@@ -181,9 +181,76 @@ Očekivani odgovor:
 
 ---
 
-## 🐛 Debugging
+## 🐛 Debugging i Rješavanje Grešaka
 
-### Ako dobijaš greške:
+### ❌ Greška: "Sorry, unable to open the file at this time"
+
+**Uzrok:** Apps Script nije pravilno deploy-an ili nemaš pristupne dozvole.
+
+**Rješenje:**
+1. Idi u Google Sheets → Extensions → Apps Script
+2. Klikni **Deploy** → **Manage deployments**
+3. Klikni na **✏️ Edit** (pored trenutnog deployment-a)
+4. Provjeri da je:
+   - **Execute as**: Me (tvoj email)
+   - **Who has access**: **Anyone** (VAŽNO!)
+5. Klikni **Deploy**
+6. Autorizuj aplikaciju ponovo:
+   - Klikni **Authorize access**
+   - Odaberi svoj Google account
+   - Klikni **Advanced** → **Go to [Project] (unsafe)**
+   - Klikni **Allow**
+7. Kopiraj novi Web app URL
+
+### ✅ Greška: `{"error":"Unknown path"}`
+
+**Ovo je DOBAR znak!** Znači da je API pravilno deploy-an i radi!
+
+**Šta znači:** API očekuje `path` parametar u URL-u.
+
+**Testiranje:**
+Umjesto da otvoriš samo:
+```
+https://script.google.com/macros/s/TVOJ_URL/exec
+```
+
+Dodaj parametar `path`:
+```
+https://script.google.com/macros/s/TVOJ_URL/exec?path=login&username=admin&password=admin123
+```
+
+### ❌ Greška: `{"error":"TypeError: Cannot read properties of null (reading 'getSheetByName')"}`
+
+**Uzrok:** Apps Script ne može pronaći Google Sheets ili sheet ne postoji.
+
+**Rješenje 1: Container-Bound Script (preporučeno)**
+1. Otvori Google Sheets sa podacima
+2. Idi Extensions → Apps Script
+3. Kopiraj kod iz `apps-script-code.gs`
+4. Deploy kao Web App
+5. Ovako će Apps Script automatski biti povezan sa tim Sheets-om
+
+**Rješenje 2: Standalone Script**
+Ako koristiš standalone Apps Script, dodaj ID Google Sheets-a:
+```javascript
+function doGet(e) {
+  const SPREADSHEET_ID = 'TVOJ_SPREADSHEET_ID'; // iz URL-a Sheets-a
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+  // ... ostatak koda
+}
+```
+
+### ❌ Greška: `{"error":"Unauthorized"}`
+
+**Uzrok:** Pogrešan username/password ili korisnik ne postoji u KORISNICI sheet-u.
+
+**Rješenje:**
+1. Provjeri KORISNICI sheet u Google Sheets
+2. Provjeri da postoji red sa tačnim username i password
+3. Provjeri da su kolone u redu (A=username, B=password)
+
+### Ako dobijaš ostale greške:
 
 1. **Reference error** - provjeri imena sheet-ova
 2. **Undefined values** - provjeri indekse kolona
@@ -206,6 +273,26 @@ Logger.log('PRIMKA exists: ' + exists);
 ```
 
 Pokreni **View** → **Logs** da vidiš output.
+
+### 🔍 Kako testirati API korak po korak:
+
+**1. Test bez parametara (očekuje "Unknown path"):**
+```
+https://script.google.com/macros/s/TVOJ_URL/exec
+```
+Odgovor: `{"error":"Unknown path"}` ✅ API radi!
+
+**2. Test login-a:**
+```
+https://script.google.com/macros/s/TVOJ_URL/exec?path=login&username=admin&password=admin123
+```
+Odgovor: `{"success":true,"username":"admin",...}` ✅ Login radi!
+
+**3. Test stats-a:**
+```
+https://script.google.com/macros/s/TVOJ_URL/exec?path=stats&year=2024&username=admin&password=admin123
+```
+Odgovor: `{"totalPrimka":...,"totalOtprema":...}` ✅ Sve radi!
 
 ---
 
