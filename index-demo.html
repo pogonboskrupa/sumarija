@@ -94,6 +94,15 @@
         .stat-mini-label { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
         .stat-mini-value { font-size: 24px; font-weight: bold; color: #059669; }
 
+        /* Worker view */
+        .worker-summary { background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 24px; text-align: center; }
+        .worker-summary h2 { font-size: 28px; margin-bottom: 8px; }
+        .worker-summary p { font-size: 16px; opacity: 0.9; }
+        .worker-total { font-size: 48px; font-weight: bold; margin: 16px 0; }
+        .sortiment-table { font-size: 13px; }
+        .sortiment-table th { background: #f3f4f6; }
+        .sortiment-header { background: #059669; color: white; font-weight: bold; }
+
         /* Responsive */
         @media (max-width: 768px) {
             .header h1 { font-size: 20px; }
@@ -104,6 +113,8 @@
             .toolbar button { width: 100%; }
             table { font-size: 12px; }
             th, td { padding: 8px; }
+            .sortiment-table { font-size: 11px; overflow-x: auto; display: block; }
+            .worker-total { font-size: 36px; }
         }
     </style>
 </head>
@@ -157,8 +168,56 @@
             <div class="loading-text">Učitavam podatke...</div>
             <div class="loading-sub">Ovo može trajati 2-3 sekunde</div>
         </div>
-        
-        <div id="content-screen" class="container hidden">
+
+        <!-- Worker view (za Šumare i Vozače) -->
+        <div id="worker-content" class="container hidden">
+            <!-- Worker summary -->
+            <div class="worker-summary">
+                <h2 id="worker-title">Moj Rad</h2>
+                <p id="worker-subtitle">Pregled primljene robe u 2024.</p>
+                <div class="worker-total" id="worker-total">0.00 m³</div>
+            </div>
+
+            <!-- Mjesečna tabela za radnika -->
+            <div class="section">
+                <h2 id="worker-monthly-title">📊 Mjesečni pregled</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mjesec</th>
+                            <th class="right">Količina (m³)</th>
+                            <th class="right">Broj sječa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="worker-monthly-table"></tbody>
+                </table>
+            </div>
+
+            <!-- Detaljni pregled sječa sa sortimentima -->
+            <div class="section">
+                <h2>📋 Detaljni pregled - Sve sječe sa sortimentima</h2>
+                <div style="overflow-x: auto;">
+                    <table class="sortiment-table">
+                        <thead>
+                            <tr class="sortiment-header">
+                                <th>Datum</th>
+                                <th>Odjel</th>
+                                <th class="right">a (m³)</th>
+                                <th class="right">b (m³)</th>
+                                <th class="right">c (m³)</th>
+                                <th class="right">d (m³)</th>
+                                <th class="right">e (m³)</th>
+                                <th class="right">Ukupno</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sortiment-table"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin view -->
+        <div id="admin-content" class="container hidden">
             <!-- Toolbar -->
             <div class="toolbar">
                 <input type="text" id="search-odjel" placeholder="🔍 Pretraži odjele..." onkeyup="filterOdjeli()">
@@ -329,13 +388,15 @@
             localStorage.removeItem('sumarija_pass');
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('app-screen').classList.add('hidden');
-            document.getElementById('content-screen').classList.add('hidden');
+            document.getElementById('worker-content').classList.add('hidden');
+            document.getElementById('admin-content').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
         }
-        
+
         async function loadData(forceRefresh = false) {
             document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('content-screen').classList.add('hidden');
+            document.getElementById('worker-content').classList.add('hidden');
+            document.getElementById('admin-content').classList.add('hidden');
 
             try {
                 const year = new Date().getFullYear();
@@ -366,70 +427,125 @@
                     cacheData(data);
                 }
                 
-                // Update KPI cards
-                document.getElementById('total-primka').textContent = data.totalPrimka.toFixed(2) + ' m³';
-                document.getElementById('total-otprema').textContent = data.totalOtprema.toFixed(2) + ' m³';
-                
-                const diff = data.totalPrimka - data.totalOtprema;
-                const diffEl = document.getElementById('total-diff');
-                diffEl.textContent = (diff >= 0 ? '+' : '') + diff.toFixed(2) + ' m³';
-                diffEl.className = 'card-value ' + (diff >= 0 ? 'green' : 'red');
-                
-                // Create monthly table
-                const monthlyTableHTML = data.monthlyStats.map(m => {
-                    const diff = m.sječa - m.otprema;
-                    return `
-                        <tr>
-                            <td style="font-weight: 500;">${m.mjesec}</td>
-                            <td class="right green">${m.sječa.toFixed(2)}</td>
-                            <td class="right blue">${m.otprema.toFixed(2)}</td>
-                            <td class="right ${diff >= 0 ? 'green' : 'red'}">${(diff >= 0 ? '+' : '') + diff.toFixed(2)}</td>
-                        </tr>
-                    `;
-                }).join('');
-                document.getElementById('monthly-table').innerHTML = monthlyTableHTML;
-
-                // Create smooth line chart
-                drawLineChart(data.monthlyStats);
-
-                // Create odjeli table with detailed info
-                const tableHTML = Object.entries(data.odjeliStats).map(([odjel, stats]) => {
-                    const projekat = stats.projekat || 0;
-                    const ostvareno = stats.ukupnoPosjeklo || stats.sječa || 0;
-                    const procenat = projekat > 0 ? (ostvareno / projekat * 100).toFixed(1) : 0;
-                    const zadnjaSjeca = stats.zadnjaSjeca || 0;
-                    const datumZadnjeSjece = stats.datumZadnjeSjece || '-';
-
-                    return `
-                        <tr>
-                            <td style="font-weight: 500;">
-                                ${odjel}
-                                <div class="odjel-detail">
-                                    <div class="progress-bar-container">
-                                        <div class="progress-bar-fill" style="width: ${Math.min(procenat, 100)}%"></div>
-                                    </div>
-                                    <div style="margin-top: 4px;">${procenat}% od projekta</div>
-                                </div>
-                            </td>
-                            <td class="right green">${zadnjaSjeca.toFixed(2)}</td>
-                            <td class="right">${datumZadnjeSjece}</td>
-                            <td class="right" style="font-weight: 600;">${projekat.toFixed(2)} / ${ostvareno.toFixed(2)}</td>
-                            <td class="right blue">${stats.otprema.toFixed(2)}</td>
-                        </tr>
-                    `;
-                }).join('');
-                document.getElementById('odjeli-table').innerHTML = tableHTML;
-
-                // Update mini stats
-                updateMiniStats(data.odjeliStats);
+                // Prikaži odgovarajući view ovisno o tipu korisnika
+                if (data.userType === 'Šumar' || data.userType === 'Vozač' || data.userType === 'Primač' || data.userType === 'Otpremač') {
+                    showWorkerView(data);
+                } else {
+                    showAdminView(data);
+                }
 
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('content-screen').classList.remove('hidden');
                 
             } catch (error) {
                 alert('Greška pri učitavanju podataka: ' + error.message);
                 document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
             }
+        }
+
+        // Prikaži worker view (za Šumare/Vozače)
+        function showWorkerView(data) {
+            const isDriver = data.userType === 'Vozač' || data.userType === 'Otpremač';
+
+            // Update summary
+            const total = data.workerStats.reduce((sum, m) => sum + m.kolicina, 0);
+            document.getElementById('worker-total').textContent = total.toFixed(2) + ' m³';
+            document.getElementById('worker-title').textContent = isDriver ? 'Moja Otprema' : 'Moja Primka';
+            document.getElementById('worker-subtitle').textContent = isDriver ?
+                'Pregled otpremljene robe u 2024.' : 'Pregled primljene robe u 2024.';
+
+            // Mjesečna tabela
+            const monthlyHTML = data.workerStats.map(m => `
+                <tr>
+                    <td style="font-weight: 500;">${m.mjesec}</td>
+                    <td class="right green">${m.kolicina.toFixed(2)}</td>
+                    <td class="right">${m.brojSjeca}</td>
+                </tr>
+            `).join('');
+            document.getElementById('worker-monthly-table').innerHTML = monthlyHTML;
+
+            // Sortiment tabela
+            const sortimentHTML = data.detailedCuts.map(cut => {
+                const sortimenti = cut.sortimenti;
+                const total = Object.values(sortimenti).reduce((sum, val) => sum + parseFloat(val), 0);
+
+                return `
+                    <tr>
+                        <td>${cut.datum}</td>
+                        <td style="font-weight: 500;">${cut.odjel}</td>
+                        <td class="right">${sortimenti.a ? sortimenti.a.toFixed(2) : '-'}</td>
+                        <td class="right">${sortimenti.b ? sortimenti.b.toFixed(2) : '-'}</td>
+                        <td class="right">${sortimenti.c ? sortimenti.c.toFixed(2) : '-'}</td>
+                        <td class="right">${sortimenti.d ? sortimenti.d.toFixed(2) : '-'}</td>
+                        <td class="right">${sortimenti.e ? sortimenti.e.toFixed(2) : '-'}</td>
+                        <td class="right" style="font-weight: 700; color: #059669;">${total.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
+            document.getElementById('sortiment-table').innerHTML = sortimentHTML;
+
+            document.getElementById('worker-content').classList.remove('hidden');
+        }
+
+        // Prikaži admin view
+        function showAdminView(data) {
+            // Update KPI cards
+            document.getElementById('total-primka').textContent = data.totalPrimka.toFixed(2) + ' m³';
+            document.getElementById('total-otprema').textContent = data.totalOtprema.toFixed(2) + ' m³';
+
+            const diff = data.totalPrimka - data.totalOtprema;
+            const diffEl = document.getElementById('total-diff');
+            diffEl.textContent = (diff >= 0 ? '+' : '') + diff.toFixed(2) + ' m³';
+            diffEl.className = 'card-value ' + (diff >= 0 ? 'green' : 'red');
+
+            // Create monthly table
+            const monthlyTableHTML = data.monthlyStats.map(m => {
+                const diff = m.sječa - m.otprema;
+                return `
+                    <tr>
+                        <td style="font-weight: 500;">${m.mjesec}</td>
+                        <td class="right green">${m.sječa.toFixed(2)}</td>
+                        <td class="right blue">${m.otprema.toFixed(2)}</td>
+                        <td class="right ${diff >= 0 ? 'green' : 'red'}">${(diff >= 0 ? '+' : '') + diff.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
+            document.getElementById('monthly-table').innerHTML = monthlyTableHTML;
+
+            // Create smooth line chart
+            drawLineChart(data.monthlyStats);
+
+            // Create odjeli table with detailed info
+            const tableHTML = Object.entries(data.odjeliStats).map(([odjel, stats]) => {
+                const projekat = stats.projekat || 0;
+                const ostvareno = stats.ukupnoPosjeklo || stats.sječa || 0;
+                const procenat = projekat > 0 ? (ostvareno / projekat * 100).toFixed(1) : 0;
+                const zadnjaSjeca = stats.zadnjaSjeca || 0;
+                const datumZadnjeSjece = stats.datumZadnjeSjece || '-';
+
+                return `
+                    <tr>
+                        <td style="font-weight: 500;">
+                            ${odjel}
+                            <div class="odjel-detail">
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar-fill" style="width: ${Math.min(procenat, 100)}%"></div>
+                                </div>
+                                <div style="margin-top: 4px;">${procenat}% od projekta</div>
+                            </div>
+                        </td>
+                        <td class="right green">${zadnjaSjeca.toFixed(2)}</td>
+                        <td class="right">${datumZadnjeSjece}</td>
+                        <td class="right" style="font-weight: 600;">${projekat.toFixed(2)} / ${ostvareno.toFixed(2)}</td>
+                        <td class="right blue">${stats.otprema.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
+            document.getElementById('odjeli-table').innerHTML = tableHTML;
+
+            // Update mini stats
+            updateMiniStats(data.odjeliStats);
+
+            document.getElementById('admin-content').classList.remove('hidden');
         }
 
         function drawLineChart(monthlyStats) {

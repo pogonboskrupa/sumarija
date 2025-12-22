@@ -95,6 +95,63 @@ const MOCK_API = {
     return stats;
   },
 
+  // Generate worker stats (primač/otpremač)
+  generateWorkerStats(username, type) {
+    const months = [
+      'Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun',
+      'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'
+    ];
+
+    return months.map((mjesec, index) => {
+      const kolicina = 50 + Math.random() * 100; // 50-150 m³ mjesečno
+      return {
+        mjesec,
+        kolicina: parseFloat(kolicina.toFixed(2)),
+        brojSjeca: Math.floor(5 + Math.random() * 15) // 5-20 sječa mjesečno
+      };
+    });
+  }
+
+  // Generate detailed cuts with sortiments
+  generateDetailedCuts(year) {
+    const cuts = [];
+    const sortimenti = ['a', 'b', 'c', 'd', 'e'];
+
+    // Generiši 50 random sječa kroz godinu
+    for (let i = 0; i < 50; i++) {
+      const mjesec = Math.floor(Math.random() * 12);
+      const dan = Math.floor(Math.random() * 28) + 1;
+      const datum = new Date(year, mjesec, dan);
+
+      const odjel = this.odjeli[Math.floor(Math.random() * this.odjeli.length)].id;
+
+      const cut = {
+        datum: datum.toLocaleDateString('bs-BA'),
+        odjel,
+        sortimenti: {}
+      };
+
+      // Dodaj random količine za svaki sortiment
+      sortimenti.forEach(sort => {
+        const kolicina = Math.random() < 0.7 ? (Math.random() * 30).toFixed(2) : 0; // 70% šanse da ima sortiment
+        if (parseFloat(kolicina) > 0) {
+          cut.sortimenti[sort] = parseFloat(kolicina);
+        }
+      });
+
+      cuts.push(cut);
+    }
+
+    // Sortiraj po datumu
+    cuts.sort((a, b) => {
+      const dateA = new Date(a.datum.split('.').reverse().join('-'));
+      const dateB = new Date(b.datum.split('.').reverse().join('-'));
+      return dateB - dateA; // Najnovije prvo
+    });
+
+    return cuts;
+  }
+
   // Stats handler
   getStats(year, username, password) {
     // Provjeri autentikaciju
@@ -103,6 +160,7 @@ const MOCK_API = {
       return { error: 'Unauthorized' };
     }
 
+    const user = this.users.find(u => u.username === username);
     const monthlyStats = this.generateMonthlyStats(year);
     const odjeliStats = this.generateOdjeliStats();
 
@@ -110,12 +168,24 @@ const MOCK_API = {
     const totalPrimka = monthlyStats.reduce((sum, m) => sum + m.sječa, 0);
     const totalOtprema = monthlyStats.reduce((sum, m) => sum + m.otprema, 0);
 
-    return {
+    const response = {
       totalPrimka: parseFloat(totalPrimka.toFixed(2)),
       totalOtprema: parseFloat(totalOtprema.toFixed(2)),
       monthlyStats,
-      odjeliStats
+      odjeliStats,
+      userType: user.type
     };
+
+    // Dodaj podatke specifične za radnike
+    if (user.type === 'Šumar' || user.type === 'Primač') {
+      response.workerStats = this.generateWorkerStats(username, 'primka');
+      response.detailedCuts = this.generateDetailedCuts(year);
+    } else if (user.type === 'Vozač' || user.type === 'Otpremač') {
+      response.workerStats = this.generateWorkerStats(username, 'otprema');
+      response.detailedCuts = this.generateDetailedCuts(year);
+    }
+
+    return response;
   }
 };
 
