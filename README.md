@@ -2,6 +2,10 @@
 
 Moderna web aplikacija za evidenciju sječe i otpreme drvne mase.
 
+## 🚀 BRZI START
+
+Pročitaj **[BRZI_START.md](BRZI_START.md)** za kompletno uputstvo!
+
 ## 📱 DEMO - Testiraj odmah!
 
 Otvori **`index-demo.html`** u browseru (čak i sa mobitela!) i testiraj aplikaciju bez deploy-a.
@@ -47,13 +51,15 @@ Otvori **`index-demo.html`** u browseru (čak i sa mobitela!) i testiraj aplikac
 
 ```
 sumarija/
-├── index.html              # Produkcijska verzija (sa pravim API-jem)
-├── index-demo.html         # Demo verzija (sa Mock API-jem)
-├── mock-api.js            # Mock API za testiranje
-├── apps-script-code.gs    # Google Apps Script backend kod
-├── APPS_SCRIPT_UPUTSTVO.md          # Uputstvo za setup
-├── APPS_SCRIPT_NAPREDNE_OPCIJE.md   # Napredne opcije
-└── README.md              # Ova datoteka
+├── index.html                        # Produkcijska verzija (sa pravim API-jem)
+├── index-demo.html                   # Demo verzija (sa Mock API-jem)
+├── mock-api.js                       # Mock API za testiranje
+├── apps-script-code.gs               # Google Apps Script backend kod
+├── BRZI_START.md                     # ⭐ Brzi start uputstvo
+├── APPS_SCRIPT_UPUTSTVO.md           # Detaljno uputstvo za setup
+├── APPS_SCRIPT_NAPREDNE_OPCIJE.md    # Napredne opcije i optimizacije
+├── KAKO_TESTIRATI.md                 # Uputstvo za testiranje demo verzije
+└── README.md                         # Ova datoteka
 ```
 
 ## 📦 Setup
