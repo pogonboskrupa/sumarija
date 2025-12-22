@@ -150,8 +150,8 @@
         <div class="header">
             <div class="header-content">
                 <div>
-                    <h1>🌲 Šumarija - Preglednik</h1>
-                    <p>Evidencija sječe i otpreme 2024</p>
+                    <h1>🌲 Pogon gospodarenja Bos. Krupa</h1>
+                    <p>Evidencija sječe i otpreme</p>
                 </div>
                 <div style="display: flex; align-items: center; gap: 16px;">
                     <div class="header-user">
@@ -174,7 +174,7 @@
             <!-- Worker summary -->
             <div class="worker-summary">
                 <h2 id="worker-title">Moj Rad</h2>
-                <p id="worker-subtitle">Pregled primljene robe u 2024.</p>
+                <p id="worker-subtitle">Pregled primljene robe</p>
                 <div class="worker-total" id="worker-total">0.00 m³</div>
             </div>
 
@@ -244,12 +244,12 @@
 
             <div class="cards">
                 <div class="card">
-                    <div class="card-label">Ukupna sječa 2024</div>
+                    <div class="card-label">Ukupna sječa</div>
                     <div class="card-value green" id="total-primka">0.00 m³</div>
                 </div>
-                
+
                 <div class="card">
-                    <div class="card-label">Ukupna otprema 2024</div>
+                    <div class="card-label">Ukupna otprema</div>
                     <div class="card-value blue" id="total-otprema">0.00 m³</div>
                 </div>
                 
@@ -260,7 +260,7 @@
             </div>
             
             <div class="section">
-                <h2>📊 Godišnji pregled - 2024</h2>
+                <h2>📊 Godišnji pregled</h2>
                 <table class="monthly-table">
                     <thead>
                         <tr>
@@ -457,7 +457,7 @@
             document.getElementById('worker-total').textContent = total.toFixed(2) + ' m³';
             document.getElementById('worker-title').textContent = isDriver ? 'Moja Otprema' : 'Moja Primka';
             document.getElementById('worker-subtitle').textContent = isDriver ?
-                'Pregled otpremljene robe u 2024.' : 'Pregled primljene robe u 2024.';
+                'Pregled otpremljene robe' : 'Pregled primljene robe';
 
             // Mjesečna tabela
             const monthlyHTML = data.workerStats.map(m => `
