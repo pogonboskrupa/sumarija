@@ -110,7 +110,7 @@ const MOCK_API = {
         brojSjeca: Math.floor(5 + Math.random() * 15) // 5-20 sječa mjesečno
       };
     });
-  }
+  },
 
   // Generate detailed cuts with sortiments
   generateDetailedCuts(year) {
