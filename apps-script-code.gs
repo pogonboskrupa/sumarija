@@ -1,6 +1,9 @@
 // Google Apps Script za Šumarija API
 // Deploy kao Web App: Deploy > New deployment > Web app
 
+// ⚠️ VAŽNO: Postavi svoj Spreadsheet ID ovdje
+const SPREADSHEET_ID = '1rpl0RiqsE6lrU9uDMTjf127By7b951rP3a5Chis9qwg';
+
 // Glavni handler za sve zahtjeve
 function doGet(e) {
   try {
@@ -20,7 +23,7 @@ function doGet(e) {
 
 // Login handler
 function handleLogin(username, password) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const usersSheet = ss.getSheetByName('Korisnici'); // Sheet name: "Korisnici"
 
   if (!usersSheet) {
@@ -63,7 +66,7 @@ function handleStats(year, username, password) {
     return createJsonResponse({ error: 'Unauthorized' }, false);
   }
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const primkaSheet = ss.getSheetByName('PRIMKA');
   const otpremaSheet = ss.getSheetByName('OTPREMA');
 
