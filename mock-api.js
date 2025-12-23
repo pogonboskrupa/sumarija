@@ -150,7 +150,7 @@ const MOCK_API = {
     });
 
     return cuts;
-  }
+  },
 
   // Stats handler
   getStats(year, username, password) {
