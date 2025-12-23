@@ -21,7 +21,7 @@ function doGet(e) {
 // Login handler
 function handleLogin(username, password) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const usersSheet = ss.getSheetByName('KORISNICI'); // prilagodi ime sheet-a
+  const usersSheet = ss.getSheetByName('Korisnici'); // Sheet name: "Korisnici"
 
   if (!usersSheet) {
     return createJsonResponse({ error: 'Users sheet not found' }, false);
@@ -29,15 +29,22 @@ function handleLogin(username, password) {
 
   const data = usersSheet.getDataRange().getValues();
 
-  // Pretpostavljam strukturu: kolona A = username, B = password, C = ime, D = prezime, E = role
-  for (let i = 1; i < data.length; i++) { // skip header
-    if (data[i][0] === username && data[i][1] === password) {
+  // Struktura: A = username, B = password, C = ime_prezime, D = tip (primac/otpremac)
+  for (let i = 1; i < data.length; i++) { // skip header (red 1)
+    // Konverzija password u string za poređenje
+    const storedPassword = String(data[i][1]);
+    const inputPassword = String(password);
+
+    if (data[i][0] === username && storedPassword === inputPassword) {
+      const tip = data[i][3]; // primac ili otpremac
+
       return createJsonResponse({
         success: true,
         username: username,
-        fullName: data[i][2] + ' ' + data[i][3],
-        role: data[i][4] || 'user',
-        type: data[i][5] || 'Korisnik'
+        fullName: data[i][2], // ime_prezime je već kompletno ime
+        role: 'user', // svi su radnici
+        type: tip || 'Korisnik',
+        userType: tip === 'primac' ? 'Primač' : (tip === 'otpremac' ? 'Otpremač' : 'Korisnik')
       }, true);
     }
   }
