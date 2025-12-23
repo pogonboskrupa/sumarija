@@ -68,8 +68,8 @@ function handleStats(year, username, password) {
   }
 
   const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-  const primkaSheet = ss.getSheetByName('PRIMKA');
-  const otpremaSheet = ss.getSheetByName('OTPREMA');
+  const primkaSheet = ss.getSheetByName('INDEX_PRIMKA');
+  const otpremaSheet = ss.getSheetByName('INDEX_OTPREMA');
 
   if (!primkaSheet || !otpremaSheet) {
     return createJsonResponse({ error: 'Required sheets not found' }, false);
