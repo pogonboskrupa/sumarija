@@ -101,14 +101,14 @@ function handleStats(year, username, password) {
 
 // Procesiranje PRIMKA sheet-a
 function processPrimkaData(data, stats, year) {
-  // Pretpostavljam strukturu:
-  // Kolona A: Datum, B: Odjel, ... ostatak kolona ..., kolona sa kubikom
+  // INDEX_PRIMKA struktura:
+  // Kolona A: Odjel, B: Datum, ... U: SVEUKUPNO (indeks 20)
 
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
-    const datum = row[0]; // kolona A
-    const odjel = row[1]; // kolona B
-    const kubik = parseFloat(row[10]) || 0; // PRILAGODI: kolona sa kubikom (npr. K = indeks 10)
+    const odjel = row[0]; // kolona A - Odjel
+    const datum = row[1]; // kolona B - Datum
+    const kubik = parseFloat(row[20]) || 0; // kolona U (indeks 20) - SVEUKUPNO
 
     if (!datum || !odjel) continue;
 
@@ -148,13 +148,14 @@ function processPrimkaData(data, stats, year) {
 
 // Procesiranje OTPREMA sheet-a
 function processOtpremaData(data, stats, year) {
-  // Slična struktura kao PRIMKA
+  // INDEX_OTPREMA struktura: ista kao INDEX_PRIMKA
+  // Kolona A: Odjel, B: Datum, ... U: SVEUKUPNO (indeks 20)
 
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
-    const datum = row[0];
-    const odjel = row[1];
-    const kubik = parseFloat(row[10]) || 0; // PRILAGODI
+    const odjel = row[0]; // kolona A - Odjel
+    const datum = row[1]; // kolona B - Datum
+    const kubik = parseFloat(row[20]) || 0; // kolona U (indeks 20) - SVEUKUPNO
 
     if (!datum || !odjel) continue;
 
