@@ -892,17 +892,11 @@ function handlePrimaci(year, username, password) {
   const primaciPrikaz = [];
   for (const primacIme in primaciMap) {
     const primac = primaciMap[primacIme];
-    const red = {
+    primaciPrikaz.push({
       primac: primacIme,
+      mjeseci: primac.mjeseci,
       ukupno: primac.ukupno
-    };
-
-    // Dodaj mjesečne kolone
-    for (let i = 0; i < 12; i++) {
-      red[mjeseci[i]] = primac.mjeseci[i];
-    }
-
-    primaciPrikaz.push(red);
+    });
   }
 
   // Sortiraj po ukupnoj količini (od najvećeg ka najmanjem)
@@ -971,17 +965,11 @@ function handleOtpremaci(year, username, password) {
   const otpremaciPrikaz = [];
   for (const otpremacIme in otpremaciMap) {
     const otpremac = otpremaciMap[otpremacIme];
-    const red = {
+    otpremaciPrikaz.push({
       otpremac: otpremacIme,
+      mjeseci: otpremac.mjeseci,
       ukupno: otpremac.ukupno
-    };
-
-    // Dodaj mjesečne kolone
-    for (let i = 0; i < 12; i++) {
-      red[mjeseci[i]] = otpremac.mjeseci[i];
-    }
-
-    otpremaciPrikaz.push(red);
+    });
   }
 
   // Sortiraj po ukupnoj količini (od najvećeg ka najmanjem)
