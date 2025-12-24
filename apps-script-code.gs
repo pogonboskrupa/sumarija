@@ -370,17 +370,41 @@ function syncIndexSheet() {
             for (let i = 1; i < data.length; i++) {
               const row = data[i];
               const datum = row[0]; // kolona A - datum
+              const primac = row[1]; // kolona B - primac
 
-              // Preskači redove bez datuma ili sa praznim datumom
-              if (!datum || datum === '' || datum === 0) continue;
+              // Debug logging za prvi spreadsheet (prvih 20 redova)
+              if (processedCount === 1 && i <= 20) {
+                Logger.log(`    Red ${i}: datum="${datum}" (${typeof datum}), primac="${primac}"`);
+              }
 
-              // Provjeri da li je datum validan (nije string kao "OPIS" ili "#DIV/0!")
-              if (typeof datum === 'string' && (datum.includes('OPIS') || datum.includes('#') || datum.includes('PLAN') || datum.includes('REAL'))) continue;
+              // Preskači redove bez datuma ili primaca
+              if (!datum || datum === '' || datum === 0) {
+                if (processedCount === 1 && i <= 20) Logger.log(`      → Skip: nema datum`);
+                continue;
+              }
 
-              // Kreiraj novi red za INDEX: [odjel, datum(A), primac(B), ...sortimenti(C-U)]
-              const newRow = [odjelNaziv, datum, row[1], ...row.slice(2)];
+              if (!primac || primac === '' || primac === 0) {
+                if (processedCount === 1 && i <= 20) Logger.log(`      → Skip: nema primac`);
+                continue;
+              }
+
+              // Preskači header redove
+              const datumStr = String(datum);
+              if (datumStr.includes('OPIS') || datumStr.includes('#') ||
+                  datumStr.includes('PLAN') || datumStr.includes('REAL') ||
+                  datumStr.includes('datum') || datumStr.includes('KUPCI')) {
+                if (processedCount === 1 && i <= 20) Logger.log(`      → Skip: header`);
+                continue;
+              }
+
+              // Dodaj red
+              const newRow = [odjelNaziv, datum, primac, ...row.slice(2)];
               primkaRows.push(newRow);
               addedRows++;
+
+              if (processedCount === 1 && addedRows <= 3) {
+                Logger.log(`      ✓ Dodano red ${addedRows}: "${odjelNaziv}" | "${datum}" | "${primac}"`);
+              }
             }
             Logger.log(`  PRIMKA: dodano ${addedRows} redova`);
           } else {
