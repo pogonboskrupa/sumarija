@@ -508,6 +508,206 @@
                 </div>
             </div>
         </div>
+
+        <!-- ADD SJECA FORM (For Primači) -->
+        <div id="add-sjeca-content" class="container hidden">
+            <div class="section">
+                <h2>➕ Dodaj novu sječu</h2>
+                <form id="add-sjeca-form" onsubmit="submitSjeca(event)">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label>Datum:</label>
+                            <input type="date" id="sjeca-datum" required style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>Odjel:</label>
+                            <input type="text" id="sjeca-odjel" required placeholder="npr. 12A" style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                        </div>
+                    </div>
+
+                    <h3 style="margin: 20px 0 10px 0; color: #047857;">Sortimenti (m³):</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                        <div class="form-group">
+                            <label>F/L Č:</label>
+                            <input type="number" step="0.01" id="sjeca-FL-C" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>I Č:</label>
+                            <input type="number" step="0.01" id="sjeca-I-C" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>II Č:</label>
+                            <input type="number" step="0.01" id="sjeca-II-C" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>III Č:</label>
+                            <input type="number" step="0.01" id="sjeca-III-C" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>RUDNO:</label>
+                            <input type="number" step="0.01" id="sjeca-RUDNO" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>TRUPCI Č:</label>
+                            <input type="number" step="0.01" id="sjeca-TRUPCI-C" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>CEL.DUGA:</label>
+                            <input type="number" step="0.01" id="sjeca-CEL-DUGA" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>CEL.CIJEPANA:</label>
+                            <input type="number" step="0.01" id="sjeca-CEL-CIJEPANA" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>ČETINARI:</label>
+                            <input type="number" step="0.01" id="sjeca-CETINARI" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>F/L L:</label>
+                            <input type="number" step="0.01" id="sjeca-FL-L" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>I L:</label>
+                            <input type="number" step="0.01" id="sjeca-I-L" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>II L:</label>
+                            <input type="number" step="0.01" id="sjeca-II-L" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>III L:</label>
+                            <input type="number" step="0.01" id="sjeca-III-L" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>TRUPCI:</label>
+                            <input type="number" step="0.01" id="sjeca-TRUPCI" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>OGR.DUGI:</label>
+                            <input type="number" step="0.01" id="sjeca-OGR-DUGI" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>OGR.CIJEPANI:</label>
+                            <input type="number" step="0.01" id="sjeca-OGR-CIJEPANI" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>LIŠĆARI:</label>
+                            <input type="number" step="0.01" id="sjeca-LISCARI" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px; display: flex; gap: 12px; justify-content: flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="resetSjecaForm()">Poništi</button>
+                        <button type="submit" class="btn btn-primary" id="submit-sjeca-btn">Dodaj sječu</button>
+                    </div>
+
+                    <div id="sjeca-message" class="hidden" style="margin-top: 20px; padding: 12px; border-radius: 8px;"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ADD OTPREMA FORM (For Otpremači) -->
+        <div id="add-otprema-content" class="container hidden">
+            <div class="section">
+                <h2>➕ Dodaj novu otpremu</h2>
+                <form id="add-otprema-form" onsubmit="submitOtprema(event)">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label>Datum:</label>
+                            <input type="date" id="otprema-datum" required style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>Odjel:</label>
+                            <input type="text" id="otprema-odjel" required placeholder="npr. 12A" style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>Kupac:</label>
+                            <input type="text" id="otprema-kupac" placeholder="Naziv kupca" style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                        </div>
+                    </div>
+
+                    <h3 style="margin: 20px 0 10px 0; color: #2563eb;">Sortimenti (m³):</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                        <div class="form-group">
+                            <label>F/L Č:</label>
+                            <input type="number" step="0.01" id="otprema-FL-C" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>I Č:</label>
+                            <input type="number" step="0.01" id="otprema-I-C" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>II Č:</label>
+                            <input type="number" step="0.01" id="otprema-II-C" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>III Č:</label>
+                            <input type="number" step="0.01" id="otprema-III-C" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>RUDNO:</label>
+                            <input type="number" step="0.01" id="otprema-RUDNO" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>TRUPCI Č:</label>
+                            <input type="number" step="0.01" id="otprema-TRUPCI-C" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>CEL.DUGA:</label>
+                            <input type="number" step="0.01" id="otprema-CEL-DUGA" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>CEL.CIJEPANA:</label>
+                            <input type="number" step="0.01" id="otprema-CEL-CIJEPANA" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>ČETINARI:</label>
+                            <input type="number" step="0.01" id="otprema-CETINARI" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>F/L L:</label>
+                            <input type="number" step="0.01" id="otprema-FL-L" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>I L:</label>
+                            <input type="number" step="0.01" id="otprema-I-L" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>II L:</label>
+                            <input type="number" step="0.01" id="otprema-II-L" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>III L:</label>
+                            <input type="number" step="0.01" id="otprema-III-L" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>TRUPCI:</label>
+                            <input type="number" step="0.01" id="otprema-TRUPCI" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>OGR.DUGI:</label>
+                            <input type="number" step="0.01" id="otprema-OGR-DUGI" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>OGR.CIJEPANI:</label>
+                            <input type="number" step="0.01" id="otprema-OGR-CIJEPANI" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>LIŠĆARI:</label>
+                            <input type="number" step="0.01" id="otprema-LISCARI" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px; display: flex; gap: 12px; justify-content: flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="resetOtpremaForm()">Poništi</button>
+                        <button type="submit" class="btn btn-primary" id="submit-otprema-btn">Dodaj otpremu</button>
+                    </div>
+
+                    <div id="otprema-message" class="hidden" style="margin-top: 20px; padding: 12px; border-radius: 8px;"></div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -713,16 +913,18 @@
             const userType = currentUser.type; // 'primac', 'otpremac', ili nešto drugo
 
             if (userType === 'primac') {
-                // Primač vidi dva prikaza: detaljan i po odjelima
+                // Primač vidi tri prikaza: pregled, po odjelima, i dodavanje
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('primac-personal')">👷 Pregled sječe u tekućoj godini</button>
                     <button class="tab" onclick="switchTab('primac-odjeli')">🏭 Prikaz po odjelima</button>
+                    <button class="tab" onclick="switchTab('add-sjeca')">➕ Dodaj sječu</button>
                 `;
             } else if (userType === 'otpremac') {
-                // Otpremač vidi dva prikaza: detaljan i po odjelima
+                // Otpremač vidi tri prikaza: pregled, po odjelima, i dodavanje
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('otpremac-personal')">🚛 Pregled otpreme u tekućoj godini</button>
                     <button class="tab" onclick="switchTab('otpremac-odjeli')">🏭 Prikaz po odjelima</button>
+                    <button class="tab" onclick="switchTab('add-otprema')">➕ Dodaj otpremu</button>
                 `;
             } else {
                 // Admin ili drugi korisnici vide sve tab-ove
@@ -750,6 +952,8 @@
             document.getElementById('otpremac-personal-content').classList.add('hidden');
             document.getElementById('primac-odjeli-content').classList.add('hidden');
             document.getElementById('otpremac-odjeli-content').classList.add('hidden');
+            document.getElementById('add-sjeca-content').classList.add('hidden');
+            document.getElementById('add-otprema-content').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
         }
         
@@ -780,6 +984,8 @@
             document.getElementById('otpremac-personal-content').classList.add('hidden');
             document.getElementById('primac-odjeli-content').classList.add('hidden');
             document.getElementById('otpremac-odjeli-content').classList.add('hidden');
+            document.getElementById('add-sjeca-content').classList.add('hidden');
+            document.getElementById('add-otprema-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
@@ -798,6 +1004,10 @@
                 loadPrimacOdjeli();
             } else if (tab === 'otpremac-odjeli') {
                 loadOtpremacOdjeli();
+            } else if (tab === 'add-sjeca') {
+                showAddSjecaForm();
+            } else if (tab === 'add-otprema') {
+                showAddOtpremaForm();
             }
         }
 
@@ -1837,5 +2047,200 @@
             sortedRows.forEach(row => tbody.appendChild(row));
         }
     </script>
+
+        // ========== ADD SJECA/OTPREMA FORMS ==========
+
+        // Show Add Sjeca Form
+        function showAddSjecaForm() {
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('add-sjeca-content').classList.remove('hidden');
+
+            // Set today's date as default
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('sjeca-datum').value = today;
+        }
+
+        // Show Add Otprema Form
+        function showAddOtpremaForm() {
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('add-otprema-content').classList.remove('hidden');
+
+            // Set today's date as default
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('otprema-datum').value = today;
+        }
+
+        // Submit Sjeca Form
+        async function submitSjeca(event) {
+            event.preventDefault();
+
+            const submitBtn = document.getElementById('submit-sjeca-btn');
+            const messageDiv = document.getElementById('sjeca-message');
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Dodavanje...';
+            messageDiv.classList.add('hidden');
+
+            try {
+                // Collect form data
+                const formData = new URLSearchParams();
+                formData.append('path', 'add-sjeca');
+                formData.append('username', currentUser.username);
+                formData.append('password', currentPassword);
+                formData.append('datum', document.getElementById('sjeca-datum').value);
+                formData.append('odjel', document.getElementById('sjeca-odjel').value);
+                formData.append('F/L Č', document.getElementById('sjeca-FL-C').value);
+                formData.append('I Č', document.getElementById('sjeca-I-C').value);
+                formData.append('II Č', document.getElementById('sjeca-II-C').value);
+                formData.append('III Č', document.getElementById('sjeca-III-C').value);
+                formData.append('RUDNO', document.getElementById('sjeca-RUDNO').value);
+                formData.append('TRUPCI Č', document.getElementById('sjeca-TRUPCI-C').value);
+                formData.append('CEL.DUGA', document.getElementById('sjeca-CEL-DUGA').value);
+                formData.append('CEL.CIJEPANA', document.getElementById('sjeca-CEL-CIJEPANA').value);
+                formData.append('ČETINARI', document.getElementById('sjeca-CETINARI').value);
+                formData.append('F/L L', document.getElementById('sjeca-FL-L').value);
+                formData.append('I L', document.getElementById('sjeca-I-L').value);
+                formData.append('II L', document.getElementById('sjeca-II-L').value);
+                formData.append('III L', document.getElementById('sjeca-III-L').value);
+                formData.append('TRUPCI', document.getElementById('sjeca-TRUPCI').value);
+                formData.append('OGR.DUGI', document.getElementById('sjeca-OGR-DUGI').value);
+                formData.append('OGR.CIJEPANI', document.getElementById('sjeca-OGR-CIJEPANI').value);
+                formData.append('LIŠĆARI', document.getElementById('sjeca-LISCARI').value);
+
+                // Send request (don't cache this)
+                const url = `${API_URL}?${formData.toString()}`;
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.success) {
+                    messageDiv.innerHTML = `✅ ${result.message}<br>Ukupno: ${result.ukupno.toFixed(2)} m³`;
+                    messageDiv.style.background = '#d1fae5';
+                    messageDiv.style.color = '#047857';
+                    messageDiv.classList.remove('hidden');
+
+                    // Reset form
+                    setTimeout(() => {
+                        resetSjecaForm();
+                        messageDiv.classList.add('hidden');
+                    }, 3000);
+
+                    // Clear cache so new data shows up
+                    const year = new Date().getFullYear();
+                    localStorage.removeItem('cache_primac_detail_' + year);
+                    localStorage.removeItem('cache_primac_odjeli_' + year);
+                    localStorage.removeItem('cache_dashboard_' + year);
+                } else {
+                    throw new Error(result.error || 'Unknown error');
+                }
+
+            } catch (error) {
+                messageDiv.innerHTML = `❌ Greška: ${error.message}`;
+                messageDiv.style.background = '#fee2e2';
+                messageDiv.style.color = '#991b1b';
+                messageDiv.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Dodaj sječu';
+            }
+        }
+
+        // Submit Otprema Form
+        async function submitOtprema(event) {
+            event.preventDefault();
+
+            const submitBtn = document.getElementById('submit-otprema-btn');
+            const messageDiv = document.getElementById('otprema-message');
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Dodavanje...';
+            messageDiv.classList.add('hidden');
+
+            try {
+                // Collect form data
+                const formData = new URLSearchParams();
+                formData.append('path', 'add-otprema');
+                formData.append('username', currentUser.username);
+                formData.append('password', currentPassword);
+                formData.append('datum', document.getElementById('otprema-datum').value);
+                formData.append('odjel', document.getElementById('otprema-odjel').value);
+                formData.append('kupac', document.getElementById('otprema-kupac').value);
+                formData.append('F/L Č', document.getElementById('otprema-FL-C').value);
+                formData.append('I Č', document.getElementById('otprema-I-C').value);
+                formData.append('II Č', document.getElementById('otprema-II-C').value);
+                formData.append('III Č', document.getElementById('otprema-III-C').value);
+                formData.append('RUDNO', document.getElementById('otprema-RUDNO').value);
+                formData.append('TRUPCI Č', document.getElementById('otprema-TRUPCI-C').value);
+                formData.append('CEL.DUGA', document.getElementById('otprema-CEL-DUGA').value);
+                formData.append('CEL.CIJEPANA', document.getElementById('otprema-CEL-CIJEPANA').value);
+                formData.append('ČETINARI', document.getElementById('otprema-CETINARI').value);
+                formData.append('F/L L', document.getElementById('otprema-FL-L').value);
+                formData.append('I L', document.getElementById('otprema-I-L').value);
+                formData.append('II L', document.getElementById('otprema-II-L').value);
+                formData.append('III L', document.getElementById('otprema-III-L').value);
+                formData.append('TRUPCI', document.getElementById('otprema-TRUPCI').value);
+                formData.append('OGR.DUGI', document.getElementById('otprema-OGR-DUGI').value);
+                formData.append('OGR.CIJEPANI', document.getElementById('otprema-OGR-CIJEPANI').value);
+                formData.append('LIŠĆARI', document.getElementById('otprema-LISCARI').value);
+
+                // Send request (don't cache this)
+                const url = `${API_URL}?${formData.toString()}`;
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.success) {
+                    messageDiv.innerHTML = `✅ ${result.message}<br>Ukupno: ${result.ukupno.toFixed(2)} m³`;
+                    messageDiv.style.background = '#dbeafe';
+                    messageDiv.style.color = '#1e40af';
+                    messageDiv.classList.remove('hidden');
+
+                    // Reset form
+                    setTimeout(() => {
+                        resetOtpremaForm();
+                        messageDiv.classList.add('hidden');
+                    }, 3000);
+
+                    // Clear cache so new data shows up
+                    const year = new Date().getFullYear();
+                    localStorage.removeItem('cache_otpremac_detail_' + year);
+                    localStorage.removeItem('cache_otpremac_odjeli_' + year);
+                    localStorage.removeItem('cache_dashboard_' + year);
+                } else {
+                    throw new Error(result.error || 'Unknown error');
+                }
+
+            } catch (error) {
+                messageDiv.innerHTML = `❌ Greška: ${error.message}`;
+                messageDiv.style.background = '#fee2e2';
+                messageDiv.style.color = '#991b1b';
+                messageDiv.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Dodaj otpremu';
+            }
+        }
+
+        // Reset Sjeca Form
+        function resetSjecaForm() {
+            document.getElementById('add-sjeca-form').reset();
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('sjeca-datum').value = today;
+
+            // Reset all sortimenti to 0
+            document.querySelectorAll('#add-sjeca-form input[type="number"]').forEach(input => {
+                input.value = 0;
+            });
+        }
+
+        // Reset Otprema Form
+        function resetOtpremaForm() {
+            document.getElementById('add-otprema-form').reset();
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('otprema-datum').value = today;
+
+            // Reset all sortimenti to 0
+            document.querySelectorAll('#add-otprema-form input[type="number"]').forEach(input => {
+                input.value = 0;
+            });
+        }
 </body>
 </html>

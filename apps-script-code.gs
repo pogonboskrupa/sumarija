@@ -38,6 +38,10 @@ function doGet(e) {
       return handlePrimacOdjeli(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'otpremac-odjeli') {
       return handleOtpremacOdjeli(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'add-sjeca') {
+      return handleAddSjeca(e.parameter);
+    } else if (path === 'add-otprema') {
+      return handleAddOtprema(e.parameter);
     }
 
     return createJsonResponse({ error: 'Unknown path' }, false);
@@ -1734,4 +1738,168 @@ function handleOtpremacOdjeli(year, username, password) {
     sortimentiNazivi: sortimentiNazivi,
     odjeli: odjeliResult
   }, true);
+}
+
+// ========================================
+// ADD SJECA API - Dodavanje nove sječe
+// ========================================
+
+/**
+ * Add Sjeca endpoint - dodaje novi unos u INDEX_PRIMKA
+ */
+function handleAddSjeca(params) {
+  try {
+    // Autentikacija
+    const loginResult = JSON.parse(handleLogin(params.username, params.password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    // Samo primači mogu dodavati sječu
+    if (loginResult.type !== 'primac') {
+      return createJsonResponse({ error: "Only primači can add sječa entries" }, false);
+    }
+
+    const userFullName = loginResult.fullName;
+
+    Logger.log('=== HANDLE ADD SJECA START ===');
+    Logger.log('User: ' + userFullName);
+    Logger.log('Odjel: ' + params.odjel);
+    Logger.log('Datum: ' + params.datum);
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const primkaSheet = ss.getSheetByName("INDEX_PRIMKA");
+
+    if (!primkaSheet) {
+      return createJsonResponse({ error: "INDEX_PRIMKA sheet not found" }, false);
+    }
+
+    // Pripremi red podataka
+    // A: ODJEL, B: DATUM, C: PRIMAČ, D-U: sortimenti (18 kolona)
+    const sortimentiNazivi = [
+      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI",
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+    ];
+
+    const newRow = [
+      params.odjel,           // A - ODJEL
+      new Date(params.datum), // B - DATUM
+      userFullName            // C - PRIMAČ
+    ];
+
+    // Dodaj sortimente D-U (18 kolona)
+    let ukupno = 0;
+    for (let i = 0; i < 17; i++) { // prvih 17 sortimenti (bez SVEUKUPNO)
+      const value = parseFloat(params[sortimentiNazivi[i]]) || 0;
+      newRow.push(value);
+      ukupno += value;
+    }
+
+    // Dodaj SVEUKUPNO kao zadnju kolonu (U)
+    newRow.push(ukupno);
+
+    // Dodaj red na kraj sheet-a
+    primkaSheet.appendRow(newRow);
+
+    Logger.log('=== HANDLE ADD SJECA END ===');
+    Logger.log('Successfully added new sjeca entry');
+
+    return createJsonResponse({
+      success: true,
+      message: "Sječa uspješno dodana",
+      ukupno: ukupno
+    }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleAddSjeca: ' + error.toString());
+    return createJsonResponse({
+      error: "Greška pri dodavanju sječe: " + error.toString()
+    }, false);
+  }
+}
+
+// ========================================
+// ADD OTPREMA API - Dodavanje nove otpreme
+// ========================================
+
+/**
+ * Add Otprema endpoint - dodaje novi unos u INDEX_OTPREMA
+ */
+function handleAddOtprema(params) {
+  try {
+    // Autentikacija
+    const loginResult = JSON.parse(handleLogin(params.username, params.password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    // Samo otpremači mogu dodavati otpremu
+    if (loginResult.type !== 'otpremac') {
+      return createJsonResponse({ error: "Only otpremači can add otprema entries" }, false);
+    }
+
+    const userFullName = loginResult.fullName;
+
+    Logger.log('=== HANDLE ADD OTPREMA START ===');
+    Logger.log('User: ' + userFullName);
+    Logger.log('Odjel: ' + params.odjel);
+    Logger.log('Datum: ' + params.datum);
+    Logger.log('Kupac: ' + params.kupac);
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const otpremaSheet = ss.getSheetByName("INDEX_OTPREMA");
+
+    if (!otpremaSheet) {
+      return createJsonResponse({ error: "INDEX_OTPREMA sheet not found" }, false);
+    }
+
+    // Pripremi red podataka
+    // A: ODJEL, B: DATUM, C: OTPREMAČ, D-U: sortimenti (18 kolona), V: KUPAC
+    const sortimentiNazivi = [
+      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI",
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+    ];
+
+    const newRow = [
+      params.odjel,           // A - ODJEL
+      new Date(params.datum), // B - DATUM
+      userFullName            // C - OTPREMAČ
+    ];
+
+    // Dodaj sortimente D-U (18 kolona)
+    let ukupno = 0;
+    for (let i = 0; i < 17; i++) { // prvih 17 sortimenti (bez SVEUKUPNO)
+      const value = parseFloat(params[sortimentiNazivi[i]]) || 0;
+      newRow.push(value);
+      ukupno += value;
+    }
+
+    // Dodaj SVEUKUPNO (U)
+    newRow.push(ukupno);
+
+    // Dodaj KUPAC (V)
+    newRow.push(params.kupac || '');
+
+    // Dodaj red na kraj sheet-a
+    otpremaSheet.appendRow(newRow);
+
+    Logger.log('=== HANDLE ADD OTPREMA END ===');
+    Logger.log('Successfully added new otprema entry');
+
+    return createJsonResponse({
+      success: true,
+      message: "Otprema uspješno dodana",
+      ukupno: ukupno
+    }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleAddOtprema: ' + error.toString());
+    return createJsonResponse({
+      error: "Greška pri dodavanju otpreme: " + error.toString()
+    }, false);
+  }
 }
