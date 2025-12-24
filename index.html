@@ -70,6 +70,23 @@
         .line-legend-color { width: 30px; height: 3px; border-radius: 2px; }
         .line-legend-color.green { background: #059669; }
         .line-legend-color.blue { background: #2563eb; }
+
+        /* Tabs navigation */
+        .tabs-container { background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-bottom: 2px solid #e5e7eb; }
+        .tabs { max-width: 1200px; margin: 0 auto; display: flex; gap: 4px; padding: 0 24px; }
+        .tab { background: transparent; border: none; padding: 16px 24px; font-size: 15px; font-weight: 600; color: #6b7280; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
+        .tab:hover { color: #047857; background: #f0fdf4; }
+        .tab.active { color: #047857; border-bottom-color: #047857; }
+
+        /* Sortimenti table styles */
+        .sortimenti-container { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .sortimenti-section { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 24px; }
+        .sortimenti-section h3 { font-size: 18px; font-weight: bold; margin-bottom: 16px; color: #1f2937; }
+        .sortimenti-table { width: 100%; font-size: 13px; }
+        .sortimenti-table th { padding: 8px 6px; font-size: 11px; }
+        .sortimenti-table td { padding: 8px 6px; }
+        .sortimenti-table tbody tr.ukupno { background: #f9fafb; font-weight: bold; border-top: 2px solid #047857; }
+        .sortimenti-table tbody tr.udio { background: #f0fdf4; font-style: italic; color: #047857; }
     </style>
 </head>
 <body>
@@ -113,59 +130,59 @@
                 </div>
             </div>
         </div>
-        
+
+        <div class="tabs-container">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
+                <button class="tab" onclick="switchTab('primaci')">👷 Prikaz po primačima</button>
+                <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz po otpremačima</button>
+            </div>
+        </div>
+
         <div id="loading-screen" class="loading">
             <div class="loading-icon">⏳</div>
             <div class="loading-text">Učitavam podatke...</div>
             <div class="loading-sub">Ovo može trajati 2-3 sekunde</div>
         </div>
         
-        <div id="content-screen" class="container hidden">
-            <div class="cards">
-                <div class="card">
-                    <div class="card-label">Ukupna sječa</div>
-                    <div class="card-value green" id="total-primka">0.00 m³</div>
-                </div>
-
-                <div class="card">
-                    <div class="card-label">Ukupna otprema</div>
-                    <div class="card-value blue" id="total-otprema">0.00 m³</div>
-                </div>
-                
-                <div class="card">
-                    <div class="card-label">Razlika</div>
-                    <div class="card-value" id="total-diff">0.00 m³</div>
-                </div>
-            </div>
-            
+        <!-- DASHBOARD CONTENT (Šumarija Krupa) -->
+        <div id="dashboard-content" class="container hidden">
             <div class="section">
-                <h2>📊 Godišnji pregled</h2>
+                <h2>📊 Mjesečni pregled</h2>
                 <table class="monthly-table">
                     <thead>
                         <tr>
                             <th>Mjesec</th>
-                            <th class="right">Sječa (m³)</th>
-                            <th class="right">Otprema (m³)</th>
-                            <th class="right">Razlika</th>
+                            <th class="right">Ukupna Sječa (m³)</th>
+                            <th class="right">Ukupna Otprema (m³)</th>
+                            <th class="right">Šuma Panj+Međustovarište</th>
+                            <th class="right">Dinamika</th>
+                            <th class="right">Razlika Sječa - Dinamika</th>
+                            <th class="right">Razlika Otprema - Dinamika</th>
                         </tr>
                     </thead>
-                    <tbody id="monthly-table"></tbody>
+                    <tbody id="dashboard-monthly-table"></tbody>
                 </table>
             </div>
 
             <div class="section">
-                <h2>📈 Grafički prikaz - Godišnja sječa i otprema</h2>
-                <div class="line-legend">
-                    <div class="line-legend-item">
-                        <div class="line-legend-color green"></div>
-                        <span>Sječa</span>
+                <h2>📋 Detaljni pregled po sortimentima</h2>
+                <div class="sortimenti-container">
+                    <div class="sortimenti-section">
+                        <h3>PRIMKA</h3>
+                        <table class="sortimenti-table">
+                            <thead id="sortimenti-header-primka"></thead>
+                            <tbody id="sortimenti-body-primka"></tbody>
+                        </table>
                     </div>
-                    <div class="line-legend-item">
-                        <div class="line-legend-color blue"></div>
-                        <span>Otprema</span>
+                    <div class="sortimenti-section">
+                        <h3>OTPREMA</h3>
+                        <table class="sortimenti-table">
+                            <thead id="sortimenti-header-otprema"></thead>
+                            <tbody id="sortimenti-body-otprema"></tbody>
+                        </table>
                     </div>
                 </div>
-                <svg id="line-chart" class="chart-svg"></svg>
             </div>
 
             <div class="section">
@@ -174,13 +191,35 @@
                     <thead>
                         <tr>
                             <th>Odjel</th>
-                            <th class="right">Zadnja sječa (m³)</th>
-                            <th class="right">Datum zadnje sječe</th>
-                            <th class="right">Projekat / Ostvareno</th>
+                            <th class="right">Sječa (m³)</th>
                             <th class="right">Otprema (m³)</th>
+                            <th class="right">Šuma Panj+Međustovarište</th>
+                            <th class="right">Zadnja sječa</th>
                         </tr>
                     </thead>
-                    <tbody id="odjeli-table"></tbody>
+                    <tbody id="dashboard-odjeli-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PRIMACI CONTENT (Prikaz po primačima) -->
+        <div id="primaci-content" class="container hidden">
+            <div class="section">
+                <h2>👷 Mjesečni prikaz po primačima</h2>
+                <table class="monthly-table">
+                    <thead id="primaci-header"></thead>
+                    <tbody id="primaci-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- OTPREMACI CONTENT (Prikaz po otpremačima) -->
+        <div id="otpremaci-content" class="container hidden">
+            <div class="section">
+                <h2>🚛 Mjesečni prikaz po otpremačima</h2>
+                <table class="monthly-table">
+                    <thead id="otpremaci-header"></thead>
+                    <tbody id="otpremaci-body"></tbody>
                 </table>
             </div>
         </div>
@@ -256,203 +295,204 @@
             localStorage.removeItem('sumarija_pass');
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('app-screen').classList.add('hidden');
-            document.getElementById('content-screen').classList.add('hidden');
+            document.getElementById('dashboard-content').classList.add('hidden');
+            document.getElementById('primaci-content').classList.add('hidden');
+            document.getElementById('otpremaci-content').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
         }
         
-        async function loadData() {
+        // Load initial data (dashboard by default)
+        function loadData() {
+            loadDashboard();
+        }
+
+        // Switch between tabs
+        function switchTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Hide all content sections
+            document.getElementById('dashboard-content').classList.add('hidden');
+            document.getElementById('primaci-content').classList.add('hidden');
+            document.getElementById('otpremaci-content').classList.add('hidden');
+
+            // Load appropriate content
+            if (tab === 'dashboard') {
+                loadDashboard();
+            } else if (tab === 'primaci') {
+                loadPrimaci();
+            } else if (tab === 'otpremaci') {
+                loadOtpremaci();
+            }
+        }
+
+        // Load dashboard data
+        async function loadDashboard() {
             document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('content-screen').classList.add('hidden');
-            
+            document.getElementById('dashboard-content').classList.add('hidden');
+
             try {
                 const year = new Date().getFullYear();
-                const response = await fetch(`${API_URL}?path=stats&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
-                const data = await response.json();
-                
-                // Update KPI cards
-                document.getElementById('total-primka').textContent = data.totalPrimka.toFixed(2) + ' m³';
-                document.getElementById('total-otprema').textContent = data.totalOtprema.toFixed(2) + ' m³';
-                
-                const diff = data.totalPrimka - data.totalOtprema;
-                const diffEl = document.getElementById('total-diff');
-                diffEl.textContent = (diff >= 0 ? '+' : '') + diff.toFixed(2) + ' m³';
-                diffEl.className = 'card-value ' + (diff >= 0 ? 'green' : 'red');
-                
-                // Create monthly table
-                const monthlyTableHTML = data.monthlyStats.map(m => {
-                    const diff = m.sječa - m.otprema;
+
+                // Parallel fetch dashboard and sortimenti data
+                const [dashboardResponse, sortimentiResponse] = await Promise.all([
+                    fetch(`${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`),
+                    fetch(`${API_URL}?path=sortimenti&year=${year}&username=${currentUser.username}&password=${currentPassword}`)
+                ]);
+
+                const dashboardData = await dashboardResponse.json();
+                const sortimentiData = await sortimentiResponse.json();
+
+                // Populate monthly table
+                const monthlyHTML = dashboardData.mjesecnaStatistika.map(m => {
+                    const razlikaSjeca = m.razlikaSjeca || 0;
+                    const razlikaOtprema = m.razlikaOtprema || 0;
                     return `
                         <tr>
                             <td style="font-weight: 500;">${m.mjesec}</td>
-                            <td class="right green">${m.sječa.toFixed(2)}</td>
+                            <td class="right green">${m.sjeca.toFixed(2)}</td>
                             <td class="right blue">${m.otprema.toFixed(2)}</td>
-                            <td class="right ${diff >= 0 ? 'green' : 'red'}">${(diff >= 0 ? '+' : '') + diff.toFixed(2)}</td>
+                            <td class="right">${m.stanje.toFixed(2)}</td>
+                            <td class="right">${m.dinamika.toFixed(2)}</td>
+                            <td class="right ${razlikaSjeca >= 0 ? 'green' : 'red'}">${(razlikaSjeca >= 0 ? '+' : '') + razlikaSjeca.toFixed(2)}</td>
+                            <td class="right ${razlikaOtprema >= 0 ? 'green' : 'red'}">${(razlikaOtprema >= 0 ? '+' : '') + razlikaOtprema.toFixed(2)}</td>
                         </tr>
                     `;
                 }).join('');
-                document.getElementById('monthly-table').innerHTML = monthlyTableHTML;
+                document.getElementById('dashboard-monthly-table').innerHTML = monthlyHTML;
 
-                // Create smooth line chart
-                drawLineChart(data.monthlyStats);
+                // Populate sortimenti tables
+                const sortimentiHeader = `
+                    <tr>
+                        <th style="text-align: left;">Mjesec</th>
+                        ${sortimentiData.sortimentiNazivi.map(s => `<th class="right">${s}</th>`).join('')}
+                    </tr>
+                `;
+                document.getElementById('sortimenti-header-primka').innerHTML = sortimentiHeader;
+                document.getElementById('sortimenti-header-otprema').innerHTML = sortimentiHeader;
 
-                // Create odjeli table with detailed info
-                const tableHTML = Object.entries(data.odjeliStats).map(([odjel, stats]) => {
-                    const projekat = stats.projekat || 0;
-                    const ostvareno = stats.ukupnoPosjeklo || stats.sječa || 0;
-                    const procenat = projekat > 0 ? (ostvareno / projekat * 100).toFixed(1) : 0;
-                    const zadnjaSjeca = stats.zadnjaSjeca || 0;
-                    const datumZadnjeSjece = stats.datumZadnjeSjece || '-';
+                const primkaBodyHTML = sortimentiData.primka.map(row => {
+                    const rowClass = row.mjesec === 'UKUPNO' ? 'ukupno' : (row.mjesec === '% UDIO' ? 'udio' : '');
+                    const values = row.mjesec === '% UDIO'
+                        ? row.vrijednosti.map(v => `<td class="right">${v.toFixed(1)}%</td>`).join('')
+                        : row.vrijednosti.map(v => `<td class="right">${v.toFixed(2)}</td>`).join('');
+                    return `<tr class="${rowClass}"><td style="font-weight: 500;">${row.mjesec}</td>${values}</tr>`;
+                }).join('');
+                document.getElementById('sortimenti-body-primka').innerHTML = primkaBodyHTML;
 
+                const otpremaBodyHTML = sortimentiData.otprema.map(row => {
+                    const rowClass = row.mjesec === 'UKUPNO' ? 'ukupno' : (row.mjesec === '% UDIO' ? 'udio' : '');
+                    const values = row.mjesec === '% UDIO'
+                        ? row.vrijednosti.map(v => `<td class="right">${v.toFixed(1)}%</td>`).join('')
+                        : row.vrijednosti.map(v => `<td class="right">${v.toFixed(2)}</td>`).join('');
+                    return `<tr class="${rowClass}"><td style="font-weight: 500;">${row.mjesec}</td>${values}</tr>`;
+                }).join('');
+                document.getElementById('sortimenti-body-otprema').innerHTML = otpremaBodyHTML;
+
+                // Populate odjeli table
+                const odjeliHTML = dashboardData.odjeli.map(o => {
                     return `
                         <tr>
-                            <td style="font-weight: 500;">
-                                ${odjel}
-                                <div class="odjel-detail">
-                                    <div class="progress-bar-container">
-                                        <div class="progress-bar-fill" style="width: ${Math.min(procenat, 100)}%"></div>
-                                    </div>
-                                    <div style="margin-top: 4px;">${procenat}% od projekta</div>
-                                </div>
-                            </td>
-                            <td class="right green">${zadnjaSjeca.toFixed(2)}</td>
-                            <td class="right">${datumZadnjeSjece}</td>
-                            <td class="right" style="font-weight: 600;">${projekat.toFixed(2)} / ${ostvareno.toFixed(2)}</td>
-                            <td class="right blue">${stats.otprema.toFixed(2)}</td>
+                            <td style="font-weight: 500;">${o.odjel}</td>
+                            <td class="right green">${o.sjeca.toFixed(2)}</td>
+                            <td class="right blue">${o.otprema.toFixed(2)}</td>
+                            <td class="right">${o.stanje.toFixed(2)}</td>
+                            <td class="right">${o.zadnjaSjeca || '-'}</td>
                         </tr>
                     `;
                 }).join('');
-                document.getElementById('odjeli-table').innerHTML = tableHTML;
-                
+                document.getElementById('dashboard-odjeli-table').innerHTML = odjeliHTML;
+
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('content-screen').classList.remove('hidden');
-                
+                document.getElementById('dashboard-content').classList.remove('hidden');
+
             } catch (error) {
-                alert('Greška pri učitavanju podataka: ' + error.message);
+                alert('Greška pri učitavanju dashboard podataka: ' + error.message);
                 document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
             }
         }
 
-        function drawLineChart(monthlyStats) {
-            const svg = document.getElementById('line-chart');
-            const padding = { top: 20, right: 40, bottom: 40, left: 60 };
-            const width = svg.clientWidth || 1000;
-            const height = 300;
-            const chartWidth = width - padding.left - padding.right;
-            const chartHeight = height - padding.top - padding.bottom;
+        // Load primaci data
+        async function loadPrimaci() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+            document.getElementById('primaci-content').classList.add('hidden');
 
-            // Clear existing content
-            svg.innerHTML = '';
-            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            try {
+                const year = new Date().getFullYear();
+                const response = await fetch(`${API_URL}?path=primaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
+                const data = await response.json();
 
-            // Find max value for scaling
-            const maxValue = Math.max(
-                ...monthlyStats.map(m => Math.max(m.sječa, m.otprema))
-            );
-            const yScale = chartHeight / (maxValue * 1.1); // 10% padding on top
-            const xStep = chartWidth / (monthlyStats.length - 1);
+                // Create header
+                const headerHTML = `
+                    <tr>
+                        <th>Primač</th>
+                        ${data.mjeseci.map(m => `<th class="right">${m}</th>`).join('')}
+                        <th class="right">Ukupno</th>
+                    </tr>
+                `;
+                document.getElementById('primaci-header').innerHTML = headerHTML;
 
-            // Create smooth path for a dataset
-            function createSmoothPath(data, getValue) {
-                const points = data.map((d, i) => ({
-                    x: padding.left + i * xStep,
-                    y: padding.top + chartHeight - getValue(d) * yScale
-                }));
+                // Create body
+                const bodyHTML = data.primaci.map(p => {
+                    return `
+                        <tr>
+                            <td style="font-weight: 500;">${p.primac}</td>
+                            ${p.mjeseci.map(v => `<td class="right">${v.toFixed(2)}</td>`).join('')}
+                            <td class="right green" style="font-weight: bold;">${p.ukupno.toFixed(2)}</td>
+                        </tr>
+                    `;
+                }).join('');
+                document.getElementById('primaci-body').innerHTML = bodyHTML;
 
-                if (points.length === 0) return '';
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('primaci-content').classList.remove('hidden');
 
-                let path = `M ${points[0].x} ${points[0].y}`;
-
-                // Create smooth curve using quadratic bezier
-                for (let i = 0; i < points.length - 1; i++) {
-                    const current = points[i];
-                    const next = points[i + 1];
-                    const controlX = (current.x + next.x) / 2;
-                    path += ` Q ${controlX} ${current.y}, ${controlX} ${(current.y + next.y) / 2}`;
-                    path += ` Q ${controlX} ${next.y}, ${next.x} ${next.y}`;
-                }
-
-                return path;
+            } catch (error) {
+                alert('Greška pri učitavanju primača: ' + error.message);
+                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
             }
+        }
 
-            // Draw grid lines
-            const gridLines = 5;
-            for (let i = 0; i <= gridLines; i++) {
-                const y = padding.top + (chartHeight / gridLines) * i;
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', padding.left);
-                line.setAttribute('y1', y);
-                line.setAttribute('x2', width - padding.right);
-                line.setAttribute('y2', y);
-                line.setAttribute('stroke', '#e5e7eb');
-                line.setAttribute('stroke-width', '1');
-                svg.appendChild(line);
+        // Load otpremaci data
+        async function loadOtpremaci() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+            document.getElementById('otpremaci-content').classList.add('hidden');
 
-                // Y-axis labels
-                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                const value = (maxValue * 1.1) * (1 - i / gridLines);
-                label.setAttribute('x', padding.left - 10);
-                label.setAttribute('y', y + 5);
-                label.setAttribute('text-anchor', 'end');
-                label.setAttribute('font-size', '12');
-                label.setAttribute('fill', '#6b7280');
-                label.textContent = value.toFixed(0);
-                svg.appendChild(label);
+            try {
+                const year = new Date().getFullYear();
+                const response = await fetch(`${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
+                const data = await response.json();
+
+                // Create header
+                const headerHTML = `
+                    <tr>
+                        <th>Otpremač</th>
+                        ${data.mjeseci.map(m => `<th class="right">${m}</th>`).join('')}
+                        <th class="right">Ukupno</th>
+                    </tr>
+                `;
+                document.getElementById('otpremaci-header').innerHTML = headerHTML;
+
+                // Create body
+                const bodyHTML = data.otpremaci.map(o => {
+                    return `
+                        <tr>
+                            <td style="font-weight: 500;">${o.otpremac}</td>
+                            ${o.mjeseci.map(v => `<td class="right">${v.toFixed(2)}</td>`).join('')}
+                            <td class="right blue" style="font-weight: bold;">${o.ukupno.toFixed(2)}</td>
+                        </tr>
+                    `;
+                }).join('');
+                document.getElementById('otpremaci-body').innerHTML = bodyHTML;
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('otpremaci-content').classList.remove('hidden');
+
+            } catch (error) {
+                alert('Greška pri učitavanju otpremača: ' + error.message);
+                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
             }
-
-            // Draw sječa line (green)
-            const sjecaPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            sjecaPath.setAttribute('d', createSmoothPath(monthlyStats, m => m.sječa));
-            sjecaPath.setAttribute('fill', 'none');
-            sjecaPath.setAttribute('stroke', '#059669');
-            sjecaPath.setAttribute('stroke-width', '3');
-            sjecaPath.setAttribute('stroke-linecap', 'round');
-            svg.appendChild(sjecaPath);
-
-            // Draw otprema line (blue)
-            const otpremaPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            otpremaPath.setAttribute('d', createSmoothPath(monthlyStats, m => m.otprema));
-            otpremaPath.setAttribute('fill', 'none');
-            otpremaPath.setAttribute('stroke', '#2563eb');
-            otpremaPath.setAttribute('stroke-width', '3');
-            otpremaPath.setAttribute('stroke-linecap', 'round');
-            svg.appendChild(otpremaPath);
-
-            // Draw data points
-            monthlyStats.forEach((m, i) => {
-                const x = padding.left + i * xStep;
-
-                // Sječa point
-                const sjecaY = padding.top + chartHeight - m.sječa * yScale;
-                const sjecaCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                sjecaCircle.setAttribute('cx', x);
-                sjecaCircle.setAttribute('cy', sjecaY);
-                sjecaCircle.setAttribute('r', '4');
-                sjecaCircle.setAttribute('fill', '#059669');
-                sjecaCircle.setAttribute('stroke', 'white');
-                sjecaCircle.setAttribute('stroke-width', '2');
-                svg.appendChild(sjecaCircle);
-
-                // Otprema point
-                const otpremaY = padding.top + chartHeight - m.otprema * yScale;
-                const otpremaCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                otpremaCircle.setAttribute('cx', x);
-                otpremaCircle.setAttribute('cy', otpremaY);
-                otpremaCircle.setAttribute('r', '4');
-                otpremaCircle.setAttribute('fill', '#2563eb');
-                otpremaCircle.setAttribute('stroke', 'white');
-                otpremaCircle.setAttribute('stroke-width', '2');
-                svg.appendChild(otpremaCircle);
-
-                // X-axis labels (month names)
-                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                label.setAttribute('x', x);
-                label.setAttribute('y', height - padding.bottom + 20);
-                label.setAttribute('text-anchor', 'middle');
-                label.setAttribute('font-size', '11');
-                label.setAttribute('fill', '#6b7280');
-                label.textContent = m.mjesec.substring(0, 3);
-                svg.appendChild(label);
-            });
         }
     </script>
 </body>

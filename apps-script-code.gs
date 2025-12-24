@@ -22,6 +22,10 @@ function doGet(e) {
       return handleDashboard(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'sortimenti') {
       return handleSortimenti(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'primaci') {
+      return handlePrimaci(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'otpremaci') {
+      return handleOtpremaci(e.parameter.year, e.parameter.username, e.parameter.password);
     }
 
     return createJsonResponse({ error: 'Unknown path' }, false);
@@ -828,5 +832,163 @@ function handleSortimenti(year, username, password) {
     sortimentiNazivi: sortimentiNazivi,
     primka: primkaRedovi,
     otprema: otpremaRedovi
+  }, true);
+}
+
+// ========================================
+// PRIMAČI API - Prikaz po primačima
+// ========================================
+
+/**
+ * Primači endpoint - vraća mjesečni prikaz po primačima
+ */
+function handlePrimaci(year, username, password) {
+  // Autentikacija
+  const loginResult = JSON.parse(handleLogin(username, password).getContent());
+  if (!loginResult.success) {
+    return createJsonResponse({ error: "Unauthorized" }, false);
+  }
+
+  const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+  const primkaSheet = ss.getSheetByName("INDEX_PRIMKA");
+
+  if (!primkaSheet) {
+    return createJsonResponse({ error: "INDEX_PRIMKA sheet not found" }, false);
+  }
+
+  const primkaData = primkaSheet.getDataRange().getValues();
+  const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
+
+  // Map: primacIme -> { mjeseci: [0,0,0,...], ukupno: 0 }
+  let primaciMap = {};
+
+  // Procesiranje PRIMKA podataka
+  for (let i = 1; i < primkaData.length; i++) {
+    const row = primkaData[i];
+    const datum = row[1]; // B - DATUM
+    const primac = row[2]; // C - PRIMAČ
+    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+
+    if (!datum || !primac) continue;
+
+    const datumObj = new Date(datum);
+    if (datumObj.getFullYear() !== parseInt(year)) continue;
+
+    const mjesec = datumObj.getMonth();
+
+    // Inicijalizuj primača ako ne postoji
+    if (!primaciMap[primac]) {
+      primaciMap[primac] = {
+        mjeseci: Array(12).fill(0),
+        ukupno: 0
+      };
+    }
+
+    primaciMap[primac].mjeseci[mjesec] += kubik;
+    primaciMap[primac].ukupno += kubik;
+  }
+
+  // Generiši array primaciPrikaz
+  const primaciPrikaz = [];
+  for (const primacIme in primaciMap) {
+    const primac = primaciMap[primacIme];
+    const red = {
+      primac: primacIme,
+      ukupno: primac.ukupno
+    };
+
+    // Dodaj mjesečne kolone
+    for (let i = 0; i < 12; i++) {
+      red[mjeseci[i]] = primac.mjeseci[i];
+    }
+
+    primaciPrikaz.push(red);
+  }
+
+  // Sortiraj po ukupnoj količini (od najvećeg ka najmanjem)
+  primaciPrikaz.sort((a, b) => b.ukupno - a.ukupno);
+
+  return createJsonResponse({
+    mjeseci: mjeseci,
+    primaci: primaciPrikaz
+  }, true);
+}
+
+// ========================================
+// OTPREMAČI API - Prikaz po otpremačima
+// ========================================
+
+/**
+ * Otpremači endpoint - vraća mjesečni prikaz po otpremačima
+ */
+function handleOtpremaci(year, username, password) {
+  // Autentikacija
+  const loginResult = JSON.parse(handleLogin(username, password).getContent());
+  if (!loginResult.success) {
+    return createJsonResponse({ error: "Unauthorized" }, false);
+  }
+
+  const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+  const otpremaSheet = ss.getSheetByName("INDEX_OTPREMA");
+
+  if (!otpremaSheet) {
+    return createJsonResponse({ error: "INDEX_OTPREMA sheet not found" }, false);
+  }
+
+  const otpremaData = otpremaSheet.getDataRange().getValues();
+  const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
+
+  // Map: otpremacIme -> { mjeseci: [0,0,0,...], ukupno: 0 }
+  let otpremaciMap = {};
+
+  // Procesiranje OTPREMA podataka
+  for (let i = 1; i < otpremaData.length; i++) {
+    const row = otpremaData[i];
+    const datum = row[1]; // B - DATUM
+    const otpremac = row[2]; // C - OTPREMAČ
+    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+
+    if (!datum || !otpremac) continue;
+
+    const datumObj = new Date(datum);
+    if (datumObj.getFullYear() !== parseInt(year)) continue;
+
+    const mjesec = datumObj.getMonth();
+
+    // Inicijalizuj otpremača ako ne postoji
+    if (!otpremaciMap[otpremac]) {
+      otpremaciMap[otpremac] = {
+        mjeseci: Array(12).fill(0),
+        ukupno: 0
+      };
+    }
+
+    otpremaciMap[otpremac].mjeseci[mjesec] += kubik;
+    otpremaciMap[otpremac].ukupno += kubik;
+  }
+
+  // Generiši array otpremaciPrikaz
+  const otpremaciPrikaz = [];
+  for (const otpremacIme in otpremaciMap) {
+    const otpremac = otpremaciMap[otpremacIme];
+    const red = {
+      otpremac: otpremacIme,
+      ukupno: otpremac.ukupno
+    };
+
+    // Dodaj mjesečne kolone
+    for (let i = 0; i < 12; i++) {
+      red[mjeseci[i]] = otpremac.mjeseci[i];
+    }
+
+    otpremaciPrikaz.push(red);
+  }
+
+  // Sortiraj po ukupnoj količini (od najvećeg ka najmanjem)
+  otpremaciPrikaz.sort((a, b) => b.ukupno - a.ukupno);
+
+  return createJsonResponse({
+    mjeseci: mjeseci,
+    otpremaci: otpremaciPrikaz
   }, true);
 }
