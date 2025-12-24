@@ -239,6 +239,30 @@
             .kupci-table .sortiment-col { min-width: 45px; font-size: 9px; }
             .kupci-table .ukupno-col { min-width: 70px; font-size: 9px; }
         }
+
+        /* Cache indicator */
+        .cache-indicator {
+            padding: 12px 24px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            border-bottom: 2px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        .btn-clear-cache {
+            background: #f59e0b;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        .btn-clear-cache:hover {
+            background: #d97706;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -279,11 +303,15 @@
                         <div class="header-user-name" id="user-name"></div>
                         <div class="header-user-role" id="user-role"></div>
                     </div>
+                    <button class="btn-clear-cache" onclick="clearAllCache()">🗑️ Obriši keš</button>
                     <button class="btn" onclick="toggleDarkMode()" style="margin-right: 12px;">🌙 Dark Mode</button>
                     <button class="btn-logout" onclick="logout()">Odjavi se</button>
                 </div>
             </div>
         </div>
+
+        <!-- Cache indicator -->
+        <div id="cache-indicator" class="cache-indicator hidden"></div>
 
         <div class="tabs-container">
             <div class="tabs" id="tabs-menu">
@@ -485,6 +513,142 @@
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbwOyqKvRtbQWQFABXe1Q8fWf2XP9K-msArcOU8BwoyN28fSGfLnPGskR1G8qBIZrMsy/exec';
 
+        // ========== CACHING & OFFLINE SUPPORT ==========
+
+        // Register Service Worker for offline support
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(registration => {
+                    console.log('Service Worker registered:', registration);
+                })
+                .catch(error => {
+                    console.error('Service Worker registration failed:', error);
+                });
+        }
+
+        // Cache configuration - different TTLs for different endpoints
+        const CACHE_CONFIG = {
+            'dashboard': 5 * 60 * 1000,        // 5 minutes
+            'primaci': 10 * 60 * 1000,         // 10 minutes
+            'otpremaci': 10 * 60 * 1000,       // 10 minutes
+            'kupci': 10 * 60 * 1000,           // 10 minutes
+            'odjeli': 15 * 60 * 1000,          // 15 minutes
+            'primac-detail': 5 * 60 * 1000,    // 5 minutes
+            'otpremac-detail': 5 * 60 * 1000,  // 5 minutes
+            'primac-odjeli': 10 * 60 * 1000,   // 10 minutes
+            'otpremac-odjeli': 10 * 60 * 1000, // 10 minutes
+            'default': 5 * 60 * 1000           // 5 minutes default
+        };
+
+        // Fetch with cache - cache-first strategy
+        async function fetchWithCache(url, cacheKey) {
+            // Determine cache TTL based on endpoint
+            const path = new URL(url).searchParams.get('path');
+            const cacheTTL = CACHE_CONFIG[path] || CACHE_CONFIG.default;
+
+            // Check cache first
+            const cached = localStorage.getItem(cacheKey);
+            if (cached) {
+                try {
+                    const cachedData = JSON.parse(cached);
+                    const now = Date.now();
+                    const age = now - cachedData.timestamp;
+
+                    // If cache is fresh, return it immediately
+                    if (age < cacheTTL) {
+                        console.log(`✓ Cache hit (${path}): ${Math.round(age / 1000)}s old`);
+                        showCacheIndicator(age);
+                        return cachedData.data;
+                    } else {
+                        console.log(`⚠ Cache stale (${path}): ${Math.round(age / 1000)}s old, fetching fresh...`);
+                    }
+                } catch (e) {
+                    console.error('Cache parse error:', e);
+                }
+            }
+
+            // Cache miss or stale - fetch from network
+            try {
+                console.log(`↻ Fetching fresh data (${path})...`);
+                const response = await fetch(url);
+                const data = await response.json();
+
+                // Store in cache
+                localStorage.setItem(cacheKey, JSON.stringify({
+                    data: data,
+                    timestamp: Date.now()
+                }));
+
+                console.log(`✓ Fresh data cached (${path})`);
+                hideCacheIndicator();
+                return data;
+
+            } catch (error) {
+                console.error('Network error:', error);
+
+                // If network fails and we have stale cache, use it
+                if (cached) {
+                    try {
+                        const cachedData = JSON.parse(cached);
+                        const age = Date.now() - cachedData.timestamp;
+                        console.log(`⚠ Network failed, using stale cache (${Math.round(age / 60000)} min old)`);
+                        showCacheIndicator(age, true);
+                        return cachedData.data;
+                    } catch (e) {
+                        console.error('Stale cache parse error:', e);
+                    }
+                }
+
+                throw error;
+            }
+        }
+
+        // Show cache indicator
+        function showCacheIndicator(age, isStale = false) {
+            const indicator = document.getElementById('cache-indicator');
+            if (!indicator) return;
+
+            const minutes = Math.round(age / 60000);
+            const seconds = Math.round(age / 1000);
+
+            if (isStale) {
+                indicator.innerHTML = `⚠️ Offline - koristeći keširane podatke (${minutes} min staro)`;
+                indicator.style.background = '#fef3c7';
+                indicator.style.color = '#92400e';
+            } else {
+                indicator.innerHTML = `📦 Keširani podaci (${seconds}s staro)`;
+                indicator.style.background = '#dbeafe';
+                indicator.style.color = '#1e40af';
+            }
+            indicator.classList.remove('hidden');
+        }
+
+        // Hide cache indicator
+        function hideCacheIndicator() {
+            const indicator = document.getElementById('cache-indicator');
+            if (indicator) {
+                indicator.classList.add('hidden');
+            }
+        }
+
+        // Clear all cache
+        function clearAllCache() {
+            const keys = Object.keys(localStorage);
+            const cacheKeys = keys.filter(k => k.startsWith('cache_'));
+            cacheKeys.forEach(k => localStorage.removeItem(k));
+            console.log(`Cleared ${cacheKeys.length} cache entries`);
+
+            // Clear Service Worker cache
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' });
+            }
+
+            alert('Keš je obrisan. Stranica će se osvježiti.');
+            window.location.reload();
+        }
+
+        // ========== END CACHING ==========
+
         let currentUser = null;
         let currentPassword = null;
         
@@ -645,9 +809,9 @@
             try {
                 const year = new Date().getFullYear();
 
-                // Fetch dashboard data
-                const response = await fetch(`${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
-                const data = await response.json();
+                // Fetch dashboard data with caching
+                const url = `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, 'cache_dashboard_' + year);
 
                 console.log('Dashboard data:', data);
 
@@ -768,9 +932,9 @@
                 }).join('');
                 document.getElementById('dashboard-monthly-table').innerHTML = monthlyHTML;
 
-                // Fetch and populate odjeli table
-                const odjeliResponse = await fetch(`${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
-                const odjeliData = await odjeliResponse.json();
+                // Fetch and populate odjeli table with caching
+                const odjeliUrl = `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const odjeliData = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year);
 
                 console.log('Odjeli data:', odjeliData);
 
@@ -815,8 +979,8 @@
 
             try {
                 const year = new Date().getFullYear();
-                const response = await fetch(`${API_URL}?path=primaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
-                const data = await response.json();
+                const url = `${API_URL}?path=primaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, 'cache_primaci_' + year);
 
                 // Create header
                 const headerHTML = `
@@ -856,8 +1020,8 @@
 
             try {
                 const year = new Date().getFullYear();
-                const response = await fetch(`${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
-                const data = await response.json();
+                const url = `${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, 'cache_otpremaci_' + year);
 
                 // Create header
                 const headerHTML = `
@@ -897,8 +1061,8 @@
 
             try {
                 const year = new Date().getFullYear();
-                const response = await fetch(`${API_URL}?path=kupci&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
-                const data = await response.json();
+                const url = `${API_URL}?path=kupci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, 'cache_kupci_' + year);
 
                 console.log('Kupci data:', data);
 
@@ -1035,8 +1199,8 @@
 
             try {
                 const year = new Date().getFullYear();
-                const response = await fetch(`${API_URL}?path=primac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
-                const data = await response.json();
+                const url = `${API_URL}?path=primac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, 'cache_primac_detail_' + year);
 
                 console.log('Primac personal data:', data);
 
@@ -1113,8 +1277,8 @@
 
             try {
                 const year = new Date().getFullYear();
-                const response = await fetch(`${API_URL}?path=otpremac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
-                const data = await response.json();
+                const url = `${API_URL}?path=otpremac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, 'cache_otpremac_detail_' + year);
 
                 console.log('Otpremac personal data:', data);
 
@@ -1205,8 +1369,8 @@
 
             try {
                 const year = new Date().getFullYear();
-                const response = await fetch(`${API_URL}?path=primac-odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
-                const data = await response.json();
+                const url = `${API_URL}?path=primac-odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, 'cache_primac_odjeli_' + year);
 
                 console.log('Primac odjeli data:', data);
 
@@ -1320,8 +1484,8 @@
 
             try {
                 const year = new Date().getFullYear();
-                const response = await fetch(`${API_URL}?path=otpremac-odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
-                const data = await response.json();
+                const url = `${API_URL}?path=otpremac-odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, 'cache_otpremac_odjeli_' + year);
 
                 console.log('Otpremac odjeli data:', data);
 
