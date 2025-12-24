@@ -1179,8 +1179,8 @@ function handleOdjeli(year, username, password) {
         // Inicijalizuj objekt za ovaj odjel
         const odjelData = {
           odjel: odjelNaziv,
-          sjeca: 0,           // U12 iz OTPREMA
-          otprema: 0,         // U13 iz OTPREMA
+          sjeca: 0,           // U12 iz PRIMKA
+          otprema: 0,         // U12 iz OTPREMA
           sumaPanj: 0,        // sjeca - otprema
           radiliste: '',      // W2 iz PRIMKA
           izvođač: '',        // W3 iz PRIMKA
@@ -1197,14 +1197,14 @@ function handleOdjeli(year, username, password) {
           odjelData.radiliste = primkaSheet.getRange('W2').getValue() || '';
           odjelData.izvođač = primkaSheet.getRange('W3').getValue() || '';
 
-          // Čitaj U11 (projekat) i U12 (sječa) za realizaciju
+          // Čitaj U11 (projekat) i U12 (sječa)
           // U = kolona 21 (0-indexed: 20)
           const projekat = parseFloat(primkaSheet.getRange('U11').getValue()) || 0;
-          const sjecaPrimka = parseFloat(primkaSheet.getRange('U12').getValue()) || 0;
+          odjelData.sjeca = parseFloat(primkaSheet.getRange('U12').getValue()) || 0;
 
           // Izračunaj realizaciju %
           if (projekat > 0) {
-            odjelData.realizacija = (sjecaPrimka / projekat) * 100;
+            odjelData.realizacija = (odjelData.sjeca / projekat) * 100;
           }
 
           // Pronađi zadnji datum unosa u PRIMKA (kolona B)
@@ -1243,14 +1243,13 @@ function handleOdjeli(year, username, password) {
         // Čitaj OTPREMA sheet
         const otpremaSheet = ss.getSheetByName('OTPREMA');
         if (otpremaSheet) {
-          // Čitaj U12 (sječa) i U13 (otprema)
-          odjelData.sjeca = parseFloat(otpremaSheet.getRange('U12').getValue()) || 0;
-          odjelData.otprema = parseFloat(otpremaSheet.getRange('U13').getValue()) || 0;
+          // Čitaj U12 (otprema)
+          odjelData.otprema = parseFloat(otpremaSheet.getRange('U12').getValue()) || 0;
 
           // Izračunaj šuma panj + međustovarište
           odjelData.sumaPanj = odjelData.sjeca - odjelData.otprema;
 
-          Logger.log(`  OTPREMA sječa: ${odjelData.sjeca}, otprema: ${odjelData.otprema}`);
+          Logger.log(`  OTPREMA otprema: ${odjelData.otprema}, šuma panj: ${odjelData.sumaPanj}`);
         } else {
           Logger.log(`  OTPREMA sheet ne postoji`);
         }
