@@ -111,6 +111,27 @@
         /* Progress bar in table */
         .table-progress-bar { background: #e5e7eb; height: 4px; border-radius: 2px; overflow: hidden; margin-top: 4px; }
         .table-progress-fill { background: #059669; height: 100%; border-radius: 2px; }
+
+        /* Kupci tables optimization */
+        .kupci-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -24px; padding: 0 24px; }
+        .kupci-table { font-size: 11px; white-space: nowrap; width: 100%; }
+        .kupci-table th, .kupci-table td { padding: 6px 4px; }
+        .kupci-table th:first-child, .kupci-table td:first-child {
+            position: sticky; left: 0; background: white; z-index: 2;
+            min-width: 120px; max-width: 180px; white-space: normal;
+            border-right: 2px solid #e5e7eb; padding-right: 8px;
+        }
+        .kupci-table th:nth-child(2), .kupci-table td:nth-child(2) {
+            position: sticky; left: 120px; background: white; z-index: 2;
+            min-width: 80px; border-right: 2px solid #e5e7eb;
+        }
+        body.dark-mode .kupci-table th:first-child, body.dark-mode .kupci-table td:first-child,
+        body.dark-mode .kupci-table th:nth-child(2), body.dark-mode .kupci-table td:nth-child(2) { background: #374151; }
+        .kupci-table thead th { background: #f9fafb; position: sticky; top: 0; z-index: 3; }
+        body.dark-mode .kupci-table thead th { background: #1f2937; }
+        .kupci-table .sortiment-col { min-width: 55px; max-width: 70px; text-align: right; }
+        .kupci-table .ukupno-col { font-weight: bold; background: #f0fdf4; min-width: 90px; border-left: 2px solid #10b981; }
+        body.dark-mode .kupci-table .ukupno-col { background: #064e3b; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -248,10 +269,12 @@
                     <input type="text" class="search-input" id="kupci-godisnji-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciGodisnjiTable()">
                     <button class="btn btn-primary" onclick="exportTableToCSV('kupci-godisnji')">📥 Export CSV</button>
                 </div>
-                <table class="monthly-table" id="kupci-godisnji-table" style="font-size: 12px;">
-                    <thead id="kupci-godisnji-header"></thead>
-                    <tbody id="kupci-godisnji-body"></tbody>
-                </table>
+                <div class="kupci-table-wrapper">
+                    <table class="kupci-table" id="kupci-godisnji-table">
+                        <thead id="kupci-godisnji-header"></thead>
+                        <tbody id="kupci-godisnji-body"></tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Mjesečni pregled -->
@@ -261,10 +284,12 @@
                     <input type="text" class="search-input" id="kupci-mjesecni-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciMjesecniTable()">
                     <button class="btn btn-primary" onclick="exportTableToCSV('kupci-mjesecni')">📥 Export CSV</button>
                 </div>
-                <table class="monthly-table" id="kupci-mjesecni-table" style="font-size: 12px;">
-                    <thead id="kupci-mjesecni-header"></thead>
-                    <tbody id="kupci-mjesecni-body"></tbody>
-                </table>
+                <div class="kupci-table-wrapper">
+                    <table class="kupci-table" id="kupci-mjesecni-table">
+                        <thead id="kupci-mjesecni-header"></thead>
+                        <tbody id="kupci-mjesecni-body"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -622,8 +647,8 @@
                 const godisnjiHeaderHTML = `
                     <tr>
                         <th onclick="sortTable(0, 'kupci-godisnji-table')">Kupac ⇅</th>
-                        ${data.sortimentiNazivi.map((s, i) => `<th class="right" onclick="sortTable(${i+1}, 'kupci-godisnji-table')">${s} ⇅</th>`).join('')}
-                        <th class="right" onclick="sortTable(${data.sortimentiNazivi.length + 1}, 'kupci-godisnji-table')" style="font-weight: bold;">Ukupno ⇅</th>
+                        ${data.sortimentiNazivi.map((s, i) => `<th class="sortiment-col" onclick="sortTable(${i+1}, 'kupci-godisnji-table')">${s} ⇅</th>`).join('')}
+                        <th class="ukupno-col" onclick="sortTable(${data.sortimentiNazivi.length + 1}, 'kupci-godisnji-table')">Ukupno ⇅</th>
                     </tr>
                 `;
                 document.getElementById('kupci-godisnji-header').innerHTML = godisnjiHeaderHTML;
@@ -632,14 +657,14 @@
                 const godisnjiBodyHTML = data.godisnji.map(k => {
                     const sortimentiCells = data.sortimentiNazivi.map(sortiment => {
                         const val = k.sortimenti[sortiment] || 0;
-                        return `<td class="right">${val.toFixed(2)}</td>`;
+                        return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
                     }).join('');
 
                     return `
                         <tr>
                             <td style="font-weight: 500;">${k.kupac}</td>
                             ${sortimentiCells}
-                            <td class="right blue" style="font-weight: bold;">${k.ukupno.toFixed(2)}</td>
+                            <td class="ukupno-col">${k.ukupno.toFixed(2)}</td>
                         </tr>
                     `;
                 }).join('');
@@ -654,8 +679,8 @@
                     <tr>
                         <th onclick="sortTable(0, 'kupci-mjesecni-table')">Kupac ⇅</th>
                         <th onclick="sortTable(1, 'kupci-mjesecni-table')">Mjesec ⇅</th>
-                        ${data.sortimentiNazivi.map((s, i) => `<th class="right" onclick="sortTable(${i+2}, 'kupci-mjesecni-table')">${s} ⇅</th>`).join('')}
-                        <th class="right" onclick="sortTable(${data.sortimentiNazivi.length + 2}, 'kupci-mjesecni-table')" style="font-weight: bold;">Ukupno ⇅</th>
+                        ${data.sortimentiNazivi.map((s, i) => `<th class="sortiment-col" onclick="sortTable(${i+2}, 'kupci-mjesecni-table')">${s} ⇅</th>`).join('')}
+                        <th class="ukupno-col" onclick="sortTable(${data.sortimentiNazivi.length + 2}, 'kupci-mjesecni-table')">Ukupno ⇅</th>
                     </tr>
                 `;
                 document.getElementById('kupci-mjesecni-header').innerHTML = mjesecniHeaderHTML;
@@ -664,7 +689,7 @@
                 const mjesecniBodyHTML = data.mjesecni.map(k => {
                     const sortimentiCells = data.sortimentiNazivi.map(sortiment => {
                         const val = k.sortimenti[sortiment] || 0;
-                        return `<td class="right">${val.toFixed(2)}</td>`;
+                        return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
                     }).join('');
 
                     return `
@@ -672,7 +697,7 @@
                             <td style="font-weight: 500;">${k.kupac}</td>
                             <td>${k.mjesec}</td>
                             ${sortimentiCells}
-                            <td class="right blue" style="font-weight: bold;">${k.ukupno.toFixed(2)}</td>
+                            <td class="ukupno-col">${k.ukupno.toFixed(2)}</td>
                         </tr>
                     `;
                 }).join('');
