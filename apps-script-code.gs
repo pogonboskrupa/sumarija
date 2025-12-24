@@ -6,6 +6,9 @@ const KORISNICI_SPREADSHEET_ID = '1rpl0RiqsE6lrU9uDMTjf127By7b951rP3a5Chis9qwg';
 const INDEX_SPREADSHEET_ID = '1nPkSx2fCbtHGcwdq8rDo9A3dsSt9QpcF7f0JBCg1K1I';     // SUMARIJA_INDEX
 const ODJELI_FOLDER_ID = '1NQ0s_F4j9iRDaZafexzP5Bwyv0NXfMMK';                      // Folder sa svim odjelima
 
+// Dinamika po mjesecima (plan 2025) - može se ažurirati za 2026
+const DINAMIKA_2025 = [788, 2389, 6027, 5597, 6977, 6934, 7336, 6384, 6997, 7895, 5167, 2016];
+
 // Glavni handler za sve zahtjeve
 function doGet(e) {
   try {
@@ -15,6 +18,8 @@ function doGet(e) {
       return handleLogin(e.parameter.username, e.parameter.password);
     } else if (path === 'stats') {
       return handleStats(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'dashboard') {
+      return handleDashboard(e.parameter.year, e.parameter.username, e.parameter.password);
     }
 
     return createJsonResponse({ error: 'Unknown path' }, false);
@@ -549,3 +554,136 @@ function syncIndexSheet() {
     throw error;
   }
 }
+
+
+// ========================================
+// DASHBOARD API - Glavni pregled
+// ========================================
+
+/**
+ * Dashboard endpoint - vraća mjesečni pregled i prikaz po odjelima
+ */
+function handleDashboard(year, username, password) {
+  // Autentikacija
+  const loginResult = JSON.parse(handleLogin(username, password).getContent());
+  if (!loginResult.success) {
+    return createJsonResponse({ error: "Unauthorized" }, false);
+  }
+
+  const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+  const primkaSheet = ss.getSheetByName("INDEX_PRIMKA");
+  const otpremaSheet = ss.getSheetByName("INDEX_OTPREMA");
+
+  if (!primkaSheet || !otpremaSheet) {
+    return createJsonResponse({ error: "INDEX sheets not found" }, false);
+  }
+
+  const primkaData = primkaSheet.getDataRange().getValues();
+  const otpremaData = otpremaSheet.getDataRange().getValues();
+
+  const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
+  const dinamika = DINAMIKA_2025;
+
+  // Inicijalizuj mjesečne sume
+  let mjesecnePrimke = Array(12).fill(0);
+  let mjesecneOtpreme = Array(12).fill(0);
+  let odjeliMap = {}; // Map: odjelNaziv -> { primka, otprema, zadnjaSječa }
+
+  // Procesiranje PRIMKA podataka
+  for (let i = 1; i < primkaData.length; i++) {
+    const row = primkaData[i];
+    const odjel = row[0]; // A - ODJEL
+    const datum = row[1]; // B - DATUM
+    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+
+    if (!datum || !odjel) continue;
+
+    const datumObj = new Date(datum);
+    if (datumObj.getFullYear() !== parseInt(year)) continue;
+
+    const mjesec = datumObj.getMonth();
+    mjesecnePrimke[mjesec] += kubik;
+
+    // Agregacija po odjelima
+    if (!odjeliMap[odjel]) {
+      odjeliMap[odjel] = { primka: 0, otprema: 0, zadnjaSječa: null };
+    }
+    odjeliMap[odjel].primka += kubik;
+
+    // Zadnja sječa
+    if (!odjeliMap[odjel].zadnjaSječa || datumObj > odjeliMap[odjel].zadnjaSječa) {
+      odjeliMap[odjel].zadnjaSječa = datumObj;
+    }
+  }
+
+  // Procesiranje OTPREMA podataka
+  for (let i = 1; i < otpremaData.length; i++) {
+    const row = otpremaData[i];
+    const odjel = row[0]; // A - ODJEL
+    const datum = row[1]; // B - DATUM  
+    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+
+    if (!datum || !odjel) continue;
+
+    const datumObj = new Date(datum);
+    if (datumObj.getFullYear() !== parseInt(year)) continue;
+
+    const mjesec = datumObj.getMonth();
+    mjesecneOtpreme[mjesec] += kubik;
+
+    if (!odjeliMap[odjel]) {
+      odjeliMap[odjel] = { primka: 0, otprema: 0, zadnjaSječa: null };
+    }
+    odjeliMap[odjel].otprema += kubik;
+  }
+
+  // Kreiraj mjesečnu statistiku
+  const mjesecnaStatistika = [];
+  for (let i = 0; i < 12; i++) {
+    const sjeca = mjesecnePrimke[i];
+    const otprema = mjesecneOtpreme[i];
+    const stanje = sjeca - otprema;
+    const dinamikaVrijednost = dinamika[i];
+    const razlikaSjeca = sjeca - dinamikaVrijednost;
+    const razlikaOtprema = otprema - dinamikaVrijednost;
+
+    mjesecnaStatistika.push({
+      mjesec: mjeseci[i],
+      sjeca: sjeca,
+      otprema: otprema,
+      stanje: stanje,
+      dinamika: dinamikaVrijednost,
+      razlikaSjeca: razlikaSjeca,
+      razlikaOtprema: razlikaOtprema
+    });
+  }
+
+  // Kreiraj prikaz po odjelima
+  const odjeliPrikaz = [];
+  for (const odjelNaziv in odjeliMap) {
+    const odjel = odjeliMap[odjelNaziv];
+    odjeliPrikaz.push({
+      odjel: odjelNaziv,
+      sjeca: odjel.primka,
+      otprema: odjel.otprema,
+      stanje: odjel.primka - odjel.otprema,
+      zadnjaSječa: odjel.zadnjaSječa ? formatDate(odjel.zadnjaSječa) : "",
+      radilište: "", // TODO: dodati ako ima u INDEX sheet-u
+      izvođač: "", // TODO: dodati ako ima u INDEX sheet-u
+      realizacija: 0 // TODO: dodati ako ima plan podatke
+    });
+  }
+
+  // Sortiraj odjele po zadnjoj sječi (najnovija prva)
+  odjeliPrikaz.sort((a, b) => {
+    if (!a.zadnjaSječa) return 1;
+    if (!b.zadnjaSječa) return -1;
+    return b.zadnjaSječa.localeCompare(a.zadnjaSječa);
+  });
+
+  return createJsonResponse({
+    mjesecnaStatistika: mjesecnaStatistika,
+    odjeli: odjeliPrikaz
+  }, true);
+}
+
