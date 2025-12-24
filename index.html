@@ -77,7 +77,42 @@
         .tab { background: transparent; border: none; padding: 16px 24px; font-size: 15px; font-weight: 600; color: #6b7280; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
         .tab:hover { color: #047857; background: #f0fdf4; }
         .tab.active { color: #047857; border-bottom-color: #047857; }
+
+        /* Summary cards */
+        .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .summary-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .summary-card-title { font-size: 13px; color: #6b7280; margin-bottom: 8px; }
+        .summary-card-value { font-size: 28px; font-weight: bold; color: #1f2937; }
+        .summary-card-subtitle { font-size: 12px; color: #9ca3af; margin-top: 4px; }
+        .summary-card.green .summary-card-value { color: #059669; }
+        .summary-card.blue .summary-card-value { color: #2563eb; }
+        .summary-card.red .summary-card-value { color: #dc2626; }
+
+        /* Chart container */
+        .chart-container { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 24px; height: 400px; }
+
+        /* Search and controls */
+        .controls-bar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+        .search-input { padding: 10px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; flex: 1; min-width: 200px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: #047857; color: white; }
+        .btn-primary:hover { background: #059669; }
+        .btn-secondary { background: #6b7280; color: white; }
+        .btn-secondary:hover { background: #4b5563; }
+
+        /* Dark mode */
+        body.dark-mode { background: #1f2937; color: #f3f4f6; }
+        body.dark-mode .container, body.dark-mode .section, body.dark-mode table,
+        body.dark-mode .summary-card, body.dark-mode .chart-container,
+        body.dark-mode .tabs-container { background: #374151; color: #f3f4f6; border-color: #4b5563; }
+        body.dark-mode table thead { background: #1f2937; }
+        body.dark-mode .search-input { background: #4b5563; color: #f3f4f6; border-color: #6b7280; }
+
+        /* Progress bar in table */
+        .table-progress-bar { background: #e5e7eb; height: 4px; border-radius: 2px; overflow: hidden; margin-top: 4px; }
+        .table-progress-fill { background: #059669; height: 100%; border-radius: 2px; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div id="login-screen" class="login-container">
@@ -116,6 +151,7 @@
                         <div class="header-user-name" id="user-name"></div>
                         <div class="header-user-role" id="user-role"></div>
                     </div>
+                    <button class="btn" onclick="toggleDarkMode()" style="margin-right: 12px;">🌙 Dark Mode</button>
                     <button class="btn-logout" onclick="logout()">Odjavi se</button>
                 </div>
             </div>
@@ -137,18 +173,34 @@
         
         <!-- DASHBOARD CONTENT (Šumarija Krupa) -->
         <div id="dashboard-content" class="container hidden">
+            <!-- Summary Cards -->
+            <div class="summary-cards" id="summary-cards"></div>
+
+            <!-- Chart -->
+            <div class="section">
+                <h2>📈 Trendovi sječe i otpreme</h2>
+                <div class="chart-container">
+                    <canvas id="trendsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Monthly Table -->
             <div class="section">
                 <h2>📊 Mjesečni pregled</h2>
-                <table class="monthly-table">
+                <div class="controls-bar">
+                    <input type="text" class="search-input" id="dashboard-search" placeholder="🔍 Pretraži po mjesecu..." onkeyup="filterDashboardTable()">
+                    <button class="btn btn-primary" onclick="exportTableToCSV('dashboard')">📥 Export CSV</button>
+                </div>
+                <table class="monthly-table" id="dashboard-table">
                     <thead>
                         <tr>
-                            <th>Mjesec</th>
-                            <th class="right">Ukupna Sječa (m³)</th>
-                            <th class="right">Ukupna Otprema (m³)</th>
-                            <th class="right">Šuma Panj+Međustovarište</th>
-                            <th class="right">Dinamika</th>
-                            <th class="right">Razlika Sječa - Dinamika</th>
-                            <th class="right">Razlika Otprema - Dinamika</th>
+                            <th onclick="sortTable(0, 'dashboard-table')">Mjesec ⇅</th>
+                            <th class="right" onclick="sortTable(1, 'dashboard-table')">Ukupna Sječa (m³) ⇅</th>
+                            <th class="right" onclick="sortTable(2, 'dashboard-table')">Ukupna Otprema (m³) ⇅</th>
+                            <th class="right" onclick="sortTable(3, 'dashboard-table')">Šuma Panj+Međustovarište ⇅</th>
+                            <th class="right" onclick="sortTable(4, 'dashboard-table')">Dinamika ⇅</th>
+                            <th class="right" onclick="sortTable(5, 'dashboard-table')">Razlika Sječa - Dinamika ⇅</th>
+                            <th class="right" onclick="sortTable(6, 'dashboard-table')">Razlika Otprema - Dinamika ⇅</th>
                         </tr>
                     </thead>
                     <tbody id="dashboard-monthly-table"></tbody>
@@ -160,7 +212,11 @@
         <div id="primaci-content" class="container hidden">
             <div class="section">
                 <h2>👷 Mjesečni prikaz po primačima</h2>
-                <table class="monthly-table">
+                <div class="controls-bar">
+                    <input type="text" class="search-input" id="primaci-search" placeholder="🔍 Pretraži po imenu primača..." onkeyup="filterPrimaciTable()">
+                    <button class="btn btn-primary" onclick="exportTableToCSV('primaci')">📥 Export CSV</button>
+                </div>
+                <table class="monthly-table" id="primaci-table">
                     <thead id="primaci-header"></thead>
                     <tbody id="primaci-body"></tbody>
                 </table>
@@ -171,7 +227,11 @@
         <div id="otpremaci-content" class="container hidden">
             <div class="section">
                 <h2>🚛 Mjesečni prikaz po otpremačima</h2>
-                <table class="monthly-table">
+                <div class="controls-bar">
+                    <input type="text" class="search-input" id="otpremaci-search" placeholder="🔍 Pretraži po imenu otpremača..." onkeyup="filterOtremaciTable()">
+                    <button class="btn btn-primary" onclick="exportTableToCSV('otpremaci')">📥 Export CSV</button>
+                </div>
+                <table class="monthly-table" id="otpremaci-table">
                     <thead id="otpremaci-header"></thead>
                     <tbody id="otpremaci-body"></tbody>
                 </table>
@@ -305,17 +365,106 @@
                     throw new Error('Dashboard data missing mjesecnaStatistika');
                 }
 
+                // Calculate summary statistics
+                const totalSjeca = data.mjesecnaStatistika.reduce((sum, m) => sum + m.sjeca, 0);
+                const totalOtprema = data.mjesecnaStatistika.reduce((sum, m) => sum + m.otprema, 0);
+                const totalStanje = totalSjeca - totalOtprema;
+                const totalDinamika = data.mjesecnaStatistika.reduce((sum, m) => sum + m.dinamika, 0);
+                const razlikaDinamika = totalSjeca - totalDinamika;
+                const percentDinamika = ((totalSjeca / totalDinamika) * 100).toFixed(1);
+
+                // Create summary cards
+                const summaryHTML = `
+                    <div class="summary-card green">
+                        <div class="summary-card-title">Ukupna Sječa</div>
+                        <div class="summary-card-value">${totalSjeca.toFixed(0)} m³</div>
+                        <div class="summary-card-subtitle">${percentDinamika}% dinamike</div>
+                    </div>
+                    <div class="summary-card blue">
+                        <div class="summary-card-title">Ukupna Otprema</div>
+                        <div class="summary-card-value">${totalOtprema.toFixed(0)} m³</div>
+                        <div class="summary-card-subtitle">${((totalOtprema/totalSjeca)*100).toFixed(1)}% od sječe</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-card-title">Šuma/Panj</div>
+                        <div class="summary-card-value">${totalStanje.toFixed(0)} m³</div>
+                        <div class="summary-card-subtitle">Preostalo u šumi</div>
+                    </div>
+                    <div class="summary-card ${razlikaDinamika >= 0 ? 'green' : 'red'}">
+                        <div class="summary-card-title">Razlika sa Dinamikom</div>
+                        <div class="summary-card-value">${(razlikaDinamika >= 0 ? '+' : '') + razlikaDinamika.toFixed(0)} m³</div>
+                        <div class="summary-card-subtitle">${razlikaDinamika >= 0 ? 'Iznad plana' : 'Ispod plana'}</div>
+                    </div>
+                `;
+                document.getElementById('summary-cards').innerHTML = summaryHTML;
+
+                // Create chart
+                const labels = data.mjesecnaStatistika.map(m => m.mjesec);
+                const sjecaData = data.mjesecnaStatistika.map(m => m.sjeca);
+                const otpremaData = data.mjesecnaStatistika.map(m => m.otprema);
+                const dinamikaData = data.mjesecnaStatistika.map(m => m.dinamika);
+
+                const ctx = document.getElementById('trendsChart');
+                if (window.dashboardChart) {
+                    window.dashboardChart.destroy();
+                }
+                window.dashboardChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Sječa',
+                            data: sjecaData,
+                            borderColor: '#059669',
+                            backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }, {
+                            label: 'Otprema',
+                            data: otpremaData,
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }, {
+                            label: 'Dinamika',
+                            data: dinamikaData,
+                            borderColor: '#dc2626',
+                            borderDash: [5, 5],
+                            tension: 0.4,
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' },
+                            tooltip: { mode: 'index', intersect: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, title: { display: true, text: 'm³' } }
+                        }
+                    }
+                });
+
                 // Populate monthly table
                 const monthlyHTML = data.mjesecnaStatistika.map(m => {
                     const razlikaSjeca = m.razlikaSjeca || 0;
                     const razlikaOtprema = m.razlikaOtprema || 0;
+                    const progressPercent = ((m.sjeca / m.dinamika) * 100).toFixed(1);
                     return `
                         <tr>
                             <td style="font-weight: 500;">${m.mjesec}</td>
                             <td class="right green">${m.sjeca.toFixed(2)}</td>
                             <td class="right blue">${m.otprema.toFixed(2)}</td>
                             <td class="right">${m.stanje.toFixed(2)}</td>
-                            <td class="right">${m.dinamika.toFixed(2)}</td>
+                            <td class="right">
+                                ${m.dinamika.toFixed(2)}
+                                <div class="table-progress-bar">
+                                    <div class="table-progress-fill" style="width: ${Math.min(progressPercent, 100)}%"></div>
+                                </div>
+                            </td>
                             <td class="right ${razlikaSjeca >= 0 ? 'green' : 'red'}">${(razlikaSjeca >= 0 ? '+' : '') + razlikaSjeca.toFixed(2)}</td>
                             <td class="right ${razlikaOtprema >= 0 ? 'green' : 'red'}">${(razlikaOtprema >= 0 ? '+' : '') + razlikaOtprema.toFixed(2)}</td>
                         </tr>
@@ -413,6 +562,148 @@
                 alert('Greška pri učitavanju otpremača: ' + error.message);
                 document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
             }
+        }
+
+        // ========================================
+        // UTILITY FUNCTIONS
+        // ========================================
+
+        // Dark mode toggle
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('dark-mode', isDark ? 'enabled' : 'disabled');
+        }
+
+        // Load dark mode preference
+        window.addEventListener('DOMContentLoaded', () => {
+            const darkMode = localStorage.getItem('dark-mode');
+            if (darkMode === 'enabled') {
+                document.body.classList.add('dark-mode');
+            }
+        });
+
+        // Filter dashboard table
+        function filterDashboardTable() {
+            const input = document.getElementById('dashboard-search');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('dashboard-table');
+            const tr = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < tr.length; i++) {
+                const td = tr[i].getElementsByTagName('td')[0];
+                if (td) {
+                    const txtValue = td.textContent || td.innerText;
+                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
+                }
+            }
+        }
+
+        // Filter primaci table
+        function filterPrimaciTable() {
+            const input = document.getElementById('primaci-search');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('primaci-table');
+            const tr = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < tr.length; i++) {
+                const td = tr[i].getElementsByTagName('td')[0];
+                if (td) {
+                    const txtValue = td.textContent || td.innerText;
+                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
+                }
+            }
+        }
+
+        // Filter otpremaci table
+        function filterOtremaciTable() {
+            const input = document.getElementById('otpremaci-search');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('otpremaci-table');
+            const tr = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < tr.length; i++) {
+                const td = tr[i].getElementsByTagName('td')[0];
+                if (td) {
+                    const txtValue = td.textContent || td.innerText;
+                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
+                }
+            }
+        }
+
+        // Export table to CSV
+        function exportTableToCSV(tableType) {
+            let table, filename;
+
+            if (tableType === 'dashboard') {
+                table = document.getElementById('dashboard-table');
+                filename = 'dashboard_pregled.csv';
+            } else if (tableType === 'primaci') {
+                table = document.getElementById('primaci-table');
+                filename = 'primaci_pregled.csv';
+            } else if (tableType === 'otpremaci') {
+                table = document.getElementById('otpremaci-table');
+                filename = 'otpremaci_pregled.csv';
+            }
+
+            const rows = table.querySelectorAll('tr');
+            const csv = [];
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = [], cols = rows[i].querySelectorAll('td, th');
+
+                for (let j = 0; j < cols.length; j++) {
+                    let data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, '').replace(/"/g, '""');
+                    row.push('"' + data + '"');
+                }
+
+                csv.push(row.join(','));
+            }
+
+            const csvString = csv.join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Sort table
+        function sortTable(columnIndex, tableId) {
+            const table = document.getElementById(tableId);
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+
+            const sortedRows = rows.sort((a, b) => {
+                const aValue = a.querySelectorAll('td')[columnIndex].innerText;
+                const bValue = b.querySelectorAll('td')[columnIndex].innerText;
+
+                // Try to parse as number
+                const aNum = parseFloat(aValue.replace(/[^\d.-]/g, ''));
+                const bNum = parseFloat(bValue.replace(/[^\d.-]/g, ''));
+
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    return aNum - bNum;
+                } else {
+                    return aValue.localeCompare(bValue, 'bs');
+                }
+            });
+
+            // Toggle sort direction
+            if (table.dataset.lastSort === columnIndex.toString()) {
+                sortedRows.reverse();
+                table.dataset.lastSort = '';
+            } else {
+                table.dataset.lastSort = columnIndex.toString();
+            }
+
+            // Re-append sorted rows
+            sortedRows.forEach(row => tbody.appendChild(row));
         }
     </script>
 </body>
