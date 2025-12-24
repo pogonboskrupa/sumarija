@@ -365,6 +365,8 @@
                 }
 
                 // Populate monthly table
+                console.log('Populating monthly table...');
+                console.log('mjesecnaStatistika:', dashboardData.mjesecnaStatistika);
                 const monthlyHTML = dashboardData.mjesecnaStatistika.map(m => {
                     const razlikaSjeca = m.razlikaSjeca || 0;
                     const razlikaOtprema = m.razlikaOtprema || 0;
@@ -383,6 +385,10 @@
                 document.getElementById('dashboard-monthly-table').innerHTML = monthlyHTML;
 
                 // Populate sortimenti tables
+                console.log('Populating sortimenti tables...');
+                console.log('sortimentiNazivi:', sortimentiData.sortimentiNazivi);
+                console.log('primka length:', sortimentiData.primka?.length);
+                console.log('otprema length:', sortimentiData.otprema?.length);
                 const sortimentiHeader = `
                     <tr>
                         <th style="text-align: left;">Mjesec</th>
