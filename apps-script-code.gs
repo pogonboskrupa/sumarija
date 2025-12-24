@@ -348,11 +348,12 @@ function syncIndexSheet() {
     Logger.log('Počinjem čitanje spreadsheet-ova...');
     while (files.hasNext()) {
       const file = files.next();
+      const odjelNaziv = file.getName(); // Naziv fajla = Odjel
       processedCount++;
 
       try {
         const ss = SpreadsheetApp.open(file);
-        Logger.log(`[${processedCount}] Processing: ${file.getName()}`);
+        Logger.log(`[${processedCount}] Processing: ${odjelNaziv}`);
 
         // Pročitaj PRIMKA sheet
         const primkaSheet = ss.getSheetByName('PRIMKA');
@@ -363,12 +364,23 @@ function syncIndexSheet() {
           if (lastRow > 1) {
             const data = primkaSheet.getDataRange().getValues();
             let addedRows = 0;
-            // Preskoči header (red 0) i dodaj ostale redove
+
+            // PRIMKA struktura: datum(A) | primac(B) | sortimenti(C-U)
+            // INDEX treba: odjel | datum | primac | sortimenti
             for (let i = 1; i < data.length; i++) {
-              if (data[i][0]) { // Ako ima odjel u koloni A
-                primkaRows.push(data[i]);
-                addedRows++;
-              }
+              const row = data[i];
+              const datum = row[0]; // kolona A - datum
+
+              // Preskači redove bez datuma ili sa praznim datumom
+              if (!datum || datum === '' || datum === 0) continue;
+
+              // Provjeri da li je datum validan (nije string kao "OPIS" ili "#DIV/0!")
+              if (typeof datum === 'string' && (datum.includes('OPIS') || datum.includes('#') || datum.includes('PLAN') || datum.includes('REAL'))) continue;
+
+              // Kreiraj novi red za INDEX: [odjel, datum(A), primac(B), ...sortimenti(C-U)]
+              const newRow = [odjelNaziv, datum, row[1], ...row.slice(2)];
+              primkaRows.push(newRow);
+              addedRows++;
             }
             Logger.log(`  PRIMKA: dodano ${addedRows} redova`);
           } else {
@@ -387,11 +399,24 @@ function syncIndexSheet() {
           if (lastRow > 1) {
             const data = otpremaSheet.getDataRange().getValues();
             let addedRows = 0;
+
+            // OTPREMA struktura: kupci(A) | datum(B) | otpremač(C) | sortimenti(D-U)
+            // INDEX treba: odjel | datum | otpremač | sortimenti
             for (let i = 1; i < data.length; i++) {
-              if (data[i][0]) { // Ako ima odjel u koloni A
-                otpremaRows.push(data[i]);
-                addedRows++;
-              }
+              const row = data[i];
+              const datum = row[1]; // kolona B - datum
+
+              // Preskači redove bez datuma
+              if (!datum || datum === '' || datum === 0) continue;
+
+              // Provjeri da li je datum validan
+              if (typeof datum === 'string' && (datum.includes('OPIS') || datum.includes('#') || datum.includes('PLAN') || datum.includes('REAL') || datum.includes('KUPCI'))) continue;
+
+              // Kreiraj novi red za INDEX: [odjel, datum(B), otpremač(C), ...sortimenti(D-U)]
+              // Preskačemo kolonu A (kupci)
+              const newRow = [odjelNaziv, datum, row[2], ...row.slice(3)];
+              otpremaRows.push(newRow);
+              addedRows++;
             }
             Logger.log(`  OTPREMA: dodano ${addedRows} redova`);
           } else {
@@ -403,7 +428,7 @@ function syncIndexSheet() {
 
       } catch (error) {
         errorCount++;
-        Logger.log(`ERROR processing ${file.getName()}: ${error.toString()}`);
+        Logger.log(`ERROR processing ${odjelNaziv}: ${error.toString()}`);
       }
     }
 
