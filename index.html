@@ -347,11 +347,15 @@
                 console.log('Dashboard data:', dashboardData);
                 console.log('Sortimenti data:', sortimentiData);
 
-                // Check if data is valid
-                if (!dashboardData.success || !sortimentiData.success) {
-                    throw new Error('API returned error: ' + (dashboardData.error || sortimentiData.error || 'Unknown error'));
+                // Check for errors
+                if (dashboardData.error) {
+                    throw new Error('Dashboard API error: ' + dashboardData.error);
+                }
+                if (sortimentiData.error) {
+                    throw new Error('Sortimenti API error: ' + sortimentiData.error);
                 }
 
+                // Check if data is valid
                 if (!dashboardData.mjesecnaStatistika || !dashboardData.odjeli) {
                     throw new Error('Dashboard data missing required fields');
                 }
