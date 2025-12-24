@@ -286,11 +286,8 @@
         </div>
 
         <div class="tabs-container">
-            <div class="tabs">
-                <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
-                <button class="tab" onclick="switchTab('primaci')">👷 Prikaz po primačima</button>
-                <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz po otpremačima</button>
-                <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
+            <div class="tabs" id="tabs-menu">
+                <!-- Tabs will be dynamically populated based on user type -->
             </div>
         </div>
 
@@ -423,8 +420,42 @@
                 </div>
             </div>
         </div>
+
+        <!-- PRIMAC PERSONAL VIEW -->
+        <div id="primac-personal-content" class="container hidden">
+            <div class="section">
+                <h2>👷 Pregled sječe u tekućoj godini</h2>
+                <div class="controls-bar">
+                    <input type="text" class="search-input" id="primac-personal-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterPrimacPersonalTable()">
+                    <button class="btn btn-primary" onclick="exportTableToCSV('primac-personal')">📥 Export CSV</button>
+                </div>
+                <div class="kupci-table-wrapper">
+                    <table class="kupci-table" id="primac-personal-table">
+                        <thead id="primac-personal-header"></thead>
+                        <tbody id="primac-personal-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- OTPREMAC PERSONAL VIEW -->
+        <div id="otpremac-personal-content" class="container hidden">
+            <div class="section">
+                <h2>🚛 Pregled otpreme u tekućoj godini</h2>
+                <div class="controls-bar">
+                    <input type="text" class="search-input" id="otpremac-personal-search" placeholder="🔍 Pretraži po odjelu/kupcu..." onkeyup="filterOtpremacPersonalTable()">
+                    <button class="btn btn-primary" onclick="exportTableToCSV('otpremac-personal')">📥 Export CSV</button>
+                </div>
+                <div class="kupci-table-wrapper">
+                    <table class="kupci-table" id="otpremac-personal-table">
+                        <thead id="otpremac-personal-header"></thead>
+                        <tbody id="otpremac-personal-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
-    
+
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbwOyqKvRtbQWQFABXe1Q8fWf2XP9K-msArcOU8BwoyN28fSGfLnPGskR1G8qBIZrMsy/exec';
 
@@ -486,6 +517,30 @@
             document.getElementById('app-screen').classList.remove('hidden');
             document.getElementById('user-name').textContent = currentUser.fullName;
             document.getElementById('user-role').textContent = currentUser.role === 'admin' ? 'Administrator' : currentUser.type;
+
+            // Dinamički kreiraj tab-ove na osnovu tipa korisnika
+            const tabsMenu = document.getElementById('tabs-menu');
+            const userType = currentUser.type; // 'primac', 'otpremac', ili nešto drugo
+
+            if (userType === 'primac') {
+                // Primač vidi samo svoj personalni prikaz
+                tabsMenu.innerHTML = `
+                    <button class="tab active" onclick="switchTab('primac-personal')">👷 Pregled sječe u tekućoj godini</button>
+                `;
+            } else if (userType === 'otpremac') {
+                // Otpremač vidi samo svoj personalni prikaz
+                tabsMenu.innerHTML = `
+                    <button class="tab active" onclick="switchTab('otpremac-personal')">🚛 Pregled otpreme u tekućoj godini</button>
+                `;
+            } else {
+                // Admin ili drugi korisnici vide sve tab-ove
+                tabsMenu.innerHTML = `
+                    <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
+                    <button class="tab" onclick="switchTab('primaci')">👷 Prikaz po primačima</button>
+                    <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz po otpremačima</button>
+                    <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
+                `;
+            }
         }
         
         function logout() {
@@ -499,12 +554,21 @@
             document.getElementById('primaci-content').classList.add('hidden');
             document.getElementById('otpremaci-content').classList.add('hidden');
             document.getElementById('kupci-content').classList.add('hidden');
+            document.getElementById('primac-personal-content').classList.add('hidden');
+            document.getElementById('otpremac-personal-content').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
         }
         
-        // Load initial data (dashboard by default)
+        // Load initial data based on user type
         function loadData() {
-            loadDashboard();
+            const userType = currentUser.type;
+            if (userType === 'primac') {
+                loadPrimacPersonal();
+            } else if (userType === 'otpremac') {
+                loadOtpremacPersonal();
+            } else {
+                loadDashboard();
+            }
         }
 
         // Switch between tabs
@@ -518,6 +582,8 @@
             document.getElementById('primaci-content').classList.add('hidden');
             document.getElementById('otpremaci-content').classList.add('hidden');
             document.getElementById('kupci-content').classList.add('hidden');
+            document.getElementById('primac-personal-content').classList.add('hidden');
+            document.getElementById('otpremac-personal-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
@@ -528,6 +594,10 @@
                 loadOtpremaci();
             } else if (tab === 'kupci') {
                 loadKupci();
+            } else if (tab === 'primac-personal') {
+                loadPrimacPersonal();
+            } else if (tab === 'otpremac-personal') {
+                loadOtpremacPersonal();
             }
         }
 
@@ -922,6 +992,164 @@
             }
         }
 
+        // Load primac personal data
+        async function loadPrimacPersonal() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+            document.getElementById('primac-personal-content').classList.add('hidden');
+
+            try {
+                const year = new Date().getFullYear();
+                const response = await fetch(`${API_URL}?path=primac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
+                const data = await response.json();
+
+                console.log('Primac personal data:', data);
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Create header
+                const headerHTML = `
+                    <tr>
+                        <th onclick="sortTable(0, 'primac-personal-table')">Datum ⇅</th>
+                        <th onclick="sortTable(1, 'primac-personal-table')">Odjel ⇅</th>
+                        ${data.sortimentiNazivi.map((s, i) => `<th class="sortiment-col" onclick="sortTable(${i+2}, 'primac-personal-table')">${s} ⇅</th>`).join('')}
+                        <th class="ukupno-col" onclick="sortTable(${data.sortimentiNazivi.length + 2}, 'primac-personal-table')">Ukupno ⇅</th>
+                    </tr>
+                `;
+                document.getElementById('primac-personal-header').innerHTML = headerHTML;
+
+                // Create body with totals
+                let totals = { sortimenti: {}, ukupno: 0 };
+                data.sortimentiNazivi.forEach(s => totals.sortimenti[s] = 0);
+
+                const bodyHTML = data.unosi.map(u => {
+                    // Add to totals
+                    data.sortimentiNazivi.forEach(s => {
+                        totals.sortimenti[s] += (u.sortimenti[s] || 0);
+                    });
+                    totals.ukupno += u.ukupno;
+
+                    const sortimentiCells = data.sortimentiNazivi.map(sortiment => {
+                        const val = u.sortimenti[sortiment] || 0;
+                        return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                    }).join('');
+
+                    return `
+                        <tr>
+                            <td style="font-weight: 500;">${u.datum}</td>
+                            <td>${u.odjel}</td>
+                            ${sortimentiCells}
+                            <td class="ukupno-col">${u.ukupno.toFixed(2)}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                // Add totals row
+                const totalsCells = data.sortimentiNazivi.map(s => {
+                    const val = totals.sortimenti[s];
+                    return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                }).join('');
+
+                const bodyWithTotals = bodyHTML + `
+                    <tr class="totals-row">
+                        <td colspan="2" style="text-align: left;">UKUPNO</td>
+                        ${totalsCells}
+                        <td class="ukupno-col">${totals.ukupno.toFixed(2)}</td>
+                    </tr>
+                `;
+
+                document.getElementById('primac-personal-body').innerHTML = bodyWithTotals;
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('primac-personal-content').classList.remove('hidden');
+
+            } catch (error) {
+                alert('Greška pri učitavanju podataka: ' + error.message);
+                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
+            }
+        }
+
+        // Load otpremac personal data
+        async function loadOtpremacPersonal() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+            document.getElementById('otpremac-personal-content').classList.add('hidden');
+
+            try {
+                const year = new Date().getFullYear();
+                const response = await fetch(`${API_URL}?path=otpremac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
+                const data = await response.json();
+
+                console.log('Otpremac personal data:', data);
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Create header
+                const headerHTML = `
+                    <tr>
+                        <th onclick="sortTable(0, 'otpremac-personal-table')">Datum ⇅</th>
+                        <th onclick="sortTable(1, 'otpremac-personal-table')">Odjel ⇅</th>
+                        <th onclick="sortTable(2, 'otpremac-personal-table')">Kupac ⇅</th>
+                        ${data.sortimentiNazivi.map((s, i) => `<th class="sortiment-col" onclick="sortTable(${i+3}, 'otpremac-personal-table')">${s} ⇅</th>`).join('')}
+                        <th class="ukupno-col" onclick="sortTable(${data.sortimentiNazivi.length + 3}, 'otpremac-personal-table')">Ukupno ⇅</th>
+                    </tr>
+                `;
+                document.getElementById('otpremac-personal-header').innerHTML = headerHTML;
+
+                // Create body with totals
+                let totals = { sortimenti: {}, ukupno: 0 };
+                data.sortimentiNazivi.forEach(s => totals.sortimenti[s] = 0);
+
+                const bodyHTML = data.unosi.map(u => {
+                    // Add to totals
+                    data.sortimentiNazivi.forEach(s => {
+                        totals.sortimenti[s] += (u.sortimenti[s] || 0);
+                    });
+                    totals.ukupno += u.ukupno;
+
+                    const sortimentiCells = data.sortimentiNazivi.map(sortiment => {
+                        const val = u.sortimenti[sortiment] || 0;
+                        return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                    }).join('');
+
+                    return `
+                        <tr>
+                            <td style="font-weight: 500;">${u.datum}</td>
+                            <td>${u.odjel}</td>
+                            <td>${u.kupac || '-'}</td>
+                            ${sortimentiCells}
+                            <td class="ukupno-col">${u.ukupno.toFixed(2)}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                // Add totals row
+                const totalsCells = data.sortimentiNazivi.map(s => {
+                    const val = totals.sortimenti[s];
+                    return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                }).join('');
+
+                const bodyWithTotals = bodyHTML + `
+                    <tr class="totals-row">
+                        <td colspan="3" style="text-align: left;">UKUPNO</td>
+                        ${totalsCells}
+                        <td class="ukupno-col">${totals.ukupno.toFixed(2)}</td>
+                    </tr>
+                `;
+
+                document.getElementById('otpremac-personal-body').innerHTML = bodyWithTotals;
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('otpremac-personal-content').classList.remove('hidden');
+
+            } catch (error) {
+                alert('Greška pri učitavanju podataka: ' + error.message);
+                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
+            }
+        }
+
         // ========================================
         // UTILITY FUNCTIONS
         // ========================================
@@ -1037,6 +1265,46 @@
             }
         }
 
+        // Filter primac personal table
+        function filterPrimacPersonalTable() {
+            const input = document.getElementById('primac-personal-search');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('primac-personal-table');
+            const tr = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < tr.length; i++) {
+                // Search in both datum and odjel columns (0 and 1)
+                const td0 = tr[i].getElementsByTagName('td')[0];
+                const td1 = tr[i].getElementsByTagName('td')[1];
+                if (td0 || td1) {
+                    const txtValue = (td0 ? (td0.textContent || td0.innerText) : '') + ' ' +
+                                     (td1 ? (td1.textContent || td1.innerText) : '');
+                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
+                }
+            }
+        }
+
+        // Filter otpremac personal table
+        function filterOtpremacPersonalTable() {
+            const input = document.getElementById('otpremac-personal-search');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('otpremac-personal-table');
+            const tr = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < tr.length; i++) {
+                // Search in datum, odjel, and kupac columns (0, 1, and 2)
+                const td0 = tr[i].getElementsByTagName('td')[0];
+                const td1 = tr[i].getElementsByTagName('td')[1];
+                const td2 = tr[i].getElementsByTagName('td')[2];
+                if (td0 || td1 || td2) {
+                    const txtValue = (td0 ? (td0.textContent || td0.innerText) : '') + ' ' +
+                                     (td1 ? (td1.textContent || td1.innerText) : '') + ' ' +
+                                     (td2 ? (td2.textContent || td2.innerText) : '');
+                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
+                }
+            }
+        }
+
         // Export table to CSV
         function exportTableToCSV(tableType) {
             let table, filename;
@@ -1059,6 +1327,12 @@
             } else if (tableType === 'kupci-mjesecni') {
                 table = document.getElementById('kupci-mjesecni-table');
                 filename = 'kupci_mjesecni_pregled.csv';
+            } else if (tableType === 'primac-personal') {
+                table = document.getElementById('primac-personal-table');
+                filename = 'moja_sjeca_' + new Date().getFullYear() + '.csv';
+            } else if (tableType === 'otpremac-personal') {
+                table = document.getElementById('otpremac-personal-table');
+                filename = 'moja_otprema_' + new Date().getFullYear() + '.csv';
             }
 
             const rows = table.querySelectorAll('tr');

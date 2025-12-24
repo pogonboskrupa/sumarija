@@ -30,6 +30,10 @@ function doGet(e) {
       return handleKupci(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'odjeli') {
       return handleOdjeli(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'primac-detail') {
+      return handlePrimacDetail(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'otpremac-detail') {
+      return handleOtpremacDetail(e.parameter.year, e.parameter.username, e.parameter.password);
     }
 
     return createJsonResponse({ error: 'Unknown path' }, false);
@@ -1297,4 +1301,193 @@ function handleOdjeli(year, username, password) {
     Logger.log('ERROR: ' + error.toString());
     return createJsonResponse({ error: error.toString() }, false);
   }
+}
+
+// ========================================
+// PRIMAC DETAIL API - Personalni prikaz za primača
+// ========================================
+
+/**
+ * Primac Detail endpoint - vraća sve unose za specificnog primača
+ * Sortiran po datumu (najnoviji prvo)
+ */
+function handlePrimacDetail(year, username, password) {
+  // Autentikacija
+  const loginResult = JSON.parse(handleLogin(username, password).getContent());
+  if (!loginResult.success) {
+    return createJsonResponse({ error: "Unauthorized" }, false);
+  }
+
+  // Dohvati puno ime korisnika iz login rezultata
+  const userFullName = loginResult.fullName;
+
+  Logger.log('=== HANDLE PRIMAC DETAIL START ===');
+  Logger.log('User: ' + userFullName);
+  Logger.log('Year: ' + year);
+
+  const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+  const primkaSheet = ss.getSheetByName("INDEX_PRIMKA");
+
+  if (!primkaSheet) {
+    return createJsonResponse({ error: "INDEX_PRIMKA sheet not found" }, false);
+  }
+
+  const primkaData = primkaSheet.getDataRange().getValues();
+  const sortimentiNazivi = [
+    "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+    "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+    "F/L L", "I L", "II L", "III L", "TRUPCI",
+    "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+  ];
+
+  const unosi = [];
+
+  // Procesiranje PRIMKA podataka - filtrirati samo za ovog primača
+  for (let i = 1; i < primkaData.length; i++) {
+    const row = primkaData[i];
+    const odjel = row[0];     // A - ODJEL
+    const datum = row[1];     // B - DATUM
+    const primac = row[2];    // C - PRIMAČ
+    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+
+    if (!datum || !primac) continue;
+
+    const datumObj = new Date(datum);
+    if (datumObj.getFullYear() !== parseInt(year)) continue;
+
+    // Filtriraj samo unose za ovog primača
+    if (String(primac).trim() !== userFullName) continue;
+
+    // Pročitaj sve sortimente (kolone D-U, indeksi 3-20)
+    const sortimenti = {};
+    for (let j = 0; j < 18; j++) {
+      const vrijednost = parseFloat(row[3 + j]) || 0;
+      sortimenti[sortimentiNazivi[j]] = vrijednost;
+    }
+
+    unosi.push({
+      datum: formatDate(datumObj),
+      datumObj: datumObj,  // Za sortiranje
+      odjel: odjel,
+      primac: primac,
+      sortimenti: sortimenti,
+      ukupno: kubik
+    });
+  }
+
+  // Sortiraj po datumu (najnoviji prvo)
+  unosi.sort((a, b) => b.datumObj - a.datumObj);
+
+  // Ukloni datumObj iz rezultata
+  const unosiResult = unosi.map(u => ({
+    datum: u.datum,
+    odjel: u.odjel,
+    primac: u.primac,
+    sortimenti: u.sortimenti,
+    ukupno: u.ukupno
+  }));
+
+  Logger.log('=== HANDLE PRIMAC DETAIL END ===');
+  Logger.log(`Ukupno unosa: ${unosiResult.length}`);
+
+  return createJsonResponse({
+    sortimentiNazivi: sortimentiNazivi,
+    unosi: unosiResult
+  }, true);
+}
+
+// ========================================
+// OTPREMAC DETAIL API - Personalni prikaz za otpremača
+// ========================================
+
+/**
+ * Otpremac Detail endpoint - vraća sve unose za specificnog otpremača
+ * Sortiran po datumu (najnoviji prvo)
+ */
+function handleOtpremacDetail(year, username, password) {
+  // Autentikacija
+  const loginResult = JSON.parse(handleLogin(username, password).getContent());
+  if (!loginResult.success) {
+    return createJsonResponse({ error: "Unauthorized" }, false);
+  }
+
+  // Dohvati puno ime korisnika iz login rezultata
+  const userFullName = loginResult.fullName;
+
+  Logger.log('=== HANDLE OTPREMAC DETAIL START ===');
+  Logger.log('User: ' + userFullName);
+  Logger.log('Year: ' + year);
+
+  const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+  const otpremaSheet = ss.getSheetByName("INDEX_OTPREMA");
+
+  if (!otpremaSheet) {
+    return createJsonResponse({ error: "INDEX_OTPREMA sheet not found" }, false);
+  }
+
+  const otpremaData = otpremaSheet.getDataRange().getValues();
+  const sortimentiNazivi = [
+    "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+    "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+    "F/L L", "I L", "II L", "III L", "TRUPCI",
+    "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+  ];
+
+  const unosi = [];
+
+  // Procesiranje OTPREMA podataka - filtrirati samo za ovog otpremača
+  for (let i = 1; i < otpremaData.length; i++) {
+    const row = otpremaData[i];
+    const odjel = row[0];       // A - ODJEL
+    const datum = row[1];       // B - DATUM
+    const otpremac = row[2];    // C - OTPREMAČ
+    const kupac = row[21];      // V - KUPAC
+    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+
+    if (!datum || !otpremac) continue;
+
+    const datumObj = new Date(datum);
+    if (datumObj.getFullYear() !== parseInt(year)) continue;
+
+    // Filtriraj samo unose za ovog otpremača
+    if (String(otpremac).trim() !== userFullName) continue;
+
+    // Pročitaj sve sortimente (kolone D-U, indeksi 3-20)
+    const sortimenti = {};
+    for (let j = 0; j < 18; j++) {
+      const vrijednost = parseFloat(row[3 + j]) || 0;
+      sortimenti[sortimentiNazivi[j]] = vrijednost;
+    }
+
+    unosi.push({
+      datum: formatDate(datumObj),
+      datumObj: datumObj,  // Za sortiranje
+      odjel: odjel,
+      otpremac: otpremac,
+      kupac: kupac || '',
+      sortimenti: sortimenti,
+      ukupno: kubik
+    });
+  }
+
+  // Sortiraj po datumu (najnoviji prvo)
+  unosi.sort((a, b) => b.datumObj - a.datumObj);
+
+  // Ukloni datumObj iz rezultata
+  const unosiResult = unosi.map(u => ({
+    datum: u.datum,
+    odjel: u.odjel,
+    otpremac: u.otpremac,
+    kupac: u.kupac,
+    sortimenti: u.sortimenti,
+    ukupno: u.ukupno
+  }));
+
+  Logger.log('=== HANDLE OTPREMAC DETAIL END ===');
+  Logger.log(`Ukupno unosa: ${unosiResult.length}`);
+
+  return createJsonResponse({
+    sortimentiNazivi: sortimentiNazivi,
+    unosi: unosiResult
+  }, true);
 }
