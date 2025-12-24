@@ -391,8 +391,10 @@ function syncIndexSheet() {
                 continue;
               }
 
-              // Dodaj red: [ODJEL, DATUM(B), PRIMAČ(C), ...sortimenti(D-U)]
-              const newRow = [odjelNaziv, datum, primac, ...row.slice(3)];
+              // Dodaj red: [ODJEL, DATUM(B), PRIMAČ(C), ...sortimenti(D-U 18 kolona)]
+              // Eksplicitno uzmi samo 18 kolona sortimenti (D-U = indeksi 3-20)
+              const sortimenti = row.slice(3, 21); // D-U (18 kolona)
+              const newRow = [odjelNaziv, datum, primac, ...sortimenti];
               primkaRows.push(newRow);
               addedRows++;
 
@@ -452,8 +454,10 @@ function syncIndexSheet() {
                 continue;
               }
 
-              // Kreiraj novi red za INDEX: [odjel, datum(B), otpremač(C), ...sortimenti(D-U), kupac(A)]
-              const newRow = [odjelNaziv, datum, otpremac, ...row.slice(3), kupac];
+              // Kreiraj novi red za INDEX: [odjel, datum(B), otpremač(C), ...sortimenti(D-U 18 kolona), kupac(A)]
+              // Eksplicitno uzmi samo 18 kolona sortimenti (D-U = indeksi 3-20)
+              const sortimenti = row.slice(3, 21); // D-U (18 kolona)
+              const newRow = [odjelNaziv, datum, otpremac, ...sortimenti, kupac];
               otpremaRows.push(newRow);
               addedRows++;
 
