@@ -162,6 +162,7 @@
                 <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
                 <button class="tab" onclick="switchTab('primaci')">👷 Prikaz po primačima</button>
                 <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz po otpremačima</button>
+                <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
             </div>
         </div>
 
@@ -234,6 +235,35 @@
                 <table class="monthly-table" id="otpremaci-table">
                     <thead id="otpremaci-header"></thead>
                     <tbody id="otpremaci-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- KUPCI CONTENT (Prikaz po kupcima) -->
+        <div id="kupci-content" class="container hidden">
+            <!-- Godišnji pregled -->
+            <div class="section">
+                <h2>🏢 Godišnji pregled po kupcima</h2>
+                <div class="controls-bar">
+                    <input type="text" class="search-input" id="kupci-godisnji-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciGodisnjiTable()">
+                    <button class="btn btn-primary" onclick="exportTableToCSV('kupci-godisnji')">📥 Export CSV</button>
+                </div>
+                <table class="monthly-table" id="kupci-godisnji-table" style="font-size: 12px;">
+                    <thead id="kupci-godisnji-header"></thead>
+                    <tbody id="kupci-godisnji-body"></tbody>
+                </table>
+            </div>
+
+            <!-- Mjesečni pregled -->
+            <div class="section">
+                <h2>📅 Mjesečni pregled po kupcima</h2>
+                <div class="controls-bar">
+                    <input type="text" class="search-input" id="kupci-mjesecni-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciMjesecniTable()">
+                    <button class="btn btn-primary" onclick="exportTableToCSV('kupci-mjesecni')">📥 Export CSV</button>
+                </div>
+                <table class="monthly-table" id="kupci-mjesecni-table" style="font-size: 12px;">
+                    <thead id="kupci-mjesecni-header"></thead>
+                    <tbody id="kupci-mjesecni-body"></tbody>
                 </table>
             </div>
         </div>
@@ -312,6 +342,7 @@
             document.getElementById('dashboard-content').classList.add('hidden');
             document.getElementById('primaci-content').classList.add('hidden');
             document.getElementById('otpremaci-content').classList.add('hidden');
+            document.getElementById('kupci-content').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
         }
         
@@ -330,6 +361,7 @@
             document.getElementById('dashboard-content').classList.add('hidden');
             document.getElementById('primaci-content').classList.add('hidden');
             document.getElementById('otpremaci-content').classList.add('hidden');
+            document.getElementById('kupci-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
@@ -338,6 +370,8 @@
                 loadPrimaci();
             } else if (tab === 'otpremaci') {
                 loadOtpremaci();
+            } else if (tab === 'kupci') {
+                loadKupci();
             }
         }
 
@@ -564,6 +598,95 @@
             }
         }
 
+        // Load kupci data
+        async function loadKupci() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+            document.getElementById('kupci-content').classList.add('hidden');
+
+            try {
+                const year = new Date().getFullYear();
+                const response = await fetch(`${API_URL}?path=kupci&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
+                const data = await response.json();
+
+                console.log('Kupci data:', data);
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // ========================================
+                // GODIŠNJI PREGLED
+                // ========================================
+
+                // Create godisnji header
+                const godisnjiHeaderHTML = `
+                    <tr>
+                        <th onclick="sortTable(0, 'kupci-godisnji-table')">Kupac ⇅</th>
+                        ${data.sortimentiNazivi.map((s, i) => `<th class="right" onclick="sortTable(${i+1}, 'kupci-godisnji-table')">${s} ⇅</th>`).join('')}
+                        <th class="right" onclick="sortTable(${data.sortimentiNazivi.length + 1}, 'kupci-godisnji-table')" style="font-weight: bold;">Ukupno ⇅</th>
+                    </tr>
+                `;
+                document.getElementById('kupci-godisnji-header').innerHTML = godisnjiHeaderHTML;
+
+                // Create godisnji body
+                const godisnjiBodyHTML = data.godisnji.map(k => {
+                    const sortimentiCells = data.sortimentiNazivi.map(sortiment => {
+                        const val = k.sortimenti[sortiment] || 0;
+                        return `<td class="right">${val.toFixed(2)}</td>`;
+                    }).join('');
+
+                    return `
+                        <tr>
+                            <td style="font-weight: 500;">${k.kupac}</td>
+                            ${sortimentiCells}
+                            <td class="right blue" style="font-weight: bold;">${k.ukupno.toFixed(2)}</td>
+                        </tr>
+                    `;
+                }).join('');
+                document.getElementById('kupci-godisnji-body').innerHTML = godisnjiBodyHTML;
+
+                // ========================================
+                // MJESEČNI PREGLED
+                // ========================================
+
+                // Create mjesecni header
+                const mjesecniHeaderHTML = `
+                    <tr>
+                        <th onclick="sortTable(0, 'kupci-mjesecni-table')">Kupac ⇅</th>
+                        <th onclick="sortTable(1, 'kupci-mjesecni-table')">Mjesec ⇅</th>
+                        ${data.sortimentiNazivi.map((s, i) => `<th class="right" onclick="sortTable(${i+2}, 'kupci-mjesecni-table')">${s} ⇅</th>`).join('')}
+                        <th class="right" onclick="sortTable(${data.sortimentiNazivi.length + 2}, 'kupci-mjesecni-table')" style="font-weight: bold;">Ukupno ⇅</th>
+                    </tr>
+                `;
+                document.getElementById('kupci-mjesecni-header').innerHTML = mjesecniHeaderHTML;
+
+                // Create mjesecni body
+                const mjesecniBodyHTML = data.mjesecni.map(k => {
+                    const sortimentiCells = data.sortimentiNazivi.map(sortiment => {
+                        const val = k.sortimenti[sortiment] || 0;
+                        return `<td class="right">${val.toFixed(2)}</td>`;
+                    }).join('');
+
+                    return `
+                        <tr>
+                            <td style="font-weight: 500;">${k.kupac}</td>
+                            <td>${k.mjesec}</td>
+                            ${sortimentiCells}
+                            <td class="right blue" style="font-weight: bold;">${k.ukupno.toFixed(2)}</td>
+                        </tr>
+                    `;
+                }).join('');
+                document.getElementById('kupci-mjesecni-body').innerHTML = mjesecniBodyHTML;
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('kupci-content').classList.remove('hidden');
+
+            } catch (error) {
+                alert('Greška pri učitavanju kupaca: ' + error.message);
+                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
+            }
+        }
+
         // ========================================
         // UTILITY FUNCTIONS
         // ========================================
@@ -631,6 +754,38 @@
             }
         }
 
+        // Filter kupci godisnji table
+        function filterKupciGodisnjiTable() {
+            const input = document.getElementById('kupci-godisnji-search');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('kupci-godisnji-table');
+            const tr = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < tr.length; i++) {
+                const td = tr[i].getElementsByTagName('td')[0];
+                if (td) {
+                    const txtValue = td.textContent || td.innerText;
+                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
+                }
+            }
+        }
+
+        // Filter kupci mjesecni table
+        function filterKupciMjesecniTable() {
+            const input = document.getElementById('kupci-mjesecni-search');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('kupci-mjesecni-table');
+            const tr = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < tr.length; i++) {
+                const td = tr[i].getElementsByTagName('td')[0];
+                if (td) {
+                    const txtValue = td.textContent || td.innerText;
+                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
+                }
+            }
+        }
+
         // Export table to CSV
         function exportTableToCSV(tableType) {
             let table, filename;
@@ -644,6 +799,12 @@
             } else if (tableType === 'otpremaci') {
                 table = document.getElementById('otpremaci-table');
                 filename = 'otpremaci_pregled.csv';
+            } else if (tableType === 'kupci-godisnji') {
+                table = document.getElementById('kupci-godisnji-table');
+                filename = 'kupci_godisnji_pregled.csv';
+            } else if (tableType === 'kupci-mjesecni') {
+                table = document.getElementById('kupci-mjesecni-table');
+                filename = 'kupci_mjesecni_pregled.csv';
             }
 
             const rows = table.querySelectorAll('tr');

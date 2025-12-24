@@ -26,6 +26,8 @@ function doGet(e) {
       return handlePrimaci(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'otpremaci') {
       return handleOtpremaci(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'kupci') {
+      return handleKupci(e.parameter.year, e.parameter.username, e.parameter.password);
     }
 
     return createJsonResponse({ error: 'Unknown path' }, false);
@@ -978,5 +980,138 @@ function handleOtpremaci(year, username, password) {
   return createJsonResponse({
     mjeseci: mjeseci,
     otpremaci: otpremaciPrikaz
+  }, true);
+}
+
+// ========================================
+// KUPCI API - Prikaz po kupcima
+// ========================================
+
+/**
+ * Kupci endpoint - vraća prikaz po kupcima (godišnji i mjesečni)
+ */
+function handleKupci(year, username, password) {
+  // Autentikacija
+  const loginResult = JSON.parse(handleLogin(username, password).getContent());
+  if (!loginResult.success) {
+    return createJsonResponse({ error: "Unauthorized" }, false);
+  }
+
+  const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+  const otpremaSheet = ss.getSheetByName("INDEX_OTPREMA");
+
+  if (!otpremaSheet) {
+    return createJsonResponse({ error: "INDEX_OTPREMA sheet not found" }, false);
+  }
+
+  const otpremaData = otpremaSheet.getDataRange().getValues();
+  const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
+
+  // Nazivi sortimenta (kolone D-U = indeksi 3-20)
+  const sortimentiNazivi = [
+    "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+    "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+    "F/L L", "I L", "II L", "III L", "TRUPCI",
+    "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+  ];
+
+  // Map za godišnji prikaz: kupac -> { sortimenti: {}, ukupno: 0 }
+  let kupciGodisnji = {};
+
+  // Map za mjesečni prikaz: kupac -> mjeseci[12] -> { sortimenti: {}, ukupno: 0 }
+  let kupciMjesecni = {};
+
+  // Procesiranje OTPREMA podataka
+  for (let i = 1; i < otpremaData.length; i++) {
+    const row = otpremaData[i];
+    const datum = row[1]; // B - DATUM
+    const kupac = row[21]; // V - KUPAC (kolona V = indeks 21)
+
+    if (!datum || !kupac) continue;
+
+    const datumObj = new Date(datum);
+    if (datumObj.getFullYear() !== parseInt(year)) continue;
+
+    const mjesec = datumObj.getMonth();
+
+    // Inicijalizuj kupca u godišnjem prikazu ako ne postoji
+    if (!kupciGodisnji[kupac]) {
+      kupciGodisnji[kupac] = {
+        sortimenti: {},
+        ukupno: 0
+      };
+      // Inicijalizuj sve sortimente na 0
+      for (let s = 0; s < sortimentiNazivi.length; s++) {
+        kupciGodisnji[kupac].sortimenti[sortimentiNazivi[s]] = 0;
+      }
+    }
+
+    // Inicijalizuj kupca u mjesečnom prikazu ako ne postoji
+    if (!kupciMjesecni[kupac]) {
+      kupciMjesecni[kupac] = [];
+      for (let m = 0; m < 12; m++) {
+        kupciMjesecni[kupac][m] = {
+          sortimenti: {},
+          ukupno: 0
+        };
+        // Inicijalizuj sve sortimente na 0
+        for (let s = 0; s < sortimentiNazivi.length; s++) {
+          kupciMjesecni[kupac][m].sortimenti[sortimentiNazivi[s]] = 0;
+        }
+      }
+    }
+
+    // Dodaj sortimente (kolone D-U, indeksi 3-20)
+    for (let s = 0; s < sortimentiNazivi.length; s++) {
+      const vrijednost = parseFloat(row[3 + s]) || 0;
+
+      // Godišnji
+      kupciGodisnji[kupac].sortimenti[sortimentiNazivi[s]] += vrijednost;
+
+      // Mjesečni
+      kupciMjesecni[kupac][mjesec].sortimenti[sortimentiNazivi[s]] += vrijednost;
+    }
+
+    // Ukupno (kolona U = SVEUKUPNO = indeks 20)
+    const ukupno = parseFloat(row[20]) || 0;
+    kupciGodisnji[kupac].ukupno += ukupno;
+    kupciMjesecni[kupac][mjesec].ukupno += ukupno;
+  }
+
+  // Generiši godišnji prikaz
+  const godisnji = [];
+  for (const kupacIme in kupciGodisnji) {
+    const kupac = kupciGodisnji[kupacIme];
+    const red = {
+      kupac: kupacIme,
+      sortimenti: kupac.sortimenti,
+      ukupno: kupac.ukupno
+    };
+    godisnji.push(red);
+  }
+
+  // Sortiraj po ukupnoj količini (od najvećeg ka najmanjem)
+  godisnji.sort((a, b) => b.ukupno - a.ukupno);
+
+  // Generiši mjesečni prikaz
+  const mjesecni = [];
+  for (const kupacIme in kupciMjesecni) {
+    for (let m = 0; m < 12; m++) {
+      const mjesecData = kupciMjesecni[kupacIme][m];
+      if (mjesecData.ukupno > 0) { // Samo mjeseci sa podacima
+        mjesecni.push({
+          kupac: kupacIme,
+          mjesec: mjeseci[m],
+          sortimenti: mjesecData.sortimenti,
+          ukupno: mjesecData.ukupno
+        });
+      }
+    }
+  }
+
+  return createJsonResponse({
+    sortimentiNazivi: sortimentiNazivi,
+    godisnji: godisnji,
+    mjesecni: mjesecni
   }, true);
 }
