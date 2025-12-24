@@ -20,6 +20,8 @@ function doGet(e) {
       return handleStats(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'dashboard') {
       return handleDashboard(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'sortimenti') {
+      return handleSortimenti(e.parameter.year, e.parameter.username, e.parameter.password);
     }
 
     return createJsonResponse({ error: 'Unknown path' }, false);
@@ -687,3 +689,144 @@ function handleDashboard(year, username, password) {
   }, true);
 }
 
+
+// ========================================
+// SORTIMENTI API - Detaljna mjesečna statistika
+// ========================================
+
+/**
+ * Sortimenti endpoint - vraća detaljnu mjesečnu statistiku po sortimentima
+ */
+function handleSortimenti(year, username, password) {
+  // Autentikacija
+  const loginResult = JSON.parse(handleLogin(username, password).getContent());
+  if (!loginResult.success) {
+    return createJsonResponse({ error: "Unauthorized" }, false);
+  }
+
+  const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+  const primkaSheet = ss.getSheetByName("INDEX_PRIMKA");
+  const otpremaSheet = ss.getSheetByName("INDEX_OTPREMA");
+
+  if (!primkaSheet || !otpremaSheet) {
+    return createJsonResponse({ error: "INDEX sheets not found" }, false);
+  }
+
+  const primkaData = primkaSheet.getDataRange().getValues();
+  const otpremaData = otpremaSheet.getDataRange().getValues();
+
+  const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
+  
+  // Nazivi sortimenta (kolone D-U = indeksi 3-20)
+  const sortimentiNazivi = [
+    "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č", 
+    "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI", 
+    "F/L L", "I L", "II L", "III L", "TRUPCI", 
+    "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+  ];
+
+  // Inicijalizuj mjesečne sume za PRIMKA (12 mjeseci x 18 sortimenta)
+  let primkaSortimenti = Array(12).fill(null).map(() => Array(18).fill(0));
+  
+  // Inicijalizuj mjesečne sume za OTPREMA
+  let otpremaSortimenti = Array(12).fill(null).map(() => Array(18).fill(0));
+
+  // Procesiranje PRIMKA podataka
+  for (let i = 1; i < primkaData.length; i++) {
+    const row = primkaData[i];
+    const datum = row[1]; // B - DATUM
+
+    if (!datum) continue;
+
+    const datumObj = new Date(datum);
+    if (datumObj.getFullYear() !== parseInt(year)) continue;
+
+    const mjesec = datumObj.getMonth();
+
+    // Kolone D-U (indeksi 3-20) = sortimenti
+    for (let j = 0; j < 18; j++) {
+      const vrijednost = parseFloat(row[3 + j]) || 0;
+      primkaSortimenti[mjesec][j] += vrijednost;
+    }
+  }
+
+  // Procesiranje OTPREMA podataka
+  for (let i = 1; i < otpremaData.length; i++) {
+    const row = otpremaData[i];
+    const datum = row[1]; // B - DATUM
+
+    if (!datum) continue;
+
+    const datumObj = new Date(datum);
+    if (datumObj.getFullYear() !== parseInt(year)) continue;
+
+    const mjesec = datumObj.getMonth();
+
+    // Kolone D-U (indeksi 3-20) = sortimenti
+    for (let j = 0; j < 18; j++) {
+      const vrijednost = parseFloat(row[3 + j]) || 0;
+      otpremaSortimenti[mjesec][j] += vrijednost;
+    }
+  }
+
+  // Izračunaj ukupne sume i % udio
+  let primkaUkupno = Array(18).fill(0);
+  let otpremaUkupno = Array(18).fill(0);
+
+  for (let mjesec = 0; mjesec < 12; mjesec++) {
+    for (let j = 0; j < 18; j++) {
+      primkaUkupno[j] += primkaSortimenti[mjesec][j];
+      otpremaUkupno[j] += otpremaSortimenti[mjesec][j];
+    }
+  }
+
+  // Generiši response
+  const primkaRedovi = [];
+  const otpremaRedovi = [];
+
+  for (let mjesec = 0; mjesec < 12; mjesec++) {
+    const primkaRed = { mjesec: mjeseci[mjesec] };
+    const otpremaRed = { mjesec: mjeseci[mjesec] };
+
+    for (let j = 0; j < 18; j++) {
+      primkaRed[sortimentiNazivi[j]] = primkaSortimenti[mjesec][j];
+      otpremaRed[sortimentiNazivi[j]] = otpremaSortimenti[mjesec][j];
+    }
+
+    primkaRedovi.push(primkaRed);
+    otpremaRedovi.push(otpremaRed);
+  }
+
+  // Dodaj UKUPNO redove
+  const primkaUkupnoRed = { mjesec: "UKUPNO" };
+  const otpremaUkupnoRed = { mjesec: "UKUPNO" };
+  
+  for (let j = 0; j < 18; j++) {
+    primkaUkupnoRed[sortimentiNazivi[j]] = primkaUkupno[j];
+    otpremaUkupnoRed[sortimentiNazivi[j]] = otpremaUkupno[j];
+  }
+
+  primkaRedovi.push(primkaUkupnoRed);
+  otpremaRedovi.push(otpremaUkupnoRed);
+
+  // Dodaj % UDIO redove
+  const primkaUdioRed = { mjesec: "% UDIO" };
+  const otpremaUdioRed = { mjesec: "% UDIO" };
+
+  const primkaSveukupno = primkaUkupno[17]; // SVEUKUPNO je zadnja kolona
+  const otpremaSveukupno = otpremaUkupno[17];
+
+  for (let j = 0; j < 18; j++) {
+    primkaUdioRed[sortimentiNazivi[j]] = primkaSveukupno > 0 ? (primkaUkupno[j] / primkaSveukupno) : 0;
+    otpremaUdioRed[sortimentiNazivi[j]] = otpremaSveukupno > 0 ? (otpremaUkupno[j] / otpremaSveukupno) : 0;
+  }
+
+  primkaRedovi.push(primkaUdioRed);
+  otpremaRedovi.push(otpremaUdioRed);
+
+  return createJsonResponse({
+    sortimentiNazivi: sortimentiNazivi,
+    primka: primkaRedovi,
+    otprema: otpremaRedovi
+  }, true);
+}
