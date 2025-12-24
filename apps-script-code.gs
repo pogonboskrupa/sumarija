@@ -4,6 +4,7 @@
 // ⚠️ VAŽNO: Postavi svoje Spreadsheet ID-ove ovdje
 const KORISNICI_SPREADSHEET_ID = '1rpl0RiqsE6lrU9uDMTjf127By7b951rP3a5Chis9qwg'; // SUMARIJA_KORISNICI
 const INDEX_SPREADSHEET_ID = '1nPkSx2fCbtHGcwdq8rDo9A3dsSt9QpcF7f0JBCg1K1I';     // SUMARIJA_INDEX
+const ODJELI_FOLDER_ID = '1NQ0s_F4j9iRDaZafexzP5Bwyv0NXfMMK';                      // Folder sa svim odjelima
 
 // Glavni handler za sve zahtjeve
 function doGet(e) {
@@ -298,4 +299,145 @@ function createJsonResponse(data, success) {
   const output = ContentService.createTextOutput(JSON.stringify(data));
   output.setMimeType(ContentService.MimeType.JSON);
   return output;
+}
+
+// ========================================
+// SYNC INDEX SHEET - Agregira podatke iz svih odjela
+// ========================================
+
+/**
+ * Sync funkcija koja agregira podatke iz svih odjela u INDEX sheet-ove
+ * Pozovi ručno iz Apps Script editora: Extensions > Apps Script > Run > syncIndexSheet
+ */
+function syncIndexSheet() {
+  Logger.log('=== SYNC INDEX START ===');
+  const startTime = new Date();
+
+  try {
+    // 1. Otvori INDEX spreadsheet
+    const indexSS = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const indexPrimkaSheet = indexSS.getSheetByName('INDEX_PRIMKA');
+    const indexOtpremaSheet = indexSS.getSheetByName('INDEX_OTPREMA');
+
+    if (!indexPrimkaSheet || !indexOtpremaSheet) {
+      throw new Error('INDEX_PRIMKA ili INDEX_OTPREMA sheet nije pronađen!');
+    }
+
+    Logger.log('INDEX sheets otvoreni uspješno');
+
+    // 2. Obriši sve podatke (osim header-a u redu 1)
+    Logger.log('Brisanje starih podataka...');
+    if (indexPrimkaSheet.getLastRow() > 1) {
+      indexPrimkaSheet.deleteRows(2, indexPrimkaSheet.getLastRow() - 1);
+    }
+    if (indexOtpremaSheet.getLastRow() > 1) {
+      indexOtpremaSheet.deleteRows(2, indexOtpremaSheet.getLastRow() - 1);
+    }
+
+    // 3. Otvori folder ODJELI
+    Logger.log('Otvaranje foldera ODJELI: ' + ODJELI_FOLDER_ID);
+    const folder = DriveApp.getFolderById(ODJELI_FOLDER_ID);
+    const files = folder.getFilesByType(MimeType.GOOGLE_SHEETS);
+
+    let primkaRows = [];
+    let otpremaRows = [];
+    let processedCount = 0;
+    let errorCount = 0;
+
+    // 4. Iteriraj kroz sve spreadsheet-ove u folderu
+    Logger.log('Počinjem čitanje spreadsheet-ova...');
+    while (files.hasNext()) {
+      const file = files.next();
+      processedCount++;
+
+      try {
+        const ss = SpreadsheetApp.open(file);
+        Logger.log(`[${processedCount}] Processing: ${file.getName()}`);
+
+        // Pročitaj PRIMKA sheet
+        const primkaSheet = ss.getSheetByName('PRIMKA');
+        if (primkaSheet && primkaSheet.getLastRow() > 1) {
+          const data = primkaSheet.getDataRange().getValues();
+          // Preskoči header (red 0) i dodaj ostale redove
+          for (let i = 1; i < data.length; i++) {
+            if (data[i][0]) { // Ako ima odjel u koloni A
+              primkaRows.push(data[i]);
+            }
+          }
+        }
+
+        // Pročitaj OTPREMA sheet
+        const otpremaSheet = ss.getSheetByName('OTPREMA');
+        if (otpremaSheet && otpremaSheet.getLastRow() > 1) {
+          const data = otpremaSheet.getDataRange().getValues();
+          for (let i = 1; i < data.length; i++) {
+            if (data[i][0]) { // Ako ima odjel u koloni A
+              otpremaRows.push(data[i]);
+            }
+          }
+        }
+
+      } catch (error) {
+        errorCount++;
+        Logger.log(`ERROR processing ${file.getName()}: ${error.toString()}`);
+      }
+    }
+
+    Logger.log(`Pročitano spreadsheet-ova: ${processedCount}`);
+    Logger.log(`PRIMKA redova: ${primkaRows.length}`);
+    Logger.log(`OTPREMA redova: ${otpremaRows.length}`);
+
+    // 5. Sortiraj po datumu (kolona B = index 1)
+    Logger.log('Sortiranje podataka po datumu...');
+    primkaRows.sort((a, b) => {
+      const dateA = new Date(a[1]);
+      const dateB = new Date(b[1]);
+      return dateA - dateB;
+    });
+
+    otpremaRows.sort((a, b) => {
+      const dateA = new Date(a[1]);
+      const dateB = new Date(b[1]);
+      return dateA - dateB;
+    });
+
+    // 6. Upiši podatke u INDEX sheet-ove
+    Logger.log('Upisivanje podataka u INDEX sheet-ove...');
+    if (primkaRows.length > 0) {
+      // Pronađi broj kolona iz prvog reda
+      const numCols = primkaRows[0].length;
+      indexPrimkaSheet.getRange(2, 1, primkaRows.length, numCols).setValues(primkaRows);
+      Logger.log(`✓ INDEX_PRIMKA: upisano ${primkaRows.length} redova`);
+    }
+
+    if (otpremaRows.length > 0) {
+      const numCols = otpremaRows[0].length;
+      indexOtpremaSheet.getRange(2, 1, otpremaRows.length, numCols).setValues(otpremaRows);
+      Logger.log(`✓ INDEX_OTPREMA: upisano ${otpremaRows.length} redova`);
+    }
+
+    const endTime = new Date();
+    const duration = (endTime - startTime) / 1000; // sekunde
+
+    Logger.log('=== SYNC INDEX COMPLETE ===');
+    Logger.log(`Trajanje: ${duration} sekundi`);
+    Logger.log(`Procesovano spreadsheet-ova: ${processedCount}`);
+    Logger.log(`Greške: ${errorCount}`);
+    Logger.log(`PRIMKA redova: ${primkaRows.length}`);
+    Logger.log(`OTPREMA redova: ${otpremaRows.length}`);
+
+    return {
+      success: true,
+      duration: duration,
+      processedSpreadsheets: processedCount,
+      errors: errorCount,
+      primkaRows: primkaRows.length,
+      otpremaRows: otpremaRows.length
+    };
+
+  } catch (error) {
+    Logger.log('=== SYNC INDEX FAILED ===');
+    Logger.log('ERROR: ' + error.toString());
+    throw error;
+  }
 }
