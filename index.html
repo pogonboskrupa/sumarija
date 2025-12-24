@@ -114,24 +114,45 @@
 
         /* Kupci tables optimization */
         .kupci-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -24px; padding: 0 24px; }
-        .kupci-table { font-size: 11px; white-space: nowrap; width: 100%; }
-        .kupci-table th, .kupci-table td { padding: 6px 4px; }
+        .kupci-table { font-size: 11px; white-space: nowrap; width: 100%; border-collapse: separate; border-spacing: 0; }
+        .kupci-table th, .kupci-table td { padding: 8px 6px; border-bottom: 1px solid #e5e7eb; }
         .kupci-table th:first-child, .kupci-table td:first-child {
             position: sticky; left: 0; background: white; z-index: 2;
-            min-width: 120px; max-width: 180px; white-space: normal;
-            border-right: 2px solid #e5e7eb; padding-right: 8px;
+            min-width: 140px; max-width: 200px; white-space: normal;
+            border-right: 2px solid #d1d5db; padding-right: 12px; font-weight: 600;
         }
         .kupci-table th:nth-child(2), .kupci-table td:nth-child(2) {
-            position: sticky; left: 120px; background: white; z-index: 2;
-            min-width: 80px; border-right: 2px solid #e5e7eb;
+            position: sticky; left: 140px; background: white; z-index: 2;
+            min-width: 90px; border-right: 2px solid #d1d5db; font-weight: 500;
         }
         body.dark-mode .kupci-table th:first-child, body.dark-mode .kupci-table td:first-child,
         body.dark-mode .kupci-table th:nth-child(2), body.dark-mode .kupci-table td:nth-child(2) { background: #374151; }
-        .kupci-table thead th { background: #f9fafb; position: sticky; top: 0; z-index: 3; }
-        body.dark-mode .kupci-table thead th { background: #1f2937; }
-        .kupci-table .sortiment-col { min-width: 55px; max-width: 70px; text-align: right; }
-        .kupci-table .ukupno-col { font-weight: bold; background: #f0fdf4; min-width: 90px; border-left: 2px solid #10b981; }
-        body.dark-mode .kupci-table .ukupno-col { background: #064e3b; }
+        .kupci-table thead th {
+            background: linear-gradient(to bottom, #f9fafb 0%, #f3f4f6 100%);
+            position: sticky; top: 0; z-index: 3; font-weight: 700;
+            border-top: 2px solid #10b981; border-bottom: 2px solid #10b981;
+            padding: 12px 6px; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;
+        }
+        body.dark-mode .kupci-table thead th { background: linear-gradient(to bottom, #1f2937 0%, #111827 100%); }
+        .kupci-table tbody tr:nth-child(even) { background: #f9fafb; }
+        body.dark-mode .kupci-table tbody tr:nth-child(even) { background: #2d3748; }
+        .kupci-table tbody tr:hover { background: #f0fdf4; }
+        body.dark-mode .kupci-table tbody tr:hover { background: #064e3b; }
+        .kupci-table tbody tr:nth-child(even):hover { background: #ecfdf5; }
+        body.dark-mode .kupci-table tbody tr:nth-child(even):hover { background: #065f46; }
+        .kupci-table .sortiment-col { min-width: 62px; max-width: 75px; text-align: right; font-family: 'Courier New', monospace; }
+        .kupci-table .ukupno-col {
+            font-weight: bold; background: linear-gradient(to right, #f0fdf4 0%, #dcfce7 100%);
+            min-width: 95px; border-left: 3px solid #10b981; text-align: right;
+            font-size: 12px; font-family: 'Courier New', monospace;
+        }
+        body.dark-mode .kupci-table .ukupno-col { background: linear-gradient(to right, #064e3b 0%, #065f46 100%); }
+        .kupci-table .totals-row {
+            background: linear-gradient(to bottom, #dcfce7 0%, #bbf7d0 100%);
+            font-weight: 700; font-size: 12px; border-top: 3px solid #10b981;
+        }
+        body.dark-mode .kupci-table .totals-row { background: linear-gradient(to bottom, #065f46 0%, #047857 100%); }
+        .kupci-table .totals-row td { border-bottom: 3px solid #10b981; padding: 12px 6px; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -653,8 +674,17 @@
                 `;
                 document.getElementById('kupci-godisnji-header').innerHTML = godisnjiHeaderHTML;
 
-                // Create godisnji body
+                // Create godisnji body with totals
+                let godisnjiTotals = { sortimenti: {}, ukupno: 0 };
+                data.sortimentiNazivi.forEach(s => godisnjiTotals.sortimenti[s] = 0);
+
                 const godisnjiBodyHTML = data.godisnji.map(k => {
+                    // Add to totals
+                    data.sortimentiNazivi.forEach(s => {
+                        godisnjiTotals.sortimenti[s] += (k.sortimenti[s] || 0);
+                    });
+                    godisnjiTotals.ukupno += k.ukupno;
+
                     const sortimentiCells = data.sortimentiNazivi.map(sortiment => {
                         const val = k.sortimenti[sortiment] || 0;
                         return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
@@ -662,13 +692,28 @@
 
                     return `
                         <tr>
-                            <td style="font-weight: 500;">${k.kupac}</td>
+                            <td>${k.kupac}</td>
                             ${sortimentiCells}
                             <td class="ukupno-col">${k.ukupno.toFixed(2)}</td>
                         </tr>
                     `;
                 }).join('');
-                document.getElementById('kupci-godisnji-body').innerHTML = godisnjiBodyHTML;
+
+                // Add totals row
+                const godisnjiTotalsCells = data.sortimentiNazivi.map(s => {
+                    const val = godisnjiTotals.sortimenti[s];
+                    return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                }).join('');
+
+                const godisnjiBodyWithTotals = godisnjiBodyHTML + `
+                    <tr class="totals-row">
+                        <td style="text-align: left;">UKUPNO</td>
+                        ${godisnjiTotalsCells}
+                        <td class="ukupno-col">${godisnjiTotals.ukupno.toFixed(2)}</td>
+                    </tr>
+                `;
+
+                document.getElementById('kupci-godisnji-body').innerHTML = godisnjiBodyWithTotals;
 
                 // ========================================
                 // MJESEČNI PREGLED
@@ -685,8 +730,17 @@
                 `;
                 document.getElementById('kupci-mjesecni-header').innerHTML = mjesecniHeaderHTML;
 
-                // Create mjesecni body
+                // Create mjesecni body with totals
+                let mjesecniTotals = { sortimenti: {}, ukupno: 0 };
+                data.sortimentiNazivi.forEach(s => mjesecniTotals.sortimenti[s] = 0);
+
                 const mjesecniBodyHTML = data.mjesecni.map(k => {
+                    // Add to totals
+                    data.sortimentiNazivi.forEach(s => {
+                        mjesecniTotals.sortimenti[s] += (k.sortimenti[s] || 0);
+                    });
+                    mjesecniTotals.ukupno += k.ukupno;
+
                     const sortimentiCells = data.sortimentiNazivi.map(sortiment => {
                         const val = k.sortimenti[sortiment] || 0;
                         return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
@@ -694,14 +748,30 @@
 
                     return `
                         <tr>
-                            <td style="font-weight: 500;">${k.kupac}</td>
+                            <td>${k.kupac}</td>
                             <td>${k.mjesec}</td>
                             ${sortimentiCells}
                             <td class="ukupno-col">${k.ukupno.toFixed(2)}</td>
                         </tr>
                     `;
                 }).join('');
-                document.getElementById('kupci-mjesecni-body').innerHTML = mjesecniBodyHTML;
+
+                // Add totals row
+                const mjesecniTotalsCells = data.sortimentiNazivi.map(s => {
+                    const val = mjesecniTotals.sortimenti[s];
+                    return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                }).join('');
+
+                const mjesecniBodyWithTotals = mjesecniBodyHTML + `
+                    <tr class="totals-row">
+                        <td style="text-align: left;">UKUPNO</td>
+                        <td></td>
+                        ${mjesecniTotalsCells}
+                        <td class="ukupno-col">${mjesecniTotals.ukupno.toFixed(2)}</td>
+                    </tr>
+                `;
+
+                document.getElementById('kupci-mjesecni-body').innerHTML = mjesecniBodyWithTotals;
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('kupci-content').classList.remove('hidden');
