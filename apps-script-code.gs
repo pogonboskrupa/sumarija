@@ -34,6 +34,10 @@ function doGet(e) {
       return handlePrimacDetail(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'otpremac-detail') {
       return handleOtpremacDetail(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'primac-odjeli') {
+      return handlePrimacOdjeli(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'otpremac-odjeli') {
+      return handleOtpremacOdjeli(e.parameter.year, e.parameter.username, e.parameter.password);
     }
 
     return createJsonResponse({ error: 'Unknown path' }, false);
@@ -1489,5 +1493,245 @@ function handleOtpremacDetail(year, username, password) {
   return createJsonResponse({
     sortimentiNazivi: sortimentiNazivi,
     unosi: unosiResult
+  }, true);
+}
+
+// ========================================
+// PRIMAC ODJELI API - Prikaz po odjelima za primača
+// ========================================
+
+/**
+ * Primac Odjeli endpoint - vraća podatke grupisane po odjelima za specificnog primača
+ * Sortiran po zadnjem datumu (najsvježiji prvo)
+ */
+function handlePrimacOdjeli(year, username, password) {
+  // Autentikacija
+  const loginResult = JSON.parse(handleLogin(username, password).getContent());
+  if (!loginResult.success) {
+    return createJsonResponse({ error: "Unauthorized" }, false);
+  }
+
+  const userFullName = loginResult.fullName;
+
+  Logger.log('=== HANDLE PRIMAC ODJELI START ===');
+  Logger.log('User: ' + userFullName);
+  Logger.log('Year: ' + year);
+
+  const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+  const primkaSheet = ss.getSheetByName("INDEX_PRIMKA");
+
+  if (!primkaSheet) {
+    return createJsonResponse({ error: "INDEX_PRIMKA sheet not found" }, false);
+  }
+
+  const primkaData = primkaSheet.getDataRange().getValues();
+  const sortimentiNazivi = [
+    "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+    "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+    "F/L L", "I L", "II L", "III L", "TRUPCI",
+    "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+  ];
+
+  // Map: odjelNaziv -> { sortimenti: {}, ukupno: 0, zadnjiDatum: Date }
+  const odjeliMap = {};
+
+  // Procesiranje PRIMKA podataka - filtrirati samo za ovog primača
+  for (let i = 1; i < primkaData.length; i++) {
+    const row = primkaData[i];
+    const odjel = row[0];     // A - ODJEL
+    const datum = row[1];     // B - DATUM
+    const primac = row[2];    // C - PRIMAČ
+    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+
+    if (!datum || !primac || !odjel) continue;
+
+    const datumObj = new Date(datum);
+    if (datumObj.getFullYear() !== parseInt(year)) continue;
+
+    // Filtriraj samo unose za ovog primača
+    if (String(primac).trim() !== userFullName) continue;
+
+    // Inicijalizuj odjel ako ne postoji
+    if (!odjeliMap[odjel]) {
+      odjeliMap[odjel] = {
+        sortimenti: {},
+        ukupno: 0,
+        zadnjiDatum: null
+      };
+      // Inicijalizuj sve sortimente na 0
+      for (let s = 0; s < sortimentiNazivi.length; s++) {
+        odjeliMap[odjel].sortimenti[sortimentiNazivi[s]] = 0;
+      }
+    }
+
+    // Dodaj sortimente (kolone D-U, indeksi 3-20)
+    for (let j = 0; j < 18; j++) {
+      const vrijednost = parseFloat(row[3 + j]) || 0;
+      odjeliMap[odjel].sortimenti[sortimentiNazivi[j]] += vrijednost;
+    }
+
+    odjeliMap[odjel].ukupno += kubik;
+
+    // Ažuriraj zadnji datum
+    if (!odjeliMap[odjel].zadnjiDatum || datumObj > odjeliMap[odjel].zadnjiDatum) {
+      odjeliMap[odjel].zadnjiDatum = datumObj;
+    }
+  }
+
+  // Konvertuj u array i sortiraj po zadnjem datumu
+  const odjeliArray = [];
+  for (const odjelNaziv in odjeliMap) {
+    const odjel = odjeliMap[odjelNaziv];
+    odjeliArray.push({
+      odjel: odjelNaziv,
+      sortimenti: odjel.sortimenti,
+      ukupno: odjel.ukupno,
+      zadnjiDatum: odjel.zadnjiDatum,
+      zadnjiDatumStr: odjel.zadnjiDatum ? formatDate(odjel.zadnjiDatum) : ''
+    });
+  }
+
+  // Sortiraj po zadnjem datumu (najnoviji prvo)
+  odjeliArray.sort((a, b) => {
+    if (!a.zadnjiDatum && !b.zadnjiDatum) return 0;
+    if (!a.zadnjiDatum) return 1;
+    if (!b.zadnjiDatum) return -1;
+    return b.zadnjiDatum - a.zadnjiDatum;
+  });
+
+  // Ukloni zadnjiDatum objekt (ostavi samo string)
+  const odjeliResult = odjeliArray.map(o => ({
+    odjel: o.odjel,
+    sortimenti: o.sortimenti,
+    ukupno: o.ukupno,
+    zadnjiDatum: o.zadnjiDatumStr
+  }));
+
+  Logger.log('=== HANDLE PRIMAC ODJELI END ===');
+  Logger.log(`Ukupno odjela: ${odjeliResult.length}`);
+
+  return createJsonResponse({
+    sortimentiNazivi: sortimentiNazivi,
+    odjeli: odjeliResult
+  }, true);
+}
+
+// ========================================
+// OTPREMAC ODJELI API - Prikaz po odjelima za otpremača
+// ========================================
+
+/**
+ * Otpremac Odjeli endpoint - vraća podatke grupisane po odjelima za specificnog otpremača
+ * Sortiran po zadnjem datumu (najsvježiji prvo)
+ */
+function handleOtpremacOdjeli(year, username, password) {
+  // Autentikacija
+  const loginResult = JSON.parse(handleLogin(username, password).getContent());
+  if (!loginResult.success) {
+    return createJsonResponse({ error: "Unauthorized" }, false);
+  }
+
+  const userFullName = loginResult.fullName;
+
+  Logger.log('=== HANDLE OTPREMAC ODJELI START ===');
+  Logger.log('User: ' + userFullName);
+  Logger.log('Year: ' + year);
+
+  const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+  const otpremaSheet = ss.getSheetByName("INDEX_OTPREMA");
+
+  if (!otpremaSheet) {
+    return createJsonResponse({ error: "INDEX_OTPREMA sheet not found" }, false);
+  }
+
+  const otpremaData = otpremaSheet.getDataRange().getValues();
+  const sortimentiNazivi = [
+    "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+    "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+    "F/L L", "I L", "II L", "III L", "TRUPCI",
+    "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+  ];
+
+  // Map: odjelNaziv -> { sortimenti: {}, ukupno: 0, zadnjiDatum: Date }
+  const odjeliMap = {};
+
+  // Procesiranje OTPREMA podataka - filtrirati samo za ovog otpremača
+  for (let i = 1; i < otpremaData.length; i++) {
+    const row = otpremaData[i];
+    const odjel = row[0];       // A - ODJEL
+    const datum = row[1];       // B - DATUM
+    const otpremac = row[2];    // C - OTPREMAČ
+    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+
+    if (!datum || !otpremac || !odjel) continue;
+
+    const datumObj = new Date(datum);
+    if (datumObj.getFullYear() !== parseInt(year)) continue;
+
+    // Filtriraj samo unose za ovog otpremača
+    if (String(otpremac).trim() !== userFullName) continue;
+
+    // Inicijalizuj odjel ako ne postoji
+    if (!odjeliMap[odjel]) {
+      odjeliMap[odjel] = {
+        sortimenti: {},
+        ukupno: 0,
+        zadnjiDatum: null
+      };
+      // Inicijalizuj sve sortimente na 0
+      for (let s = 0; s < sortimentiNazivi.length; s++) {
+        odjeliMap[odjel].sortimenti[sortimentiNazivi[s]] = 0;
+      }
+    }
+
+    // Dodaj sortimente (kolone D-U, indeksi 3-20)
+    for (let j = 0; j < 18; j++) {
+      const vrijednost = parseFloat(row[3 + j]) || 0;
+      odjeliMap[odjel].sortimenti[sortimentiNazivi[j]] += vrijednost;
+    }
+
+    odjeliMap[odjel].ukupno += kubik;
+
+    // Ažuriraj zadnji datum
+    if (!odjeliMap[odjel].zadnjiDatum || datumObj > odjeliMap[odjel].zadnjiDatum) {
+      odjeliMap[odjel].zadnjiDatum = datumObj;
+    }
+  }
+
+  // Konvertuj u array i sortiraj po zadnjem datumu
+  const odjeliArray = [];
+  for (const odjelNaziv in odjeliMap) {
+    const odjel = odjeliMap[odjelNaziv];
+    odjeliArray.push({
+      odjel: odjelNaziv,
+      sortimenti: odjel.sortimenti,
+      ukupno: odjel.ukupno,
+      zadnjiDatum: odjel.zadnjiDatum,
+      zadnjiDatumStr: odjel.zadnjiDatum ? formatDate(odjel.zadnjiDatum) : ''
+    });
+  }
+
+  // Sortiraj po zadnjem datumu (najnoviji prvo)
+  odjeliArray.sort((a, b) => {
+    if (!a.zadnjiDatum && !b.zadnjiDatum) return 0;
+    if (!a.zadnjiDatum) return 1;
+    if (!b.zadnjiDatum) return -1;
+    return b.zadnjiDatum - a.zadnjiDatum;
+  });
+
+  // Ukloni zadnjiDatum objekt (ostavi samo string)
+  const odjeliResult = odjeliArray.map(o => ({
+    odjel: o.odjel,
+    sortimenti: o.sortimenti,
+    ukupno: o.ukupno,
+    zadnjiDatum: o.zadnjiDatumStr
+  }));
+
+  Logger.log('=== HANDLE OTPREMAC ODJELI END ===');
+  Logger.log(`Ukupno odjela: ${odjeliResult.length}`);
+
+  return createJsonResponse({
+    sortimentiNazivi: sortimentiNazivi,
+    odjeli: odjeliResult
   }, true);
 }

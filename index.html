@@ -454,6 +454,32 @@
                 </div>
             </div>
         </div>
+
+        <!-- PRIMAC ODJELI VIEW (By Department) -->
+        <div id="primac-odjeli-content" class="container hidden">
+            <div class="section">
+                <h2>🏭 Prikaz sječe po odjelima</h2>
+                <div id="primac-odjeli-container"></div>
+                <div class="controls-bar" style="justify-content: center; margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="prevPagePrimacOdjeli()" id="primac-odjeli-prev">← Prethodna</button>
+                    <span style="margin: 0 20px; font-weight: 600;" id="primac-odjeli-page-info">Stranica 1</span>
+                    <button class="btn btn-secondary" onclick="nextPagePrimacOdjeli()" id="primac-odjeli-next">Sledeća →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- OTPREMAC ODJELI VIEW (By Department) -->
+        <div id="otpremac-odjeli-content" class="container hidden">
+            <div class="section">
+                <h2>🏭 Prikaz otpreme po odjelima</h2>
+                <div id="otpremac-odjeli-container"></div>
+                <div class="controls-bar" style="justify-content: center; margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="prevPageOtpremacOdjeli()" id="otpremac-odjeli-prev">← Prethodna</button>
+                    <span style="margin: 0 20px; font-weight: 600;" id="otpremac-odjeli-page-info">Stranica 1</span>
+                    <button class="btn btn-secondary" onclick="nextPageOtpremacOdjeli()" id="otpremac-odjeli-next">Sledeća →</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -523,14 +549,16 @@
             const userType = currentUser.type; // 'primac', 'otpremac', ili nešto drugo
 
             if (userType === 'primac') {
-                // Primač vidi samo svoj personalni prikaz
+                // Primač vidi dva prikaza: detaljan i po odjelima
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('primac-personal')">👷 Pregled sječe u tekućoj godini</button>
+                    <button class="tab" onclick="switchTab('primac-odjeli')">🏭 Prikaz po odjelima</button>
                 `;
             } else if (userType === 'otpremac') {
-                // Otpremač vidi samo svoj personalni prikaz
+                // Otpremač vidi dva prikaza: detaljan i po odjelima
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('otpremac-personal')">🚛 Pregled otpreme u tekućoj godini</button>
+                    <button class="tab" onclick="switchTab('otpremac-odjeli')">🏭 Prikaz po odjelima</button>
                 `;
             } else {
                 // Admin ili drugi korisnici vide sve tab-ove
