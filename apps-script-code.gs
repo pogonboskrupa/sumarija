@@ -237,39 +237,18 @@ function processOtpremaData(data, stats, year) {
   Logger.log('=== END OTPREMA DEBUG ===');
 }
 
-// Procesiranje podataka o projektima (U11 i U12)
+// Procesiranje podataka o projektima (ne koristi se u novoj strukturi)
 function processOdjeliDetails(primkaSheet, stats) {
-  // Pretpostavljam da svaki odjel ima svoj red na PRIMKA sheet-u
-  // gdje je U11 projektovana masa, a U12 ukupno posjeklo
-
-  const data = primkaSheet.getDataRange().getValues();
-
-  // VAŽNO: Prilagodi ovu logiku prema stvarnoj strukturi tvog sheet-a
-  // Ovaj primjer pretpostavlja da svaki odjel ima "summary" red
+  // INDEX_PRIMKA sada ima strukturu: Odjel(A) | Datum(B) | Primač(C) | Sortimenti(D-U)
+  // Ne sadrži podatke o projektovanoj masi i ukupno poseklo
+  // Postavi default vrednosti za sve odjele
 
   for (let odjel in stats.odjeliStats) {
-    // Pronađi red za ovaj odjel
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      const odjelNaziv = row[1]; // kolona B - naziv odjela
-
-      if (odjelNaziv === odjel) {
-        // U11 = kolona U = indeks 20
-        // U12 = kolona V = indeks 21
-        const projekat = parseFloat(row[20]) || 0; // U11
-        const ukupnoPosjeklo = parseFloat(row[21]) || 0; // U12
-
-        stats.odjeliStats[odjel].projekat = projekat;
-        stats.odjeliStats[odjel].ukupnoPosjeklo = ukupnoPosjeklo;
-        break;
-      }
-    }
+    stats.odjeliStats[odjel].projekat = 0;
+    stats.odjeliStats[odjel].ukupnoPosjeklo = stats.odjeliStats[odjel].sječa; // Ukupno poseklo = sječa
   }
 
-  // Alternativa: Ako U11 i U12 su u posebnom sheet-u ili posebnoj lokaciji
-  // možeš koristiti getRange() direktno:
-  // const projekat = primkaSheet.getRange('U11').getValue();
-  // const ukupnoPosjeklo = primkaSheet.getRange('U12').getValue();
+  Logger.log('processOdjeliDetails: postavljene default vrednosti (projekat=0, ukupnoPosjeklo=sječa)');
 }
 
 // Kreiranje prazne mjesečne statistike
