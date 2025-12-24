@@ -28,6 +28,8 @@ function doGet(e) {
       return handleOtpremaci(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'kupci') {
       return handleKupci(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'odjeli') {
+      return handleOdjeli(e.parameter.year, e.parameter.username, e.parameter.password);
     }
 
     return createJsonResponse({ error: 'Unknown path' }, false);
@@ -1136,4 +1138,164 @@ function handleKupci(year, username, password) {
     godisnji: godisnji,
     mjesecni: mjesecni
   }, true);
+}
+
+// ========================================
+// ODJELI API - Pregled po odjelima
+// ========================================
+
+/**
+ * Odjeli endpoint - vraća prikaz po odjelima sa detaljnim podacima
+ * iz individualnih spreadsheet-ova (PRIMKA i OTPREMA listova)
+ */
+function handleOdjeli(year, username, password) {
+  // Autentikacija
+  const loginResult = JSON.parse(handleLogin(username, password).getContent());
+  if (!loginResult.success) {
+    return createJsonResponse({ error: "Unauthorized" }, false);
+  }
+
+  Logger.log('=== HANDLE ODJELI START ===');
+  Logger.log('Year: ' + year);
+
+  try {
+    // Otvori folder ODJELI
+    const folder = DriveApp.getFolderById(ODJELI_FOLDER_ID);
+    const files = folder.getFilesByType(MimeType.GOOGLE_SHEETS);
+
+    const odjeliPrikaz = [];
+    let processedCount = 0;
+
+    // Iteriraj kroz sve spreadsheet-ove u folderu
+    while (files.hasNext()) {
+      const file = files.next();
+      const odjelNaziv = file.getName(); // Naziv fajla = Odjel
+      processedCount++;
+
+      try {
+        const ss = SpreadsheetApp.open(file);
+        Logger.log(`[${processedCount}] Processing odjel: ${odjelNaziv}`);
+
+        // Inicijalizuj objekt za ovaj odjel
+        const odjelData = {
+          odjel: odjelNaziv,
+          sjeca: 0,           // U12 iz OTPREMA
+          otprema: 0,         // U13 iz OTPREMA
+          sumaPanj: 0,        // sjeca - otprema
+          radiliste: '',      // W2 iz PRIMKA
+          izvođač: '',        // W3 iz PRIMKA
+          datumZadnjeSjece: '', // Zadnji datum unosa u PRIMKA
+          realizacija: 0,     // (U12/U11) * 100 iz PRIMKA
+          zadnjiDatumObj: null  // Za sortiranje
+        };
+
+        // Čitaj PRIMKA sheet
+        const primkaSheet = ss.getSheetByName('PRIMKA');
+        if (primkaSheet) {
+          // Čitaj W2 (radilište) i W3 (izvođač radova)
+          // W = kolona 23 (0-indexed: 22)
+          odjelData.radiliste = primkaSheet.getRange('W2').getValue() || '';
+          odjelData.izvođač = primkaSheet.getRange('W3').getValue() || '';
+
+          // Čitaj U11 (projekat) i U12 (sječa) za realizaciju
+          // U = kolona 21 (0-indexed: 20)
+          const projekat = parseFloat(primkaSheet.getRange('U11').getValue()) || 0;
+          const sjecaPrimka = parseFloat(primkaSheet.getRange('U12').getValue()) || 0;
+
+          // Izračunaj realizaciju %
+          if (projekat > 0) {
+            odjelData.realizacija = (sjecaPrimka / projekat) * 100;
+          }
+
+          // Pronađi zadnji datum unosa u PRIMKA (kolona B)
+          const lastRow = primkaSheet.getLastRow();
+          Logger.log(`  PRIMKA last row: ${lastRow}`);
+
+          if (lastRow > 1) {
+            const allData = primkaSheet.getRange(2, 2, lastRow - 1, 1).getValues(); // Kolona B (datum)
+
+            // Filtriraj validne datume i pronađi najnoviji
+            let zadnjiDatum = null;
+            for (let i = 0; i < allData.length; i++) {
+              const datum = allData[i][0];
+              if (datum && datum !== '' && datum !== 0) {
+                const datumObj = new Date(datum);
+
+                // Provjeri da li je validan datum i da li pripada tražnoj godini
+                if (!isNaN(datumObj.getTime()) && datumObj.getFullYear() === parseInt(year)) {
+                  if (!zadnjiDatum || datumObj > zadnjiDatum) {
+                    zadnjiDatum = datumObj;
+                  }
+                }
+              }
+            }
+
+            if (zadnjiDatum) {
+              odjelData.datumZadnjeSjece = formatDate(zadnjiDatum);
+              odjelData.zadnjiDatumObj = zadnjiDatum;
+              Logger.log(`  PRIMKA zadnji datum: ${odjelData.datumZadnjeSjece}`);
+            }
+          }
+        } else {
+          Logger.log(`  PRIMKA sheet ne postoji`);
+        }
+
+        // Čitaj OTPREMA sheet
+        const otpremaSheet = ss.getSheetByName('OTPREMA');
+        if (otpremaSheet) {
+          // Čitaj U12 (sječa) i U13 (otprema)
+          odjelData.sjeca = parseFloat(otpremaSheet.getRange('U12').getValue()) || 0;
+          odjelData.otprema = parseFloat(otpremaSheet.getRange('U13').getValue()) || 0;
+
+          // Izračunaj šuma panj + međustovarište
+          odjelData.sumaPanj = odjelData.sjeca - odjelData.otprema;
+
+          Logger.log(`  OTPREMA sječa: ${odjelData.sjeca}, otprema: ${odjelData.otprema}`);
+        } else {
+          Logger.log(`  OTPREMA sheet ne postoji`);
+        }
+
+        // Dodaj u rezultat
+        odjeliPrikaz.push(odjelData);
+
+      } catch (error) {
+        Logger.log(`ERROR processing ${odjelNaziv}: ${error.toString()}`);
+        // Nastavi sa sledećim odjelom
+      }
+    }
+
+    Logger.log(`Procesovano odjela: ${processedCount}`);
+
+    // Sortiraj po zadnjoj sječi (najnovija prva)
+    odjeliPrikaz.sort((a, b) => {
+      if (!a.zadnjiDatumObj && !b.zadnjiDatumObj) return 0;
+      if (!a.zadnjiDatumObj) return 1;
+      if (!b.zadnjiDatumObj) return -1;
+      return b.zadnjiDatumObj - a.zadnjiDatumObj; // Descending (najnovija prva)
+    });
+
+    // Ukloni zadnjiDatumObj iz rezultata (koristili smo ga samo za sortiranje)
+    const odjeliResult = odjeliPrikaz.map(o => ({
+      odjel: o.odjel,
+      sjeca: o.sjeca,
+      otprema: o.otprema,
+      sumaPanj: o.sumaPanj,
+      radiliste: o.radiliste,
+      izvođač: o.izvođač,
+      datumZadnjeSjece: o.datumZadnjeSjece,
+      realizacija: o.realizacija
+    }));
+
+    Logger.log('=== HANDLE ODJELI END ===');
+    Logger.log(`Ukupno odjela: ${odjeliResult.length}`);
+
+    return createJsonResponse({
+      odjeli: odjeliResult
+    }, true);
+
+  } catch (error) {
+    Logger.log('=== HANDLE ODJELI ERROR ===');
+    Logger.log('ERROR: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
 }

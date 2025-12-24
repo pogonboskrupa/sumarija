@@ -328,6 +328,30 @@
                 </table>
             </div>
 
+            <!-- Odjeli Table -->
+            <div class="section">
+                <h2>🏭 Pregled po odjelima</h2>
+                <div class="controls-bar">
+                    <input type="text" class="search-input" id="odjeli-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterOdjeliTable()">
+                    <button class="btn btn-primary" onclick="exportTableToCSV('odjeli')">📥 Export CSV</button>
+                </div>
+                <table class="monthly-table" id="odjeli-table">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable(0, 'odjeli-table')">Odjel ⇅</th>
+                            <th class="right" onclick="sortTable(1, 'odjeli-table')">Sječa (m³) ⇅</th>
+                            <th class="right" onclick="sortTable(2, 'odjeli-table')">Otprema (m³) ⇅</th>
+                            <th class="right" onclick="sortTable(3, 'odjeli-table')">Šuma Panj+Međustovarište ⇅</th>
+                            <th onclick="sortTable(4, 'odjeli-table')">Radilište ⇅</th>
+                            <th onclick="sortTable(5, 'odjeli-table')">Izvođač Radova ⇅</th>
+                            <th onclick="sortTable(6, 'odjeli-table')">Datum Zadnje Sječe ⇅</th>
+                            <th class="right" onclick="sortTable(7, 'odjeli-table')">Realizacija % ⇅</th>
+                        </tr>
+                    </thead>
+                    <tbody id="odjeli-table-body"></tbody>
+                </table>
+            </div>
+
             <!-- Chart -->
             <div class="section">
                 <h2>📈 Trendovi sječe i otpreme</h2>
@@ -638,6 +662,36 @@
                 }).join('');
                 document.getElementById('dashboard-monthly-table').innerHTML = monthlyHTML;
 
+                // Fetch and populate odjeli table
+                const odjeliResponse = await fetch(`${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
+                const odjeliData = await odjeliResponse.json();
+
+                console.log('Odjeli data:', odjeliData);
+
+                if (odjeliData.error) {
+                    console.error('Odjeli API error:', odjeliData.error);
+                    document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri učitavanju podataka o odjelima</td></tr>';
+                } else if (odjeliData.odjeli && odjeliData.odjeli.length > 0) {
+                    const odjeliHTML = odjeliData.odjeli.map(o => {
+                        const realizacijaColor = o.realizacija >= 100 ? 'green' : (o.realizacija >= 80 ? 'blue' : 'red');
+                        return `
+                            <tr>
+                                <td style="font-weight: 500;">${o.odjel}</td>
+                                <td class="right green">${o.sjeca.toFixed(2)}</td>
+                                <td class="right blue">${o.otprema.toFixed(2)}</td>
+                                <td class="right">${o.sumaPanj.toFixed(2)}</td>
+                                <td>${o.radiliste || '-'}</td>
+                                <td>${o.izvođač || '-'}</td>
+                                <td>${o.datumZadnjeSjece || '-'}</td>
+                                <td class="right ${realizacijaColor}">${o.realizacija > 0 ? o.realizacija.toFixed(1) + '%' : '-'}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                    document.getElementById('odjeli-table-body').innerHTML = odjeliHTML;
+                } else {
+                    document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #6b7280;">Nema podataka o odjelima</td></tr>';
+                }
+
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('dashboard-content').classList.remove('hidden');
 
@@ -903,6 +957,22 @@
             }
         }
 
+        // Filter odjeli table
+        function filterOdjeliTable() {
+            const input = document.getElementById('odjeli-search');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('odjeli-table');
+            const tr = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < tr.length; i++) {
+                const td = tr[i].getElementsByTagName('td')[0];
+                if (td) {
+                    const txtValue = td.textContent || td.innerText;
+                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
+                }
+            }
+        }
+
         // Filter primaci table
         function filterPrimaciTable() {
             const input = document.getElementById('primaci-search');
@@ -974,6 +1044,9 @@
             if (tableType === 'dashboard') {
                 table = document.getElementById('dashboard-table');
                 filename = 'dashboard_pregled.csv';
+            } else if (tableType === 'odjeli') {
+                table = document.getElementById('odjeli-table');
+                filename = 'odjeli_pregled.csv';
             } else if (tableType === 'primaci') {
                 table = document.getElementById('primaci-table');
                 filename = 'primaci_pregled.csv';
