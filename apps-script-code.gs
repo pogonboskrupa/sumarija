@@ -365,12 +365,12 @@ function syncIndexSheet() {
             const data = primkaSheet.getDataRange().getValues();
             let addedRows = 0;
 
-            // PRIMKA struktura: datum(A) | primac(B) | sortimenti(C-U)
-            // INDEX treba: odjel | datum | primac | sortimenti
+            // PRIMKA struktura: PRAZNA(A) | DATUM(B) | PRIMAČ(C) | sortimenti(D-U)
+            // INDEX treba: odjel | datum | primač | sortimenti
             for (let i = 1; i < data.length; i++) {
               const row = data[i];
-              const datum = row[0]; // kolona A - datum
-              const primac = row[1]; // kolona B - primac
+              const datum = row[1]; // kolona B - datum
+              const primac = row[2]; // kolona C - primač
 
               // Debug logging za prvi spreadsheet (prvih 20 redova)
               if (processedCount === 1 && i <= 20) {
@@ -390,15 +390,17 @@ function syncIndexSheet() {
 
               // Preskači header redove
               const datumStr = String(datum);
+              const primacStr = String(primac);
               if (datumStr.includes('OPIS') || datumStr.includes('#') ||
                   datumStr.includes('PLAN') || datumStr.includes('REAL') ||
-                  datumStr.includes('datum') || datumStr.includes('KUPCI')) {
+                  datumStr.includes('DATUM') || datumStr.includes('datum') ||
+                  primacStr.includes('primac') || primacStr.includes('PRIMAC')) {
                 if (processedCount === 1 && i <= 20) Logger.log(`      → Skip: header`);
                 continue;
               }
 
-              // Dodaj red
-              const newRow = [odjelNaziv, datum, primac, ...row.slice(2)];
+              // Dodaj red: [ODJEL, DATUM(B), PRIMAČ(C), ...sortimenti(D-U)]
+              const newRow = [odjelNaziv, datum, primac, ...row.slice(3)];
               primkaRows.push(newRow);
               addedRows++;
 
