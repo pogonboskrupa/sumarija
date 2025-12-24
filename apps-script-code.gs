@@ -425,22 +425,47 @@ function syncIndexSheet() {
             let addedRows = 0;
 
             // OTPREMA struktura: kupci(A) | datum(B) | otpremač(C) | sortimenti(D-U)
-            // INDEX treba: odjel | datum | otpremač | sortimenti
+            // INDEX treba: odjel | datum | otpremač | sortimenti | kupac
             for (let i = 1; i < data.length; i++) {
               const row = data[i];
+              const kupac = row[0]; // kolona A - kupac
               const datum = row[1]; // kolona B - datum
+              const otpremac = row[2]; // kolona C - otpremač
 
-              // Preskači redove bez datuma
-              if (!datum || datum === '' || datum === 0) continue;
+              // Debug logging za prvi spreadsheet (prvih 20 redova)
+              if (processedCount === 1 && i <= 20) {
+                Logger.log(`    Red ${i}: kupac="${kupac}", datum="${datum}" (${typeof datum}), otpremac="${otpremac}"`);
+              }
 
-              // Provjeri da li je datum validan
-              if (typeof datum === 'string' && (datum.includes('OPIS') || datum.includes('#') || datum.includes('PLAN') || datum.includes('REAL') || datum.includes('KUPCI'))) continue;
+              // Preskači redove bez datuma ili otpremača
+              if (!datum || datum === '' || datum === 0) {
+                if (processedCount === 1 && i <= 20) Logger.log(`      → Skip: nema datum`);
+                continue;
+              }
 
-              // Kreiraj novi red za INDEX: [odjel, datum(B), otpremač(C), ...sortimenti(D-U)]
-              // Preskačemo kolonu A (kupci)
-              const newRow = [odjelNaziv, datum, row[2], ...row.slice(3)];
+              if (!otpremac || otpremac === '' || otpremac === 0) {
+                if (processedCount === 1 && i <= 20) Logger.log(`      → Skip: nema otpremač`);
+                continue;
+              }
+
+              // Preskači header redove
+              const datumStr = String(datum);
+              if (datumStr.includes('OPIS') || datumStr.includes('#') ||
+                  datumStr.includes('PLAN') || datumStr.includes('REAL') ||
+                  datumStr.includes('datum') || datumStr.includes('KUPCI') ||
+                  datumStr.includes('UČINCI')) {
+                if (processedCount === 1 && i <= 20) Logger.log(`      → Skip: header`);
+                continue;
+              }
+
+              // Kreiraj novi red za INDEX: [odjel, datum(B), otpremač(C), ...sortimenti(D-U), kupac(A)]
+              const newRow = [odjelNaziv, datum, otpremac, ...row.slice(3), kupac];
               otpremaRows.push(newRow);
               addedRows++;
+
+              if (processedCount === 1 && addedRows <= 3) {
+                Logger.log(`      ✓ Dodano red ${addedRows}: "${odjelNaziv}" | "${datum}" | "${otpremac}" | kupac="${kupac}"`);
+              }
             }
             Logger.log(`  OTPREMA: dodano ${addedRows} redova`);
           } else {
