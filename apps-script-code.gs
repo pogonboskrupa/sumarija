@@ -380,14 +380,16 @@ function syncIndexSheet() {
                 continue;
               }
 
-              // Preskači header redove
-              const datumStr = String(datum);
-              const primacStr = String(primac);
+              // Preskači header redove - provjeri i datum i primača
+              const datumStr = String(datum).toUpperCase();
+              const primacStr = String(primac).toUpperCase();
+
               if (datumStr.includes('OPIS') || datumStr.includes('#') ||
                   datumStr.includes('PLAN') || datumStr.includes('REAL') ||
-                  datumStr.includes('DATUM') || datumStr.includes('datum') ||
-                  primacStr.includes('primac') || primacStr.includes('PRIMAC')) {
-                if (processedCount === 1 && i <= 20) Logger.log(`      → Skip: header`);
+                  datumStr.includes('DATUM') || datumStr === 'DATUM' ||
+                  primacStr.includes('PRIMAC') || primacStr === 'PRIMAC' ||
+                  primacStr.includes('PRIMAČ') || primacStr === 'PRIMAČ') {
+                if (processedCount === 1 && i <= 20) Logger.log(`      → Skip: header (datum="${datum}", primac="${primac}")`);
                 continue;
               }
 
@@ -444,13 +446,17 @@ function syncIndexSheet() {
                 continue;
               }
 
-              // Preskači header redove
-              const datumStr = String(datum);
+              // Preskači header redove - provjeri i datum i otpremača
+              const datumStr = String(datum).toUpperCase();
+              const otpremacStr = String(otpremac).toUpperCase();
+
               if (datumStr.includes('OPIS') || datumStr.includes('#') ||
                   datumStr.includes('PLAN') || datumStr.includes('REAL') ||
-                  datumStr.includes('datum') || datumStr.includes('KUPCI') ||
-                  datumStr.includes('UČINCI')) {
-                if (processedCount === 1 && i <= 20) Logger.log(`      → Skip: header`);
+                  datumStr.includes('DATUM') || datumStr.includes('KUPCI') ||
+                  datumStr.includes('UČINCI') || datumStr === 'DATUM' ||
+                  otpremacStr.includes('OTPREMAČ') || otpremacStr === 'OTPREMAČ' ||
+                  otpremacStr.includes('OTPREMAC') || otpremacStr === 'OTPREMAC') {
+                if (processedCount === 1 && i <= 20) Logger.log(`      → Skip: header (datum="${datum}", otpremac="${otpremac}")`);
                 continue;
               }
 
