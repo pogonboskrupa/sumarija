@@ -104,16 +104,37 @@ function processPrimkaData(data, stats, year) {
   // INDEX_PRIMKA struktura:
   // Kolona A: Odjel, B: Datum, ... U: SVEUKUPNO (indeks 20)
 
+  Logger.log('=== PRIMKA DEBUG ===');
+  Logger.log('Total rows in PRIMKA: ' + data.length);
+
+  let processedRows = 0;
+  let skippedNoDatum = 0;
+  let skippedWrongYear = 0;
+  let totalSum = 0;
+
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
     const odjel = row[0]; // kolona A - Odjel
     const datum = row[1]; // kolona B - Datum
     const kubik = parseFloat(row[20]) || 0; // kolona U (indeks 20) - SVEUKUPNO
 
-    if (!datum || !odjel) continue;
+    if (!datum || !odjel) {
+      skippedNoDatum++;
+      continue;
+    }
 
     const datumObj = new Date(datum);
-    if (datumObj.getFullYear() !== parseInt(year)) continue;
+    if (datumObj.getFullYear() !== parseInt(year)) {
+      skippedWrongYear++;
+      continue;
+    }
+
+    processedRows++;
+    totalSum += kubik;
+
+    if (processedRows <= 5) {
+      Logger.log('Row ' + i + ': Odjel=' + odjel + ', Datum=' + datum + ', Kubik=' + kubik);
+    }
 
     // Ukupna primka
     stats.totalPrimka += kubik;
@@ -144,6 +165,12 @@ function processPrimkaData(data, stats, year) {
       stats.odjeliStats[odjel].datumZadnjeSjece = formatDate(datumObj);
     }
   }
+
+  Logger.log('Processed rows: ' + processedRows);
+  Logger.log('Skipped (no datum/odjel): ' + skippedNoDatum);
+  Logger.log('Skipped (wrong year): ' + skippedWrongYear);
+  Logger.log('Total PRIMKA sum: ' + totalSum);
+  Logger.log('=== END PRIMKA DEBUG ===');
 }
 
 // Procesiranje OTPREMA sheet-a
@@ -151,16 +178,37 @@ function processOtpremaData(data, stats, year) {
   // INDEX_OTPREMA struktura: ista kao INDEX_PRIMKA
   // Kolona A: Odjel, B: Datum, ... U: SVEUKUPNO (indeks 20)
 
+  Logger.log('=== OTPREMA DEBUG ===');
+  Logger.log('Total rows in OTPREMA: ' + data.length);
+
+  let processedRows = 0;
+  let skippedNoDatum = 0;
+  let skippedWrongYear = 0;
+  let totalSum = 0;
+
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
     const odjel = row[0]; // kolona A - Odjel
     const datum = row[1]; // kolona B - Datum
     const kubik = parseFloat(row[20]) || 0; // kolona U (indeks 20) - SVEUKUPNO
 
-    if (!datum || !odjel) continue;
+    if (!datum || !odjel) {
+      skippedNoDatum++;
+      continue;
+    }
 
     const datumObj = new Date(datum);
-    if (datumObj.getFullYear() !== parseInt(year)) continue;
+    if (datumObj.getFullYear() !== parseInt(year)) {
+      skippedWrongYear++;
+      continue;
+    }
+
+    processedRows++;
+    totalSum += kubik;
+
+    if (processedRows <= 5) {
+      Logger.log('Row ' + i + ': Odjel=' + odjel + ', Datum=' + datum + ', Kubik=' + kubik);
+    }
 
     stats.totalOtprema += kubik;
 
@@ -180,6 +228,12 @@ function processOtpremaData(data, stats, year) {
 
     stats.odjeliStats[odjel].otprema += kubik;
   }
+
+  Logger.log('Processed rows: ' + processedRows);
+  Logger.log('Skipped (no datum/odjel): ' + skippedNoDatum);
+  Logger.log('Skipped (wrong year): ' + skippedWrongYear);
+  Logger.log('Total OTPREMA sum: ' + totalSum);
+  Logger.log('=== END OTPREMA DEBUG ===');
 }
 
 // Procesiranje podataka o projektima (U11 i U12)
