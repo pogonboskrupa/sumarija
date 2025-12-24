@@ -584,6 +584,8 @@
             document.getElementById('kupci-content').classList.add('hidden');
             document.getElementById('primac-personal-content').classList.add('hidden');
             document.getElementById('otpremac-personal-content').classList.add('hidden');
+            document.getElementById('primac-odjeli-content').classList.add('hidden');
+            document.getElementById('otpremac-odjeli-content').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
         }
         
@@ -612,6 +614,8 @@
             document.getElementById('kupci-content').classList.add('hidden');
             document.getElementById('primac-personal-content').classList.add('hidden');
             document.getElementById('otpremac-personal-content').classList.add('hidden');
+            document.getElementById('primac-odjeli-content').classList.add('hidden');
+            document.getElementById('otpremac-odjeli-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
@@ -626,6 +630,10 @@
                 loadPrimacPersonal();
             } else if (tab === 'otpremac-personal') {
                 loadOtpremacPersonal();
+            } else if (tab === 'primac-odjeli') {
+                loadPrimacOdjeli();
+            } else if (tab === 'otpremac-odjeli') {
+                loadOtpremacOdjeli();
             }
         }
 
@@ -1175,6 +1183,248 @@
             } catch (error) {
                 alert('Greška pri učitavanju podataka: ' + error.message);
                 document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
+            }
+        }
+
+        // ========================================
+        // ODJELI VIEW (BY DEPARTMENT) - WITH PAGINATION
+        // ========================================
+
+        let primacOdjeliData = null;
+        let primacOdjeliCurrentPage = 0;
+        const primacOdjeliPageSize = 5;
+
+        let otpremacOdjeliData = null;
+        let otpremacOdjeliCurrentPage = 0;
+        const otpremacOdjeliPageSize = 5;
+
+        // Load primac odjeli data
+        async function loadPrimacOdjeli() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+            document.getElementById('primac-odjeli-content').classList.add('hidden');
+
+            try {
+                const year = new Date().getFullYear();
+                const response = await fetch(`${API_URL}?path=primac-odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
+                const data = await response.json();
+
+                console.log('Primac odjeli data:', data);
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                primacOdjeliData = data;
+                primacOdjeliCurrentPage = 0;
+                renderPrimacOdjeliPage();
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('primac-odjeli-content').classList.remove('hidden');
+
+            } catch (error) {
+                alert('Greška pri učitavanju podataka: ' + error.message);
+                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
+            }
+        }
+
+        function renderPrimacOdjeliPage() {
+            if (!primacOdjeliData) return;
+
+            const start = primacOdjeliCurrentPage * primacOdjeliPageSize;
+            const end = Math.min(start + primacOdjeliPageSize, primacOdjeliData.odjeli.length);
+            const pageOdjeli = primacOdjeliData.odjeli.slice(start, end);
+
+            let html = '';
+
+            pageOdjeli.forEach(odjel => {
+                // Kreiraj HTML za odjel sa dve tabele
+                html += `
+                    <div style="margin-bottom: 40px; border: 2px solid #10b981; border-radius: 12px; padding: 20px; background: #f0fdf4;">
+                        <h3 style="color: #047857; margin-bottom: 16px;">📁 ${odjel.odjel}</h3>
+                        <p style="font-size: 13px; color: #6b7280; margin-bottom: 16px;">Zadnji unos: ${odjel.zadnjiDatum || 'N/A'}</p>
+
+                        <!-- Apsolutne vrijednosti -->
+                        <h4 style="font-size: 15px; margin-bottom: 8px; color: #059669;">Apsolutne vrijednosti (m³)</h4>
+                        <div class="kupci-table-wrapper" style="margin-bottom: 20px;">
+                            <table class="kupci-table">
+                                <thead>
+                                    <tr>
+                                        ${primacOdjeliData.sortimentiNazivi.map(s => `<th class="sortiment-col">${s}</th>`).join('')}
+                                        <th class="ukupno-col">Ukupno</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        ${primacOdjeliData.sortimentiNazivi.map(s => {
+                                            const val = odjel.sortimenti[s] || 0;
+                                            return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                                        }).join('')}
+                                        <td class="ukupno-col">${odjel.ukupno.toFixed(2)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Procentualne vrijednosti -->
+                        <h4 style="font-size: 15px; margin-bottom: 8px; color: #059669;">Procentualni udio (%)</h4>
+                        <div class="kupci-table-wrapper">
+                            <table class="kupci-table">
+                                <thead>
+                                    <tr>
+                                        ${primacOdjeliData.sortimentiNazivi.map(s => `<th class="sortiment-col">${s}</th>`).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        ${primacOdjeliData.sortimentiNazivi.map(s => {
+                                            const val = odjel.sortimenti[s] || 0;
+                                            const percent = odjel.ukupno > 0 ? (val / odjel.ukupno) * 100 : 0;
+                                            return `<td class="sortiment-col">${percent > 0 ? percent.toFixed(1) + '%' : '-'}</td>`;
+                                        }).join('')}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('primac-odjeli-container').innerHTML = html;
+
+            // Update pagination controls
+            const totalPages = Math.ceil(primacOdjeliData.odjeli.length / primacOdjeliPageSize);
+            document.getElementById('primac-odjeli-page-info').textContent = `Stranica ${primacOdjeliCurrentPage + 1} od ${totalPages}`;
+            document.getElementById('primac-odjeli-prev').disabled = primacOdjeliCurrentPage === 0;
+            document.getElementById('primac-odjeli-next').disabled = primacOdjeliCurrentPage >= totalPages - 1;
+        }
+
+        function prevPagePrimacOdjeli() {
+            if (primacOdjeliCurrentPage > 0) {
+                primacOdjeliCurrentPage--;
+                renderPrimacOdjeliPage();
+            }
+        }
+
+        function nextPagePrimacOdjeli() {
+            const totalPages = Math.ceil(primacOdjeliData.odjeli.length / primacOdjeliPageSize);
+            if (primacOdjeliCurrentPage < totalPages - 1) {
+                primacOdjeliCurrentPage++;
+                renderPrimacOdjeliPage();
+            }
+        }
+
+        // Load otpremac odjeli data
+        async function loadOtpremacOdjeli() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+            document.getElementById('otpremac-odjeli-content').classList.add('hidden');
+
+            try {
+                const year = new Date().getFullYear();
+                const response = await fetch(`${API_URL}?path=otpremac-odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
+                const data = await response.json();
+
+                console.log('Otpremac odjeli data:', data);
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                otpremacOdjeliData = data;
+                otpremacOdjeliCurrentPage = 0;
+                renderOtpremacOdjeliPage();
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('otpremac-odjeli-content').classList.remove('hidden');
+
+            } catch (error) {
+                alert('Greška pri učitavanju podataka: ' + error.message);
+                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
+            }
+        }
+
+        function renderOtpremacOdjeliPage() {
+            if (!otpremacOdjeliData) return;
+
+            const start = otpremacOdjeliCurrentPage * otpremacOdjeliPageSize;
+            const end = Math.min(start + otpremacOdjeliPageSize, otpremacOdjeliData.odjeli.length);
+            const pageOdjeli = otpremacOdjeliData.odjeli.slice(start, end);
+
+            let html = '';
+
+            pageOdjeli.forEach(odjel => {
+                // Kreiraj HTML za odjel sa dve tabele
+                html += `
+                    <div style="margin-bottom: 40px; border: 2px solid #2563eb; border-radius: 12px; padding: 20px; background: #eff6ff;">
+                        <h3 style="color: #1e40af; margin-bottom: 16px;">📁 ${odjel.odjel}</h3>
+                        <p style="font-size: 13px; color: #6b7280; margin-bottom: 16px;">Zadnji unos: ${odjel.zadnjiDatum || 'N/A'}</p>
+
+                        <!-- Apsolutne vrijednosti -->
+                        <h4 style="font-size: 15px; margin-bottom: 8px; color: #2563eb;">Apsolutne vrijednosti (m³)</h4>
+                        <div class="kupci-table-wrapper" style="margin-bottom: 20px;">
+                            <table class="kupci-table">
+                                <thead>
+                                    <tr>
+                                        ${otpremacOdjeliData.sortimentiNazivi.map(s => `<th class="sortiment-col">${s}</th>`).join('')}
+                                        <th class="ukupno-col">Ukupno</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        ${otpremacOdjeliData.sortimentiNazivi.map(s => {
+                                            const val = odjel.sortimenti[s] || 0;
+                                            return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                                        }).join('')}
+                                        <td class="ukupno-col">${odjel.ukupno.toFixed(2)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Procentualne vrijednosti -->
+                        <h4 style="font-size: 15px; margin-bottom: 8px; color: #2563eb;">Procentualni udio (%)</h4>
+                        <div class="kupci-table-wrapper">
+                            <table class="kupci-table">
+                                <thead>
+                                    <tr>
+                                        ${otpremacOdjeliData.sortimentiNazivi.map(s => `<th class="sortiment-col">${s}</th>`).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        ${otpremacOdjeliData.sortimentiNazivi.map(s => {
+                                            const val = odjel.sortimenti[s] || 0;
+                                            const percent = odjel.ukupno > 0 ? (val / odjel.ukupno) * 100 : 0;
+                                            return `<td class="sortiment-col">${percent > 0 ? percent.toFixed(1) + '%' : '-'}</td>`;
+                                        }).join('')}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('otpremac-odjeli-container').innerHTML = html;
+
+            // Update pagination controls
+            const totalPages = Math.ceil(otpremacOdjeliData.odjeli.length / otpremacOdjeliPageSize);
+            document.getElementById('otpremac-odjeli-page-info').textContent = `Stranica ${otpremacOdjeliCurrentPage + 1} od ${totalPages}`;
+            document.getElementById('otpremac-odjeli-prev').disabled = otpremacOdjeliCurrentPage === 0;
+            document.getElementById('otpremac-odjeli-next').disabled = otpremacOdjeliCurrentPage >= totalPages - 1;
+        }
+
+        function prevPageOtpremacOdjeli() {
+            if (otpremacOdjeliCurrentPage > 0) {
+                otpremacOdjeliCurrentPage--;
+                renderOtpremacOdjeliPage();
+            }
+        }
+
+        function nextPageOtpremacOdjeli() {
+            const totalPages = Math.ceil(otpremacOdjeliData.odjeli.length / otpremacOdjeliPageSize);
+            if (otpremacOdjeliCurrentPage < totalPages - 1) {
+                otpremacOdjeliCurrentPage++;
+                renderOtpremacOdjeliPage();
             }
         }
 
