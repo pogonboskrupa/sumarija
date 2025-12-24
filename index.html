@@ -367,78 +367,120 @@
                 // Populate monthly table
                 console.log('Populating monthly table...');
                 console.log('mjesecnaStatistika:', dashboardData.mjesecnaStatistika);
-                const monthlyHTML = dashboardData.mjesecnaStatistika.map(m => {
-                    const razlikaSjeca = m.razlikaSjeca || 0;
-                    const razlikaOtprema = m.razlikaOtprema || 0;
-                    return `
-                        <tr>
-                            <td style="font-weight: 500;">${m.mjesec}</td>
-                            <td class="right green">${m.sjeca.toFixed(2)}</td>
-                            <td class="right blue">${m.otprema.toFixed(2)}</td>
-                            <td class="right">${m.stanje.toFixed(2)}</td>
-                            <td class="right">${m.dinamika.toFixed(2)}</td>
-                            <td class="right ${razlikaSjeca >= 0 ? 'green' : 'red'}">${(razlikaSjeca >= 0 ? '+' : '') + razlikaSjeca.toFixed(2)}</td>
-                            <td class="right ${razlikaOtprema >= 0 ? 'green' : 'red'}">${(razlikaOtprema >= 0 ? '+' : '') + razlikaOtprema.toFixed(2)}</td>
-                        </tr>
-                    `;
-                }).join('');
-                document.getElementById('dashboard-monthly-table').innerHTML = monthlyHTML;
+                console.log('Type check:', Array.isArray(dashboardData.mjesecnaStatistika));
+
+                try {
+                    const monthlyHTML = dashboardData.mjesecnaStatistika.map(m => {
+                        const razlikaSjeca = m.razlikaSjeca || 0;
+                        const razlikaOtprema = m.razlikaOtprema || 0;
+                        return `
+                            <tr>
+                                <td style="font-weight: 500;">${m.mjesec}</td>
+                                <td class="right green">${m.sjeca.toFixed(2)}</td>
+                                <td class="right blue">${m.otprema.toFixed(2)}</td>
+                                <td class="right">${m.stanje.toFixed(2)}</td>
+                                <td class="right">${m.dinamika.toFixed(2)}</td>
+                                <td class="right ${razlikaSjeca >= 0 ? 'green' : 'red'}">${(razlikaSjeca >= 0 ? '+' : '') + razlikaSjeca.toFixed(2)}</td>
+                                <td class="right ${razlikaOtprema >= 0 ? 'green' : 'red'}">${(razlikaOtprema >= 0 ? '+' : '') + razlikaOtprema.toFixed(2)}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                    document.getElementById('dashboard-monthly-table').innerHTML = monthlyHTML;
+                    console.log('✓ Monthly table populated successfully');
+                } catch (err) {
+                    console.error('ERROR in monthly table:', err);
+                    throw new Error('Monthly table error: ' + err.message);
+                }
 
                 // Populate sortimenti tables
                 console.log('Populating sortimenti tables...');
                 console.log('sortimentiNazivi:', sortimentiData.sortimentiNazivi);
+                console.log('sortimentiNazivi type:', Array.isArray(sortimentiData.sortimentiNazivi));
                 console.log('primka length:', sortimentiData.primka?.length);
+                console.log('primka type:', Array.isArray(sortimentiData.primka));
                 console.log('otprema length:', sortimentiData.otprema?.length);
-                const sortimentiHeader = `
-                    <tr>
-                        <th style="text-align: left;">Mjesec</th>
-                        ${sortimentiData.sortimentiNazivi.map(s => `<th class="right">${s}</th>`).join('')}
-                    </tr>
-                `;
-                document.getElementById('sortimenti-header-primka').innerHTML = sortimentiHeader;
-                document.getElementById('sortimenti-header-otprema').innerHTML = sortimentiHeader;
+                console.log('otprema type:', Array.isArray(sortimentiData.otprema));
 
-                const primkaBodyHTML = sortimentiData.primka.map(row => {
-                    const rowClass = row.mjesec === 'UKUPNO' ? 'ukupno' : (row.mjesec === '% UDIO' ? 'udio' : '');
-                    const values = sortimentiData.sortimentiNazivi.map(sortiment => {
-                        const val = row[sortiment] || 0;
-                        if (row.mjesec === '% UDIO') {
-                            return `<td class="right">${(val * 100).toFixed(1)}%</td>`;
-                        } else {
-                            return `<td class="right">${val.toFixed(2)}</td>`;
-                        }
-                    }).join('');
-                    return `<tr class="${rowClass}"><td style="font-weight: 500;">${row.mjesec}</td>${values}</tr>`;
-                }).join('');
-                document.getElementById('sortimenti-body-primka').innerHTML = primkaBodyHTML;
-
-                const otpremaBodyHTML = sortimentiData.otprema.map(row => {
-                    const rowClass = row.mjesec === 'UKUPNO' ? 'ukupno' : (row.mjesec === '% UDIO' ? 'udio' : '');
-                    const values = sortimentiData.sortimentiNazivi.map(sortiment => {
-                        const val = row[sortiment] || 0;
-                        if (row.mjesec === '% UDIO') {
-                            return `<td class="right">${(val * 100).toFixed(1)}%</td>`;
-                        } else {
-                            return `<td class="right">${val.toFixed(2)}</td>`;
-                        }
-                    }).join('');
-                    return `<tr class="${rowClass}"><td style="font-weight: 500;">${row.mjesec}</td>${values}</tr>`;
-                }).join('');
-                document.getElementById('sortimenti-body-otprema').innerHTML = otpremaBodyHTML;
-
-                // Populate odjeli table
-                const odjeliHTML = dashboardData.odjeli.map(o => {
-                    return `
+                try {
+                    console.log('Creating sortimenti header...');
+                    const sortimentiHeader = `
                         <tr>
-                            <td style="font-weight: 500;">${o.odjel}</td>
-                            <td class="right green">${o.sjeca.toFixed(2)}</td>
-                            <td class="right blue">${o.otprema.toFixed(2)}</td>
-                            <td class="right">${o.stanje.toFixed(2)}</td>
-                            <td class="right">${o.zadnjaSjeca || '-'}</td>
+                            <th style="text-align: left;">Mjesec</th>
+                            ${sortimentiData.sortimentiNazivi.map(s => `<th class="right">${s}</th>`).join('')}
                         </tr>
                     `;
-                }).join('');
-                document.getElementById('dashboard-odjeli-table').innerHTML = odjeliHTML;
+                    document.getElementById('sortimenti-header-primka').innerHTML = sortimentiHeader;
+                    document.getElementById('sortimenti-header-otprema').innerHTML = sortimentiHeader;
+                    console.log('✓ Sortimenti header created successfully');
+                } catch (err) {
+                    console.error('ERROR in sortimenti header:', err);
+                    throw new Error('Sortimenti header error: ' + err.message);
+                }
+
+                try {
+                    console.log('Creating primka body...');
+                    const primkaBodyHTML = sortimentiData.primka.map(row => {
+                        const rowClass = row.mjesec === 'UKUPNO' ? 'ukupno' : (row.mjesec === '% UDIO' ? 'udio' : '');
+                        const values = sortimentiData.sortimentiNazivi.map(sortiment => {
+                            const val = row[sortiment] || 0;
+                            if (row.mjesec === '% UDIO') {
+                                return `<td class="right">${(val * 100).toFixed(1)}%</td>`;
+                            } else {
+                                return `<td class="right">${val.toFixed(2)}</td>`;
+                            }
+                        }).join('');
+                        return `<tr class="${rowClass}"><td style="font-weight: 500;">${row.mjesec}</td>${values}</tr>`;
+                    }).join('');
+                    document.getElementById('sortimenti-body-primka').innerHTML = primkaBodyHTML;
+                    console.log('✓ Primka body created successfully');
+                } catch (err) {
+                    console.error('ERROR in primka body:', err);
+                    throw new Error('Primka body error: ' + err.message);
+                }
+
+                try {
+                    console.log('Creating otprema body...');
+                    const otpremaBodyHTML = sortimentiData.otprema.map(row => {
+                        const rowClass = row.mjesec === 'UKUPNO' ? 'ukupno' : (row.mjesec === '% UDIO' ? 'udio' : '');
+                        const values = sortimentiData.sortimentiNazivi.map(sortiment => {
+                            const val = row[sortiment] || 0;
+                            if (row.mjesec === '% UDIO') {
+                                return `<td class="right">${(val * 100).toFixed(1)}%</td>`;
+                            } else {
+                                return `<td class="right">${val.toFixed(2)}</td>`;
+                            }
+                        }).join('');
+                        return `<tr class="${rowClass}"><td style="font-weight: 500;">${row.mjesec}</td>${values}</tr>`;
+                    }).join('');
+                    document.getElementById('sortimenti-body-otprema').innerHTML = otpremaBodyHTML;
+                    console.log('✓ Otprema body created successfully');
+                } catch (err) {
+                    console.error('ERROR in otprema body:', err);
+                    throw new Error('Otprema body error: ' + err.message);
+                }
+
+                // Populate odjeli table
+                try {
+                    console.log('Creating odjeli table...');
+                    console.log('odjeli:', dashboardData.odjeli);
+                    console.log('odjeli type:', Array.isArray(dashboardData.odjeli));
+                    const odjeliHTML = dashboardData.odjeli.map(o => {
+                        return `
+                            <tr>
+                                <td style="font-weight: 500;">${o.odjel}</td>
+                                <td class="right green">${o.sjeca.toFixed(2)}</td>
+                                <td class="right blue">${o.otprema.toFixed(2)}</td>
+                                <td class="right">${o.stanje.toFixed(2)}</td>
+                                <td class="right">${o.zadnjaSjeca || '-'}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                    document.getElementById('dashboard-odjeli-table').innerHTML = odjeliHTML;
+                    console.log('✓ Odjeli table created successfully');
+                } catch (err) {
+                    console.error('ERROR in odjeli table:', err);
+                    throw new Error('Odjeli table error: ' + err.message);
+                }
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('dashboard-content').classList.remove('hidden');
