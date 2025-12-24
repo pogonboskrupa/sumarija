@@ -401,18 +401,47 @@ function syncIndexSheet() {
       return dateA - dateB;
     });
 
-    // 6. Upiši podatke u INDEX sheet-ove
+    // 6. Normalizuj broj kolona (svi redovi moraju imati isti broj kolona kao INDEX sheet)
+    Logger.log('Normalizacija broja kolona...');
+    const indexPrimkaHeaderCols = indexPrimkaSheet.getLastColumn();
+    const indexOtpremaHeaderCols = indexOtpremaSheet.getLastColumn();
+
+    Logger.log(`INDEX_PRIMKA header kolone: ${indexPrimkaHeaderCols}`);
+    Logger.log(`INDEX_OTPREMA header kolone: ${indexOtpremaHeaderCols}`);
+
+    // Normalizuj PRIMKA redove
+    primkaRows = primkaRows.map(row => {
+      if (row.length > indexPrimkaHeaderCols) {
+        // Odreži višak kolona
+        return row.slice(0, indexPrimkaHeaderCols);
+      } else if (row.length < indexPrimkaHeaderCols) {
+        // Dodaj prazne ćelije
+        const padding = new Array(indexPrimkaHeaderCols - row.length).fill('');
+        return row.concat(padding);
+      }
+      return row;
+    });
+
+    // Normalizuj OTPREMA redove
+    otpremaRows = otpremaRows.map(row => {
+      if (row.length > indexOtpremaHeaderCols) {
+        return row.slice(0, indexOtpremaHeaderCols);
+      } else if (row.length < indexOtpremaHeaderCols) {
+        const padding = new Array(indexOtpremaHeaderCols - row.length).fill('');
+        return row.concat(padding);
+      }
+      return row;
+    });
+
+    // 7. Upiši podatke u INDEX sheet-ove
     Logger.log('Upisivanje podataka u INDEX sheet-ove...');
     if (primkaRows.length > 0) {
-      // Pronađi broj kolona iz prvog reda
-      const numCols = primkaRows[0].length;
-      indexPrimkaSheet.getRange(2, 1, primkaRows.length, numCols).setValues(primkaRows);
+      indexPrimkaSheet.getRange(2, 1, primkaRows.length, indexPrimkaHeaderCols).setValues(primkaRows);
       Logger.log(`✓ INDEX_PRIMKA: upisano ${primkaRows.length} redova`);
     }
 
     if (otpremaRows.length > 0) {
-      const numCols = otpremaRows[0].length;
-      indexOtpremaSheet.getRange(2, 1, otpremaRows.length, numCols).setValues(otpremaRows);
+      indexOtpremaSheet.getRange(2, 1, otpremaRows.length, indexOtpremaHeaderCols).setValues(otpremaRows);
       Logger.log(`✓ INDEX_OTPREMA: upisano ${otpremaRows.length} redova`);
     }
 
