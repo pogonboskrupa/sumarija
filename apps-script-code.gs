@@ -356,25 +356,49 @@ function syncIndexSheet() {
 
         // Pročitaj PRIMKA sheet
         const primkaSheet = ss.getSheetByName('PRIMKA');
-        if (primkaSheet && primkaSheet.getLastRow() > 1) {
-          const data = primkaSheet.getDataRange().getValues();
-          // Preskoči header (red 0) i dodaj ostale redove
-          for (let i = 1; i < data.length; i++) {
-            if (data[i][0]) { // Ako ima odjel u koloni A
-              primkaRows.push(data[i]);
+        if (primkaSheet) {
+          const lastRow = primkaSheet.getLastRow();
+          Logger.log(`  PRIMKA: ${lastRow} redova (total)`);
+
+          if (lastRow > 1) {
+            const data = primkaSheet.getDataRange().getValues();
+            let addedRows = 0;
+            // Preskoči header (red 0) i dodaj ostale redove
+            for (let i = 1; i < data.length; i++) {
+              if (data[i][0]) { // Ako ima odjel u koloni A
+                primkaRows.push(data[i]);
+                addedRows++;
+              }
             }
+            Logger.log(`  PRIMKA: dodano ${addedRows} redova`);
+          } else {
+            Logger.log(`  PRIMKA: preskočeno (samo header)`);
           }
+        } else {
+          Logger.log(`  PRIMKA: sheet ne postoji`);
         }
 
         // Pročitaj OTPREMA sheet
         const otpremaSheet = ss.getSheetByName('OTPREMA');
-        if (otpremaSheet && otpremaSheet.getLastRow() > 1) {
-          const data = otpremaSheet.getDataRange().getValues();
-          for (let i = 1; i < data.length; i++) {
-            if (data[i][0]) { // Ako ima odjel u koloni A
-              otpremaRows.push(data[i]);
+        if (otpremaSheet) {
+          const lastRow = otpremaSheet.getLastRow();
+          Logger.log(`  OTPREMA: ${lastRow} redova (total)`);
+
+          if (lastRow > 1) {
+            const data = otpremaSheet.getDataRange().getValues();
+            let addedRows = 0;
+            for (let i = 1; i < data.length; i++) {
+              if (data[i][0]) { // Ako ima odjel u koloni A
+                otpremaRows.push(data[i]);
+                addedRows++;
+              }
             }
+            Logger.log(`  OTPREMA: dodano ${addedRows} redova`);
+          } else {
+            Logger.log(`  OTPREMA: preskočeno (samo header)`);
           }
+        } else {
+          Logger.log(`  OTPREMA: sheet ne postoji`);
         }
 
       } catch (error) {
