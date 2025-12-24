@@ -394,18 +394,28 @@
 
                 const primkaBodyHTML = sortimentiData.primka.map(row => {
                     const rowClass = row.mjesec === 'UKUPNO' ? 'ukupno' : (row.mjesec === '% UDIO' ? 'udio' : '');
-                    const values = row.mjesec === '% UDIO'
-                        ? row.vrijednosti.map(v => `<td class="right">${v.toFixed(1)}%</td>`).join('')
-                        : row.vrijednosti.map(v => `<td class="right">${v.toFixed(2)}</td>`).join('');
+                    const values = sortimentiData.sortimentiNazivi.map(sortiment => {
+                        const val = row[sortiment] || 0;
+                        if (row.mjesec === '% UDIO') {
+                            return `<td class="right">${(val * 100).toFixed(1)}%</td>`;
+                        } else {
+                            return `<td class="right">${val.toFixed(2)}</td>`;
+                        }
+                    }).join('');
                     return `<tr class="${rowClass}"><td style="font-weight: 500;">${row.mjesec}</td>${values}</tr>`;
                 }).join('');
                 document.getElementById('sortimenti-body-primka').innerHTML = primkaBodyHTML;
 
                 const otpremaBodyHTML = sortimentiData.otprema.map(row => {
                     const rowClass = row.mjesec === 'UKUPNO' ? 'ukupno' : (row.mjesec === '% UDIO' ? 'udio' : '');
-                    const values = row.mjesec === '% UDIO'
-                        ? row.vrijednosti.map(v => `<td class="right">${v.toFixed(1)}%</td>`).join('')
-                        : row.vrijednosti.map(v => `<td class="right">${v.toFixed(2)}</td>`).join('');
+                    const values = sortimentiData.sortimentiNazivi.map(sortiment => {
+                        const val = row[sortiment] || 0;
+                        if (row.mjesec === '% UDIO') {
+                            return `<td class="right">${(val * 100).toFixed(1)}%</td>`;
+                        } else {
+                            return `<td class="right">${val.toFixed(2)}</td>`;
+                        }
+                    }).join('');
                     return `<tr class="${rowClass}"><td style="font-weight: 500;">${row.mjesec}</td>${values}</tr>`;
                 }).join('');
                 document.getElementById('sortimenti-body-otprema').innerHTML = otpremaBodyHTML;
