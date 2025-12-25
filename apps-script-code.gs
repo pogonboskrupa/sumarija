@@ -2001,6 +2001,11 @@ function handlePendingUnosi(year, username, password) {
           sortimenti[sortimentiNazivi[j]] = vrijednost;
         }
 
+        // Izračunaj ukupno kao ČETINARI + LIŠĆARI
+        const cetinari = parseFloat(sortimenti['ČETINARI']) || 0;
+        const liscari = parseFloat(sortimenti['LIŠĆARI']) || 0;
+        const ukupno = cetinari + liscari;
+
         pendingUnosi.push({
           id: i,  // Row number za kasnije brisanje/odobravanje
           tip: 'SJEČA',
@@ -2009,7 +2014,7 @@ function handlePendingUnosi(year, username, password) {
           radnik: primac,
           kupac: '',
           sortimenti: sortimenti,
-          ukupno: parseFloat(row[20]) || 0,
+          ukupno: ukupno,
           timestamp: formatDate(new Date(timestamp)),
           timestampObj: new Date(timestamp)
         });
@@ -2041,6 +2046,11 @@ function handlePendingUnosi(year, username, password) {
           sortimenti[sortimentiNazivi[j]] = vrijednost;
         }
 
+        // Izračunaj ukupno kao ČETINARI + LIŠĆARI
+        const cetinari = parseFloat(sortimenti['ČETINARI']) || 0;
+        const liscari = parseFloat(sortimenti['LIŠĆARI']) || 0;
+        const ukupno = cetinari + liscari;
+
         pendingUnosi.push({
           id: i,  // Row number za kasnije brisanje/odobravanje
           tip: 'OTPREMA',
@@ -2049,7 +2059,7 @@ function handlePendingUnosi(year, username, password) {
           radnik: otpremac,
           kupac: kupac || '',
           sortimenti: sortimenti,
-          ukupno: parseFloat(row[20]) || 0,
+          ukupno: ukupno,
           timestamp: formatDate(new Date(timestamp)),
           timestampObj: new Date(timestamp)
         });
