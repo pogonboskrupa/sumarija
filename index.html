@@ -1423,7 +1423,7 @@
             }
 
             toggleUserMenu(); // Close menu
-            alert('Keš je obrisan. Stranica će se osvježiti.');
+            showInfo('Keš obrisan', 'Stranica će se osvježiti.');
             window.location.reload();
         }
 
@@ -1847,7 +1847,7 @@
 
             } catch (error) {
                 console.error('Dashboard error:', error);
-                alert('Greška pri učitavanju dashboard podataka: ' + error.message);
+                showError('Greška', 'Greška pri učitavanju dashboard podataka: ' + error.message);
                 document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
             }
         }
@@ -1888,7 +1888,7 @@
                 document.getElementById('primaci-content').classList.remove('hidden');
 
             } catch (error) {
-                alert('Greška pri učitavanju primača: ' + error.message);
+                showError('Greška', 'Greška pri učitavanju primača: ' + error.message);
                 document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
             }
         }
@@ -1929,7 +1929,7 @@
                 document.getElementById('otpremaci-content').classList.remove('hidden');
 
             } catch (error) {
-                alert('Greška pri učitavanju otpremača: ' + error.message);
+                showError('Greška', 'Greška pri učitavanju otpremača: ' + error.message);
                 document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
             }
         }
@@ -2067,7 +2067,7 @@
                 document.getElementById('kupci-content').classList.remove('hidden');
 
             } catch (error) {
-                alert('Greška pri učitavanju kupaca: ' + error.message);
+                showError('Greška', 'Greška pri učitavanju kupaca: ' + error.message);
                 document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
             }
         }
@@ -2145,7 +2145,7 @@
                 document.getElementById('primac-personal-content').classList.remove('hidden');
 
             } catch (error) {
-                alert('Greška pri učitavanju podataka: ' + error.message);
+                showError('Greška', 'Greška pri učitavanju podataka: ' + error.message);
                 document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
             }
         }
@@ -2225,7 +2225,7 @@
                 document.getElementById('otpremac-personal-content').classList.remove('hidden');
 
             } catch (error) {
-                alert('Greška pri učitavanju podataka: ' + error.message);
+                showError('Greška', 'Greška pri učitavanju podataka: ' + error.message);
                 document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
             }
         }
@@ -2266,7 +2266,7 @@
                 document.getElementById('primac-odjeli-content').classList.remove('hidden');
 
             } catch (error) {
-                alert('Greška pri učitavanju podataka: ' + error.message);
+                showError('Greška', 'Greška pri učitavanju podataka: ' + error.message);
                 document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
             }
         }
@@ -2381,7 +2381,7 @@
                 document.getElementById('otpremac-odjeli-content').classList.remove('hidden');
 
             } catch (error) {
-                alert('Greška pri učitavanju podataka: ' + error.message);
+                showError('Greška', 'Greška pri učitavanju podataka: ' + error.message);
                 document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
             }
         }
@@ -2885,7 +2885,7 @@
 
         // Edit pending unos (placeholder for future implementation)
         function editPendingUnos(id, tip) {
-            alert('📝 Uređivanje unosa #' + id + ' (Tip: ' + tip + ') - Ova funkcionalnost će biti dodana uskoro.');
+            showInfo('U razvoju', 'Uređivanje unosa #' + id + ' (Tip: ' + tip + ') - Ova funkcionalnost će biti dodana uskoro.');
             // Close dropdown
             const dropdown = document.getElementById('row-actions-' + id);
             if (dropdown) dropdown.classList.remove('show');
@@ -2917,13 +2917,13 @@
                         const result = await response.json();
 
                         if (result.success) {
-                            alert('✅ ' + result.message);
+                            showSuccess('Uspjeh', result.message);
                             loadPendingUnosi();
                         } else {
                             throw new Error(result.error || 'Unknown error');
                         }
                     } catch (error) {
-                        alert('❌ Greška: ' + error.message);
+                        showError('Greška', error.message);
                     }
                 }
             );
@@ -3688,13 +3688,13 @@
                         var result = await response.json();
 
                         if (result.success) {
-                            alert('✅ ' + result.message);
+                            showSuccess('Uspjeh', result.message);
                             loadMySjece();
                         } else {
                             throw new Error(result.error || 'Unknown error');
                         }
                     } catch (error) {
-                        alert('❌ Greška: ' + error.message);
+                        showError('Greška', error.message);
                     }
                 }
             );
@@ -3718,13 +3718,13 @@
                         var result = await response.json();
 
                         if (result.success) {
-                            alert('✅ ' + result.message);
+                            showSuccess('Uspjeh', result.message);
                             loadMyOtpreme();
                         } else {
                             throw new Error(result.error || 'Unknown error');
                         }
                     } catch (error) {
-                        alert('❌ Greška: ' + error.message);
+                        showError('Greška', error.message);
                     }
                 }
             );
