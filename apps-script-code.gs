@@ -1810,12 +1810,17 @@ function handleAddSjeca(params) {
     ];
 
     // Dodaj sortimente D-U (18 kolona)
-    let ukupno = 0;
+    const sortimentiValues = [];
     for (let i = 0; i < 17; i++) { // prvih 17 sortimenti (bez SVEUKUPNO)
       const value = parseFloat(params[sortimentiNazivi[i]]) || 0;
       newRow.push(value);
-      ukupno += value;
+      sortimentiValues.push(value);
     }
+
+    // Izračunaj SVEUKUPNO kao ČETINARI + LIŠĆARI
+    const cetinari = sortimentiValues[8];  // ČETINARI je na indeksu 8
+    const liscari = sortimentiValues[16];  // LIŠĆARI je na indeksu 16
+    const ukupno = cetinari + liscari;
 
     // Dodaj SVEUKUPNO kao zadnju kolonu (U)
     newRow.push(ukupno);
@@ -1907,12 +1912,17 @@ function handleAddOtprema(params) {
     ];
 
     // Dodaj sortimente D-U (18 kolona)
-    let ukupno = 0;
+    const sortimentiValues = [];
     for (let i = 0; i < 17; i++) { // prvih 17 sortimenti (bez SVEUKUPNO)
       const value = parseFloat(params[sortimentiNazivi[i]]) || 0;
       newRow.push(value);
-      ukupno += value;
+      sortimentiValues.push(value);
     }
+
+    // Izračunaj SVEUKUPNO kao ČETINARI + LIŠĆARI
+    const cetinari = sortimentiValues[8];  // ČETINARI je na indeksu 8
+    const liscari = sortimentiValues[16];  // LIŠĆARI je na indeksu 16
+    const ukupno = cetinari + liscari;
 
     // Dodaj SVEUKUPNO (U)
     newRow.push(ukupno);
@@ -2239,16 +2249,21 @@ function handleUpdatePending(params) {
     }
 
     // Update all sortimenti
-    let ukupno = 0;
     headers.forEach((header, idx) => {
       if (params[header] !== undefined && header !== 'ODJEL' && header !== 'DATUM' &&
           header !== 'PRIMAČ' && header !== 'OTPREMAČ' && header !== 'KUPAC' &&
           header !== 'STATUS' && header !== 'TIMESTAMP' && header !== 'SVEUKUPNO') {
         const value = parseFloat(params[header]) || 0;
         updatedRow[idx] = value;
-        ukupno += value;
       }
     });
+
+    // Izračunaj SVEUKUPNO kao ČETINARI + LIŠĆARI
+    const cetinariCol = headers.indexOf('ČETINARI');
+    const liscariCol = headers.indexOf('LIŠĆARI');
+    const cetinari = cetinariCol !== -1 ? (parseFloat(updatedRow[cetinariCol]) || 0) : 0;
+    const liscari = liscariCol !== -1 ? (parseFloat(updatedRow[liscariCol]) || 0) : 0;
+    const ukupno = cetinari + liscari;
 
     // Update SVEUKUPNO if it exists
     const sveukupnoCol = headers.indexOf('SVEUKUPNO');
