@@ -709,10 +709,10 @@
             </div>
         </div>
 
-        <!-- PENDING UNOSI VIEW (For Rukovodilac/Admin) -->
+        <!-- DODANI UNOSI VIEW (For Rukovodilac/Admin) -->
         <div id="pending-unosi-content" class="container hidden">
             <div class="section">
-                <h2>📋 Pending Unosi - Pregled</h2>
+                <h2>📋 Dodani Unosi - Pregled</h2>
                 <p style="color: #6b7280; margin-bottom: 20px;">Unosi koje su radnici poslali na pregled</p>
                 <div id="pending-unosi-container"></div>
             </div>
@@ -942,7 +942,7 @@
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz po primačima</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz po otpremačima</button>
                     <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
-                    <button class="tab" onclick="switchTab('pending-unosi')">📋 Pending unosi</button>
+                    <button class="tab" onclick="switchTab('pending-unosi')">📋 Dodani unosi</button>
                 `;
             }
         }
@@ -2060,25 +2060,23 @@
             // Re-append sorted rows
             sortedRows.forEach(row => tbody.appendChild(row));
         }
-    </script>
 
+        // ========== DODANI UNOSI VIEW ==========
 
-        // ========== PENDING UNOSI VIEW ==========
-
-        // Load Pending Unosi
+        // Load Dodani Unosi (Pending entries)
         async function loadPendingUnosi() {
             document.getElementById('loading-screen').classList.remove('hidden');
             document.getElementById('pending-unosi-content').classList.add('hidden');
 
             try {
                 const year = new Date().getFullYear();
-                const url = `${API_URL}?path=pending-unosi&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const url = API_URL + '?path=pending-unosi&year=' + year + '&username=' + currentUser.username + '&password=' + currentPassword;
 
                 // Don't cache pending entries - always fetch fresh
                 const response = await fetch(url);
                 const data = await response.json();
 
-                console.log('Pending unosi data:', data);
+                console.log('Dodani unosi data:', data);
 
                 if (data.error) {
                     throw new Error(data.error);
@@ -2088,7 +2086,7 @@
                 let html = '';
 
                 if (!data.unosi || data.unosi.length === 0) {
-                    html = '<p style="text-align: center; padding: 40px; color: #6b7280;">Nema pending unosa</p>';
+                    html = '<p style="text-align: center; padding: 40px; color: #6b7280;">Nema dodanih unosa</p>';
                 } else {
                     html = '<div class="kupci-table-wrapper"><table class="kupci-table"><thead><tr>';
                     html += '<th style="min-width: 80px;">Tip</th>';
@@ -2098,42 +2096,52 @@
                     html += '<th style="min-width: 120px;">Kupac</th>';
 
                     // Sortimenti headers
-                    data.sortimentiNazivi.forEach(s => {
-                        html += `<th class="sortiment-col">${s}</th>`;
-                    });
+                    for (let i = 0; i < data.sortimentiNazivi.length; i++) {
+                        html += '<th class="sortiment-col">' + data.sortimentiNazivi[i] + '</th>';
+                    }
 
                     html += '<th style="min-width: 130px;">Poslano</th>';
                     html += '</tr></thead><tbody>';
 
                     // Render rows
-                    data.unosi.forEach(unos => {
-                        const tipClass = unos.tip === 'SJEČA' ? 'green' : 'blue';
+                    for (let i = 0; i < data.unosi.length; i++) {
+                        const unos = data.unosi[i];
+                        const tipColor = unos.tip === 'SJEČA' ? '#059669' : '#2563eb';
+
                         html += '<tr>';
-                        html += `<td><span style="font-weight: 600; color: ${unos.tip === 'SJEČA' ? '#059669' : '#2563eb'}">${unos.tip}</span></td>`;
-                        html += `<td>${unos.datum}</td>`;
-                        html += `<td style="font-weight: 600;">${unos.odjel}</td>`;
-                        html += `<td>${unos.radnik}</td>`;
-                        html += `<td>${unos.kupac || '-'}</td>`;
+                        html += '<td><span style="font-weight: 600; color: ' + tipColor + '">' + unos.tip + '</span></td>';
+                        html += '<td>' + unos.datum + '</td>';
+                        html += '<td style="font-weight: 600;">' + unos.odjel + '</td>';
+                        html += '<td>' + unos.radnik + '</td>';
+                        html += '<td>' + (unos.kupac || '-') + '</td>';
 
                         // Sortimenti values
-                        data.sortimentiNazivi.forEach(s => {
-                            const val = unos.sortimenti[s] || 0;
-                            html += `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
-                        });
+                        for (let j = 0; j < data.sortimentiNazivi.length; j++) {
+                            const sortiment = data.sortimentiNazivi[j];
+                            const val = unos.sortimenti[sortiment] || 0;
+                            const displayVal = val > 0 ? val.toFixed(2) : '-';
+                            html += '<td class="sortiment-col">' + displayVal + '</td>';
+                        }
 
-                        html += `<td style="font-size: 11px; color: #6b7280;">${unos.timestamp}</td>`;
+                        html += '<td style="font-size: 11px; color: #6b7280;">' + unos.timestamp + '</td>';
                         html += '</tr>';
-                    });
+                    }
 
                     html += '</tbody></table></div>';
 
                     // Add summary
-                    html += `<div style="margin-top: 20px; padding: 12px; background: #f9fafb; border-radius: 8px;">`;
-                    html += `<strong>Ukupno pending unosa:</strong> ${data.unosi.length}`;
-                    const sjecaCount = data.unosi.filter(u => u.tip === 'SJEČA').length;
-                    const otpremaCount = data.unosi.filter(u => u.tip === 'OTPREMA').length;
-                    html += ` (Sječa: ${sjecaCount}, Otprema: ${otpremaCount})`;
-                    html += `</div>`;
+                    html += '<div style="margin-top: 20px; padding: 12px; background: #f9fafb; border-radius: 8px;">';
+                    html += '<strong>Ukupno dodanih unosa:</strong> ' + data.unosi.length;
+
+                    let sjecaCount = 0;
+                    let otpremaCount = 0;
+                    for (let i = 0; i < data.unosi.length; i++) {
+                        if (data.unosi[i].tip === 'SJEČA') sjecaCount++;
+                        else if (data.unosi[i].tip === 'OTPREMA') otpremaCount++;
+                    }
+
+                    html += ' (Sječa: ' + sjecaCount + ', Otprema: ' + otpremaCount + ')';
+                    html += '</div>';
                 }
 
                 document.getElementById('pending-unosi-container').innerHTML = html;
@@ -2142,15 +2150,14 @@
                 document.getElementById('pending-unosi-content').classList.remove('hidden');
 
             } catch (error) {
-                console.error('Error loading pending unosi:', error);
+                console.error('Error loading dodani unosi:', error);
                 document.getElementById('pending-unosi-container').innerHTML =
-                    `<p style="color: #dc2626; text-align: center; padding: 40px;">Greška: ${error.message}</p>`;
+                    '<p style="color: #dc2626; text-align: center; padding: 40px;">Greška: ' + error.message + '</p>';
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('pending-unosi-content').classList.remove('hidden');
             }
         }
-        // ========== ADD SJECA/OTPREMA FORMS ==========
-
+    </script>
         // Show Add Sjeca Form
         function showAddSjecaForm() {
             document.getElementById('loading-screen').classList.add('hidden');
