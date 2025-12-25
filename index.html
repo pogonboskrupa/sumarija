@@ -130,6 +130,49 @@
         .btn-secondary { background: #6b7280; color: white; }
         .btn-secondary:hover { background: #4b5563; }
 
+        /* Filter Bar - Advanced */
+        .filter-bar { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .filter-bar-title { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+        .filter-group { display: flex; flex-direction: column; gap: 6px; }
+        .filter-label { font-size: 12px; font-weight: 600; color: #6b7280; }
+        .filter-input, .filter-select { padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white; color: #1f2937; }
+        .filter-input:focus, .filter-select:focus { outline: none; border-color: #047857; box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.1); }
+        .filter-actions { display: flex; gap: 8px; align-items: flex-end; }
+        .filter-actions .btn { padding: 10px 16px; font-size: 13px; }
+        .btn-clear { background: #f3f4f6; color: #374151; }
+        .btn-clear:hover { background: #e5e7eb; }
+
+        /* Row Actions Dropdown */
+        .row-actions { position: relative; }
+        .row-actions-btn { background: transparent; border: none; cursor: pointer; padding: 8px; border-radius: 6px; color: #6b7280; font-size: 18px; line-height: 1; }
+        .row-actions-btn:hover { background: #f3f4f6; color: #374151; }
+        .row-actions-dropdown { display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); min-width: 160px; z-index: 100; border: 1px solid #e5e7eb; }
+        .row-actions-dropdown.show { display: block; }
+        .row-actions-item { padding: 10px 14px; cursor: pointer; font-size: 13px; color: #374151; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; gap: 8px; }
+        .row-actions-item:hover { background: #f9fafb; }
+        .row-actions-item:last-child { border-bottom: none; }
+        .row-actions-item.danger { color: #dc2626; }
+        .row-actions-item.danger:hover { background: #fee2e2; }
+
+        /* Confirm Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: white; border-radius: 16px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .modal-header { margin-bottom: 16px; }
+        .modal-title { font-size: 18px; font-weight: 700; color: #1f2937; }
+        .modal-body { margin-bottom: 24px; font-size: 14px; color: #6b7280; line-height: 1.6; }
+        .modal-footer { display: flex; gap: 12px; justify-content: flex-end; }
+        .modal-footer .btn { padding: 10px 20px; }
+        .btn-danger { background: #dc2626; color: white; }
+        .btn-danger:hover { background: #b91c1c; }
+
+        /* Column Grouping */
+        .col-group-cetinari { background: linear-gradient(to bottom, #f0fdf4 0%, #dcfce7 100%); border-left: 2px solid #10b981; border-right: 2px solid #10b981; }
+        .col-group-liscari { background: linear-gradient(to bottom, #fef3c7 0%, #fde68a 100%); border-left: 2px solid #f59e0b; border-right: 2px solid #f59e0b; }
+        body.dark-mode .col-group-cetinari { background: linear-gradient(to bottom, #064e3b 0%, #065f46 100%); }
+        body.dark-mode .col-group-liscari { background: linear-gradient(to bottom, #78350f 0%, #92400e 100%); }
+
         /* Dark mode */
         body.dark-mode { background: #1f2937; color: #f3f4f6; }
         body.dark-mode .container, body.dark-mode .section, body.dark-mode table,
@@ -861,7 +904,55 @@
             <div class="section">
                 <h2>📋 Dodani Unosi - Pregled</h2>
                 <p style="color: #6b7280; margin-bottom: 20px;">Unosi koje su radnici poslali na pregled</p>
+
+                <!-- Filter Bar -->
+                <div class="filter-bar">
+                    <div class="filter-bar-title">🔍 Filteri</div>
+                    <div class="filter-grid">
+                        <div class="filter-group">
+                            <label class="filter-label">Datum od:</label>
+                            <input type="date" class="filter-input" id="filter-datum-od">
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Datum do:</label>
+                            <input type="date" class="filter-input" id="filter-datum-do">
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Tip:</label>
+                            <select class="filter-select" id="filter-tip">
+                                <option value="">Sve</option>
+                                <option value="SJEČA">Sječa</option>
+                                <option value="OTPREMA">Otprema</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Pretraga:</label>
+                            <input type="text" class="filter-input" id="filter-search" placeholder="Odjel, radnik, kupac...">
+                        </div>
+                        <div class="filter-actions">
+                            <button class="btn btn-primary" onclick="applyFilters()">Filtriraj</button>
+                            <button class="btn btn-clear" onclick="clearFilters()">Očisti</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="pending-unosi-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div class="modal-overlay" id="confirm-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" id="modal-title">Potvrda brisanja</div>
+            </div>
+            <div class="modal-body" id="modal-body">
+                Da li ste sigurni da želite obrisati ovaj unos?
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeConfirmModal()">Otkaži</button>
+                <button class="btn btn-danger" id="modal-confirm-btn">Obriši</button>
             </div>
         </div>
     </div>
