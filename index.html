@@ -272,6 +272,41 @@
         }
 
         /* ============================================
+           PRIMACI & OTPREMACI TABLE STYLES
+           ============================================ */
+        #primaci-table, #otpremaci-table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        #primaci-table thead th, #otpremaci-table thead th {
+            position: sticky !important;
+            top: 0;
+            z-index: 15 !important;
+        }
+        #primaci-table tbody tr, #otpremaci-table tbody tr {
+            border-bottom: 1px solid #e5e7eb;
+        }
+        /* Ensure sticky columns work properly */
+        #primaci-table td:first-child, #otpremaci-table td:first-child {
+            position: sticky !important;
+            left: 0 !important;
+        }
+        #primaci-table th:first-child, #otpremaci-table th:first-child {
+            position: sticky !important;
+            left: 0 !important;
+        }
+        /* Add box shadow for sticky elements */
+        #primaci-table td:first-child::after, #otpremaci-table td:first-child::after {
+            content: '';
+            position: absolute;
+            right: -1px;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+        }
+
+        /* ============================================
            MOBILE OPTIMIZATIONS (< 768px)
            ============================================ */
         @media (max-width: 768px) {
@@ -1956,27 +1991,75 @@
                 const url = `${API_URL}?path=primaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
                 const data = await fetchWithCache(url, 'cache_primaci_' + year);
 
-                // Create header
+                // Calculate totals per month
+                const monthTotals = new Array(12).fill(0);
+                let grandTotal = 0;
+
+                data.primaci.forEach(p => {
+                    p.mjeseci.forEach((val, idx) => {
+                        monthTotals[idx] += val;
+                    });
+                    grandTotal += p.ukupno;
+                });
+
+                // Create header with sticky styling
                 const headerHTML = `
                     <tr>
-                        <th>Primač</th>
-                        ${data.mjeseci.map(m => `<th class="right">${m}</th>`).join('')}
-                        <th class="right">Ukupno</th>
+                        <th style="position: sticky; left: 0; background: #059669; z-index: 20; border-right: 3px solid #047857; min-width: 150px;">
+                            👷 Primač
+                        </th>
+                        ${data.mjeseci.map((m, idx) => `
+                            <th class="right" style="min-width: 80px; background: #059669; color: white; font-weight: 700; border: 1px solid #047857;">
+                                ${m}
+                            </th>
+                        `).join('')}
+                        <th class="right" style="min-width: 100px; background: #047857; color: white; font-weight: 900; border: 2px solid #065f46;">
+                            📊 UKUPNO
+                        </th>
                     </tr>
                 `;
                 document.getElementById('primaci-header').innerHTML = headerHTML;
 
-                // Create body
-                const bodyHTML = data.primaci.map(p => {
+                // Create body with enhanced styling
+                const bodyHTML = data.primaci.map((p, idx) => {
+                    const rowBg = idx % 2 === 0 ? '#f0fdf4' : 'white';
+                    const hoverBg = idx % 2 === 0 ? '#dcfce7' : '#f0fdf4';
+
                     return `
-                        <tr>
-                            <td style="font-weight: 500;">${p.primac}</td>
-                            ${p.mjeseci.map(v => `<td class="right">${v.toFixed(2)}</td>`).join('')}
-                            <td class="right green" style="font-weight: bold;">${p.ukupno.toFixed(2)}</td>
+                        <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
+                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #059669; padding: 10px; font-size: 11px;">
+                                ${p.primac}
+                            </td>
+                            ${p.mjeseci.map((v, mIdx) => {
+                                const displayVal = v > 0 ? v.toFixed(2) : '-';
+                                const fontWeight = v > 0 ? 'font-weight: 500;' : 'color: #9ca3af;';
+                                return `<td class="right" style="${fontWeight} border: 1px solid #d1fae5; padding: 8px; font-size: 10px; font-family: 'Courier New', monospace;">${displayVal}</td>`;
+                            }).join('')}
+                            <td class="right" style="font-weight: 700; background: linear-gradient(to right, #d1fae5, #a7f3d0); border: 2px solid #059669; padding: 10px; font-size: 11px; color: #065f46;">
+                                ${p.ukupno.toFixed(2)} m³
+                            </td>
                         </tr>
                     `;
                 }).join('');
-                document.getElementById('primaci-body').innerHTML = bodyHTML;
+
+                // Add totals row
+                const totalsRow = `
+                    <tr style="background: linear-gradient(to bottom, #059669, #047857); color: white; font-weight: 700; border-top: 3px solid #065f46;">
+                        <td style="position: sticky; left: 0; background: #047857; z-index: 10; border-right: 3px solid #065f46; padding: 12px; font-size: 12px;">
+                            📈 UKUPNO
+                        </td>
+                        ${monthTotals.map(total => `
+                            <td class="right" style="border: 1px solid #065f46; padding: 10px; font-size: 11px;">
+                                ${total > 0 ? total.toFixed(2) : '-'}
+                            </td>
+                        `).join('')}
+                        <td class="right" style="background: #065f46; border: 2px solid #064e3b; padding: 12px; font-size: 13px; font-weight: 900;">
+                            ${grandTotal.toFixed(2)} m³
+                        </td>
+                    </tr>
+                `;
+
+                document.getElementById('primaci-body').innerHTML = bodyHTML + totalsRow;
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('primaci-content').classList.remove('hidden');
@@ -1997,27 +2080,75 @@
                 const url = `${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
                 const data = await fetchWithCache(url, 'cache_otpremaci_' + year);
 
-                // Create header
+                // Calculate totals per month
+                const monthTotals = new Array(12).fill(0);
+                let grandTotal = 0;
+
+                data.otpremaci.forEach(o => {
+                    o.mjeseci.forEach((val, idx) => {
+                        monthTotals[idx] += val;
+                    });
+                    grandTotal += o.ukupno;
+                });
+
+                // Create header with sticky styling (blue theme)
                 const headerHTML = `
                     <tr>
-                        <th>Otpremač</th>
-                        ${data.mjeseci.map(m => `<th class="right">${m}</th>`).join('')}
-                        <th class="right">Ukupno</th>
+                        <th style="position: sticky; left: 0; background: #2563eb; z-index: 20; border-right: 3px solid #1e40af; min-width: 150px;">
+                            🚛 Otpremač
+                        </th>
+                        ${data.mjeseci.map((m, idx) => `
+                            <th class="right" style="min-width: 80px; background: #2563eb; color: white; font-weight: 700; border: 1px solid #1e40af;">
+                                ${m}
+                            </th>
+                        `).join('')}
+                        <th class="right" style="min-width: 100px; background: #1e40af; color: white; font-weight: 900; border: 2px solid #1e3a8a;">
+                            📊 UKUPNO
+                        </th>
                     </tr>
                 `;
                 document.getElementById('otpremaci-header').innerHTML = headerHTML;
 
-                // Create body
-                const bodyHTML = data.otpremaci.map(o => {
+                // Create body with enhanced styling (blue theme)
+                const bodyHTML = data.otpremaci.map((o, idx) => {
+                    const rowBg = idx % 2 === 0 ? '#eff6ff' : 'white';
+                    const hoverBg = idx % 2 === 0 ? '#dbeafe' : '#eff6ff';
+
                     return `
-                        <tr>
-                            <td style="font-weight: 500;">${o.otpremac}</td>
-                            ${o.mjeseci.map(v => `<td class="right">${v.toFixed(2)}</td>`).join('')}
-                            <td class="right blue" style="font-weight: bold;">${o.ukupno.toFixed(2)}</td>
+                        <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
+                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #2563eb; padding: 10px; font-size: 11px;">
+                                ${o.otpremac}
+                            </td>
+                            ${o.mjeseci.map((v, mIdx) => {
+                                const displayVal = v > 0 ? v.toFixed(2) : '-';
+                                const fontWeight = v > 0 ? 'font-weight: 500;' : 'color: #9ca3af;';
+                                return `<td class="right" style="${fontWeight} border: 1px solid #dbeafe; padding: 8px; font-size: 10px; font-family: 'Courier New', monospace;">${displayVal}</td>`;
+                            }).join('')}
+                            <td class="right" style="font-weight: 700; background: linear-gradient(to right, #dbeafe, #bfdbfe); border: 2px solid #2563eb; padding: 10px; font-size: 11px; color: #1e40af;">
+                                ${o.ukupno.toFixed(2)} m³
+                            </td>
                         </tr>
                     `;
                 }).join('');
-                document.getElementById('otpremaci-body').innerHTML = bodyHTML;
+
+                // Add totals row
+                const totalsRow = `
+                    <tr style="background: linear-gradient(to bottom, #2563eb, #1e40af); color: white; font-weight: 700; border-top: 3px solid #1e3a8a;">
+                        <td style="position: sticky; left: 0; background: #1e40af; z-index: 10; border-right: 3px solid #1e3a8a; padding: 12px; font-size: 12px;">
+                            📈 UKUPNO
+                        </td>
+                        ${monthTotals.map(total => `
+                            <td class="right" style="border: 1px solid #1e3a8a; padding: 10px; font-size: 11px;">
+                                ${total > 0 ? total.toFixed(2) : '-'}
+                            </td>
+                        `).join('')}
+                        <td class="right" style="background: #1e3a8a; border: 2px solid #1e293b; padding: 12px; font-size: 13px; font-weight: 900;">
+                            ${grandTotal.toFixed(2)} m³
+                        </td>
+                    </tr>
+                `;
+
+                document.getElementById('otpremaci-body').innerHTML = bodyHTML + totalsRow;
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('otpremaci-content').classList.remove('hidden');
