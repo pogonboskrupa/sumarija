@@ -1176,9 +1176,6 @@
 
         // Check if already logged in
         window.addEventListener('DOMContentLoaded', () => {
-            // Load odjeli list
-            loadOdjeli();
-
             const savedUser = localStorage.getItem('sumarija_user');
             const savedPass = localStorage.getItem('sumarija_pass');
 
@@ -1187,6 +1184,7 @@
                 currentPassword = savedPass;
                 showApp();
                 loadData();
+                loadOdjeli(); // Load odjeli list after auto-login
             }
         });
         
@@ -1214,6 +1212,7 @@
                     localStorage.setItem('sumarija_pass', password);
                     showApp();
                     loadData();
+                    loadOdjeli(); // Load odjeli list after manual login
                 } else {
                     errorMsg.textContent = data.error || 'Greška pri prijavi';
                     errorMsg.classList.remove('hidden');
