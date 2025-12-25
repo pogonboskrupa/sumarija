@@ -205,9 +205,26 @@
         body.dark-mode .kupci-table th:nth-child(2), body.dark-mode .kupci-table td:nth-child(2) { background: #374151; }
         .kupci-table thead th {
             background: linear-gradient(to bottom, #f9fafb 0%, #f3f4f6 100%);
-            position: sticky; top: 0; z-index: 3; font-weight: 700;
+            position: sticky !important; top: 0; z-index: 15 !important; font-weight: 700;
             border-top: 2px solid #10b981; border-bottom: 2px solid #10b981;
             padding: 12px 6px; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;
+        }
+        /* Enhanced sticky for kupci godisnji and mjesecni tables */
+        #kupci-godisnji-table thead th,
+        #kupci-mjesecni-table thead th {
+            position: sticky !important;
+            top: 0;
+            z-index: 15 !important;
+        }
+        #kupci-godisnji-table td:first-child,
+        #kupci-mjesecni-table td:first-child {
+            position: sticky !important;
+            left: 0 !important;
+            z-index: 10 !important;
+        }
+        #kupci-godisnji-table th:first-child,
+        #kupci-mjesecni-table th:first-child {
+            z-index: 20 !important;
         }
         body.dark-mode .kupci-table thead th { background: linear-gradient(to bottom, #1f2937 0%, #111827 100%); }
         .kupci-table tbody tr:nth-child(even) { background: #f9fafb; }
@@ -234,32 +251,36 @@
            MONTHLY SORTIMENTI TABLE STYLES
            ============================================ */
         .mjesecni-table-wrapper table {
-            font-size: 10px !important;
+            font-size: 9px !important;
             border-collapse: collapse;
+            width: 100%;
         }
         .mjesecni-table-wrapper th {
             background: #1e40af !important;
             color: white !important;
-            padding: 8px 4px !important;
-            font-size: 10px !important;
+            padding: 6px 2px !important;
+            font-size: 9px !important;
             text-align: center;
             border: 1px solid #1e3a8a;
             position: sticky !important;
             top: 0;
             z-index: 10;
+            white-space: nowrap;
+            max-width: 60px;
         }
         .mjesecni-table-wrapper td {
-            padding: 6px 4px !important;
-            font-size: 10px !important;
+            padding: 4px 2px !important;
+            font-size: 9px !important;
             text-align: right;
             border: 1px solid #e5e7eb;
+            white-space: nowrap;
         }
         .mjesecni-table-wrapper tbody tr:hover {
             background: #dbeafe !important;
         }
         /* Bold columns styling */
-        .mjesecni-table-wrapper .col-cetinari { background: #fef3c7; }
-        .mjesecni-table-wrapper .col-liscari { background: #d1fae5; }
+        .mjesecni-table-wrapper .col-cetinari { background: #fef3c7; font-weight: 700; }
+        .mjesecni-table-wrapper .col-liscari { background: #d1fae5; font-weight: 700; }
         .mjesecni-table-wrapper .col-sveukupno { background: #e0e7ff; font-weight: 700; }
         /* Group separators */
         .mjesecni-table-wrapper .group-cetvrti th,
@@ -269,6 +290,17 @@
         .mjesecni-table-wrapper .group-ogrevno th,
         .mjesecni-table-wrapper .group-ogrevno td {
             border-left: 2px solid #059669 !important;
+        }
+        /* Mobile optimization */
+        @media (max-width: 768px) {
+            .mjesecni-table-wrapper th,
+            .mjesecni-table-wrapper td {
+                font-size: 7px !important;
+                padding: 3px 1px !important;
+            }
+            .mjesecni-table-wrapper th {
+                max-width: 45px;
+            }
         }
 
         /* ============================================
@@ -2042,18 +2074,18 @@
                     `;
                 }).join('');
 
-                // Add totals row
+                // Add totals row with softer colors
                 const totalsRow = `
-                    <tr style="background: linear-gradient(to bottom, #059669, #047857); color: white; font-weight: 700; border-top: 3px solid #065f46;">
-                        <td style="position: sticky; left: 0; background: #047857; z-index: 10; border-right: 3px solid #065f46; padding: 12px; font-size: 12px;">
+                    <tr style="background: linear-gradient(to bottom, #d1fae5, #a7f3d0); color: #065f46; font-weight: 700; border-top: 3px solid #34d399;">
+                        <td style="position: sticky; left: 0; background: #d1fae5; z-index: 10; border-right: 3px solid #34d399; padding: 12px; font-size: 12px;">
                             📈 UKUPNO
                         </td>
                         ${monthTotals.map(total => `
-                            <td class="right" style="border: 1px solid #065f46; padding: 10px; font-size: 11px;">
+                            <td class="right" style="border: 1px solid #6ee7b7; padding: 10px; font-size: 11px;">
                                 ${total > 0 ? total.toFixed(2) : '-'}
                             </td>
                         `).join('')}
-                        <td class="right" style="background: #065f46; border: 2px solid #064e3b; padding: 12px; font-size: 13px; font-weight: 900;">
+                        <td class="right" style="background: #a7f3d0; border: 2px solid #34d399; padding: 12px; font-size: 13px; font-weight: 900;">
                             ${grandTotal.toFixed(2)} m³
                         </td>
                     </tr>
@@ -2131,18 +2163,18 @@
                     `;
                 }).join('');
 
-                // Add totals row
+                // Add totals row with softer colors
                 const totalsRow = `
-                    <tr style="background: linear-gradient(to bottom, #2563eb, #1e40af); color: white; font-weight: 700; border-top: 3px solid #1e3a8a;">
-                        <td style="position: sticky; left: 0; background: #1e40af; z-index: 10; border-right: 3px solid #1e3a8a; padding: 12px; font-size: 12px;">
+                    <tr style="background: linear-gradient(to bottom, #dbeafe, #bfdbfe); color: #1e40af; font-weight: 700; border-top: 3px solid #60a5fa;">
+                        <td style="position: sticky; left: 0; background: #dbeafe; z-index: 10; border-right: 3px solid #60a5fa; padding: 12px; font-size: 12px;">
                             📈 UKUPNO
                         </td>
                         ${monthTotals.map(total => `
-                            <td class="right" style="border: 1px solid #1e3a8a; padding: 10px; font-size: 11px;">
+                            <td class="right" style="border: 1px solid #93c5fd; padding: 10px; font-size: 11px;">
                                 ${total > 0 ? total.toFixed(2) : '-'}
                             </td>
                         `).join('')}
-                        <td class="right" style="background: #1e3a8a; border: 2px solid #1e293b; padding: 12px; font-size: 13px; font-weight: 900;">
+                        <td class="right" style="background: #bfdbfe; border: 2px solid #60a5fa; padding: 12px; font-size: 13px; font-weight: 900;">
                             ${grandTotal.toFixed(2)} m³
                         </td>
                     </tr>
@@ -2179,12 +2211,16 @@
                 // GODIŠNJI PREGLED
                 // ========================================
 
-                // Create godisnji header
+                // Create godisnji header with expert styling
                 const godisnjiHeaderHTML = `
                     <tr>
-                        <th onclick="sortTable(0, 'kupci-godisnji-table')">Kupac ⇅</th>
-                        ${data.sortimentiNazivi.map((s, i) => `<th class="sortiment-col" onclick="sortTable(${i+1}, 'kupci-godisnji-table')">${s} ⇅</th>`).join('')}
-                        <th class="ukupno-col" onclick="sortTable(${data.sortimentiNazivi.length + 1}, 'kupci-godisnji-table')">Ukupno ⇅</th>
+                        <th onclick="sortTable(0, 'kupci-godisnji-table')" style="position: sticky; left: 0; background: #7c3aed; z-index: 20; border-right: 3px solid #6d28d9; min-width: 180px; cursor: pointer;">
+                            🏢 Kupac ⇅
+                        </th>
+                        ${data.sortimentiNazivi.map((s, i) => `<th class="sortiment-col" onclick="sortTable(${i+1}, 'kupci-godisnji-table')" style="min-width: 70px; background: #7c3aed; color: white; font-weight: 700; border: 1px solid #6d28d9; cursor: pointer;">${s} ⇅</th>`).join('')}
+                        <th class="ukupno-col" onclick="sortTable(${data.sortimentiNazivi.length + 1}, 'kupci-godisnji-table')" style="min-width: 100px; background: #6d28d9; color: white; font-weight: 900; cursor: pointer;">
+                            📊 UKUPNO ⇅
+                        </th>
                     </tr>
                 `;
                 document.getElementById('kupci-godisnji-header').innerHTML = godisnjiHeaderHTML;
@@ -2193,38 +2229,46 @@
                 let godisnjiTotals = { sortimenti: {}, ukupno: 0 };
                 data.sortimentiNazivi.forEach(s => godisnjiTotals.sortimenti[s] = 0);
 
-                const godisnjiBodyHTML = data.godisnji.map(k => {
+                const godisnjiBodyHTML = data.godisnji.map((k, idx) => {
                     // Add to totals
                     data.sortimentiNazivi.forEach(s => {
                         godisnjiTotals.sortimenti[s] += (k.sortimenti[s] || 0);
                     });
                     godisnjiTotals.ukupno += k.ukupno;
 
+                    const rowBg = idx % 2 === 0 ? '#faf5ff' : 'white';
+                    const hoverBg = idx % 2 === 0 ? '#f3e8ff' : '#faf5ff';
+
                     const sortimentiCells = data.sortimentiNazivi.map(sortiment => {
                         const val = k.sortimenti[sortiment] || 0;
-                        return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                        const displayVal = val > 0 ? val.toFixed(2) : '-';
+                        const fontWeight = val > 0 ? 'font-weight: 500;' : 'color: #9ca3af;';
+                        return `<td class="sortiment-col" style="${fontWeight} border: 1px solid #e9d5ff; font-family: 'Courier New', monospace;">${displayVal}</td>`;
                     }).join('');
 
                     return `
-                        <tr>
-                            <td>${k.kupac}</td>
+                        <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
+                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #7c3aed;">${k.kupac}</td>
                             ${sortimentiCells}
-                            <td class="ukupno-col">${k.ukupno.toFixed(2)}</td>
+                            <td class="ukupno-col" style="font-weight: 700; background: linear-gradient(to right, #e9d5ff, #d8b4fe); color: #6b21a8; font-family: 'Courier New', monospace;">${k.ukupno.toFixed(2)} m³</td>
                         </tr>
                     `;
                 }).join('');
 
-                // Add totals row
+                // Add totals row with soft purple colors
                 const godisnjiTotalsCells = data.sortimentiNazivi.map(s => {
                     const val = godisnjiTotals.sortimenti[s];
-                    return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                    const displayVal = val > 0 ? val.toFixed(2) : '-';
+                    return `<td class="sortiment-col" style="border: 1px solid #c084fc; font-family: 'Courier New', monospace;">${displayVal}</td>`;
                 }).join('');
 
                 const godisnjiBodyWithTotals = godisnjiBodyHTML + `
-                    <tr class="totals-row">
-                        <td style="text-align: left;">UKUPNO</td>
+                    <tr style="background: linear-gradient(to bottom, #e9d5ff, #d8b4fe); color: #6b21a8; font-weight: 700; border-top: 3px solid #a855f7;">
+                        <td style="position: sticky; left: 0; background: #e9d5ff; z-index: 10; border-right: 2px solid #7c3aed;">
+                            📈 UKUPNO
+                        </td>
                         ${godisnjiTotalsCells}
-                        <td class="ukupno-col">${godisnjiTotals.ukupno.toFixed(2)}</td>
+                        <td class="ukupno-col" style="background: #d8b4fe; border: 2px solid #a855f7; font-weight: 900; font-family: 'Courier New', monospace;">${godisnjiTotals.ukupno.toFixed(2)} m³</td>
                     </tr>
                 `;
 
@@ -2234,13 +2278,19 @@
                 // MJESEČNI PREGLED
                 // ========================================
 
-                // Create mjesecni header
+                // Create mjesecni header with expert styling
                 const mjesecniHeaderHTML = `
                     <tr>
-                        <th onclick="sortTable(0, 'kupci-mjesecni-table')">Kupac ⇅</th>
-                        <th onclick="sortTable(1, 'kupci-mjesecni-table')">Mjesec ⇅</th>
-                        ${data.sortimentiNazivi.map((s, i) => `<th class="sortiment-col" onclick="sortTable(${i+2}, 'kupci-mjesecni-table')">${s} ⇅</th>`).join('')}
-                        <th class="ukupno-col" onclick="sortTable(${data.sortimentiNazivi.length + 2}, 'kupci-mjesecni-table')">Ukupno ⇅</th>
+                        <th onclick="sortTable(0, 'kupci-mjesecni-table')" style="position: sticky; left: 0; background: #7c3aed; z-index: 20; border-right: 3px solid #6d28d9; min-width: 150px; cursor: pointer;">
+                            🏢 Kupac ⇅
+                        </th>
+                        <th onclick="sortTable(1, 'kupci-mjesecni-table')" style="min-width: 80px; background: #7c3aed; color: white; font-weight: 700; border: 1px solid #6d28d9; cursor: pointer;">
+                            📅 Mjesec ⇅
+                        </th>
+                        ${data.sortimentiNazivi.map((s, i) => `<th class="sortiment-col" onclick="sortTable(${i+2}, 'kupci-mjesecni-table')" style="min-width: 70px; background: #7c3aed; color: white; font-weight: 700; border: 1px solid #6d28d9; cursor: pointer;">${s} ⇅</th>`).join('')}
+                        <th class="ukupno-col" onclick="sortTable(${data.sortimentiNazivi.length + 2}, 'kupci-mjesecni-table')" style="min-width: 100px; background: #6d28d9; color: white; font-weight: 900; cursor: pointer;">
+                            📊 UKUPNO ⇅
+                        </th>
                     </tr>
                 `;
                 document.getElementById('kupci-mjesecni-header').innerHTML = mjesecniHeaderHTML;
@@ -2249,40 +2299,48 @@
                 let mjesecniTotals = { sortimenti: {}, ukupno: 0 };
                 data.sortimentiNazivi.forEach(s => mjesecniTotals.sortimenti[s] = 0);
 
-                const mjesecniBodyHTML = data.mjesecni.map(k => {
+                const mjesecniBodyHTML = data.mjesecni.map((k, idx) => {
                     // Add to totals
                     data.sortimentiNazivi.forEach(s => {
                         mjesecniTotals.sortimenti[s] += (k.sortimenti[s] || 0);
                     });
                     mjesecniTotals.ukupno += k.ukupno;
 
+                    const rowBg = idx % 2 === 0 ? '#faf5ff' : 'white';
+                    const hoverBg = idx % 2 === 0 ? '#f3e8ff' : '#faf5ff';
+
                     const sortimentiCells = data.sortimentiNazivi.map(sortiment => {
                         const val = k.sortimenti[sortiment] || 0;
-                        return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                        const displayVal = val > 0 ? val.toFixed(2) : '-';
+                        const fontWeight = val > 0 ? 'font-weight: 500;' : 'color: #9ca3af;';
+                        return `<td class="sortiment-col" style="${fontWeight} border: 1px solid #e9d5ff; font-family: 'Courier New', monospace;">${displayVal}</td>`;
                     }).join('');
 
                     return `
-                        <tr>
-                            <td>${k.kupac}</td>
-                            <td>${k.mjesec}</td>
+                        <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
+                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #7c3aed;">${k.kupac}</td>
+                            <td style="border: 1px solid #e9d5ff;">${k.mjesec}</td>
                             ${sortimentiCells}
-                            <td class="ukupno-col">${k.ukupno.toFixed(2)}</td>
+                            <td class="ukupno-col" style="font-weight: 700; background: linear-gradient(to right, #e9d5ff, #d8b4fe); color: #6b21a8; font-family: 'Courier New', monospace;">${k.ukupno.toFixed(2)} m³</td>
                         </tr>
                     `;
                 }).join('');
 
-                // Add totals row
+                // Add totals row with soft purple colors
                 const mjesecniTotalsCells = data.sortimentiNazivi.map(s => {
                     const val = mjesecniTotals.sortimenti[s];
-                    return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                    const displayVal = val > 0 ? val.toFixed(2) : '-';
+                    return `<td class="sortiment-col" style="border: 1px solid #c084fc; font-family: 'Courier New', monospace;">${displayVal}</td>`;
                 }).join('');
 
                 const mjesecniBodyWithTotals = mjesecniBodyHTML + `
-                    <tr class="totals-row">
-                        <td style="text-align: left;">UKUPNO</td>
-                        <td></td>
+                    <tr style="background: linear-gradient(to bottom, #e9d5ff, #d8b4fe); color: #6b21a8; font-weight: 700; border-top: 3px solid #a855f7;">
+                        <td style="position: sticky; left: 0; background: #e9d5ff; z-index: 10; border-right: 2px solid #7c3aed;">
+                            📈 UKUPNO
+                        </td>
+                        <td style="background: #e9d5ff;"></td>
                         ${mjesecniTotalsCells}
-                        <td class="ukupno-col">${mjesecniTotals.ukupno.toFixed(2)}</td>
+                        <td class="ukupno-col" style="background: #d8b4fe; border: 2px solid #a855f7; font-weight: 900; font-family: 'Courier New', monospace;">${mjesecniTotals.ukupno.toFixed(2)} m³</td>
                     </tr>
                 `;
 
@@ -3151,7 +3209,7 @@
             }
 
             const sortimenti = data.sortimenti; // Array of sortiment names
-            const mjeseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+            const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
 
             console.log('Rendering table with', sortimenti.length, 'sortimenti and', data.mjeseci.length, 'months');
 
