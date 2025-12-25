@@ -60,6 +60,9 @@
         .page-header-left p { font-size: 14px; color: #6b7280; }
         .page-header-right { display: flex; gap: 8px; align-items: center; }
         .badge { display: inline-block; padding: 6px 12px; background: #e0e7ff; color: #3730a3; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .notification-badge { position: relative; display: inline-block; }
+        .notification-badge .badge-count { position: absolute; top: -8px; right: -8px; background: #dc2626; color: white; border-radius: 10px; padding: 2px 6px; font-size: 11px; font-weight: 700; min-width: 18px; text-align: center; display: none; }
+        .notification-badge .badge-count.show { display: block; }
         .badge.success { background: #d1fae5; color: #047857; }
         .badge.warning { background: #fef3c7; color: #92400e; }
 
@@ -1257,7 +1260,10 @@
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz po primačima</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz po otpremačima</button>
                     <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
-                    <button class="tab" onclick="switchTab('pending-unosi')">📋 Dodani unosi</button>
+                    <button class="tab notification-badge" onclick="switchTab('pending-unosi')">
+                        📋 Dodani unosi
+                        <span class="badge-count" id="pending-count-badge"></span>
+                    </button>
                 `;
             }
         }
@@ -1512,6 +1518,9 @@
                 } else {
                     document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #6b7280;">Nema podataka o odjelima</td></tr>';
                 }
+
+                // Load pending count for badge (admin only)
+                loadPendingCount();
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('dashboard-content').classList.remove('hidden');
@@ -2507,6 +2516,9 @@
                 // Store unfiltered data for filtering
                 unfilteredPendingData = data.unosi || [];
 
+                // Update badge count
+                updatePendingBadge(unfilteredPendingData.length);
+
                 // Render table
                 renderPendingTable(unfilteredPendingData);
 
@@ -2519,6 +2531,35 @@
                     '<p style="color: #dc2626; text-align: center; padding: 40px;">Greška: ' + error.message + '</p>';
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('pending-unosi-content').classList.remove('hidden');
+            }
+        }
+
+        // Load pending count (for badge only)
+        async function loadPendingCount() {
+            try {
+                const year = new Date().getFullYear();
+                const url = API_URL + '?path=pending-unosi&year=' + year + '&username=' + currentUser.username + '&password=' + currentPassword;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.success && data.unosi) {
+                    updatePendingBadge(data.unosi.length);
+                }
+            } catch (error) {
+                console.error('Error loading pending count:', error);
+            }
+        }
+
+        // Update pending badge count
+        function updatePendingBadge(count) {
+            const badge = document.getElementById('pending-count-badge');
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.classList.add('show');
+                } else {
+                    badge.classList.remove('show');
+                }
             }
         }
 
