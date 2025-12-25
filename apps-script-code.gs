@@ -58,6 +58,10 @@ function doGet(e) {
       return handleGetOdjeliList();
     } else if (path === 'mjesecni-sortimenti') {
       return handleMjesecniSortimenti(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'primaci-daily') {
+      return handlePrimaciDaily(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
+    } else if (path === 'otpremaci-daily') {
+      return handleOtremaciDaily(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
     }
 
     return createJsonResponse({ error: 'Unknown path' }, false);
@@ -2555,6 +2559,152 @@ function handleMjesecniSortimenti(year, username, password) {
     Logger.log('ERROR in handleMjesecniSortimenti: ' + error.toString());
     return createJsonResponse({
       error: "Greška pri učitavanju mjesečnih sortimenti: " + error.toString()
+    }, false);
+  }
+}
+
+// ========================================
+// PRIMACI DAILY API - Daily data for current month
+// ========================================
+function handlePrimaciDaily(year, month, username, password) {
+  try {
+    // Authentication
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const primkaSheet = ss.getSheetByName("INDEX_PRIMKA");
+
+    if (!primkaSheet) {
+      return createJsonResponse({ error: "INDEX_PRIMKA sheet not found" }, false);
+    }
+
+    const primkaData = primkaSheet.getDataRange().getValues();
+
+    const sortimentiNazivi = [
+      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI",
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+    ];
+
+    const dailyData = [];
+
+    // Process PRIMKA data
+    for (let i = 1; i < primkaData.length; i++) {
+      const row = primkaData[i];
+      const odjel = row[0];
+      const datum = row[1];
+      const primac = row[2];
+
+      if (!datum || !primac) continue;
+
+      const datumObj = new Date(datum);
+      if (datumObj.getFullYear() !== parseInt(year)) continue;
+      if (datumObj.getMonth() !== parseInt(month)) continue;
+
+      // Build sortimenti object
+      const sortimenti = {};
+      for (let j = 0; j < sortimentiNazivi.length; j++) {
+        sortimenti[sortimentiNazivi[j]] = parseFloat(row[3 + j]) || 0;
+      }
+
+      dailyData.push({
+        datum: Utilities.formatDate(datumObj, Session.getScriptTimeZone(), "dd.MM.yyyy"),
+        datumSort: datumObj.getTime(),
+        odjel: odjel || "",
+        primac: primac,
+        sortimenti: sortimenti
+      });
+    }
+
+    // Sort by date (newest first)
+    dailyData.sort((a, b) => b.datumSort - a.datumSort);
+
+    return createJsonResponse({
+      sortimentiNazivi: sortimentiNazivi,
+      data: dailyData
+    }, true);
+
+  } catch (error) {
+    return createJsonResponse({
+      error: "Greška pri učitavanju dnevnih podataka sječe: " + error.toString()
+    }, false);
+  }
+}
+
+// ========================================
+// OTPREMACI DAILY API - Daily data for current month
+// ========================================
+function handleOtremaciDaily(year, month, username, password) {
+  try {
+    // Authentication
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const otpremaSheet = ss.getSheetByName("INDEX_OTPREMA");
+
+    if (!otpremaSheet) {
+      return createJsonResponse({ error: "INDEX_OTPREMA sheet not found" }, false);
+    }
+
+    const otpremaData = otpremaSheet.getDataRange().getValues();
+
+    const sortimentiNazivi = [
+      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI",
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+    ];
+
+    const dailyData = [];
+
+    // Process OTPREMA data
+    for (let i = 1; i < otpremaData.length; i++) {
+      const row = otpremaData[i];
+      const odjel = row[0];
+      const datum = row[1];
+      const otpremac = row[2];
+      const kupac = row[21] || ""; // KUPAC column
+
+      if (!datum || !otpremac) continue;
+
+      const datumObj = new Date(datum);
+      if (datumObj.getFullYear() !== parseInt(year)) continue;
+      if (datumObj.getMonth() !== parseInt(month)) continue;
+
+      // Build sortimenti object
+      const sortimenti = {};
+      for (let j = 0; j < sortimentiNazivi.length; j++) {
+        sortimenti[sortimentiNazivi[j]] = parseFloat(row[3 + j]) || 0;
+      }
+
+      dailyData.push({
+        datum: Utilities.formatDate(datumObj, Session.getScriptTimeZone(), "dd.MM.yyyy"),
+        datumSort: datumObj.getTime(),
+        odjel: odjel || "",
+        otpremac: otpremac,
+        kupac: kupac,
+        sortimenti: sortimenti
+      });
+    }
+
+    // Sort by date (newest first)
+    dailyData.sort((a, b) => b.datumSort - a.datumSort);
+
+    return createJsonResponse({
+      sortimentiNazivi: sortimentiNazivi,
+      data: dailyData
+    }, true);
+
+  } catch (error) {
+    return createJsonResponse({
+      error: "Greška pri učitavanju dnevnih podataka otpreme: " + error.toString()
     }, false);
   }
 }

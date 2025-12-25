@@ -251,26 +251,26 @@
            MONTHLY SORTIMENTI TABLE STYLES
            ============================================ */
         .mjesecni-table-wrapper table {
-            font-size: 9px !important;
+            font-size: 11px !important;
             border-collapse: collapse;
             width: 100%;
         }
         .mjesecni-table-wrapper th {
             background: #1e40af !important;
             color: white !important;
-            padding: 6px 2px !important;
-            font-size: 9px !important;
+            padding: 8px 4px !important;
+            font-size: 11px !important;
             text-align: center;
             border: 1px solid #1e3a8a;
             position: sticky !important;
             top: 0;
             z-index: 10;
             white-space: nowrap;
-            max-width: 60px;
+            max-width: 70px;
         }
         .mjesecni-table-wrapper td {
-            padding: 4px 2px !important;
-            font-size: 9px !important;
+            padding: 6px 3px !important;
+            font-size: 11px !important;
             text-align: right;
             border: 1px solid #e5e7eb;
             white-space: nowrap;
@@ -295,11 +295,11 @@
         @media (max-width: 768px) {
             .mjesecni-table-wrapper th,
             .mjesecni-table-wrapper td {
-                font-size: 7px !important;
-                padding: 3px 1px !important;
+                font-size: 9px !important;
+                padding: 4px 2px !important;
             }
             .mjesecni-table-wrapper th {
-                max-width: 45px;
+                max-width: 55px;
             }
         }
 
@@ -888,6 +888,7 @@
 
         <!-- PRIMACI CONTENT (Prikaz po primačima) -->
         <div id="primaci-content" class="container hidden">
+            <!-- Mjesečni prikaz -->
             <div class="section">
                 <h2>👷 Mjesečni prikaz po primačima</h2>
                 <div class="controls-bar">
@@ -899,10 +900,26 @@
                     <tbody id="primaci-body"></tbody>
                 </table>
             </div>
+
+            <!-- Dnevni prikaz - tekući mjesec -->
+            <div class="section">
+                <h2>📅 Sječa po danima - tekući mjesec</h2>
+                <div class="controls-bar">
+                    <input type="text" class="search-input" id="primaci-daily-search" placeholder="🔍 Pretraži..." onkeyup="filterPrimaciDailyTable()">
+                    <button class="btn btn-primary" onclick="exportTableToCSV('primaci-daily')">📥 Export CSV</button>
+                </div>
+                <div class="kupci-table-wrapper">
+                    <table class="kupci-table" id="primaci-daily-table">
+                        <thead id="primaci-daily-header"></thead>
+                        <tbody id="primaci-daily-body"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <!-- OTPREMACI CONTENT (Prikaz po otpremačima) -->
         <div id="otpremaci-content" class="container hidden">
+            <!-- Mjesečni prikaz -->
             <div class="section">
                 <h2>🚛 Mjesečni prikaz po otpremačima</h2>
                 <div class="controls-bar">
@@ -913,6 +930,21 @@
                     <thead id="otpremaci-header"></thead>
                     <tbody id="otpremaci-body"></tbody>
                 </table>
+            </div>
+
+            <!-- Dnevni prikaz - tekući mjesec -->
+            <div class="section">
+                <h2>📅 Otprema po danima - tekući mjesec</h2>
+                <div class="controls-bar">
+                    <input type="text" class="search-input" id="otpremaci-daily-search" placeholder="🔍 Pretraži..." onkeyup="filterOtremaciDailyTable()">
+                    <button class="btn btn-primary" onclick="exportTableToCSV('otpremaci-daily')">📥 Export CSV</button>
+                </div>
+                <div class="kupci-table-wrapper">
+                    <table class="kupci-table" id="otpremaci-daily-table">
+                        <thead id="otpremaci-daily-header"></thead>
+                        <tbody id="otpremaci-daily-body"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -2093,6 +2125,9 @@
 
                 document.getElementById('primaci-body').innerHTML = bodyHTML + totalsRow;
 
+                // Load daily data for current month
+                loadPrimaciDaily();
+
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('primaci-content').classList.remove('hidden');
 
@@ -2182,12 +2217,208 @@
 
                 document.getElementById('otpremaci-body').innerHTML = bodyHTML + totalsRow;
 
+                // Load daily data for current month
+                loadOtremaciDaily();
+
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('otpremaci-content').classList.remove('hidden');
 
             } catch (error) {
                 showError('Greška', 'Greška pri učitavanju otpremača: ' + error.message);
                 document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
+            }
+        }
+
+        // Load primaci daily data (current month)
+        async function loadPrimaciDaily() {
+            try {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = now.getMonth(); // 0-11
+
+                const url = `${API_URL}?path=primaci-daily&year=${year}&month=${month}&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetch(url).then(res => res.json());
+
+                if (data.error) {
+                    console.error('Error loading primaci daily:', data.error);
+                    return;
+                }
+
+                // Orange theme for daily primaci
+                const headerHTML = `
+                    <tr>
+                        <th style="position: sticky; left: 0; background: #ea580c; z-index: 20; border-right: 3px solid #c2410c; min-width: 100px; cursor: pointer;">
+                            📅 Datum
+                        </th>
+                        <th style="min-width: 100px; background: #ea580c; color: white; font-weight: 700; border: 1px solid #c2410c;">
+                            🏢 Odjel
+                        </th>
+                        <th style="min-width: 150px; background: #ea580c; color: white; font-weight: 700; border: 1px solid #c2410c;">
+                            👷 Primač
+                        </th>
+                        ${data.sortimentiNazivi.map(s => `
+                            <th style="min-width: 70px; background: #ea580c; color: white; font-weight: 700; border: 1px solid #c2410c; font-size: 10px;">
+                                ${s}
+                            </th>
+                        `).join('')}
+                    </tr>
+                `;
+                document.getElementById('primaci-daily-header').innerHTML = headerHTML;
+
+                // Calculate totals
+                const totals = {};
+                data.sortimentiNazivi.forEach(s => totals[s] = 0);
+                data.data.forEach(row => {
+                    data.sortimentiNazivi.forEach(s => {
+                        totals[s] += row.sortimenti[s] || 0;
+                    });
+                });
+
+                // Build body with zebra striping and hover effects
+                const bodyHTML = data.data.map((row, idx) => {
+                    const rowBg = idx % 2 === 0 ? '#fff7ed' : 'white';
+                    const hoverBg = idx % 2 === 0 ? '#ffedd5' : '#fff7ed';
+
+                    const sortimentiCells = data.sortimentiNazivi.map(sortiment => {
+                        const val = row.sortimenti[sortiment] || 0;
+                        const displayVal = val > 0 ? val.toFixed(2) : '-';
+                        const fontWeight = val > 0 ? 'font-weight: 500;' : 'color: #9ca3af;';
+                        return `<td style="${fontWeight} border: 1px solid #fed7aa; font-family: 'Courier New', monospace; text-align: right;">${displayVal}</td>`;
+                    }).join('');
+
+                    return `
+                        <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
+                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #ea580c;">
+                                ${row.datum}
+                            </td>
+                            <td style="border: 1px solid #fed7aa;">${row.odjel}</td>
+                            <td style="font-weight: 600; border: 1px solid #fed7aa;">${row.primac}</td>
+                            ${sortimentiCells}
+                        </tr>
+                    `;
+                }).join('');
+
+                // Add totals row with soft orange colors
+                const totalsCells = data.sortimentiNazivi.map(s => {
+                    const val = totals[s];
+                    const displayVal = val > 0 ? val.toFixed(2) : '-';
+                    return `<td style="border: 1px solid #fb923c; font-family: 'Courier New', monospace; text-align: right;">${displayVal}</td>`;
+                }).join('');
+
+                const totalsRow = `
+                    <tr style="background: linear-gradient(to bottom, #fed7aa, #fdba74); color: #9a3412; font-weight: 700; border-top: 3px solid #f97316;">
+                        <td style="position: sticky; left: 0; background: #fed7aa; z-index: 10; border-right: 2px solid #ea580c;">
+                            📈 UKUPNO
+                        </td>
+                        <td style="background: #fed7aa;"></td>
+                        <td style="background: #fed7aa;"></td>
+                        ${totalsCells}
+                    </tr>
+                `;
+
+                document.getElementById('primaci-daily-body').innerHTML = bodyHTML + totalsRow;
+
+            } catch (error) {
+                console.error('Error in loadPrimaciDaily:', error);
+            }
+        }
+
+        // Load otpremaci daily data (current month)
+        async function loadOtremaciDaily() {
+            try {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = now.getMonth(); // 0-11
+
+                const url = `${API_URL}?path=otpremaci-daily&year=${year}&month=${month}&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetch(url).then(res => res.json());
+
+                if (data.error) {
+                    console.error('Error loading otpremaci daily:', data.error);
+                    return;
+                }
+
+                // Teal/cyan theme for daily otpremaci
+                const headerHTML = `
+                    <tr>
+                        <th style="position: sticky; left: 0; background: #0891b2; z-index: 20; border-right: 3px solid #0e7490; min-width: 100px; cursor: pointer;">
+                            📅 Datum
+                        </th>
+                        <th style="min-width: 100px; background: #0891b2; color: white; font-weight: 700; border: 1px solid #0e7490;">
+                            🏢 Odjel
+                        </th>
+                        <th style="min-width: 150px; background: #0891b2; color: white; font-weight: 700; border: 1px solid #0e7490;">
+                            🚛 Otpremač
+                        </th>
+                        <th style="min-width: 150px; background: #0891b2; color: white; font-weight: 700; border: 1px solid #0e7490;">
+                            🏪 Kupac
+                        </th>
+                        ${data.sortimentiNazivi.map(s => `
+                            <th style="min-width: 70px; background: #0891b2; color: white; font-weight: 700; border: 1px solid #0e7490; font-size: 10px;">
+                                ${s}
+                            </th>
+                        `).join('')}
+                    </tr>
+                `;
+                document.getElementById('otpremaci-daily-header').innerHTML = headerHTML;
+
+                // Calculate totals
+                const totals = {};
+                data.sortimentiNazivi.forEach(s => totals[s] = 0);
+                data.data.forEach(row => {
+                    data.sortimentiNazivi.forEach(s => {
+                        totals[s] += row.sortimenti[s] || 0;
+                    });
+                });
+
+                // Build body with zebra striping and hover effects
+                const bodyHTML = data.data.map((row, idx) => {
+                    const rowBg = idx % 2 === 0 ? '#ecfeff' : 'white';
+                    const hoverBg = idx % 2 === 0 ? '#cffafe' : '#ecfeff';
+
+                    const sortimentiCells = data.sortimentiNazivi.map(sortiment => {
+                        const val = row.sortimenti[sortiment] || 0;
+                        const displayVal = val > 0 ? val.toFixed(2) : '-';
+                        const fontWeight = val > 0 ? 'font-weight: 500;' : 'color: #9ca3af;';
+                        return `<td style="${fontWeight} border: 1px solid #a5f3fc; font-family: 'Courier New', monospace; text-align: right;">${displayVal}</td>`;
+                    }).join('');
+
+                    return `
+                        <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
+                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #0891b2;">
+                                ${row.datum}
+                            </td>
+                            <td style="border: 1px solid #a5f3fc;">${row.odjel}</td>
+                            <td style="font-weight: 600; border: 1px solid #a5f3fc;">${row.otpremac}</td>
+                            <td style="border: 1px solid #a5f3fc; color: #0e7490; font-weight: 600;">${row.kupac || '-'}</td>
+                            ${sortimentiCells}
+                        </tr>
+                    `;
+                }).join('');
+
+                // Add totals row with soft cyan colors
+                const totalsCells = data.sortimentiNazivi.map(s => {
+                    const val = totals[s];
+                    const displayVal = val > 0 ? val.toFixed(2) : '-';
+                    return `<td style="border: 1px solid #22d3ee; font-family: 'Courier New', monospace; text-align: right;">${displayVal}</td>`;
+                }).join('');
+
+                const totalsRow = `
+                    <tr style="background: linear-gradient(to bottom, #a5f3fc, #67e8f9); color: #0e7490; font-weight: 700; border-top: 3px solid #06b6d4;">
+                        <td style="position: sticky; left: 0; background: #a5f3fc; z-index: 10; border-right: 2px solid #0891b2;">
+                            📈 UKUPNO
+                        </td>
+                        <td style="background: #a5f3fc;"></td>
+                        <td style="background: #a5f3fc;"></td>
+                        <td style="background: #a5f3fc;"></td>
+                        ${totalsCells}
+                    </tr>
+                `;
+
+                document.getElementById('otpremaci-daily-body').innerHTML = bodyHTML + totalsRow;
+
+            } catch (error) {
+                console.error('Error in loadOtremaciDaily:', error);
             }
         }
 
@@ -2835,6 +3066,54 @@
                     const txtValue = td.textContent || td.innerText;
                     tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
                 }
+            }
+        }
+
+        // Filter primaci daily table
+        function filterPrimaciDailyTable() {
+            const input = document.getElementById('primaci-daily-search');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('primaci-daily-table');
+            const tbody = table.getElementsByTagName('tbody')[0];
+            if (!tbody) return;
+            const tr = tbody.getElementsByTagName('tr');
+
+            for (let i = 0; i < tr.length - 1; i++) { // -1 to exclude UKUPNO row
+                const tds = tr[i].getElementsByTagName('td');
+                let found = false;
+                // Search in datum, odjel, and primac columns
+                for (let j = 0; j < 3 && j < tds.length; j++) {
+                    const txtValue = tds[j].textContent || tds[j].innerText;
+                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                        found = true;
+                        break;
+                    }
+                }
+                tr[i].style.display = found ? '' : 'none';
+            }
+        }
+
+        // Filter otpremaci daily table
+        function filterOtremaciDailyTable() {
+            const input = document.getElementById('otpremaci-daily-search');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('otpremaci-daily-table');
+            const tbody = table.getElementsByTagName('tbody')[0];
+            if (!tbody) return;
+            const tr = tbody.getElementsByTagName('tr');
+
+            for (let i = 0; i < tr.length - 1; i++) { // -1 to exclude UKUPNO row
+                const tds = tr[i].getElementsByTagName('td');
+                let found = false;
+                // Search in datum, odjel, otpremac, and kupac columns
+                for (let j = 0; j < 4 && j < tds.length; j++) {
+                    const txtValue = tds[j].textContent || tds[j].innerText;
+                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                        found = true;
+                        break;
+                    }
+                }
+                tr[i].style.display = found ? '' : 'none';
             }
         }
 
