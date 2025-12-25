@@ -1768,14 +1768,26 @@ function handleAddSjeca(params) {
     Logger.log('Datum: ' + params.datum);
 
     const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const primkaSheet = ss.getSheetByName("INDEX_PRIMKA");
+    let pendingSheet = ss.getSheetByName("PENDING_PRIMKA");
 
-    if (!primkaSheet) {
-      return createJsonResponse({ error: "INDEX_PRIMKA sheet not found" }, false);
+    // Kreiraj PENDING_PRIMKA sheet ako ne postoji
+    if (!pendingSheet) {
+      pendingSheet = ss.insertSheet("PENDING_PRIMKA");
+      // Dodaj header red
+      const headers = ["ODJEL", "DATUM", "PRIMAČ", "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+                       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI", "F/L L", "I L", "II L", "III L", "TRUPCI",
+                       "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO", "STATUS", "TIMESTAMP"];
+      pendingSheet.appendRow(headers);
+
+      // Formatiraj header
+      const headerRange = pendingSheet.getRange(1, 1, 1, headers.length);
+      headerRange.setBackground("#047857");
+      headerRange.setFontColor("white");
+      headerRange.setFontWeight("bold");
     }
 
     // Pripremi red podataka
-    // A: ODJEL, B: DATUM, C: PRIMAČ, D-U: sortimenti (18 kolona)
+    // A-U: kao INDEX_PRIMKA, V: STATUS, W: TIMESTAMP
     const sortimentiNazivi = [
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
@@ -1800,15 +1812,19 @@ function handleAddSjeca(params) {
     // Dodaj SVEUKUPNO kao zadnju kolonu (U)
     newRow.push(ukupno);
 
+    // Dodaj STATUS (V) i TIMESTAMP (W)
+    newRow.push("PENDING");
+    newRow.push(new Date());
+
     // Dodaj red na kraj sheet-a
-    primkaSheet.appendRow(newRow);
+    pendingSheet.appendRow(newRow);
 
     Logger.log('=== HANDLE ADD SJECA END ===');
-    Logger.log('Successfully added new sjeca entry');
+    Logger.log('Successfully added new sjeca entry to PENDING');
 
     return createJsonResponse({
       success: true,
-      message: "Sječa uspješno dodana",
+      message: "Sječa poslana rukovodiocu na pregled",
       ukupno: ukupno
     }, true);
 
@@ -1849,14 +1865,26 @@ function handleAddOtprema(params) {
     Logger.log('Kupac: ' + params.kupac);
 
     const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const otpremaSheet = ss.getSheetByName("INDEX_OTPREMA");
+    let pendingSheet = ss.getSheetByName("PENDING_OTPREMA");
 
-    if (!otpremaSheet) {
-      return createJsonResponse({ error: "INDEX_OTPREMA sheet not found" }, false);
+    // Kreiraj PENDING_OTPREMA sheet ako ne postoji
+    if (!pendingSheet) {
+      pendingSheet = ss.insertSheet("PENDING_OTPREMA");
+      // Dodaj header red
+      const headers = ["ODJEL", "DATUM", "OTPREMAČ", "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+                       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI", "F/L L", "I L", "II L", "III L", "TRUPCI",
+                       "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO", "KUPAC", "STATUS", "TIMESTAMP"];
+      pendingSheet.appendRow(headers);
+
+      // Formatiraj header
+      const headerRange = pendingSheet.getRange(1, 1, 1, headers.length);
+      headerRange.setBackground("#2563eb");
+      headerRange.setFontColor("white");
+      headerRange.setFontWeight("bold");
     }
 
     // Pripremi red podataka
-    // A: ODJEL, B: DATUM, C: OTPREMAČ, D-U: sortimenti (18 kolona), V: KUPAC
+    // A-U: kao INDEX_OTPREMA, V: KUPAC, W: STATUS, X: TIMESTAMP
     const sortimentiNazivi = [
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
@@ -1884,15 +1912,19 @@ function handleAddOtprema(params) {
     // Dodaj KUPAC (V)
     newRow.push(params.kupac || '');
 
+    // Dodaj STATUS (W) i TIMESTAMP (X)
+    newRow.push("PENDING");
+    newRow.push(new Date());
+
     // Dodaj red na kraj sheet-a
-    otpremaSheet.appendRow(newRow);
+    pendingSheet.appendRow(newRow);
 
     Logger.log('=== HANDLE ADD OTPREMA END ===');
-    Logger.log('Successfully added new otprema entry');
+    Logger.log('Successfully added new otprema entry to PENDING');
 
     return createJsonResponse({
       success: true,
-      message: "Otprema uspješno dodana",
+      message: "Otprema poslana rukovodiocu na pregled",
       ukupno: ukupno
     }, true);
 
