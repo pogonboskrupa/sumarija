@@ -44,6 +44,12 @@ function doGet(e) {
       return handleAddOtprema(e.parameter);
     } else if (path === 'pending-unosi') {
       return handlePendingUnosi(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'my-pending') {
+      return handleMyPending(e.parameter.username, e.parameter.password, e.parameter.tip);
+    } else if (path === 'update-pending') {
+      return handleUpdatePending(e.parameter);
+    } else if (path === 'delete-pending') {
+      return handleDeletePending(e.parameter);
     }
 
     return createJsonResponse({ error: 'Unknown path' }, false);
@@ -2078,6 +2084,246 @@ function handlePendingUnosi(year, username, password) {
     Logger.log('ERROR in handlePendingUnosi: ' + error.toString());
     return createJsonResponse({
       error: "Greška pri učitavanju pending unosa: " + error.toString()
+    }, false);
+  }
+}
+
+// Handler za prikaz mojih pending unosa (zadnjih 10)
+function handleMyPending(username, password, tip) {
+  try {
+    Logger.log('=== HANDLE MY PENDING START ===');
+    Logger.log('Username: ' + username);
+    Logger.log('Tip: ' + tip); // 'sjeca' ili 'otprema'
+
+    // Verify user
+    const user = verifyUser(username, password);
+    if (!user) {
+      return createJsonResponse({ error: 'Neispravno korisničko ime ili lozinka' }, false);
+    }
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const sheetName = tip === 'sjeca' ? 'PENDING_PRIMKA' : 'PENDING_OTPREMA';
+    const sheet = ss.getSheetByName(sheetName);
+
+    if (!sheet) {
+      return createJsonResponse({
+        unosi: [],
+        message: 'Nema pending unosa'
+      }, true);
+    }
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+
+    // Find column indices
+    const radnikCol = tip === 'sjeca' ?
+      headers.indexOf('PRIMAČ') :
+      headers.indexOf('OTPREMAČ');
+    const statusCol = headers.indexOf('STATUS');
+    const timestampCol = headers.indexOf('TIMESTAMP');
+    const rowIdCol = headers.indexOf('ROW_ID'); // We'll add this for tracking
+
+    const rezultat = [];
+
+    // Process rows (skip header)
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+
+      // Check if this entry belongs to the current user and is pending
+      if (row[statusCol] === 'PENDING' && row[radnikCol] === user.ime) {
+        const unos = {
+          rowIndex: i + 1, // Store row index for editing
+          datum: row[headers.indexOf('DATUM')],
+          odjel: row[headers.indexOf('ODJEL')],
+          timestamp: row[timestampCol],
+          sortimenti: {}
+        };
+
+        // Add kupac for otprema
+        if (tip === 'otprema') {
+          unos.kupac = row[headers.indexOf('KUPAC')] || '';
+        }
+
+        // Extract all sortimenti
+        headers.forEach((header, idx) => {
+          if (header !== 'ODJEL' && header !== 'DATUM' && header !== 'PRIMAČ' &&
+              header !== 'OTPREMAČ' && header !== 'KUPAC' && header !== 'STATUS' &&
+              header !== 'TIMESTAMP' && header !== 'ROW_ID' && header !== 'SVEUKUPNO') {
+            unos.sortimenti[header] = row[idx] || 0;
+          }
+        });
+
+        rezultat.push(unos);
+      }
+    }
+
+    // Sort by timestamp (newest first) and take last 10
+    rezultat.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const last10 = rezultat.slice(0, 10);
+
+    Logger.log('=== HANDLE MY PENDING END ===');
+    Logger.log(`Found ${last10.length} pending entries for user ${user.ime}`);
+
+    return createJsonResponse({
+      unosi: last10
+    }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleMyPending: ' + error.toString());
+    return createJsonResponse({
+      error: "Greška pri učitavanju mojih unosa: " + error.toString()
+    }, false);
+  }
+}
+
+// Handler za ažuriranje pending unosa
+function handleUpdatePending(params) {
+  try {
+    Logger.log('=== HANDLE UPDATE PENDING START ===');
+
+    const username = params.username;
+    const password = params.password;
+    const tip = params.tip; // 'sjeca' ili 'otprema'
+    const rowIndex = parseInt(params.rowIndex);
+
+    // Verify user
+    const user = verifyUser(username, password);
+    if (!user) {
+      return createJsonResponse({ error: 'Neispravno korisničko ime ili lozinka' }, false);
+    }
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const sheetName = tip === 'sjeca' ? 'PENDING_PRIMKA' : 'PENDING_OTPREMA';
+    const sheet = ss.getSheetByName(sheetName);
+
+    if (!sheet) {
+      return createJsonResponse({ error: 'Sheet ne postoji' }, false);
+    }
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const row = data[rowIndex - 1];
+
+    // Verify ownership (only the creator or admin can edit)
+    const radnikCol = tip === 'sjeca' ? headers.indexOf('PRIMAČ') : headers.indexOf('OTPREMAČ');
+    const statusCol = headers.indexOf('STATUS');
+
+    if (row[statusCol] !== 'PENDING') {
+      return createJsonResponse({ error: 'Ovaj unos nije više pending' }, false);
+    }
+
+    if (user.uloga !== 'admin' && row[radnikCol] !== user.ime) {
+      return createJsonResponse({ error: 'Nemate pravo da uredite ovaj unos' }, false);
+    }
+
+    // Build updated row
+    const updatedRow = [...row];
+
+    // Update datum and odjel
+    updatedRow[headers.indexOf('DATUM')] = params.datum;
+    updatedRow[headers.indexOf('ODJEL')] = params.odjel;
+
+    // Update kupac for otprema
+    if (tip === 'otprema' && params.kupac !== undefined) {
+      updatedRow[headers.indexOf('KUPAC')] = params.kupac;
+    }
+
+    // Update all sortimenti
+    let ukupno = 0;
+    headers.forEach((header, idx) => {
+      if (params[header] !== undefined && header !== 'ODJEL' && header !== 'DATUM' &&
+          header !== 'PRIMAČ' && header !== 'OTPREMAČ' && header !== 'KUPAC' &&
+          header !== 'STATUS' && header !== 'TIMESTAMP' && header !== 'SVEUKUPNO') {
+        const value = parseFloat(params[header]) || 0;
+        updatedRow[idx] = value;
+        ukupno += value;
+      }
+    });
+
+    // Update SVEUKUPNO if it exists
+    const sveukupnoCol = headers.indexOf('SVEUKUPNO');
+    if (sveukupnoCol !== -1) {
+      updatedRow[sveukupnoCol] = ukupno;
+    }
+
+    // Update timestamp to show it was edited
+    updatedRow[headers.indexOf('TIMESTAMP')] = new Date();
+
+    // Write updated row back to sheet
+    sheet.getRange(rowIndex, 1, 1, updatedRow.length).setValues([updatedRow]);
+
+    Logger.log('=== HANDLE UPDATE PENDING END ===');
+    Logger.log(`Updated row ${rowIndex} in ${sheetName}`);
+
+    return createJsonResponse({
+      success: true,
+      message: 'Unos uspješno ažuriran',
+      ukupno: ukupno
+    }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleUpdatePending: ' + error.toString());
+    return createJsonResponse({
+      error: "Greška pri ažuriranju unosa: " + error.toString()
+    }, false);
+  }
+}
+
+// Handler za brisanje pending unosa
+function handleDeletePending(params) {
+  try {
+    Logger.log('=== HANDLE DELETE PENDING START ===');
+
+    const username = params.username;
+    const password = params.password;
+    const tip = params.tip;
+    const rowIndex = parseInt(params.rowIndex);
+
+    // Verify user
+    const user = verifyUser(username, password);
+    if (!user) {
+      return createJsonResponse({ error: 'Neispravno korisničko ime ili lozinka' }, false);
+    }
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const sheetName = tip === 'sjeca' ? 'PENDING_PRIMKA' : 'PENDING_OTPREMA';
+    const sheet = ss.getSheetByName(sheetName);
+
+    if (!sheet) {
+      return createJsonResponse({ error: 'Sheet ne postoji' }, false);
+    }
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const row = data[rowIndex - 1];
+
+    // Verify ownership (only the creator or admin can delete)
+    const radnikCol = tip === 'sjeca' ? headers.indexOf('PRIMAČ') : headers.indexOf('OTPREMAČ');
+    const statusCol = headers.indexOf('STATUS');
+
+    if (row[statusCol] !== 'PENDING') {
+      return createJsonResponse({ error: 'Ovaj unos nije više pending' }, false);
+    }
+
+    if (user.uloga !== 'admin' && row[radnikCol] !== user.ime) {
+      return createJsonResponse({ error: 'Nemate pravo da obrišete ovaj unos' }, false);
+    }
+
+    // Delete the row
+    sheet.deleteRow(rowIndex);
+
+    Logger.log('=== HANDLE DELETE PENDING END ===');
+    Logger.log(`Deleted row ${rowIndex} from ${sheetName}`);
+
+    return createJsonResponse({
+      success: true,
+      message: 'Unos uspješno obrisan'
+    }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleDeletePending: ' + error.toString());
+    return createJsonResponse({
+      error: "Greška pri brisanju unosa: " + error.toString()
     }, false);
   }
 }
