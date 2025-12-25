@@ -117,7 +117,7 @@
         <div id="loading-screen" class="loading">
             <div class="loading-icon">⏳</div>
             <div class="loading-text">Učitavam podatke...</div>
-            <div class="loading-sub">Ovo može trajati 2-3 sekunde</div>
+            <div class="loading-sub">Molimo sačekajte...</div>
         </div>
         
         <div id="content-screen" class="container hidden">
@@ -187,10 +187,72 @@
     </div>
     
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbyzTN1Yw1YakzDV_grWM_HPqDqeYNNUh-uTlhiEIug/dev';
+        // ✅ UPDATED: Ispravan API URL (završava sa /exec)
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwpm7ggzTEalGJopOIwEKv7qg908p0P1yaJSV45qqU1Rz7FGrgOvilTaZZWpukSbdB7Hw/exec';
+
+        // API konfiguracija
+        const API_CONFIG = {
+            timeout: 15000,      // 15 sekundi timeout
+            maxRetries: 3,       // Maksimalno 3 pokušaja
+            retryDelay: 2000     // Početni delay 2 sekunde (eksponencijalni backoff)
+        };
 
         let currentUser = null;
         let currentPassword = null;
+
+        // ✅ NOVO: Fetch sa retry logikom i timeout-om
+        async function fetchWithRetry(url, options = {}) {
+            const { timeout = API_CONFIG.timeout, maxRetries = API_CONFIG.maxRetries } = options;
+
+            for (let attempt = 0; attempt < maxRetries; attempt++) {
+                try {
+                    // Kreiranje AbortController za timeout
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+                    const response = await fetch(url, {
+                        ...options,
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(timeoutId);
+
+                    // Provjera HTTP status koda
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    return await response.json();
+
+                } catch (error) {
+                    const isLastAttempt = attempt === maxRetries - 1;
+
+                    // Ako je timeout greška
+                    if (error.name === 'AbortError') {
+                        if (isLastAttempt) {
+                            throw new Error('Server ne odgovara. Molimo pokušajte kasnije.');
+                        }
+                    }
+                    // Ako je network greška
+                    else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                        if (isLastAttempt) {
+                            throw new Error('Nema internet konekcije. Provjerite mrežu i pokušajte ponovo.');
+                        }
+                    }
+                    // Ostale greške
+                    else if (isLastAttempt) {
+                        throw error;
+                    }
+
+                    // Čekaj prije sljedećeg pokušaja (eksponencijalni backoff)
+                    if (!isLastAttempt) {
+                        const delay = API_CONFIG.retryDelay * Math.pow(2, attempt);
+                        console.log(`Pokušaj ${attempt + 1} neuspješan. Pokušavam ponovo za ${delay}ms...`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                }
+            }
+        }
         
         // Check if already logged in
         window.addEventListener('DOMContentLoaded', () => {
@@ -205,23 +267,25 @@
             }
         });
         
-        // Login form
+        // ✅ UPDATED: Login form sa retry logikom
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const errorMsg = document.getElementById('error-msg');
             const loginBtn = document.getElementById('login-btn');
-            
+
             errorMsg.classList.add('hidden');
             loginBtn.disabled = true;
             loginBtn.textContent = 'Prijavljivanje...';
-            
+
             try {
-                const response = await fetch(`${API_URL}?path=login&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`);
-                const data = await response.json();
-                
+                // Koristi fetchWithRetry umjesto običnog fetch
+                const data = await fetchWithRetry(
+                    `${API_URL}?path=login&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+                );
+
                 if (data.success) {
                     currentUser = data;
                     currentPassword = password;
@@ -230,11 +294,23 @@
                     showApp();
                     loadData();
                 } else {
-                    errorMsg.textContent = data.error || 'Greška pri prijavi';
+                    // Specifičnije error poruke
+                    const errorText = data.error || 'Pogrešno korisničko ime ili šifra';
+                    errorMsg.textContent = errorText;
                     errorMsg.classList.remove('hidden');
                 }
             } catch (error) {
-                errorMsg.textContent = 'Greška u komunikaciji sa serverom: ' + error.message;
+                // Poboljšan error handling sa specifičnim porukama
+                let errorText = error.message;
+
+                // Dodaj help tekst za česte greške
+                if (error.message.includes('internet')) {
+                    errorText += ' Pokušajte ponovo kada budete online.';
+                } else if (error.message.includes('Server ne odgovara')) {
+                    errorText += ' Server je možda privremeno nedostupan.';
+                }
+
+                errorMsg.textContent = errorText;
                 errorMsg.classList.remove('hidden');
             } finally {
                 loginBtn.disabled = false;
@@ -260,24 +336,44 @@
             document.getElementById('loading-screen').classList.remove('hidden');
         }
         
+        // ✅ UPDATED: loadData sa retry logikom i boljim error handling-om
         async function loadData() {
             document.getElementById('loading-screen').classList.remove('hidden');
             document.getElementById('content-screen').classList.add('hidden');
-            
+
             try {
                 const year = new Date().getFullYear();
-                const response = await fetch(`${API_URL}?path=stats&year=${year}&username=${currentUser.username}&password=${currentPassword}`);
-                const data = await response.json();
-                
+
+                // Koristi fetchWithRetry umjesto običnog fetch
+                const data = await fetchWithRetry(
+                    `${API_URL}?path=stats&year=${year}&username=${currentUser.username}&password=${currentPassword}`
+                );
+
+                // ✅ NOVO: Validacija podataka
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Validacija da svi potrebni podaci postoje
+                if (!data.monthlyStats || !Array.isArray(data.monthlyStats)) {
+                    throw new Error('Neispravni podaci sa servera (nedostaju mjesečne statistike)');
+                }
+
+                if (!data.odjeliStats || typeof data.odjeliStats !== 'object') {
+                    throw new Error('Neispravni podaci sa servera (nedostaju statistike odjela)');
+                }
+
                 // Update KPI cards
-                document.getElementById('total-primka').textContent = data.totalPrimka.toFixed(2) + ' m³';
-                document.getElementById('total-otprema').textContent = data.totalOtprema.toFixed(2) + ' m³';
-                
-                const diff = data.totalPrimka - data.totalOtprema;
+                const totalPrimka = data.totalPrimka || 0;
+                const totalOtprema = data.totalOtprema || 0;
+                document.getElementById('total-primka').textContent = totalPrimka.toFixed(2) + ' m³';
+                document.getElementById('total-otprema').textContent = totalOtprema.toFixed(2) + ' m³';
+
+                const diff = totalPrimka - totalOtprema;
                 const diffEl = document.getElementById('total-diff');
                 diffEl.textContent = (diff >= 0 ? '+' : '') + diff.toFixed(2) + ' m³';
                 diffEl.className = 'card-value ' + (diff >= 0 ? 'green' : 'red');
-                
+
                 // Create monthly table
                 const monthlyTableHTML = data.monthlyStats.map(m => {
                     const diff = m.sječa - m.otprema;
@@ -322,16 +418,39 @@
                     `;
                 }).join('');
                 document.getElementById('odjeli-table').innerHTML = tableHTML;
-                
+
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('content-screen').classList.remove('hidden');
-                
+
             } catch (error) {
-                alert('Greška pri učitavanju podataka: ' + error.message);
-                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
+                // ✅ UPDATED: Inline error prikaz umjesto alert()
+                let errorMessage = error.message;
+
+                // Dodatni context za određene greške
+                if (error.message.includes('Unauthorized')) {
+                    errorMessage = 'Sesija je istekla. Molimo prijavite se ponovo.';
+                    // Auto logout nakon 2 sekunde
+                    setTimeout(() => logout(), 2000);
+                } else if (error.message.includes('internet')) {
+                    errorMessage += ' Provjerite internet konekciju.';
+                } else if (error.message.includes('Server ne odgovara')) {
+                    errorMessage += ' Pokušajte osvježiti stranicu.';
+                }
+
+                document.getElementById('loading-screen').innerHTML = `
+                    <div class="loading-icon">❌</div>
+                    <div class="loading-text">Greška pri učitavanju podataka</div>
+                    <div class="loading-sub">${errorMessage}</div>
+                    <div style="margin-top: 20px;">
+                        <button class="btn" onclick="loadData()" style="max-width: 200px; margin: 0 auto;">
+                            🔄 Pokušaj ponovo
+                        </button>
+                    </div>
+                `;
             }
         }
 
+        // ✅ UPDATED: drawLineChart sa safe handling
         function drawLineChart(monthlyStats) {
             const svg = document.getElementById('line-chart');
             const padding = { top: 20, right: 40, bottom: 40, left: 60 };
@@ -344,9 +463,23 @@
             svg.innerHTML = '';
             svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
 
+            // ✅ NOVO: Safe handling za prazne podatke
+            if (!monthlyStats || monthlyStats.length === 0) {
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', width / 2);
+                text.setAttribute('y', height / 2);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('font-size', '14');
+                text.setAttribute('fill', '#6b7280');
+                text.textContent = 'Nema podataka za prikaz';
+                svg.appendChild(text);
+                return;
+            }
+
             // Find max value for scaling
             const maxValue = Math.max(
-                ...monthlyStats.map(m => Math.max(m.sječa, m.otprema))
+                ...monthlyStats.map(m => Math.max(m.sječa || 0, m.otprema || 0)),
+                1 // Minimalno 1 da se izbjegne dijeljenje sa 0
             );
             const yScale = chartHeight / (maxValue * 1.1); // 10% padding on top
             const xStep = chartWidth / (monthlyStats.length - 1);
