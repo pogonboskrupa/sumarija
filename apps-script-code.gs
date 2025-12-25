@@ -1934,7 +1934,7 @@ function handleAddOtprema(params) {
       // Dodaj header red
       const headers = ["ODJEL", "DATUM", "OTPREMAČ", "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
                        "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI", "F/L L", "I L", "II L", "III L", "TRUPCI",
-                       "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO", "KUPAC", "STATUS", "TIMESTAMP"];
+                       "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO", "KUPAC", "BROJ_OTPREMNICE", "STATUS", "TIMESTAMP"];
       pendingSheet.appendRow(headers);
 
       // Formatiraj header
@@ -1978,7 +1978,10 @@ function handleAddOtprema(params) {
     // Dodaj KUPAC (V)
     newRow.push(params.kupac || '');
 
-    // Dodaj STATUS (W) i TIMESTAMP (X)
+    // Dodaj BROJ_OTPREMNICE (W)
+    newRow.push(params.brojOtpremnice || '');
+
+    // Dodaj STATUS (X) i TIMESTAMP (Y)
     newRow.push("PENDING");
     newRow.push(new Date());
 
@@ -2089,8 +2092,9 @@ function handlePendingUnosi(year, username, password) {
         const datum = row[1];       // B - DATUM
         const otpremac = row[2];    // C - OTPREMAČ
         const kupac = row[21];      // V - KUPAC
-        const status = row[22];     // W - STATUS
-        const timestamp = row[23];  // X - TIMESTAMP
+        const brojOtpremnice = row[22]; // W - BROJ_OTPREMNICE
+        const status = row[23];     // X - STATUS
+        const timestamp = row[24];  // Y - TIMESTAMP
 
         if (!datum || status !== "PENDING") continue;
 
@@ -2116,6 +2120,7 @@ function handlePendingUnosi(year, username, password) {
           odjel: odjel,
           radnik: otpremac,
           kupac: kupac || '',
+          brojOtpremnice: brojOtpremnice || '',
           sortimenti: sortimenti,
           ukupno: ukupno,
           timestamp: formatDate(new Date(timestamp)),
@@ -2135,6 +2140,7 @@ function handlePendingUnosi(year, username, password) {
       odjel: u.odjel,
       radnik: u.radnik,
       kupac: u.kupac,
+      brojOtpremnice: u.brojOtpremnice,
       sortimenti: u.sortimenti,
       ukupno: u.ukupno,
       timestamp: u.timestamp
@@ -2207,15 +2213,16 @@ function handleMyPending(username, password, tip) {
           sortimenti: {}
         };
 
-        // Add kupac for otprema
+        // Add kupac and broj otpremnice for otprema
         if (tip === 'otprema') {
           unos.kupac = row[headers.indexOf('KUPAC')] || '';
+          unos.brojOtpremnice = row[headers.indexOf('BROJ_OTPREMNICE')] || '';
         }
 
         // Extract all sortimenti
         headers.forEach((header, idx) => {
           if (header !== 'ODJEL' && header !== 'DATUM' && header !== 'PRIMAČ' &&
-              header !== 'OTPREMAČ' && header !== 'KUPAC' && header !== 'STATUS' &&
+              header !== 'OTPREMAČ' && header !== 'KUPAC' && header !== 'BROJ_OTPREMNICE' && header !== 'STATUS' &&
               header !== 'TIMESTAMP' && header !== 'ROW_ID' && header !== 'SVEUKUPNO') {
             unos.sortimenti[header] = row[idx] || 0;
           }
@@ -2291,15 +2298,20 @@ function handleUpdatePending(params) {
     updatedRow[headers.indexOf('DATUM')] = params.datum;
     updatedRow[headers.indexOf('ODJEL')] = params.odjel;
 
-    // Update kupac for otprema
-    if (tip === 'otprema' && params.kupac !== undefined) {
-      updatedRow[headers.indexOf('KUPAC')] = params.kupac;
+    // Update kupac and broj otpremnice for otprema
+    if (tip === 'otprema') {
+      if (params.kupac !== undefined) {
+        updatedRow[headers.indexOf('KUPAC')] = params.kupac;
+      }
+      if (params.brojOtpremnice !== undefined) {
+        updatedRow[headers.indexOf('BROJ_OTPREMNICE')] = params.brojOtpremnice;
+      }
     }
 
     // Update all sortimenti
     headers.forEach((header, idx) => {
       if (params[header] !== undefined && header !== 'ODJEL' && header !== 'DATUM' &&
-          header !== 'PRIMAČ' && header !== 'OTPREMAČ' && header !== 'KUPAC' &&
+          header !== 'PRIMAČ' && header !== 'OTPREMAČ' && header !== 'KUPAC' && header !== 'BROJ_OTPREMNICE' &&
           header !== 'STATUS' && header !== 'TIMESTAMP' && header !== 'SVEUKUPNO') {
         const value = parseFloat(params[header]) || 0;
         updatedRow[idx] = value;

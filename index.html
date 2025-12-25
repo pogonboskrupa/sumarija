@@ -1026,6 +1026,10 @@
                             <label>Kupac:</label>
                             <input type="text" id="otprema-kupac" placeholder="Naziv kupca" style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
                         </div>
+                        <div class="form-group">
+                            <label>Broj otpremnice:</label>
+                            <input type="text" id="otprema-broj-otpremnice" placeholder="Unesite broj otpremnice" style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                        </div>
                     </div>
 
                     <h3 style="margin: 20px 0 10px 0; color: #2563eb;">Sortimenti (m³):</h3>
@@ -1192,6 +1196,10 @@
                         <div class="form-group">
                             <label>Kupac:</label>
                             <input type="text" id="edit-otprema-kupac" placeholder="Naziv kupca" style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>Broj otpremnice:</label>
+                            <input type="text" id="edit-otprema-broj-otpremnice" placeholder="Unesite broj otpremnice" style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
                         </div>
                     </div>
 
@@ -2791,6 +2799,7 @@
                 html += '<th style="min-width: 80px;">Odjel</th>';
                 html += '<th style="min-width: 150px;">Radnik</th>';
                 html += '<th style="min-width: 120px;">Kupac</th>';
+                html += '<th style="min-width: 120px;">Br. otpremnice</th>';
 
                 // Sortimenti headers with grouping
                 for (let i = 0; i < sortimentiNazivi.length; i++) {
@@ -2813,6 +2822,7 @@
                     html += '<td style="font-weight: 600;">' + unos.odjel + '</td>';
                     html += '<td>' + unos.radnik + '</td>';
                     html += '<td>' + (unos.kupac || '-') + '</td>';
+                    html += '<td>' + (unos.brojOtpremnice || '-') + '</td>';
 
                     // Sortimenti values with grouping
                     for (let j = 0; j < sortimentiNazivi.length; j++) {
@@ -3320,6 +3330,7 @@
                 formData.append('datum', document.getElementById('otprema-datum').value);
                 formData.append('odjel', document.getElementById('otprema-odjel').value);
                 formData.append('kupac', document.getElementById('otprema-kupac').value);
+                formData.append('brojOtpremnice', document.getElementById('otprema-broj-otpremnice').value);
                 formData.append('F/L Č', document.getElementById('otprema-FL-C').value);
                 formData.append('I Č', document.getElementById('otprema-I-C').value);
                 formData.append('II Č', document.getElementById('otprema-II-C').value);
@@ -3496,6 +3507,7 @@
                     html += '<th style="padding: 12px; border: 1px solid #ddd;">Datum</th>';
                     html += '<th style="padding: 12px; border: 1px solid #ddd;">Odjel</th>';
                     html += '<th style="padding: 12px; border: 1px solid #ddd;">Kupac</th>';
+                    html += '<th style="padding: 12px; border: 1px solid #ddd;">Br. otpremnice</th>';
                     html += '<th style="padding: 12px; border: 1px solid #ddd;">ČETINARI</th>';
                     html += '<th style="padding: 12px; border: 1px solid #ddd;">LIŠĆARI</th>';
                     html += '<th style="padding: 12px; border: 1px solid #ddd;">Ukupno</th>';
@@ -3513,6 +3525,7 @@
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + unos.datum + '</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + unos.odjel + '</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + (unos.kupac || '-') + '</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + (unos.brojOtpremnice || '-') + '</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + cetinari.toFixed(2) + ' m³</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + liscari.toFixed(2) + ' m³</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">' + ukupno.toFixed(2) + ' m³</td>';
@@ -3703,6 +3716,7 @@
             document.getElementById('edit-otprema-datum').value = unos.datum;
             document.getElementById('edit-otprema-odjel').value = unos.odjel;
             document.getElementById('edit-otprema-kupac').value = unos.kupac || '';
+            document.getElementById('edit-otprema-broj-otpremnice').value = unos.brojOtpremnice || '';
 
             var sortimentiHtml = '';
             var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ČETINARI',
@@ -3790,6 +3804,7 @@
                 formData.append('datum', document.getElementById('edit-otprema-datum').value);
                 formData.append('odjel', document.getElementById('edit-otprema-odjel').value);
                 formData.append('kupac', document.getElementById('edit-otprema-kupac').value);
+                formData.append('brojOtpremnice', document.getElementById('edit-otprema-broj-otpremnice').value);
 
                 var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ČETINARI',
                                      'F/L L', 'I L', 'II L', 'III L', 'TRUPCI', 'OGR.DUGI', 'OGR.CIJEPANI', 'LIŠĆARI'];
