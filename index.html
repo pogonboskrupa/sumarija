@@ -1626,9 +1626,9 @@
                 // Admin ili drugi korisnici vide sve tab-ove
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
-                    <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📊 Mjesečni sortimenti</button>
-                    <button class="tab" onclick="switchTab('primaci')">👷 Prikaz po primačima</button>
-                    <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz po otpremačima</button>
+                    <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📊 Sječa/otprema po mjesecima</button>
+                    <button class="tab" onclick="switchTab('primaci')">👷 Prikaz sječe</button>
+                    <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz otpreme</button>
                     <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
                     <button class="tab notification-badge" onclick="switchTab('pending-unosi')">
                         📋 Dodani unosi
@@ -2918,21 +2918,29 @@
                 const year = new Date().getFullYear();
                 const url = API_URL + '?path=mjesecni-sortimenti&year=' + year + '&username=' + currentUser.username + '&password=' + currentPassword;
 
+                console.log('Fetching mjesečni sortimenti for year:', year);
                 const response = await fetch(url);
                 const data = await response.json();
 
-                console.log('Mjesečni sortimenti data:', data);
+                console.log('Mjesečni sortimenti response:', data);
 
                 if (data.error) {
                     throw new Error(data.error);
                 }
 
+                if (!data.sjeca || !data.otprema) {
+                    throw new Error('Invalid data format received from server');
+                }
+
+                console.log('Rendering SJEČA table...');
                 // Render SJEČA table
                 renderMjesecnaTabela(data.sjeca, 'mjesecna-sjeca');
 
+                console.log('Rendering OTPREMA table...');
                 // Render OTPREMA table
                 renderMjesecnaTabela(data.otprema, 'mjesecna-otprema');
 
+                console.log('Tables rendered successfully');
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('mjesecni-sortimenti-content').classList.remove('hidden');
 
@@ -2946,17 +2954,34 @@
 
         // Render monthly table (SJEČA or OTPREMA)
         function renderMjesecnaTabela(data, tableId) {
+            console.log('renderMjesecnaTabela called with tableId:', tableId, 'data:', data);
+
             const headerElem = document.getElementById(tableId + '-header');
             const bodyElem = document.getElementById(tableId + '-body');
 
+            if (!headerElem || !bodyElem) {
+                console.error('Table elements not found for tableId:', tableId);
+                return;
+            }
+
             if (!data || !data.sortimenti || data.sortimenti.length === 0) {
+                console.log('No data available for table:', tableId);
                 headerElem.innerHTML = '';
                 bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka</td></tr>';
                 return;
             }
 
+            if (!data.mjeseci || !Array.isArray(data.mjeseci) || data.mjeseci.length !== 12) {
+                console.error('Invalid mjeseci data for table:', tableId, data.mjeseci);
+                headerElem.innerHTML = '';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #dc2626;">Greška u formatu podataka</td></tr>';
+                return;
+            }
+
             const sortimenti = data.sortimenti; // Array of sortiment names
             const mjeseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+
+            console.log('Rendering table with', sortimenti.length, 'sortimenti and', data.mjeseci.length, 'months');
 
             // Build header
             let headerHtml = '<tr><th style="min-width: 100px;">Mjesec</th>';
