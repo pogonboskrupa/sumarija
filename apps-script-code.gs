@@ -58,6 +58,46 @@ function doGet(e) {
   }
 }
 
+// Helper function to verify user credentials
+function verifyUser(username, password) {
+  const ss = SpreadsheetApp.openById(KORISNICI_SPREADSHEET_ID);
+  const usersSheet = ss.getSheetByName('Korisnici');
+
+  if (!usersSheet) {
+    return null;
+  }
+
+  const data = usersSheet.getDataRange().getValues();
+
+  // Check if admin
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    return {
+      username: username,
+      ime: 'Administrator',
+      uloga: 'admin',
+      tip: 'admin'
+    };
+  }
+
+  // Check regular users
+  // Structure: A = username, B = password, C = ime_prezime, D = tip (primac/otpremac)
+  for (let i = 1; i < data.length; i++) {
+    const storedPassword = String(data[i][1]);
+    const inputPassword = String(password);
+
+    if (data[i][0] === username && storedPassword === inputPassword) {
+      return {
+        username: username,
+        ime: data[i][2], // Full name
+        uloga: 'user',
+        tip: data[i][3] || 'user'
+      };
+    }
+  }
+
+  return null;
+}
+
 // Login handler
 function handleLogin(username, password) {
   const ss = SpreadsheetApp.openById(KORISNICI_SPREADSHEET_ID);

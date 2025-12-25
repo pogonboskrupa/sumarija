@@ -2384,7 +2384,8 @@
                     // Sortimenti values with grouping
                     for (let j = 0; j < sortimentiNazivi.length; j++) {
                         const sortiment = sortimentiNazivi[j];
-                        const val = unos.sortimenti[sortiment] || 0;
+                        // Use calculated ukupno for SVEUKUPNO instead of saved value
+                        const val = sortiment === 'SVEUKUPNO' ? unos.ukupno : (unos.sortimenti[sortiment] || 0);
                         const displayVal = val > 0 ? val.toFixed(2) : '-';
                         const colClass = getColumnGroup(sortiment);
                         html += '<td class="sortiment-col right ' + colClass + '">' + displayVal + '</td>';
