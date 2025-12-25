@@ -6,6 +6,10 @@ const KORISNICI_SPREADSHEET_ID = '1rpl0RiqsE6lrU9uDMTjf127By7b951rP3a5Chis9qwg';
 const INDEX_SPREADSHEET_ID = '1nPkSx2fCbtHGcwdq8rDo9A3dsSt9QpcF7f0JBCg1K1I';     // SUMARIJA_INDEX
 const ODJELI_FOLDER_ID = '1NQ0s_F4j9iRDaZafexzP5Bwyv0NXfMMK';                      // Folder sa svim odjelima
 
+// Admin credentials
+const ADMIN_USERNAME = 'admin';
+const ADMIN_PASSWORD = 'admin';
+
 // Dinamika po mjesecima (plan 2025) - može se ažurirati za 2026
 const DINAMIKA_2025 = [788, 2389, 6027, 5597, 6977, 6934, 7336, 6384, 6997, 7895, 5167, 2016];
 
@@ -50,6 +54,8 @@ function doGet(e) {
       return handleUpdatePending(e.parameter);
     } else if (path === 'delete-pending') {
       return handleDeletePending(e.parameter);
+    } else if (path === 'get-odjeli-list') {
+      return handleGetOdjeliList();
     }
 
     return createJsonResponse({ error: 'Unknown path' }, false);
@@ -2389,6 +2395,42 @@ function handleDeletePending(params) {
     Logger.log('ERROR in handleDeletePending: ' + error.toString());
     return createJsonResponse({
       error: "Greška pri brisanju unosa: " + error.toString()
+    }, false);
+  }
+}
+
+// Handler za dobijanje liste odjela iz foldera
+function handleGetOdjeliList() {
+  try {
+    Logger.log('=== HANDLE GET ODJELI LIST START ===');
+
+    const folder = DriveApp.getFolderById(ODJELI_FOLDER_ID);
+    const files = folder.getFilesByType(MimeType.GOOGLE_SHEETS);
+
+    const odjeliList = [];
+
+    while (files.hasNext()) {
+      const file = files.next();
+      // Remove file extension and get just the odjel name
+      let odjelName = file.getName().replace(/\.(xlsx|xls|gsheet)$/i, '');
+      odjeliList.push(odjelName);
+    }
+
+    // Sort alphabetically
+    odjeliList.sort();
+
+    Logger.log('=== HANDLE GET ODJELI LIST END ===');
+    Logger.log('Found ' + odjeliList.length + ' odjeli');
+
+    return createJsonResponse({
+      success: true,
+      odjeli: odjeliList
+    }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleGetOdjeliList: ' + error.toString());
+    return createJsonResponse({
+      error: "Greška pri učitavanju liste odjela: " + error.toString()
     }, false);
   }
 }

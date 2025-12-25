@@ -605,7 +605,9 @@
                         </div>
                         <div class="form-group">
                             <label>Odjel:</label>
-                            <input type="text" id="sjeca-odjel" required placeholder="npr. 12A" style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                            <select id="sjeca-odjel" required style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                                <option value="">Izaberi odjel...</option>
+                            </select>
                         </div>
                     </div>
 
@@ -708,7 +710,9 @@
                         </div>
                         <div class="form-group">
                             <label>Odjel:</label>
-                            <input type="text" id="otprema-odjel" required placeholder="npr. 12A" style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                            <select id="otprema-odjel" required style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                                <option value="">Izaberi odjel...</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Kupac:</label>
@@ -834,7 +838,9 @@
                         </div>
                         <div class="form-group">
                             <label>Odjel:</label>
-                            <input type="text" id="edit-sjeca-odjel" required placeholder="npr. 12A" style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                            <select id="edit-sjeca-odjel" required style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                                <option value="">Izaberi odjel...</option>
+                            </select>
                         </div>
                     </div>
 
@@ -871,7 +877,9 @@
                         </div>
                         <div class="form-group">
                             <label>Odjel:</label>
-                            <input type="text" id="edit-otprema-odjel" required placeholder="npr. 12A" style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                            <select id="edit-otprema-odjel" required style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                                <option value="">Izaberi odjel...</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Kupac:</label>
@@ -1114,12 +1122,63 @@
 
         let currentUser = null;
         let currentPassword = null;
-        
+        let odjeliList = [];
+
+        // Load odjeli list from API
+        async function loadOdjeli() {
+            try {
+                const url = API_URL + '?path=get-odjeli-list';
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.success && data.odjeli) {
+                    odjeliList = data.odjeli;
+                    populateOdjeliDropdowns();
+                }
+            } catch (error) {
+                console.error('Error loading odjeli:', error);
+            }
+        }
+
+        // Populate all odjel dropdowns
+        function populateOdjeliDropdowns() {
+            const dropdowns = [
+                'sjeca-odjel',
+                'otprema-odjel',
+                'edit-sjeca-odjel',
+                'edit-otprema-odjel'
+            ];
+
+            dropdowns.forEach(dropdownId => {
+                const dropdown = document.getElementById(dropdownId);
+                if (dropdown) {
+                    // Keep the first "Izaberi odjel..." option
+                    const currentValue = dropdown.value;
+                    dropdown.innerHTML = '<option value="">Izaberi odjel...</option>';
+
+                    odjeliList.forEach(odjel => {
+                        const option = document.createElement('option');
+                        option.value = odjel;
+                        option.textContent = odjel;
+                        dropdown.appendChild(option);
+                    });
+
+                    // Restore previously selected value if it exists
+                    if (currentValue && odjeliList.includes(currentValue)) {
+                        dropdown.value = currentValue;
+                    }
+                }
+            });
+        }
+
         // Check if already logged in
         window.addEventListener('DOMContentLoaded', () => {
+            // Load odjeli list
+            loadOdjeli();
+
             const savedUser = localStorage.getItem('sumarija_user');
             const savedPass = localStorage.getItem('sumarija_pass');
-            
+
             if (savedUser && savedPass) {
                 currentUser = JSON.parse(savedUser);
                 currentPassword = savedPass;
