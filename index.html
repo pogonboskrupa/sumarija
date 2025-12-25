@@ -2332,6 +2332,100 @@
         // ========== DODANI UNOSI VIEW ==========
 
         // Load Dodani Unosi (Pending entries)
+        // Helper to determine column group
+        function getColumnGroup(sortiment) {
+            const cetinariCols = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'CEL.DUGA', 'CEL.CIJEPANA', 'TRUPCI Č', 'ČETINARI'];
+            const liscariCols = ['F/L L', 'I L', 'II L', 'III L', 'OGR.DUGI', 'OGR.CIJEPANI', 'TRUPCI L', 'LIŠĆARI'];
+
+            if (cetinariCols.includes(sortiment)) return 'col-group-cetinari';
+            if (liscariCols.includes(sortiment)) return 'col-group-liscari';
+            return '';
+        }
+
+        // Render pending table with filters
+        function renderPendingTable(data) {
+            let html = '';
+
+            if (!data || data.length === 0) {
+                html = '<p style="text-align: center; padding: 40px; color: #6b7280;">Nema dodanih unosa</p>';
+            } else {
+                // Get sortimenti names from first item
+                const sortimentiNazivi = data[0] && data[0].sortimenti ? Object.keys(data[0].sortimenti) : [];
+
+                html = '<div class="kupci-table-wrapper"><table class="kupci-table"><thead><tr>';
+                html += '<th style="min-width: 80px;">Tip</th>';
+                html += '<th style="min-width: 100px;">Datum</th>';
+                html += '<th style="min-width: 80px;">Odjel</th>';
+                html += '<th style="min-width: 150px;">Radnik</th>';
+                html += '<th style="min-width: 120px;">Kupac</th>';
+
+                // Sortimenti headers with grouping
+                for (let i = 0; i < sortimentiNazivi.length; i++) {
+                    const colClass = getColumnGroup(sortimentiNazivi[i]);
+                    html += '<th class="sortiment-col ' + colClass + '">' + sortimentiNazivi[i] + '</th>';
+                }
+
+                html += '<th style="min-width: 130px;">Poslano</th>';
+                html += '<th style="min-width: 80px;"></th>'; // Actions column
+                html += '</tr></thead><tbody>';
+
+                // Render rows
+                for (let i = 0; i < data.length; i++) {
+                    const unos = data[i];
+                    const tipColor = unos.tip === 'SJEČA' ? '#059669' : '#2563eb';
+
+                    html += '<tr>';
+                    html += '<td><span style="font-weight: 600; color: ' + tipColor + '">' + unos.tip + '</span></td>';
+                    html += '<td>' + unos.datum + '</td>';
+                    html += '<td style="font-weight: 600;">' + unos.odjel + '</td>';
+                    html += '<td>' + unos.radnik + '</td>';
+                    html += '<td>' + (unos.kupac || '-') + '</td>';
+
+                    // Sortimenti values with grouping
+                    for (let j = 0; j < sortimentiNazivi.length; j++) {
+                        const sortiment = sortimentiNazivi[j];
+                        const val = unos.sortimenti[sortiment] || 0;
+                        const displayVal = val > 0 ? val.toFixed(2) : '-';
+                        const colClass = getColumnGroup(sortiment);
+                        html += '<td class="sortiment-col right ' + colClass + '">' + displayVal + '</td>';
+                    }
+
+                    html += '<td style="font-size: 11px; color: #6b7280;">' + unos.timestamp + '</td>';
+
+                    // Row actions dropdown
+                    html += '<td>';
+                    html += '<div class="row-actions">';
+                    html += '<button class="row-actions-btn" onclick="toggleRowActions(' + unos.id + ')">⋮</button>';
+                    html += '<div class="row-actions-dropdown" id="row-actions-' + unos.id + '">';
+                    html += '<div class="row-actions-item" onclick="editPendingUnos(' + unos.id + ', \'' + unos.tip + '\')">✏️ Uredi</div>';
+                    html += '<div class="row-actions-item danger" onclick="deletePendingUnos(' + unos.id + ', \'' + unos.tip + '\')">🗑️ Obriši</div>';
+                    html += '</div>';
+                    html += '</div>';
+                    html += '</td>';
+
+                    html += '</tr>';
+                }
+
+                html += '</tbody></table></div>';
+
+                // Add summary
+                html += '<div style="margin-top: 20px; padding: 12px; background: #f9fafb; border-radius: 8px;">';
+                html += '<strong>Ukupno dodanih unosa:</strong> ' + data.length;
+
+                let sjecaCount = 0;
+                let otpremaCount = 0;
+                for (let i = 0; i < data.length; i++) {
+                    if (data[i].tip === 'SJEČA') sjecaCount++;
+                    else if (data[i].tip === 'OTPREMA') otpremaCount++;
+                }
+
+                html += ' (Sječa: ' + sjecaCount + ', Otprema: ' + otpremaCount + ')';
+                html += '</div>';
+            }
+
+            document.getElementById('pending-unosi-container').innerHTML = html;
+        }
+
         async function loadPendingUnosi() {
             document.getElementById('loading-screen').classList.remove('hidden');
             document.getElementById('pending-unosi-content').classList.add('hidden');
@@ -2350,69 +2444,11 @@
                     throw new Error(data.error);
                 }
 
-                // Build table HTML
-                let html = '';
+                // Store unfiltered data for filtering
+                unfilteredPendingData = data.unosi || [];
 
-                if (!data.unosi || data.unosi.length === 0) {
-                    html = '<p style="text-align: center; padding: 40px; color: #6b7280;">Nema dodanih unosa</p>';
-                } else {
-                    html = '<div class="kupci-table-wrapper"><table class="kupci-table"><thead><tr>';
-                    html += '<th style="min-width: 80px;">Tip</th>';
-                    html += '<th style="min-width: 100px;">Datum</th>';
-                    html += '<th style="min-width: 80px;">Odjel</th>';
-                    html += '<th style="min-width: 150px;">Radnik</th>';
-                    html += '<th style="min-width: 120px;">Kupac</th>';
-
-                    // Sortimenti headers
-                    for (let i = 0; i < data.sortimentiNazivi.length; i++) {
-                        html += '<th class="sortiment-col">' + data.sortimentiNazivi[i] + '</th>';
-                    }
-
-                    html += '<th style="min-width: 130px;">Poslano</th>';
-                    html += '</tr></thead><tbody>';
-
-                    // Render rows
-                    for (let i = 0; i < data.unosi.length; i++) {
-                        const unos = data.unosi[i];
-                        const tipColor = unos.tip === 'SJEČA' ? '#059669' : '#2563eb';
-
-                        html += '<tr>';
-                        html += '<td><span style="font-weight: 600; color: ' + tipColor + '">' + unos.tip + '</span></td>';
-                        html += '<td>' + unos.datum + '</td>';
-                        html += '<td style="font-weight: 600;">' + unos.odjel + '</td>';
-                        html += '<td>' + unos.radnik + '</td>';
-                        html += '<td>' + (unos.kupac || '-') + '</td>';
-
-                        // Sortimenti values
-                        for (let j = 0; j < data.sortimentiNazivi.length; j++) {
-                            const sortiment = data.sortimentiNazivi[j];
-                            const val = unos.sortimenti[sortiment] || 0;
-                            const displayVal = val > 0 ? val.toFixed(2) : '-';
-                            html += '<td class="sortiment-col">' + displayVal + '</td>';
-                        }
-
-                        html += '<td style="font-size: 11px; color: #6b7280;">' + unos.timestamp + '</td>';
-                        html += '</tr>';
-                    }
-
-                    html += '</tbody></table></div>';
-
-                    // Add summary
-                    html += '<div style="margin-top: 20px; padding: 12px; background: #f9fafb; border-radius: 8px;">';
-                    html += '<strong>Ukupno dodanih unosa:</strong> ' + data.unosi.length;
-
-                    let sjecaCount = 0;
-                    let otpremaCount = 0;
-                    for (let i = 0; i < data.unosi.length; i++) {
-                        if (data.unosi[i].tip === 'SJEČA') sjecaCount++;
-                        else if (data.unosi[i].tip === 'OTPREMA') otpremaCount++;
-                    }
-
-                    html += ' (Sječa: ' + sjecaCount + ', Otprema: ' + otpremaCount + ')';
-                    html += '</div>';
-                }
-
-                document.getElementById('pending-unosi-container').innerHTML = html;
+                // Render table
+                renderPendingTable(unfilteredPendingData);
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('pending-unosi-content').classList.remove('hidden');
@@ -2424,6 +2460,50 @@
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('pending-unosi-content').classList.remove('hidden');
             }
+        }
+
+        // Edit pending unos (placeholder for future implementation)
+        function editPendingUnos(id, tip) {
+            alert('📝 Uređivanje unosa #' + id + ' (Tip: ' + tip + ') - Ova funkcionalnost će biti dodana uskoro.');
+            // Close dropdown
+            const dropdown = document.getElementById('row-actions-' + id);
+            if (dropdown) dropdown.classList.remove('show');
+        }
+
+        // Delete pending unos with modal confirmation
+        function deletePendingUnos(id, tip) {
+            // Close dropdown first
+            const dropdown = document.getElementById('row-actions-' + id);
+            if (dropdown) dropdown.classList.remove('show');
+
+            // Show confirmation modal
+            showConfirmModal(
+                'Potvrda brisanja',
+                'Da li ste sigurni da želite obrisati ovaj unos? (ID: ' + id + ', Tip: ' + tip + ')',
+                async function() {
+                    try {
+                        const formData = new URLSearchParams();
+                        formData.append('path', 'delete-pending-unos');
+                        formData.append('id', id);
+                        formData.append('tip', tip);
+                        formData.append('username', currentUser.username);
+                        formData.append('password', currentPassword);
+
+                        const url = API_URL + '?' + formData.toString();
+                        const response = await fetch(url);
+                        const result = await response.json();
+
+                        if (result.success) {
+                            alert('✅ ' + result.message);
+                            loadPendingUnosi();
+                        } else {
+                            throw new Error(result.error || 'Unknown error');
+                        }
+                    } catch (error) {
+                        alert('❌ Greška: ' + error.message);
+                    }
+                }
+            );
         }
 
         // Calculate Sjeca totals automatically
@@ -3168,60 +3248,184 @@
 
         // Delete functions
         async function deleteMySjeca(rowIndex) {
-            if (!confirm('Da li ste sigurni da želite obrisati ovaj unos?')) {
-                return;
-            }
+            showConfirmModal(
+                'Potvrda brisanja',
+                'Da li ste sigurni da želite obrisati ovaj unos sječe?',
+                async function() {
+                    try {
+                        var formData = new URLSearchParams();
+                        formData.append('path', 'delete-pending');
+                        formData.append('username', currentUser.username);
+                        formData.append('password', currentPassword);
+                        formData.append('tip', 'sjeca');
+                        formData.append('rowIndex', rowIndex);
 
-            try {
-                var formData = new URLSearchParams();
-                formData.append('path', 'delete-pending');
-                formData.append('username', currentUser.username);
-                formData.append('password', currentPassword);
-                formData.append('tip', 'sjeca');
-                formData.append('rowIndex', rowIndex);
+                        var url = API_URL + '?' + formData.toString();
+                        var response = await fetch(url);
+                        var result = await response.json();
 
-                var url = API_URL + '?' + formData.toString();
-                var response = await fetch(url);
-                var result = await response.json();
-
-                if (result.success) {
-                    alert('✅ ' + result.message);
-                    loadMySjece();
-                } else {
-                    throw new Error(result.error || 'Unknown error');
+                        if (result.success) {
+                            alert('✅ ' + result.message);
+                            loadMySjece();
+                        } else {
+                            throw new Error(result.error || 'Unknown error');
+                        }
+                    } catch (error) {
+                        alert('❌ Greška: ' + error.message);
+                    }
                 }
-            } catch (error) {
-                alert('❌ Greška: ' + error.message);
-            }
+            );
         }
 
         async function deleteMyOtprema(rowIndex) {
-            if (!confirm('Da li ste sigurni da želite obrisati ovaj unos?')) {
-                return;
-            }
+            showConfirmModal(
+                'Potvrda brisanja',
+                'Da li ste sigurni da želite obrisati ovaj unos otpreme?',
+                async function() {
+                    try {
+                        var formData = new URLSearchParams();
+                        formData.append('path', 'delete-pending');
+                        formData.append('username', currentUser.username);
+                        formData.append('password', currentPassword);
+                        formData.append('tip', 'otprema');
+                        formData.append('rowIndex', rowIndex);
 
-            try {
-                var formData = new URLSearchParams();
-                formData.append('path', 'delete-pending');
-                formData.append('username', currentUser.username);
-                formData.append('password', currentPassword);
-                formData.append('tip', 'otprema');
-                formData.append('rowIndex', rowIndex);
+                        var url = API_URL + '?' + formData.toString();
+                        var response = await fetch(url);
+                        var result = await response.json();
 
-                var url = API_URL + '?' + formData.toString();
-                var response = await fetch(url);
-                var result = await response.json();
-
-                if (result.success) {
-                    alert('✅ ' + result.message);
-                    loadMyOtpreme();
-                } else {
-                    throw new Error(result.error || 'Unknown error');
+                        if (result.success) {
+                            alert('✅ ' + result.message);
+                            loadMyOtpreme();
+                        } else {
+                            throw new Error(result.error || 'Unknown error');
+                        }
+                    } catch (error) {
+                        alert('❌ Greška: ' + error.message);
+                    }
                 }
-            } catch (error) {
-                alert('❌ Greška: ' + error.message);
-            }
+            );
         }
+
+        // ============================================
+        // MODAL FUNCTIONS
+        // ============================================
+
+        let confirmCallback = null;
+
+        function showConfirmModal(title, message, onConfirm) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').textContent = message;
+            confirmCallback = onConfirm;
+            document.getElementById('confirm-modal').classList.add('show');
+
+            document.getElementById('modal-confirm-btn').onclick = function() {
+                if (confirmCallback) confirmCallback();
+                closeConfirmModal();
+            };
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.remove('show');
+            confirmCallback = null;
+        }
+
+        // Close modal on overlay click
+        document.getElementById('confirm-modal').addEventListener('click', function(e) {
+            if (e.target.id === 'confirm-modal') {
+                closeConfirmModal();
+            }
+        });
+
+        // ============================================
+        // FILTER FUNCTIONS
+        // ============================================
+
+        let unfilteredPendingData = [];
+
+        function applyFilters() {
+            const datumOd = document.getElementById('filter-datum-od')?.value;
+            const datumDo = document.getElementById('filter-datum-do')?.value;
+            const tip = document.getElementById('filter-tip')?.value;
+            const search = document.getElementById('filter-search')?.value.toLowerCase();
+
+            let filtered = [...unfilteredPendingData];
+
+            // Filter by date range
+            if (datumOd) {
+                filtered = filtered.filter(item => {
+                    const itemDate = new Date(item.timestampObj);
+                    return itemDate >= new Date(datumOd);
+                });
+            }
+            if (datumDo) {
+                filtered = filtered.filter(item => {
+                    const itemDate = new Date(item.timestampObj);
+                    return itemDate <= new Date(datumDo + 'T23:59:59');
+                });
+            }
+
+            // Filter by type
+            if (tip) {
+                filtered = filtered.filter(item => item.tip === tip);
+            }
+
+            // Filter by search text
+            if (search) {
+                filtered = filtered.filter(item => {
+                    const searchText = (
+                        (item.odjel || '') + ' ' +
+                        (item.radnik || '') + ' ' +
+                        (item.kupac || '')
+                    ).toLowerCase();
+                    return searchText.includes(search);
+                });
+            }
+
+            // Re-render table with filtered data
+            renderPendingTable(filtered);
+        }
+
+        function clearFilters() {
+            const filterDatumOd = document.getElementById('filter-datum-od');
+            const filterDatumDo = document.getElementById('filter-datum-do');
+            const filterTip = document.getElementById('filter-tip');
+            const filterSearch = document.getElementById('filter-search');
+
+            if (filterDatumOd) filterDatumOd.value = '';
+            if (filterDatumDo) filterDatumDo.value = '';
+            if (filterTip) filterTip.value = '';
+            if (filterSearch) filterSearch.value = '';
+
+            renderPendingTable(unfilteredPendingData);
+        }
+
+        // ============================================
+        // ROW ACTIONS DROPDOWN
+        // ============================================
+
+        function toggleRowActions(id) {
+            const dropdown = document.getElementById('row-actions-' + id);
+            const allDropdowns = document.querySelectorAll('.row-actions-dropdown');
+
+            // Close all other dropdowns
+            allDropdowns.forEach(d => {
+                if (d.id !== 'row-actions-' + id) {
+                    d.classList.remove('show');
+                }
+            });
+
+            // Toggle this dropdown
+            dropdown.classList.toggle('show');
+        }
+
+        // Close row actions when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.row-actions')) {
+                const allDropdowns = document.querySelectorAll('.row-actions-dropdown');
+                allDropdowns.forEach(d => d.classList.remove('show'));
+            }
+        });
     </script>
 </body>
 </html>
