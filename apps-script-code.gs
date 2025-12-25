@@ -56,6 +56,8 @@ function doGet(e) {
       return handleDeletePending(e.parameter);
     } else if (path === 'get-odjeli-list') {
       return handleGetOdjeliList();
+    } else if (path === 'mjesecni-sortimenti') {
+      return handleMjesecniSortimenti(e.parameter.year, e.parameter.username, e.parameter.password);
     }
 
     return createJsonResponse({ error: 'Unknown path' }, false);
@@ -2431,6 +2433,116 @@ function handleGetOdjeliList() {
     Logger.log('ERROR in handleGetOdjeliList: ' + error.toString());
     return createJsonResponse({
       error: "Greška pri učitavanju liste odjela: " + error.toString()
+    }, false);
+  }
+}
+
+// Handler za mjesečne sortimente
+function handleMjesecniSortimenti(year, username, password) {
+  try {
+    // Autentikacija
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    Logger.log('=== HANDLE MJESECNI SORTIMENTI START ===');
+    Logger.log('Year: ' + year);
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const primkaSheet = ss.getSheetByName("INDEX_PRIMKA");
+    const otpremaSheet = ss.getSheetByName("INDEX_OTPREMA");
+
+    if (!primkaSheet || !otpremaSheet) {
+      return createJsonResponse({ error: "INDEX sheets not found" }, false);
+    }
+
+    const primkaData = primkaSheet.getDataRange().getValues();
+    const otpremaData = otpremaSheet.getDataRange().getValues();
+
+    // Nazivi sortimenta (kolone D-U = indeksi 3-20)
+    const sortimentiNazivi = [
+      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI",
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+    ];
+
+    // Inicijalizuj mjesečne sume za SJEČA (12 mjeseci)
+    let sjecaMjeseci = [];
+    for (let m = 0; m < 12; m++) {
+      const mjesecObj = {};
+      for (let s = 0; s < sortimentiNazivi.length; s++) {
+        mjesecObj[sortimentiNazivi[s]] = 0;
+      }
+      sjecaMjeseci.push(mjesecObj);
+    }
+
+    // Inicijalizuj mjesečne sume za OTPREMA (12 mjeseci)
+    let otpremaMjeseci = [];
+    for (let m = 0; m < 12; m++) {
+      const mjesecObj = {};
+      for (let s = 0; s < sortimentiNazivi.length; s++) {
+        mjesecObj[sortimentiNazivi[s]] = 0;
+      }
+      otpremaMjeseci.push(mjesecObj);
+    }
+
+    // Procesiranje SJEČA podataka
+    for (let i = 1; i < primkaData.length; i++) {
+      const row = primkaData[i];
+      const datum = row[1]; // B - DATUM
+
+      if (!datum) continue;
+
+      const datumObj = new Date(datum);
+      if (datumObj.getFullYear() !== parseInt(year)) continue;
+
+      const mjesec = datumObj.getMonth(); // 0-11
+
+      // Kolone D-U (indeksi 3-20) = sortimenti
+      for (let j = 0; j < sortimentiNazivi.length; j++) {
+        const vrijednost = parseFloat(row[3 + j]) || 0;
+        sjecaMjeseci[mjesec][sortimentiNazivi[j]] += vrijednost;
+      }
+    }
+
+    // Procesiranje OTPREMA podataka
+    for (let i = 1; i < otpremaData.length; i++) {
+      const row = otpremaData[i];
+      const datum = row[1]; // B - DATUM
+
+      if (!datum) continue;
+
+      const datumObj = new Date(datum);
+      if (datumObj.getFullYear() !== parseInt(year)) continue;
+
+      const mjesec = datumObj.getMonth(); // 0-11
+
+      // Kolone D-U (indeksi 3-20) = sortimenti
+      for (let j = 0; j < sortimentiNazivi.length; j++) {
+        const vrijednost = parseFloat(row[3 + j]) || 0;
+        otpremaMjeseci[mjesec][sortimentiNazivi[j]] += vrijednost;
+      }
+    }
+
+    Logger.log('=== HANDLE MJESECNI SORTIMENTI END ===');
+
+    return createJsonResponse({
+      sjeca: {
+        sortimenti: sortimentiNazivi,
+        mjeseci: sjecaMjeseci
+      },
+      otprema: {
+        sortimenti: sortimentiNazivi,
+        mjeseci: otpremaMjeseci
+      }
+    }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleMjesecniSortimenti: ' + error.toString());
+    return createJsonResponse({
+      error: "Greška pri učitavanju mjesečnih sortimenti: " + error.toString()
     }, false);
   }
 }

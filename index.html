@@ -737,6 +737,47 @@
             </div>
         </div>
 
+        <!-- MJESEČNI SORTIMENTI CONTENT -->
+        <div id="mjesecni-sortimenti-content" class="container hidden">
+            <!-- SJEČA PO MJESECIMA -->
+            <div class="section">
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <h1>📊 Sječa po mjesecima i sortimentima</h1>
+                        <p>Prikaz mjesečnih podataka za tekuću godinu</p>
+                    </div>
+                    <div class="page-header-right">
+                        <button class="btn btn-primary" onclick="exportTableToCSV('mjesecna-sjeca')">📥 Export CSV</button>
+                    </div>
+                </div>
+                <div class="kupci-table-wrapper mjesecni-table-wrapper">
+                    <table class="kupci-table" id="mjesecna-sjeca-table">
+                        <thead id="mjesecna-sjeca-header"></thead>
+                        <tbody id="mjesecna-sjeca-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- OTPREMA PO MJESECIMA -->
+            <div class="section">
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <h1>🚛 Otprema po mjesecima i sortimentima</h1>
+                        <p>Prikaz mjesečnih podataka za tekuću godinu</p>
+                    </div>
+                    <div class="page-header-right">
+                        <button class="btn btn-primary" onclick="exportTableToCSV('mjesecna-otprema')">📥 Export CSV</button>
+                    </div>
+                </div>
+                <div class="kupci-table-wrapper mjesecni-table-wrapper">
+                    <table class="kupci-table" id="mjesecna-otprema-table">
+                        <thead id="mjesecna-otprema-header"></thead>
+                        <tbody id="mjesecna-otprema-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- PRIMACI CONTENT (Prikaz po primačima) -->
         <div id="primaci-content" class="container hidden">
             <div class="section">
@@ -1577,6 +1618,7 @@
                 // Admin ili drugi korisnici vide sve tab-ove
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
+                    <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📊 Mjesečni sortimenti</button>
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz po primačima</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz po otpremačima</button>
                     <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
@@ -1647,6 +1689,7 @@
             document.getElementById('edit-sjeca-content').classList.add('hidden');
             document.getElementById('edit-otprema-content').classList.add('hidden');
             document.getElementById('pending-unosi-content').classList.add('hidden');
+            document.getElementById('mjesecni-sortimenti-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
@@ -1675,6 +1718,8 @@
                 loadMyOtpreme();
             } else if (tab === 'pending-unosi') {
                 loadPendingUnosi();
+            } else if (tab === 'mjesecni-sortimenti') {
+                loadMjesecniSortimenti();
             }
         }
 
@@ -2852,6 +2897,124 @@
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('pending-unosi-content').classList.remove('hidden');
             }
+        }
+
+        // Load monthly sortimenti
+        async function loadMjesecniSortimenti() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+            document.getElementById('mjesecni-sortimenti-content').classList.add('hidden');
+
+            try {
+                const year = new Date().getFullYear();
+                const url = API_URL + '?path=mjesecni-sortimenti&year=' + year + '&username=' + currentUser.username + '&password=' + currentPassword;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                console.log('Mjesečni sortimenti data:', data);
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Render SJEČA table
+                renderMjesecnaTabela(data.sjeca, 'mjesecna-sjeca');
+
+                // Render OTPREMA table
+                renderMjesecnaTabela(data.otprema, 'mjesecna-otprema');
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('mjesecni-sortimenti-content').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error loading mjesečni sortimenti:', error);
+                showError('Greška', 'Greška pri učitavanju mjesečnih podataka: ' + error.message);
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('mjesecni-sortimenti-content').classList.remove('hidden');
+            }
+        }
+
+        // Render monthly table (SJEČA or OTPREMA)
+        function renderMjesecnaTabela(data, tableId) {
+            const headerElem = document.getElementById(tableId + '-header');
+            const bodyElem = document.getElementById(tableId + '-body');
+
+            if (!data || !data.sortimenti || data.sortimenti.length === 0) {
+                headerElem.innerHTML = '';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka</td></tr>';
+                return;
+            }
+
+            const sortimenti = data.sortimenti; // Array of sortiment names
+            const mjeseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+
+            // Build header
+            let headerHtml = '<tr><th style="min-width: 100px;">Mjesec</th>';
+            for (let i = 0; i < sortimenti.length; i++) {
+                const colClass = getColumnGroup(sortimenti[i]);
+                headerHtml += '<th class="sortiment-col ' + colClass + '">' + sortimenti[i] + '</th>';
+            }
+            headerHtml += '<th style="min-width: 100px; font-weight: 700;">UKUPNO</th>';
+            headerHtml += '</tr>';
+            headerElem.innerHTML = headerHtml;
+
+            // Build body - 12 months + UKUPNO + %UDIO
+            let bodyHtml = '';
+            const totals = {}; // Total per sortiment
+            let grandTotal = 0;
+
+            // Month rows
+            for (let m = 0; m < 12; m++) {
+                bodyHtml += '<tr>';
+                bodyHtml += '<td style="font-weight: 600;">' + mjeseci[m] + '</td>';
+
+                let monthTotal = 0;
+                for (let s = 0; s < sortimenti.length; s++) {
+                    const sortiment = sortimenti[s];
+                    const value = data.mjeseci[m][sortiment] || 0;
+                    const displayVal = value > 0 ? value.toFixed(2) : '-';
+                    const colClass = getColumnGroup(sortiment);
+
+                    bodyHtml += '<td class="sortiment-col right ' + colClass + '">' + displayVal + '</td>';
+
+                    // Add to totals
+                    if (!totals[sortiment]) totals[sortiment] = 0;
+                    totals[sortiment] += value;
+                    monthTotal += value;
+                }
+
+                bodyHtml += '<td class="right" style="font-weight: 600;">' + monthTotal.toFixed(2) + '</td>';
+                bodyHtml += '</tr>';
+                grandTotal += monthTotal;
+            }
+
+            // UKUPNO row
+            bodyHtml += '<tr style="background: #f9fafb; font-weight: 700; border-top: 2px solid #d1d5db;">';
+            bodyHtml += '<td>UKUPNO</td>';
+            for (let s = 0; s < sortimenti.length; s++) {
+                const sortiment = sortimenti[s];
+                const total = totals[sortiment] || 0;
+                const colClass = getColumnGroup(sortiment);
+                bodyHtml += '<td class="sortiment-col right ' + colClass + '">' + total.toFixed(2) + '</td>';
+            }
+            bodyHtml += '<td class="right">' + grandTotal.toFixed(2) + '</td>';
+            bodyHtml += '</tr>';
+
+            // %UDIO row
+            bodyHtml += '<tr style="background: #f3f4f6; font-style: italic; color: #6b7280;">';
+            bodyHtml += '<td>% UDIO</td>';
+            for (let s = 0; s < sortimenti.length; s++) {
+                const sortiment = sortimenti[s];
+                const total = totals[sortiment] || 0;
+                const percentage = grandTotal > 0 ? ((total / grandTotal) * 100).toFixed(1) : '0.0';
+                const colClass = getColumnGroup(sortiment);
+                bodyHtml += '<td class="sortiment-col right ' + colClass + '">' + percentage + '%</td>';
+            }
+            const totalPercentage = '100.0';
+            bodyHtml += '<td class="right">' + totalPercentage + '%</td>';
+            bodyHtml += '</tr>';
+
+            bodyElem.innerHTML = bodyHtml;
         }
 
         // Load pending count (for badge only)
