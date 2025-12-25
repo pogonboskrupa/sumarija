@@ -548,8 +548,8 @@
                             <input type="number" step="0.01" id="sjeca-RUDNO" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
                         </div>
                         <div class="form-group">
-                            <label>TRUPCI Č:</label>
-                            <input type="number" step="0.01" id="sjeca-TRUPCI-C" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                            <label>TRUPCI Č: <span style="color: #6b7280; font-size: 0.85em;">(auto)</span></label>
+                            <input type="number" step="0.01" id="sjeca-TRUPCI-C" value="0" min="0" readonly style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%; background: #f3f4f6; color: #374151; font-weight: 600;">
                         </div>
                         <div class="form-group">
                             <label>CEL.DUGA:</label>
@@ -560,8 +560,8 @@
                             <input type="number" step="0.01" id="sjeca-CEL-CIJEPANA" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
                         </div>
                         <div class="form-group">
-                            <label>ČETINARI:</label>
-                            <input type="number" step="0.01" id="sjeca-CETINARI" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                            <label>ČETINARI: <span style="color: #6b7280; font-size: 0.85em;">(auto)</span></label>
+                            <input type="number" step="0.01" id="sjeca-CETINARI" value="0" min="0" readonly style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%; background: #f3f4f6; color: #374151; font-weight: 600;">
                         </div>
                         <div class="form-group">
                             <label>F/L L:</label>
@@ -580,8 +580,8 @@
                             <input type="number" step="0.01" id="sjeca-III-L" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
                         </div>
                         <div class="form-group">
-                            <label>TRUPCI:</label>
-                            <input type="number" step="0.01" id="sjeca-TRUPCI" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                            <label>TRUPCI: <span style="color: #6b7280; font-size: 0.85em;">(auto)</span></label>
+                            <input type="number" step="0.01" id="sjeca-TRUPCI" value="0" min="0" readonly style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%; background: #f3f4f6; color: #374151; font-weight: 600;">
                         </div>
                         <div class="form-group">
                             <label>OGR.DUGI:</label>
@@ -592,9 +592,14 @@
                             <input type="number" step="0.01" id="sjeca-OGR-CIJEPANI" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
                         </div>
                         <div class="form-group">
-                            <label>LIŠĆARI:</label>
-                            <input type="number" step="0.01" id="sjeca-LISCARI" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                            <label>LIŠĆARI: <span style="color: #6b7280; font-size: 0.85em;">(auto)</span></label>
+                            <input type="number" step="0.01" id="sjeca-LISCARI" value="0" min="0" readonly style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%; background: #f3f4f6; color: #374151; font-weight: 600;">
                         </div>
+                    </div>
+
+                    <div style="margin-top: 20px; padding: 20px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 10px;">
+                        <label style="font-size: 1.2em; font-weight: bold; color: #92400e;">SVEUKUPNO (m³):</label>
+                        <input type="number" step="0.01" id="sjeca-SVEUKUPNO" value="0" readonly style="padding: 12px; border: 2px solid #f59e0b; border-radius: 8px; width: 100%; background: #fffbeb; color: #92400e; font-size: 1.5em; font-weight: bold; text-align: center;">
                     </div>
 
                     <div style="margin-top: 30px; display: flex; gap: 12px; justify-content: flex-end;">
@@ -650,8 +655,8 @@
                             <input type="number" step="0.01" id="otprema-RUDNO" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
                         </div>
                         <div class="form-group">
-                            <label>TRUPCI Č:</label>
-                            <input type="number" step="0.01" id="otprema-TRUPCI-C" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                            <label>TRUPCI Č: <span style="color: #6b7280; font-size: 0.85em;">(auto)</span></label>
+                            <input type="number" step="0.01" id="otprema-TRUPCI-C" value="0" min="0" readonly style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%; background: #f3f4f6; color: #374151; font-weight: 600;">
                         </div>
                         <div class="form-group">
                             <label>CEL.DUGA:</label>
@@ -662,8 +667,8 @@
                             <input type="number" step="0.01" id="otprema-CEL-CIJEPANA" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
                         </div>
                         <div class="form-group">
-                            <label>ČETINARI:</label>
-                            <input type="number" step="0.01" id="otprema-CETINARI" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                            <label>ČETINARI: <span style="color: #6b7280; font-size: 0.85em;">(auto)</span></label>
+                            <input type="number" step="0.01" id="otprema-CETINARI" value="0" min="0" readonly style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%; background: #f3f4f6; color: #374151; font-weight: 600;">
                         </div>
                         <div class="form-group">
                             <label>F/L L:</label>
@@ -682,8 +687,8 @@
                             <input type="number" step="0.01" id="otprema-III-L" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
                         </div>
                         <div class="form-group">
-                            <label>TRUPCI:</label>
-                            <input type="number" step="0.01" id="otprema-TRUPCI" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                            <label>TRUPCI: <span style="color: #6b7280; font-size: 0.85em;">(auto)</span></label>
+                            <input type="number" step="0.01" id="otprema-TRUPCI" value="0" min="0" readonly style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%; background: #f3f4f6; color: #374151; font-weight: 600;">
                         </div>
                         <div class="form-group">
                             <label>OGR.DUGI:</label>
@@ -694,9 +699,14 @@
                             <input type="number" step="0.01" id="otprema-OGR-CIJEPANI" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
                         </div>
                         <div class="form-group">
-                            <label>LIŠĆARI:</label>
-                            <input type="number" step="0.01" id="otprema-LISCARI" value="0" min="0" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;">
+                            <label>LIŠĆARI: <span style="color: #6b7280; font-size: 0.85em;">(auto)</span></label>
+                            <input type="number" step="0.01" id="otprema-LISCARI" value="0" min="0" readonly style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%; background: #f3f4f6; color: #374151; font-weight: 600;">
                         </div>
+                    </div>
+
+                    <div style="margin-top: 20px; padding: 20px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 10px;">
+                        <label style="font-size: 1.2em; font-weight: bold; color: #92400e;">SVEUKUPNO (m³):</label>
+                        <input type="number" step="0.01" id="otprema-SVEUKUPNO" value="0" readonly style="padding: 12px; border: 2px solid #f59e0b; border-radius: 8px; width: 100%; background: #fffbeb; color: #92400e; font-size: 1.5em; font-weight: bold; text-align: center;">
                     </div>
 
                     <div style="margin-top: 30px; display: flex; gap: 12px; justify-content: flex-end;">
@@ -2158,6 +2168,86 @@
             }
         }
 
+        // Calculate Sjeca totals automatically
+        function calculateSjeca() {
+            // Get all četinar values
+            var flC = parseFloat(document.getElementById('sjeca-FL-C').value) || 0;
+            var iC = parseFloat(document.getElementById('sjeca-I-C').value) || 0;
+            var iiC = parseFloat(document.getElementById('sjeca-II-C').value) || 0;
+            var iiiC = parseFloat(document.getElementById('sjeca-III-C').value) || 0;
+            var rudno = parseFloat(document.getElementById('sjeca-RUDNO').value) || 0;
+            var celDuga = parseFloat(document.getElementById('sjeca-CEL-DUGA').value) || 0;
+            var celCijepana = parseFloat(document.getElementById('sjeca-CEL-CIJEPANA').value) || 0;
+
+            // Calculate TRUPCI Č = F/L Č + I Č + II Č + III Č + RUDNO
+            var trupciC = flC + iC + iiC + iiiC + rudno;
+            document.getElementById('sjeca-TRUPCI-C').value = trupciC.toFixed(2);
+
+            // Calculate ČETINARI = CEL.DUGA + CEL.CIJEPANA + TRUPCI Č
+            var cetinari = celDuga + celCijepana + trupciC;
+            document.getElementById('sjeca-CETINARI').value = cetinari.toFixed(2);
+
+            // Get all lišćar values
+            var flL = parseFloat(document.getElementById('sjeca-FL-L').value) || 0;
+            var iL = parseFloat(document.getElementById('sjeca-I-L').value) || 0;
+            var iiL = parseFloat(document.getElementById('sjeca-II-L').value) || 0;
+            var iiiL = parseFloat(document.getElementById('sjeca-III-L').value) || 0;
+            var ogrDugi = parseFloat(document.getElementById('sjeca-OGR-DUGI').value) || 0;
+            var ogrCijepani = parseFloat(document.getElementById('sjeca-OGR-CIJEPANI').value) || 0;
+
+            // Calculate TRUPCI L = F/L L + I L + II L + III L
+            var trupciL = flL + iL + iiL + iiiL;
+            document.getElementById('sjeca-TRUPCI').value = trupciL.toFixed(2);
+
+            // Calculate LIŠĆARI = OGR.DUGI + OGR.CIJEPANI + TRUPCI L
+            var liscari = ogrDugi + ogrCijepani + trupciL;
+            document.getElementById('sjeca-LISCARI').value = liscari.toFixed(2);
+
+            // Calculate SVEUKUPNO = ČETINARI + LIŠĆARI
+            var sveukupno = cetinari + liscari;
+            document.getElementById('sjeca-SVEUKUPNO').value = sveukupno.toFixed(2);
+        }
+
+        // Calculate Otprema totals automatically
+        function calculateOtprema() {
+            // Get all četinar values
+            var flC = parseFloat(document.getElementById('otprema-FL-C').value) || 0;
+            var iC = parseFloat(document.getElementById('otprema-I-C').value) || 0;
+            var iiC = parseFloat(document.getElementById('otprema-II-C').value) || 0;
+            var iiiC = parseFloat(document.getElementById('otprema-III-C').value) || 0;
+            var rudno = parseFloat(document.getElementById('otprema-RUDNO').value) || 0;
+            var celDuga = parseFloat(document.getElementById('otprema-CEL-DUGA').value) || 0;
+            var celCijepana = parseFloat(document.getElementById('otprema-CEL-CIJEPANA').value) || 0;
+
+            // Calculate TRUPCI Č = F/L Č + I Č + II Č + III Č + RUDNO
+            var trupciC = flC + iC + iiC + iiiC + rudno;
+            document.getElementById('otprema-TRUPCI-C').value = trupciC.toFixed(2);
+
+            // Calculate ČETINARI = CEL.DUGA + CEL.CIJEPANA + TRUPCI Č
+            var cetinari = celDuga + celCijepana + trupciC;
+            document.getElementById('otprema-CETINARI').value = cetinari.toFixed(2);
+
+            // Get all lišćar values
+            var flL = parseFloat(document.getElementById('otprema-FL-L').value) || 0;
+            var iL = parseFloat(document.getElementById('otprema-I-L').value) || 0;
+            var iiL = parseFloat(document.getElementById('otprema-II-L').value) || 0;
+            var iiiL = parseFloat(document.getElementById('otprema-III-L').value) || 0;
+            var ogrDugi = parseFloat(document.getElementById('otprema-OGR-DUGI').value) || 0;
+            var ogrCijepani = parseFloat(document.getElementById('otprema-OGR-CIJEPANI').value) || 0;
+
+            // Calculate TRUPCI L = F/L L + I L + II L + III L
+            var trupciL = flL + iL + iiL + iiiL;
+            document.getElementById('otprema-TRUPCI').value = trupciL.toFixed(2);
+
+            // Calculate LIŠĆARI = OGR.DUGI + OGR.CIJEPANI + TRUPCI L
+            var liscari = ogrDugi + ogrCijepani + trupciL;
+            document.getElementById('otprema-LISCARI').value = liscari.toFixed(2);
+
+            // Calculate SVEUKUPNO = ČETINARI + LIŠĆARI
+            var sveukupno = cetinari + liscari;
+            document.getElementById('otprema-SVEUKUPNO').value = sveukupno.toFixed(2);
+        }
+
         // Show Add Sjeca Form
         function showAddSjecaForm() {
             document.getElementById('loading-screen').classList.add('hidden');
@@ -2166,6 +2256,23 @@
             // Set today's date as default
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('sjeca-datum').value = today;
+
+            // Add event listeners to all sortimenti inputs for automatic calculation
+            const sjecaInputIds = ['sjeca-FL-C', 'sjeca-I-C', 'sjeca-II-C', 'sjeca-III-C', 'sjeca-RUDNO',
+                                   'sjeca-CEL-DUGA', 'sjeca-CEL-CIJEPANA',
+                                   'sjeca-FL-L', 'sjeca-I-L', 'sjeca-II-L', 'sjeca-III-L',
+                                   'sjeca-OGR-DUGI', 'sjeca-OGR-CIJEPANI'];
+
+            sjecaInputIds.forEach(function(inputId) {
+                const element = document.getElementById(inputId);
+                if (element && !element.hasAttribute('data-listener-added')) {
+                    element.addEventListener('input', calculateSjeca);
+                    element.setAttribute('data-listener-added', 'true');
+                }
+            });
+
+            // Initial calculation
+            calculateSjeca();
         }
 
         // Show Add Otprema Form
@@ -2176,6 +2283,23 @@
             // Set today's date as default
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('otprema-datum').value = today;
+
+            // Add event listeners to all sortimenti inputs for automatic calculation
+            const otpremaInputIds = ['otprema-FL-C', 'otprema-I-C', 'otprema-II-C', 'otprema-III-C', 'otprema-RUDNO',
+                                     'otprema-CEL-DUGA', 'otprema-CEL-CIJEPANA',
+                                     'otprema-FL-L', 'otprema-I-L', 'otprema-II-L', 'otprema-III-L',
+                                     'otprema-OGR-DUGI', 'otprema-OGR-CIJEPANI'];
+
+            otpremaInputIds.forEach(function(inputId) {
+                const element = document.getElementById(inputId);
+                if (element && !element.hasAttribute('data-listener-added')) {
+                    element.addEventListener('input', calculateOtprema);
+                    element.setAttribute('data-listener-added', 'true');
+                }
+            });
+
+            // Initial calculation
+            calculateOtprema();
         }
 
         // Submit Sjeca Form
@@ -2337,6 +2461,9 @@
             document.querySelectorAll('#add-sjeca-form input[type="number"]').forEach(input => {
                 input.value = 0;
             });
+
+            // Recalculate totals
+            calculateSjeca();
         }
 
         // Reset Otprema Form
@@ -2349,6 +2476,9 @@
             document.querySelectorAll('#add-otprema-form input[type="number"]').forEach(input => {
                 input.value = 0;
             });
+
+            // Recalculate totals
+            calculateOtprema();
         }
     </script>
 </body>
