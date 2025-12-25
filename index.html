@@ -231,6 +231,47 @@
         .kupci-table .totals-row td { border-bottom: 3px solid #10b981; padding: 12px 6px; }
 
         /* ============================================
+           MONTHLY SORTIMENTI TABLE STYLES
+           ============================================ */
+        .mjesecni-table-wrapper table {
+            font-size: 10px !important;
+            border-collapse: collapse;
+        }
+        .mjesecni-table-wrapper th {
+            background: #1e40af !important;
+            color: white !important;
+            padding: 8px 4px !important;
+            font-size: 10px !important;
+            text-align: center;
+            border: 1px solid #1e3a8a;
+            position: sticky !important;
+            top: 0;
+            z-index: 10;
+        }
+        .mjesecni-table-wrapper td {
+            padding: 6px 4px !important;
+            font-size: 10px !important;
+            text-align: right;
+            border: 1px solid #e5e7eb;
+        }
+        .mjesecni-table-wrapper tbody tr:hover {
+            background: #dbeafe !important;
+        }
+        /* Bold columns styling */
+        .mjesecni-table-wrapper .col-cetinari { background: #fef3c7; }
+        .mjesecni-table-wrapper .col-liscari { background: #d1fae5; }
+        .mjesecni-table-wrapper .col-sveukupno { background: #e0e7ff; font-weight: 700; }
+        /* Group separators */
+        .mjesecni-table-wrapper .group-cetvrti th,
+        .mjesecni-table-wrapper .group-cetvrti td {
+            border-left: 2px solid #2563eb !important;
+        }
+        .mjesecni-table-wrapper .group-ogrevno th,
+        .mjesecni-table-wrapper .group-ogrevno td {
+            border-left: 2px solid #059669 !important;
+        }
+
+        /* ============================================
            MOBILE OPTIMIZATIONS (< 768px)
            ============================================ */
         @media (max-width: 768px) {
@@ -2984,69 +3025,83 @@
             console.log('Rendering table with', sortimenti.length, 'sortimenti and', data.mjeseci.length, 'months');
 
             // Build header
-            let headerHtml = '<tr><th style="min-width: 100px;">Mjesec</th>';
+            let headerHtml = '<tr><th style="min-width: 100px; position: sticky; left: 0; background: #1e40af; z-index: 20;">Mjesec</th>';
             for (let i = 0; i < sortimenti.length; i++) {
                 const colClass = getColumnGroup(sortimenti[i]);
-                headerHtml += '<th class="sortiment-col ' + colClass + '">' + sortimenti[i] + '</th>';
+                let extraClass = '';
+                if (sortimenti[i] === 'ČETINARI') extraClass = ' col-cetinari';
+                else if (sortimenti[i] === 'LIŠĆARI') extraClass = ' col-liscari';
+                else if (sortimenti[i] === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+
+                headerHtml += '<th class="sortiment-col ' + colClass + extraClass + '">' + sortimenti[i] + '</th>';
             }
-            headerHtml += '<th style="min-width: 100px; font-weight: 700;">UKUPNO</th>';
             headerHtml += '</tr>';
             headerElem.innerHTML = headerHtml;
 
             // Build body - 12 months + UKUPNO + %UDIO
             let bodyHtml = '';
             const totals = {}; // Total per sortiment
-            let grandTotal = 0;
 
             // Month rows
             for (let m = 0; m < 12; m++) {
-                bodyHtml += '<tr>';
-                bodyHtml += '<td style="font-weight: 600;">' + mjeseci[m] + '</td>';
+                const rowStyle = m % 2 === 0 ? 'background: #f9fafb;' : '';
+                bodyHtml += '<tr style="' + rowStyle + '">';
+                bodyHtml += '<td style="font-weight: 600; position: sticky; left: 0; background: ' + (m % 2 === 0 ? '#f9fafb' : 'white') + '; z-index: 9; border-right: 2px solid #1e40af;">' + mjeseci[m] + '</td>';
 
-                let monthTotal = 0;
                 for (let s = 0; s < sortimenti.length; s++) {
                     const sortiment = sortimenti[s];
                     const value = data.mjeseci[m][sortiment] || 0;
                     const displayVal = value > 0 ? value.toFixed(2) : '-';
                     const colClass = getColumnGroup(sortiment);
+                    let extraClass = '';
+                    if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
+                    else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
+                    else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
 
-                    bodyHtml += '<td class="sortiment-col right ' + colClass + '">' + displayVal + '</td>';
+                    bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '">' + displayVal + '</td>';
 
                     // Add to totals
                     if (!totals[sortiment]) totals[sortiment] = 0;
                     totals[sortiment] += value;
-                    monthTotal += value;
                 }
 
-                bodyHtml += '<td class="right" style="font-weight: 600;">' + monthTotal.toFixed(2) + '</td>';
                 bodyHtml += '</tr>';
-                grandTotal += monthTotal;
             }
 
             // UKUPNO row
-            bodyHtml += '<tr style="background: #f9fafb; font-weight: 700; border-top: 2px solid #d1d5db;">';
-            bodyHtml += '<td>UKUPNO</td>';
+            bodyHtml += '<tr style="background: #e5e7eb; font-weight: 700; border-top: 3px solid #374151; border-bottom: 2px solid #374151;">';
+            bodyHtml += '<td style="position: sticky; left: 0; background: #e5e7eb; z-index: 9; border-right: 2px solid #1e40af;">UKUPNO</td>';
             for (let s = 0; s < sortimenti.length; s++) {
                 const sortiment = sortimenti[s];
                 const total = totals[sortiment] || 0;
                 const colClass = getColumnGroup(sortiment);
-                bodyHtml += '<td class="sortiment-col right ' + colClass + '">' + total.toFixed(2) + '</td>';
+                let extraClass = '';
+                if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
+                else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
+                else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+
+                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '">' + total.toFixed(2) + '</td>';
             }
-            bodyHtml += '<td class="right">' + grandTotal.toFixed(2) + '</td>';
             bodyHtml += '</tr>';
 
+            // Calculate grand total from SVEUKUPNO
+            const grandTotal = totals['SVEUKUPNO'] || 0;
+
             // %UDIO row
-            bodyHtml += '<tr style="background: #f3f4f6; font-style: italic; color: #6b7280;">';
-            bodyHtml += '<td>% UDIO</td>';
+            bodyHtml += '<tr style="background: #f3f4f6; font-style: italic; color: #374151; border-bottom: 3px solid #374151;">';
+            bodyHtml += '<td style="position: sticky; left: 0; background: #f3f4f6; z-index: 9; border-right: 2px solid #1e40af;">% UDIO</td>';
             for (let s = 0; s < sortimenti.length; s++) {
                 const sortiment = sortimenti[s];
                 const total = totals[sortiment] || 0;
                 const percentage = grandTotal > 0 ? ((total / grandTotal) * 100).toFixed(1) : '0.0';
                 const colClass = getColumnGroup(sortiment);
-                bodyHtml += '<td class="sortiment-col right ' + colClass + '">' + percentage + '%</td>';
+                let extraClass = '';
+                if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
+                else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
+                else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+
+                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '">' + percentage + '%</td>';
             }
-            const totalPercentage = '100.0';
-            bodyHtml += '<td class="right">' + totalPercentage + '%</td>';
             bodyHtml += '</tr>';
 
             bodyElem.innerHTML = bodyHtml;
