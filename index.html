@@ -2297,6 +2297,13 @@
             }
         }
 
+        // Helper function to get month name
+        function getMonthName(monthIndex) {
+            const months = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni',
+                           'Juli', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+            return months[monthIndex];
+        }
+
         // Load primaci daily data (current month)
         async function loadPrimaciDaily() {
             try {
@@ -2305,10 +2312,35 @@
                 const month = now.getMonth(); // 0-11
 
                 const url = `${API_URL}?path=primaci-daily&year=${year}&month=${month}&username=${currentUser.username}&password=${currentPassword}`;
+                console.log('Loading primaci daily from:', url);
                 const data = await fetch(url).then(res => res.json());
+
+                console.log('Primaci daily data received:', data);
 
                 if (data.error) {
                     console.error('Error loading primaci daily:', data.error);
+                    document.getElementById('primaci-daily-body').innerHTML = `
+                        <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
+                            Greška: ${data.error}
+                        </td></tr>
+                    `;
+                    return;
+                }
+
+                if (!data.data || data.data.length === 0) {
+                    console.log('No data available for current month');
+                    document.getElementById('primaci-daily-header').innerHTML = `
+                        <tr>
+                            <th style="background: #ea580c; color: white; padding: 12px;">
+                                📅 Sječa po danima - ${getMonthName(month)} ${year}
+                            </th>
+                        </tr>
+                    `;
+                    document.getElementById('primaci-daily-body').innerHTML = `
+                        <tr><td style="text-align: center; padding: 40px; color: #6b7280;">
+                            Nema podataka za tekući mjesec
+                        </td></tr>
+                    `;
                     return;
                 }
 
@@ -2349,18 +2381,18 @@
 
                     const sortimentiCells = data.sortimentiNazivi.map(sortiment => {
                         const val = row.sortimenti[sortiment] || 0;
-                        const displayVal = val > 0 ? val.toFixed(2) : '-';
+                        const displayVal = val > 0 ? val.toFixed(2) : '0.00';
                         const fontWeight = val > 0 ? 'font-weight: 500;' : 'color: #9ca3af;';
-                        return `<td style="${fontWeight} border: 1px solid #fed7aa; font-family: 'Courier New', monospace; text-align: right;">${displayVal}</td>`;
+                        return `<td style="${fontWeight} border: 1px solid #fed7aa; font-family: 'Courier New', monospace; text-align: right; padding: 8px 4px;">${displayVal}</td>`;
                     }).join('');
 
                     return `
                         <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
-                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #ea580c;">
+                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #ea580c; padding: 8px;">
                                 ${row.datum}
                             </td>
-                            <td style="border: 1px solid #fed7aa;">${row.odjel}</td>
-                            <td style="font-weight: 600; border: 1px solid #fed7aa;">${row.primac}</td>
+                            <td style="border: 1px solid #fed7aa; padding: 8px;">${row.odjel}</td>
+                            <td style="font-weight: 600; border: 1px solid #fed7aa; padding: 8px;">${row.primac}</td>
                             ${sortimentiCells}
                         </tr>
                     `;
@@ -2369,13 +2401,13 @@
                 // Add totals row with soft orange colors
                 const totalsCells = data.sortimentiNazivi.map(s => {
                     const val = totals[s];
-                    const displayVal = val > 0 ? val.toFixed(2) : '-';
-                    return `<td style="border: 1px solid #fb923c; font-family: 'Courier New', monospace; text-align: right;">${displayVal}</td>`;
+                    const displayVal = val > 0 ? val.toFixed(2) : '0.00';
+                    return `<td style="border: 1px solid #fb923c; font-family: 'Courier New', monospace; text-align: right; padding: 8px 4px;">${displayVal}</td>`;
                 }).join('');
 
                 const totalsRow = `
                     <tr style="background: linear-gradient(to bottom, #fed7aa, #fdba74); color: #9a3412; font-weight: 700; border-top: 3px solid #f97316;">
-                        <td style="position: sticky; left: 0; background: #fed7aa; z-index: 10; border-right: 2px solid #ea580c;">
+                        <td style="position: sticky; left: 0; background: #fed7aa; z-index: 10; border-right: 2px solid #ea580c; padding: 12px;">
                             📈 UKUPNO
                         </td>
                         <td style="background: #fed7aa;"></td>
@@ -2386,8 +2418,15 @@
 
                 document.getElementById('primaci-daily-body').innerHTML = bodyHTML + totalsRow;
 
+                console.log('Primaci daily table rendered with', data.data.length, 'rows');
+
             } catch (error) {
                 console.error('Error in loadPrimaciDaily:', error);
+                document.getElementById('primaci-daily-body').innerHTML = `
+                    <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
+                        Greška pri učitavanju: ${error.message}
+                    </td></tr>
+                `;
             }
         }
 
@@ -2399,17 +2438,42 @@
                 const month = now.getMonth(); // 0-11
 
                 const url = `${API_URL}?path=otpremaci-daily&year=${year}&month=${month}&username=${currentUser.username}&password=${currentPassword}`;
+                console.log('Loading otpremaci daily from:', url);
                 const data = await fetch(url).then(res => res.json());
+
+                console.log('Otpremaci daily data received:', data);
 
                 if (data.error) {
                     console.error('Error loading otpremaci daily:', data.error);
+                    document.getElementById('otpremaci-daily-body').innerHTML = `
+                        <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
+                            Greška: ${data.error}
+                        </td></tr>
+                    `;
+                    return;
+                }
+
+                if (!data.data || data.data.length === 0) {
+                    console.log('No data available for current month');
+                    document.getElementById('otpremaci-daily-header').innerHTML = `
+                        <tr>
+                            <th style="background: #0891b2; color: white; padding: 12px;">
+                                📅 Otprema po danima - ${getMonthName(month)} ${year}
+                            </th>
+                        </tr>
+                    `;
+                    document.getElementById('otpremaci-daily-body').innerHTML = `
+                        <tr><td style="text-align: center; padding: 40px; color: #6b7280;">
+                            Nema podataka za tekući mjesec
+                        </td></tr>
+                    `;
                     return;
                 }
 
                 // Teal/cyan theme for daily otpremaci
                 const headerHTML = `
                     <tr>
-                        <th style="position: sticky; left: 0; background: #0891b2; z-index: 20; border-right: 3px solid #0e7490; min-width: 100px; cursor: pointer;">
+                        <th style="position: sticky; left: 0; background: #0891b2; z-index: 20; border-right: 3px solid #0e7490; min-width: 100px;">
                             📅 Datum
                         </th>
                         <th style="min-width: 100px; background: #0891b2; color: white; font-weight: 700; border: 1px solid #0e7490;">
@@ -2446,19 +2510,19 @@
 
                     const sortimentiCells = data.sortimentiNazivi.map(sortiment => {
                         const val = row.sortimenti[sortiment] || 0;
-                        const displayVal = val > 0 ? val.toFixed(2) : '-';
+                        const displayVal = val > 0 ? val.toFixed(2) : '0.00';
                         const fontWeight = val > 0 ? 'font-weight: 500;' : 'color: #9ca3af;';
-                        return `<td style="${fontWeight} border: 1px solid #a5f3fc; font-family: 'Courier New', monospace; text-align: right;">${displayVal}</td>`;
+                        return `<td style="${fontWeight} border: 1px solid #a5f3fc; font-family: 'Courier New', monospace; text-align: right; padding: 8px 4px;">${displayVal}</td>`;
                     }).join('');
 
                     return `
                         <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
-                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #0891b2;">
+                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #0891b2; padding: 8px;">
                                 ${row.datum}
                             </td>
-                            <td style="border: 1px solid #a5f3fc;">${row.odjel}</td>
-                            <td style="font-weight: 600; border: 1px solid #a5f3fc;">${row.otpremac}</td>
-                            <td style="border: 1px solid #a5f3fc; color: #0e7490; font-weight: 600;">${row.kupac || '-'}</td>
+                            <td style="border: 1px solid #a5f3fc; padding: 8px;">${row.odjel}</td>
+                            <td style="font-weight: 600; border: 1px solid #a5f3fc; padding: 8px;">${row.otpremac}</td>
+                            <td style="border: 1px solid #a5f3fc; color: #0e7490; font-weight: 600; padding: 8px;">${row.kupac || '-'}</td>
                             ${sortimentiCells}
                         </tr>
                     `;
@@ -2467,13 +2531,13 @@
                 // Add totals row with soft cyan colors
                 const totalsCells = data.sortimentiNazivi.map(s => {
                     const val = totals[s];
-                    const displayVal = val > 0 ? val.toFixed(2) : '-';
-                    return `<td style="border: 1px solid #22d3ee; font-family: 'Courier New', monospace; text-align: right;">${displayVal}</td>`;
+                    const displayVal = val > 0 ? val.toFixed(2) : '0.00';
+                    return `<td style="border: 1px solid #22d3ee; font-family: 'Courier New', monospace; text-align: right; padding: 8px 4px;">${displayVal}</td>`;
                 }).join('');
 
                 const totalsRow = `
                     <tr style="background: linear-gradient(to bottom, #a5f3fc, #67e8f9); color: #0e7490; font-weight: 700; border-top: 3px solid #06b6d4;">
-                        <td style="position: sticky; left: 0; background: #a5f3fc; z-index: 10; border-right: 2px solid #0891b2;">
+                        <td style="position: sticky; left: 0; background: #a5f3fc; z-index: 10; border-right: 2px solid #0891b2; padding: 12px;">
                             📈 UKUPNO
                         </td>
                         <td style="background: #a5f3fc;"></td>
@@ -2485,8 +2549,15 @@
 
                 document.getElementById('otpremaci-daily-body').innerHTML = bodyHTML + totalsRow;
 
+                console.log('Otpremaci daily table rendered with', data.data.length, 'rows');
+
             } catch (error) {
                 console.error('Error in loadOtremaciDaily:', error);
+                document.getElementById('otpremaci-daily-body').innerHTML = `
+                    <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
+                        Greška pri učitavanju: ${error.message}
+                    </td></tr>
+                `;
             }
         }
 
