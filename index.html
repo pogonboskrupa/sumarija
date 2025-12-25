@@ -708,6 +708,15 @@
                 </form>
             </div>
         </div>
+
+        <!-- PENDING UNOSI VIEW (For Rukovodilac/Admin) -->
+        <div id="pending-unosi-content" class="container hidden">
+            <div class="section">
+                <h2>📋 Pending Unosi - Pregled</h2>
+                <p style="color: #6b7280; margin-bottom: 20px;">Unosi koje su radnici poslali na pregled</p>
+                <div id="pending-unosi-container"></div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -933,6 +942,7 @@
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz po primačima</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz po otpremačima</button>
                     <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
+                    <button class="tab" onclick="switchTab('pending-unosi')">📋 Pending unosi</button>
                 `;
             }
         }
@@ -954,6 +964,7 @@
             document.getElementById('otpremac-odjeli-content').classList.add('hidden');
             document.getElementById('add-sjeca-content').classList.add('hidden');
             document.getElementById('add-otprema-content').classList.add('hidden');
+            document.getElementById('pending-unosi-content').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
         }
         
@@ -986,6 +997,7 @@
             document.getElementById('otpremac-odjeli-content').classList.add('hidden');
             document.getElementById('add-sjeca-content').classList.add('hidden');
             document.getElementById('add-otprema-content').classList.add('hidden');
+            document.getElementById('pending-unosi-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
@@ -1008,6 +1020,8 @@
                 showAddSjecaForm();
             } else if (tab === 'add-otprema') {
                 showAddOtpremaForm();
+            } else if (tab === 'pending-unosi') {
+                loadPendingUnosi();
             }
         }
 
@@ -2048,6 +2062,93 @@
         }
     </script>
 
+
+        // ========== PENDING UNOSI VIEW ==========
+
+        // Load Pending Unosi
+        async function loadPendingUnosi() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+            document.getElementById('pending-unosi-content').classList.add('hidden');
+
+            try {
+                const year = new Date().getFullYear();
+                const url = `${API_URL}?path=pending-unosi&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+
+                // Don't cache pending entries - always fetch fresh
+                const response = await fetch(url);
+                const data = await response.json();
+
+                console.log('Pending unosi data:', data);
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Build table HTML
+                let html = '';
+
+                if (!data.unosi || data.unosi.length === 0) {
+                    html = '<p style="text-align: center; padding: 40px; color: #6b7280;">Nema pending unosa</p>';
+                } else {
+                    html = '<div class="kupci-table-wrapper"><table class="kupci-table"><thead><tr>';
+                    html += '<th style="min-width: 80px;">Tip</th>';
+                    html += '<th style="min-width: 100px;">Datum</th>';
+                    html += '<th style="min-width: 80px;">Odjel</th>';
+                    html += '<th style="min-width: 150px;">Radnik</th>';
+                    html += '<th style="min-width: 120px;">Kupac</th>';
+
+                    // Sortimenti headers
+                    data.sortimentiNazivi.forEach(s => {
+                        html += `<th class="sortiment-col">${s}</th>`;
+                    });
+
+                    html += '<th style="min-width: 130px;">Poslano</th>';
+                    html += '</tr></thead><tbody>';
+
+                    // Render rows
+                    data.unosi.forEach(unos => {
+                        const tipClass = unos.tip === 'SJEČA' ? 'green' : 'blue';
+                        html += '<tr>';
+                        html += `<td><span style="font-weight: 600; color: ${unos.tip === 'SJEČA' ? '#059669' : '#2563eb'}">${unos.tip}</span></td>`;
+                        html += `<td>${unos.datum}</td>`;
+                        html += `<td style="font-weight: 600;">${unos.odjel}</td>`;
+                        html += `<td>${unos.radnik}</td>`;
+                        html += `<td>${unos.kupac || '-'}</td>`;
+
+                        // Sortimenti values
+                        data.sortimentiNazivi.forEach(s => {
+                            const val = unos.sortimenti[s] || 0;
+                            html += `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                        });
+
+                        html += `<td style="font-size: 11px; color: #6b7280;">${unos.timestamp}</td>`;
+                        html += '</tr>';
+                    });
+
+                    html += '</tbody></table></div>';
+
+                    // Add summary
+                    html += `<div style="margin-top: 20px; padding: 12px; background: #f9fafb; border-radius: 8px;">`;
+                    html += `<strong>Ukupno pending unosa:</strong> ${data.unosi.length}`;
+                    const sjecaCount = data.unosi.filter(u => u.tip === 'SJEČA').length;
+                    const otpremaCount = data.unosi.filter(u => u.tip === 'OTPREMA').length;
+                    html += ` (Sječa: ${sjecaCount}, Otprema: ${otpremaCount})`;
+                    html += `</div>`;
+                }
+
+                document.getElementById('pending-unosi-container').innerHTML = html;
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('pending-unosi-content').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error loading pending unosi:', error);
+                document.getElementById('pending-unosi-container').innerHTML =
+                    `<p style="color: #dc2626; text-align: center; padding: 40px;">Greška: ${error.message}</p>`;
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('pending-unosi-content').classList.remove('hidden');
+            }
+        }
         // ========== ADD SJECA/OTPREMA FORMS ==========
 
         // Show Add Sjeca Form

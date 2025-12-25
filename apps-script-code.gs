@@ -42,6 +42,8 @@ function doGet(e) {
       return handleAddSjeca(e.parameter);
     } else if (path === 'add-otprema') {
       return handleAddOtprema(e.parameter);
+    } else if (path === 'pending-unosi') {
+      return handlePendingUnosi(e.parameter.year, e.parameter.username, e.parameter.password);
     }
 
     return createJsonResponse({ error: 'Unknown path' }, false);
@@ -1932,6 +1934,150 @@ function handleAddOtprema(params) {
     Logger.log('ERROR in handleAddOtprema: ' + error.toString());
     return createJsonResponse({
       error: "Greška pri dodavanju otpreme: " + error.toString()
+    }, false);
+  }
+}
+
+// ========================================
+// PENDING UNOSI API - Prikaz pending unosa za rukovodioca
+// ========================================
+
+/**
+ * Pending Unosi endpoint - vraća sve pending unose za pregled rukovodioca
+ */
+function handlePendingUnosi(year, username, password) {
+  try {
+    // Autentikacija
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    Logger.log('=== HANDLE PENDING UNOSI START ===');
+    Logger.log('User: ' + loginResult.fullName);
+    Logger.log('Year: ' + year);
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    
+    const pendingPrimkaSheet = ss.getSheetByName("PENDING_PRIMKA");
+    const pendingOtpremaSheet = ss.getSheetByName("PENDING_OTPREMA");
+
+    const sortimentiNazivi = [
+      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI",
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+    ];
+
+    const pendingUnosi = [];
+
+    // Pročitaj PENDING_PRIMKA
+    if (pendingPrimkaSheet) {
+      const primkaData = pendingPrimkaSheet.getDataRange().getValues();
+      
+      for (let i = 1; i < primkaData.length; i++) {
+        const row = primkaData[i];
+        const odjel = row[0];       // A - ODJEL
+        const datum = row[1];       // B - DATUM
+        const primac = row[2];      // C - PRIMAČ
+        const status = row[21];     // V - STATUS
+        const timestamp = row[22];  // W - TIMESTAMP
+
+        if (!datum || status !== "PENDING") continue;
+
+        const datumObj = new Date(datum);
+        if (year && datumObj.getFullYear() !== parseInt(year)) continue;
+
+        // Pročitaj sortimente (kolone D-U, indeksi 3-20)
+        const sortimenti = {};
+        for (let j = 0; j < 18; j++) {
+          const vrijednost = parseFloat(row[3 + j]) || 0;
+          sortimenti[sortimentiNazivi[j]] = vrijednost;
+        }
+
+        pendingUnosi.push({
+          id: i,  // Row number za kasnije brisanje/odobravanje
+          tip: 'SJEČA',
+          datum: formatDate(datumObj),
+          odjel: odjel,
+          radnik: primac,
+          kupac: '',
+          sortimenti: sortimenti,
+          ukupno: parseFloat(row[20]) || 0,
+          timestamp: formatDate(new Date(timestamp)),
+          timestampObj: new Date(timestamp)
+        });
+      }
+    }
+
+    // Pročitaj PENDING_OTPREMA
+    if (pendingOtpremaSheet) {
+      const otpremaData = pendingOtpremaSheet.getDataRange().getValues();
+      
+      for (let i = 1; i < otpremaData.length; i++) {
+        const row = otpremaData[i];
+        const odjel = row[0];       // A - ODJEL
+        const datum = row[1];       // B - DATUM
+        const otpremac = row[2];    // C - OTPREMAČ
+        const kupac = row[21];      // V - KUPAC
+        const status = row[22];     // W - STATUS
+        const timestamp = row[23];  // X - TIMESTAMP
+
+        if (!datum || status !== "PENDING") continue;
+
+        const datumObj = new Date(datum);
+        if (year && datumObj.getFullYear() !== parseInt(year)) continue;
+
+        // Pročitaj sortimente (kolone D-U, indeksi 3-20)
+        const sortimenti = {};
+        for (let j = 0; j < 18; j++) {
+          const vrijednost = parseFloat(row[3 + j]) || 0;
+          sortimenti[sortimentiNazivi[j]] = vrijednost;
+        }
+
+        pendingUnosi.push({
+          id: i,  // Row number za kasnije brisanje/odobravanje
+          tip: 'OTPREMA',
+          datum: formatDate(datumObj),
+          odjel: odjel,
+          radnik: otpremac,
+          kupac: kupac || '',
+          sortimenti: sortimenti,
+          ukupno: parseFloat(row[20]) || 0,
+          timestamp: formatDate(new Date(timestamp)),
+          timestampObj: new Date(timestamp)
+        });
+      }
+    }
+
+    // Sortiraj po timestamp-u (najnoviji prvo)
+    pendingUnosi.sort((a, b) => b.timestampObj - a.timestampObj);
+
+    // Ukloni timestampObj iz rezultata
+    const rezultat = pendingUnosi.map(u => ({
+      id: u.id,
+      tip: u.tip,
+      datum: u.datum,
+      odjel: u.odjel,
+      radnik: u.radnik,
+      kupac: u.kupac,
+      sortimenti: u.sortimenti,
+      ukupno: u.ukupno,
+      timestamp: u.timestamp
+    }));
+
+    Logger.log('=== HANDLE PENDING UNOSI END ===');
+    Logger.log(`Ukupno pending unosa: ${rezultat.length}`);
+
+    return createJsonResponse({
+      sortimentiNazivi: sortimentiNazivi,
+      unosi: rezultat
+    }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handlePendingUnosi: ' + error.toString());
+    return createJsonResponse({
+      error: "Greška pri učitavanju pending unosa: " + error.toString()
     }, false);
   }
 }
