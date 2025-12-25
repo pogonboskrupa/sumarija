@@ -118,6 +118,13 @@
         .submenu-content { animation: fadeIn 0.3s ease-in; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Month selector */
+        .month-selector { margin-bottom: 16px; padding: 12px; background: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0; display: flex; align-items: center; gap: 12px; }
+        .month-selector label { font-weight: 600; color: #047857; font-size: 14px; }
+        .month-select { padding: 8px 12px; border: 1px solid #059669; border-radius: 6px; font-size: 14px; font-weight: 600; color: #047857; background: white; cursor: pointer; min-width: 150px; }
+        .month-select:hover { background: #f0fdf4; }
+        .month-select:focus { outline: none; border-color: #047857; box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1); }
+
         /* Summary cards */
         .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 28px; }
         .summary-card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #f3f4f6; transition: all 0.2s; }
@@ -921,6 +928,23 @@
             <!-- Dnevni prikaz - tekući mjesec -->
             <div id="primaci-daily-view" class="submenu-content hidden">
                 <div class="section">
+                    <div class="month-selector">
+                        <label for="primaci-month-select">📅 Izaberi mjesec:</label>
+                        <select id="primaci-month-select" class="month-select" onchange="loadPrimaciDaily(this.value)">
+                            <option value="0">Januar</option>
+                            <option value="1">Februar</option>
+                            <option value="2">Mart</option>
+                            <option value="3">April</option>
+                            <option value="4">Maj</option>
+                            <option value="5">Juni</option>
+                            <option value="6">Juli</option>
+                            <option value="7">Avgust</option>
+                            <option value="8">Septembar</option>
+                            <option value="9">Oktobar</option>
+                            <option value="10">Novembar</option>
+                            <option value="11">Decembar</option>
+                        </select>
+                    </div>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="primaci-daily-search" placeholder="🔍 Pretraži..." onkeyup="filterPrimaciDailyTable()">
                         <button class="btn btn-primary" onclick="exportTableToCSV('primaci-daily')">📥 Export CSV</button>
@@ -962,6 +986,23 @@
             <!-- Dnevni prikaz - tekući mjesec -->
             <div id="otpremaci-daily-view" class="submenu-content hidden">
                 <div class="section">
+                    <div class="month-selector">
+                        <label for="otpremaci-month-select">📅 Izaberi mjesec:</label>
+                        <select id="otpremaci-month-select" class="month-select" onchange="loadOtremaciDaily(this.value)">
+                            <option value="0">Januar</option>
+                            <option value="1">Februar</option>
+                            <option value="2">Mart</option>
+                            <option value="3">April</option>
+                            <option value="4">Maj</option>
+                            <option value="5">Juni</option>
+                            <option value="6">Juli</option>
+                            <option value="7">Avgust</option>
+                            <option value="8">Septembar</option>
+                            <option value="9">Oktobar</option>
+                            <option value="10">Novembar</option>
+                            <option value="11">Decembar</option>
+                        </select>
+                    </div>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="otpremaci-daily-search" placeholder="🔍 Pretraži..." onkeyup="filterOtremaciDailyTable()">
                         <button class="btn btn-primary" onclick="exportTableToCSV('otpremaci-daily')">📥 Export CSV</button>
@@ -2304,12 +2345,18 @@
             return months[monthIndex];
         }
 
-        // Load primaci daily data (current month)
-        async function loadPrimaciDaily() {
+        // Load primaci daily data (for selected month)
+        async function loadPrimaciDaily(selectedMonth) {
             try {
                 const now = new Date();
                 const year = now.getFullYear();
-                const month = now.getMonth(); // 0-11
+                const month = selectedMonth !== undefined ? parseInt(selectedMonth) : now.getMonth(); // 0-11
+
+                // Set the selected month in the dropdown
+                const monthSelect = document.getElementById('primaci-month-select');
+                if (monthSelect) {
+                    monthSelect.value = month;
+                }
 
                 const url = `${API_URL}?path=primaci-daily&year=${year}&month=${month}&username=${currentUser.username}&password=${currentPassword}`;
                 console.log('Loading primaci daily from:', url);
@@ -2430,12 +2477,18 @@
             }
         }
 
-        // Load otpremaci daily data (current month)
-        async function loadOtremaciDaily() {
+        // Load otpremaci daily data (for selected month)
+        async function loadOtremaciDaily(selectedMonth) {
             try {
                 const now = new Date();
                 const year = now.getFullYear();
-                const month = now.getMonth(); // 0-11
+                const month = selectedMonth !== undefined ? parseInt(selectedMonth) : now.getMonth(); // 0-11
+
+                // Set the selected month in the dropdown
+                const monthSelect = document.getElementById('otpremaci-month-select');
+                if (monthSelect) {
+                    monthSelect.value = month;
+                }
 
                 const url = `${API_URL}?path=otpremaci-daily&year=${year}&month=${month}&username=${currentUser.username}&password=${currentPassword}`;
                 console.log('Loading otpremaci daily from:', url);
