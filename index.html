@@ -2483,9 +2483,11 @@
                 async function() {
                     try {
                         const formData = new URLSearchParams();
-                        formData.append('path', 'delete-pending-unos');
-                        formData.append('id', id);
-                        formData.append('tip', tip);
+                        formData.append('path', 'delete-pending');
+                        formData.append('rowIndex', id);
+                        // Convert tip to lowercase: SJEČA -> sjeca, OTPREMA -> otprema
+                        const tipLower = tip === 'SJEČA' ? 'sjeca' : 'otprema';
+                        formData.append('tip', tipLower);
                         formData.append('username', currentUser.username);
                         formData.append('password', currentPassword);
 
