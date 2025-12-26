@@ -213,7 +213,7 @@ function processPrimkaData(data, stats, year) {
 
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
+    for (let j = 3; j <= 19; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -292,7 +292,7 @@ function processOtpremaData(data, stats, year) {
 
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
+    for (let j = 3; j <= 19; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -739,7 +739,7 @@ function handleDashboard(year, username, password) {
 
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
+    for (let j = 3; j <= 19; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -771,7 +771,7 @@ function handleDashboard(year, username, password) {
 
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
+    for (let j = 3; j <= 19; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -1015,7 +1015,7 @@ function handlePrimaci(year, username, password) {
     const primac = row[2]; // C - PRIMAČ
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
+    for (let j = 3; j <= 19; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -1092,7 +1092,7 @@ function handleOtpremaci(year, username, password) {
     const otpremac = row[2]; // C - OTPREMAČ
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
+    for (let j = 3; j <= 19; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -1237,7 +1237,7 @@ function handleKupci(year, username, password) {
     // Ukupno (kolona U = SVEUKUPNO = indeks 20)
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let ukupno = 0;
-    for (let j = 3; j <= 20; j++) {
+    for (let j = 3; j <= 19; j++) {
       ukupno += parseFloat(row[j]) || 0;
     }
     kupciGodisnji[kupacNormalized].ukupno += ukupno;
@@ -1490,7 +1490,7 @@ function handlePrimacDetail(year, username, password) {
     const primac = row[2];    // C - PRIMAČ
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
+    for (let j = 3; j <= 19; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -1588,7 +1588,7 @@ function handleOtpremacDetail(year, username, password) {
     const kupac = row[21];      // V - KUPAC
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
+    for (let j = 3; j <= 19; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -1687,7 +1687,7 @@ function handlePrimacOdjeli(year, username, password) {
     const primac = row[2];    // C - PRIMAČ
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
+    for (let j = 3; j <= 19; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -1811,7 +1811,7 @@ function handleOtpremacOdjeli(year, username, password) {
     const otpremac = row[2];    // C - OTPREMAČ
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
+    for (let j = 3; j <= 19; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
