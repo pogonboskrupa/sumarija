@@ -909,6 +909,8 @@
             <div class="submenu">
                 <button class="submenu-tab active" onclick="switchPrimaciSubmenu('monthly')">📊 Mjesečni prikaz</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('daily')">📅 Po danima</button>
+                <button class="submenu-tab" onclick="switchPrimaciSubmenu('radilista')">🏗️ Radilišta</button>
+                <button class="submenu-tab" onclick="switchPrimaciSubmenu('izvodjaci')">👷 Izvođači</button>
             </div>
 
             <!-- Mjesečni prikaz -->
@@ -957,6 +959,44 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Prikaz po radilištima -->
+            <div id="primaci-radilista-view" class="submenu-content hidden">
+                <div class="section">
+                    <h3 style="color: #ea580c; text-align: center; margin-bottom: 20px;">🏗️ Prikaz sječe po radilištima</h3>
+                    <div class="controls-bar">
+                        <button class="btn btn-primary" onclick="exportTableToCSV('primaci-radilista')">📥 Export CSV</button>
+                    </div>
+                    <table class="monthly-table" id="primaci-radilista-table">
+                        <thead id="primaci-radilista-header"></thead>
+                        <tbody id="primaci-radilista-body"></tbody>
+                    </table>
+                    <h4 style="color: #7c2d12; margin-top: 30px; margin-bottom: 15px;">📊 Godišnja rekapitulacija po sortimentima</h4>
+                    <table class="monthly-table" id="primaci-radilista-recap">
+                        <thead id="primaci-radilista-recap-header"></thead>
+                        <tbody id="primaci-radilista-recap-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Prikaz po izvođačima -->
+            <div id="primaci-izvodjaci-view" class="submenu-content hidden">
+                <div class="section">
+                    <h3 style="color: #ea580c; text-align: center; margin-bottom: 20px;">👷 Prikaz sječe po izvođačima radova</h3>
+                    <div class="controls-bar">
+                        <button class="btn btn-primary" onclick="exportTableToCSV('primaci-izvodjaci')">📥 Export CSV</button>
+                    </div>
+                    <table class="monthly-table" id="primaci-izvodjaci-table">
+                        <thead id="primaci-izvodjaci-header"></thead>
+                        <tbody id="primaci-izvodjaci-body"></tbody>
+                    </table>
+                    <h4 style="color: #7c2d12; margin-top: 30px; margin-bottom: 15px;">📊 Godišnja rekapitulacija po sortimentima</h4>
+                    <table class="monthly-table" id="primaci-izvodjaci-recap">
+                        <thead id="primaci-izvodjaci-recap-header"></thead>
+                        <tbody id="primaci-izvodjaci-recap-body"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <!-- OTPREMACI CONTENT (Prikaz po otpremačima) -->
@@ -967,6 +1007,8 @@
             <div class="submenu">
                 <button class="submenu-tab active" onclick="switchOtremaciSubmenu('monthly')">📊 Mjesečni prikaz</button>
                 <button class="submenu-tab" onclick="switchOtremaciSubmenu('daily')">📅 Po danima</button>
+                <button class="submenu-tab" onclick="switchOtremaciSubmenu('radilista')">🏗️ Radilišta</button>
+                <button class="submenu-tab" onclick="switchOtremaciSubmenu('izvodjaci')">👷 Izvođači</button>
             </div>
 
             <!-- Mjesečni prikaz -->
@@ -1013,6 +1055,44 @@
                             <tbody id="otpremaci-daily-body"></tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+
+            <!-- Prikaz po radilištima -->
+            <div id="otpremaci-radilista-view" class="submenu-content hidden">
+                <div class="section">
+                    <h3 style="color: #0891b2; text-align: center; margin-bottom: 20px;">🏗️ Prikaz otpreme po radilištima</h3>
+                    <div class="controls-bar">
+                        <button class="btn btn-primary" onclick="exportTableToCSV('otpremaci-radilista')">📥 Export CSV</button>
+                    </div>
+                    <table class="monthly-table" id="otpremaci-radilista-table">
+                        <thead id="otpremaci-radilista-header"></thead>
+                        <tbody id="otpremaci-radilista-body"></tbody>
+                    </table>
+                    <h4 style="color: #155e75; margin-top: 30px; margin-bottom: 15px;">📊 Godišnja rekapitulacija po sortimentima</h4>
+                    <table class="monthly-table" id="otpremaci-radilista-recap">
+                        <thead id="otpremaci-radilista-recap-header"></thead>
+                        <tbody id="otpremaci-radilista-recap-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Prikaz po izvođačima -->
+            <div id="otpremaci-izvodjaci-view" class="submenu-content hidden">
+                <div class="section">
+                    <h3 style="color: #0891b2; text-align: center; margin-bottom: 20px;">👷 Prikaz otpreme po izvođačima radova</h3>
+                    <div class="controls-bar">
+                        <button class="btn btn-primary" onclick="exportTableToCSV('otpremaci-izvodjaci')">📥 Export CSV</button>
+                    </div>
+                    <table class="monthly-table" id="otpremaci-izvodjaci-table">
+                        <thead id="otpremaci-izvodjaci-header"></thead>
+                        <tbody id="otpremaci-izvodjaci-body"></tbody>
+                    </table>
+                    <h4 style="color: #155e75; margin-top: 30px; margin-bottom: 15px;">📊 Godišnja rekapitulacija po sortimentima</h4>
+                    <table class="monthly-table" id="otpremaci-izvodjaci-recap">
+                        <thead id="otpremaci-izvodjaci-recap-header"></thead>
+                        <tbody id="otpremaci-izvodjaci-recap-body"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -1950,6 +2030,8 @@
             // Hide all submenu content
             document.getElementById('primaci-monthly-view').classList.add('hidden');
             document.getElementById('primaci-daily-view').classList.add('hidden');
+            document.getElementById('primaci-radilista-view').classList.add('hidden');
+            document.getElementById('primaci-izvodjaci-view').classList.add('hidden');
 
             // Show selected view
             if (view === 'monthly') {
@@ -1959,6 +2041,18 @@
                 // Load daily data if not already loaded
                 if (!document.getElementById('primaci-daily-header').innerHTML) {
                     loadPrimaciDaily();
+                }
+            } else if (view === 'radilista') {
+                document.getElementById('primaci-radilista-view').classList.remove('hidden');
+                // Load radilista data if not already loaded
+                if (!document.getElementById('primaci-radilista-header').innerHTML) {
+                    loadPrimaciByRadiliste();
+                }
+            } else if (view === 'izvodjaci') {
+                document.getElementById('primaci-izvodjaci-view').classList.remove('hidden');
+                // Load izvodjaci data if not already loaded
+                if (!document.getElementById('primaci-izvodjaci-header').innerHTML) {
+                    loadPrimaciByIzvodjac();
                 }
             }
         }
@@ -1973,6 +2067,8 @@
             // Hide all submenu content
             document.getElementById('otpremaci-monthly-view').classList.add('hidden');
             document.getElementById('otpremaci-daily-view').classList.add('hidden');
+            document.getElementById('otpremaci-radilista-view').classList.add('hidden');
+            document.getElementById('otpremaci-izvodjaci-view').classList.add('hidden');
 
             // Show selected view
             if (view === 'monthly') {
@@ -1982,6 +2078,18 @@
                 // Load daily data if not already loaded
                 if (!document.getElementById('otpremaci-daily-header').innerHTML) {
                     loadOtremaciDaily();
+                }
+            } else if (view === 'radilista') {
+                document.getElementById('otpremaci-radilista-view').classList.remove('hidden');
+                // Load radilista data if not already loaded
+                if (!document.getElementById('otpremaci-radilista-header').innerHTML) {
+                    loadOtremaciByRadiliste();
+                }
+            } else if (view === 'izvodjaci') {
+                document.getElementById('otpremaci-izvodjaci-view').classList.remove('hidden');
+                // Load izvodjaci data if not already loaded
+                if (!document.getElementById('otpremaci-izvodjaci-header').innerHTML) {
+                    loadOtremaciByIzvodjac();
                 }
             }
         }
@@ -2731,6 +2839,518 @@
             } catch (error) {
                 console.error('Error in loadOtremaciDaily:', error);
                 document.getElementById('otpremaci-daily-body').innerHTML = `
+                    <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
+                        Greška pri učitavanju: ${error.message}
+                    </td></tr>
+                `;
+            }
+        }
+
+        // ========================================
+        // PRIKAZI PO RADILIŠTIMA I IZVOĐAČIMA
+        // ========================================
+
+        // Load primaci by radiliste
+        async function loadPrimaciByRadiliste() {
+            try {
+                const year = new Date().getFullYear();
+                const url = `${API_URL}?path=primaci-by-radiliste&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                console.log('Primaci by radiliste data received:', data);
+
+                if (data.error) {
+                    console.error('Error loading primaci by radiliste:', data.error);
+                    document.getElementById('primaci-radilista-body').innerHTML = `
+                        <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
+                            Greška: ${data.error}
+                        </td></tr>
+                    `;
+                    return;
+                }
+
+                if (!data.radilista || data.radilista.length === 0) {
+                    document.getElementById('primaci-radilista-header').innerHTML = `
+                        <tr><th style="background: #ea580c; color: white; padding: 12px;">
+                            🏗️ Prikaz po radilištima - ${year}
+                        </th></tr>
+                    `;
+                    document.getElementById('primaci-radilista-body').innerHTML = `
+                        <tr><td style="text-align: center; padding: 40px; color: #6b7280;">
+                            Nema podataka o radilištima
+                        </td></tr>
+                    `;
+                    return;
+                }
+
+                // Render mjesečnu tabelu
+                const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+
+                let headerHTML = `
+                    <tr>
+                        <th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
+                            🏗️ Radilište
+                        </th>
+                `;
+                mjeseci.forEach(mj => {
+                    headerHTML += `<th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 12px;">${mj}</th>`;
+                });
+                headerHTML += `
+                    <th style="background: linear-gradient(135deg, #7c2d12, #451a03); color: white; padding: 12px; font-weight: 900; position: sticky; top: 0; z-index: 20;">
+                        UKUPNO
+                    </th>
+                </tr>
+                `;
+                document.getElementById('primaci-radilista-header').innerHTML = headerHTML;
+
+                let bodyHTML = '';
+                data.radilista.forEach((radiliste, idx) => {
+                    const rowBg = idx % 2 === 0 ? '#fff7ed' : '#ffffff';
+                    const hoverBg = '#ffedd5';
+
+                    const mjeseciCells = radiliste.mjeseci.map(val => {
+                        const displayVal = val > 0 ? val.toFixed(2) : '-';
+                        const fontWeight = val > 0 ? 'font-weight: 700; color: #7c2d12;' : 'color: #d1d5db;';
+                        return `<td style="${fontWeight} border: 1px solid #fed7aa; font-family: 'Courier New', monospace; font-size: 11px; text-align: right; padding: 8px;">${displayVal}</td>`;
+                    }).join('');
+
+                    bodyHTML += `
+                        <tr style="background: ${rowBg}; transition: all 0.15s ease;" onmouseover="this.style.background='${hoverBg}';" onmouseout="this.style.background='${rowBg}';">
+                            <td style="font-weight: 700; font-size: 12px; border: 1px solid #fed7aa; padding: 10px; color: #7c2d12;">
+                                ${radiliste.naziv}
+                            </td>
+                            ${mjeseciCells}
+                            <td style="background: #fef3c7; border: 2px solid #f59e0b; font-family: 'Courier New', monospace; text-align: right; padding: 10px; font-weight: 900; font-size: 13px; color: #92400e;">
+                                ${radiliste.ukupno.toFixed(2)}
+                            </td>
+                        </tr>
+                    `;
+                });
+                document.getElementById('primaci-radilista-body').innerHTML = bodyHTML;
+
+                // Render godišnju rekapitulaciju po sortimentima
+                let recapHeaderHTML = `
+                    <tr>
+                        <th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
+                            🏗️ Radilište
+                        </th>
+                `;
+                data.sortimentiNazivi.forEach(s => {
+                    recapHeaderHTML += `<th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 10px;">${s}</th>`;
+                });
+                recapHeaderHTML += `</tr>`;
+                document.getElementById('primaci-radilista-recap-header').innerHTML = recapHeaderHTML;
+
+                let recapBodyHTML = '';
+                data.radilista.forEach((radiliste, idx) => {
+                    const rowBg = idx % 2 === 0 ? '#fff7ed' : '#ffffff';
+
+                    const sortimentiCells = data.sortimentiNazivi.map(s => {
+                        const val = radiliste.sortimentiUkupno[s] || 0;
+                        const displayVal = val > 0 ? val.toFixed(2) : '-';
+                        const fontWeight = val > 0 ? 'font-weight: 700; color: #7c2d12;' : 'color: #d1d5db;';
+                        return `<td style="${fontWeight} border: 1px solid #fed7aa; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 8px;">${displayVal}</td>`;
+                    }).join('');
+
+                    recapBodyHTML += `
+                        <tr style="background: ${rowBg};">
+                            <td style="font-weight: 700; font-size: 12px; border: 1px solid #fed7aa; padding: 10px; color: #7c2d12;">
+                                ${radiliste.naziv}
+                            </td>
+                            ${sortimentiCells}
+                        </tr>
+                    `;
+                });
+                document.getElementById('primaci-radilista-recap-body').innerHTML = recapBodyHTML;
+
+                console.log('Primaci by radiliste rendered');
+
+            } catch (error) {
+                console.error('Error in loadPrimaciByRadiliste:', error);
+                document.getElementById('primaci-radilista-body').innerHTML = `
+                    <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
+                        Greška pri učitavanju: ${error.message}
+                    </td></tr>
+                `;
+            }
+        }
+
+        // Load primaci by izvodjac
+        async function loadPrimaciByIzvodjac() {
+            try {
+                const year = new Date().getFullYear();
+                const url = `${API_URL}?path=primaci-by-izvodjac&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                console.log('Primaci by izvodjac data received:', data);
+
+                if (data.error) {
+                    console.error('Error loading primaci by izvodjac:', data.error);
+                    document.getElementById('primaci-izvodjaci-body').innerHTML = `
+                        <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
+                            Greška: ${data.error}
+                        </td></tr>
+                    `;
+                    return;
+                }
+
+                if (!data.izvodjaci || data.izvodjaci.length === 0) {
+                    document.getElementById('primaci-izvodjaci-header').innerHTML = `
+                        <tr><th style="background: #ea580c; color: white; padding: 12px;">
+                            👷 Prikaz po izvođačima - ${year}
+                        </th></tr>
+                    `;
+                    document.getElementById('primaci-izvodjaci-body').innerHTML = `
+                        <tr><td style="text-align: center; padding: 40px; color: #6b7280;">
+                            Nema podataka o izvođačima
+                        </td></tr>
+                    `;
+                    return;
+                }
+
+                // Render mjesečnu tabelu
+                const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+
+                let headerHTML = `
+                    <tr>
+                        <th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
+                            👷 Izvođač radova
+                        </th>
+                `;
+                mjeseci.forEach(mj => {
+                    headerHTML += `<th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 12px;">${mj}</th>`;
+                });
+                headerHTML += `
+                    <th style="background: linear-gradient(135deg, #7c2d12, #451a03); color: white; padding: 12px; font-weight: 900; position: sticky; top: 0; z-index: 20;">
+                        UKUPNO
+                    </th>
+                </tr>
+                `;
+                document.getElementById('primaci-izvodjaci-header').innerHTML = headerHTML;
+
+                let bodyHTML = '';
+                data.izvodjaci.forEach((izvodjac, idx) => {
+                    const rowBg = idx % 2 === 0 ? '#fff7ed' : '#ffffff';
+                    const hoverBg = '#ffedd5';
+
+                    const mjeseciCells = izvodjac.mjeseci.map(val => {
+                        const displayVal = val > 0 ? val.toFixed(2) : '-';
+                        const fontWeight = val > 0 ? 'font-weight: 700; color: #7c2d12;' : 'color: #d1d5db;';
+                        return `<td style="${fontWeight} border: 1px solid #fed7aa; font-family: 'Courier New', monospace; font-size: 11px; text-align: right; padding: 8px;">${displayVal}</td>`;
+                    }).join('');
+
+                    bodyHTML += `
+                        <tr style="background: ${rowBg}; transition: all 0.15s ease;" onmouseover="this.style.background='${hoverBg}';" onmouseout="this.style.background='${rowBg}';">
+                            <td style="font-weight: 700; font-size: 12px; border: 1px solid #fed7aa; padding: 10px; color: #7c2d12;">
+                                ${izvodjac.naziv}
+                            </td>
+                            ${mjeseciCells}
+                            <td style="background: #fef3c7; border: 2px solid #f59e0b; font-family: 'Courier New', monospace; text-align: right; padding: 10px; font-weight: 900; font-size: 13px; color: #92400e;">
+                                ${izvodjac.ukupno.toFixed(2)}
+                            </td>
+                        </tr>
+                    `;
+                });
+                document.getElementById('primaci-izvodjaci-body').innerHTML = bodyHTML;
+
+                // Render godišnju rekapitulaciju po sortimentima
+                let recapHeaderHTML = `
+                    <tr>
+                        <th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
+                            👷 Izvođač radova
+                        </th>
+                `;
+                data.sortimentiNazivi.forEach(s => {
+                    recapHeaderHTML += `<th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 10px;">${s}</th>`;
+                });
+                recapHeaderHTML += `</tr>`;
+                document.getElementById('primaci-izvodjaci-recap-header').innerHTML = recapHeaderHTML;
+
+                let recapBodyHTML = '';
+                data.izvodjaci.forEach((izvodjac, idx) => {
+                    const rowBg = idx % 2 === 0 ? '#fff7ed' : '#ffffff';
+
+                    const sortimentiCells = data.sortimentiNazivi.map(s => {
+                        const val = izvodjac.sortimentiUkupno[s] || 0;
+                        const displayVal = val > 0 ? val.toFixed(2) : '-';
+                        const fontWeight = val > 0 ? 'font-weight: 700; color: #7c2d12;' : 'color: #d1d5db;';
+                        return `<td style="${fontWeight} border: 1px solid #fed7aa; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 8px;">${displayVal}</td>`;
+                    }).join('');
+
+                    recapBodyHTML += `
+                        <tr style="background: ${rowBg};">
+                            <td style="font-weight: 700; font-size: 12px; border: 1px solid #fed7aa; padding: 10px; color: #7c2d12;">
+                                ${izvodjac.naziv}
+                            </td>
+                            ${sortimentiCells}
+                        </tr>
+                    `;
+                });
+                document.getElementById('primaci-izvodjaci-recap-body').innerHTML = recapBodyHTML;
+
+                console.log('Primaci by izvodjac rendered');
+
+            } catch (error) {
+                console.error('Error in loadPrimaciByIzvodjac:', error);
+                document.getElementById('primaci-izvodjaci-body').innerHTML = `
+                    <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
+                        Greška pri učitavanju: ${error.message}
+                    </td></tr>
+                `;
+            }
+        }
+
+        // Load otpremaci by radiliste
+        async function loadOtremaciByRadiliste() {
+            try {
+                const year = new Date().getFullYear();
+                const url = `${API_URL}?path=otpremaci-by-radiliste&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                console.log('Otpremaci by radiliste data received:', data);
+
+                if (data.error) {
+                    console.error('Error loading otpremaci by radiliste:', data.error);
+                    document.getElementById('otpremaci-radilista-body').innerHTML = `
+                        <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
+                            Greška: ${data.error}
+                        </td></tr>
+                    `;
+                    return;
+                }
+
+                if (!data.radilista || data.radilista.length === 0) {
+                    document.getElementById('otpremaci-radilista-header').innerHTML = `
+                        <tr><th style="background: #0891b2; color: white; padding: 12px;">
+                            🏗️ Prikaz po radilištima - ${year}
+                        </th></tr>
+                    `;
+                    document.getElementById('otpremaci-radilista-body').innerHTML = `
+                        <tr><td style="text-align: center; padding: 40px; color: #6b7280;">
+                            Nema podataka o radilištima
+                        </td></tr>
+                    `;
+                    return;
+                }
+
+                // Render mjesečnu tabelu
+                const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+
+                let headerHTML = `
+                    <tr>
+                        <th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
+                            🏗️ Radilište
+                        </th>
+                `;
+                mjeseci.forEach(mj => {
+                    headerHTML += `<th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 12px;">${mj}</th>`;
+                });
+                headerHTML += `
+                    <th style="background: linear-gradient(135deg, #155e75, #164e63); color: white; padding: 12px; font-weight: 900; position: sticky; top: 0; z-index: 20;">
+                        UKUPNO
+                    </th>
+                </tr>
+                `;
+                document.getElementById('otpremaci-radilista-header').innerHTML = headerHTML;
+
+                let bodyHTML = '';
+                data.radilista.forEach((radiliste, idx) => {
+                    const rowBg = idx % 2 === 0 ? '#cffafe' : '#ffffff';
+                    const hoverBg = '#a5f3fc';
+
+                    const mjeseciCells = radiliste.mjeseci.map(val => {
+                        const displayVal = val > 0 ? val.toFixed(2) : '-';
+                        const fontWeight = val > 0 ? 'font-weight: 700; color: #155e75;' : 'color: #d1d5db;';
+                        return `<td style="${fontWeight} border: 1px solid #a5f3fc; font-family: 'Courier New', monospace; font-size: 11px; text-align: right; padding: 8px;">${displayVal}</td>`;
+                    }).join('');
+
+                    bodyHTML += `
+                        <tr style="background: ${rowBg}; transition: all 0.15s ease;" onmouseover="this.style.background='${hoverBg}';" onmouseout="this.style.background='${rowBg}';">
+                            <td style="font-weight: 700; font-size: 12px; border: 1px solid #a5f3fc; padding: 10px; color: #155e75;">
+                                ${radiliste.naziv}
+                            </td>
+                            ${mjeseciCells}
+                            <td style="background: #bfdbfe; border: 2px solid #3b82f6; font-family: 'Courier New', monospace; text-align: right; padding: 10px; font-weight: 900; font-size: 13px; color: #1e3a8a;">
+                                ${radiliste.ukupno.toFixed(2)}
+                            </td>
+                        </tr>
+                    `;
+                });
+                document.getElementById('otpremaci-radilista-body').innerHTML = bodyHTML;
+
+                // Render godišnju rekapitulaciju po sortimentima
+                let recapHeaderHTML = `
+                    <tr>
+                        <th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
+                            🏗️ Radilište
+                        </th>
+                `;
+                data.sortimentiNazivi.forEach(s => {
+                    recapHeaderHTML += `<th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 10px;">${s}</th>`;
+                });
+                recapHeaderHTML += `</tr>`;
+                document.getElementById('otpremaci-radilista-recap-header').innerHTML = recapHeaderHTML;
+
+                let recapBodyHTML = '';
+                data.radilista.forEach((radiliste, idx) => {
+                    const rowBg = idx % 2 === 0 ? '#cffafe' : '#ffffff';
+
+                    const sortimentiCells = data.sortimentiNazivi.map(s => {
+                        const val = radiliste.sortimentiUkupno[s] || 0;
+                        const displayVal = val > 0 ? val.toFixed(2) : '-';
+                        const fontWeight = val > 0 ? 'font-weight: 700; color: #155e75;' : 'color: #d1d5db;';
+                        return `<td style="${fontWeight} border: 1px solid #a5f3fc; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 8px;">${displayVal}</td>`;
+                    }).join('');
+
+                    recapBodyHTML += `
+                        <tr style="background: ${rowBg};">
+                            <td style="font-weight: 700; font-size: 12px; border: 1px solid #a5f3fc; padding: 10px; color: #155e75;">
+                                ${radiliste.naziv}
+                            </td>
+                            ${sortimentiCells}
+                        </tr>
+                    `;
+                });
+                document.getElementById('otpremaci-radilista-recap-body').innerHTML = recapBodyHTML;
+
+                console.log('Otpremaci by radiliste rendered');
+
+            } catch (error) {
+                console.error('Error in loadOtremaciByRadiliste:', error);
+                document.getElementById('otpremaci-radilista-body').innerHTML = `
+                    <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
+                        Greška pri učitavanju: ${error.message}
+                    </td></tr>
+                `;
+            }
+        }
+
+        // Load otpremaci by izvodjac
+        async function loadOtremaciByIzvodjac() {
+            try {
+                const year = new Date().getFullYear();
+                const url = `${API_URL}?path=otpremaci-by-izvodjac&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                console.log('Otpremaci by izvodjac data received:', data);
+
+                if (data.error) {
+                    console.error('Error loading otpremaci by izvodjac:', data.error);
+                    document.getElementById('otpremaci-izvodjaci-body').innerHTML = `
+                        <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
+                            Greška: ${data.error}
+                        </td></tr>
+                    `;
+                    return;
+                }
+
+                if (!data.izvodjaci || data.izvodjaci.length === 0) {
+                    document.getElementById('otpremaci-izvodjaci-header').innerHTML = `
+                        <tr><th style="background: #0891b2; color: white; padding: 12px;">
+                            👷 Prikaz po izvođačima - ${year}
+                        </th></tr>
+                    `;
+                    document.getElementById('otpremaci-izvodjaci-body').innerHTML = `
+                        <tr><td style="text-align: center; padding: 40px; color: #6b7280;">
+                            Nema podataka o izvođačima
+                        </td></tr>
+                    `;
+                    return;
+                }
+
+                // Render mjesečnu tabelu
+                const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+
+                let headerHTML = `
+                    <tr>
+                        <th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
+                            👷 Izvođač radova
+                        </th>
+                `;
+                mjeseci.forEach(mj => {
+                    headerHTML += `<th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 12px;">${mj}</th>`;
+                });
+                headerHTML += `
+                    <th style="background: linear-gradient(135deg, #155e75, #164e63); color: white; padding: 12px; font-weight: 900; position: sticky; top: 0; z-index: 20;">
+                        UKUPNO
+                    </th>
+                </tr>
+                `;
+                document.getElementById('otpremaci-izvodjaci-header').innerHTML = headerHTML;
+
+                let bodyHTML = '';
+                data.izvodjaci.forEach((izvodjac, idx) => {
+                    const rowBg = idx % 2 === 0 ? '#cffafe' : '#ffffff';
+                    const hoverBg = '#a5f3fc';
+
+                    const mjeseciCells = izvodjac.mjeseci.map(val => {
+                        const displayVal = val > 0 ? val.toFixed(2) : '-';
+                        const fontWeight = val > 0 ? 'font-weight: 700; color: #155e75;' : 'color: #d1d5db;';
+                        return `<td style="${fontWeight} border: 1px solid #a5f3fc; font-family: 'Courier New', monospace; font-size: 11px; text-align: right; padding: 8px;">${displayVal}</td>`;
+                    }).join('');
+
+                    bodyHTML += `
+                        <tr style="background: ${rowBg}; transition: all 0.15s ease;" onmouseover="this.style.background='${hoverBg}';" onmouseout="this.style.background='${rowBg}';">
+                            <td style="font-weight: 700; font-size: 12px; border: 1px solid #a5f3fc; padding: 10px; color: #155e75;">
+                                ${izvodjac.naziv}
+                            </td>
+                            ${mjeseciCells}
+                            <td style="background: #bfdbfe; border: 2px solid #3b82f6; font-family: 'Courier New', monospace; text-align: right; padding: 10px; font-weight: 900; font-size: 13px; color: #1e3a8a;">
+                                ${izvodjac.ukupno.toFixed(2)}
+                            </td>
+                        </tr>
+                    `;
+                });
+                document.getElementById('otpremaci-izvodjaci-body').innerHTML = bodyHTML;
+
+                // Render godišnju rekapitulaciju po sortimentima
+                let recapHeaderHTML = `
+                    <tr>
+                        <th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
+                            👷 Izvođač radova
+                        </th>
+                `;
+                data.sortimentiNazivi.forEach(s => {
+                    recapHeaderHTML += `<th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 10px;">${s}</th>`;
+                });
+                recapHeaderHTML += `</tr>`;
+                document.getElementById('otpremaci-izvodjaci-recap-header').innerHTML = recapHeaderHTML;
+
+                let recapBodyHTML = '';
+                data.izvodjaci.forEach((izvodjac, idx) => {
+                    const rowBg = idx % 2 === 0 ? '#cffafe' : '#ffffff';
+
+                    const sortimentiCells = data.sortimentiNazivi.map(s => {
+                        const val = izvodjac.sortimentiUkupno[s] || 0;
+                        const displayVal = val > 0 ? val.toFixed(2) : '-';
+                        const fontWeight = val > 0 ? 'font-weight: 700; color: #155e75;' : 'color: #d1d5db;';
+                        return `<td style="${fontWeight} border: 1px solid #a5f3fc; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 8px;">${displayVal}</td>`;
+                    }).join('');
+
+                    recapBodyHTML += `
+                        <tr style="background: ${rowBg};">
+                            <td style="font-weight: 700; font-size: 12px; border: 1px solid #a5f3fc; padding: 10px; color: #155e75;">
+                                ${izvodjac.naziv}
+                            </td>
+                            ${sortimentiCells}
+                        </tr>
+                    `;
+                });
+                document.getElementById('otpremaci-izvodjaci-recap-body').innerHTML = recapBodyHTML;
+
+                console.log('Otpremaci by izvodjac rendered');
+
+            } catch (error) {
+                console.error('Error in loadOtremaciByIzvodjac:', error);
+                document.getElementById('otpremaci-izvodjaci-body').innerHTML = `
                     <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
                         Greška pri učitavanju: ${error.message}
                     </td></tr>
