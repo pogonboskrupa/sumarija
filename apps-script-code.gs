@@ -210,7 +210,12 @@ function processPrimkaData(data, stats, year) {
     const row = data[i];
     const odjel = row[0]; // kolona A - Odjel
     const datum = row[1]; // kolona B - Datum
-    const kubik = parseFloat(row[20]) || 0; // kolona U (indeks 20) - SVEUKUPNO
+
+    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    let kubik = 0;
+    for (let j = 3; j <= 20; j++) {
+      kubik += parseFloat(row[j]) || 0;
+    }
 
     if (!datum || !odjel) {
       skippedNoDatum++;
@@ -284,7 +289,12 @@ function processOtpremaData(data, stats, year) {
     const row = data[i];
     const odjel = row[0]; // kolona A - Odjel
     const datum = row[1]; // kolona B - Datum
-    const kubik = parseFloat(row[20]) || 0; // kolona U (indeks 20) - SVEUKUPNO
+
+    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    let kubik = 0;
+    for (let j = 3; j <= 20; j++) {
+      kubik += parseFloat(row[j]) || 0;
+    }
 
     if (!datum || !odjel) {
       skippedNoDatum++;
@@ -1003,7 +1013,11 @@ function handlePrimaci(year, username, password) {
     const row = primkaData[i];
     const datum = row[1]; // B - DATUM
     const primac = row[2]; // C - PRIMAČ
-    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    let kubik = 0;
+    for (let j = 3; j <= 20; j++) {
+      kubik += parseFloat(row[j]) || 0;
+    }
 
     if (!datum || !primac) continue;
 
@@ -1076,7 +1090,11 @@ function handleOtpremaci(year, username, password) {
     const row = otpremaData[i];
     const datum = row[1]; // B - DATUM
     const otpremac = row[2]; // C - OTPREMAČ
-    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    let kubik = 0;
+    for (let j = 3; j <= 20; j++) {
+      kubik += parseFloat(row[j]) || 0;
+    }
 
     if (!datum || !otpremac) continue;
 
@@ -1217,7 +1235,11 @@ function handleKupci(year, username, password) {
     }
 
     // Ukupno (kolona U = SVEUKUPNO = indeks 20)
-    const ukupno = parseFloat(row[20]) || 0;
+    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    let ukupno = 0;
+    for (let j = 3; j <= 20; j++) {
+      ukupno += parseFloat(row[j]) || 0;
+    }
     kupciGodisnji[kupacNormalized].ukupno += ukupno;
     kupciMjesecni[kupacNormalized][mjesec].ukupno += ukupno;
   }
@@ -1466,7 +1488,11 @@ function handlePrimacDetail(year, username, password) {
     const odjel = row[0];     // A - ODJEL
     const datum = row[1];     // B - DATUM
     const primac = row[2];    // C - PRIMAČ
-    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    let kubik = 0;
+    for (let j = 3; j <= 20; j++) {
+      kubik += parseFloat(row[j]) || 0;
+    }
 
     if (!datum || !primac) continue;
 
@@ -1560,7 +1586,11 @@ function handleOtpremacDetail(year, username, password) {
     const datum = row[1];       // B - DATUM
     const otpremac = row[2];    // C - OTPREMAČ
     const kupac = row[21];      // V - KUPAC
-    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    let kubik = 0;
+    for (let j = 3; j <= 20; j++) {
+      kubik += parseFloat(row[j]) || 0;
+    }
 
     if (!datum || !otpremac) continue;
 
@@ -1655,7 +1685,11 @@ function handlePrimacOdjeli(year, username, password) {
     const odjel = row[0];     // A - ODJEL
     const datum = row[1];     // B - DATUM
     const primac = row[2];    // C - PRIMAČ
-    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    let kubik = 0;
+    for (let j = 3; j <= 20; j++) {
+      kubik += parseFloat(row[j]) || 0;
+    }
 
     if (!datum || !primac || !odjel) continue;
 
@@ -1775,7 +1809,11 @@ function handleOtpremacOdjeli(year, username, password) {
     const odjel = row[0];       // A - ODJEL
     const datum = row[1];       // B - DATUM
     const otpremac = row[2];    // C - OTPREMAČ
-    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    let kubik = 0;
+    for (let j = 3; j <= 20; j++) {
+      kubik += parseFloat(row[j]) || 0;
+    }
 
     if (!datum || !otpremac || !odjel) continue;
 
