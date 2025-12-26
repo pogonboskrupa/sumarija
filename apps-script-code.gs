@@ -449,16 +449,18 @@ function syncIndexSheet() {
         const ss = SpreadsheetApp.open(file);
         Logger.log(`[${processedCount}] Processing: ${odjelNaziv}`);
 
-        // Pročitaj PRIMKA sheet
+        // ✨ PROČITAJ RADILIŠTE (W2) I IZVOĐAČ (W3) IZ PRIMKA sheet-a PRVO (van if bloka da bude dostupno i za OTPREMU)
+        let radiliste = "";
+        let izvodjac = "";
+
         const primkaSheet = ss.getSheetByName('PRIMKA');
         if (primkaSheet) {
+          radiliste = primkaSheet.getRange("W2").getValue() || "";
+          izvodjac = primkaSheet.getRange("W3").getValue() || "";
+          Logger.log(`  PRIMKA: Radilište="${radiliste}", Izvođač="${izvodjac}"`);
+
           const lastRow = primkaSheet.getLastRow();
           Logger.log(`  PRIMKA: ${lastRow} redova (total)`);
-
-          // ✨ PROČITAJ RADILIŠTE (W2) I IZVOĐAČ (W3)
-          const radiliste = primkaSheet.getRange("W2").getValue() || "";
-          const izvodjac = primkaSheet.getRange("W3").getValue() || "";
-          Logger.log(`  PRIMKA: Radilište="${radiliste}", Izvođač="${izvodjac}"`);
 
           if (lastRow > 1) {
             const data = primkaSheet.getDataRange().getValues();
