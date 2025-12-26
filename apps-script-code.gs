@@ -213,7 +213,7 @@ function processPrimkaData(data, stats, year) {
 
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 19; j++) {
+    for (let j = 3; j <= 20; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -292,7 +292,7 @@ function processOtpremaData(data, stats, year) {
 
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 19; j++) {
+    for (let j = 3; j <= 20; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -410,21 +410,21 @@ function syncIndexSheet() {
     // 1.5. Dodaj header-e za Radilište i Izvođač ako ne postoje
     Logger.log('Provjera header-a za Radilište i Izvođač...');
 
-    // INDEX_PRIMKA: A-C (3) + D-T (17 sortimenti) + U=Radilište + V=Izvođač = 22 kolone (A-V)
+    // INDEX_PRIMKA: A-C (3) + D-U (18 sortimenti) + V=Radilište + W=Izvođač = 23 kolone (A-W)
     const primkaLastCol = indexPrimkaSheet.getLastColumn();
-    if (primkaLastCol < 21) { // Ako nema kolonu U (21)
-      Logger.log(`INDEX_PRIMKA: Dodavanje header-a Radilište (U) i Izvođač (V)`);
-      indexPrimkaSheet.getRange("U1").setValue("Radilište");
-      indexPrimkaSheet.getRange("V1").setValue("Izvođač");
+    if (primkaLastCol < 22) { // Ako nema kolonu V (22)
+      Logger.log(`INDEX_PRIMKA: Dodavanje header-a Radilište (V) i Izvođač (W)`);
+      indexPrimkaSheet.getRange("V1").setValue("Radilište");
+      indexPrimkaSheet.getRange("W1").setValue("Izvođač");
     } else {
       Logger.log(`INDEX_PRIMKA: Header-i već postoje (kolone: ${primkaLastCol})`);
     }
 
-    // INDEX_OTPREMA: A-C (3) + D-T (17 sortimenti) + U=Kupac + V=Radilište = 22 kolone (A-V)
+    // INDEX_OTPREMA: A-C (3) + D-U (18 sortimenti) + V=Kupac + W=Radilište = 23 kolone (A-W)
     const otpremaLastCol = indexOtpremaSheet.getLastColumn();
-    if (otpremaLastCol < 22) { // Ako nema kolonu V (22)
-      Logger.log(`INDEX_OTPREMA: Dodavanje header-a Radilište (V)`);
-      indexOtpremaSheet.getRange("V1").setValue("Radilište");
+    if (otpremaLastCol < 23) { // Ako nema kolonu W (23)
+      Logger.log(`INDEX_OTPREMA: Dodavanje header-a Radilište (W)`);
+      indexOtpremaSheet.getRange("W1").setValue("Radilište");
     } else {
       Logger.log(`INDEX_OTPREMA: Header već postoji (kolone: ${otpremaLastCol})`);
     }
@@ -514,7 +514,7 @@ function syncIndexSheet() {
 
               // Dodaj red: [ODJEL, DATUM(B), PRIMAČ(C), ...sortimenti(D-T 17 kolona), RADILIŠTE(W2), IZVOĐAČ(W3)]
               // Eksplicitno uzmi samo 17 kolona sortimenti (D-T = indeksi 3-19), preskačući U (SVEUKUPNO)
-              const sortimenti = row.slice(3, 20); // D-T (17 kolona)
+              const sortimenti = row.slice(3, 21); // D-U (18 kolona)
               const newRow = [odjelNaziv, datum, primac, ...sortimenti, radiliste, izvodjac];
               primkaRows.push(newRow);
               addedRows++;
@@ -586,7 +586,7 @@ function syncIndexSheet() {
 
               // Kreiraj novi red za INDEX: [odjel, datum(B), otpremač(C), ...sortimenti(D-T 17 kolona), kupac(A), radilište]
               // Eksplicitno uzmi samo 17 kolona sortimenti (D-T = indeksi 3-19), preskačući U (SVEUKUPNO)
-              const sortimenti = row.slice(3, 20); // D-T (17 kolona)
+              const sortimenti = row.slice(3, 21); // D-U (18 kolona)
               const newRow = [odjelNaziv, datum, otpremac, ...sortimenti, kupac, radilisteOtprema];
               otpremaRows.push(newRow);
               addedRows++;
@@ -739,7 +739,7 @@ function handleDashboard(year, username, password) {
 
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 19; j++) {
+    for (let j = 3; j <= 20; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -771,7 +771,7 @@ function handleDashboard(year, username, password) {
 
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 19; j++) {
+    for (let j = 3; j <= 20; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -872,7 +872,7 @@ function handleSortimenti(year, username, password) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
     ];
 
   // Inicijalizuj mjesečne sume za PRIMKA (12 mjeseci x 18 sortimenta)
@@ -1015,7 +1015,7 @@ function handlePrimaci(year, username, password) {
     const primac = row[2]; // C - PRIMAČ
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 19; j++) {
+    for (let j = 3; j <= 20; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -1092,7 +1092,7 @@ function handleOtpremaci(year, username, password) {
     const otpremac = row[2]; // C - OTPREMAČ
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 19; j++) {
+    for (let j = 3; j <= 20; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -1164,7 +1164,7 @@ function handleKupci(year, username, password) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
     ];
 
   // Map za godišnji prikaz: kupac -> { sortimenti: {}, ukupno: 0 }
@@ -1237,7 +1237,7 @@ function handleKupci(year, username, password) {
     // Ukupno (kolona U = SVEUKUPNO = indeks 20)
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let ukupno = 0;
-    for (let j = 3; j <= 19; j++) {
+    for (let j = 3; j <= 20; j++) {
       ukupno += parseFloat(row[j]) || 0;
     }
     kupciGodisnji[kupacNormalized].ukupno += ukupno;
@@ -1477,7 +1477,7 @@ function handlePrimacDetail(year, username, password) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
     ];
 
   const unosi = [];
@@ -1490,7 +1490,7 @@ function handlePrimacDetail(year, username, password) {
     const primac = row[2];    // C - PRIMAČ
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 19; j++) {
+    for (let j = 3; j <= 20; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -1574,7 +1574,7 @@ function handleOtpremacDetail(year, username, password) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
     ];
 
   const unosi = [];
@@ -1588,7 +1588,7 @@ function handleOtpremacDetail(year, username, password) {
     const kupac = row[21];      // V - KUPAC
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 19; j++) {
+    for (let j = 3; j <= 20; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -1673,7 +1673,7 @@ function handlePrimacOdjeli(year, username, password) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
     ];
 
   // Map: odjelNaziv -> { sortimenti: {}, ukupno: 0, zadnjiDatum: Date }
@@ -1687,7 +1687,7 @@ function handlePrimacOdjeli(year, username, password) {
     const primac = row[2];    // C - PRIMAČ
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 19; j++) {
+    for (let j = 3; j <= 20; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -1797,7 +1797,7 @@ function handleOtpremacOdjeli(year, username, password) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
     ];
 
   // Map: odjelNaziv -> { sortimenti: {}, ukupno: 0, zadnjiDatum: Date }
@@ -1811,7 +1811,7 @@ function handleOtpremacOdjeli(year, username, password) {
     const otpremac = row[2];    // C - OTPREMAČ
     // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
     let kubik = 0;
-    for (let j = 3; j <= 19; j++) {
+    for (let j = 3; j <= 20; j++) {
       kubik += parseFloat(row[j]) || 0;
     }
 
@@ -1940,7 +1940,7 @@ function handleAddSjeca(params) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
     ];
 
     const newRow = [
@@ -2042,7 +2042,7 @@ function handleAddOtprema(params) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
     ];
 
     const newRow = [
@@ -2125,7 +2125,7 @@ function handlePendingUnosi(year, username, password) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
     ];
 
     const pendingUnosi = [];
@@ -2570,7 +2570,7 @@ function handleMjesecniSortimenti(year, username, password) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
     ];
 
     // Inicijalizuj mjesečne sume za SJEČA (12 mjeseci)
@@ -2676,7 +2676,7 @@ function handlePrimaciDaily(year, month, username, password) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
     ];
 
     const dailyData = [];
@@ -2748,7 +2748,7 @@ function handleOtremaciDaily(year, month, username, password) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
     ];
 
     const dailyData = [];
@@ -2826,7 +2826,7 @@ function handlePrimaciByRadiliste(year, username, password) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
     ];
 
     // Grupisanje po radilištima
@@ -2837,8 +2837,8 @@ function handlePrimaciByRadiliste(year, username, password) {
       const odjel = row[0];
       const datum = row[1];
 
-      // ✨ ČITAJ RADILIŠTE IZ KOLONE U (indeks 20)
-      const radiliste = row[20] || "Nepoznato radilište";
+      // ✨ ČITAJ RADILIŠTE IZ KOLONE V (indeks 21)
+      const radiliste = row[21] || "Nepoznato radilište";
 
       if (!datum || !odjel) continue;
 
@@ -2927,7 +2927,7 @@ function handlePrimaciByIzvodjac(year, username, password) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
     ];
 
     // Grupisanje po izvođačima
@@ -2938,8 +2938,8 @@ function handlePrimaciByIzvodjac(year, username, password) {
       const odjel = row[0];
       const datum = row[1];
 
-      // ✨ ČITAJ IZVOĐAČ IZ KOLONE V (indeks 21)
-      const izvodjac = row[21] || "Nepoznati izvođač";
+      // ✨ ČITAJ IZVOĐAČ IZ KOLONE W (indeks 22)
+      const izvodjac = row[22] || "Nepoznati izvođač";
 
       if (!datum || !odjel) continue;
 
@@ -3028,7 +3028,7 @@ function handleOtremaciByRadiliste(year, username, password) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
     ];
 
     // Grupisanje po radilištima
@@ -3039,8 +3039,8 @@ function handleOtremaciByRadiliste(year, username, password) {
       const odjel = row[0];
       const datum = row[1];
 
-      // ✨ ČITAJ RADILIŠTE IZ KOLONE V (indeks 21)
-      const radiliste = row[21] || "Nepoznato radilište";
+      // ✨ ČITAJ RADILIŠTE IZ KOLONE W (indeks 22)
+      const radiliste = row[22] || "Nepoznato radilište";
 
       if (!datum || !odjel) continue;
 
