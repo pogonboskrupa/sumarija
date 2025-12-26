@@ -211,10 +211,13 @@ function processPrimkaData(data, stats, year) {
     const odjel = row[0]; // kolona A - Odjel
     const datum = row[1]; // kolona B - Datum
 
-    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    // Saberi samo POJEDINAČNE sortimente (preskačući automatske sume)
+    // D,E,F,G,H (3-7) + J,K (9-10) + M,N,O,P (12-15) + R,S (17-18) = 13 sortimenti
+    // Preskačemo: I(8)=suma četinara, L(11)=suma, Q(16)=suma lišćara, T(19)=suma, U(20)=ukupna suma
+    const sortimentiIndeksi = [3,4,5,6,7,9,10,12,13,14,15,17,18];
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
-      kubik += parseFloat(row[j]) || 0;
+    for (let idx of sortimentiIndeksi) {
+      kubik += parseFloat(row[idx]) || 0;
     }
 
     if (!datum || !odjel) {
@@ -290,10 +293,13 @@ function processOtpremaData(data, stats, year) {
     const odjel = row[0]; // kolona A - Odjel
     const datum = row[1]; // kolona B - Datum
 
-    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    // Saberi samo POJEDINAČNE sortimente (preskačući automatske sume)
+    // D,E,F,G,H (3-7) + J,K (9-10) + M,N,O,P (12-15) + R,S (17-18) = 13 sortimenti
+    // Preskačemo: I(8)=suma četinara, L(11)=suma, Q(16)=suma lišćara, T(19)=suma, U(20)=ukupna suma
+    const sortimentiIndeksi = [3,4,5,6,7,9,10,12,13,14,15,17,18];
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
-      kubik += parseFloat(row[j]) || 0;
+    for (let idx of sortimentiIndeksi) {
+      kubik += parseFloat(row[idx]) || 0;
     }
 
     if (!datum || !odjel) {
@@ -737,10 +743,13 @@ function handleDashboard(year, username, password) {
     const odjel = row[0]; // A - ODJEL
     const datum = row[1]; // B - DATUM
 
-    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    // Saberi samo POJEDINAČNE sortimente (preskačući automatske sume)
+    // D,E,F,G,H (3-7) + J,K (9-10) + M,N,O,P (12-15) + R,S (17-18) = 13 sortimenti
+    // Preskačemo: I(8)=suma četinara, L(11)=suma, Q(16)=suma lišćara, T(19)=suma, U(20)=ukupna suma
+    const sortimentiIndeksi = [3,4,5,6,7,9,10,12,13,14,15,17,18];
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
-      kubik += parseFloat(row[j]) || 0;
+    for (let idx of sortimentiIndeksi) {
+      kubik += parseFloat(row[idx]) || 0;
     }
 
     if (!datum || !odjel) continue;
@@ -769,10 +778,13 @@ function handleDashboard(year, username, password) {
     const odjel = row[0]; // A - ODJEL
     const datum = row[1]; // B - DATUM
 
-    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    // Saberi samo POJEDINAČNE sortimente (preskačući automatske sume)
+    // D,E,F,G,H (3-7) + J,K (9-10) + M,N,O,P (12-15) + R,S (17-18) = 13 sortimenti
+    // Preskačemo: I(8)=suma četinara, L(11)=suma, Q(16)=suma lišćara, T(19)=suma, U(20)=ukupna suma
+    const sortimentiIndeksi = [3,4,5,6,7,9,10,12,13,14,15,17,18];
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
-      kubik += parseFloat(row[j]) || 0;
+    for (let idx of sortimentiIndeksi) {
+      kubik += parseFloat(row[idx]) || 0;
     }
 
     if (!datum || !odjel) continue;
@@ -1013,10 +1025,13 @@ function handlePrimaci(year, username, password) {
     const row = primkaData[i];
     const datum = row[1]; // B - DATUM
     const primac = row[2]; // C - PRIMAČ
-    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    // Saberi samo POJEDINAČNE sortimente (preskačući automatske sume)
+    // D,E,F,G,H (3-7) + J,K (9-10) + M,N,O,P (12-15) + R,S (17-18) = 13 sortimenti
+    // Preskačemo: I(8)=suma četinara, L(11)=suma, Q(16)=suma lišćara, T(19)=suma, U(20)=ukupna suma
+    const sortimentiIndeksi = [3,4,5,6,7,9,10,12,13,14,15,17,18];
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
-      kubik += parseFloat(row[j]) || 0;
+    for (let idx of sortimentiIndeksi) {
+      kubik += parseFloat(row[idx]) || 0;
     }
 
     if (!datum || !primac) continue;
@@ -1090,10 +1105,13 @@ function handleOtpremaci(year, username, password) {
     const row = otpremaData[i];
     const datum = row[1]; // B - DATUM
     const otpremac = row[2]; // C - OTPREMAČ
-    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    // Saberi samo POJEDINAČNE sortimente (preskačući automatske sume)
+    // D,E,F,G,H (3-7) + J,K (9-10) + M,N,O,P (12-15) + R,S (17-18) = 13 sortimenti
+    // Preskačemo: I(8)=suma četinara, L(11)=suma, Q(16)=suma lišćara, T(19)=suma, U(20)=ukupna suma
+    const sortimentiIndeksi = [3,4,5,6,7,9,10,12,13,14,15,17,18];
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
-      kubik += parseFloat(row[j]) || 0;
+    for (let idx of sortimentiIndeksi) {
+      kubik += parseFloat(row[idx]) || 0;
     }
 
     if (!datum || !otpremac) continue;
@@ -1488,10 +1506,13 @@ function handlePrimacDetail(year, username, password) {
     const odjel = row[0];     // A - ODJEL
     const datum = row[1];     // B - DATUM
     const primac = row[2];    // C - PRIMAČ
-    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    // Saberi samo POJEDINAČNE sortimente (preskačući automatske sume)
+    // D,E,F,G,H (3-7) + J,K (9-10) + M,N,O,P (12-15) + R,S (17-18) = 13 sortimenti
+    // Preskačemo: I(8)=suma četinara, L(11)=suma, Q(16)=suma lišćara, T(19)=suma, U(20)=ukupna suma
+    const sortimentiIndeksi = [3,4,5,6,7,9,10,12,13,14,15,17,18];
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
-      kubik += parseFloat(row[j]) || 0;
+    for (let idx of sortimentiIndeksi) {
+      kubik += parseFloat(row[idx]) || 0;
     }
 
     if (!datum || !primac) continue;
@@ -1586,10 +1607,13 @@ function handleOtpremacDetail(year, username, password) {
     const datum = row[1];       // B - DATUM
     const otpremac = row[2];    // C - OTPREMAČ
     const kupac = row[21];      // V - KUPAC
-    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    // Saberi samo POJEDINAČNE sortimente (preskačući automatske sume)
+    // D,E,F,G,H (3-7) + J,K (9-10) + M,N,O,P (12-15) + R,S (17-18) = 13 sortimenti
+    // Preskačemo: I(8)=suma četinara, L(11)=suma, Q(16)=suma lišćara, T(19)=suma, U(20)=ukupna suma
+    const sortimentiIndeksi = [3,4,5,6,7,9,10,12,13,14,15,17,18];
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
-      kubik += parseFloat(row[j]) || 0;
+    for (let idx of sortimentiIndeksi) {
+      kubik += parseFloat(row[idx]) || 0;
     }
 
     if (!datum || !otpremac) continue;
@@ -1685,10 +1709,13 @@ function handlePrimacOdjeli(year, username, password) {
     const odjel = row[0];     // A - ODJEL
     const datum = row[1];     // B - DATUM
     const primac = row[2];    // C - PRIMAČ
-    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    // Saberi samo POJEDINAČNE sortimente (preskačući automatske sume)
+    // D,E,F,G,H (3-7) + J,K (9-10) + M,N,O,P (12-15) + R,S (17-18) = 13 sortimenti
+    // Preskačemo: I(8)=suma četinara, L(11)=suma, Q(16)=suma lišćara, T(19)=suma, U(20)=ukupna suma
+    const sortimentiIndeksi = [3,4,5,6,7,9,10,12,13,14,15,17,18];
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
-      kubik += parseFloat(row[j]) || 0;
+    for (let idx of sortimentiIndeksi) {
+      kubik += parseFloat(row[idx]) || 0;
     }
 
     if (!datum || !primac || !odjel) continue;
@@ -1809,10 +1836,13 @@ function handleOtpremacOdjeli(year, username, password) {
     const odjel = row[0];       // A - ODJEL
     const datum = row[1];       // B - DATUM
     const otpremac = row[2];    // C - OTPREMAČ
-    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    // Saberi samo POJEDINAČNE sortimente (preskačući automatske sume)
+    // D,E,F,G,H (3-7) + J,K (9-10) + M,N,O,P (12-15) + R,S (17-18) = 13 sortimenti
+    // Preskačemo: I(8)=suma četinara, L(11)=suma, Q(16)=suma lišćara, T(19)=suma, U(20)=ukupna suma
+    const sortimentiIndeksi = [3,4,5,6,7,9,10,12,13,14,15,17,18];
     let kubik = 0;
-    for (let j = 3; j <= 20; j++) {
-      kubik += parseFloat(row[j]) || 0;
+    for (let idx of sortimentiIndeksi) {
+      kubik += parseFloat(row[idx]) || 0;
     }
 
     if (!datum || !otpremac || !odjel) continue;
@@ -2564,14 +2594,18 @@ function handleMjesecniSortimenti(year, username, password) {
     const primkaData = primkaSheet.getDataRange().getValues();
     const otpremaData = otpremaSheet.getDataRange().getValues();
 
-    // Nazivi sortimenta (kolone D-T = indeksi 3-19, ukupno 17 sortimenti)
-    // Kolona U (indeks 20) je SVEUKUPNO i ne treba je čitati jer INDEX već ima pojedinačne sortimente
+    // Nazivi POJEDINAČNIH sortimenti (bez automatskih suma)
+    // Struktura: D-H (5 četinara) + J-K (2) + M-P (4 lišćara) + R-S (2) = 13 sortimenti
+    // Preskačemo: I=suma četinara, L=suma, Q=suma lišćara, T=suma, U=ukupna suma
     const sortimentiNazivi = [
-      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-      "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+      "F/L Č", "I Č", "II Č", "III Č", "RUDNO",        // D-H (5)
+      "TRUPCI Č", "CEL.DUGA",                           // J-K (2)
+      "F/L L", "I L", "II L", "III L",                 // M-P (4)
+      "TRUPCI", "OGR.DUGI", "OGR.CIJEPANI"             // R-S-??? (ima problem sa brojem)
     ];
+
+    // Indeksi kolona za svaki sortiment (13 kolona)
+    const sortimentiIndeksi = [3,4,5,6,7,9,10,12,13,14,15,17,18];
 
     // Inicijalizuj mjesečne sume za SJEČA (12 mjeseci)
     let sjecaMjeseci = [];
