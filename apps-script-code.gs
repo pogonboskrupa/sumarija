@@ -68,8 +68,6 @@ function doGet(e) {
       return handlePrimaciByIzvodjac(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'otpremaci-by-radiliste') {
       return handleOtremaciByRadiliste(e.parameter.year, e.parameter.username, e.parameter.password);
-    } else if (path === 'otpremaci-by-izvodjac') {
-      return handleOtremaciByIzvodjac(e.parameter.year, e.parameter.username, e.parameter.password);
     }
 
     return createJsonResponse({ error: 'Unknown path' }, false);
@@ -412,14 +410,13 @@ function syncIndexSheet() {
       Logger.log(`INDEX_PRIMKA: Header-i već postoje (kolone: ${primkaLastCol})`);
     }
 
-    // INDEX_OTPREMA: A-V (22 kolone, V=KUPAC) → dodaj W=Radilište, X=Izvođač
+    // INDEX_OTPREMA: A-V (22 kolone, V=KUPAC) → dodaj samo W=Radilište (Izvođač se NE koristi za OTPREMU)
     const otpremaLastCol = indexOtpremaSheet.getLastColumn();
-    if (otpremaLastCol < 23) { // Ako nema kolonu W (23)
-      Logger.log(`INDEX_OTPREMA: Dodavanje header-a Radilište (W) i Izvođač (X)`);
+    if (otpremaLastCol < 22) { // Ako nema kolonu W (22)
+      Logger.log(`INDEX_OTPREMA: Dodavanje header-a Radilište (W)`);
       indexOtpremaSheet.getRange("W1").setValue("Radilište");
-      indexOtpremaSheet.getRange("X1").setValue("Izvođač");
     } else {
-      Logger.log(`INDEX_OTPREMA: Header-i već postoje (kolone: ${otpremaLastCol})`);
+      Logger.log(`INDEX_OTPREMA: Header već postoji (kolone: ${otpremaLastCol})`);
     }
 
     // 2. Obriši sve podatke (osim header-a u redu 1)
@@ -528,10 +525,10 @@ function syncIndexSheet() {
           const lastRow = otpremaSheet.getLastRow();
           Logger.log(`  OTPREMA: ${lastRow} redova (total)`);
 
-          // ✨ PROČITAJ RADILIŠTE (W2) I IZVOĐAČ (W3) - isti kao u PRIMKA
-          const radilisteOtprema = otpremaSheet.getRange("W2").getValue() || "";
-          const izvodjacOtprema = otpremaSheet.getRange("W3").getValue() || "";
-          Logger.log(`  OTPREMA: Radilište="${radilisteOtprema}", Izvođač="${izvodjacOtprema}"`);
+          // ✨ PROČITAJ RADILIŠTE iz PRIMKA sheet-a (W2) - ISTI kao za sječu
+          // Izvođač se NE koristi za OTPREMU
+          const radilisteOtprema = radiliste; // Koristi radilište iz PRIMKA (pročitano na liniji 462)
+          Logger.log(`  OTPREMA: Radilište="${radilisteOtprema}" (iz PRIMKA)`);
 
           if (lastRow > 1) {
             const data = otpremaSheet.getDataRange().getValues();
@@ -575,15 +572,15 @@ function syncIndexSheet() {
                 continue;
               }
 
-              // Kreiraj novi red za INDEX: [odjel, datum(B), otpremač(C), ...sortimenti(D-U 18 kolona), kupac(A), radilište(W2), izvođač(W3)]
+              // Kreiraj novi red za INDEX: [odjel, datum(B), otpremač(C), ...sortimenti(D-U 18 kolona), kupac(A), radilište]
               // Eksplicitno uzmi samo 18 kolona sortimenti (D-U = indeksi 3-20)
               const sortimenti = row.slice(3, 21); // D-U (18 kolona)
-              const newRow = [odjelNaziv, datum, otpremac, ...sortimenti, kupac, radilisteOtprema, izvodjacOtprema];
+              const newRow = [odjelNaziv, datum, otpremac, ...sortimenti, kupac, radilisteOtprema];
               otpremaRows.push(newRow);
               addedRows++;
 
               if (processedCount === 1 && addedRows <= 3) {
-                Logger.log(`      ✓ Dodano red ${addedRows}: "${odjelNaziv}" | "${datum}" | "${otpremac}" | kupac="${kupac}" | radilište="${radilisteOtprema}" | izvođač="${izvodjacOtprema}"`);
+                Logger.log(`      ✓ Dodano red ${addedRows}: "${odjelNaziv}" | "${datum}" | "${otpremac}" | kupac="${kupac}" | radilište="${radilisteOtprema}"`);
               }
             }
             Logger.log(`  OTPREMA: dodano ${addedRows} redova`);
@@ -3057,103 +3054,3 @@ function handleOtremaciByRadiliste(year, username, password) {
   }
 }
 
-/**
- * Prikaz otpreme po izvođačima - mjesečni sortimenti + godišnja rekapitulacija
- */
-function handleOtremaciByIzvodjac(year, username, password) {
-  try {
-    // Authentication
-    const loginResult = JSON.parse(handleLogin(username, password).getContent());
-    if (!loginResult.success) {
-      return createJsonResponse({ error: "Unauthorized" }, false);
-    }
-
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const otpremaSheet = ss.getSheetByName("INDEX_OTPREMA");
-
-    if (!otpremaSheet) {
-      return createJsonResponse({ error: "INDEX_OTPREMA sheet not found" }, false);
-    }
-
-    const otpremaData = otpremaSheet.getDataRange().getValues();
-
-    const sortimentiNazivi = [
-      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-      "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
-    ];
-
-    // Grupisanje po izvođačima
-    const izvodjaciMap = {};
-
-    for (let i = 1; i < otpremaData.length; i++) {
-      const row = otpremaData[i];
-      const odjel = row[0];
-      const datum = row[1];
-
-      // ✨ ČITAJ IZVOĐAČ IZ KOLONE X (indeks 23)
-      const izvodjac = row[23] || "Nepoznati izvođač";
-
-      if (!datum || !odjel) continue;
-
-      const datumObj = new Date(datum);
-      if (datumObj.getFullYear() !== parseInt(year)) continue;
-
-      const mjesec = datumObj.getMonth(); // 0-11
-
-      // Inicijalizuj strukturu ako ne postoji
-      if (!izvodjaciMap[izvodjac]) {
-        izvodjaciMap[izvodjac] = {
-          naziv: izvodjac,
-          mjeseci: Array(12).fill(0),
-          sortimenti: {}
-        };
-
-        // Inicijalizuj sortimente
-        sortimentiNazivi.forEach(s => {
-          izvodjaciMap[izvodjac].sortimenti[s] = Array(12).fill(0);
-        });
-      }
-
-      // Akumuliraj podatke - čitaj sortimente iz kolona D-U (indeksi 3-20)
-      sortimentiNazivi.forEach((sortiment, idx) => {
-        const value = parseFloat(row[3 + idx]) || 0;
-        izvodjaciMap[izvodjac].sortimenti[sortiment][mjesec] += value;
-        izvodjaciMap[izvodjac].mjeseci[mjesec] += value;
-      });
-    }
-
-    // Konvertuj u array i dodaj ukupne sume
-    const izvodjaciArray = Object.values(izvodjaciMap).map(izvodjac => {
-      const ukupno = izvodjac.mjeseci.reduce((sum, val) => sum + val, 0);
-
-      // Ukupno po sortimentima
-      const sortimentiUkupno = {};
-      sortimentiNazivi.forEach(s => {
-        sortimentiUkupno[s] = izvodjac.sortimenti[s].reduce((sum, val) => sum + val, 0);
-      });
-
-      return {
-        naziv: izvodjac.naziv,
-        mjeseci: izvodjac.mjeseci,
-        sortimenti: izvodjac.sortimenti,
-        sortimentiUkupno: sortimentiUkupno,
-        ukupno: ukupno
-      };
-    });
-
-    // Sortiraj po ukupnoj količini
-    izvodjaciArray.sort((a, b) => b.ukupno - a.ukupno);
-
-    return createJsonResponse({
-      izvodjaci: izvodjaciArray,
-      sortimentiNazivi: sortimentiNazivi
-    }, true);
-
-  } catch (error) {
-    return createJsonResponse({
-      error: "Greška pri učitavanju podataka otpreme po izvođačima: " + error.toString()
-    }, false);
-  }
-}
