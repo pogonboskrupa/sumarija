@@ -2434,7 +2434,7 @@
                 const dates = Object.keys(groupedByDate).sort((a, b) => {
                     const [dayA, monthA] = a.split('.').map(Number);
                     const [dayB, monthB] = b.split('.').map(Number);
-                    return monthA !== monthB ? monthA - monthB : dayA - dayB;
+                    return monthA !== monthB ? monthB - monthA : dayB - dayA;  // Obrnut redosled - od najnovijeg ka najstarijem
                 });
 
                 dates.forEach(datum => {
@@ -2631,7 +2631,7 @@
                 const dates = Object.keys(groupedByDate).sort((a, b) => {
                     const [dayA, monthA] = a.split('.').map(Number);
                     const [dayB, monthB] = b.split('.').map(Number);
-                    return monthA !== monthB ? monthA - monthB : dayA - dayB;
+                    return monthA !== monthB ? monthB - monthA : dayB - dayA;  // Obrnut redosled - od najnovijeg ka najstarijem
                 });
 
                 dates.forEach(datum => {
