@@ -225,7 +225,7 @@ function processPrimkaData(data, stats, year) {
       continue;
     }
 
-    const datumObj = new Date(datum);
+    const datumObj = parseDate(datum);
     if (datumObj.getFullYear() !== parseInt(year)) {
       skippedWrongYear++;
       continue;
@@ -307,7 +307,7 @@ function processOtpremaData(data, stats, year) {
       continue;
     }
 
-    const datumObj = new Date(datum);
+    const datumObj = parseDate(datum);
     if (datumObj.getFullYear() !== parseInt(year)) {
       skippedWrongYear++;
       continue;
@@ -380,6 +380,49 @@ function formatDate(date) {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
   return `${day}.${month}.${year}`;
+}
+
+/**
+ * Parsira datum - podržava Date objekte i string formate (DD/MM/YYYY, DD.MM.YYYY, itd.)
+ * Ova funkcija je KRITIČNA jer Google Sheets ponekad vraća datume kao stringove
+ * a JavaScript's new Date() interpretira "DD/MM/YYYY" kao "MM/DD/YYYY" što uzrokuje
+ * da April i Oktober budu zamijenjeni!
+ */
+function parseDate(datum) {
+  // Ako je već Date objekat, vrati ga direktno
+  if (datum instanceof Date) {
+    return datum;
+  }
+
+  // Ako je broj (timestamp), konvertuj u Date
+  if (typeof datum === 'number') {
+    return new Date(datum);
+  }
+
+  // Ako je string, parsuj ga pažljivo
+  if (typeof datum === 'string') {
+    const str = datum.trim();
+
+    // Format: DD/MM/YYYY ili DD.MM.YYYY ili DD-MM-YYYY
+    const ddmmyyyyPattern = /^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})$/;
+    const match = str.match(ddmmyyyyPattern);
+
+    if (match) {
+      const day = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1; // JavaScript months su 0-indexed
+      const year = parseInt(match[3], 10);
+      return new Date(year, month, day);
+    }
+
+    // Fallback: pokušaj sa standardnim parserom (za ISO format i sl.)
+    const parsed = new Date(str);
+    if (!isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+
+  // Ako ništa ne radi, vrati nevažeći datum
+  return new Date(NaN);
 }
 
 // Pomoćna funkcija za JSON response
@@ -622,14 +665,14 @@ function syncIndexSheet() {
     // 5. Sortiraj po datumu (kolona B = index 1)
     Logger.log('Sortiranje podataka po datumu...');
     primkaRows.sort((a, b) => {
-      const dateA = new Date(a[1]);
-      const dateB = new Date(b[1]);
+      const dateA = parseDate(a[1]);
+      const dateB = parseDate(b[1]);
       return dateA - dateB;
     });
 
     otpremaRows.sort((a, b) => {
-      const dateA = new Date(a[1]);
-      const dateB = new Date(b[1]);
+      const dateA = parseDate(a[1]);
+      const dateB = parseDate(b[1]);
       return dateA - dateB;
     });
 
@@ -754,7 +797,7 @@ function handleDashboard(year, username, password) {
 
     if (!datum || !odjel) continue;
 
-    const datumObj = new Date(datum);
+    const datumObj = parseDate(datum);
     if (datumObj.getFullYear() !== parseInt(year)) continue;
 
     const mjesec = datumObj.getMonth();
@@ -789,7 +832,7 @@ function handleDashboard(year, username, password) {
 
     if (!datum || !odjel) continue;
 
-    const datumObj = new Date(datum);
+    const datumObj = parseDate(datum);
     if (datumObj.getFullYear() !== parseInt(year)) continue;
 
     const mjesec = datumObj.getMonth();
@@ -900,7 +943,7 @@ function handleSortimenti(year, username, password) {
 
     if (!datum) continue;
 
-    const datumObj = new Date(datum);
+    const datumObj = parseDate(datum);
     if (datumObj.getFullYear() !== parseInt(year)) continue;
 
     const mjesec = datumObj.getMonth();
@@ -919,7 +962,7 @@ function handleSortimenti(year, username, password) {
 
     if (!datum) continue;
 
-    const datumObj = new Date(datum);
+    const datumObj = parseDate(datum);
     if (datumObj.getFullYear() !== parseInt(year)) continue;
 
     const mjesec = datumObj.getMonth();
@@ -1036,7 +1079,7 @@ function handlePrimaci(year, username, password) {
 
     if (!datum || !primac) continue;
 
-    const datumObj = new Date(datum);
+    const datumObj = parseDate(datum);
     if (datumObj.getFullYear() !== parseInt(year)) continue;
 
     const mjesec = datumObj.getMonth();
@@ -1116,7 +1159,7 @@ function handleOtpremaci(year, username, password) {
 
     if (!datum || !otpremac) continue;
 
-    const datumObj = new Date(datum);
+    const datumObj = parseDate(datum);
     if (datumObj.getFullYear() !== parseInt(year)) continue;
 
     const mjesec = datumObj.getMonth();
@@ -1208,7 +1251,7 @@ function handleKupci(year, username, password) {
       continue;
     }
 
-    const datumObj = new Date(datum);
+    const datumObj = parseDate(datum);
     if (datumObj.getFullYear() !== parseInt(year)) continue;
 
     const mjesec = datumObj.getMonth();
@@ -1381,7 +1424,7 @@ function handleOdjeli(year, username, password) {
             for (let i = 0; i < allData.length; i++) {
               const datum = allData[i][0];
               if (datum && datum !== '' && datum !== 0) {
-                const datumObj = new Date(datum);
+                const datumObj = parseDate(datum);
 
                 // Provjeri da li je validan datum i da li pripada tražnoj godini
                 if (!isNaN(datumObj.getTime()) && datumObj.getFullYear() === parseInt(year)) {
@@ -1517,7 +1560,7 @@ function handlePrimacDetail(year, username, password) {
 
     if (!datum || !primac) continue;
 
-    const datumObj = new Date(datum);
+    const datumObj = parseDate(datum);
     if (datumObj.getFullYear() !== parseInt(year)) continue;
 
     // Filtriraj samo unose za ovog primača
@@ -1618,7 +1661,7 @@ function handleOtpremacDetail(year, username, password) {
 
     if (!datum || !otpremac) continue;
 
-    const datumObj = new Date(datum);
+    const datumObj = parseDate(datum);
     if (datumObj.getFullYear() !== parseInt(year)) continue;
 
     // Filtriraj samo unose za ovog otpremača
@@ -1720,7 +1763,7 @@ function handlePrimacOdjeli(year, username, password) {
 
     if (!datum || !primac || !odjel) continue;
 
-    const datumObj = new Date(datum);
+    const datumObj = parseDate(datum);
     if (datumObj.getFullYear() !== parseInt(year)) continue;
 
     // Filtriraj samo unose za ovog primača
@@ -1847,7 +1890,7 @@ function handleOtpremacOdjeli(year, username, password) {
 
     if (!datum || !otpremac || !odjel) continue;
 
-    const datumObj = new Date(datum);
+    const datumObj = parseDate(datum);
     if (datumObj.getFullYear() !== parseInt(year)) continue;
 
     // Filtriraj samo unose za ovog otpremača
@@ -1975,7 +2018,7 @@ function handleAddSjeca(params) {
 
     const newRow = [
       params.odjel,           // A - ODJEL
-      new Date(params.datum), // B - DATUM
+      parseDate(params.datum), // B - DATUM
       userFullName            // C - PRIMAČ
     ];
 
@@ -2077,7 +2120,7 @@ function handleAddOtprema(params) {
 
     const newRow = [
       params.odjel,           // A - ODJEL
-      new Date(params.datum), // B - DATUM
+      parseDate(params.datum), // B - DATUM
       userFullName            // C - OTPREMAČ
     ];
 
@@ -2174,7 +2217,7 @@ function handlePendingUnosi(year, username, password) {
 
         if (!datum || status !== "PENDING") continue;
 
-        const datumObj = new Date(datum);
+        const datumObj = parseDate(datum);
         if (year && datumObj.getFullYear() !== parseInt(year)) continue;
 
         // Pročitaj sortimente (kolone D-U, indeksi 3-20)
@@ -2220,7 +2263,7 @@ function handlePendingUnosi(year, username, password) {
 
         if (!datum || status !== "PENDING") continue;
 
-        const datumObj = new Date(datum);
+        const datumObj = parseDate(datum);
         if (year && datumObj.getFullYear() !== parseInt(year)) continue;
 
         // Pročitaj sortimente (kolone D-U, indeksi 3-20)
@@ -2634,7 +2677,7 @@ function handleMjesecniSortimenti(year, username, password) {
 
       if (!datum) continue;
 
-      const datumObj = new Date(datum);
+      const datumObj = parseDate(datum);
       if (datumObj.getFullYear() !== parseInt(year)) continue;
 
       const mjesec = datumObj.getMonth(); // 0-11
@@ -2654,7 +2697,7 @@ function handleMjesecniSortimenti(year, username, password) {
 
       if (!datum) continue;
 
-      const datumObj = new Date(datum);
+      const datumObj = parseDate(datum);
       if (datumObj.getFullYear() !== parseInt(year)) continue;
 
       const mjesec = datumObj.getMonth(); // 0-11
@@ -2726,7 +2769,7 @@ function handlePrimaciDaily(year, month, username, password) {
 
       if (!datum || !primac) continue;
 
-      const datumObj = new Date(datum);
+      const datumObj = parseDate(datum);
       if (datumObj.getFullYear() !== parseInt(year)) continue;
       if (datumObj.getMonth() !== parseInt(month)) continue;
 
@@ -2799,7 +2842,7 @@ function handleOtremaciDaily(year, month, username, password) {
 
       if (!datum || !otpremac) continue;
 
-      const datumObj = new Date(datum);
+      const datumObj = parseDate(datum);
       if (datumObj.getFullYear() !== parseInt(year)) continue;
       if (datumObj.getMonth() !== parseInt(month)) continue;
 
@@ -2878,7 +2921,7 @@ function handlePrimaciByRadiliste(year, username, password) {
 
       if (!datum || !odjel) continue;
 
-      const datumObj = new Date(datum);
+      const datumObj = parseDate(datum);
       if (datumObj.getFullYear() !== parseInt(year)) continue;
 
       const mjesec = datumObj.getMonth(); // 0-11
@@ -2979,7 +3022,7 @@ function handlePrimaciByIzvodjac(year, username, password) {
 
       if (!datum || !odjel) continue;
 
-      const datumObj = new Date(datum);
+      const datumObj = parseDate(datum);
       if (datumObj.getFullYear() !== parseInt(year)) continue;
 
       const mjesec = datumObj.getMonth(); // 0-11
@@ -3080,7 +3123,7 @@ function handleOtremaciByRadiliste(year, username, password) {
 
       if (!datum || !odjel) continue;
 
-      const datumObj = new Date(datum);
+      const datumObj = parseDate(datum);
       if (datumObj.getFullYear() !== parseInt(year)) continue;
 
       const mjesec = datumObj.getMonth(); // 0-11
@@ -3139,5 +3182,184 @@ function handleOtremaciByRadiliste(year, username, password) {
       error: "Greška pri učitavanju podataka otpreme po radilištima: " + error.toString()
     }, false);
   }
+}
+
+// ========================================
+// DIAGNOSTIC FUNCTION: Analyze April/October Data Discrepancy
+// Tests rows 273-363 to identify date parsing issues
+// ========================================
+function diagnosticAnalyzeAprilOctoberData() {
+  try {
+    Logger.log('=== DIAGNOSTIC: April/October Data Analysis ===');
+    Logger.log('Analyzing rows 273-363 (User-reported April data range)');
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const primkaSheet = ss.getSheetByName('INDEX_PRIMKA');
+
+    if (!primkaSheet) {
+      Logger.log('ERROR: INDEX_PRIMKA sheet not found');
+      return;
+    }
+
+    // Get all data
+    const allData = primkaSheet.getDataRange().getValues();
+    Logger.log(`Total rows in INDEX_PRIMKA: ${allData.length}`);
+    Logger.log(`Headers (row 1): ${JSON.stringify(allData[0])}`);
+
+    // Focus on rows 273-363 (user-reported range, converting to array indices 272-362)
+    const startRow = 272; // 0-indexed
+    const endRow = 362;   // 0-indexed
+    const targetRows = allData.slice(startRow, endRow + 1);
+
+    Logger.log(`\n=== ANALYZING ROWS 273-363 (${targetRows.length} rows) ===\n`);
+
+    // Sortimenti indices: D,E,F,G,H (3-7) + J,K (9-10) + M,N,O,P (12-15) + R,S (17-18)
+    const sortimentiIndeksi = [3, 4, 5, 6, 7, 9, 10, 12, 13, 14, 15, 17, 18];
+
+    // Data structure to track results
+    const monthBreakdown = {
+      0: { name: 'Januar', count: 0, sum: 0, dates: [] },
+      1: { name: 'Februar', count: 0, sum: 0, dates: [] },
+      2: { name: 'Mart', count: 0, sum: 0, dates: [] },
+      3: { name: 'April', count: 0, sum: 0, dates: [] },
+      4: { name: 'Maj', count: 0, sum: 0, dates: [] },
+      5: { name: 'Jun', count: 0, sum: 0, dates: [] },
+      6: { name: 'Jul', count: 0, sum: 0, dates: [] },
+      7: { name: 'Avgust', count: 0, sum: 0, dates: [] },
+      8: { name: 'Septembar', count: 0, sum: 0, dates: [] },
+      9: { name: 'Oktobar', count: 0, sum: 0, dates: [] },
+      10: { name: 'Novembar', count: 0, sum: 0, dates: [] },
+      11: { name: 'Decembar', count: 0, sum: 0, dates: [] }
+    };
+
+    let totalSum = 0;
+    let parsingIssues = 0;
+
+    // ========== FIRST 10 ROWS DETAILED ANALYSIS ==========
+    Logger.log('--- DETAILED ANALYSIS OF FIRST 10 ROWS ---');
+
+    for (let i = 0; i < Math.min(10, targetRows.length); i++) {
+      const row = targetRows[i];
+      const rowNum = startRow + i + 1; // Actual row number in sheet
+      const odjel = row[0];
+      const rawDatum = row[1];
+
+      // Calculate sum for this row
+      let kubik = 0;
+      for (let idx of sortimentiIndeksi) {
+        kubik += parseFloat(row[idx]) || 0;
+      }
+
+      // Parse date
+      const datumObj = parseDate(rawDatum);
+      const month = datumObj.getMonth();
+      const year = datumObj.getFullYear();
+      const dateStr = datumObj.toString();
+
+      // Check for parsing issues
+      const isParsedCorrectly = !isNaN(datumObj.getTime());
+      if (!isParsedCorrectly) {
+        parsingIssues++;
+      }
+
+      Logger.log(`\nRow ${rowNum}:`);
+      Logger.log(`  Raw datum value: "${rawDatum}" (type: ${typeof rawDatum})`);
+      Logger.log(`  Parsed date: ${dateStr}`);
+      Logger.log(`  getMonth() returns: ${month} (${monthBreakdown[month].name})`);
+      Logger.log(`  getFullYear(): ${year}`);
+      Logger.log(`  Parsed correctly: ${isParsedCorrectly}`);
+      Logger.log(`  Sum of sortimenti: ${kubik.toFixed(2)} m³`);
+      Logger.log(`  Odjel: ${odjel}`);
+    }
+
+    // ========== FULL RANGE ANALYSIS ==========
+    Logger.log('\n\n--- FULL RANGE ANALYSIS (All 91 rows) ---');
+
+    for (let i = 0; i < targetRows.length; i++) {
+      const row = targetRows[i];
+      const rawDatum = row[1];
+
+      // Calculate sum for this row
+      let kubik = 0;
+      for (let idx of sortimentiIndeksi) {
+        kubik += parseFloat(row[idx]) || 0;
+      }
+
+      // Parse date
+      const datumObj = parseDate(rawDatum);
+      const month = datumObj.getMonth();
+      const year = datumObj.getFullYear();
+
+      // Check for parsing issues
+      const isParsedCorrectly = !isNaN(datumObj.getTime());
+      if (!isParsedCorrectly) {
+        parsingIssues++;
+      } else if (year === 2025) { // Only count 2025 data
+        monthBreakdown[month].count++;
+        monthBreakdown[month].sum += kubik;
+        monthBreakdown[month].dates.push(rawDatum);
+        totalSum += kubik;
+      }
+    }
+
+    // ========== SUMMARY REPORT ==========
+    Logger.log('\n\n=== SUMMARY REPORT ===');
+    Logger.log(`Total rows analyzed: ${targetRows.length}`);
+    Logger.log(`Parsing issues found: ${parsingIssues}`);
+    Logger.log(`Total sum (rows 273-363): ${totalSum.toFixed(2)} m³`);
+
+    Logger.log('\n--- MONTH BREAKDOWN ---');
+    for (let m = 0; m < 12; m++) {
+      const data = monthBreakdown[m];
+      if (data.count > 0 || data.sum > 0) {
+        Logger.log(`${m.toString().padStart(2, '0')} - ${data.name.padEnd(12)}: ${data.count.toString().padStart(3)} rows, ${data.sum.toFixed(2).padStart(12)} m³`);
+      }
+    }
+
+    // ========== MONTH COMPARISON ==========
+    Logger.log('\n\n=== EXPECTED vs ACTUAL ===');
+    Logger.log('According to user:');
+    Logger.log('  April (month 3) should have: ~34909.45 m³');
+    Logger.log('  October (month 9) should have: ~25706.53 m³');
+    Logger.log('\nActual breakdown:');
+    Logger.log(`  April (month 3):   ${monthBreakdown[3].sum.toFixed(2)} m³ (${monthBreakdown[3].count} rows)`);
+    Logger.log(`  October (month 9): ${monthBreakdown[9].sum.toFixed(2)} m³ (${monthBreakdown[9].count} rows)`);
+
+    Logger.log('\n\n=== ANALYSIS COMPLETE ===');
+
+    // Return summary as object for further processing
+    return {
+      totalSum: totalSum,
+      monthBreakdown: monthBreakdown,
+      parsingIssues: parsingIssues,
+      firstTenRows: targetRows.slice(0, 10)
+    };
+
+  } catch (error) {
+    Logger.log('ERROR in diagnosticAnalyzeAprilOctoberData: ' + error.toString());
+    Logger.log('Stack: ' + error.stack);
+  }
+}
+
+// ========================================
+// Helper: Check date format and parse issues
+// ========================================
+function testDateParsing() {
+  Logger.log('=== DATE PARSING TEST ===');
+
+  // Test various date formats that might appear in the sheet
+  const testDates = [
+    '2025-04-01',
+    '04/01/2025',
+    '1/4/2025',
+    '2025-10-15',
+    new Date(2025, 3, 1), // April 1, 2025 as Date object
+    new Date(2025, 9, 15) // October 15, 2025 as Date object
+  ];
+
+  testDates.forEach(d => {
+    const parsed = new Date(d);
+    Logger.log(`Input: ${d} => getMonth(): ${parsed.getMonth()} (${isNaN(parsed.getTime()) ? 'INVALID' : 'valid'})`);
+  });
 }
 
