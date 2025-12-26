@@ -869,11 +869,11 @@ function handleSortimenti(year, username, password) {
   
   // Nazivi sortimenta (kolone D-U = indeksi 3-20)
   const sortimentiNazivi = [
-    "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č", 
-    "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI", 
-    "F/L L", "I L", "II L", "III L", "TRUPCI", 
-    "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
-  ];
+      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI",
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+    ];
 
   // Inicijalizuj mjesečne sume za PRIMKA (12 mjeseci x 18 sortimenta)
   let primkaSortimenti = Array(12).fill(null).map(() => Array(18).fill(0));
@@ -1161,11 +1161,11 @@ function handleKupci(year, username, password) {
 
   // Nazivi sortimenta (kolone D-U = indeksi 3-20)
   const sortimentiNazivi = [
-    "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-    "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-    "F/L L", "I L", "II L", "III L", "TRUPCI",
-    "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
-  ];
+      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI",
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+    ];
 
   // Map za godišnji prikaz: kupac -> { sortimenti: {}, ukupno: 0 }
   let kupciGodisnji = {};
@@ -1474,11 +1474,11 @@ function handlePrimacDetail(year, username, password) {
 
   const primkaData = primkaSheet.getDataRange().getValues();
   const sortimentiNazivi = [
-    "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-    "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-    "F/L L", "I L", "II L", "III L", "TRUPCI",
-    "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
-  ];
+      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI",
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+    ];
 
   const unosi = [];
 
@@ -1571,11 +1571,11 @@ function handleOtpremacDetail(year, username, password) {
 
   const otpremaData = otpremaSheet.getDataRange().getValues();
   const sortimentiNazivi = [
-    "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-    "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-    "F/L L", "I L", "II L", "III L", "TRUPCI",
-    "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
-  ];
+      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI",
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+    ];
 
   const unosi = [];
 
@@ -1670,11 +1670,11 @@ function handlePrimacOdjeli(year, username, password) {
 
   const primkaData = primkaSheet.getDataRange().getValues();
   const sortimentiNazivi = [
-    "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-    "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-    "F/L L", "I L", "II L", "III L", "TRUPCI",
-    "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
-  ];
+      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI",
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+    ];
 
   // Map: odjelNaziv -> { sortimenti: {}, ukupno: 0, zadnjiDatum: Date }
   const odjeliMap = {};
@@ -1794,11 +1794,11 @@ function handleOtpremacOdjeli(year, username, password) {
 
   const otpremaData = otpremaSheet.getDataRange().getValues();
   const sortimentiNazivi = [
-    "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-    "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-    "F/L L", "I L", "II L", "III L", "TRUPCI",
-    "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
-  ];
+      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI",
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
+    ];
 
   // Map: odjelNaziv -> { sortimenti: {}, ukupno: 0, zadnjiDatum: Date }
   const odjeliMap = {};
@@ -1940,7 +1940,7 @@ function handleAddSjeca(params) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
     ];
 
     const newRow = [
@@ -2042,7 +2042,7 @@ function handleAddOtprema(params) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
     ];
 
     const newRow = [
@@ -2125,7 +2125,7 @@ function handlePendingUnosi(year, username, password) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
     ];
 
     const pendingUnosi = [];
@@ -2564,12 +2564,13 @@ function handleMjesecniSortimenti(year, username, password) {
     const primkaData = primkaSheet.getDataRange().getValues();
     const otpremaData = otpremaSheet.getDataRange().getValues();
 
-    // Nazivi sortimenta (kolone D-U = indeksi 3-20)
+    // Nazivi sortimenta (kolone D-T = indeksi 3-19, ukupno 17 sortimenti)
+    // Kolona U (indeks 20) je SVEUKUPNO i ne treba je čitati jer INDEX već ima pojedinačne sortimente
     const sortimentiNazivi = [
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
     ];
 
     // Inicijalizuj mjesečne sume za SJEČA (12 mjeseci)
@@ -2675,7 +2676,7 @@ function handlePrimaciDaily(year, month, username, password) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
     ];
 
     const dailyData = [];
@@ -2747,7 +2748,7 @@ function handleOtremaciDaily(year, month, username, password) {
       "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
       "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI"
     ];
 
     const dailyData = [];
