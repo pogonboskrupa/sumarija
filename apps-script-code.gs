@@ -416,21 +416,21 @@ function syncIndexSheet() {
     // 1.5. Dodaj header-e za Radilište i Izvođač ako ne postoje
     Logger.log('Provjera header-a za Radilište i Izvođač...');
 
-    // INDEX_PRIMKA: A-C (3) + 13 sortimenti + Q=Radilište + R=Izvođač = 18 kolona (A-R)
+    // INDEX_PRIMKA: A-C (3) + D-U (18 sortimenti ISTI kao u odjel sheet-u) + V=Radilište + W=Izvođač = 23 kolone (A-W)
     const primkaLastCol = indexPrimkaSheet.getLastColumn();
-    if (primkaLastCol < 17) { // Ako nema kolonu Q (17)
-      Logger.log(`INDEX_PRIMKA: Dodavanje header-a Radilište (Q) i Izvođač (R)`);
-      indexPrimkaSheet.getRange("Q1").setValue("Radilište");
-      indexPrimkaSheet.getRange("R1").setValue("Izvođač");
+    if (primkaLastCol < 22) { // Ako nema kolonu V (22)
+      Logger.log(`INDEX_PRIMKA: Dodavanje header-a Radilište (V) i Izvođač (W)`);
+      indexPrimkaSheet.getRange("V1").setValue("Radilište");
+      indexPrimkaSheet.getRange("W1").setValue("Izvođač");
     } else {
       Logger.log(`INDEX_PRIMKA: Header-i već postoje (kolone: ${primkaLastCol})`);
     }
 
-    // INDEX_OTPREMA: A-C (3) + 13 sortimenti + Q=Kupac + R=Radilište = 18 kolona (A-R)
+    // INDEX_OTPREMA: A-C (3) + D-U (18 sortimenti ISTI kao u odjel sheet-u) + V=Kupac + W=Radilište = 23 kolone (A-W)
     const otpremaLastCol = indexOtpremaSheet.getLastColumn();
-    if (otpremaLastCol < 18) { // Ako nema kolonu R (18)
-      Logger.log(`INDEX_OTPREMA: Dodavanje header-a Radilište (R)`);
-      indexOtpremaSheet.getRange("R1").setValue("Radilište");
+    if (otpremaLastCol < 23) { // Ako nema kolonu W (23)
+      Logger.log(`INDEX_OTPREMA: Dodavanje header-a Radilište (W)`);
+      indexOtpremaSheet.getRange("W1").setValue("Radilište");
     } else {
       Logger.log(`INDEX_OTPREMA: Header već postoji (kolone: ${otpremaLastCol})`);
     }
@@ -518,10 +518,9 @@ function syncIndexSheet() {
                 continue;
               }
 
-              // Dodaj red: [ODJEL, DATUM(B), PRIMAČ(C), ...sortimenti(13 pojedinačnih), RADILIŠTE(W2), IZVOĐAČ(W3)]
-              // Uzmi samo POJEDINAČNE sortimente, preskačući automatske sume (I,L,Q,T,U)
-              const sortimentiIndeksi = [3,4,5,6,7,9,10,12,13,14,15,17,18]; // D-H, J-K, M-P, R-S
-              const sortimenti = sortimentiIndeksi.map(idx => row[idx]);
+              // Dodaj red: [ODJEL, DATUM(B), PRIMAČ(C), ...sortimenti D-U (18 kolona - IDENTIČNO kao u odjel sheet-u), RADILIŠTE(W2), IZVOĐAČ(W3)]
+              // Kopiraj SVE kolone D-U, uključujući i automatske sume (I, L, Q, T, U)
+              const sortimenti = row.slice(3, 21); // D-U (18 kolona) - ISTA struktura kao u PRIMKA sheet-u
               const newRow = [odjelNaziv, datum, primac, ...sortimenti, radiliste, izvodjac];
               primkaRows.push(newRow);
               addedRows++;
@@ -591,10 +590,9 @@ function syncIndexSheet() {
                 continue;
               }
 
-              // Kreiraj novi red za INDEX: [odjel, datum(B), otpremač(C), ...sortimenti(13 pojedinačnih), kupac(A), radilište]
-              // Uzmi samo POJEDINAČNE sortimente, preskačući automatske sume (I,L,Q,T,U)
-              const sortimentiIndeksi = [3,4,5,6,7,9,10,12,13,14,15,17,18]; // D-H, J-K, M-P, R-S
-              const sortimenti = sortimentiIndeksi.map(idx => row[idx]);
+              // Kreiraj novi red za INDEX: [odjel, datum(B), otpremač(C), ...sortimenti D-U (18 kolona - IDENTIČNO kao u odjel sheet-u), kupac(A), radilište]
+              // Kopiraj SVE kolone D-U, uključujući i automatske sume (I, L, Q, T, U)
+              const sortimenti = row.slice(3, 21); // D-U (18 kolona) - ISTA struktura kao u OTPREMA sheet-u
               const newRow = [odjelNaziv, datum, otpremac, ...sortimenti, kupac, radilisteOtprema];
               otpremaRows.push(newRow);
               addedRows++;
@@ -2875,8 +2873,8 @@ function handlePrimaciByRadiliste(year, username, password) {
       const odjel = row[0];
       const datum = row[1];
 
-      // ✨ ČITAJ RADILIŠTE IZ KOLONE Q (indeks 16)
-      const radiliste = row[16] || "Nepoznato radilište";
+      // ✨ ČITAJ RADILIŠTE IZ KOLONE V (indeks 21)
+      const radiliste = row[21] || "Nepoznato radilište";
 
       if (!datum || !odjel) continue;
 
@@ -2976,8 +2974,8 @@ function handlePrimaciByIzvodjac(year, username, password) {
       const odjel = row[0];
       const datum = row[1];
 
-      // ✨ ČITAJ IZVOĐAČ IZ KOLONE R (indeks 17)
-      const izvodjac = row[17] || "Nepoznati izvođač";
+      // ✨ ČITAJ IZVOĐAČ IZ KOLONE W (indeks 22)
+      const izvodjac = row[22] || "Nepoznati izvođač";
 
       if (!datum || !odjel) continue;
 
@@ -3077,8 +3075,8 @@ function handleOtremaciByRadiliste(year, username, password) {
       const odjel = row[0];
       const datum = row[1];
 
-      // ✨ ČITAJ RADILIŠTE IZ KOLONE R (indeks 17)
-      const radiliste = row[17] || "Nepoznato radilište";
+      // ✨ ČITAJ RADILIŠTE IZ KOLONE W (indeks 22)
+      const radiliste = row[22] || "Nepoznato radilište";
 
       if (!datum || !odjel) continue;
 
