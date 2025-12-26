@@ -726,7 +726,12 @@ function handleDashboard(year, username, password) {
     const row = primkaData[i];
     const odjel = row[0]; // A - ODJEL
     const datum = row[1]; // B - DATUM
-    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+
+    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    let kubik = 0;
+    for (let j = 3; j <= 20; j++) {
+      kubik += parseFloat(row[j]) || 0;
+    }
 
     if (!datum || !odjel) continue;
 
@@ -752,8 +757,13 @@ function handleDashboard(year, username, password) {
   for (let i = 1; i < otpremaData.length; i++) {
     const row = otpremaData[i];
     const odjel = row[0]; // A - ODJEL
-    const datum = row[1]; // B - DATUM  
-    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+    const datum = row[1]; // B - DATUM
+
+    // Saberi sve sortimente D-U (indeksi 3-20, ukupno 18 sortimenti)
+    let kubik = 0;
+    for (let j = 3; j <= 20; j++) {
+      kubik += parseFloat(row[j]) || 0;
+    }
 
     if (!datum || !odjel) continue;
 
