@@ -476,6 +476,29 @@ function syncIndexSheet() {
 
     Logger.log('INDEX sheets otvoreni uspješno');
 
+    // 1.5. Dodaj header-e za Radilište i Izvođač ako ne postoje
+    Logger.log('Provjera header-a za Radilište i Izvođač...');
+
+    // INDEX_PRIMKA: A-U (21 kolona) → dodaj V=Radilište, W=Izvođač
+    const primkaLastCol = indexPrimkaSheet.getLastColumn();
+    if (primkaLastCol < 22) { // Ako nema kolonu V (22)
+      Logger.log(`INDEX_PRIMKA: Dodavanje header-a Radilište (V) i Izvođač (W)`);
+      indexPrimkaSheet.getRange("V1").setValue("Radilište");
+      indexPrimkaSheet.getRange("W1").setValue("Izvođač");
+    } else {
+      Logger.log(`INDEX_PRIMKA: Header-i već postoje (kolone: ${primkaLastCol})`);
+    }
+
+    // INDEX_OTPREMA: A-V (22 kolone, V=KUPAC) → dodaj W=Radilište, X=Izvođač
+    const otpremaLastCol = indexOtpremaSheet.getLastColumn();
+    if (otpremaLastCol < 23) { // Ako nema kolonu W (23)
+      Logger.log(`INDEX_OTPREMA: Dodavanje header-a Radilište (W) i Izvođač (X)`);
+      indexOtpremaSheet.getRange("W1").setValue("Radilište");
+      indexOtpremaSheet.getRange("X1").setValue("Izvođač");
+    } else {
+      Logger.log(`INDEX_OTPREMA: Header-i već postoje (kolone: ${otpremaLastCol})`);
+    }
+
     // 2. Obriši sve podatke (osim header-a u redu 1)
     Logger.log('Brisanje starih podataka...');
     if (indexPrimkaSheet.getLastRow() > 1) {
@@ -512,12 +535,17 @@ function syncIndexSheet() {
           const lastRow = primkaSheet.getLastRow();
           Logger.log(`  PRIMKA: ${lastRow} redova (total)`);
 
+          // ✨ PROČITAJ RADILIŠTE (W2) I IZVOĐAČ (W3)
+          const radiliste = primkaSheet.getRange("W2").getValue() || "";
+          const izvodjac = primkaSheet.getRange("W3").getValue() || "";
+          Logger.log(`  PRIMKA: Radilište="${radiliste}", Izvođač="${izvodjac}"`);
+
           if (lastRow > 1) {
             const data = primkaSheet.getDataRange().getValues();
             let addedRows = 0;
 
             // PRIMKA struktura: PRAZNA(A) | DATUM(B) | PRIMAČ(C) | sortimenti(D-U)
-            // INDEX treba: odjel | datum | primač | sortimenti
+            // INDEX treba: odjel | datum | primač | sortimenti | radilište | izvođač
             for (let i = 1; i < data.length; i++) {
               const row = data[i];
               const datum = row[1]; // kolona B - datum
@@ -552,15 +580,15 @@ function syncIndexSheet() {
                 continue;
               }
 
-              // Dodaj red: [ODJEL, DATUM(B), PRIMAČ(C), ...sortimenti(D-U 18 kolona)]
+              // Dodaj red: [ODJEL, DATUM(B), PRIMAČ(C), ...sortimenti(D-U 18 kolona), RADILIŠTE(W2), IZVOĐAČ(W3)]
               // Eksplicitno uzmi samo 18 kolona sortimenti (D-U = indeksi 3-20)
               const sortimenti = row.slice(3, 21); // D-U (18 kolona)
-              const newRow = [odjelNaziv, datum, primac, ...sortimenti];
+              const newRow = [odjelNaziv, datum, primac, ...sortimenti, radiliste, izvodjac];
               primkaRows.push(newRow);
               addedRows++;
 
               if (processedCount === 1 && addedRows <= 3) {
-                Logger.log(`      ✓ Dodano red ${addedRows}: "${odjelNaziv}" | "${datum}" | "${primac}"`);
+                Logger.log(`      ✓ Dodano red ${addedRows}: "${odjelNaziv}" | "${datum}" | "${primac}" | radilište="${radiliste}" | izvođač="${izvodjac}"`);
               }
             }
             Logger.log(`  PRIMKA: dodano ${addedRows} redova`);
@@ -577,12 +605,17 @@ function syncIndexSheet() {
           const lastRow = otpremaSheet.getLastRow();
           Logger.log(`  OTPREMA: ${lastRow} redova (total)`);
 
+          // ✨ PROČITAJ RADILIŠTE (W2) I IZVOĐAČ (W3) - isti kao u PRIMKA
+          const radilisteOtprema = otpremaSheet.getRange("W2").getValue() || "";
+          const izvodjacOtprema = otpremaSheet.getRange("W3").getValue() || "";
+          Logger.log(`  OTPREMA: Radilište="${radilisteOtprema}", Izvođač="${izvodjacOtprema}"`);
+
           if (lastRow > 1) {
             const data = otpremaSheet.getDataRange().getValues();
             let addedRows = 0;
 
             // OTPREMA struktura: kupci(A) | datum(B) | otpremač(C) | sortimenti(D-U)
-            // INDEX treba: odjel | datum | otpremač | sortimenti | kupac
+            // INDEX treba: odjel | datum | otpremač | sortimenti | kupac | radilište | izvođač
             for (let i = 1; i < data.length; i++) {
               const row = data[i];
               const kupac = row[0]; // kolona A - kupac
@@ -619,15 +652,15 @@ function syncIndexSheet() {
                 continue;
               }
 
-              // Kreiraj novi red za INDEX: [odjel, datum(B), otpremač(C), ...sortimenti(D-U 18 kolona), kupac(A)]
+              // Kreiraj novi red za INDEX: [odjel, datum(B), otpremač(C), ...sortimenti(D-U 18 kolona), kupac(A), radilište(W2), izvođač(W3)]
               // Eksplicitno uzmi samo 18 kolona sortimenti (D-U = indeksi 3-20)
               const sortimenti = row.slice(3, 21); // D-U (18 kolona)
-              const newRow = [odjelNaziv, datum, otpremac, ...sortimenti, kupac];
+              const newRow = [odjelNaziv, datum, otpremac, ...sortimenti, kupac, radilisteOtprema, izvodjacOtprema];
               otpremaRows.push(newRow);
               addedRows++;
 
               if (processedCount === 1 && addedRows <= 3) {
-                Logger.log(`      ✓ Dodano red ${addedRows}: "${odjelNaziv}" | "${datum}" | "${otpremac}" | kupac="${kupac}"`);
+                Logger.log(`      ✓ Dodano red ${addedRows}: "${odjelNaziv}" | "${datum}" | "${otpremac}" | kupac="${kupac}" | radilište="${radilisteOtprema}" | izvođač="${izvodjacOtprema}"`);
               }
             }
             Logger.log(`  OTPREMA: dodano ${addedRows} redova`);
