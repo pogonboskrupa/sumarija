@@ -1807,10 +1807,16 @@
         };
 
         // Fetch with cache - cache-first strategy
-        async function fetchWithCache(url, cacheKey) {
+        async function fetchWithCache(url, cacheKey, forceRefresh = false) {
             // Determine cache TTL based on endpoint
             const path = new URL(url).searchParams.get('path');
             const cacheTTL = CACHE_CONFIG[path] || CACHE_CONFIG.default;
+
+            // If force refresh, clear cache for this key
+            if (forceRefresh) {
+                localStorage.removeItem(cacheKey);
+                console.log(`🔄 Force refresh: cleared cache for ${cacheKey}`);
+            }
 
             // Check cache first
             const cached = localStorage.getItem(cacheKey);
@@ -1895,6 +1901,15 @@
             if (indicator) {
                 indicator.classList.add('hidden');
             }
+        }
+
+        // Clear cache by pattern
+        function clearCacheByPattern(pattern) {
+            const keys = Object.keys(localStorage);
+            const matchingKeys = keys.filter(k => k.includes(pattern));
+            matchingKeys.forEach(k => localStorage.removeItem(k));
+            console.log(`🗑️  Cleared ${matchingKeys.length} cache entries matching '${pattern}'`);
+            return matchingKeys.length;
         }
 
         // Clear all cache
@@ -2640,7 +2655,7 @@
 
                 const url = `${API_URL}?path=primaci-daily&year=${year}&month=${month}&username=${currentUser.username}&password=${currentPassword}`;
                 console.log('Loading primaci daily from:', url);
-                const data = await fetch(url).then(res => res.json());
+                const data = await fetchWithCache(url, `cache_primaci_daily_${year}_${month}`);
 
                 console.log('Primaci daily data received:', data);
 
@@ -2834,7 +2849,7 @@
 
                 const url = `${API_URL}?path=otpremaci-daily&year=${year}&month=${month}&username=${currentUser.username}&password=${currentPassword}`;
                 console.log('Loading otpremaci daily from:', url);
-                const data = await fetch(url).then(res => res.json());
+                const data = await fetchWithCache(url, `cache_otpremaci_daily_${year}_${month}`);
 
                 console.log('Otpremaci daily data received:', data);
 
@@ -3028,8 +3043,7 @@
                 const year = new Date().getFullYear();
                 const url = `${API_URL}?path=primaci-by-radiliste&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
 
-                const response = await fetch(url);
-                const data = await response.json();
+                const data = await fetchWithCache(url, `cache_primaci_radiliste_${year}`);
 
                 console.log('Primaci by radiliste data received:', data);
 
@@ -3155,8 +3169,7 @@
                 const year = new Date().getFullYear();
                 const url = `${API_URL}?path=primaci-by-izvodjac&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
 
-                const response = await fetch(url);
-                const data = await response.json();
+                const data = await fetchWithCache(url, `cache_primaci_izvodjac_${year}`);
 
                 console.log('Primaci by izvodjac data received:', data);
 
@@ -3282,8 +3295,7 @@
                 const year = new Date().getFullYear();
                 const url = `${API_URL}?path=otpremaci-by-radiliste&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
 
-                const response = await fetch(url);
-                const data = await response.json();
+                const data = await fetchWithCache(url, `cache_otpremaci_radiliste_${year}`);
 
                 console.log('Otpremaci by radiliste data received:', data);
 
@@ -4410,8 +4422,7 @@
                 const url = API_URL + '?path=mjesecni-sortimenti&year=' + year + '&username=' + currentUser.username + '&password=' + currentPassword;
 
                 console.log('Fetching mjesečni sortimenti for year:', year);
-                const response = await fetch(url);
-                const data = await response.json();
+                const data = await fetchWithCache(url, `cache_mjesecni_sortimenti_${year}`);
 
                 console.log('Mjesečni sortimenti response:', data);
 
@@ -4577,13 +4588,11 @@
 
                 // Load PRIMKA (sječa) data
                 const primkaUrl = API_URL + '?path=primaci-daily&year=' + year + '&month=' + month + '&username=' + currentUser.username + '&password=' + currentPassword;
-                const primkaResponse = await fetch(primkaUrl);
-                const primkaData = await primkaResponse.json();
+                const primkaData = await fetchWithCache(primkaUrl, `cache_izvjestaji_primka_${year}_${month}`);
 
                 // Load OTPREMA data
                 const otpremaUrl = API_URL + '?path=otpremaci-daily&year=' + year + '&month=' + month + '&username=' + currentUser.username + '&password=' + currentPassword;
-                const otpremaResponse = await fetch(otpremaUrl);
-                const otpremaData = await otpremaResponse.json();
+                const otpremaData = await fetchWithCache(otpremaUrl, `cache_izvjestaji_otprema_${year}_${month}`);
 
                 if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
                 if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
@@ -4798,8 +4807,7 @@
 
                 // Load PRIMKA (sječa) data
                 const primkaUrl = API_URL + '?path=primaci-daily&year=' + year + '&month=' + month + '&username=' + currentUser.username + '&password=' + currentPassword;
-                const primkaResponse = await fetch(primkaUrl);
-                const primkaData = await primkaResponse.json();
+                const primkaData = await fetchWithCache(primkaUrl, `cache_sedmicni_sjeca_${year}_${month}`);
 
                 if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
 
@@ -4827,8 +4835,7 @@
 
                 // Load OTPREMA data
                 const otpremaUrl = API_URL + '?path=otpremaci-daily&year=' + year + '&month=' + month + '&username=' + currentUser.username + '&password=' + currentPassword;
-                const otpremaResponse = await fetch(otpremaUrl);
-                const otpremaData = await otpremaResponse.json();
+                const otpremaData = await fetchWithCache(otpremaUrl, `cache_sedmicni_otprema_${year}_${month}`);
 
                 if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
 
@@ -5085,8 +5092,7 @@
             try {
                 // Load data from backend
                 const url = API_URL + '?path=stanje-odjela&username=' + currentUser.username + '&password=' + currentPassword;
-                const response = await fetch(url);
-                const data = await response.json();
+                const data = await fetchWithCache(url, `cache_stanje_odjela`);
 
                 if (data.error) throw new Error(data.error);
 
@@ -5519,11 +5525,14 @@
                         messageDiv.classList.add('hidden');
                     }, 3000);
 
-                    // Clear cache so new data shows up
-                    const year = new Date().getFullYear();
-                    localStorage.removeItem('cache_primac_detail_' + year);
-                    localStorage.removeItem('cache_primac_odjeli_' + year);
-                    localStorage.removeItem('cache_dashboard_' + year);
+                    // Clear all sječa-related cache entries so new data shows up
+                    clearCacheByPattern('primac');
+                    clearCacheByPattern('primaci');
+                    clearCacheByPattern('dashboard');
+                    clearCacheByPattern('izvjestaji');
+                    clearCacheByPattern('sedmicni_sjeca');
+                    clearCacheByPattern('stanje_odjela');
+                    clearCacheByPattern('my_sjece');
                 } else {
                     throw new Error(result.error || 'Unknown error');
                 }
@@ -5595,11 +5604,15 @@
                         messageDiv.classList.add('hidden');
                     }, 3000);
 
-                    // Clear cache so new data shows up
-                    const year = new Date().getFullYear();
-                    localStorage.removeItem('cache_otpremac_detail_' + year);
-                    localStorage.removeItem('cache_otpremac_odjeli_' + year);
-                    localStorage.removeItem('cache_dashboard_' + year);
+                    // Clear all otprema-related cache entries so new data shows up
+                    clearCacheByPattern('otpremac');
+                    clearCacheByPattern('otpremaci');
+                    clearCacheByPattern('dashboard');
+                    clearCacheByPattern('kupci');
+                    clearCacheByPattern('izvjestaji');
+                    clearCacheByPattern('sedmicni_otprema');
+                    clearCacheByPattern('stanje_odjela');
+                    clearCacheByPattern('my_otpreme');
                 } else {
                     throw new Error(result.error || 'Unknown error');
                 }
@@ -5654,8 +5667,7 @@
 
             try {
                 const url = API_URL + '?path=my-pending&username=' + currentUser.username + '&password=' + currentPassword + '&tip=sjeca';
-                const response = await fetch(url);
-                const data = await response.json();
+                const data = await fetchWithCache(url, `cache_my_sjece_${currentUser.username}`);
 
                 if (data.error) {
                     throw new Error(data.error);
@@ -5721,8 +5733,7 @@
 
             try {
                 const url = API_URL + '?path=my-pending&username=' + currentUser.username + '&password=' + currentPassword + '&tip=otprema';
-                const response = await fetch(url);
-                const data = await response.json();
+                const data = await fetchWithCache(url, `cache_my_otpreme_${currentUser.username}`);
 
                 if (data.error) {
                     throw new Error(data.error);
