@@ -1647,21 +1647,15 @@
                 <div class="page-header" style="margin-top: 0;">
                     <div class="page-header-left">
                         <h2>📦 Stanje odjela</h2>
-                        <p style="color: #6b7280;">Trenutno stanje odjela iz fajla ODJELI (OTPREMA sheet)</p>
+                        <p style="color: #6b7280;">Trenutno stanje radilišta - sortirano po najsvježijim unosima sječe</p>
                     </div>
                     <div class="page-header-right">
                         <button class="btn btn-primary" onclick="loadStanjeOdjela()">🔄 Osvježi</button>
                     </div>
                 </div>
 
-                <div class="section">
-                    <div style="overflow-x: auto;">
-                        <table id="stanje-odjela-table">
-                            <thead id="stanje-odjela-header"></thead>
-                            <tbody id="stanje-odjela-body"></tbody>
-                        </table>
-                    </div>
-                </div>
+                <!-- Container za sve odjele -->
+                <div id="stanje-odjela-container"></div>
             </div>
         </div>
 
@@ -5090,8 +5084,8 @@
 
                 if (data.error) throw new Error(data.error);
 
-                // Render table
-                renderStanjeOdjelaTable(data.data, data.sortimentiNazivi);
+                // Render sections
+                renderStanjeOdjelaSections(data.data, data.sortimentiNazivi);
 
                 document.getElementById('loading-screen').classList.add('hidden');
 
@@ -5102,90 +5096,110 @@
             }
         }
 
-        function renderStanjeOdjelaTable(data, sortimentiNazivi) {
-            const headerElem = document.getElementById('stanje-odjela-header');
-            const bodyElem = document.getElementById('stanje-odjela-body');
+        function renderStanjeOdjelaSections(data, sortimentiNazivi) {
+            const container = document.getElementById('stanje-odjela-container');
 
             if (data.length === 0) {
-                headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka</td></tr>';
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka</div>';
                 return;
             }
 
-            // Build header - Sortimenti od D-U
-            let headerHtml = '<tr>';
-            headerHtml += '<th style="position: sticky; left: 0; background: #f9fafb; z-index: 20; min-width: 200px;">Radilište</th>';
-            headerHtml += '<th style="background: #f9fafb; min-width: 150px;">Vrsta</th>';
-            sortimentiNazivi.forEach(sortiment => {
-                const colClass = getColumnGroup(sortiment);
-                let extraClass = '';
-                if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
-                else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
-                else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+            let html = '';
 
-                headerHtml += '<th class="sortiment-col right ' + colClass + extraClass + '">' + sortiment + '</th>';
-            });
-            headerHtml += '</tr>';
-            headerElem.innerHTML = headerHtml;
-
-            // Build body - Za svaki odjel 4 reda: PROJEKAT, SJEČA, OTPREMA, ŠUMA-LAGER
-            let bodyHtml = '';
-            const totals = {
-                projekat: new Array(sortimentiNazivi.length).fill(0),
-                sjeca: new Array(sortimentiNazivi.length).fill(0),
-                otprema: new Array(sortimentiNazivi.length).fill(0),
-                sumaLager: new Array(sortimentiNazivi.length).fill(0)
-            };
-
+            // Za svaki odjel kreiraj zasebnu sekciju
             data.forEach((odjelData, odjelIndex) => {
                 const odjelNaziv = odjelData.odjelNaziv;
                 const redovi = odjelData.redovi;
 
-                // Separator između odjela (samo vizuelno)
-                if (odjelIndex > 0) {
-                    bodyHtml += '<tr style="height: 8px; background: #e5e7eb;"><td colspan="' + (sortimentiNazivi.length + 1) + '" style="padding: 0;"></td></tr>';
-                }
+                // Sekcija za svaki odjel
+                html += '<div class="section" style="margin-bottom: 40px; border: 2px solid #d1d5db; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">';
 
-                // 4 reda za ovaj odjel
+                // Header radilišta
+                html += '<div style="background: linear-gradient(135deg, #047857 0%, #059669 100%); padding: 16px 24px; border-bottom: 3px solid #10b981;">';
+                html += '<h3 style="margin: 0; color: white; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 12px;">';
+                html += '<span style="font-size: 24px;">🏭</span>';
+                html += '<span>' + odjelNaziv + '</span>';
+                html += '</h3>';
+                html += '</div>';
+
+                // Tabela sa sortimentnim zaglavljem
+                html += '<div style="overflow-x: auto;">';
+                html += '<table style="width: 100%; border-collapse: collapse; background: white;">';
+
+                // Sortimentno zaglavlje
+                html += '<thead>';
+                html += '<tr style="background: #f0fdf4; border-bottom: 2px solid #10b981;">';
+                html += '<th style="padding: 14px 16px; text-align: left; font-weight: 700; color: #047857; border-right: 1px solid #d1d5db; min-width: 180px; position: sticky; left: 0; background: #f0fdf4; z-index: 10;">Vrsta</th>';
+
+                sortimentiNazivi.forEach((sortiment, index) => {
+                    const colClass = getColumnGroup(sortiment);
+                    let bgColor = '#f0fdf4';
+                    let textColor = '#047857';
+
+                    if (sortiment === 'ČETINARI') {
+                        bgColor = '#dbeafe';
+                        textColor = '#1e40af';
+                    } else if (sortiment === 'LIŠĆARI') {
+                        bgColor = '#fef3c7';
+                        textColor = '#92400e';
+                    } else if (sortiment === 'SVEUKUPNO') {
+                        bgColor = '#ede9fe';
+                        textColor = '#5b21b6';
+                    }
+
+                    const borderRight = index < sortimentiNazivi.length - 1 ? 'border-right: 1px solid #d1d5db;' : '';
+                    html += '<th style="padding: 14px 12px; text-align: right; font-weight: 700; font-size: 13px; color: ' + textColor + '; background: ' + bgColor + '; ' + borderRight + ' white-space: nowrap;">' + sortiment + '</th>';
+                });
+
+                html += '</tr>';
+                html += '</thead>';
+
+                // Body sa 4 reda
+                html += '<tbody>';
+
                 const vrste = [
-                    { naziv: 'PROJEKAT', data: redovi.projekat, key: 'projekat', icon: '📋' },
-                    { naziv: 'SJEČA', data: redovi.sjeca, key: 'sjeca', icon: '🌲' },
-                    { naziv: 'OTPREMA', data: redovi.otprema, key: 'otprema', icon: '🚛' },
-                    { naziv: 'ŠUMA-LAGER', data: redovi.sumaLager, key: 'sumaLager', icon: '📦' }
+                    { naziv: 'PROJEKAT', data: redovi.projekat, icon: '📋', bg: '#fef3c7', color: '#92400e', borderColor: '#fbbf24' },
+                    { naziv: 'SJEČA', data: redovi.sjeca, icon: '🌲', bg: '#d1fae5', color: '#065f46', borderColor: '#10b981' },
+                    { naziv: 'OTPREMA', data: redovi.otprema, icon: '🚛', bg: '#dbeafe', color: '#1e40af', borderColor: '#3b82f6' },
+                    { naziv: 'ŠUMA-LAGER', data: redovi.sumaLager, icon: '📦', bg: '#e9d5ff', color: '#6b21a8', borderColor: '#a855f7' }
                 ];
 
                 vrste.forEach((vrsta, vrstaIndex) => {
-                    const rowStyle = vrstaIndex % 2 === 0 ? 'background: #f9fafb;' : 'background: white;';
-                    bodyHtml += '<tr style="' + rowStyle + '">';
+                    const borderBottom = vrstaIndex < vrste.length - 1 ? 'border-bottom: 1px solid #e5e7eb;' : '';
 
-                    // Prva kolona: Naziv radilišta + Vrsta (samo za prvi red pokazuj naziv odjela)
-                    if (vrstaIndex === 0) {
-                        bodyHtml += '<td rowspan="4" style="font-weight: 700; position: sticky; left: 0; background: #f0fdf4; z-index: 9; border-right: 2px solid #10b981; padding: 12px; vertical-align: top; color: #047857;">' + odjelNaziv + '</td>';
-                    }
+                    html += '<tr style="' + borderBottom + '">';
+                    html += '<td style="padding: 12px 16px; font-weight: 700; color: ' + vrsta.color + '; background: ' + vrsta.bg + '; border-right: 3px solid ' + vrsta.borderColor + '; position: sticky; left: 0; z-index: 5;">';
+                    html += '<span style="display: inline-flex; align-items: center; gap: 8px;">';
+                    html += '<span style="font-size: 20px;">' + vrsta.icon + '</span>';
+                    html += '<span>' + vrsta.naziv + '</span>';
+                    html += '</span>';
+                    html += '</td>';
 
-                    bodyHtml += '<td style="font-weight: 600; padding-left: 16px; color: #374151;">' + vrsta.icon + ' ' + vrsta.naziv + '</td>';
-
-                    // Sortimenti kolone
                     vrsta.data.forEach((value, index) => {
-                        // Dodaj u totale
-                        totals[vrsta.key][index] += value;
-
                         const sortiment = sortimentiNazivi[index];
-                        const colClass = getColumnGroup(sortiment);
-                        let extraClass = '';
-                        if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
-                        else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
-                        else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+                        let bgColor = 'white';
 
-                        const displayValue = value === 0 ? '' : value.toFixed(2);
-                        bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '">' + displayValue + '</td>';
+                        if (sortiment === 'ČETINARI') bgColor = '#eff6ff';
+                        else if (sortiment === 'LIŠĆARI') bgColor = '#fffbeb';
+                        else if (sortiment === 'SVEUKUPNO') bgColor = '#faf5ff';
+
+                        const borderRight = index < sortimentiNazivi.length - 1 ? 'border-right: 1px solid #e5e7eb;' : '';
+                        const displayValue = value === 0 ? '-' : value.toFixed(2);
+                        const fontWeight = sortiment === 'SVEUKUPNO' ? 'font-weight: 700;' : '';
+
+                        html += '<td style="padding: 12px; text-align: right; background: ' + bgColor + '; ' + borderRight + ' ' + fontWeight + ' color: #374151;">' + displayValue + '</td>';
                     });
 
-                    bodyHtml += '</tr>';
+                    html += '</tr>';
                 });
+
+                html += '</tbody>';
+                html += '</table>';
+                html += '</div>';
+                html += '</div>';
             });
 
-            bodyElem.innerHTML = bodyHtml;
+            container.innerHTML = html;
         }
 
         // Load pending count (for badge only)
