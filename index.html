@@ -1974,53 +1974,97 @@
         <!-- MY SJECE VIEW (For Primač) -->
         <div id="my-sjece-content" class="container hidden">
             <div class="section">
-                <h2>📝 Moje sječe - Zadnjih 10 unosa</h2>
-                <p style="color: #6b7280; margin-bottom: 20px;">Ovdje možete pregledati i ispraviti vaše nedavne unose</p>
-                <div id="my-sjece-container"></div>
+                <!-- Professional Header -->
+                <div class="worker-header primac">
+                    <div class="worker-header-icon">📝</div>
+                    <div>
+                        <h1 class="worker-header-title">Moje sječe</h1>
+                        <p class="worker-header-subtitle">Pregledajte i ispravite vaše nedavne unose - zadnjih 10 zapisa</p>
+                    </div>
+                </div>
+
+                <!-- Modern Card Container -->
+                <div class="worker-table-card">
+                    <div class="worker-table-card-header">
+                        <h3 class="worker-table-card-title">📋 Nedavni unosi</h3>
+                        <span class="worker-table-card-badge" id="my-sjece-count">0 zapisa</span>
+                    </div>
+                    <div id="my-sjece-container"></div>
+                </div>
             </div>
         </div>
 
         <!-- MY OTPREME VIEW (For Otpremač) -->
         <div id="my-otpreme-content" class="container hidden">
             <div class="section">
-                <h2>📝 Moje otpreme - Zadnjih 10 unosa</h2>
-                <p style="color: #6b7280; margin-bottom: 20px;">Ovdje možete pregledati i ispraviti vaše nedavne unose</p>
-                <div id="my-otpreme-container"></div>
+                <!-- Professional Header -->
+                <div class="worker-header otpremac">
+                    <div class="worker-header-icon">📝</div>
+                    <div>
+                        <h1 class="worker-header-title">Moje otpreme</h1>
+                        <p class="worker-header-subtitle">Pregledajte i ispravite vaše nedavne unose - zadnjih 10 zapisa</p>
+                    </div>
+                </div>
+
+                <!-- Modern Card Container -->
+                <div class="worker-table-card">
+                    <div class="worker-table-card-header">
+                        <h3 class="worker-table-card-title">📦 Nedavni unosi</h3>
+                        <span class="worker-table-card-badge blue" id="my-otpreme-count">0 zapisa</span>
+                    </div>
+                    <div id="my-otpreme-container"></div>
+                </div>
             </div>
         </div>
 
         <!-- EDIT SJECA FORM (For editing existing entry) -->
         <div id="edit-sjeca-content" class="container hidden">
             <div class="section">
-                <h2>✏️ Uredi sječu</h2>
-                <form id="edit-sjeca-form" onsubmit="submitEditSjeca(event)">
+                <form id="edit-sjeca-form" class="worker-form" onsubmit="submitEditSjeca(event)">
                     <input type="hidden" id="edit-sjeca-rowIndex">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px;">
-                        <div class="form-group">
-                            <label>Datum:</label>
-                            <input type="date" id="edit-sjeca-datum" required style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+
+                    <!-- Professional Header -->
+                    <div class="worker-form-header">
+                        <h2 class="worker-form-title">
+                            <span>✏️</span>
+                            Uredi sječu
+                        </h2>
+                        <p class="worker-form-subtitle">Izmjenite podatke o sječi - automatski totali će se preračunati</p>
+                    </div>
+
+                    <!-- Basic Info -->
+                    <div class="worker-form-grid">
+                        <div class="worker-form-group">
+                            <label class="worker-form-label">📅 Datum</label>
+                            <input type="date" id="edit-sjeca-datum" required class="worker-form-input">
                         </div>
-                        <div class="form-group">
-                            <label>Odjel:</label>
-                            <select id="edit-sjeca-odjel" required style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                        <div class="worker-form-group">
+                            <label class="worker-form-label">🏭 Odjel</label>
+                            <select id="edit-sjeca-odjel" required class="worker-form-select">
                                 <option value="">Izaberi odjel...</option>
                             </select>
                         </div>
                     </div>
 
-                    <h3 style="margin: 20px 0 10px 0; color: #047857;">Sortimenti (m³):</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;" id="edit-sjeca-sortimenti">
+                    <!-- Sortimenti Section -->
+                    <h3 class="worker-form-section-title">
+                        <span>🌲</span>
+                        Sortimenti (m³)
+                    </h3>
+                    <div class="worker-form-grid" id="edit-sjeca-sortimenti">
                         <!-- Sortimenti fields will be dynamically added here -->
                     </div>
 
-                    <div style="margin-top: 20px; padding: 20px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 10px;">
-                        <label style="font-size: 1.2em; font-weight: bold; color: #92400e;">SVEUKUPNO (m³):</label>
-                        <input type="number" step="0.01" id="edit-sjeca-SVEUKUPNO" value="0" readonly style="padding: 12px; border: 2px solid #f59e0b; border-radius: 8px; width: 100%; background: #fffbeb; color: #92400e; font-size: 1.5em; font-weight: bold; text-align: center;">
+                    <!-- Total Box -->
+                    <div class="worker-form-total-box">
+                        <div class="worker-form-total-label">📊 SVEUKUPNO</div>
+                        <input type="number" step="0.01" id="edit-sjeca-SVEUKUPNO" value="0" readonly class="worker-form-total-value" style="border: none; background: transparent;">
                     </div>
 
-                    <div style="margin-top: 30px; display: flex; gap: 12px; justify-content: flex-end;">
-                        <button type="button" class="btn btn-secondary" onclick="cancelEditSjeca()">Otkaži</button>
-                        <button type="submit" class="btn btn-primary" id="submit-edit-sjeca-btn">Sačuvaj izmjene</button>
+                    <!-- Actions -->
+                    <div class="worker-form-actions">
+                        <button type="button" class="worker-form-btn worker-form-btn-secondary" onclick="cancelEditSjeca()">Otkaži</button>
+                        <button type="submit" class="worker-form-btn worker-form-btn-primary" id="submit-edit-sjeca-btn">Sačuvaj izmjene</button>
                     </div>
 
                     <div id="edit-sjeca-message" class="hidden" style="margin-top: 20px; padding: 12px; border-radius: 8px;"></div>
@@ -2031,43 +2075,59 @@
         <!-- EDIT OTPREMA FORM (For editing existing entry) -->
         <div id="edit-otprema-content" class="container hidden">
             <div class="section">
-                <h2>✏️ Uredi otpremu</h2>
-                <form id="edit-otprema-form" onsubmit="submitEditOtprema(event)">
+                <form id="edit-otprema-form" class="worker-form otpremac" onsubmit="submitEditOtprema(event)">
                     <input type="hidden" id="edit-otprema-rowIndex">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px;">
-                        <div class="form-group">
-                            <label>Datum:</label>
-                            <input type="date" id="edit-otprema-datum" required style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+
+                    <!-- Professional Header -->
+                    <div class="worker-form-header">
+                        <h2 class="worker-form-title">
+                            <span>✏️</span>
+                            Uredi otpremu
+                        </h2>
+                        <p class="worker-form-subtitle">Izmjenite podatke o otpremi - automatski totali će se preračunati</p>
+                    </div>
+
+                    <!-- Basic Info -->
+                    <div class="worker-form-grid">
+                        <div class="worker-form-group">
+                            <label class="worker-form-label">📅 Datum</label>
+                            <input type="date" id="edit-otprema-datum" required class="worker-form-input">
                         </div>
-                        <div class="form-group">
-                            <label>Odjel:</label>
-                            <select id="edit-otprema-odjel" required style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                        <div class="worker-form-group">
+                            <label class="worker-form-label">🏭 Odjel</label>
+                            <select id="edit-otprema-odjel" required class="worker-form-select">
                                 <option value="">Izaberi odjel...</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label>Kupac:</label>
-                            <input type="text" id="edit-otprema-kupac" placeholder="Naziv kupca" style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                        <div class="worker-form-group">
+                            <label class="worker-form-label">🏢 Kupac</label>
+                            <input type="text" id="edit-otprema-kupac" placeholder="Naziv kupca" class="worker-form-input">
                         </div>
-                        <div class="form-group">
-                            <label>Broj otpremnice:</label>
-                            <input type="text" id="edit-otprema-broj-otpremnice" placeholder="Unesite broj otpremnice" style="padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%;">
+                        <div class="worker-form-group">
+                            <label class="worker-form-label">📋 Broj otpremnice</label>
+                            <input type="text" id="edit-otprema-broj-otpremnice" placeholder="Unesite broj" class="worker-form-input">
                         </div>
                     </div>
 
-                    <h3 style="margin: 20px 0 10px 0; color: #2563eb;">Sortimenti (m³):</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;" id="edit-otprema-sortimenti">
+                    <!-- Sortimenti Section -->
+                    <h3 class="worker-form-section-title">
+                        <span>🌲</span>
+                        Sortimenti (m³)
+                    </h3>
+                    <div class="worker-form-grid" id="edit-otprema-sortimenti">
                         <!-- Sortimenti fields will be dynamically added here -->
                     </div>
 
-                    <div style="margin-top: 20px; padding: 20px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 10px;">
-                        <label style="font-size: 1.2em; font-weight: bold; color: #92400e;">SVEUKUPNO (m³):</label>
-                        <input type="number" step="0.01" id="edit-otprema-SVEUKUPNO" value="0" readonly style="padding: 12px; border: 2px solid #f59e0b; border-radius: 8px; width: 100%; background: #fffbeb; color: #92400e; font-size: 1.5em; font-weight: bold; text-align: center;">
+                    <!-- Total Box -->
+                    <div class="worker-form-total-box">
+                        <div class="worker-form-total-label">📊 SVEUKUPNO</div>
+                        <input type="number" step="0.01" id="edit-otprema-SVEUKUPNO" value="0" readonly class="worker-form-total-value" style="border: none; background: transparent;">
                     </div>
 
-                    <div style="margin-top: 30px; display: flex; gap: 12px; justify-content: flex-end;">
-                        <button type="button" class="btn btn-secondary" onclick="cancelEditOtprema()">Otkaži</button>
-                        <button type="submit" class="btn btn-primary" id="submit-edit-otprema-btn">Sačuvaj izmjene</button>
+                    <!-- Actions -->
+                    <div class="worker-form-actions">
+                        <button type="button" class="worker-form-btn worker-form-btn-secondary" onclick="cancelEditOtprema()">Otkaži</button>
+                        <button type="submit" class="worker-form-btn worker-form-btn-primary otpremac" id="submit-edit-otprema-btn">Sačuvaj izmjene</button>
                     </div>
 
                     <div id="edit-otprema-message" class="hidden" style="margin-top: 20px; padding: 12px; border-radius: 8px;"></div>
