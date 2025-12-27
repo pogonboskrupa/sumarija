@@ -1514,6 +1514,7 @@
                 <button class="sub-tab active" onclick="switchIzvjestajiSubTab('mjesecni')">📅 Mjesečni izvještaj</button>
                 <button class="sub-tab" onclick="switchIzvjestajiSubTab('sedmicni-sjeca')">📊 Sedmični izvještaj sječe</button>
                 <button class="sub-tab" onclick="switchIzvjestajiSubTab('sedmicni-otprema')">📊 Sedmični izvještaj otpreme</button>
+                <button class="sub-tab" onclick="switchIzvjestajiSubTab('stanje-odjela')">📦 Stanje odjela</button>
             </div>
 
             <!-- MJESEČNI IZVJEŠTAJ -->
@@ -1639,6 +1640,28 @@
                 </div>
 
                 <div id="sedmicni-otprema-container"></div>
+            </div>
+
+            <!-- STANJE ODJELA -->
+            <div id="stanje-odjela-izvjestaj" class="sub-content hidden">
+                <div class="page-header" style="margin-top: 0;">
+                    <div class="page-header-left">
+                        <h2>📦 Stanje odjela</h2>
+                        <p style="color: #6b7280;">Trenutno stanje odjela iz fajla ODJELI (OTPREMA sheet)</p>
+                    </div>
+                    <div class="page-header-right">
+                        <button class="btn btn-primary" onclick="loadStanjeOdjela()">🔄 Osvježi</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div style="overflow-x: auto;">
+                        <table id="stanje-odjela-table">
+                            <thead id="stanje-odjela-header"></thead>
+                            <tbody id="stanje-odjela-body"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -4744,6 +4767,7 @@
             document.getElementById('mjesecni-izvjestaj').classList.add('hidden');
             document.getElementById('sedmicni-sjeca-izvjestaj').classList.add('hidden');
             document.getElementById('sedmicni-otprema-izvjestaj').classList.add('hidden');
+            document.getElementById('stanje-odjela-izvjestaj').classList.add('hidden');
 
             // Show selected sub-content and activate tab
             if (subTab === 'mjesecni') {
@@ -4758,6 +4782,10 @@
                 document.querySelector('.sub-tab[onclick*="sedmicni-otprema"]').classList.add('active');
                 document.getElementById('sedmicni-otprema-izvjestaj').classList.remove('hidden');
                 loadSedmicniIzvjestajOtprema();
+            } else if (subTab === 'stanje-odjela') {
+                document.querySelector('.sub-tab[onclick*="stanje-odjela"]').classList.add('active');
+                document.getElementById('stanje-odjela-izvjestaj').classList.remove('hidden');
+                loadStanjeOdjela();
             }
         }
 
@@ -5045,6 +5073,103 @@
             });
 
             container.innerHTML = html;
+        }
+
+        // ========================================
+        // STANJE ODJELA - Trenutno stanje iz fajla ODJELI
+        // ========================================
+
+        async function loadStanjeOdjela() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+
+            try {
+                // Load data from backend
+                const url = API_URL + '?path=stanje-odjela&username=' + currentUser.username + '&password=' + currentPassword;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.error) throw new Error(data.error);
+
+                // Render table
+                renderStanjeOdjelaTable(data.data, data.sortimentiNazivi);
+
+                document.getElementById('loading-screen').classList.add('hidden');
+
+            } catch (error) {
+                console.error('Error loading stanje odjela:', error);
+                showError('Greška', 'Greška pri učitavanju stanja odjela: ' + error.message);
+                document.getElementById('loading-screen').classList.add('hidden');
+            }
+        }
+
+        function renderStanjeOdjelaTable(data, sortimentiNazivi) {
+            const headerElem = document.getElementById('stanje-odjela-header');
+            const bodyElem = document.getElementById('stanje-odjela-body');
+
+            if (data.length === 0) {
+                headerElem.innerHTML = '';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka</td></tr>';
+                return;
+            }
+
+            // Build header
+            let headerHtml = '<tr><th style="position: sticky; left: 0; background: #f9fafb; z-index: 20; min-width: 200px;">Odjel</th>';
+            sortimentiNazivi.forEach(sortiment => {
+                const colClass = getColumnGroup(sortiment);
+                let extraClass = '';
+                if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
+                else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
+                else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+
+                headerHtml += '<th class="sortiment-col right ' + colClass + extraClass + '">' + sortiment + '</th>';
+            });
+            headerHtml += '</tr>';
+            headerElem.innerHTML = headerHtml;
+
+            // Build body
+            let bodyHtml = '';
+            const totals = {};
+            sortimentiNazivi.forEach((s, index) => totals[index] = 0);
+
+            data.forEach((row, rowIndex) => {
+                const rowStyle = rowIndex % 2 === 0 ? 'background: #f9fafb;' : '';
+                bodyHtml += '<tr style="' + rowStyle + '">';
+                bodyHtml += '<td style="font-weight: 600; position: sticky; left: 0; background: ' + (rowIndex % 2 === 0 ? '#f9fafb' : 'white') + '; z-index: 9;">' + row.odjel + '</td>';
+
+                row.sortimenti.forEach((value, index) => {
+                    totals[index] += value;
+
+                    const sortiment = sortimentiNazivi[index];
+                    const colClass = getColumnGroup(sortiment);
+                    let extraClass = '';
+                    if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
+                    else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
+                    else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+
+                    const displayValue = value === 0 ? '' : value.toFixed(2);
+                    bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '">' + displayValue + '</td>';
+                });
+
+                bodyHtml += '</tr>';
+            });
+
+            // Add UKUPNO row
+            bodyHtml += '<tr style="background: #f9fafb; border-top: 3px solid #1f2937; font-weight: 700;">';
+            bodyHtml += '<td style="position: sticky; left: 0; background: #f9fafb; z-index: 9; font-size: 15px; padding: 14px;">📊 UKUPNO</td>';
+
+            sortimentiNazivi.forEach((sortiment, index) => {
+                const colClass = getColumnGroup(sortiment);
+                let extraClass = '';
+                if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
+                else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
+                else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+
+                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 700;">' + totals[index].toFixed(2) + '</td>';
+            });
+
+            bodyHtml += '</tr>';
+
+            bodyElem.innerHTML = bodyHtml;
         }
 
         // Load pending count (for badge only)

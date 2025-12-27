@@ -62,6 +62,8 @@ function doGet(e) {
       return handlePrimaciDaily(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
     } else if (path === 'otpremaci-daily') {
       return handleOtremaciDaily(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
+    } else if (path === 'stanje-odjela') {
+      return handleStanjeOdjela(e.parameter.username, e.parameter.password);
     }
 
     return createJsonResponse({ error: 'Unknown path' }, false);
@@ -3117,5 +3119,117 @@ function diagnosticCheckOriginalSheet() {
 
   } catch (error) {
     Logger.log('ERROR in diagnosticCheckOriginalSheet: ' + error.toString());
+  }
+}
+
+/**
+ * STANJE ODJELA - Čita trenutno stanje iz fajla ODJELI, sheet OTPREMA, opseg B7:U13
+ */
+function handleStanjeOdjela(username, password) {
+  // Verify user
+  const user = verifyUser(username, password);
+  if (!user) {
+    return createJsonResponse({ error: 'Invalid credentials' }, false);
+  }
+
+  try {
+    Logger.log('=== HANDLE STANJE ODJELA START ===');
+
+    // Otvori folder ODJELI
+    const folder = DriveApp.getFolderById(ODJELI_FOLDER_ID);
+
+    // Traži fajl sa imenom "ODJELI" ili sličnim
+    const files = folder.getFilesByName('ODJELI');
+
+    let odjeliFile = null;
+    if (files.hasNext()) {
+      odjeliFile = files.next();
+    } else {
+      // Pokušaj sa različitim varijacijama imena
+      const filesIterator = folder.getFiles();
+      while (filesIterator.hasNext()) {
+        const file = filesIterator.next();
+        const fileName = file.getName().toUpperCase();
+        if (fileName.includes('ODJELI') || fileName === 'ODJELI') {
+          odjeliFile = file;
+          break;
+        }
+      }
+    }
+
+    if (!odjeliFile) {
+      return createJsonResponse({ error: 'ODJELI fajl nije pronađen u folderu' }, false);
+    }
+
+    Logger.log('ODJELI fajl pronađen: ' + odjeliFile.getName());
+
+    // Otvori spreadsheet
+    const spreadsheet = SpreadsheetApp.open(odjeliFile);
+    const otpremaSheet = spreadsheet.getSheetByName('OTPREMA');
+
+    if (!otpremaSheet) {
+      return createJsonResponse({ error: 'OTPREMA sheet ne postoji u ODJELI fajlu' }, false);
+    }
+
+    // Čitaj opseg B7:U13 (7 redova, 20 kolona)
+    const range = otpremaSheet.getRange('B7:U13');
+    const values = range.getValues();
+
+    // Parsiranje podataka
+    const data = [];
+
+    for (let i = 0; i < values.length; i++) {
+      const row = values[i];
+
+      // Za red 13 (index 6), spojiti B13 i C13 kao "ŠUMA-LAGER"
+      let odjelNaziv = '';
+      if (i === 6) {
+        // Red 13 - spojiti B13 i C13
+        odjelNaziv = 'ŠUMA-LAGER';
+      } else {
+        // Ostali redovi - preuzmi B kolonu (index 0)
+        odjelNaziv = row[0] || '';
+      }
+
+      // Skip ako je naziv prazan
+      if (!odjelNaziv || odjelNaziv.toString().trim() === '') {
+        continue;
+      }
+
+      // Kolone od C do U (index 1 do 19) - 19 kolona sa sortimentima
+      const sortimentiValues = [];
+      for (let j = 1; j < row.length; j++) {
+        const value = parseFloat(row[j]) || 0;
+        sortimentiValues.push(value);
+      }
+
+      data.push({
+        odjel: odjelNaziv.toString().trim(),
+        sortimenti: sortimentiValues
+      });
+    }
+
+    // Čitaj zaglavlja iz B6:U6
+    const headerRange = otpremaSheet.getRange('B6:U6');
+    const headerValues = headerRange.getValues()[0];
+
+    // Prva kolona je "Odjel", ostalo su sortimenti
+    const sortimentiNazivi = [];
+    for (let i = 1; i < headerValues.length; i++) {
+      sortimentiNazivi.push(headerValues[i] || '');
+    }
+
+    Logger.log('=== HANDLE STANJE ODJELA END ===');
+    Logger.log('Broj redova: ' + data.length);
+
+    return createJsonResponse({
+      data: data,
+      sortimentiNazivi: sortimentiNazivi
+    }, true);
+
+  } catch (error) {
+    Logger.log('=== HANDLE STANJE ODJELA ERROR ===');
+    Logger.log(error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
   }
 }
