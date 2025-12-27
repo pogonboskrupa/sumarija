@@ -1792,6 +1792,41 @@
                 });
         }
 
+        // Smart cache TTL - optimized for data entry patterns
+        // Unosi se dodaju radnim danima ujutro do 8h
+        function getSmartCacheTTL() {
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinutes = now.getMinutes();
+
+            // Prije 8:00 - unosi se još dodaju, kraći cache
+            if (currentHour < 8) {
+                console.log('⏰ Prije 8h - cache 30 minuta (unosi se dodaju)');
+                return 30 * 60 * 1000; // 30 minuta
+            }
+
+            // Poslije 8:00 - podaci stabilni do kraja dana
+            // Cache do 18:00 ili maksimalno 10 sati
+            const endOfWorkDay = new Date(now);
+            endOfWorkDay.setHours(18, 0, 0, 0); // 18:00
+
+            const timeUntilEndOfDay = endOfWorkDay.getTime() - now.getTime();
+            const tenHours = 10 * 60 * 60 * 1000;
+
+            // Ako je već poslije 18h, cache do kraja dana (midnight)
+            if (currentHour >= 18) {
+                console.log('⏰ Poslije 18h - cache 4 sata');
+                return 4 * 60 * 60 * 1000; // 4 sata
+            }
+
+            // Inače, cache do kraja radnog dana ili max 10h
+            const cacheDuration = Math.min(timeUntilEndOfDay, tenHours);
+            const hoursRemaining = Math.round(cacheDuration / (60 * 60 * 1000) * 10) / 10;
+            console.log(`⏰ Poslije 8h - cache ${hoursRemaining}h (podaci stabilni)`);
+
+            return cacheDuration;
+        }
+
         // Cache configuration - different TTLs for different endpoints
         const CACHE_CONFIG = {
             'dashboard': 5 * 60 * 1000,        // 5 minutes
@@ -1808,9 +1843,9 @@
 
         // Fetch with cache - cache-first strategy
         async function fetchWithCache(url, cacheKey, forceRefresh = false) {
-            // Determine cache TTL based on endpoint
+            // Use smart cache TTL optimized for data entry patterns
             const path = new URL(url).searchParams.get('path');
-            const cacheTTL = CACHE_CONFIG[path] || CACHE_CONFIG.default;
+            const cacheTTL = getSmartCacheTTL();
 
             // If force refresh, clear cache for this key
             if (forceRefresh) {
@@ -1882,15 +1917,29 @@
 
             const minutes = Math.round(age / 60000);
             const seconds = Math.round(age / 1000);
+            const hours = Math.round(age / 3600000);
 
             if (isStale) {
                 indicator.innerHTML = `⚠️ Offline - koristeći keširane podatke (${minutes} min staro)`;
                 indicator.style.background = '#fef3c7';
                 indicator.style.color = '#92400e';
             } else {
-                indicator.innerHTML = `📦 Keširani podaci (${seconds}s staro)`;
-                indicator.style.background = '#dbeafe';
-                indicator.style.color = '#1e40af';
+                // Show time in most appropriate unit
+                let timeStr;
+                if (hours > 0) {
+                    timeStr = `${hours}h`;
+                } else if (minutes > 0) {
+                    timeStr = `${minutes} min`;
+                } else {
+                    timeStr = `${seconds}s`;
+                }
+
+                const currentHour = new Date().getHours();
+                const cacheStatus = currentHour < 8 ? 'osvježava se uskoro' : 'važeći do kraja dana';
+
+                indicator.innerHTML = `⚡ Brzo učitavanje (${timeStr} staro, ${cacheStatus})`;
+                indicator.style.background = '#d1fae5';
+                indicator.style.color = '#047857';
             }
             indicator.classList.remove('hidden');
         }
