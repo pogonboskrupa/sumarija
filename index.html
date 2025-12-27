@@ -1582,7 +1582,7 @@
                 <div class="page-header" style="margin-top: 0;">
                     <div class="page-header-left">
                         <h2>📊 Sedmični izvještaj sječe</h2>
-                        <p style="color: #6b7280;">Po defaultu prikazane zadnje dvije sedmice</p>
+                        <p style="color: #6b7280;">Sve sedmice u mjesecu - od najnovije ka najstarijoj</p>
                     </div>
                     <div class="page-header-right">
                         <select id="sedmicni-sjeca-year-select" class="year-select" onchange="loadSedmicniIzvjestajSjeca()">
@@ -1614,7 +1614,7 @@
                 <div class="page-header" style="margin-top: 0;">
                     <div class="page-header-left">
                         <h2>📊 Sedmični izvještaj otpreme</h2>
-                        <p style="color: #6b7280;">Po defaultu prikazane zadnje dvije sedmice</p>
+                        <p style="color: #6b7280;">Sve sedmice u mjesecu - od najnovije ka najstarijoj</p>
                     </div>
                     <div class="page-header-right">
                         <select id="sedmicni-otprema-year-select" class="year-select" onchange="loadSedmicniIzvjestajOtprema()">
@@ -4985,8 +4985,8 @@
 
             let html = '';
 
-            // Get last 2 weeks by default
-            const visibleWeeks = weeks.length >= 2 ? weeks.slice(-2) : weeks;
+            // Show all weeks in the month, sorted from newest to oldest (reverse chronological)
+            const visibleWeeks = weeks.slice().reverse();
 
             visibleWeeks.forEach(week => {
                 // Convert odjeliMap to array
