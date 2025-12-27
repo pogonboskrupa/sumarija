@@ -118,6 +118,14 @@
         .submenu-content { animation: fadeIn 0.3s ease-in; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Sub-tabs for IZVJEŠTAJI */
+        .sub-tabs { display: flex; gap: 12px; padding: 16px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex-wrap: wrap; }
+        .sub-tab { background: white; border: 2px solid #e5e7eb; padding: 12px 24px; font-size: 14px; font-weight: 600; color: #6b7280; cursor: pointer; border-radius: 8px; transition: all 0.2s; white-space: nowrap; }
+        .sub-tab:hover { color: #047857; background: #f0fdf4; border-color: #10b981; }
+        .sub-tab.active { color: white; background: #047857; border-color: #047857; box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3); }
+        .sub-content { animation: fadeIn 0.3s ease-in; }
+        .sub-content.hidden { display: none; }
+
         /* Month selector */
         .month-selector { margin-bottom: 16px; padding: 12px; background: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0; display: flex; align-items: center; gap: 12px; }
         .month-selector label { font-weight: 600; color: #047857; font-size: 14px; }
@@ -1497,60 +1505,140 @@
             <div class="page-header">
                 <div class="page-header-left">
                     <h1>📋 Izvještaji</h1>
-                    <p>Detaljan prikaz mjesečne sječe i otpreme po odjelima sa sortimentima</p>
-                </div>
-                <div class="page-header-right">
-                    <select id="izvjestaji-year-select" class="year-select" onchange="loadIzvjestaji()">
-                        <option value="2025">2025</option>
-                        <option value="2024">2024</option>
-                    </select>
-                    <select id="izvjestaji-month-select" class="month-select" onchange="loadIzvjestaji()">
-                        <option value="0">Januar</option>
-                        <option value="1">Februar</option>
-                        <option value="2">Mart</option>
-                        <option value="3">April</option>
-                        <option value="4">Maj</option>
-                        <option value="5">Juni</option>
-                        <option value="6">Juli</option>
-                        <option value="7">August</option>
-                        <option value="8">Septembar</option>
-                        <option value="9">Oktobar</option>
-                        <option value="10">Novembar</option>
-                        <option value="11">Decembar</option>
-                    </select>
+                    <p>Detaljan prikaz sječe i otpreme po odjelima</p>
                 </div>
             </div>
 
-            <!-- SJEČA (PRIMKA) PO ODJELIMA -->
-            <div class="section">
-                <h2>🌲 Sječa po odjelima - <span id="izvjestaji-primka-title"></span></h2>
-                <p style="color: #6b7280; margin-bottom: 20px;">Spisak odjela sa sortimentnim prikazom</p>
-                <div class="controls-bar">
-                    <input type="text" class="search-input" id="izvjestaji-primka-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterIzvjestajiPrimkaTable()">
-                    <button class="btn btn-primary" onclick="exportTableToCSV('izvjestaji-primka')">📥 Export CSV</button>
+            <!-- SUB-MENU TABS -->
+            <div class="sub-tabs" style="margin-bottom: 30px;">
+                <button class="sub-tab active" onclick="switchIzvjestajiSubTab('mjesecni')">📅 Mjesečni izvještaj</button>
+                <button class="sub-tab" onclick="switchIzvjestajiSubTab('sedmicni-sjeca')">📊 Sedmični izvještaj sječe</button>
+                <button class="sub-tab" onclick="switchIzvjestajiSubTab('sedmicni-otprema')">📊 Sedmični izvještaj otpreme</button>
+            </div>
+
+            <!-- MJESEČNI IZVJEŠTAJ -->
+            <div id="mjesecni-izvjestaj" class="sub-content">
+                <div class="page-header" style="margin-top: 0;">
+                    <div class="page-header-left">
+                        <h2>📅 Mjesečni izvještaj</h2>
+                    </div>
+                    <div class="page-header-right">
+                        <select id="izvjestaji-year-select" class="year-select" onchange="loadIzvjestaji()">
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                        </select>
+                        <select id="izvjestaji-month-select" class="month-select" onchange="loadIzvjestaji()">
+                            <option value="0">Januar</option>
+                            <option value="1">Februar</option>
+                            <option value="2">Mart</option>
+                            <option value="3">April</option>
+                            <option value="4">Maj</option>
+                            <option value="5">Juni</option>
+                            <option value="6">Juli</option>
+                            <option value="7">August</option>
+                            <option value="8">Septembar</option>
+                            <option value="9">Oktobar</option>
+                            <option value="10">Novembar</option>
+                            <option value="11">Decembar</option>
+                        </select>
+                    </div>
                 </div>
-                <div style="overflow-x: auto;">
-                    <table id="izvjestaji-primka-table">
-                        <thead id="izvjestaji-primka-header"></thead>
-                        <tbody id="izvjestaji-primka-body"></tbody>
-                    </table>
+
+                <!-- SJEČA (PRIMKA) PO ODJELIMA -->
+                <div class="section">
+                    <h2>🌲 Sječa po odjelima - <span id="izvjestaji-primka-title"></span></h2>
+                    <p style="color: #6b7280; margin-bottom: 20px;">Spisak odjela sa sortimentnim prikazom</p>
+                    <div class="controls-bar">
+                        <input type="text" class="search-input" id="izvjestaji-primka-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterIzvjestajiPrimkaTable()">
+                        <button class="btn btn-primary" onclick="exportTableToCSV('izvjestaji-primka')">📥 Export CSV</button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table id="izvjestaji-primka-table">
+                            <thead id="izvjestaji-primka-header"></thead>
+                            <tbody id="izvjestaji-primka-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- OTPREMA PO ODJELIMA -->
+                <div class="section">
+                    <h2>🚛 Otprema po odjelima - <span id="izvjestaji-otprema-title"></span></h2>
+                    <p style="color: #6b7280; margin-bottom: 20px;">Spisak odjela sa sortimentnim prikazom</p>
+                    <div class="controls-bar">
+                        <input type="text" class="search-input" id="izvjestaji-otprema-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterIzvjestajiOtpremaTable()">
+                        <button class="btn btn-primary" onclick="exportTableToCSV('izvjestaji-otprema')">📥 Export CSV</button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table id="izvjestaji-otprema-table">
+                            <thead id="izvjestaji-otprema-header"></thead>
+                            <tbody id="izvjestaji-otprema-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <!-- OTPREMA PO ODJELIMA -->
-            <div class="section">
-                <h2>🚛 Otprema po odjelima - <span id="izvjestaji-otprema-title"></span></h2>
-                <p style="color: #6b7280; margin-bottom: 20px;">Spisak odjela sa sortimentnim prikazom</p>
-                <div class="controls-bar">
-                    <input type="text" class="search-input" id="izvjestaji-otprema-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterIzvjestajiOtpremaTable()">
-                    <button class="btn btn-primary" onclick="exportTableToCSV('izvjestaji-otprema')">📥 Export CSV</button>
+            <!-- SEDMIČNI IZVJEŠTAJ SJEČE -->
+            <div id="sedmicni-sjeca-izvjestaj" class="sub-content hidden">
+                <div class="page-header" style="margin-top: 0;">
+                    <div class="page-header-left">
+                        <h2>📊 Sedmični izvještaj sječe</h2>
+                        <p style="color: #6b7280;">Po defaultu prikazane zadnje dvije sedmice</p>
+                    </div>
+                    <div class="page-header-right">
+                        <select id="sedmicni-sjeca-year-select" class="year-select" onchange="loadSedmicniIzvjestajSjeca()">
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                        </select>
+                        <select id="sedmicni-sjeca-month-select" class="month-select" onchange="loadSedmicniIzvjestajSjeca()">
+                            <option value="0">Januar</option>
+                            <option value="1">Februar</option>
+                            <option value="2">Mart</option>
+                            <option value="3">April</option>
+                            <option value="4">Maj</option>
+                            <option value="5">Juni</option>
+                            <option value="6">Juli</option>
+                            <option value="7">August</option>
+                            <option value="8">Septembar</option>
+                            <option value="9">Oktobar</option>
+                            <option value="10">Novembar</option>
+                            <option value="11">Decembar</option>
+                        </select>
+                    </div>
                 </div>
-                <div style="overflow-x: auto;">
-                    <table id="izvjestaji-otprema-table">
-                        <thead id="izvjestaji-otprema-header"></thead>
-                        <tbody id="izvjestaji-otprema-body"></tbody>
-                    </table>
+
+                <div id="sedmicni-sjeca-container"></div>
+            </div>
+
+            <!-- SEDMIČNI IZVJEŠTAJ OTPREME -->
+            <div id="sedmicni-otprema-izvjestaj" class="sub-content hidden">
+                <div class="page-header" style="margin-top: 0;">
+                    <div class="page-header-left">
+                        <h2>📊 Sedmični izvještaj otpreme</h2>
+                        <p style="color: #6b7280;">Po defaultu prikazane zadnje dvije sedmice</p>
+                    </div>
+                    <div class="page-header-right">
+                        <select id="sedmicni-otprema-year-select" class="year-select" onchange="loadSedmicniIzvjestajOtprema()">
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                        </select>
+                        <select id="sedmicni-otprema-month-select" class="month-select" onchange="loadSedmicniIzvjestajOtprema()">
+                            <option value="0">Januar</option>
+                            <option value="1">Februar</option>
+                            <option value="2">Mart</option>
+                            <option value="3">April</option>
+                            <option value="4">Maj</option>
+                            <option value="5">Juni</option>
+                            <option value="6">Juli</option>
+                            <option value="7">August</option>
+                            <option value="8">Septembar</option>
+                            <option value="9">Oktobar</option>
+                            <option value="10">Novembar</option>
+                            <option value="11">Decembar</option>
+                        </select>
+                    </div>
                 </div>
+
+                <div id="sedmicni-otprema-container"></div>
             </div>
         </div>
 
@@ -2062,7 +2150,33 @@
             } else if (tab === 'mjesecni-sortimenti') {
                 loadMjesecniSortimenti();
             } else if (tab === 'izvjestaji') {
-                loadIzvjestaji();
+                // Initialize dropdowns to current month/year if not already set
+                const currentDate = new Date();
+                const currentYear = currentDate.getFullYear();
+                const currentMonth = currentDate.getMonth();
+
+                // Set defaults for all izvjestaji dropdowns
+                if (!document.getElementById('izvjestaji-year-select').value) {
+                    document.getElementById('izvjestaji-year-select').value = currentYear;
+                }
+                if (!document.getElementById('izvjestaji-month-select').value) {
+                    document.getElementById('izvjestaji-month-select').value = currentMonth;
+                }
+                if (!document.getElementById('sedmicni-sjeca-year-select').value) {
+                    document.getElementById('sedmicni-sjeca-year-select').value = currentYear;
+                }
+                if (!document.getElementById('sedmicni-sjeca-month-select').value) {
+                    document.getElementById('sedmicni-sjeca-month-select').value = currentMonth;
+                }
+                if (!document.getElementById('sedmicni-otprema-year-select').value) {
+                    document.getElementById('sedmicni-otprema-year-select').value = currentYear;
+                }
+                if (!document.getElementById('sedmicni-otprema-month-select').value) {
+                    document.getElementById('sedmicni-otprema-month-select').value = currentMonth;
+                }
+
+                // Load mjesečni izvještaj by default
+                switchIzvjestajiSubTab('mjesecni');
             }
         }
 
@@ -4615,6 +4729,322 @@
                     }
                 }
             }
+        }
+
+        // ========================================
+        // IZVJEŠTAJI - Sub-tab switching
+        // ========================================
+
+        function switchIzvjestajiSubTab(subTab) {
+            // Remove active class from all sub-tabs
+            const subTabs = document.querySelectorAll('.sub-tab');
+            subTabs.forEach(tab => tab.classList.remove('active'));
+
+            // Hide all sub-contents
+            document.getElementById('mjesecni-izvjestaj').classList.add('hidden');
+            document.getElementById('sedmicni-sjeca-izvjestaj').classList.add('hidden');
+            document.getElementById('sedmicni-otprema-izvjestaj').classList.add('hidden');
+
+            // Show selected sub-content and activate tab
+            if (subTab === 'mjesecni') {
+                document.querySelector('.sub-tab[onclick*="mjesecni"]').classList.add('active');
+                document.getElementById('mjesecni-izvjestaj').classList.remove('hidden');
+                loadIzvjestaji();
+            } else if (subTab === 'sedmicni-sjeca') {
+                document.querySelector('.sub-tab[onclick*="sedmicni-sjeca"]').classList.add('active');
+                document.getElementById('sedmicni-sjeca-izvjestaj').classList.remove('hidden');
+                loadSedmicniIzvjestajSjeca();
+            } else if (subTab === 'sedmicni-otprema') {
+                document.querySelector('.sub-tab[onclick*="sedmicni-otprema"]').classList.add('active');
+                document.getElementById('sedmicni-otprema-izvjestaj').classList.remove('hidden');
+                loadSedmicniIzvjestajOtprema();
+            }
+        }
+
+        // ========================================
+        // SEDMIČNI IZVJEŠTAJI - Functions
+        // ========================================
+
+        async function loadSedmicniIzvjestajSjeca() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+
+            try {
+                const year = document.getElementById('sedmicni-sjeca-year-select').value;
+                const month = document.getElementById('sedmicni-sjeca-month-select').value;
+
+                // Load PRIMKA (sječa) data
+                const primkaUrl = API_URL + '?path=primaci-daily&year=' + year + '&month=' + month + '&username=' + currentUser.username + '&password=' + currentPassword;
+                const primkaResponse = await fetch(primkaUrl);
+                const primkaData = await primkaResponse.json();
+
+                if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
+
+                // Group by weeks (within month boundaries)
+                const weeklyData = groupDataByWeeks(primkaData.data, year, month, primkaData.sortimentiNazivi);
+
+                // Render
+                renderSedmicniIzvjestaj(weeklyData, primkaData.sortimentiNazivi, 'sedmicni-sjeca-container', year, month);
+
+                document.getElementById('loading-screen').classList.add('hidden');
+
+            } catch (error) {
+                console.error('Error loading sedmični izvještaj sječe:', error);
+                showError('Greška', 'Greška pri učitavanju sedmičnog izvještaja: ' + error.message);
+                document.getElementById('loading-screen').classList.add('hidden');
+            }
+        }
+
+        async function loadSedmicniIzvjestajOtprema() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+
+            try {
+                const year = document.getElementById('sedmicni-otprema-year-select').value;
+                const month = document.getElementById('sedmicni-otprema-month-select').value;
+
+                // Load OTPREMA data
+                const otpremaUrl = API_URL + '?path=otpremaci-daily&year=' + year + '&month=' + month + '&username=' + currentUser.username + '&password=' + currentPassword;
+                const otpremaResponse = await fetch(otpremaUrl);
+                const otpremaData = await otpremaResponse.json();
+
+                if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
+
+                // Group by weeks (within month boundaries)
+                const weeklyData = groupDataByWeeks(otpremaData.data, year, month, otpremaData.sortimentiNazivi);
+
+                // Render
+                renderSedmicniIzvjestaj(weeklyData, otpremaData.sortimentiNazivi, 'sedmicni-otprema-container', year, month);
+
+                document.getElementById('loading-screen').classList.add('hidden');
+
+            } catch (error) {
+                console.error('Error loading sedmični izvještaj otpreme:', error);
+                showError('Greška', 'Greška pri učitavanju sedmičnog izvještaja: ' + error.message);
+                document.getElementById('loading-screen').classList.add('hidden');
+            }
+        }
+
+        // Group data by weeks (sedmice se ne prelaze preko granica mjeseca)
+        function groupDataByWeeks(data, year, month, sortimentiNazivi) {
+            const weeks = [];
+            const weeksMap = new Map();
+
+            // Parse year and month
+            const y = parseInt(year);
+            const m = parseInt(month);
+
+            data.forEach(row => {
+                // Parse datum (expecting DD/MM/YYYY format)
+                const datumStr = row.datum;
+                const dateParts = datumStr.split(/[\/\.\-]/);
+                const day = parseInt(dateParts[0]);
+                const recordMonth = parseInt(dateParts[1]) - 1;
+                const recordYear = parseInt(dateParts[2]);
+
+                // Skip if not in selected month
+                if (recordYear !== y || recordMonth !== m) return;
+
+                const datum = new Date(recordYear, recordMonth, day);
+
+                // Get week number within the month
+                const weekInfo = getWeekWithinMonth(datum, y, m);
+                const weekKey = weekInfo.weekNumber;
+
+                if (!weeksMap.has(weekKey)) {
+                    weeksMap.set(weekKey, {
+                        weekNumber: weekKey,
+                        weekStart: weekInfo.weekStart,
+                        weekEnd: weekInfo.weekEnd,
+                        odjeliMap: {}
+                    });
+                }
+
+                const week = weeksMap.get(weekKey);
+                const odjel = row.odjel;
+
+                if (!week.odjeliMap[odjel]) {
+                    week.odjeliMap[odjel] = {};
+                    sortimentiNazivi.forEach(s => week.odjeliMap[odjel][s] = 0);
+                }
+
+                sortimentiNazivi.forEach(sortiment => {
+                    const value = parseFloat(row.sortimenti[sortiment]) || 0;
+                    week.odjeliMap[odjel][sortiment] += value;
+                });
+            });
+
+            // Convert Map to Array and sort by week number
+            weeksMap.forEach(week => weeks.push(week));
+            weeks.sort((a, b) => a.weekNumber - b.weekNumber);
+
+            return weeks;
+        }
+
+        // Get week number within month (sedmica počinje u ponedjeljak)
+        function getWeekWithinMonth(date, year, month) {
+            // Clone date to avoid mutation
+            const d = new Date(date.getTime());
+
+            // Get first day of month
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+
+            // Find first Monday of the month (or first day if it's not Monday)
+            let weekStart = new Date(firstDay);
+            const firstDayOfWeek = firstDay.getDay(); // 0=Sunday, 1=Monday, ...
+
+            // If first day is not Monday, find next Monday (or use first day if it's after Monday)
+            if (firstDayOfWeek === 0) { // Sunday
+                weekStart.setDate(firstDay.getDate() + 1); // Move to Monday
+            } else if (firstDayOfWeek > 1) { // Tuesday-Saturday
+                weekStart.setDate(firstDay.getDate() + (8 - firstDayOfWeek)); // Move to next Monday
+            }
+            // If firstDayOfWeek === 1 (Monday), weekStart is already correct
+
+            // Calculate week number
+            let weekNumber = 1;
+            let currentWeekStart = new Date(firstDay);
+
+            while (currentWeekStart <= d) {
+                let currentWeekEnd = new Date(currentWeekStart);
+                currentWeekEnd.setDate(currentWeekEnd.getDate() + 6); // Sunday
+
+                // Ensure week doesn't go beyond month
+                if (currentWeekEnd > lastDay) {
+                    currentWeekEnd = new Date(lastDay);
+                }
+
+                // Check if date falls in this week
+                if (d >= currentWeekStart && d <= currentWeekEnd) {
+                    return {
+                        weekNumber: weekNumber,
+                        weekStart: formatDateDDMMYYYY(currentWeekStart),
+                        weekEnd: formatDateDDMMYYYY(currentWeekEnd)
+                    };
+                }
+
+                // Move to next week (always Monday)
+                currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+
+                // If next week is in next month, stop
+                if (currentWeekStart.getMonth() !== month) {
+                    break;
+                }
+
+                weekNumber++;
+            }
+
+            // Fallback: return week 1
+            return {
+                weekNumber: 1,
+                weekStart: formatDateDDMMYYYY(firstDay),
+                weekEnd: formatDateDDMMYYYY(lastDay)
+            };
+        }
+
+        // Format date as DD/MM/YYYY
+        function formatDateDDMMYYYY(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return day + '/' + month + '/' + year;
+        }
+
+        // Render sedmični izvještaj (multiple tables, one per week)
+        function renderSedmicniIzvjestaj(weeks, sortimentiNazivi, containerId, year, month) {
+            const container = document.getElementById(containerId);
+            const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+
+            if (weeks.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za odabrani mjesec</div>';
+                return;
+            }
+
+            let html = '';
+
+            // Get last 2 weeks by default
+            const visibleWeeks = weeks.length >= 2 ? weeks.slice(-2) : weeks;
+
+            visibleWeeks.forEach(week => {
+                // Convert odjeliMap to array
+                const odjeliArray = [];
+                for (const odjel in week.odjeliMap) {
+                    odjeliArray.push({
+                        odjel: odjel,
+                        sortimenti: week.odjeliMap[odjel]
+                    });
+                }
+                odjeliArray.sort((a, b) => a.odjel.localeCompare(b.odjel));
+
+                html += '<div class="section" style="margin-bottom: 40px;">';
+                html += '<h3 style="margin-bottom: 16px; color: #047857;">📅 Sedmica ' + week.weekNumber + ': ' + week.weekStart + ' - ' + week.weekEnd + '</h3>';
+
+                if (odjeliArray.length === 0) {
+                    html += '<p style="color: #6b7280; padding: 20px;">Nema podataka za ovu sedmicu</p>';
+                } else {
+                    html += '<div style="overflow-x: auto;"><table class="table">';
+
+                    // Header
+                    html += '<thead><tr><th style="position: sticky; left: 0; background: #f9fafb; z-index: 20; min-width: 200px;">Odjel</th>';
+                    sortimentiNazivi.forEach(sortiment => {
+                        const colClass = getColumnGroup(sortiment);
+                        let extraClass = '';
+                        if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
+                        else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
+                        else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+
+                        html += '<th class="sortiment-col right ' + colClass + extraClass + '">' + sortiment + '</th>';
+                    });
+                    html += '</tr></thead>';
+
+                    // Body
+                    html += '<tbody>';
+                    const totals = {};
+                    sortimentiNazivi.forEach(s => totals[s] = 0);
+
+                    odjeliArray.forEach((row, index) => {
+                        const rowStyle = index % 2 === 0 ? 'background: #f9fafb;' : '';
+                        html += '<tr style="' + rowStyle + '">';
+                        html += '<td style="font-weight: 600; position: sticky; left: 0; background: ' + (index % 2 === 0 ? '#f9fafb' : 'white') + '; z-index: 9;">' + row.odjel + '</td>';
+
+                        sortimentiNazivi.forEach(sortiment => {
+                            const value = row.sortimenti[sortiment] || 0;
+                            totals[sortiment] += value;
+
+                            const colClass = getColumnGroup(sortiment);
+                            let extraClass = '';
+                            if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
+                            else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
+                            else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+
+                            const displayValue = value === 0 ? '' : value.toFixed(2);
+                            html += '<td class="sortiment-col right ' + colClass + extraClass + '">' + displayValue + '</td>';
+                        });
+
+                        html += '</tr>';
+                    });
+
+                    // UKUPNO row
+                    html += '<tr style="background: #f9fafb; border-top: 3px solid #1f2937; font-weight: 700;">';
+                    html += '<td style="position: sticky; left: 0; background: #f9fafb; z-index: 9; font-size: 15px; padding: 14px;">📊 UKUPNO</td>';
+
+                    sortimentiNazivi.forEach(sortiment => {
+                        const colClass = getColumnGroup(sortiment);
+                        let extraClass = '';
+                        if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
+                        else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
+                        else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+
+                        html += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 700;">' + totals[sortiment].toFixed(2) + '</td>';
+                    });
+
+                    html += '</tr>';
+                    html += '</tbody></table></div>';
+                }
+
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
         }
 
         // Load pending count (for badge only)
