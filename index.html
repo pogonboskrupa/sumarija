@@ -731,6 +731,500 @@
                 font-size: 12px;
             }
         }
+
+        /* ========================================
+           PROFESIONALNI UI ZA PRIMAČE I OTPREMAČE
+           ======================================== */
+
+        /* Gradient Headers for Worker Views */
+        .worker-header {
+            background: linear-gradient(135deg, #047857 0%, #059669 50%, #10b981 100%);
+            padding: 32px 24px;
+            border-radius: 16px 16px 0 0;
+            margin: -24px -24px 24px -24px;
+            box-shadow: 0 8px 24px rgba(4, 120, 87, 0.15);
+        }
+
+        .worker-header.primac {
+            background: linear-gradient(135deg, #047857 0%, #059669 50%, #10b981 100%);
+        }
+
+        .worker-header.otpremac {
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%);
+        }
+
+        .worker-header-title {
+            color: white;
+            font-size: 28px;
+            font-weight: 800;
+            margin: 0 0 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .worker-header-subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 15px;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .worker-header-icon {
+            font-size: 36px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        /* Modern Card-Based Tables */
+        .worker-table-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            margin-bottom: 24px;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+
+        .worker-table-card:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .worker-table-card-header {
+            background: linear-gradient(to right, #f9fafb 0%, #f3f4f6 100%);
+            padding: 16px 24px;
+            border-bottom: 2px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .worker-table-card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .worker-table-card-badge {
+            background: #047857;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .worker-table-card-badge.blue {
+            background: #2563eb;
+        }
+
+        /* Enhanced Table Styling for Workers */
+        .worker-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 13px;
+        }
+
+        .worker-table thead {
+            background: linear-gradient(to bottom, #047857 0%, #059669 100%);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .worker-table.otpremac thead {
+            background: linear-gradient(to bottom, #1e40af 0%, #2563eb 100%);
+        }
+
+        .worker-table th {
+            padding: 14px 12px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .worker-table th:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .worker-table td {
+            padding: 12px;
+            border-bottom: 1px solid #f3f4f6;
+            color: #374151;
+        }
+
+        .worker-table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .worker-table tbody tr:hover {
+            background: linear-gradient(to right, #f0fdf4 0%, #d1fae5 100%);
+            box-shadow: inset 4px 0 0 #047857;
+        }
+
+        .worker-table.otpremac tbody tr:hover {
+            background: linear-gradient(to right, #eff6ff 0%, #dbeafe 100%);
+            box-shadow: inset 4px 0 0 #2563eb;
+        }
+
+        .worker-table .totals-row {
+            background: linear-gradient(to right, #f0fdf4 0%, #dcfce7 100%);
+            border-top: 3px solid #047857;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .worker-table.otpremac .totals-row {
+            background: linear-gradient(to right, #eff6ff 0%, #dbeafe 100%);
+            border-top: 3px solid #2563eb;
+        }
+
+        .worker-table .totals-row td {
+            padding: 16px 12px;
+            color: #047857;
+        }
+
+        .worker-table.otpremac .totals-row td {
+            color: #1e40af;
+        }
+
+        /* Value Highlighting */
+        .value-highlight {
+            background: #fef3c7;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            color: #92400e;
+        }
+
+        .value-highlight.large {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+            box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+        }
+
+        /* Modern Form Styling */
+        .worker-form {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
+        }
+
+        .worker-form-header {
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .worker-form-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: #1f2937;
+            margin: 0 0 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .worker-form-subtitle {
+            font-size: 14px;
+            color: #6b7280;
+            margin: 0;
+        }
+
+        .worker-form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .worker-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .worker-form-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #374151;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .worker-form-input,
+        .worker-form-select {
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 15px;
+            color: #1f2937;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .worker-form-input:focus,
+        .worker-form-select:focus {
+            outline: none;
+            border-color: #047857;
+            box-shadow: 0 0 0 4px rgba(4, 120, 87, 0.1);
+        }
+
+        .worker-form.otpremac .worker-form-input:focus,
+        .worker-form.otpremac .worker-form-select:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .worker-form-section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #047857;
+            margin: 28px 0 16px 0;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #d1fae5;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .worker-form.otpremac .worker-form-section-title {
+            color: #2563eb;
+            border-bottom-color: #dbeafe;
+        }
+
+        .worker-form-total-box {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 3px solid #f59e0b;
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 28px;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+        }
+
+        .worker-form-total-label {
+            font-size: 16px;
+            font-weight: 800;
+            color: #92400e;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .worker-form-total-value {
+            font-size: 36px;
+            font-weight: 900;
+            color: #92400e;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 2px 4px rgba(146, 64, 14, 0.1);
+        }
+
+        .worker-form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 2px solid #e5e7eb;
+        }
+
+        .worker-form-btn {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .worker-form-btn-primary {
+            background: linear-gradient(135deg, #047857 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(4, 120, 87, 0.3);
+        }
+
+        .worker-form-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(4, 120, 87, 0.4);
+        }
+
+        .worker-form-btn-primary.otpremac {
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .worker-form-btn-primary.otpremac:hover {
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+        }
+
+        .worker-form-btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 2px solid #e5e7eb;
+        }
+
+        .worker-form-btn-secondary:hover {
+            background: #e5e7eb;
+            transform: translateY(-2px);
+        }
+
+        /* Action Buttons in Tables */
+        .worker-action-btn {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-right: 6px;
+        }
+
+        .worker-action-btn-edit {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .worker-action-btn-edit:hover {
+            background: #3b82f6;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+        }
+
+        .worker-action-btn-delete {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .worker-action-btn-delete:hover {
+            background: #dc2626;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+        }
+
+        /* Stats Cards for Workers */
+        .worker-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+
+        .worker-stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+
+        .worker-stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .worker-stat-card.green {
+            border-top: 4px solid #047857;
+        }
+
+        .worker-stat-card.blue {
+            border-top: 4px solid #2563eb;
+        }
+
+        .worker-stat-card.yellow {
+            border-top: 4px solid #f59e0b;
+        }
+
+        .worker-stat-card-label {
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .worker-stat-card-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: #1f2937;
+            font-family: 'Courier New', monospace;
+        }
+
+        .worker-stat-card.green .worker-stat-card-value {
+            color: #047857;
+        }
+
+        .worker-stat-card.blue .worker-stat-card-value {
+            color: #2563eb;
+        }
+
+        .worker-stat-card.yellow .worker-stat-card-value {
+            color: #f59e0b;
+        }
+
+        .worker-stat-card-unit {
+            font-size: 14px;
+            color: #9ca3af;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        /* Responsive Design for Workers */
+        @media (max-width: 768px) {
+            .worker-header {
+                padding: 24px 16px;
+                margin: -16px -16px 16px -16px;
+            }
+
+            .worker-header-title {
+                font-size: 22px;
+            }
+
+            .worker-form {
+                padding: 20px;
+            }
+
+            .worker-form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .worker-stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .worker-table {
+                font-size: 11px;
+            }
+
+            .worker-table th,
+            .worker-table td {
+                padding: 8px 6px;
+            }
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
