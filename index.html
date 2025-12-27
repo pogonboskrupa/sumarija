@@ -5112,8 +5112,10 @@
                 return;
             }
 
-            // Build header
-            let headerHtml = '<tr><th style="position: sticky; left: 0; background: #f9fafb; z-index: 20; min-width: 200px;">Odjel</th>';
+            // Build header - Sortimenti od D-U
+            let headerHtml = '<tr>';
+            headerHtml += '<th style="position: sticky; left: 0; background: #f9fafb; z-index: 20; min-width: 200px;">Radilište</th>';
+            headerHtml += '<th style="background: #f9fafb; min-width: 150px;">Vrsta</th>';
             sortimentiNazivi.forEach(sortiment => {
                 const colClass = getColumnGroup(sortiment);
                 let extraClass = '';
@@ -5126,48 +5128,62 @@
             headerHtml += '</tr>';
             headerElem.innerHTML = headerHtml;
 
-            // Build body
+            // Build body - Za svaki odjel 4 reda: PROJEKAT, SJEČA, OTPREMA, ŠUMA-LAGER
             let bodyHtml = '';
-            const totals = {};
-            sortimentiNazivi.forEach((s, index) => totals[index] = 0);
+            const totals = {
+                projekat: new Array(sortimentiNazivi.length).fill(0),
+                sjeca: new Array(sortimentiNazivi.length).fill(0),
+                otprema: new Array(sortimentiNazivi.length).fill(0),
+                sumaLager: new Array(sortimentiNazivi.length).fill(0)
+            };
 
-            data.forEach((row, rowIndex) => {
-                const rowStyle = rowIndex % 2 === 0 ? 'background: #f9fafb;' : '';
-                bodyHtml += '<tr style="' + rowStyle + '">';
-                bodyHtml += '<td style="font-weight: 600; position: sticky; left: 0; background: ' + (rowIndex % 2 === 0 ? '#f9fafb' : 'white') + '; z-index: 9;">' + row.odjel + '</td>';
+            data.forEach((odjelData, odjelIndex) => {
+                const odjelNaziv = odjelData.odjelNaziv;
+                const redovi = odjelData.redovi;
 
-                row.sortimenti.forEach((value, index) => {
-                    totals[index] += value;
+                // Separator između odjela (samo vizuelno)
+                if (odjelIndex > 0) {
+                    bodyHtml += '<tr style="height: 8px; background: #e5e7eb;"><td colspan="' + (sortimentiNazivi.length + 1) + '" style="padding: 0;"></td></tr>';
+                }
 
-                    const sortiment = sortimentiNazivi[index];
-                    const colClass = getColumnGroup(sortiment);
-                    let extraClass = '';
-                    if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
-                    else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
-                    else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+                // 4 reda za ovaj odjel
+                const vrste = [
+                    { naziv: 'PROJEKAT', data: redovi.projekat, key: 'projekat', icon: '📋' },
+                    { naziv: 'SJEČA', data: redovi.sjeca, key: 'sjeca', icon: '🌲' },
+                    { naziv: 'OTPREMA', data: redovi.otprema, key: 'otprema', icon: '🚛' },
+                    { naziv: 'ŠUMA-LAGER', data: redovi.sumaLager, key: 'sumaLager', icon: '📦' }
+                ];
 
-                    const displayValue = value === 0 ? '' : value.toFixed(2);
-                    bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '">' + displayValue + '</td>';
+                vrste.forEach((vrsta, vrstaIndex) => {
+                    const rowStyle = vrstaIndex % 2 === 0 ? 'background: #f9fafb;' : 'background: white;';
+                    bodyHtml += '<tr style="' + rowStyle + '">';
+
+                    // Prva kolona: Naziv radilišta + Vrsta (samo za prvi red pokazuj naziv odjela)
+                    if (vrstaIndex === 0) {
+                        bodyHtml += '<td rowspan="4" style="font-weight: 700; position: sticky; left: 0; background: #f0fdf4; z-index: 9; border-right: 2px solid #10b981; padding: 12px; vertical-align: top; color: #047857;">' + odjelNaziv + '</td>';
+                    }
+
+                    bodyHtml += '<td style="font-weight: 600; padding-left: 16px; color: #374151;">' + vrsta.icon + ' ' + vrsta.naziv + '</td>';
+
+                    // Sortimenti kolone
+                    vrsta.data.forEach((value, index) => {
+                        // Dodaj u totale
+                        totals[vrsta.key][index] += value;
+
+                        const sortiment = sortimentiNazivi[index];
+                        const colClass = getColumnGroup(sortiment);
+                        let extraClass = '';
+                        if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
+                        else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
+                        else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+
+                        const displayValue = value === 0 ? '' : value.toFixed(2);
+                        bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '">' + displayValue + '</td>';
+                    });
+
+                    bodyHtml += '</tr>';
                 });
-
-                bodyHtml += '</tr>';
             });
-
-            // Add UKUPNO row
-            bodyHtml += '<tr style="background: #f9fafb; border-top: 3px solid #1f2937; font-weight: 700;">';
-            bodyHtml += '<td style="position: sticky; left: 0; background: #f9fafb; z-index: 9; font-size: 15px; padding: 14px;">📊 UKUPNO</td>';
-
-            sortimentiNazivi.forEach((sortiment, index) => {
-                const colClass = getColumnGroup(sortiment);
-                let extraClass = '';
-                if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
-                else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
-                else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
-
-                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 700;">' + totals[index].toFixed(2) + '</td>';
-            });
-
-            bodyHtml += '</tr>';
 
             bodyElem.innerHTML = bodyHtml;
         }

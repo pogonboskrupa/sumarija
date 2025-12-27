@@ -3123,7 +3123,9 @@ function diagnosticCheckOriginalSheet() {
 }
 
 /**
- * STANJE ODJELA - Čita trenutno stanje iz fajla ODJELI, sheet OTPREMA, opseg B7:U13
+ * STANJE ODJELA - Čita trenutno stanje iz svih odjela (redovi 10-13, kolone D-U)
+ * Prikazuje po radilištima sa 4 reda: PROJEKAT, SJEČA, OTPREMA, ŠUMA-LAGER
+ * Sortira po najsvježijim unosima u PRIMKA
  */
 function handleStanjeOdjela(username, password) {
   // Verify user
@@ -3137,93 +3139,98 @@ function handleStanjeOdjela(username, password) {
 
     // Otvori folder ODJELI
     const folder = DriveApp.getFolderById(ODJELI_FOLDER_ID);
+    const files = folder.getFiles();
 
-    // Traži fajl sa imenom "ODJELI" ili sličnim
-    const files = folder.getFilesByName('ODJELI');
+    const odjeliData = [];
+    let sortimentiNazivi = []; // Čitamo iz prvog fajla
 
-    let odjeliFile = null;
-    if (files.hasNext()) {
-      odjeliFile = files.next();
-    } else {
-      // Pokušaj sa različitim varijacijama imena
-      const filesIterator = folder.getFiles();
-      while (filesIterator.hasNext()) {
-        const file = filesIterator.next();
-        const fileName = file.getName().toUpperCase();
-        if (fileName.includes('ODJELI') || fileName === 'ODJELI') {
-          odjeliFile = file;
-          break;
-        }
-      }
-    }
+    while (files.hasNext()) {
+      const file = files.next();
+      const fileName = file.getName();
 
-    if (!odjeliFile) {
-      return createJsonResponse({ error: 'ODJELI fajl nije pronađen u folderu' }, false);
-    }
-
-    Logger.log('ODJELI fajl pronađen: ' + odjeliFile.getName());
-
-    // Otvori spreadsheet
-    const spreadsheet = SpreadsheetApp.open(odjeliFile);
-    const otpremaSheet = spreadsheet.getSheetByName('OTPREMA');
-
-    if (!otpremaSheet) {
-      return createJsonResponse({ error: 'OTPREMA sheet ne postoji u ODJELI fajlu' }, false);
-    }
-
-    // Čitaj opseg B7:U13 (7 redova, 20 kolona)
-    const range = otpremaSheet.getRange('B7:U13');
-    const values = range.getValues();
-
-    // Parsiranje podataka
-    const data = [];
-
-    for (let i = 0; i < values.length; i++) {
-      const row = values[i];
-
-      // Za red 13 (index 6), spojiti B13 i C13 kao "ŠUMA-LAGER"
-      let odjelNaziv = '';
-      if (i === 6) {
-        // Red 13 - spojiti B13 i C13
-        odjelNaziv = 'ŠUMA-LAGER';
-      } else {
-        // Ostali redovi - preuzmi B kolonu (index 0)
-        odjelNaziv = row[0] || '';
-      }
-
-      // Skip ako je naziv prazan
-      if (!odjelNaziv || odjelNaziv.toString().trim() === '') {
+      // Skip fajl ODJELI (glavni fajl)
+      if (fileName.toUpperCase().includes('ODJELI') && !fileName.includes(' ')) {
         continue;
       }
 
-      // Kolone od C do U (index 1 do 19) - 19 kolona sa sortimentima
-      const sortimentiValues = [];
-      for (let j = 1; j < row.length; j++) {
-        const value = parseFloat(row[j]) || 0;
-        sortimentiValues.push(value);
+      try {
+        Logger.log('Processing fajl: ' + fileName);
+
+        const spreadsheet = SpreadsheetApp.open(file);
+        const otpremaSheet = spreadsheet.getSheetByName('OTPREMA');
+        const primkaSheet = spreadsheet.getSheetByName('PRIMKA');
+
+        if (!otpremaSheet) {
+          Logger.log('OTPREMA sheet ne postoji u fajlu: ' + fileName);
+          continue;
+        }
+
+        // Čitaj zaglavlja iz reda 6, kolone D-U (indeksi 3-20)
+        if (sortimentiNazivi.length === 0) {
+          const headerRange = otpremaSheet.getRange(6, 4, 1, 18); // Red 6, kolona D (4), 18 kolona (D-U)
+          const headerValues = headerRange.getValues()[0];
+          sortimentiNazivi = headerValues.map(h => h || '');
+          Logger.log('Sortimenti zaglavlja: ' + sortimentiNazivi.join(', '));
+        }
+
+        // Čitaj redove 10-13, kolone D-U (indeksi 3-20)
+        const dataRange = otpremaSheet.getRange(10, 4, 4, 18); // Redovi 10-13, kolona D, 18 kolona
+        const dataValues = dataRange.getValues();
+
+        const projekat = dataValues[0].map(v => parseFloat(v) || 0);
+        const sjeca = dataValues[1].map(v => parseFloat(v) || 0);
+        const otprema = dataValues[2].map(v => parseFloat(v) || 0);
+        const sumaLager = dataValues[3].map(v => parseFloat(v) || 0);
+
+        // Pronađi najsvježiji datum iz PRIMKA sheet
+        let zadnjiDatum = null;
+        if (primkaSheet) {
+          const primkaData = primkaSheet.getDataRange().getValues();
+
+          for (let i = 1; i < primkaData.length; i++) {
+            const row = primkaData[i];
+            const datum = row[0]; // Kolona A - datum
+
+            if (!datum) continue;
+
+            const datumObj = parseDate(datum);
+            if (!datumObj || isNaN(datumObj.getTime())) continue;
+
+            if (!zadnjiDatum || datumObj > zadnjiDatum) {
+              zadnjiDatum = datumObj;
+            }
+          }
+        }
+
+        odjeliData.push({
+          odjelNaziv: fileName,
+          zadnjiDatum: zadnjiDatum,
+          redovi: {
+            projekat: projekat,
+            sjeca: sjeca,
+            otprema: otprema,
+            sumaLager: sumaLager
+          }
+        });
+
+      } catch (error) {
+        Logger.log('Greška pri obradi fajla ' + fileName + ': ' + error.toString());
       }
-
-      data.push({
-        odjel: odjelNaziv.toString().trim(),
-        sortimenti: sortimentiValues
-      });
     }
 
-    // Čitaj zaglavlja iz B6:U6
-    const headerRange = otpremaSheet.getRange('B6:U6');
-    const headerValues = headerRange.getValues()[0];
-
-    // Prva kolona je "Odjel", ostalo su sortimenti
-    const sortimentiNazivi = [];
-    for (let i = 1; i < headerValues.length; i++) {
-      sortimentiNazivi.push(headerValues[i] || '');
-    }
+    // Sortiraj po najsvježijem datumu (najnoviji prvo)
+    odjeliData.sort((a, b) => {
+      if (!a.zadnjiDatum && !b.zadnjiDatum) return 0;
+      if (!a.zadnjiDatum) return 1;
+      if (!b.zadnjiDatum) return -1;
+      return b.zadnjiDatum - a.zadnjiDatum;
+    });
 
     Logger.log('=== HANDLE STANJE ODJELA END ===');
-    Logger.log('Broj redova: ' + data.length);
+    Logger.log('Broj odjela: ' + odjeliData.length);
 
     return createJsonResponse({
-      data: data,
+      data: odjeliData,
       sortimentiNazivi: sortimentiNazivi
     }, true);
 
