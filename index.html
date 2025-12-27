@@ -1614,16 +1614,35 @@
         <!-- PRIMAC PERSONAL VIEW -->
         <div id="primac-personal-content" class="container hidden">
             <div class="section">
-                <h2>👷 Pregled sječe u tekućoj godini</h2>
+                <!-- Professional Header -->
+                <div class="worker-header primac">
+                    <div class="worker-header-icon">👷</div>
+                    <div>
+                        <h1 class="worker-header-title">Pregled sječe</h1>
+                        <p class="worker-header-subtitle">Vaši unosi za tekuću godinu - kompletan pregled po odjelima</p>
+                    </div>
+                </div>
+
+                <!-- Controls -->
                 <div class="controls-bar">
                     <input type="text" class="search-input" id="primac-personal-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterPrimacPersonalTable()">
                     <button class="btn btn-primary" onclick="exportTableToCSV('primac-personal')">📥 Export CSV</button>
                 </div>
-                <div class="kupci-table-wrapper">
-                    <table class="kupci-table" id="primac-personal-table">
-                        <thead id="primac-personal-header"></thead>
-                        <tbody id="primac-personal-body"></tbody>
-                    </table>
+
+                <!-- Modern Table Card -->
+                <div class="worker-table-card">
+                    <div class="worker-table-card-header">
+                        <h3 class="worker-table-card-title">
+                            📋 Sječa po odjelima
+                        </h3>
+                        <span class="worker-table-card-badge" id="primac-row-count">0 redova</span>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="worker-table" id="primac-personal-table">
+                            <thead id="primac-personal-header"></thead>
+                            <tbody id="primac-personal-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1631,16 +1650,35 @@
         <!-- OTPREMAC PERSONAL VIEW -->
         <div id="otpremac-personal-content" class="container hidden">
             <div class="section">
-                <h2>🚛 Pregled otpreme u tekućoj godini</h2>
+                <!-- Professional Header -->
+                <div class="worker-header otpremac">
+                    <div class="worker-header-icon">🚛</div>
+                    <div>
+                        <h1 class="worker-header-title">Pregled otpreme</h1>
+                        <p class="worker-header-subtitle">Vaši unosi za tekuću godinu - kompletan pregled po odjelima i kupcima</p>
+                    </div>
+                </div>
+
+                <!-- Controls -->
                 <div class="controls-bar">
                     <input type="text" class="search-input" id="otpremac-personal-search" placeholder="🔍 Pretraži po odjelu/kupcu..." onkeyup="filterOtpremacPersonalTable()">
                     <button class="btn btn-primary" onclick="exportTableToCSV('otpremac-personal')">📥 Export CSV</button>
                 </div>
-                <div class="kupci-table-wrapper">
-                    <table class="kupci-table" id="otpremac-personal-table">
-                        <thead id="otpremac-personal-header"></thead>
-                        <tbody id="otpremac-personal-body"></tbody>
-                    </table>
+
+                <!-- Modern Table Card -->
+                <div class="worker-table-card">
+                    <div class="worker-table-card-header">
+                        <h3 class="worker-table-card-title">
+                            📦 Otprema po odjelima i kupcima
+                        </h3>
+                        <span class="worker-table-card-badge blue" id="otpremac-row-count">0 redova</span>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="worker-table otpremac" id="otpremac-personal-table">
+                            <thead id="otpremac-personal-header"></thead>
+                            <tbody id="otpremac-personal-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
