@@ -764,10 +764,11 @@
         }
 
         .worker-header-subtitle {
-            color: rgba(255, 255, 255, 0.9);
+            color: rgba(255, 255, 255, 0.95);
             font-size: 15px;
             margin: 0;
-            font-weight: 500;
+            font-weight: 600;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
         }
 
         .worker-header-icon {
@@ -854,6 +855,7 @@
             cursor: pointer;
             user-select: none;
             transition: background 0.2s;
+            text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.5);
         }
 
         .worker-table th:hover {
@@ -915,6 +917,48 @@
             color: white;
             box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
         }
+
+        /* Mjesečne boje za tabele - 12 različitih svijetlih nijansi */
+        .worker-table tbody tr.mjesec-1 { background: linear-gradient(to right, #fce7f3 0%, #fbcfe8 100%); } /* Januar - Розова */
+        .worker-table tbody tr.mjesec-2 { background: linear-gradient(to right, #f3e8ff 0%, #e9d5ff 100%); } /* Februar - Ljubičasta */
+        .worker-table tbody tr.mjesec-3 { background: linear-gradient(to right, #e0e7ff 0%, #c7d2fe 100%); } /* Mart - Indigo */
+        .worker-table tbody tr.mjesec-4 { background: linear-gradient(to right, #dbeafe 0%, #bfdbfe 100%); } /* April - Plava */
+        .worker-table tbody tr.mjesec-5 { background: linear-gradient(to right, #cffafe 0%, #a5f3fc 100%); } /* Maj - Cyan */
+        .worker-table tbody tr.mjesec-6 { background: linear-gradient(to right, #ccfbf1 0%, #99f6e4 100%); } /* Juni - Teal */
+        .worker-table tbody tr.mjesec-7 { background: linear-gradient(to right, #d1fae5 0%, #a7f3d0 100%); } /* Juli - Zelena */
+        .worker-table tbody tr.mjesec-8 { background: linear-gradient(to right, #d9f99d 0%, #bef264 100%); } /* August - Lime */
+        .worker-table tbody tr.mjesec-9 { background: linear-gradient(to right, #fef9c3 0%, #fef08a 100%); } /* Septembar - Žuta */
+        .worker-table tbody tr.mjesec-10 { background: linear-gradient(to right, #fed7aa 0%, #fdba74 100%); } /* Oktobar - Narandžasta */
+        .worker-table tbody tr.mjesec-11 { background: linear-gradient(to right, #fecaca 0%, #fca5a5 100%); } /* Novembar - Crvena */
+        .worker-table tbody tr.mjesec-12 { background: linear-gradient(to right, #e5e7eb 0%, #d1d5db 100%); } /* Decembar - Siva */
+
+        /* Hover efekat za mjesečne boje */
+        .worker-table tbody tr.mjesec-1:hover { background: linear-gradient(to right, #fbcfe8 0%, #f9a8d4 100%); box-shadow: inset 4px 0 0 #ec4899; }
+        .worker-table tbody tr.mjesec-2:hover { background: linear-gradient(to right, #e9d5ff 0%, #d8b4fe 100%); box-shadow: inset 4px 0 0 #a855f7; }
+        .worker-table tbody tr.mjesec-3:hover { background: linear-gradient(to right, #c7d2fe 0%, #a5b4fc 100%); box-shadow: inset 4px 0 0 #6366f1; }
+        .worker-table tbody tr.mjesec-4:hover { background: linear-gradient(to right, #bfdbfe 0%, #93c5fd 100%); box-shadow: inset 4px 0 0 #3b82f6; }
+        .worker-table tbody tr.mjesec-5:hover { background: linear-gradient(to right, #a5f3fc 0%, #67e8f9 100%); box-shadow: inset 4px 0 0 #06b6d4; }
+        .worker-table tbody tr.mjesec-6:hover { background: linear-gradient(to right, #99f6e4 0%, #5eead4 100%); box-shadow: inset 4px 0 0 #14b8a6; }
+        .worker-table tbody tr.mjesec-7:hover { background: linear-gradient(to right, #a7f3d0 0%, #6ee7b7 100%); box-shadow: inset 4px 0 0 #10b981; }
+        .worker-table tbody tr.mjesec-8:hover { background: linear-gradient(to right, #bef264 0%, #a3e635 100%); box-shadow: inset 4px 0 0 #84cc16; }
+        .worker-table tbody tr.mjesec-9:hover { background: linear-gradient(to right, #fef08a 0%, #fde047 100%); box-shadow: inset 4px 0 0 #eab308; }
+        .worker-table tbody tr.mjesec-10:hover { background: linear-gradient(to right, #fdba74 0%, #fb923c 100%); box-shadow: inset 4px 0 0 #f97316; }
+        .worker-table tbody tr.mjesec-11:hover { background: linear-gradient(to right, #fca5a5 0%, #f87171 100%); box-shadow: inset 4px 0 0 #ef4444; }
+        .worker-table tbody tr.mjesec-12:hover { background: linear-gradient(to right, #d1d5db 0%, #9ca3af 100%); box-shadow: inset 4px 0 0 #6b7280; }
+
+        /* Otpremači tabele također koriste mjesečne boje */
+        .worker-table.otpremac tbody tr.mjesec-1:hover { box-shadow: inset 4px 0 0 #ec4899; }
+        .worker-table.otpremac tbody tr.mjesec-2:hover { box-shadow: inset 4px 0 0 #a855f7; }
+        .worker-table.otpremac tbody tr.mjesec-3:hover { box-shadow: inset 4px 0 0 #6366f1; }
+        .worker-table.otpremac tbody tr.mjesec-4:hover { box-shadow: inset 4px 0 0 #3b82f6; }
+        .worker-table.otpremac tbody tr.mjesec-5:hover { box-shadow: inset 4px 0 0 #06b6d4; }
+        .worker-table.otpremac tbody tr.mjesec-6:hover { box-shadow: inset 4px 0 0 #14b8a6; }
+        .worker-table.otpremac tbody tr.mjesec-7:hover { box-shadow: inset 4px 0 0 #10b981; }
+        .worker-table.otpremac tbody tr.mjesec-8:hover { box-shadow: inset 4px 0 0 #84cc16; }
+        .worker-table.otpremac tbody tr.mjesec-9:hover { box-shadow: inset 4px 0 0 #eab308; }
+        .worker-table.otpremac tbody tr.mjesec-10:hover { box-shadow: inset 4px 0 0 #f97316; }
+        .worker-table.otpremac tbody tr.mjesec-11:hover { box-shadow: inset 4px 0 0 #ef4444; }
+        .worker-table.otpremac tbody tr.mjesec-12:hover { box-shadow: inset 4px 0 0 #6b7280; }
 
         /* Modern Form Styling */
         .worker-form {
@@ -4308,8 +4352,12 @@
                         return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
                     }).join('');
 
+                    // Extract month from date (format: DD.MM.YYYY)
+                    const dateParts = u.datum.split('.');
+                    const mjesec = dateParts.length >= 2 ? parseInt(dateParts[1]) : 1;
+
                     return `
-                        <tr>
+                        <tr class="mjesec-${mjesec}">
                             <td style="font-weight: 500;">${u.datum}</td>
                             <td>${u.odjel}</td>
                             ${sortimentiCells}
@@ -4387,8 +4435,12 @@
                         return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
                     }).join('');
 
+                    // Extract month from date (format: DD.MM.YYYY)
+                    const dateParts = u.datum.split('.');
+                    const mjesec = dateParts.length >= 2 ? parseInt(dateParts[1]) : 1;
+
                     return `
-                        <tr>
+                        <tr class="mjesec-${mjesec}">
                             <td style="font-weight: 500;">${u.datum}</td>
                             <td>${u.odjel}</td>
                             <td>${u.kupac || '-'}</td>
