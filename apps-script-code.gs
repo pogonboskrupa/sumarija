@@ -2842,3 +2842,75 @@ function diagnosticOctoberData() {
     Logger.log('ERROR in diagnosticOctoberData: ' + error.toString());
   }
 }
+
+/**
+ * DIJAGNOSTIČKA FUNKCIJA: Prikazuje RAW datume iz INDEX_PRIMKA
+ * Pomaže da vidimo kako su datumi spremljeni i kako ih parseDate() parsira
+ */
+function diagnosticRawDates() {
+  try {
+    Logger.log('=== RAW DATUMI DIJAGNOSTIKA ===');
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const primkaSheet = ss.getSheetByName('INDEX_PRIMKA');
+
+    if (!primkaSheet) {
+      Logger.log('ERROR: INDEX_PRIMKA sheet not found');
+      return;
+    }
+
+    const primkaData = primkaSheet.getDataRange().getValues();
+    Logger.log('Ukupno redova u INDEX_PRIMKA: ' + primkaData.length);
+    Logger.log('\n=== PRVIH 30 REDOVA (primjeri datuma) ===\n');
+
+    const mjeseciCounter = {};
+    for (let m = 0; m < 12; m++) {
+      mjeseciCounter[m] = 0;
+    }
+
+    for (let i = 1; i < Math.min(30, primkaData.length); i++) {
+      const row = primkaData[i];
+      const odjel = row[0];
+      const rawDatum = row[1];
+      const kubik = parseFloat(row[20]) || 0;
+
+      const datumType = typeof rawDatum;
+      const isDateObj = rawDatum instanceof Date;
+
+      Logger.log('Red ' + (i+1) + ':');
+      Logger.log('  Odjel: ' + odjel);
+      Logger.log('  RAW datum: "' + rawDatum + '"');
+      Logger.log('  Tip: ' + datumType + (isDateObj ? ' (Date objekat)' : ''));
+
+      if (rawDatum) {
+        const datumObj = parseDate(rawDatum);
+        const isValid = !isNaN(datumObj.getTime());
+
+        if (isValid) {
+          const mjesec = datumObj.getMonth();
+          const godina = datumObj.getFullYear();
+          Logger.log('  Parsiran: ' + formatDate(datumObj) + ' (mjesec=' + mjesec + ', godina=' + godina + ')');
+
+          if (godina === 2025) {
+            mjeseciCounter[mjesec]++;
+          }
+        } else {
+          Logger.log('  Parsiran: INVALID DATE!');
+        }
+      }
+      Logger.log('  Kubik: ' + kubik.toFixed(2) + '\n');
+    }
+
+    Logger.log('\n=== DISTRIBUCIJA PO MJESECIMA (2025) ===');
+    const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni',
+                          'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+    for (let m = 0; m < 12; m++) {
+      Logger.log(mjeseciNazivi[m] + ': ' + mjeseciCounter[m] + ' unosa');
+    }
+
+    Logger.log('\n=== KRAJ DIJAGNOSTIKE ===');
+
+  } catch (error) {
+    Logger.log('ERROR in diagnosticRawDates: ' + error.toString());
+  }
+}
