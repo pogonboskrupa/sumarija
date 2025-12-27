@@ -1650,6 +1650,9 @@
                         <p style="color: #6b7280;">Trenutno stanje radilišta - sortirano po najsvježijim unosima sječe</p>
                     </div>
                     <div class="page-header-right">
+                        <select id="stanje-odjela-select" class="year-select" style="min-width: 250px; margin-right: 12px;" onchange="filterStanjeOdjela()">
+                            <option value="">Sva radilišta</option>
+                        </select>
                         <button class="btn btn-primary" onclick="loadStanjeOdjela()">🔄 Osvježi</button>
                     </div>
                 </div>
@@ -5073,6 +5076,10 @@
         // STANJE ODJELA - Trenutno stanje iz fajla ODJELI
         // ========================================
 
+        // Globalne varijable za stanje odjela
+        let stanjeOdjelaData = [];
+        let stanjeOdjelaSortimenti = [];
+
         async function loadStanjeOdjela() {
             document.getElementById('loading-screen').classList.remove('hidden');
 
@@ -5084,6 +5091,13 @@
 
                 if (data.error) throw new Error(data.error);
 
+                // Sačuvaj podatke globalno
+                stanjeOdjelaData = data.data;
+                stanjeOdjelaSortimenti = data.sortimentiNazivi;
+
+                // Populiši dropdown sa radilištima
+                populateStanjeOdjelaDropdown(data.data);
+
                 // Render sections
                 renderStanjeOdjelaSections(data.data, data.sortimentiNazivi);
 
@@ -5093,6 +5107,34 @@
                 console.error('Error loading stanje odjela:', error);
                 showError('Greška', 'Greška pri učitavanju stanja odjela: ' + error.message);
                 document.getElementById('loading-screen').classList.add('hidden');
+            }
+        }
+
+        function populateStanjeOdjelaDropdown(data) {
+            const select = document.getElementById('stanje-odjela-select');
+
+            // Očisti postojeće opcije osim "Sva radilišta"
+            select.innerHTML = '<option value="">Sva radilišta</option>';
+
+            // Dodaj sve odjele
+            data.forEach(odjel => {
+                const option = document.createElement('option');
+                option.value = odjel.odjelNaziv;
+                option.textContent = odjel.odjelNaziv;
+                select.appendChild(option);
+            });
+        }
+
+        function filterStanjeOdjela() {
+            const selectedOdjel = document.getElementById('stanje-odjela-select').value;
+
+            if (selectedOdjel === '') {
+                // Prikaži sve
+                renderStanjeOdjelaSections(stanjeOdjelaData, stanjeOdjelaSortimenti);
+            } else {
+                // Filtriraj samo izabrano radilište
+                const filteredData = stanjeOdjelaData.filter(odjel => odjel.odjelNaziv === selectedOdjel);
+                renderStanjeOdjelaSections(filteredData, stanjeOdjelaSortimenti);
             }
         }
 
