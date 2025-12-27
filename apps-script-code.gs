@@ -3008,3 +3008,114 @@ function diagnosticFind2578() {
     Logger.log('ERROR in diagnosticFind2578: ' + error.toString());
   }
 }
+
+/**
+ * DIJAGNOSTIČKA FUNKCIJA: Čita direktno iz originalnog "RISOVAC KRUPA 64 ZAPISNIK" Google Sheets fajla
+ * Da vidimo šta piše u PRIMKA i OTPREMA sheet-ovima
+ */
+function diagnosticCheckOriginalSheet() {
+  try {
+    Logger.log('=== PROVJERA ORIGINALNOG SHEET-A "RISOVAC KRUPA 64  ZAPISNIK" ===');
+
+    const folder = DriveApp.getFolderById(ODJELI_FOLDER_ID);
+    const files = folder.getFilesByType(MimeType.GOOGLE_SHEETS);
+
+    let foundFile = null;
+
+    while (files.hasNext()) {
+      const file = files.next();
+      const fileName = file.getName();
+
+      // Traži fajl sa ovim imenom (može biti sa jednim ili dva razmaka)
+      if (fileName.includes('RISOVAC KRUPA 64') && fileName.includes('ZAPISNIK')) {
+        foundFile = file;
+        Logger.log('Pronađen fajl: "' + fileName + '"');
+        break;
+      }
+    }
+
+    if (!foundFile) {
+      Logger.log('ERROR: Fajl "RISOVAC KRUPA 64 ZAPISNIK" nije pronađen!');
+      return;
+    }
+
+    const ss = SpreadsheetApp.open(foundFile);
+
+    // Provjeri PRIMKA sheet
+    const primkaSheet = ss.getSheetByName('PRIMKA');
+    if (primkaSheet) {
+      Logger.log('\n=== PRIMKA SHEET - SVI OKTOBAR UNOSI ===');
+
+      const primkaData = primkaSheet.getDataRange().getValues();
+      Logger.log('Ukupno redova u PRIMKA: ' + primkaData.length);
+
+      let primkaOktobarCount = 0;
+
+      for (let i = 1; i < primkaData.length; i++) {
+        const row = primkaData[i];
+        const datum = row[1]; // kolona B
+        const primac = row[2]; // kolona C
+        const kubik = parseFloat(row[20]) || 0; // kolona U
+
+        if (!datum) continue;
+
+        const datumObj = parseDate(datum);
+        if (isNaN(datumObj.getTime())) continue;
+        if (datumObj.getFullYear() !== 2025) continue;
+        if (datumObj.getMonth() !== 9) continue; // Oktobar
+
+        primkaOktobarCount++;
+        Logger.log('Red ' + (i+1) + ': Datum=' + formatDate(datumObj) + ' | Primač=' + primac + ' | Kubik=' + kubik.toFixed(2));
+
+        if (Math.abs(kubik - 25.78) < 0.1) {
+          Logger.log('  ⚠️ OVO JE 25.78 UNOS!');
+        }
+      }
+
+      Logger.log('\nUKUPNO PRIMKA OKTOBAR: ' + primkaOktobarCount + ' unosa');
+    } else {
+      Logger.log('PRIMKA sheet ne postoji!');
+    }
+
+    // Provjeri OTPREMA sheet
+    const otpremaSheet = ss.getSheetByName('OTPREMA');
+    if (otpremaSheet) {
+      Logger.log('\n=== OTPREMA SHEET - SVI OKTOBAR UNOSI ===');
+
+      const otpremaData = otpremaSheet.getDataRange().getValues();
+      Logger.log('Ukupno redova u OTPREMA: ' + otpremaData.length);
+
+      let otpremaOktobarCount = 0;
+
+      for (let i = 1; i < otpremaData.length; i++) {
+        const row = otpremaData[i];
+        const datum = row[1]; // kolona B
+        const otpremac = row[2]; // kolona C
+        const kubik = parseFloat(row[20]) || 0; // kolona U
+
+        if (!datum) continue;
+
+        const datumObj = parseDate(datum);
+        if (isNaN(datumObj.getTime())) continue;
+        if (datumObj.getFullYear() !== 2025) continue;
+        if (datumObj.getMonth() !== 9) continue; // Oktobar
+
+        otpremaOktobarCount++;
+        Logger.log('Red ' + (i+1) + ': Datum=' + formatDate(datumObj) + ' | Otpremač=' + otpremac + ' | Kubik=' + kubik.toFixed(2));
+
+        if (Math.abs(kubik - 25.78) < 0.1) {
+          Logger.log('  ⚠️ OVO JE 25.78 UNOS!');
+        }
+      }
+
+      Logger.log('\nUKUPNO OTPREMA OKTOBAR: ' + otpremaOktobarCount + ' unosa');
+    } else {
+      Logger.log('OTPREMA sheet ne postoji!');
+    }
+
+    Logger.log('\n=== KRAJ DIJAGNOSTIKE ===');
+
+  } catch (error) {
+    Logger.log('ERROR in diagnosticCheckOriginalSheet: ' + error.toString());
+  }
+}
