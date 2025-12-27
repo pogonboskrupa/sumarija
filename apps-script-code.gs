@@ -3139,9 +3139,9 @@ function handleStanjeOdjela(username, password) {
 
     // Fiksno sortimentno zaglavlje (D-U kolone)
     const sortimentiNazivi = [
-      'F/L Č', 'I KL Č', 'II KL Č', 'III KL Č', 'RUDNO', 'TRUPCI Č',
+      'F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'TRUPCI Č',
       'CEL.DUGA', 'CEL.CIJEPANA', 'ČETINARI',
-      'F/L L', 'I KL L', 'II KL L', 'III KL L', 'TRUPCI L',
+      'F/L L', 'I L', 'II L', 'III L', 'TRUPCI L',
       'OGR. DUGI', 'OGR. CIJEPANI', 'LIŠĆARI',
       'SVEUKUPNO'
     ];
