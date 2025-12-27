@@ -582,10 +582,45 @@
             .header { padding: 8px 12px; }
             .header-title h1 { font-size: 14px; }
 
-            /* Make tables even more compact */
-            table { font-size: 10px; }
-            th, td { padding: 6px 4px; }
-            th { font-size: 9px; }
+            /* Make tables more readable on mobile */
+            table {
+                font-size: 13px;
+                min-width: max-content;
+            }
+            th, td {
+                padding: 10px 8px;
+                white-space: nowrap;
+            }
+            th {
+                font-size: 11px;
+                font-weight: 700;
+            }
+            td {
+                color: #111827;
+                font-weight: 600;
+            }
+
+            /* Scroll wrapper for wide tables */
+            .section > div:has(table) {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                margin: 0 -8px;
+            }
+
+            /* Sticky first column for all tables */
+            table th:first-child,
+            table td:first-child {
+                position: sticky;
+                left: 0;
+                z-index: 5;
+                background: white;
+                box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+            }
+
+            table thead th:first-child {
+                z-index: 15;
+                background: linear-gradient(to bottom, #047857 0%, #059669 100%);
+            }
 
             /* Summary cards */
             .summary-card-value { font-size: 20px; }
@@ -865,7 +900,8 @@
         .worker-table td {
             padding: 12px;
             border-bottom: 1px solid #f3f4f6;
-            color: #374151;
+            color: #1f2937;
+            font-weight: 500;
         }
 
         .worker-table tbody tr {
@@ -1248,6 +1284,10 @@
                 font-size: 22px;
             }
 
+            .worker-header-subtitle {
+                font-size: 13px;
+            }
+
             .worker-form {
                 padding: 20px;
             }
@@ -1260,13 +1300,92 @@
                 grid-template-columns: 1fr;
             }
 
-            .worker-table {
-                font-size: 11px;
+            /* MOBILNI PREGLED TABELA - Poboljšan */
+            .worker-table-card {
+                margin-left: -16px;
+                margin-right: -16px;
+                border-radius: 0;
             }
 
-            .worker-table th,
+            .worker-table {
+                font-size: 13px;
+                min-width: max-content;
+            }
+
+            .worker-table th {
+                padding: 12px 10px;
+                font-size: 11px;
+                white-space: nowrap;
+            }
+
             .worker-table td {
-                padding: 8px 6px;
+                padding: 12px 10px;
+                white-space: nowrap;
+                color: #111827;
+                font-weight: 600;
+            }
+
+            /* Sticky prva kolona na mobilnom */
+            .worker-table th:first-child,
+            .worker-table td:first-child {
+                position: sticky;
+                left: 0;
+                z-index: 5;
+                background: inherit;
+                box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+            }
+
+            .worker-table thead th:first-child {
+                z-index: 15;
+            }
+
+            /* Pojačan kontrast brojeva na mobilnom */
+            .worker-table .sortiment-col,
+            .worker-table .ukupno-col {
+                font-weight: 700;
+                color: #000000;
+                font-size: 14px;
+            }
+
+            /* Wrapper sa scroll indikatorom */
+            .worker-table-card > div {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                position: relative;
+            }
+
+            .worker-table-card > div::after {
+                content: '← Scroll →';
+                position: sticky;
+                right: 0;
+                bottom: 0;
+                background: linear-gradient(90deg, transparent 0%, #047857 20%, #047857 80%, transparent 100%);
+                color: white;
+                padding: 8px 16px;
+                font-size: 11px;
+                font-weight: 700;
+                text-align: center;
+                display: block;
+                opacity: 0.8;
+                pointer-events: none;
+                border-radius: 4px;
+                margin: 8px;
+            }
+
+            .worker-table.otpremac + div::after {
+                background: linear-gradient(90deg, transparent 0%, #2563eb 20%, #2563eb 80%, transparent 100%);
+            }
+
+            /* Veći touch targets za sortiranje */
+            .worker-table th {
+                min-width: 80px;
+            }
+
+            /* Totals row čitljiviji */
+            .worker-table .totals-row td {
+                font-size: 15px;
+                font-weight: 800;
+                color: #000000;
             }
         }
     </style>
