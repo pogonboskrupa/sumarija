@@ -5116,24 +5116,33 @@
             // Očisti postojeće opcije osim "Sva radilišta"
             select.innerHTML = '<option value="">Sva radilišta</option>';
 
-            // Dodaj sve odjele
+            // Izvuci unique radilišta
+            const radilistaSet = new Set();
             data.forEach(odjel => {
+                if (odjel.radiliste) {
+                    radilistaSet.add(odjel.radiliste);
+                }
+            });
+
+            // Sortiraj i dodaj u dropdown
+            const radilista = Array.from(radilistaSet).sort();
+            radilista.forEach(radiliste => {
                 const option = document.createElement('option');
-                option.value = odjel.odjelNaziv;
-                option.textContent = odjel.odjelNaziv;
+                option.value = radiliste;
+                option.textContent = radiliste;
                 select.appendChild(option);
             });
         }
 
         function filterStanjeOdjela() {
-            const selectedOdjel = document.getElementById('stanje-odjela-select').value;
+            const selectedRadiliste = document.getElementById('stanje-odjela-select').value;
 
-            if (selectedOdjel === '') {
+            if (selectedRadiliste === '') {
                 // Prikaži sve
                 renderStanjeOdjelaSections(stanjeOdjelaData, stanjeOdjelaSortimenti);
             } else {
                 // Filtriraj samo izabrano radilište
-                const filteredData = stanjeOdjelaData.filter(odjel => odjel.odjelNaziv === selectedOdjel);
+                const filteredData = stanjeOdjelaData.filter(odjel => odjel.radiliste === selectedRadiliste);
                 renderStanjeOdjelaSections(filteredData, stanjeOdjelaSortimenti);
             }
         }
@@ -5150,6 +5159,7 @@
 
             // Za svaki odjel kreiraj zasebnu sekciju
             data.forEach((odjelData, odjelIndex) => {
+                const radiliste = odjelData.radiliste || odjelData.odjelNaziv;
                 const odjelNaziv = odjelData.odjelNaziv;
                 const redovi = odjelData.redovi;
 
@@ -5160,7 +5170,10 @@
                 html += '<div style="background: linear-gradient(135deg, #047857 0%, #059669 100%); padding: 16px 24px; border-bottom: 3px solid #10b981;">';
                 html += '<h3 style="margin: 0; color: white; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 12px;">';
                 html += '<span style="font-size: 24px;">🏭</span>';
-                html += '<span>' + odjelNaziv + '</span>';
+                html += '<div>';
+                html += '<div>' + radiliste + '</div>';
+                html += '<div style="font-size: 12px; font-weight: 400; opacity: 0.9; margin-top: 4px;">(' + odjelNaziv + ')</div>';
+                html += '</div>';
                 html += '</h3>';
                 html += '</div>';
 

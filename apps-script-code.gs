@@ -3137,12 +3137,20 @@ function handleStanjeOdjela(username, password) {
   try {
     Logger.log('=== HANDLE STANJE ODJELA START ===');
 
+    // Fiksno sortimentno zaglavlje (D-U kolone)
+    const sortimentiNazivi = [
+      'F/L Č', 'I KL Č', 'II KL Č', 'III KL Č', 'RUDNO', 'TRUPCI Č',
+      'CEL.DUGA', 'CEL.CIJEPANA', 'ČETINARI',
+      'F/L L', 'I KL L', 'II KL L', 'III KL L', 'TRUPCI L',
+      'OGR. DUGI', 'OGR. CIJEPANI', 'LIŠĆARI',
+      'SVEUKUPNO'
+    ];
+
     // Otvori folder ODJELI
     const folder = DriveApp.getFolderById(ODJELI_FOLDER_ID);
     const files = folder.getFiles();
 
     const odjeliData = [];
-    let sortimentiNazivi = []; // Čitamo iz prvog fajla
 
     while (files.hasNext()) {
       const file = files.next();
@@ -3165,12 +3173,18 @@ function handleStanjeOdjela(username, password) {
           continue;
         }
 
-        // Čitaj zaglavlja iz reda 6, kolone D-U (indeksi 3-20)
-        if (sortimentiNazivi.length === 0) {
-          const headerRange = otpremaSheet.getRange(6, 4, 1, 18); // Red 6, kolona D (4), 18 kolona (D-U)
-          const headerValues = headerRange.getValues()[0];
-          sortimentiNazivi = headerValues.map(h => h || '');
-          Logger.log('Sortimenti zaglavlja: ' + sortimentiNazivi.join(', '));
+        // Čitaj naziv radilišta iz PRIMKA sheet, W2 (red 2, kolona 23)
+        let radilisteNaziv = fileName; // Fallback ako W2 ne postoji
+        if (primkaSheet) {
+          try {
+            const w2Cell = primkaSheet.getRange(2, 23); // Red 2, kolona W (23)
+            const w2Value = w2Cell.getValue();
+            if (w2Value && w2Value.toString().trim() !== '') {
+              radilisteNaziv = w2Value.toString().trim();
+            }
+          } catch (e) {
+            Logger.log('Greška pri čitanju W2: ' + e.toString());
+          }
         }
 
         // Čitaj redove 10-13, kolone D-U (indeksi 3-20)
@@ -3204,6 +3218,7 @@ function handleStanjeOdjela(username, password) {
 
         odjeliData.push({
           odjelNaziv: fileName,
+          radiliste: radilisteNaziv,
           zadnjiDatum: zadnjiDatum,
           redovi: {
             projekat: projekat,
