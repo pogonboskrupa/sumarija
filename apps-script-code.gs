@@ -2754,3 +2754,91 @@ function handleOtremaciDaily(year, month, username, password) {
     }, false);
   }
 }
+
+// ========================================
+// DIJAGNOSTIKA - Funkcije za debugovanje
+// ========================================
+
+/**
+ * DIJAGNOSTIČKA FUNKCIJA: Prikazuje sve Oktobar unose iz INDEX_PRIMKA i INDEX_OTPREMA
+ * Koristi se za debugovanje razlika u mjesečnim sumama
+ */
+function diagnosticOctoberData() {
+  try {
+    Logger.log('=== OKTOBAR DIJAGNOSTIKA ===');
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const primkaSheet = ss.getSheetByName('INDEX_PRIMKA');
+    const otpremaSheet = ss.getSheetByName('INDEX_OTPREMA');
+
+    if (!primkaSheet || !otpremaSheet) {
+      Logger.log('ERROR: INDEX sheets not found');
+      return;
+    }
+
+    const primkaData = primkaSheet.getDataRange().getValues();
+    const otpremaData = otpremaSheet.getDataRange().getValues();
+
+    // Analiza PRIMKA (Sječa)
+    Logger.log('\n=== PRIMKA (SJEČA) - OKTOBAR 2025 ===');
+    let primkaSum = 0;
+    let primkaCount = 0;
+
+    for (let i = 1; i < primkaData.length; i++) {
+      const row = primkaData[i];
+      const odjel = row[0];
+      const datum = row[1];
+      const kubik = parseFloat(row[20]) || 0; // kolona U - SVEUKUPNO
+
+      if (!datum || !odjel) continue;
+
+      const datumObj = parseDate(datum);
+      if (datumObj.getFullYear() !== 2025) continue;
+      if (datumObj.getMonth() !== 9) continue; // 9 = Oktobar (0-indexed)
+
+      primkaCount++;
+      primkaSum += kubik;
+
+      if (primkaCount <= 20) {
+        const datumStr = formatDate(datumObj);
+        const rowNum = i + 1;
+        Logger.log('Red ' + rowNum + ': ' + odjel + ' | Datum: ' + datumStr + ' | Kubik: ' + kubik.toFixed(2));
+      }
+    }
+
+    Logger.log('\nUKUPNO PRIMKA OKTOBAR: ' + primkaSum.toFixed(2) + ' m³ (' + primkaCount + ' unosa)');
+
+    // Analiza OTPREMA
+    Logger.log('\n=== OTPREMA - OKTOBAR 2025 ===');
+    let otpremaSum = 0;
+    let otpremaCount = 0;
+
+    for (let i = 1; i < otpremaData.length; i++) {
+      const row = otpremaData[i];
+      const odjel = row[0];
+      const datum = row[1];
+      const kupac = row[21] || ""; // KUPAC column
+      const kubik = parseFloat(row[20]) || 0; // kolona U - SVEUKUPNO
+
+      if (!datum || !odjel) continue;
+
+      const datumObj = parseDate(datum);
+      if (datumObj.getFullYear() !== 2025) continue;
+      if (datumObj.getMonth() !== 9) continue; // 9 = Oktobar
+
+      otpremaCount++;
+      otpremaSum += kubik;
+
+      const datumStr = formatDate(datumObj);
+      const rowNum = i + 1;
+      Logger.log('Red ' + rowNum + ': ' + odjel + ' | Datum: ' + datumStr + ' | Kupac: ' + kupac + ' | Kubik: ' + kubik.toFixed(2));
+    }
+
+    Logger.log('\nUKUPNO OTPREMA OKTOBAR: ' + otpremaSum.toFixed(2) + ' m³ (' + otpremaCount + ' unosa)');
+    Logger.log('RAZLIKA: ' + (primkaSum - otpremaSum).toFixed(2) + ' m³');
+    Logger.log('=== KRAJ DIJAGNOSTIKE ===');
+
+  } catch (error) {
+    Logger.log('ERROR in diagnosticOctoberData: ' + error.toString());
+  }
+}
