@@ -2914,3 +2914,97 @@ function diagnosticRawDates() {
     Logger.log('ERROR in diagnosticRawDates: ' + error.toString());
   }
 }
+
+/**
+ * DIJAGNOSTIČKA FUNKCIJA: Traži specifični unos od 25.78 m³ u Oktobru
+ * Da vidimo zašto se taj unos pojavljuje u PRIMKA
+ */
+function diagnosticFind2578() {
+  try {
+    Logger.log('=== TRAŽIM 25.78 UNOS U OKTOBRU ===');
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const primkaSheet = ss.getSheetByName('INDEX_PRIMKA');
+
+    if (!primkaSheet) {
+      Logger.log('ERROR: INDEX_PRIMKA sheet not found');
+      return;
+    }
+
+    const primkaData = primkaSheet.getDataRange().getValues();
+    Logger.log('Ukupno redova u INDEX_PRIMKA: ' + primkaData.length);
+    Logger.log('\n=== TRAŽIM UNOSE SA KUBIK = 25.78 U OKTOBRU ===\n');
+
+    let foundCount = 0;
+
+    for (let i = 1; i < primkaData.length; i++) {
+      const row = primkaData[i];
+      const odjel = row[0];
+      const datum = row[1];
+      const primac = row[2];
+      const kubik = parseFloat(row[20]) || 0; // kolona U - SVEUKUPNO
+
+      if (!datum || !odjel) continue;
+
+      const datumObj = parseDate(datum);
+      if (datumObj.getFullYear() !== 2025) continue;
+      if (datumObj.getMonth() !== 9) continue; // 9 = Oktobar
+
+      // Traži unose koji su približno 25.78 (± 0.1)
+      if (Math.abs(kubik - 25.78) < 0.1) {
+        foundCount++;
+        Logger.log('PRONAĐENO! Red ' + (i+1) + ':');
+        Logger.log('  Odjel: ' + odjel);
+        Logger.log('  Datum: ' + formatDate(datumObj));
+        Logger.log('  Primač: ' + primac);
+        Logger.log('  Kubik: ' + kubik.toFixed(2));
+        Logger.log('  Radilište: ' + (row[21] || ''));
+        Logger.log('  Izvođač: ' + (row[22] || ''));
+        Logger.log('');
+      }
+    }
+
+    Logger.log('\n=== UKUPNO PRONAĐENO: ' + foundCount + ' unosa ===');
+
+    // Također traži u OTPREMA
+    const otpremaSheet = ss.getSheetByName('INDEX_OTPREMA');
+    if (otpremaSheet) {
+      const otpremaData = otpremaSheet.getDataRange().getValues();
+      Logger.log('\n=== PROVJERA U INDEX_OTPREMA ===\n');
+
+      let otpremaFoundCount = 0;
+
+      for (let i = 1; i < otpremaData.length; i++) {
+        const row = otpremaData[i];
+        const odjel = row[0];
+        const datum = row[1];
+        const otpremac = row[2];
+        const kubik = parseFloat(row[20]) || 0;
+
+        if (!datum || !odjel) continue;
+
+        const datumObj = parseDate(datum);
+        if (datumObj.getFullYear() !== 2025) continue;
+        if (datumObj.getMonth() !== 9) continue;
+
+        if (Math.abs(kubik - 25.78) < 0.1) {
+          otpremaFoundCount++;
+          Logger.log('PRONAĐENO! Red ' + (i+1) + ':');
+          Logger.log('  Odjel: ' + odjel);
+          Logger.log('  Datum: ' + formatDate(datumObj));
+          Logger.log('  Otpremač: ' + otpremac);
+          Logger.log('  Kupac: ' + (row[21] || ''));
+          Logger.log('  Kubik: ' + kubik.toFixed(2));
+          Logger.log('');
+        }
+      }
+
+      Logger.log('UKUPNO U OTPREMA: ' + otpremaFoundCount + ' unosa');
+    }
+
+    Logger.log('=== KRAJ DIJAGNOSTIKE ===');
+
+  } catch (error) {
+    Logger.log('ERROR in diagnosticFind2578: ' + error.toString());
+  }
+}
