@@ -8041,12 +8041,12 @@
                         odjeliStats[odjel.odjel] = {
                             sječa: odjel.sjeca || 0,
                             otprema: odjel.otprema || 0,
-                            projekat: projekatTotal > 0 ? projekatTotal : (odjel.projekat || 0), // Use STANJE ODJELA projekat if available
+                            projekat: (odjel.projekat && odjel.projekat > 0) ? odjel.projekat : projekatTotal, // Use odjel.projekat (U11) as primary source
                             ukupnoPosjeklo: odjel.sjeca || 0,
                             zadnjaSjeca: odjel.zadnjaSjeca || 0,
                             datumZadnjeSjece: odjel.datumZadnjeSjece || '',
                             radiliste: radilisteNaziv || odjel.radiliste || '',
-                            izvođač: odjel.izvođač || '',
+                            izvođač: (odjel.izvođač || '').trim(), // Trim whitespace to prevent duplicates
                             zadnjiDatumUnosa: odjel.datumZadnjeSjece || '' // Use formatted date from odjel, not stanjeMatch
                         };
                     });
@@ -8367,40 +8367,91 @@
         // Render Performance Alerts Banner
         function renderPerformanceAlerts(odjeliStats) {
             console.log('renderPerformanceAlerts called with:', odjeliStats);
-            const lowPerformers = [];
+            const criticalAlerts = []; // 🔴 Kritično: > 5 dana bez unosa + projekat >> posječeno
+            const warningAlerts = [];  // ⚠️ Upozorenje: posječena masa > 110% projekta (blizu 115% limite)
+
+            const today = new Date();
 
             Object.entries(odjeliStats).forEach(([odjel, stats]) => {
                 const projekat = stats.projekat || 0;
                 const ostvareno = stats.sječa || 0;
+                const zadnjiDatum = stats.zadnjiDatumUnosa || '';
                 const procenat = projekat > 0 ? ((ostvareno / projekat) * 100) : 0;
 
-                if (projekat > 0 && procenat < 70) {
-                    lowPerformers.push({ odjel, procenat: procenat.toFixed(1) });
+                // Kriterijum 1: KRITIČNO - Nije bilo unosa > 5 dana + projekat daleko veći od posječenog
+                if (zadnjiDatum && projekat > 0) {
+                    const dateParts = zadnjiDatum.split('.');
+                    if (dateParts.length === 3) {
+                        const lastEntry = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+                        const daysSinceEntry = Math.floor((today - lastEntry) / (1000 * 60 * 60 * 24));
+
+                        // KRITIČNO: Više od 5 dana + posječeno manje od 50% projekta
+                        if (daysSinceEntry > 5 && procenat < 50) {
+                            criticalAlerts.push({
+                                odjel,
+                                reason: `${daysSinceEntry} dana bez unosa, ${procenat.toFixed(0)}% plana`,
+                                days: daysSinceEntry,
+                                procenat: procenat.toFixed(0)
+                            });
+                        }
+                    }
+                }
+
+                // Kriterijum 2: UPOZORENJE - Posječena masa > 110% projekta (blizu 115% limite za aneks)
+                if (projekat > 0 && procenat > 110) {
+                    warningAlerts.push({
+                        odjel,
+                        reason: `${procenat.toFixed(0)}% projekta - blizu limite za aneks (115%)`,
+                        procenat: procenat.toFixed(0)
+                    });
                 }
             });
 
-            console.log('Low performers found:', lowPerformers);
+            console.log('Critical alerts:', criticalAlerts);
+            console.log('Warning alerts:', warningAlerts);
+
             const banner = document.getElementById('performance-alerts-banner');
 
-            if (lowPerformers.length > 0) {
-                const alertType = lowPerformers.some(p => parseFloat(p.procenat) < 50) ? 'danger' : 'warning';
-                const icon = alertType === 'danger' ? '🔴' : '⚠️';
-                const title = alertType === 'danger' ? 'KRITIČNO!' : 'UPOZORENJE';
-
-                banner.className = `alert-banner ${alertType}`;
+            // Prikaži kritične alert-e ako postoje, inače upozorenja
+            if (criticalAlerts.length > 0) {
+                banner.className = 'alert-banner danger';
                 banner.style.display = 'flex';
                 banner.innerHTML = `
-                    <span style="font-size: 24px;">${icon}</span>
+                    <span style="font-size: 24px;">🔴</span>
                     <div style="flex: 1;">
-                        <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">${title} - Niska Produktivnost</div>
+                        <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">KRITIČNO - Nema Unosa + Niska Realizacija</div>
                         <div style="font-size: 13px;">
-                            ${lowPerformers.length} odjel${lowPerformers.length > 1 ? 'a' : ''} ispod 70% plana:
-                            ${lowPerformers.map(p => `${p.odjel} (${p.procenat}%)`).join(', ')}
+                            ${criticalAlerts.length} odjel${criticalAlerts.length > 1 ? 'a' : ''}:
+                            ${criticalAlerts.map(a => `${a.odjel} (${a.reason})`).join(', ')}
+                        </div>
+                    </div>
+                `;
+            } else if (warningAlerts.length > 0) {
+                banner.className = 'alert-banner warning';
+                banner.style.display = 'flex';
+                banner.innerHTML = `
+                    <span style="font-size: 24px;">⚠️</span>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">UPOZORENJE - Premašena Projektovana Masa</div>
+                        <div style="font-size: 13px;">
+                            ${warningAlerts.length} odjel${warningAlerts.length > 1 ? 'a' : ''} iznad 110% projekta:
+                            ${warningAlerts.map(a => `${a.odjel} (${a.procenat}%)`).join(', ')}
                         </div>
                     </div>
                 `;
             } else {
-                banner.style.display = 'none';
+                // Sve je dobro - možda prikaži success banner?
+                banner.className = 'alert-banner success';
+                banner.style.display = 'flex';
+                banner.innerHTML = `
+                    <span style="font-size: 24px;">✅</span>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">SVE U REDU</div>
+                        <div style="font-size: 13px;">
+                            Nema kritičnih odjela - svi odjeli su unutar dozvoljenih parametara
+                        </div>
+                    </div>
+                `;
             }
         }
 
@@ -8408,25 +8459,35 @@
         function renderIzvodjaciPerformance(odjeliStats) {
             console.log('renderIzvodjaciPerformance called with:', odjeliStats);
             const izvodjaciMap = {};
+            const izvodjaciOriginalNames = {}; // Track original names for display
 
-            // Group by izvođač
+            // Group by izvođač (normalized to prevent duplicates)
             Object.entries(odjeliStats).forEach(([odjel, stats]) => {
-                const izvodjac = stats.izvođač || stats.izvodjac || 'Nepoznat';
+                let izvodjac = stats.izvođač || stats.izvodjac || '';
+                izvodjac = izvodjac.trim(); // Remove whitespace
+
+                if (!izvodjac || izvodjac === '') {
+                    return; // Skip empty izvođači
+                }
+
+                // Normalize for grouping (uppercase, trim)
+                const normalizedName = izvodjac.toUpperCase();
                 const sjeca = stats.sječa || 0;
 
-                if (!izvodjaciMap[izvodjac]) {
-                    izvodjaciMap[izvodjac] = 0;
+                if (!izvodjaciMap[normalizedName]) {
+                    izvodjaciMap[normalizedName] = 0;
+                    izvodjaciOriginalNames[normalizedName] = izvodjac; // Store first encountered name
                 }
-                izvodjaciMap[izvodjac] += sjeca;
+                izvodjaciMap[normalizedName] += sjeca;
             });
 
-            console.log('Izvođači grouped:', izvodjaciMap);
+            console.log('Izvođači grouped (normalized):', izvodjaciMap);
 
-            // Sort by volume
+            // Sort by volume and use original names for display
             const sorted = Object.entries(izvodjaciMap)
-                .filter(([name]) => name !== 'Nepoznat' && name !== '')
                 .sort((a, b) => b[1] - a[1])
-                .slice(0, 10);
+                .slice(0, 10)
+                .map(([normalizedName, volume]) => [izvodjaciOriginalNames[normalizedName], volume]);
 
             console.log('Top izvođači sorted:', sorted);
 
