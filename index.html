@@ -2843,6 +2843,63 @@
                 </div>
             </div>
 
+            <!-- Seasonal Analysis (Q1-Q4) -->
+            <div class="section">
+                <h2>📅 Sezonska Analiza - Quartali</h2>
+                <p>Produktivnost po quarter-ima (Q1: Jan-Mar, Q2: Apr-Jun, Q3: Jul-Sep, Q4: Oct-Dec)</p>
+                <div class="kpi-grid" id="seasonal-analysis">
+                    <p style="color: #6b7280; text-align: center; padding: 20px;">Učitavanje...</p>
+                </div>
+            </div>
+
+            <!-- Performance Timeline -->
+            <div class="section">
+                <h2>⏱️ Performance Timeline - Realizacija Projekta</h2>
+                <p>Cumulative % realizacije projekta po mjesecima</p>
+                <div class="line-legend">
+                    <div class="line-legend-item">
+                        <div class="line-legend-color green"></div>
+                        <span>Cumulative Realizacija</span>
+                    </div>
+                    <div class="line-legend-item">
+                        <div class="line-legend-color" style="background: #dc2626;"></div>
+                        <span>Target (100%)</span>
+                    </div>
+                </div>
+                <svg id="performance-timeline-chart" class="chart-svg"></svg>
+            </div>
+
+            <!-- Mjesečni Trend Kupaca -->
+            <div class="section">
+                <h2>📈 Mjesečni Trend Kupaca</h2>
+                <p>Koji kupci su bili aktivni po mjesecima</p>
+                <div style="overflow-x: auto;">
+                    <table class="monthly-table" id="kupci-mjesecni-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left;">Kupac</th>
+                                <th class="right">Jan</th>
+                                <th class="right">Feb</th>
+                                <th class="right">Mar</th>
+                                <th class="right">Apr</th>
+                                <th class="right">Maj</th>
+                                <th class="right">Jun</th>
+                                <th class="right">Jul</th>
+                                <th class="right">Avg</th>
+                                <th class="right">Sep</th>
+                                <th class="right">Okt</th>
+                                <th class="right">Nov</th>
+                                <th class="right">Dec</th>
+                                <th class="right" style="font-weight: 700;">UKUPNO</th>
+                            </tr>
+                        </thead>
+                        <tbody id="kupci-mjesecni-tbody">
+                            <tr><td colspan="14" style="text-align: center; color: #6b7280; padding: 20px;">Učitavanje...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Detaljni Pregled - All Odjeli Table -->
             <div class="section">
                 <h2>📊 Detaljni Pregled - Svi Odjeli</h2>
@@ -8154,6 +8211,11 @@
             renderIzvodjaciPerformance(data.odjeliStats || {});
             renderKupciPerformance(data.stanjeOdjelaRaw || {}); // Zamijenjeno: bilo renderSortimentiBreakdown
             renderTimelineUnosi(data.odjeliStats || {});
+
+            // Render additional analytics features
+            renderSeasonalAnalysis(monthlyStats);
+            renderPerformanceTimeline(data.odjeliStats || {}, monthlyStats);
+            renderKupciMjesecniTrend(); // Async - fetch own data
         }
 
         // Render Top 5 Odjela by Sječa
@@ -8650,6 +8712,241 @@
                 : '<p style="color: #6b7280; text-align: center; padding: 20px;">Nema podataka o unosima</p>';
 
             document.getElementById('timeline-unosi-list').innerHTML = html;
+        }
+
+        // Render Seasonal Analysis (Q1-Q4)
+        function renderSeasonalAnalysis(monthlyStats) {
+            console.log('renderSeasonalAnalysis called with:', monthlyStats);
+
+            // Define quarters
+            const quarters = [
+                { name: 'Q1', label: 'Jan-Mar', months: [0, 1, 2], icon: '❄️', color: '#3b82f6' },
+                { name: 'Q2', label: 'Apr-Jun', months: [3, 4, 5], icon: '🌸', color: '#10b981' },
+                { name: 'Q3', label: 'Jul-Sep', months: [6, 7, 8], icon: '☀️', color: '#f59e0b' },
+                { name: 'Q4', label: 'Okt-Dec', months: [9, 10, 11], icon: '🍂', color: '#dc2626' }
+            ];
+
+            const html = quarters.map(q => {
+                const quarterSjeca = q.months.reduce((sum, monthIdx) => {
+                    return sum + (monthlyStats[monthIdx]?.sječa || 0);
+                }, 0);
+
+                const quarterOtprema = q.months.reduce((sum, monthIdx) => {
+                    return sum + (monthlyStats[monthIdx]?.otprema || 0);
+                }, 0);
+
+                return `
+                    <div class="kpi-card-small" style="background: linear-gradient(135deg, ${q.color}15 0%, ${q.color}25 100%); border-left-color: ${q.color};">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <span style="font-size: 28px;">${q.icon}</span>
+                            <div style="text-align: right;">
+                                <div style="font-size: 11px; color: #6b7280; font-weight: 600; text-transform: uppercase;">${q.name}</div>
+                                <div style="font-size: 12px; color: #9ca3af;">${q.label}</div>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <div style="font-size: 11px; color: #6b7280; margin-bottom: 2px;">Sječa</div>
+                            <div style="font-size: 18px; font-weight: 700; color: #059669;">${quarterSjeca.toFixed(0)} m³</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: #6b7280; margin-bottom: 2px;">Otprema</div>
+                            <div style="font-size: 18px; font-weight: 700; color: #2563eb;">${quarterOtprema.toFixed(0)} m³</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('seasonal-analysis').innerHTML = html;
+        }
+
+        // Render Performance Timeline (Cumulative Realizacija)
+        function renderPerformanceTimeline(odjeliStats, monthlyStats) {
+            console.log('renderPerformanceTimeline called');
+
+            // Calculate total projekat
+            const totalProjekat = Object.values(odjeliStats).reduce((sum, stats) => sum + (stats.projekat || 0), 0);
+
+            if (totalProjekat === 0) {
+                document.getElementById('performance-timeline-chart').innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="#6b7280">Nema podataka za projekat</text>';
+                return;
+            }
+
+            // Calculate cumulative realizacija by month
+            const cumulativeData = [];
+            let cumulativeSjeca = 0;
+
+            monthlyStats.forEach((m, index) => {
+                cumulativeSjeca += (m.sječa || 0);
+                const percentage = (cumulativeSjeca / totalProjekat) * 100;
+                cumulativeData.push({
+                    mjesec: m.mjesec,
+                    percentage: percentage
+                });
+            });
+
+            console.log('Cumulative realizacija:', cumulativeData);
+
+            // SVG Chart
+            const svg = document.getElementById('performance-timeline-chart');
+            svg.innerHTML = ''; // Clear
+
+            const width = 900;
+            const height = 300;
+            const padding = { top: 30, right: 40, bottom: 50, left: 60 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+            // Y-axis scale (0-120% to show overshoot)
+            const maxY = Math.max(120, Math.max(...cumulativeData.map(d => d.percentage)));
+            const yScale = chartHeight / maxY;
+
+            // X-axis step
+            const xStep = chartWidth / (cumulativeData.length - 1);
+
+            // Draw grid lines
+            for (let i = 0; i <= 5; i++) {
+                const value = (maxY / 5) * i;
+                const y = padding.top + chartHeight - value * yScale;
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', padding.left);
+                line.setAttribute('y1', y);
+                line.setAttribute('x2', padding.left + chartWidth);
+                line.setAttribute('y2', y);
+                line.setAttribute('stroke', '#e5e7eb');
+                line.setAttribute('stroke-width', '1');
+                svg.appendChild(line);
+
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('x', padding.left - 10);
+                label.setAttribute('y', y + 5);
+                label.setAttribute('text-anchor', 'end');
+                label.setAttribute('font-size', '12');
+                label.setAttribute('fill', '#6b7280');
+                label.textContent = value.toFixed(0) + '%';
+                svg.appendChild(label);
+            }
+
+            // Draw 100% target line (red dashed)
+            const targetY = padding.top + chartHeight - 100 * yScale;
+            const targetLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            targetLine.setAttribute('x1', padding.left);
+            targetLine.setAttribute('y1', targetY);
+            targetLine.setAttribute('x2', padding.left + chartWidth);
+            targetLine.setAttribute('y2', targetY);
+            targetLine.setAttribute('stroke', '#dc2626');
+            targetLine.setAttribute('stroke-width', '2');
+            targetLine.setAttribute('stroke-dasharray', '5,5');
+            svg.appendChild(targetLine);
+
+            // Draw cumulative line
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            let pathData = '';
+
+            cumulativeData.forEach((d, i) => {
+                const x = padding.left + i * xStep;
+                const y = padding.top + chartHeight - d.percentage * yScale;
+
+                if (i === 0) {
+                    pathData += `M ${x} ${y}`;
+                } else {
+                    pathData += ` L ${x} ${y}`;
+                }
+            });
+
+            path.setAttribute('d', pathData);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke', '#059669');
+            path.setAttribute('stroke-width', '3');
+            path.setAttribute('stroke-linecap', 'round');
+            svg.appendChild(path);
+
+            // Draw data points
+            cumulativeData.forEach((d, i) => {
+                const x = padding.left + i * xStep;
+                const y = padding.top + chartHeight - d.percentage * yScale;
+
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', x);
+                circle.setAttribute('cy', y);
+                circle.setAttribute('r', '4');
+                circle.setAttribute('fill', d.percentage >= 100 ? '#10b981' : '#059669');
+                circle.setAttribute('stroke', 'white');
+                circle.setAttribute('stroke-width', '2');
+                svg.appendChild(circle);
+
+                // Month label
+                if (i % 2 === 0) { // Show every other month
+                    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    label.setAttribute('x', x);
+                    label.setAttribute('y', padding.top + chartHeight + 20);
+                    label.setAttribute('text-anchor', 'middle');
+                    label.setAttribute('font-size', '11');
+                    label.setAttribute('fill', '#6b7280');
+                    label.textContent = d.mjesec;
+                    svg.appendChild(label);
+                }
+            });
+        }
+
+        // Render Mjesečni Trend Kupaca
+        async function renderKupciMjesecniTrend() {
+            console.log('renderKupciMjesecniTrend called - fetching data...');
+
+            try {
+                const year = new Date().getFullYear();
+                const kupciUrl = `${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const kupciData = await fetchWithCache(kupciUrl, 'cache_kupci_' + year);
+
+                console.log('Kupci mjesecni data:', kupciData);
+
+                if (!kupciData || !kupciData.mjesecni) {
+                    document.getElementById('kupci-mjesecni-tbody').innerHTML = '<tr><td colspan="14" style="text-align: center; color: #6b7280;">Nema podataka</td></tr>';
+                    return;
+                }
+
+                // Group mjesecni by kupac
+                const kupciMap = {};
+                kupciData.mjesecni.forEach(entry => {
+                    const kupac = entry.kupac || 'Nepoznat';
+                    const mjesec = entry.mjesec; // 0-11
+                    const ukupno = entry.ukupno || 0;
+
+                    if (!kupciMap[kupac]) {
+                        kupciMap[kupac] = new Array(12).fill(0);
+                    }
+                    kupciMap[kupac][mjesec] = ukupno;
+                });
+
+                // Calculate total per kupac and sort
+                const kupciArray = Object.entries(kupciMap).map(([kupac, mjeseci]) => {
+                    const total = mjeseci.reduce((sum, val) => sum + val, 0);
+                    return { kupac, mjeseci, total };
+                }).sort((a, b) => b.total - a.total).slice(0, 15); // Top 15 kupaca
+
+                console.log('Top 15 kupaca mjesečno:', kupciArray);
+
+                const html = kupciArray.map(k => {
+                    return `
+                        <tr>
+                            <td style="font-weight: 500;">${k.kupac}</td>
+                            ${k.mjeseci.map(val => {
+                                const display = val > 0 ? val.toFixed(0) : '-';
+                                const color = val > 1000 ? 'color: #059669; font-weight: 600;' : '';
+                                return `<td class="right" style="${color}">${display}</td>`;
+                            }).join('')}
+                            <td class="right" style="font-weight: 700; color: #1f2937;">${k.total.toFixed(0)}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                document.getElementById('kupci-mjesecni-tbody').innerHTML = html || '<tr><td colspan="14" style="text-align: center; color: #6b7280;">Nema podataka</td></tr>';
+            } catch (error) {
+                console.error('Error loading kupci mjesecni trend:', error);
+                document.getElementById('kupci-mjesecni-tbody').innerHTML = '<tr><td colspan="14" style="text-align: center; color: #dc2626;">Greška pri učitavanju</td></tr>';
+            }
         }
 
         // Filter analytics table by search
