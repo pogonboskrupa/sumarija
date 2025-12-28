@@ -1451,6 +1451,180 @@
                 max-height: 250px;
             }
         }
+
+        /* ============================================
+           OPERATIVA & ANALYTICS STYLES
+           ============================================ */
+
+        /* Analytics Grid - 2 column responsive layout */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        /* Ranking Items for Top 5 Odjela */
+        .ranking-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .ranking-item:last-child { border-bottom: none; }
+
+        .ranking-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #d1d5db;
+            min-width: 40px;
+        }
+        .ranking-number.top { color: #fbbf24; } /* Gold for top 3 */
+
+        .ranking-info { flex: 1; }
+        .ranking-name {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 15px;
+        }
+        .ranking-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #059669;
+        }
+
+        /* KPI Cards Grid - 4 columns responsive */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        /* KPI Card Small - Gradient backgrounds */
+        .kpi-card-small {
+            background: linear-gradient(135deg, #f0fdf4 0%, #d1fae5 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #059669;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        .kpi-card-small:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+        .kpi-card-small.blue {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-left-color: #2563eb;
+        }
+        .kpi-card-small.yellow {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            border-left-color: #f59e0b;
+        }
+        .kpi-card-small.purple {
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+            border-left-color: #9333ea;
+        }
+
+        .kpi-label-small {
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            letter-spacing: 0.05em;
+        }
+        .kpi-value-small {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1f2937;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Professional Monthly Table */
+        .professional-monthly-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 15px;
+        }
+        .professional-monthly-table thead th {
+            background: linear-gradient(to bottom, #047857 0%, #059669 100%);
+            color: white;
+            padding: 16px 14px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 3px solid #10b981;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .professional-monthly-table tbody tr {
+            transition: all 0.2s;
+        }
+        .professional-monthly-table tbody tr:nth-child(even) {
+            background: #f9fafb;
+        }
+        .professional-monthly-table tbody tr:hover {
+            background: #f0fdf4;
+            box-shadow: 0 2px 8px rgba(5, 150, 105, 0.1);
+        }
+        .professional-monthly-table tbody td {
+            padding: 16px 14px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .professional-monthly-table tbody td:first-child {
+            font-weight: 700;
+            color: #1f2937;
+            font-size: 15px;
+        }
+        .professional-monthly-table tbody td.number {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .professional-monthly-table .month-total {
+            background: linear-gradient(to bottom, #d1fae5 0%, #a7f3d0 100%);
+            font-weight: 700;
+            border-top: 2px solid #10b981;
+        }
+        .professional-monthly-table .month-total td {
+            font-size: 17px;
+            color: #047857;
+        }
+
+        /* Dark mode for OPERATIVA */
+        body.dark-mode .kpi-card-small {
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+            border-left-color: #10b981;
+        }
+        body.dark-mode .kpi-card-small.blue {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            border-left-color: #3b82f6;
+        }
+        body.dark-mode .kpi-card-small.yellow {
+            background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
+            border-left-color: #f59e0b;
+        }
+        body.dark-mode .kpi-value-small,
+        body.dark-mode .ranking-name,
+        body.dark-mode .ranking-value {
+            color: #f3f4f6;
+        }
+        body.dark-mode .professional-monthly-table thead th {
+            background: linear-gradient(to bottom, #064e3b 0%, #065f46 100%);
+        }
+        body.dark-mode .professional-monthly-table tbody tr:nth-child(even) {
+            background: #1f2937;
+        }
+        body.dark-mode .professional-monthly-table tbody tr:hover {
+            background: #065f46;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -1460,10 +1634,18 @@
 
     <div id="login-screen" class="login-container">
         <div class="login-box">
-            <h1>🌲</h1>
+            <!-- Logo Container -->
+            <div style="text-align: center; margin-bottom: 24px;">
+                <div style="display: inline-flex; align-items: center; justify-content: center; width: 120px; height: 120px; background: linear-gradient(135deg, #047857 0%, #059669 100%); border-radius: 50%; margin-bottom: 16px; box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3);">
+                    <span style="font-size: 60px;">🌲</span>
+                </div>
+                <h3 style="font-size: 16px; font-weight: 700; color: #047857; margin-bottom: 4px; letter-spacing: 0.5px;">ŠPD "UNSKO-SANSKE ŠUME"</h3>
+                <h4 style="font-size: 14px; font-weight: 600; color: #6b7280; margin-bottom: 8px;">BOSANSKA KRUPA</h4>
+            </div>
+
             <h2>Šumarija</h2>
             <p>Evidencija sječe i otpreme</p>
-            
+
             <form id="login-form">
                 <div id="error-msg" class="error hidden"></div>
                 
@@ -1539,10 +1721,10 @@
                     <input type="text" class="search-input" id="dashboard-search" placeholder="🔍 Pretraži po mjesecu..." onkeyup="filterDashboardTable()">
                     <button class="btn btn-primary" onclick="exportTableToCSV('dashboard')">📥 Export CSV</button>
                 </div>
-                <table class="monthly-table" id="dashboard-table">
+                <table class="professional-monthly-table" id="dashboard-table">
                     <thead>
                         <tr>
-                            <th onclick="sortTable(0, 'dashboard-table')">Mjesec ⇅</th>
+                            <th onclick="sortTable(0, 'dashboard-table')" style="text-align: left;">Mjesec ⇅</th>
                             <th class="right" onclick="sortTable(1, 'dashboard-table')">Ukupna Sječa (m³) ⇅</th>
                             <th class="right" onclick="sortTable(2, 'dashboard-table')">Ukupna Otprema (m³) ⇅</th>
                             <th class="right" onclick="sortTable(3, 'dashboard-table')">Zaliha ⇅</th>
@@ -2404,6 +2586,128 @@
             </div>
         </div>
 
+        <!-- OPERATIVA CONTENT - Analytics Dashboard -->
+        <div id="operativa-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>📊 Operativa & Analiza</h1>
+                    <p>Napredna analitika i KPI metrike za donošenje odluka</p>
+                </div>
+                <div class="page-header-right">
+                    <span class="badge success">Godišnji pregled</span>
+                </div>
+            </div>
+
+            <!-- KPI Metrics Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card-small">
+                    <div class="kpi-label-small">Sječa/Otprema Ratio</div>
+                    <div class="kpi-value-small" id="kpi-ratio">0.00</div>
+                </div>
+                <div class="kpi-card-small blue">
+                    <div class="kpi-label-small">Procenat Ostvarenja</div>
+                    <div class="kpi-value-small" id="kpi-procenat">0%</div>
+                </div>
+                <div class="kpi-card-small yellow">
+                    <div class="kpi-label-small">Ukupno Odjela</div>
+                    <div class="kpi-value-small" id="kpi-odjela">0</div>
+                </div>
+                <div class="kpi-card-small purple">
+                    <div class="kpi-label-small">Prosječna Sječa</div>
+                    <div class="kpi-value-small" id="kpi-avg-sjeca">0 m³</div>
+                </div>
+            </div>
+
+            <!-- Analytics Grid - Top 5 & Projekat Progress -->
+            <div class="analytics-grid">
+                <!-- Top 5 Odjela by Sječa -->
+                <div class="section">
+                    <h2>🏆 Top 5 Odjela - Sječa</h2>
+                    <p>Najboljih pet odjela po ukupnoj sječi</p>
+                    <div id="top-odjeli-list">
+                        <div class="ranking-item">
+                            <div class="ranking-number">1</div>
+                            <div class="ranking-info">
+                                <div class="ranking-name">Učitavanje...</div>
+                                <div class="ranking-value">0.00 m³</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Projekat vs Ostvareno Progress Bars -->
+                <div class="section">
+                    <h2>🎯 Projekat vs Ostvareno</h2>
+                    <p>Procenat realizacije plana po odjelima</p>
+                    <div id="projekat-ostvareno-list">
+                        <div style="margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span style="font-weight: 600; color: #1f2937;">Učitavanje...</span>
+                                <span style="font-weight: 700; color: #059669;">0.0%</span>
+                            </div>
+                            <div class="progress-bar-container" style="height: 12px;">
+                                <div class="progress-bar-fill" style="width: 0%; background: #e5e7eb;"></div>
+                            </div>
+                            <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">0 / 0 m³</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Trend Analysis -->
+            <div class="section">
+                <h2>📈 Monthly Trend - Analiza</h2>
+                <p>Mjesečna analiza trendova sječe i otpreme</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; margin-top: 20px;">
+                    <div>
+                        <div style="font-size: 13px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">AVG SJEČA PO MJESECU</div>
+                        <div style="font-size: 28px; font-weight: 700; color: #059669;" id="avg-monthly-sjeca">0 m³</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 13px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">AVG OTPREMA PO MJESECU</div>
+                        <div style="font-size: 28px; font-weight: 700; color: #2563eb;" id="avg-monthly-otprema">0 m³</div>
+                    </div>
+                </div>
+
+                <!-- Chart Legend -->
+                <div class="line-legend">
+                    <div class="line-legend-item">
+                        <div class="line-legend-color green"></div>
+                        <span>Sječa</span>
+                    </div>
+                    <div class="line-legend-item">
+                        <div class="line-legend-color blue"></div>
+                        <span>Otprema</span>
+                    </div>
+                </div>
+
+                <svg id="analytics-chart" class="chart-svg"></svg>
+            </div>
+
+            <!-- Detaljni Pregled - All Odjeli Table -->
+            <div class="section">
+                <h2>📊 Detaljni Pregled - Svi Odjeli</h2>
+                <p>Kompletna analiza svih odjela sa projekat realizacijom</p>
+                <div class="controls-bar" style="margin-top: 20px;">
+                    <input type="text" class="search-input" id="analytics-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterAnalyticsTable()">
+                    <button class="btn btn-primary" onclick="exportTableToCSV('analytics-odjeli')">📥 Export CSV</button>
+                </div>
+                <table class="monthly-table" id="analytics-odjeli-main-table">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable(0, 'analytics-odjeli-main-table')">Odjel ⇅</th>
+                            <th class="right" onclick="sortTable(1, 'analytics-odjeli-main-table')">Sječa (m³) ⇅</th>
+                            <th class="right" onclick="sortTable(2, 'analytics-odjeli-main-table')">Otprema (m³) ⇅</th>
+                            <th class="right" onclick="sortTable(3, 'analytics-odjeli-main-table')">Projekat ⇅</th>
+                            <th class="right" onclick="sortTable(4, 'analytics-odjeli-main-table')">% Ostvareno ⇅</th>
+                            <th class="right" onclick="sortTable(5, 'analytics-odjeli-main-table')">Razlika ⇅</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analytics-odjeli-table"></tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- IZVJEŠTAJI CONTENT -->
         <div id="izvjestaji-content" class="container hidden">
             <div class="page-header">
@@ -3030,11 +3334,20 @@
                     <button class="tab" onclick="switchTab('add-otprema')">➕ Dodaj otpremu</button>
                     <button class="tab" onclick="switchTab('my-otpreme')">📝 Moje otpreme</button>
                 `;
+            } else if (userType === 'OPERATIVA') {
+                // OPERATIVA korisnik vidi samo analytics dashboards
+                tabsMenu.innerHTML = `
+                    <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
+                    <button class="tab" onclick="switchTab('operativa')">📊 Operativa & Analiza</button>
+                    <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Mjesečni pregled</button>
+                    <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
+                `;
             } else {
                 // Admin ili drugi korisnici vide sve tab-ove
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
-                    <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📊 Sječa/otprema po mjesecima</button>
+                    <button class="tab" onclick="switchTab('operativa')">📊 Operativa & Analiza</button>
+                    <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Sječa/otprema po mjesecima</button>
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz sječe</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz otpreme</button>
                     <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
@@ -3109,10 +3422,13 @@
             document.getElementById('pending-unosi-content').classList.add('hidden');
             document.getElementById('mjesecni-sortimenti-content').classList.add('hidden');
             document.getElementById('izvjestaji-content').classList.add('hidden');
+            document.getElementById('operativa-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
                 loadDashboard();
+            } else if (tab === 'operativa') {
+                loadOperativa();
             } else if (tab === 'primaci') {
                 loadPrimaci();
             } else if (tab === 'otpremaci') {
@@ -3354,18 +3670,18 @@
                     const progressPercent = ((m.sjeca / m.dinamika) * 100).toFixed(1);
                     return `
                         <tr>
-                            <td style="font-weight: 500;">${m.mjesec}</td>
-                            <td class="right green">${m.sjeca.toFixed(2)}</td>
-                            <td class="right blue">${m.otprema.toFixed(2)}</td>
-                            <td class="right">${m.stanje.toFixed(2)}</td>
-                            <td class="right">
+                            <td>${m.mjesec}</td>
+                            <td class="number green">${m.sjeca.toFixed(2)}</td>
+                            <td class="number blue">${m.otprema.toFixed(2)}</td>
+                            <td class="number">${m.stanje.toFixed(2)}</td>
+                            <td class="number">
                                 ${m.dinamika.toFixed(2)}
                                 <div class="table-progress-bar">
                                     <div class="table-progress-fill" style="width: ${Math.min(progressPercent, 100)}%"></div>
                                 </div>
                             </td>
-                            <td class="right ${razlikaSjeca >= 0 ? 'green' : 'red'}">${(razlikaSjeca >= 0 ? '+' : '') + razlikaSjeca.toFixed(2)}</td>
-                            <td class="right ${razlikaOtprema >= 0 ? 'green' : 'red'}">${(razlikaOtprema >= 0 ? '+' : '') + razlikaOtprema.toFixed(2)}</td>
+                            <td class="number ${razlikaSjeca >= 0 ? 'green' : 'red'}">${(razlikaSjeca >= 0 ? '+' : '') + razlikaSjeca.toFixed(2)}</td>
+                            <td class="number ${razlikaOtprema >= 0 ? 'green' : 'red'}">${(razlikaOtprema >= 0 ? '+' : '') + razlikaOtprema.toFixed(2)}</td>
                         </tr>
                     `;
                 }).join('');
@@ -7487,6 +7803,331 @@
                 allDropdowns.forEach(d => d.classList.remove('show'));
             }
         });
+
+        // ============================================
+        // OPERATIVA & ANALYTICS FUNCTIONS
+        // ============================================
+
+        // Load OPERATIVA screen and populate analytics
+        function loadOperativa() {
+            console.log('Loading Operativa screen...');
+            document.getElementById('operativa-content').classList.remove('hidden');
+            document.getElementById('loading-screen').classList.add('hidden');
+
+            // Reload data from cache or fetch if needed
+            if (globalData && globalData.monthlyStats && globalData.odjeliStats) {
+                loadOperativaData(globalData);
+            } else {
+                // Fetch fresh data
+                loadStats(selectedYear).then(data => {
+                    loadOperativaData(data);
+                });
+            }
+        }
+
+        // Main data processing for Operativa screen
+        function loadOperativaData(data) {
+            console.log('Processing Operativa data:', data);
+
+            // Calculate KPIs
+            const totalPrimka = data.totalPrimka || 0;
+            const totalOtprema = data.totalOtprema || 0;
+            const ratio = totalOtprema > 0 ? (totalPrimka / totalOtprema).toFixed(2) : '0.00';
+
+            // Count odjeli
+            const odjeliCount = Object.keys(data.odjeliStats || {}).length;
+
+            // Calculate average projekat completion
+            let totalProjekat = 0;
+            let totalOstvareno = 0;
+            Object.values(data.odjeliStats || {}).forEach(stats => {
+                totalProjekat += stats.projekat || 0;
+                totalOstvareno += stats.ukupnoPosjeklo || stats.sječa || 0;
+            });
+            const procenatOstvarenja = totalProjekat > 0
+                ? ((totalOstvareno / totalProjekat) * 100).toFixed(0)
+                : '0';
+
+            // Calculate monthly averages
+            const monthlyStats = data.monthlyStats || [];
+            const avgMonthlySjeca = monthlyStats.length > 0
+                ? (monthlyStats.reduce((sum, m) => sum + (m.sječa || 0), 0) / monthlyStats.length).toFixed(2)
+                : '0.00';
+            const avgMonthlyOtprema = monthlyStats.length > 0
+                ? (monthlyStats.reduce((sum, m) => sum + (m.otprema || 0), 0) / monthlyStats.length).toFixed(2)
+                : '0.00';
+
+            // Update KPI cards
+            document.getElementById('kpi-ratio').textContent = ratio;
+            document.getElementById('kpi-procenat').textContent = procenatOstvarenja + '%';
+            document.getElementById('kpi-odjela').textContent = odjeliCount;
+            document.getElementById('kpi-avg-sjeca').textContent = odjeliCount > 0
+                ? (totalPrimka / odjeliCount).toFixed(0) + ' m³'
+                : '0 m³';
+
+            // Update monthly averages
+            document.getElementById('avg-monthly-sjeca').textContent = avgMonthlySjeca + ' m³';
+            document.getElementById('avg-monthly-otprema').textContent = avgMonthlyOtprema + ' m³';
+
+            // Render components
+            renderTopOdjeli(data.odjeliStats || {});
+            renderProjekatOstvareno(data.odjeliStats || {});
+            renderAnalyticsChart(monthlyStats);
+            renderAnalyticsOdjeliTable(data.odjeliStats || {});
+        }
+
+        // Render Top 5 Odjela by Sječa
+        function renderTopOdjeli(odjeliStats) {
+            const sorted = Object.entries(odjeliStats)
+                .sort((a, b) => (b[1].sječa || 0) - (a[1].sječa || 0))
+                .slice(0, 5);
+
+            const html = sorted.length > 0
+                ? sorted.map((entry, index) => {
+                    const [odjel, stats] = entry;
+                    const rankClass = index < 3 ? 'top' : '';
+                    return `
+                        <div class="ranking-item">
+                            <div class="ranking-number ${rankClass}">${index + 1}</div>
+                            <div class="ranking-info">
+                                <div class="ranking-name">${odjel}</div>
+                                <div class="ranking-value">${(stats.sječa || 0).toFixed(2)} m³</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')
+                : '<p style="color: #6b7280; text-align: center; padding: 20px;">Nema podataka</p>';
+
+            document.getElementById('top-odjeli-list').innerHTML = html;
+        }
+
+        // Render Projekat vs Ostvareno progress bars
+        function renderProjekatOstvareno(odjeliStats) {
+            const sorted = Object.entries(odjeliStats)
+                .filter(([_, stats]) => (stats.projekat || 0) > 0)
+                .map(([odjel, stats]) => ({
+                    odjel,
+                    projekat: stats.projekat || 0,
+                    ostvareno: stats.ukupnoPosjeklo || stats.sječa || 0,
+                    procenat: (stats.projekat || 0) > 0
+                        ? (((stats.ukupnoPosjeklo || stats.sječa || 0) / stats.projekat) * 100)
+                        : 0
+                }))
+                .sort((a, b) => b.procenat - a.procenat)
+                .slice(0, 5);
+
+            const html = sorted.length > 0
+                ? sorted.map(item => {
+                    const barWidth = Math.min(item.procenat, 100);
+                    const colorClass = item.procenat >= 90 ? 'green'
+                                     : item.procenat >= 70 ? 'blue'
+                                     : 'red';
+                    const barColor = item.procenat >= 90 ? '#059669'
+                                   : item.procenat >= 70 ? '#2563eb'
+                                   : '#dc2626';
+
+                    return `
+                        <div style="margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span style="font-weight: 600; color: #1f2937;">${item.odjel}</span>
+                                <span style="font-weight: 700; color: #059669;">${item.procenat.toFixed(1)}%</span>
+                            </div>
+                            <div class="progress-bar-container" style="height: 12px;">
+                                <div class="progress-bar-fill ${colorClass}" style="width: ${barWidth}%; background: ${barColor};"></div>
+                            </div>
+                            <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">
+                                ${item.ostvareno.toFixed(0)} / ${item.projekat.toFixed(0)} m³
+                            </div>
+                        </div>
+                    `;
+                }).join('')
+                : '<p style="color: #6b7280; text-align: center; padding: 20px;">Nema podataka o projektu</p>';
+
+            document.getElementById('projekat-ostvareno-list').innerHTML = html;
+        }
+
+        // Render SVG Analytics Chart (Monthly Trend)
+        function renderAnalyticsChart(monthlyStats) {
+            const svg = document.getElementById('analytics-chart');
+            if (!svg) return;
+
+            const padding = { top: 20, right: 40, bottom: 40, left: 60 };
+            const width = svg.clientWidth || 1000;
+            const height = 300;
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+
+            svg.innerHTML = '';
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+            // Empty state
+            if (!monthlyStats || monthlyStats.length === 0) {
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', width / 2);
+                text.setAttribute('y', height / 2);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('font-size', '14');
+                text.setAttribute('fill', '#6b7280');
+                text.textContent = 'Nema podataka za prikaz';
+                svg.appendChild(text);
+                return;
+            }
+
+            // Calculate scales
+            const maxValue = Math.max(
+                ...monthlyStats.map(m => Math.max(m.sječa || 0, m.otprema || 0)),
+                1
+            );
+            const yScale = chartHeight / (maxValue * 1.1);
+            const xStep = chartWidth / (monthlyStats.length - 1);
+
+            // Smooth path function
+            function createSmoothPath(data, getValue) {
+                const points = data.map((d, i) => ({
+                    x: padding.left + i * xStep,
+                    y: padding.top + chartHeight - getValue(d) * yScale
+                }));
+
+                if (points.length === 0) return '';
+
+                let path = `M ${points[0].x} ${points[0].y}`;
+
+                for (let i = 0; i < points.length - 1; i++) {
+                    const current = points[i];
+                    const next = points[i + 1];
+                    const controlX = (current.x + next.x) / 2;
+                    path += ` Q ${controlX} ${current.y}, ${controlX} ${(current.y + next.y) / 2}`;
+                    path += ` Q ${controlX} ${next.y}, ${next.x} ${next.y}`;
+                }
+
+                return path;
+            }
+
+            // Draw grid lines
+            const gridLines = 5;
+            for (let i = 0; i <= gridLines; i++) {
+                const y = padding.top + (chartHeight / gridLines) * i;
+
+                // Grid line
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', padding.left);
+                line.setAttribute('y1', y);
+                line.setAttribute('x2', width - padding.right);
+                line.setAttribute('y2', y);
+                line.setAttribute('stroke', '#e5e7eb');
+                line.setAttribute('stroke-width', '1');
+                svg.appendChild(line);
+
+                // Y-axis label
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                const value = (maxValue * 1.1) * (1 - i / gridLines);
+                label.setAttribute('x', padding.left - 10);
+                label.setAttribute('y', y + 5);
+                label.setAttribute('text-anchor', 'end');
+                label.setAttribute('font-size', '12');
+                label.setAttribute('fill', '#6b7280');
+                label.textContent = value.toFixed(0);
+                svg.appendChild(label);
+            }
+
+            // Draw Sječa line (green)
+            const sjecaPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            sjecaPath.setAttribute('d', createSmoothPath(monthlyStats, m => m.sječa || 0));
+            sjecaPath.setAttribute('fill', 'none');
+            sjecaPath.setAttribute('stroke', '#059669');
+            sjecaPath.setAttribute('stroke-width', '3');
+            sjecaPath.setAttribute('stroke-linecap', 'round');
+            svg.appendChild(sjecaPath);
+
+            // Draw Otprema line (blue)
+            const otpremaPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            otpremaPath.setAttribute('d', createSmoothPath(monthlyStats, m => m.otprema || 0));
+            otpremaPath.setAttribute('fill', 'none');
+            otpremaPath.setAttribute('stroke', '#2563eb');
+            otpremaPath.setAttribute('stroke-width', '3');
+            otpremaPath.setAttribute('stroke-linecap', 'round');
+            svg.appendChild(otpremaPath);
+
+            // Draw data points
+            monthlyStats.forEach((m, i) => {
+                const x = padding.left + i * xStep;
+
+                // Sječa point
+                const sjecaY = padding.top + chartHeight - (m.sječa || 0) * yScale;
+                const sjecaCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                sjecaCircle.setAttribute('cx', x);
+                sjecaCircle.setAttribute('cy', sjecaY);
+                sjecaCircle.setAttribute('r', '4');
+                sjecaCircle.setAttribute('fill', '#059669');
+                sjecaCircle.setAttribute('stroke', 'white');
+                sjecaCircle.setAttribute('stroke-width', '2');
+                svg.appendChild(sjecaCircle);
+
+                // Otprema point
+                const otpremaY = padding.top + chartHeight - (m.otprema || 0) * yScale;
+                const otpremaCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                otpremaCircle.setAttribute('cx', x);
+                otpremaCircle.setAttribute('cy', otpremaY);
+                otpremaCircle.setAttribute('r', '4');
+                otpremaCircle.setAttribute('fill', '#2563eb');
+                otpremaCircle.setAttribute('stroke', 'white');
+                otpremaCircle.setAttribute('stroke-width', '2');
+                svg.appendChild(otpremaCircle);
+
+                // Month label
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('x', x);
+                label.setAttribute('y', height - padding.bottom + 20);
+                label.setAttribute('text-anchor', 'middle');
+                label.setAttribute('font-size', '11');
+                label.setAttribute('fill', '#6b7280');
+                label.textContent = (m.mjesec || '').substring(0, 3);
+                svg.appendChild(label);
+            });
+        }
+
+        // Render detailed analytics odjeli table
+        function renderAnalyticsOdjeliTable(odjeliStats) {
+            const html = Object.entries(odjeliStats).map(([odjel, stats]) => {
+                const projekat = stats.projekat || 0;
+                const ostvareno = stats.ukupnoPosjeklo || stats.sječa || 0;
+                const procenat = projekat > 0 ? ((ostvareno / projekat) * 100).toFixed(1) : '0.0';
+                const diff = (stats.sječa || 0) - (stats.otprema || 0);
+
+                const procenatClass = procenat >= 90 ? 'green' : procenat >= 70 ? 'blue' : 'red';
+                const diffClass = diff >= 0 ? 'green' : 'red';
+
+                return `
+                    <tr>
+                        <td style="font-weight: 500;">${odjel}</td>
+                        <td class="right green">${(stats.sječa || 0).toFixed(2)}</td>
+                        <td class="right blue">${(stats.otprema || 0).toFixed(2)}</td>
+                        <td class="right">${projekat.toFixed(2)}</td>
+                        <td class="right ${procenatClass}">${procenat}%</td>
+                        <td class="right ${diffClass}">${(diff >= 0 ? '+' : '') + diff.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('analytics-odjeli-table').innerHTML = html || '<tr><td colspan="6" style="text-align: center; color: #6b7280;">Nema podataka</td></tr>';
+        }
+
+        // Filter analytics table by search
+        function filterAnalyticsTable() {
+            const searchValue = document.getElementById('analytics-search').value.toLowerCase();
+            const table = document.getElementById('analytics-odjeli-main-table');
+            const rows = table.querySelectorAll('tbody tr');
+
+            rows.forEach(row => {
+                const odjelName = row.cells[0].textContent.toLowerCase();
+                if (odjelName.includes(searchValue)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
     </script>
 </body>
 </html>
