@@ -1309,6 +1309,7 @@ function handleOdjeli(year, username, password) {
           radiliste: '',      // W2 iz PRIMKA
           izvođač: '',        // W3 iz PRIMKA
           datumZadnjeSjece: '', // Zadnji datum unosa u PRIMKA
+          projekat: 0,        // U11 iz PRIMKA - projektovana masa
           realizacija: 0,     // (U12/U11) * 100 iz PRIMKA
           zadnjiDatumObj: null  // Za sortiranje
         };
@@ -1324,6 +1325,7 @@ function handleOdjeli(year, username, password) {
           // Čitaj U11 (projekat) i U12 (sječa)
           // U = kolona 21 (0-indexed: 20)
           const projekat = parseFloat(primkaSheet.getRange('U11').getValue()) || 0;
+          odjelData.projekat = projekat; // Dodaj projekat u objekat
           odjelData.sjeca = parseFloat(primkaSheet.getRange('U12').getValue()) || 0;
 
           // Izračunaj realizaciju %
@@ -1406,6 +1408,7 @@ function handleOdjeli(year, username, password) {
       radiliste: o.radiliste,
       izvođač: o.izvođač,
       datumZadnjeSjece: o.datumZadnjeSjece,
+      projekat: o.projekat,  // Dodaj projekat iz U11 ćelije PRIMKA sheet-a
       realizacija: o.realizacija
     }));
 
