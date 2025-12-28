@@ -1625,6 +1625,134 @@
         body.dark-mode .professional-monthly-table tbody tr:hover {
             background: #065f46;
         }
+
+        /* Performance Alerts */
+        .alert-banner {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            border-left: 4px solid;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+        }
+        .alert-banner.danger {
+            background: #fee2e2;
+            border-left-color: #dc2626;
+            color: #991b1b;
+        }
+        .alert-banner.warning {
+            background: #fef3c7;
+            border-left-color: #f59e0b;
+            color: #92400e;
+        }
+        .alert-banner.success {
+            background: #d1fae5;
+            border-left-color: #059669;
+            color: #065f46;
+        }
+        .alert-icon {
+            font-size: 24px;
+        }
+        .alert-content {
+            flex: 1;
+        }
+        .alert-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .alert-message {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* Timeline Item */
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+        .timeline-date {
+            min-width: 120px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b7280;
+        }
+        .timeline-odjel {
+            flex: 1;
+            font-size: 15px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .timeline-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .timeline-status.fresh {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .timeline-status.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .timeline-status.old {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Sortimenti Bar */
+        .sortimenti-bar-container {
+            margin-bottom: 20px;
+        }
+        .sortimenti-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .sortimenti-label-name {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .sortimenti-label-value {
+            font-weight: 700;
+            color: #059669;
+        }
+        .sortimenti-bar {
+            height: 40px;
+            background: #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+        }
+        .sortimenti-bar-cetinari {
+            background: linear-gradient(90deg, #059669, #10b981);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .sortimenti-bar-liscari {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -2684,6 +2812,37 @@
                 <svg id="analytics-chart" class="chart-svg"></svg>
             </div>
 
+            <!-- Performance Alerts Banner -->
+            <div id="performance-alerts-banner" style="display: none;"></div>
+
+            <!-- Izvođači Performance -->
+            <div class="section">
+                <h2>👷 Top Izvođači Radova</h2>
+                <p>Ranking izvođača po ukupnom volume-u sječe</p>
+                <div id="izvodjaci-performance-list">
+                    <p style="color: #6b7280; text-align: center; padding: 20px;">Učitavanje...</p>
+                </div>
+            </div>
+
+            <!-- Sortimenti Analysis -->
+            <div class="analytics-grid">
+                <div class="section">
+                    <h2>🪵 Četinari vs Lišćari</h2>
+                    <p>Breakdown po vrstama drveta</p>
+                    <div id="sortimenti-breakdown">
+                        <p style="color: #6b7280; text-align: center; padding: 20px;">Učitavanje...</p>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>📅 Timeline - Zadnji Unosi</h2>
+                    <p>Odjeli sortirani po datumu zadnjeg unosa</p>
+                    <div id="timeline-unosi-list">
+                        <p style="color: #6b7280; text-align: center; padding: 20px;">Učitavanje...</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Detaljni Pregled - All Odjeli Table -->
             <div class="section">
                 <h2>📊 Detaljni Pregled - Svi Odjeli</h2>
@@ -3343,10 +3502,9 @@
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                 `;
             } else {
-                // Admin ili drugi korisnici vide sve tab-ove
+                // Admin korisnici - bez OPERATIVA tab-a (admin se loguje kao OPERATIVA tip ako želi vidjeti operativa podatke)
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
-                    <button class="tab" onclick="switchTab('operativa')">📊 Operativa & Analiza</button>
                     <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Sječa/otprema po mjesecima</button>
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz sječe</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz otpreme</button>
@@ -7962,6 +8120,12 @@
             renderProjekatOstvareno(data.odjeliStats || {});
             renderAnalyticsChart(monthlyStats);
             renderAnalyticsOdjeliTable(data.odjeliStats || {});
+
+            // Render new features
+            renderPerformanceAlerts(data.odjeliStats || {});
+            renderIzvodjaciPerformance(data.odjeliStats || {});
+            renderSortimentiBreakdown(data.stanjeOdjelaRaw || {});
+            renderTimelineUnosi(data.odjeliStats || {});
         }
 
         // Render Top 5 Odjela by Sječa
@@ -8198,6 +8362,193 @@
             }).join('');
 
             document.getElementById('analytics-odjeli-table').innerHTML = html || '<tr><td colspan="6" style="text-align: center; color: #6b7280;">Nema podataka</td></tr>';
+        }
+
+        // Render Performance Alerts Banner
+        function renderPerformanceAlerts(odjeliStats) {
+            const lowPerformers = [];
+
+            Object.entries(odjeliStats).forEach(([odjel, stats]) => {
+                const projekat = stats.projekat || 0;
+                const ostvareno = stats.sječa || 0;
+                const procenat = projekat > 0 ? ((ostvareno / projekat) * 100) : 0;
+
+                if (projekat > 0 && procenat < 70) {
+                    lowPerformers.push({ odjel, procenat: procenat.toFixed(1) });
+                }
+            });
+
+            const banner = document.getElementById('performance-alerts-banner');
+
+            if (lowPerformers.length > 0) {
+                const alertType = lowPerformers.some(p => parseFloat(p.procenat) < 50) ? 'danger' : 'warning';
+                const icon = alertType === 'danger' ? '🔴' : '⚠️';
+                const title = alertType === 'danger' ? 'KRITIČNO!' : 'UPOZORENJE';
+
+                banner.className = `alert-banner ${alertType}`;
+                banner.style.display = 'flex';
+                banner.innerHTML = `
+                    <span style="font-size: 24px;">${icon}</span>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">${title} - Niska Produktivnost</div>
+                        <div style="font-size: 13px;">
+                            ${lowPerformers.length} odjel${lowPerformers.length > 1 ? 'a' : ''} ispod 70% plana:
+                            ${lowPerformers.map(p => `${p.odjel} (${p.procenat}%)`).join(', ')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+        // Render Top Izvođači Performance
+        function renderIzvodjaciPerformance(odjeliStats) {
+            const izvodjaciMap = {};
+
+            // Group by izvođač
+            Object.entries(odjeliStats).forEach(([odjel, stats]) => {
+                const izvodjac = stats.izvođač || stats.izvodjac || 'Nepoznat';
+                const sjeca = stats.sječa || 0;
+
+                if (!izvodjaciMap[izvodjac]) {
+                    izvodjaciMap[izvodjac] = 0;
+                }
+                izvodjaciMap[izvodjac] += sjeca;
+            });
+
+            // Sort by volume
+            const sorted = Object.entries(izvodjaciMap)
+                .filter(([name]) => name !== 'Nepoznat')
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            const html = sorted.length > 0
+                ? sorted.map(([izvodjac, volume], index) => {
+                    const rankClass = index < 3 ? 'top' : '';
+                    return `
+                        <div class="ranking-item">
+                            <div class="ranking-number ${rankClass}">${index + 1}</div>
+                            <div class="ranking-info">
+                                <div class="ranking-name">${izvodjac}</div>
+                                <div class="ranking-value">${volume.toFixed(2)} m³</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')
+                : '<p style="color: #6b7280; text-align: center; padding: 20px;">Nema podataka o izvođačima</p>';
+
+            document.getElementById('izvodjaci-performance-list').innerHTML = html;
+        }
+
+        // Render Sortimenti Breakdown (Četinari vs Lišćari)
+        function renderSortimentiBreakdown(stanjeOdjelaRaw) {
+            let cetinariTotal = 0;
+            let liscariTotal = 0;
+
+            if (stanjeOdjelaRaw && stanjeOdjelaRaw.data && stanjeOdjelaRaw.sortimentiNazivi) {
+                const sortimentiNazivi = stanjeOdjelaRaw.sortimentiNazivi;
+
+                stanjeOdjelaRaw.data.forEach(odjel => {
+                    if (odjel.redovi && odjel.redovi.sjeca) {
+                        odjel.redovi.sjeca.forEach((value, index) => {
+                            const sortiment = sortimentiNazivi[index] || '';
+                            const val = parseFloat(value) || 0;
+
+                            // Četinari indices: F/L Č, I Č, II Č, III Č, RD, TRUPCI Č, CEL.DUGA, CEL.CIJEPANA, ČETINARI
+                            if (sortiment.includes('Č') || sortiment.includes('RD') ||
+                                sortiment.includes('CEL.') || sortiment === 'ČETINARI') {
+                                cetinariTotal += val;
+                            }
+                            // Lišćari indices: F/L L, I L, II L, III L, TRUPCI L, OGR., LIŠĆARI
+                            else if (sortiment.includes('L') || sortiment.includes('OGR.') ||
+                                     sortiment === 'LIŠĆARI') {
+                                liscariTotal += val;
+                            }
+                        });
+                    }
+                });
+            }
+
+            const total = cetinariTotal + liscariTotal;
+            const cetinariProcenat = total > 0 ? ((cetinariTotal / total) * 100) : 50;
+            const liscariProcenat = total > 0 ? ((liscariTotal / total) * 100) : 50;
+
+            const html = `
+                <div style="margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-weight: 600; color: #059669;">🌲 Četinari</span>
+                        <span style="font-weight: 600; color: #059669;">${cetinariTotal.toFixed(2)} m³ (${cetinariProcenat.toFixed(1)}%)</span>
+                    </div>
+                    <div class="sortimenti-bar">
+                        <div class="sortimenti-bar-cetinari" style="width: ${cetinariProcenat}%;"></div>
+                    </div>
+                </div>
+                <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-weight: 600; color: #f59e0b;">🍂 Lišćari</span>
+                        <span style="font-weight: 600; color: #f59e0b;">${liscariTotal.toFixed(2)} m³ (${liscariProcenat.toFixed(1)}%)</span>
+                    </div>
+                    <div class="sortimenti-bar">
+                        <div class="sortimenti-bar-liscari" style="width: ${liscariProcenat}%;"></div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('sortimenti-breakdown').innerHTML = html;
+        }
+
+        // Render Timeline - Zadnji Unosi
+        function renderTimelineUnosi(odjeliStats) {
+            const timeline = [];
+
+            Object.entries(odjeliStats).forEach(([odjel, stats]) => {
+                const zadnjiDatum = stats.zadnjiDatumUnosa || stats.zadnjiUnos || '';
+                if (zadnjiDatum) {
+                    timeline.push({ odjel, datum: zadnjiDatum });
+                }
+            });
+
+            // Sort by date (most recent first)
+            timeline.sort((a, b) => {
+                const dateA = new Date(a.datum.split('.').reverse().join('-'));
+                const dateB = new Date(b.datum.split('.').reverse().join('-'));
+                return dateB - dateA;
+            });
+
+            const html = timeline.length > 0
+                ? timeline.slice(0, 10).map(item => {
+                    // Calculate days since entry
+                    const dateParts = item.datum.split('.');
+                    const entryDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+                    const today = new Date();
+                    const daysDiff = Math.floor((today - entryDate) / (1000 * 60 * 60 * 24));
+
+                    let statusClass = 'fresh';
+                    let statusText = 'Svježe';
+                    if (daysDiff > 30) {
+                        statusClass = 'old';
+                        statusText = `${daysDiff} dana`;
+                    } else if (daysDiff > 7) {
+                        statusClass = 'warning';
+                        statusText = `${daysDiff} dana`;
+                    } else if (daysDiff > 0) {
+                        statusText = `prije ${daysDiff}d`;
+                    }
+
+                    return `
+                        <div class="timeline-item">
+                            <div class="timeline-date">${item.datum}</div>
+                            <div class="timeline-content">
+                                <div class="timeline-odjel">${item.odjel}</div>
+                                <div class="timeline-status ${statusClass}">${statusText}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')
+                : '<p style="color: #6b7280; text-align: center; padding: 20px;">Nema podataka o unosima</p>';
+
+            document.getElementById('timeline-unosi-list').innerHTML = html;
         }
 
         // Filter analytics table by search
