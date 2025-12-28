@@ -3382,6 +3382,7 @@
             document.getElementById('edit-sjeca-content').classList.add('hidden');
             document.getElementById('edit-otprema-content').classList.add('hidden');
             document.getElementById('pending-unosi-content').classList.add('hidden');
+            document.getElementById('operativa-content').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
         }
         
@@ -7814,14 +7815,75 @@
             document.getElementById('operativa-content').classList.remove('hidden');
             document.getElementById('loading-screen').classList.add('hidden');
 
-            // Reload data from cache or fetch if needed
-            if (globalData && globalData.monthlyStats && globalData.odjeliStats) {
-                loadOperativaData(globalData);
-            } else {
-                // Fetch fresh data
-                loadStats(selectedYear).then(data => {
-                    loadOperativaData(data);
-                });
+            // Load stats data for current year
+            const year = new Date().getFullYear();
+            loadStatsForOperativa(year);
+        }
+
+        // Load and transform data for OPERATIVA screen
+        async function loadStatsForOperativa(year) {
+            try {
+                // Fetch dashboard data
+                const dashboardUrl = `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const dashboardData = await fetchWithCache(dashboardUrl, 'cache_dashboard_' + year);
+
+                // Fetch odjeli data
+                const odjeliUrl = `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const odjeliResponse = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year);
+
+                console.log('Dashboard data for OPERATIVA:', dashboardData);
+                console.log('Odjeli data for OPERATIVA:', odjeliResponse);
+
+                if (dashboardData.error || odjeliResponse.error) {
+                    console.error('Error loading OPERATIVA data');
+                    return;
+                }
+
+                // Transform dashboard data to OPERATIVA format
+                const totalPrimka = dashboardData.mjesecnaStatistika.reduce((sum, m) => sum + (m.sjeca || 0), 0);
+                const totalOtprema = dashboardData.mjesecnaStatistika.reduce((sum, m) => sum + (m.otprema || 0), 0);
+
+                // Transform monthly stats: mjesecnaStatistika -> monthlyStats
+                const monthlyStats = dashboardData.mjesecnaStatistika.map(m => ({
+                    mjesec: m.mjesec,
+                    sječa: m.sjeca || 0,
+                    otprema: m.otprema || 0,
+                    stanje: m.stanje || 0,
+                    dinamika: m.dinamika || 0
+                }));
+
+                // Transform odjeli data to odjeliStats format
+                const odjeliStats = {};
+                if (odjeliResponse.odjeli && odjeliResponse.odjeli.length > 0) {
+                    odjeliResponse.odjeli.forEach(odjel => {
+                        odjeliStats[odjel.odjel] = {
+                            sječa: odjel.sjeca || 0,
+                            otprema: odjel.otprema || 0,
+                            projekat: odjel.projekat || 0,
+                            ukupnoPosjeklo: odjel.sjeca || 0,
+                            zadnjaSjeca: odjel.zadnjaSjeca || 0,
+                            datumZadnjeSjece: odjel.datumZadnjeSjece || '',
+                            radiliste: odjel.radiliste || '',
+                            izvođač: odjel.izvođač || ''
+                        };
+                    });
+                }
+
+                // Create transformed data object
+                const transformedData = {
+                    totalPrimka,
+                    totalOtprema,
+                    monthlyStats,
+                    odjeliStats
+                };
+
+                console.log('Transformed data for OPERATIVA:', transformedData);
+
+                // Load OPERATIVA with transformed data
+                loadOperativaData(transformedData);
+
+            } catch (error) {
+                console.error('Error in loadStatsForOperativa:', error);
             }
         }
 
