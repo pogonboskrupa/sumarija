@@ -2827,9 +2827,9 @@
             <!-- Sortimenti Analysis -->
             <div class="analytics-grid">
                 <div class="section">
-                    <h2>🪵 Četinari vs Lišćari</h2>
-                    <p>Breakdown po vrstama drveta</p>
-                    <div id="sortimenti-breakdown">
+                    <h2>📦 Top Kupci - Otprema</h2>
+                    <p>Kupci rangirani po volumenu otpreme</p>
+                    <div id="kupci-performance-list">
                         <p style="color: #6b7280; text-align: center; padding: 20px;">Učitavanje...</p>
                     </div>
                 </div>
@@ -7997,6 +7997,19 @@
                 console.log('Odjeli data for OPERATIVA:', odjeliResponse);
                 console.log('STANJE ODJELA data for OPERATIVA (PROJEKAT source):', stanjeOdjelaData);
 
+                // DEBUG: Log odjeli count and total from API
+                if (odjeliResponse && odjeliResponse.odjeli) {
+                    const odjeliCount = odjeliResponse.odjeli.length;
+                    const totalFromAPI = odjeliResponse.odjeli.reduce((sum, o) => sum + (o.sjeca || 0), 0);
+                    console.log(`=== ODJELI API SUMMARY ===`);
+                    console.log(`Total odjela in API: ${odjeliCount}`);
+                    console.log(`Total sječa from API (direct): ${totalFromAPI.toFixed(2)} m³`);
+                    console.log(`Expected total: ~68171 m³`);
+                    if (Math.abs(totalFromAPI - 68171) > 1000) {
+                        console.warn(`⚠️ SUMA DISCREPANCY: ${(totalFromAPI - 68171).toFixed(2)} m³ difference!`);
+                    }
+                }
+
                 if (dashboardData.error || odjeliResponse.error) {
                     console.error('Error loading OPERATIVA data');
                     return;
@@ -8139,7 +8152,7 @@
             // Render new features
             renderPerformanceAlerts(data.odjeliStats || {});
             renderIzvodjaciPerformance(data.odjeliStats || {});
-            renderSortimentiBreakdown(data.stanjeOdjelaRaw || {});
+            renderKupciPerformance(data.stanjeOdjelaRaw || {}); // Zamijenjeno: bilo renderSortimentiBreakdown
             renderTimelineUnosi(data.odjeliStats || {});
         }
 
@@ -8537,64 +8550,50 @@
             document.getElementById('izvodjaci-performance-list').innerHTML = html;
         }
 
-        // Render Sortimenti Breakdown (Četinari vs Lišćari)
-        function renderSortimentiBreakdown(stanjeOdjelaRaw) {
-            console.log('renderSortimentiBreakdown called with:', stanjeOdjelaRaw);
-            let cetinariTotal = 0;
-            let liscariTotal = 0;
+        // Render Top Kupci Performance - Otprema
+        async function renderKupciPerformance(stanjeOdjelaRaw) {
+            console.log('renderKupciPerformance called - Loading kupci data...');
 
-            if (stanjeOdjelaRaw && stanjeOdjelaRaw.data && stanjeOdjelaRaw.sortimentiNazivi) {
-                const sortimentiNazivi = stanjeOdjelaRaw.sortimentiNazivi;
+            try {
+                // Fetch kupci data from API
+                const year = new Date().getFullYear();
+                const kupciUrl = `${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const kupciData = await fetchWithCache(kupciUrl, 'cache_kupci_' + year);
 
-                stanjeOdjelaRaw.data.forEach(odjel => {
-                    if (odjel.redovi && odjel.redovi.sjeca) {
-                        odjel.redovi.sjeca.forEach((value, index) => {
-                            const sortiment = sortimentiNazivi[index] || '';
-                            const val = parseFloat(value) || 0;
+                console.log('Kupci data received:', kupciData);
 
-                            // Četinari indices: F/L Č, I Č, II Č, III Č, RD, TRUPCI Č, CEL.DUGA, CEL.CIJEPANA, ČETINARI
-                            if (sortiment.includes('Č') || sortiment.includes('RD') ||
-                                sortiment.includes('CEL.') || sortiment === 'ČETINARI') {
-                                cetinariTotal += val;
-                            }
-                            // Lišćari indices: F/L L, I L, II L, III L, TRUPCI L, OGR., LIŠĆARI
-                            else if (sortiment.includes('L') || sortiment.includes('OGR.') ||
-                                     sortiment === 'LIŠĆARI') {
-                                liscariTotal += val;
-                            }
-                        });
-                    }
-                });
+                if (!kupciData || !kupciData.godisnji) {
+                    document.getElementById('kupci-performance-list').innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">Nema podataka o kupcima</p>';
+                    return;
+                }
+
+                // Sort kupci by ukupno volume descending
+                const sorted = kupciData.godisnji
+                    .sort((a, b) => (b.ukupno || 0) - (a.ukupno || 0))
+                    .slice(0, 10);
+
+                console.log('Top 10 kupaca:', sorted);
+
+                const html = sorted.length > 0
+                    ? sorted.map((kupac, index) => {
+                        const rankClass = index < 3 ? 'top' : '';
+                        return `
+                            <div class="ranking-item">
+                                <div class="ranking-number ${rankClass}">${index + 1}</div>
+                                <div class="ranking-info">
+                                    <div class="ranking-name">${kupac.kupac || 'Nepoznat'}</div>
+                                    <div class="ranking-value">${(kupac.ukupno || 0).toFixed(2)} m³</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')
+                    : '<p style="color: #6b7280; text-align: center; padding: 20px;">Nema podataka o kupcima</p>';
+
+                document.getElementById('kupci-performance-list').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading kupci data:', error);
+                document.getElementById('kupci-performance-list').innerHTML = '<p style="color: #dc2626; text-align: center; padding: 20px;">Greška pri učitavanju podataka</p>';
             }
-
-            console.log('Sortimenti totals - Četinari:', cetinariTotal, 'Lišćari:', liscariTotal);
-
-            const total = cetinariTotal + liscariTotal;
-            const cetinariProcenat = total > 0 ? ((cetinariTotal / total) * 100) : 50;
-            const liscariProcenat = total > 0 ? ((liscariTotal / total) * 100) : 50;
-
-            const html = `
-                <div style="margin-bottom: 16px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-weight: 600; color: #059669;">🌲 Četinari</span>
-                        <span style="font-weight: 600; color: #059669;">${cetinariTotal.toFixed(2)} m³ (${cetinariProcenat.toFixed(1)}%)</span>
-                    </div>
-                    <div class="sortimenti-bar">
-                        <div class="sortimenti-bar-cetinari" style="width: ${cetinariProcenat}%;"></div>
-                    </div>
-                </div>
-                <div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-weight: 600; color: #f59e0b;">🍂 Lišćari</span>
-                        <span style="font-weight: 600; color: #f59e0b;">${liscariTotal.toFixed(2)} m³ (${liscariProcenat.toFixed(1)}%)</span>
-                    </div>
-                    <div class="sortimenti-bar">
-                        <div class="sortimenti-bar-liscari" style="width: ${liscariProcenat}%;"></div>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('sortimenti-breakdown').innerHTML = html;
         }
 
         // Render Timeline - Zadnji Unosi
