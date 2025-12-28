@@ -803,7 +803,15 @@
             font-size: 13px;
             margin: 0;
             font-weight: 600;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
+            text-shadow:
+                /* Bijeli outline (sitni) */
+                -1px -1px 0 rgba(255, 255, 255, 0.3),
+                1px -1px 0 rgba(255, 255, 255, 0.3),
+                -1px 1px 0 rgba(255, 255, 255, 0.3),
+                1px 1px 0 rgba(255, 255, 255, 0.3),
+                /* Crni shadow za dubinu */
+                0 2px 8px rgba(0, 0, 0, 0.5),
+                0 1px 3px rgba(0, 0, 0, 0.6);
         }
 
         .worker-header-icon {
@@ -1828,7 +1836,7 @@
                     <div class="worker-header-icon">👷</div>
                     <div>
                         <h1 class="worker-header-title">Pregled sječe</h1>
-                        <p class="worker-header-subtitle">Vaši unosi za tekuću godinu - kompletan pregled po odjelima</p>
+                        <p class="worker-header-subtitle">Pregled primki u tekućoj godini</p>
                     </div>
                 </div>
 
@@ -1870,7 +1878,7 @@
                     <div class="worker-header-icon">🚛</div>
                     <div>
                         <h1 class="worker-header-title">Pregled otpreme</h1>
-                        <p class="worker-header-subtitle">Vaši unosi za tekuću godinu - kompletan pregled po odjelima i kupcima</p>
+                        <p class="worker-header-subtitle">Pregled otpremnica u tekućoj godini</p>
                     </div>
                 </div>
 
