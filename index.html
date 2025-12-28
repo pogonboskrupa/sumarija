@@ -2824,16 +2824,8 @@
                 </div>
             </div>
 
-            <!-- Sortimenti Analysis -->
+            <!-- Timeline Analysis -->
             <div class="analytics-grid">
-                <div class="section">
-                    <h2>📦 Top Kupci - Otprema</h2>
-                    <p>Kupci rangirani po volumenu otpreme</p>
-                    <div id="kupci-performance-list">
-                        <p style="color: #6b7280; text-align: center; padding: 20px;">Učitavanje...</p>
-                    </div>
-                </div>
-
                 <div class="section">
                     <h2>📅 Timeline - Zadnji Unosi</h2>
                     <p>Odjeli sortirani po datumu zadnjeg unosa</p>
@@ -2852,21 +2844,102 @@
                 </div>
             </div>
 
-            <!-- Performance Timeline -->
+            <!-- Detaljni Pregled - All Odjeli Table -->
             <div class="section">
-                <h2>⏱️ Performance Timeline - Realizacija Projekta</h2>
-                <p>Cumulative % realizacije projekta po mjesecima</p>
-                <div class="line-legend">
-                    <div class="line-legend-item">
-                        <div class="line-legend-color green"></div>
-                        <span>Cumulative Realizacija</span>
+                <h2>📊 Detaljni Pregled - Svi Odjeli</h2>
+                <p>Kompletna analiza svih odjela sa projekat realizacijom</p>
+                <div class="controls-bar" style="margin-top: 20px;">
+                    <input type="text" class="search-input" id="analytics-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterAnalyticsTable()">
+                    <button class="btn btn-primary" onclick="exportTableToCSV('analytics-odjeli')">📥 Export CSV</button>
+                </div>
+                <table class="monthly-table" id="analytics-odjeli-main-table">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable(0, 'analytics-odjeli-main-table')">Odjel ⇅</th>
+                            <th class="right" onclick="sortTable(1, 'analytics-odjeli-main-table')">Sječa (m³) ⇅</th>
+                            <th class="right" onclick="sortTable(2, 'analytics-odjeli-main-table')">Otprema (m³) ⇅</th>
+                            <th class="right" onclick="sortTable(3, 'analytics-odjeli-main-table')">Projekat ⇅</th>
+                            <th class="right" onclick="sortTable(4, 'analytics-odjeli-main-table')">% Ostvareno ⇅</th>
+                            <th class="right" onclick="sortTable(5, 'analytics-odjeli-main-table')">Razlika ⇅</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analytics-odjeli-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- KUPCI CONTENT -->
+        <div id="kupci-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>📦 Analiza Kupaca</h1>
+                    <p>Detaljni pregled kupaca po sortimentima i mjesečni trend</p>
+                </div>
+            </div>
+
+            <!-- Top 5 Kupaca po Sortimentima -->
+            <div class="section">
+                <h2>🏆 Top 5 Kupaca po Sortimentima</h2>
+                <p>Najbolji kupci za svaku kategoriju sortimenta</p>
+
+                <div class="analytics-grid">
+                    <!-- TRUPCI ČETINARA -->
+                    <div class="section">
+                        <h3>🌲 TRUPCI ČETINARA</h3>
+                        <div id="kupci-trupci-cetinara">
+                            <p style="color: #6b7280; text-align: center; padding: 20px;">Učitavanje...</p>
+                        </div>
                     </div>
-                    <div class="line-legend-item">
-                        <div class="line-legend-color" style="background: #dc2626;"></div>
-                        <span>Target (100%)</span>
+
+                    <!-- CELULOZA DUGA -->
+                    <div class="section">
+                        <h3>📏 CELULOZA DUGA</h3>
+                        <div id="kupci-celuloza-duga">
+                            <p style="color: #6b7280; text-align: center; padding: 20px;">Učitavanje...</p>
+                        </div>
+                    </div>
+
+                    <!-- CELULOZA CIJEPANA -->
+                    <div class="section">
+                        <h3>🪓 CELULOZA CIJEPANA</h3>
+                        <div id="kupci-celuloza-cijepana">
+                            <p style="color: #6b7280; text-align: center; padding: 20px;">Učitavanje...</p>
+                        </div>
+                    </div>
+
+                    <!-- TRUPCI LIŠĆARA -->
+                    <div class="section">
+                        <h3>🍂 TRUPCI LIŠĆARA</h3>
+                        <div id="kupci-trupci-liscara">
+                            <p style="color: #6b7280; text-align: center; padding: 20px;">Učitavanje...</p>
+                        </div>
+                    </div>
+
+                    <!-- OGRIJEV DUGI -->
+                    <div class="section">
+                        <h3>🔥 OGRIJEV DUGI</h3>
+                        <div id="kupci-ogrijev-dugi">
+                            <p style="color: #6b7280; text-align: center; padding: 20px;">Učitavanje...</p>
+                        </div>
+                    </div>
+
+                    <!-- OGRIJEV CIJEPANI -->
+                    <div class="section">
+                        <h3>🪵 OGRIJEV CIJEPANI</h3>
+                        <div id="kupci-ogrijev-cijepani">
+                            <p style="color: #6b7280; text-align: center; padding: 20px;">Učitavanje...</p>
+                        </div>
                     </div>
                 </div>
-                <svg id="performance-timeline-chart" class="chart-svg"></svg>
+            </div>
+
+            <!-- Top 10 Kupaca - Ukupna Otprema -->
+            <div class="section">
+                <h2>📦 Top 10 Kupaca - Ukupna Otprema</h2>
+                <p>Kupci rangirani po ukupnom volumenu otpreme</p>
+                <div id="kupci-top-10-list">
+                    <p style="color: #6b7280; text-align: center; padding: 20px;">Učitavanje...</p>
+                </div>
             </div>
 
             <!-- Mjesečni Trend Kupaca -->
@@ -2898,29 +2971,6 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
-
-            <!-- Detaljni Pregled - All Odjeli Table -->
-            <div class="section">
-                <h2>📊 Detaljni Pregled - Svi Odjeli</h2>
-                <p>Kompletna analiza svih odjela sa projekat realizacijom</p>
-                <div class="controls-bar" style="margin-top: 20px;">
-                    <input type="text" class="search-input" id="analytics-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterAnalyticsTable()">
-                    <button class="btn btn-primary" onclick="exportTableToCSV('analytics-odjeli')">📥 Export CSV</button>
-                </div>
-                <table class="monthly-table" id="analytics-odjeli-main-table">
-                    <thead>
-                        <tr>
-                            <th onclick="sortTable(0, 'analytics-odjeli-main-table')">Odjel ⇅</th>
-                            <th class="right" onclick="sortTable(1, 'analytics-odjeli-main-table')">Sječa (m³) ⇅</th>
-                            <th class="right" onclick="sortTable(2, 'analytics-odjeli-main-table')">Otprema (m³) ⇅</th>
-                            <th class="right" onclick="sortTable(3, 'analytics-odjeli-main-table')">Projekat ⇅</th>
-                            <th class="right" onclick="sortTable(4, 'analytics-odjeli-main-table')">% Ostvareno ⇅</th>
-                            <th class="right" onclick="sortTable(5, 'analytics-odjeli-main-table')">Razlika ⇅</th>
-                        </tr>
-                    </thead>
-                    <tbody id="analytics-odjeli-table"></tbody>
-                </table>
             </div>
         </div>
 
@@ -3555,6 +3605,7 @@
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
                     <button class="tab" onclick="switchTab('operativa')">📊 Operativa & Analiza</button>
+                    <button class="tab" onclick="switchTab('kupci')">📦 Kupci</button>
                     <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Mjesečni pregled</button>
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                 `;
@@ -4909,166 +4960,122 @@
 
         // Load kupci data
         async function loadKupci() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('kupci-content').classList.add('hidden');
+            console.log('Loading Kupci screen...');
+            document.getElementById('kupci-content').classList.remove('hidden');
+            document.getElementById('loading-screen').classList.add('hidden');
 
             try {
                 const year = new Date().getFullYear();
-                const url = `${API_URL}?path=kupci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_kupci_' + year);
+                const url = `${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, 'cache_kupci_otpremaci_' + year);
 
-                console.log('Kupci data:', data);
+                console.log('Kupci data from otpremaci:', data);
 
-                if (data.error) {
-                    throw new Error(data.error);
+                if (data.error || !data.godisnji || !data.sortimentiNazivi) {
+                    throw new Error(data.error || 'Nema podataka');
                 }
 
-                // ========================================
-                // GODIŠNJI PREGLED
-                // ========================================
+                // Render Top 5 by sortimenti categories
+                renderKupciTop5BySortimenti(data);
 
-                // Create godisnji header with expert styling
-                const godisnjiHeaderHTML = `
-                    <tr>
-                        <th onclick="sortTable(0, 'kupci-godisnji-table')" style="position: sticky; left: 0; background: #7c3aed; z-index: 20; border-right: 3px solid #6d28d9; min-width: 180px; cursor: pointer;">
-                            🏢 Kupac ⇅
-                        </th>
-                        ${data.sortimentiNazivi.map((s, i) => `<th class="sortiment-col" onclick="sortTable(${i+1}, 'kupci-godisnji-table')" style="min-width: 70px; background: #7c3aed; color: white; font-weight: 700; border: 1px solid #6d28d9; cursor: pointer;">${s} ⇅</th>`).join('')}
-                        <th class="ukupno-col" onclick="sortTable(${data.sortimentiNazivi.length + 1}, 'kupci-godisnji-table')" style="min-width: 100px; background: #6d28d9; color: white; font-weight: 900; cursor: pointer;">
-                            📊 UKUPNO ⇅
-                        </th>
-                    </tr>
-                `;
-                document.getElementById('kupci-godisnji-header').innerHTML = godisnjiHeaderHTML;
+                // Render Top 10 total otprema
+                renderKupciTop10(data.godisnji);
 
-                // Create godisnji body with totals
-                let godisnjiTotals = { sortimenti: {}, ukupno: 0 };
-                data.sortimentiNazivi.forEach(s => godisnjiTotals.sortimenti[s] = 0);
-
-                const godisnjiBodyHTML = data.godisnji.map((k, idx) => {
-                    // Add to totals
-                    data.sortimentiNazivi.forEach(s => {
-                        godisnjiTotals.sortimenti[s] += (k.sortimenti[s] || 0);
-                    });
-                    godisnjiTotals.ukupno += k.ukupno;
-
-                    const rowBg = idx % 2 === 0 ? '#faf5ff' : 'white';
-                    const hoverBg = idx % 2 === 0 ? '#f3e8ff' : '#faf5ff';
-
-                    const sortimentiCells = data.sortimentiNazivi.map(sortiment => {
-                        const val = k.sortimenti[sortiment] || 0;
-                        const displayVal = val > 0 ? val.toFixed(2) : '-';
-                        const fontWeight = val > 0 ? 'font-weight: 500;' : 'color: #9ca3af;';
-                        return `<td class="sortiment-col" style="${fontWeight} border: 1px solid #e9d5ff; font-family: 'Courier New', monospace;">${displayVal}</td>`;
-                    }).join('');
-
-                    return `
-                        <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
-                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #7c3aed;">${k.kupac}</td>
-                            ${sortimentiCells}
-                            <td class="ukupno-col" style="font-weight: 700; background: linear-gradient(to right, #e9d5ff, #d8b4fe); color: #6b21a8; font-family: 'Courier New', monospace;">${k.ukupno.toFixed(2)} m³</td>
-                        </tr>
-                    `;
-                }).join('');
-
-                // Add totals row with soft purple colors
-                const godisnjiTotalsCells = data.sortimentiNazivi.map(s => {
-                    const val = godisnjiTotals.sortimenti[s];
-                    const displayVal = val > 0 ? val.toFixed(2) : '-';
-                    return `<td class="sortiment-col" style="border: 1px solid #c084fc; font-family: 'Courier New', monospace;">${displayVal}</td>`;
-                }).join('');
-
-                const godisnjiBodyWithTotals = godisnjiBodyHTML + `
-                    <tr style="background: linear-gradient(to bottom, #e9d5ff, #d8b4fe); color: #6b21a8; font-weight: 700; border-top: 3px solid #a855f7;">
-                        <td style="position: sticky; left: 0; background: #e9d5ff; z-index: 10; border-right: 2px solid #7c3aed;">
-                            📈 UKUPNO
-                        </td>
-                        ${godisnjiTotalsCells}
-                        <td class="ukupno-col" style="background: #d8b4fe; border: 2px solid #a855f7; font-weight: 900; font-family: 'Courier New', monospace;">${godisnjiTotals.ukupno.toFixed(2)} m³</td>
-                    </tr>
-                `;
-
-                document.getElementById('kupci-godisnji-body').innerHTML = godisnjiBodyWithTotals;
-
-                // ========================================
-                // MJESEČNI PREGLED
-                // ========================================
-
-                // Create mjesecni header with expert styling
-                const mjesecniHeaderHTML = `
-                    <tr>
-                        <th onclick="sortTable(0, 'kupci-mjesecni-table')" style="position: sticky; left: 0; background: #7c3aed; z-index: 20; border-right: 3px solid #6d28d9; min-width: 150px; cursor: pointer;">
-                            🏢 Kupac ⇅
-                        </th>
-                        <th onclick="sortTable(1, 'kupci-mjesecni-table')" style="min-width: 80px; background: #7c3aed; color: white; font-weight: 700; border: 1px solid #6d28d9; cursor: pointer;">
-                            📅 Mjesec ⇅
-                        </th>
-                        ${data.sortimentiNazivi.map((s, i) => `<th class="sortiment-col" onclick="sortTable(${i+2}, 'kupci-mjesecni-table')" style="min-width: 70px; background: #7c3aed; color: white; font-weight: 700; border: 1px solid #6d28d9; cursor: pointer;">${s} ⇅</th>`).join('')}
-                        <th class="ukupno-col" onclick="sortTable(${data.sortimentiNazivi.length + 2}, 'kupci-mjesecni-table')" style="min-width: 100px; background: #6d28d9; color: white; font-weight: 900; cursor: pointer;">
-                            📊 UKUPNO ⇅
-                        </th>
-                    </tr>
-                `;
-                document.getElementById('kupci-mjesecni-header').innerHTML = mjesecniHeaderHTML;
-
-                // Create mjesecni body with totals
-                let mjesecniTotals = { sortimenti: {}, ukupno: 0 };
-                data.sortimentiNazivi.forEach(s => mjesecniTotals.sortimenti[s] = 0);
-
-                const mjesecniBodyHTML = data.mjesecni.map((k, idx) => {
-                    // Add to totals
-                    data.sortimentiNazivi.forEach(s => {
-                        mjesecniTotals.sortimenti[s] += (k.sortimenti[s] || 0);
-                    });
-                    mjesecniTotals.ukupno += k.ukupno;
-
-                    const rowBg = idx % 2 === 0 ? '#faf5ff' : 'white';
-                    const hoverBg = idx % 2 === 0 ? '#f3e8ff' : '#faf5ff';
-
-                    const sortimentiCells = data.sortimentiNazivi.map(sortiment => {
-                        const val = k.sortimenti[sortiment] || 0;
-                        const displayVal = val > 0 ? val.toFixed(2) : '-';
-                        const fontWeight = val > 0 ? 'font-weight: 500;' : 'color: #9ca3af;';
-                        return `<td class="sortiment-col" style="${fontWeight} border: 1px solid #e9d5ff; font-family: 'Courier New', monospace;">${displayVal}</td>`;
-                    }).join('');
-
-                    return `
-                        <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
-                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #7c3aed;">${k.kupac}</td>
-                            <td style="border: 1px solid #e9d5ff;">${k.mjesec}</td>
-                            ${sortimentiCells}
-                            <td class="ukupno-col" style="font-weight: 700; background: linear-gradient(to right, #e9d5ff, #d8b4fe); color: #6b21a8; font-family: 'Courier New', monospace;">${k.ukupno.toFixed(2)} m³</td>
-                        </tr>
-                    `;
-                }).join('');
-
-                // Add totals row with soft purple colors
-                const mjesecniTotalsCells = data.sortimentiNazivi.map(s => {
-                    const val = mjesecniTotals.sortimenti[s];
-                    const displayVal = val > 0 ? val.toFixed(2) : '-';
-                    return `<td class="sortiment-col" style="border: 1px solid #c084fc; font-family: 'Courier New', monospace;">${displayVal}</td>`;
-                }).join('');
-
-                const mjesecniBodyWithTotals = mjesecniBodyHTML + `
-                    <tr style="background: linear-gradient(to bottom, #e9d5ff, #d8b4fe); color: #6b21a8; font-weight: 700; border-top: 3px solid #a855f7;">
-                        <td style="position: sticky; left: 0; background: #e9d5ff; z-index: 10; border-right: 2px solid #7c3aed;">
-                            📈 UKUPNO
-                        </td>
-                        <td style="background: #e9d5ff;"></td>
-                        ${mjesecniTotalsCells}
-                        <td class="ukupno-col" style="background: #d8b4fe; border: 2px solid #a855f7; font-weight: 900; font-family: 'Courier New', monospace;">${mjesecniTotals.ukupno.toFixed(2)} m³</td>
-                    </tr>
-                `;
-
-                document.getElementById('kupci-mjesecni-body').innerHTML = mjesecniBodyWithTotals;
-
-                document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('kupci-content').classList.remove('hidden');
+                // Render mjesečni trend
+                renderKupciMjesecniTrend();
 
             } catch (error) {
-                showError('Greška', 'Greška pri učitavanju kupaca: ' + error.message);
-                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
+                console.error('Error loading kupci:', error);
+                document.getElementById('kupci-top-10-list').innerHTML = '<p style="color: #dc2626; text-align: center; padding: 20px;">Greška pri učitavanju: ' + error.message + '</p>';
             }
+        }
+
+        // Render Top 5 Kupaca po sortimentima
+        function renderKupciTop5BySortimenti(data) {
+            console.log('renderKupciTop5BySortimenti called');
+
+            // Define sortimenti categories and their indices
+            const sortimentiCategories = {
+                'TRUPCI Č': ['TRUPCI Č'],
+                'CEL.DUGA': ['CEL.DUGA'],
+                'CEL.CIJEPANA': ['CEL.CIJEPANA'],
+                'TRUPCI': ['TRUPCI'],
+                'OGR. DUGI': ['OGR. DUGI', 'OGR.DUGI'],
+                'OGR. CIJEPANI': ['OGR. CIJEPANI', 'OGR.CIJEPANI']
+            };
+
+            const divIds = {
+                'TRUPCI Č': 'kupci-trupci-cetinara',
+                'CEL.DUGA': 'kupci-celuloza-duga',
+                'CEL.CIJEPANA': 'kupci-celuloza-cijepana',
+                'TRUPCI': 'kupci-trupci-liscara',
+                'OGR. DUGI': 'kupci-ogrijev-dugi',
+                'OGR. CIJEPANI': 'kupci-ogrijev-cijepani'
+            };
+
+            Object.entries(sortimentiCategories).forEach(([category, sortimenti]) => {
+                const kupciMap = {};
+
+                data.godisnji.forEach(kupac => {
+                    let total = 0;
+                    sortimenti.forEach(sortiment => {
+                        total += (kupac.sortimenti[sortiment] || 0);
+                    });
+                    if (total > 0) {
+                        kupciMap[kupac.kupac] = total;
+                    }
+                });
+
+                const sorted = Object.entries(kupciMap)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5);
+
+                const html = sorted.length > 0
+                    ? sorted.map(([kupac, volume], index) => {
+                        const rankClass = index < 3 ? 'top' : '';
+                        return `
+                            <div class="ranking-item">
+                                <div class="ranking-number ${rankClass}">${index + 1}</div>
+                                <div class="ranking-info">
+                                    <div class="ranking-name">${kupac}</div>
+                                    <div class="ranking-value">${volume.toFixed(2)} m³</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')
+                    : '<p style="color: #6b7280; text-align: center; padding: 20px;">Nema podataka</p>';
+
+                const divId = divIds[category];
+                if (divId) {
+                    document.getElementById(divId).innerHTML = html;
+                }
+            });
+        }
+
+        // Render Top 10 Kupaca - Total Otprema
+        function renderKupciTop10(godisnjiData) {
+            console.log('renderKupciTop10 called');
+
+            const sorted = godisnjiData
+                .sort((a, b) => (b.ukupno || 0) - (a.ukupno || 0))
+                .slice(0, 10);
+
+            const html = sorted.length > 0
+                ? sorted.map((kupac, index) => {
+                    const rankClass = index < 3 ? 'top' : '';
+                    return `
+                        <div class="ranking-item">
+                            <div class="ranking-number ${rankClass}">${index + 1}</div>
+                            <div class="ranking-info">
+                                <div class="ranking-name">${kupac.kupac || 'Nepoznat'}</div>
+                                <div class="ranking-value">${(kupac.ukupno || 0).toFixed(2)} m³</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')
+                : '<p style="color: #6b7280; text-align: center; padding: 20px;">Nema podataka</p>';
+
+            document.getElementById('kupci-top-10-list').innerHTML = html;
         }
 
         // ========================================
@@ -8209,13 +8216,10 @@
             // Render new features
             renderPerformanceAlerts(data.odjeliStats || {});
             renderIzvodjaciPerformance(data.odjeliStats || {});
-            renderKupciPerformance(data.stanjeOdjelaRaw || {}); // Zamijenjeno: bilo renderSortimentiBreakdown
             renderTimelineUnosi(data.odjeliStats || {});
 
             // Render additional analytics features
             renderSeasonalAnalysis(monthlyStats);
-            renderPerformanceTimeline(data.odjeliStats || {}, monthlyStats);
-            renderKupciMjesecniTrend(); // Async - fetch own data
         }
 
         // Render Top 5 Odjela by Sječa
@@ -8612,52 +8616,6 @@
             document.getElementById('izvodjaci-performance-list').innerHTML = html;
         }
 
-        // Render Top Kupci Performance - Otprema
-        async function renderKupciPerformance(stanjeOdjelaRaw) {
-            console.log('renderKupciPerformance called - Loading kupci data...');
-
-            try {
-                // Fetch kupci data from API
-                const year = new Date().getFullYear();
-                const kupciUrl = `${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const kupciData = await fetchWithCache(kupciUrl, 'cache_kupci_' + year);
-
-                console.log('Kupci data received:', kupciData);
-
-                if (!kupciData || !kupciData.godisnji) {
-                    document.getElementById('kupci-performance-list').innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">Nema podataka o kupcima</p>';
-                    return;
-                }
-
-                // Sort kupci by ukupno volume descending
-                const sorted = kupciData.godisnji
-                    .sort((a, b) => (b.ukupno || 0) - (a.ukupno || 0))
-                    .slice(0, 10);
-
-                console.log('Top 10 kupaca:', sorted);
-
-                const html = sorted.length > 0
-                    ? sorted.map((kupac, index) => {
-                        const rankClass = index < 3 ? 'top' : '';
-                        return `
-                            <div class="ranking-item">
-                                <div class="ranking-number ${rankClass}">${index + 1}</div>
-                                <div class="ranking-info">
-                                    <div class="ranking-name">${kupac.kupac || 'Nepoznat'}</div>
-                                    <div class="ranking-value">${(kupac.ukupno || 0).toFixed(2)} m³</div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('')
-                    : '<p style="color: #6b7280; text-align: center; padding: 20px;">Nema podataka o kupcima</p>';
-
-                document.getElementById('kupci-performance-list').innerHTML = html;
-            } catch (error) {
-                console.error('Error loading kupci data:', error);
-                document.getElementById('kupci-performance-list').innerHTML = '<p style="color: #dc2626; text-align: center; padding: 20px;">Greška pri učitavanju podataka</p>';
-            }
-        }
-
         // Render Timeline - Zadnji Unosi
         function renderTimelineUnosi(odjeliStats) {
             console.log('renderTimelineUnosi called with:', odjeliStats);
@@ -8757,138 +8715,6 @@
             }).join('');
 
             document.getElementById('seasonal-analysis').innerHTML = html;
-        }
-
-        // Render Performance Timeline (Cumulative Realizacija)
-        function renderPerformanceTimeline(odjeliStats, monthlyStats) {
-            console.log('renderPerformanceTimeline called');
-
-            // Calculate total projekat
-            const totalProjekat = Object.values(odjeliStats).reduce((sum, stats) => sum + (stats.projekat || 0), 0);
-
-            if (totalProjekat === 0) {
-                document.getElementById('performance-timeline-chart').innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="#6b7280">Nema podataka za projekat</text>';
-                return;
-            }
-
-            // Calculate cumulative realizacija by month
-            const cumulativeData = [];
-            let cumulativeSjeca = 0;
-
-            monthlyStats.forEach((m, index) => {
-                cumulativeSjeca += (m.sječa || 0);
-                const percentage = (cumulativeSjeca / totalProjekat) * 100;
-                cumulativeData.push({
-                    mjesec: m.mjesec,
-                    percentage: percentage
-                });
-            });
-
-            console.log('Cumulative realizacija:', cumulativeData);
-
-            // SVG Chart
-            const svg = document.getElementById('performance-timeline-chart');
-            svg.innerHTML = ''; // Clear
-
-            const width = 900;
-            const height = 300;
-            const padding = { top: 30, right: 40, bottom: 50, left: 60 };
-            const chartWidth = width - padding.left - padding.right;
-            const chartHeight = height - padding.top - padding.bottom;
-
-            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-
-            // Y-axis scale (0-120% to show overshoot)
-            const maxY = Math.max(120, Math.max(...cumulativeData.map(d => d.percentage)));
-            const yScale = chartHeight / maxY;
-
-            // X-axis step
-            const xStep = chartWidth / (cumulativeData.length - 1);
-
-            // Draw grid lines
-            for (let i = 0; i <= 5; i++) {
-                const value = (maxY / 5) * i;
-                const y = padding.top + chartHeight - value * yScale;
-
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', padding.left);
-                line.setAttribute('y1', y);
-                line.setAttribute('x2', padding.left + chartWidth);
-                line.setAttribute('y2', y);
-                line.setAttribute('stroke', '#e5e7eb');
-                line.setAttribute('stroke-width', '1');
-                svg.appendChild(line);
-
-                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                label.setAttribute('x', padding.left - 10);
-                label.setAttribute('y', y + 5);
-                label.setAttribute('text-anchor', 'end');
-                label.setAttribute('font-size', '12');
-                label.setAttribute('fill', '#6b7280');
-                label.textContent = value.toFixed(0) + '%';
-                svg.appendChild(label);
-            }
-
-            // Draw 100% target line (red dashed)
-            const targetY = padding.top + chartHeight - 100 * yScale;
-            const targetLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            targetLine.setAttribute('x1', padding.left);
-            targetLine.setAttribute('y1', targetY);
-            targetLine.setAttribute('x2', padding.left + chartWidth);
-            targetLine.setAttribute('y2', targetY);
-            targetLine.setAttribute('stroke', '#dc2626');
-            targetLine.setAttribute('stroke-width', '2');
-            targetLine.setAttribute('stroke-dasharray', '5,5');
-            svg.appendChild(targetLine);
-
-            // Draw cumulative line
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            let pathData = '';
-
-            cumulativeData.forEach((d, i) => {
-                const x = padding.left + i * xStep;
-                const y = padding.top + chartHeight - d.percentage * yScale;
-
-                if (i === 0) {
-                    pathData += `M ${x} ${y}`;
-                } else {
-                    pathData += ` L ${x} ${y}`;
-                }
-            });
-
-            path.setAttribute('d', pathData);
-            path.setAttribute('fill', 'none');
-            path.setAttribute('stroke', '#059669');
-            path.setAttribute('stroke-width', '3');
-            path.setAttribute('stroke-linecap', 'round');
-            svg.appendChild(path);
-
-            // Draw data points
-            cumulativeData.forEach((d, i) => {
-                const x = padding.left + i * xStep;
-                const y = padding.top + chartHeight - d.percentage * yScale;
-
-                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('cx', x);
-                circle.setAttribute('cy', y);
-                circle.setAttribute('r', '4');
-                circle.setAttribute('fill', d.percentage >= 100 ? '#10b981' : '#059669');
-                circle.setAttribute('stroke', 'white');
-                circle.setAttribute('stroke-width', '2');
-                svg.appendChild(circle);
-
-                // Month label
-                if (i % 2 === 0) { // Show every other month
-                    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                    label.setAttribute('x', x);
-                    label.setAttribute('y', padding.top + chartHeight + 20);
-                    label.setAttribute('text-anchor', 'middle');
-                    label.setAttribute('font-size', '11');
-                    label.setAttribute('fill', '#6b7280');
-                    label.textContent = d.mjesec;
-                    svg.appendChild(label);
-                }
-            });
         }
 
         // Render Mjesečni Trend Kupaca
