@@ -7831,8 +7831,13 @@
                 const odjeliUrl = `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
                 const odjeliResponse = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year);
 
+                // **NOVO: Fetch STANJE ODJELA data (sa PROJEKAT podacima iz Excel redova 10-13)**
+                const stanjeOdjelaUrl = `${API_URL}?path=stanje-odjela&username=${currentUser.username}&password=${currentPassword}`;
+                const stanjeOdjelaData = await fetchWithCache(stanjeOdjelaUrl, 'cache_stanje_odjela');
+
                 console.log('Dashboard data for OPERATIVA:', dashboardData);
                 console.log('Odjeli data for OPERATIVA:', odjeliResponse);
+                console.log('STANJE ODJELA data for OPERATIVA (PROJEKAT source):', stanjeOdjelaData);
 
                 if (dashboardData.error || odjeliResponse.error) {
                     console.error('Error loading OPERATIVA data');
@@ -7852,19 +7857,39 @@
                     dinamika: m.dinamika || 0
                 }));
 
-                // Transform odjeli data to odjeliStats format
+                // **IMPROVED: Enrich odjeli data with PROJEKAT from STANJE ODJELA (red 10 Excel)**
                 const odjeliStats = {};
                 if (odjeliResponse.odjeli && odjeliResponse.odjeli.length > 0) {
                     odjeliResponse.odjeli.forEach(odjel => {
+                        // Find matching odjel in STANJE ODJELA data
+                        let projekatTotal = 0;
+                        let radilisteNaziv = '';
+                        let zadnjiDatum = null;
+
+                        if (stanjeOdjelaData && stanjeOdjelaData.data) {
+                            const stanjeMatch = stanjeOdjelaData.data.find(s =>
+                                s.odjelNaziv.toLowerCase().includes(odjel.odjel.toLowerCase()) ||
+                                odjel.odjel.toLowerCase().includes(s.odjelNaziv.replace('.xlsx', '').toLowerCase())
+                            );
+
+                            if (stanjeMatch && stanjeMatch.redovi && stanjeMatch.redovi.projekat) {
+                                // Sum all sortimenti from projekat row (red 10 iz Excel-a)
+                                projekatTotal = stanjeMatch.redovi.projekat.reduce((sum, val) => sum + (val || 0), 0);
+                                radilisteNaziv = stanjeMatch.radiliste || '';
+                                zadnjiDatum = stanjeMatch.zadnjiDatum;
+                            }
+                        }
+
                         odjeliStats[odjel.odjel] = {
                             sječa: odjel.sjeca || 0,
                             otprema: odjel.otprema || 0,
-                            projekat: odjel.projekat || 0,
+                            projekat: projekatTotal > 0 ? projekatTotal : (odjel.projekat || 0), // Use STANJE ODJELA projekat if available
                             ukupnoPosjeklo: odjel.sjeca || 0,
                             zadnjaSjeca: odjel.zadnjaSjeca || 0,
                             datumZadnjeSjece: odjel.datumZadnjeSjece || '',
-                            radiliste: odjel.radiliste || '',
-                            izvođač: odjel.izvođač || ''
+                            radiliste: radilisteNaziv || odjel.radiliste || '',
+                            izvođač: odjel.izvođač || '',
+                            zadnjiDatumUnosa: zadnjiDatum
                         };
                     });
                 }
@@ -7874,10 +7899,11 @@
                     totalPrimka,
                     totalOtprema,
                     monthlyStats,
-                    odjeliStats
+                    odjeliStats,
+                    stanjeOdjelaRaw: stanjeOdjelaData // Pass raw data for additional features
                 };
 
-                console.log('Transformed data for OPERATIVA:', transformedData);
+                console.log('Transformed data for OPERATIVA (enriched with PROJEKAT):', transformedData);
 
                 // Load OPERATIVA with transformed data
                 loadOperativaData(transformedData);
