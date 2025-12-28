@@ -1849,58 +1849,61 @@
                     </div>
                 </div>
 
-                <!-- Submenu Tabs -->
-                <div class="submenu" style="margin-bottom: 24px;">
-                    <button class="submenu-tab active" onclick="switchPrimacPersonalTab('godisnji')">📅 Godišnji prikaz</button>
-                    <button class="submenu-tab" onclick="switchPrimacPersonalTab('detalji')">📋 Detaljni pregled</button>
+                <!-- Mjesečni dijagram sječe -->
+                <div class="worker-chart-card primac">
+                    <h3 class="worker-chart-title">📊 Mjesečna sječa - Grafički prikaz</h3>
+                    <canvas id="primac-chart" class="worker-chart-canvas"></canvas>
                 </div>
 
-                <!-- GODIŠNJI PRIKAZ TAB -->
-                <div id="primac-personal-godisnji" class="submenu-content">
-                    <div class="worker-table-card">
-                        <div class="worker-table-card-header">
-                            <h3 class="worker-table-card-title">
-                                📅 Godišnja rekapitulacija po mjesecima
-                            </h3>
-                            <span class="worker-table-card-badge" id="primac-godisnji-year">2025</span>
-                        </div>
-                        <div style="overflow-x: auto;">
-                            <table class="worker-table" id="primac-godisnji-table">
-                                <thead id="primac-godisnji-header"></thead>
-                                <tbody id="primac-godisnji-body"></tbody>
-                            </table>
-                        </div>
+                <!-- Controls -->
+                <div class="controls-bar">
+                    <input type="text" class="search-input" id="primac-personal-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterPrimacPersonalTable()">
+                    <button class="btn btn-primary" onclick="exportTableToCSV('primac-personal')">📥 Export CSV</button>
+                </div>
+
+                <!-- Modern Table Card -->
+                <div class="worker-table-card">
+                    <div class="worker-table-card-header">
+                        <h3 class="worker-table-card-title">
+                            📋 Sječa po odjelima
+                        </h3>
+                        <span class="worker-table-card-badge" id="primac-row-count">0 redova</span>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="worker-table" id="primac-personal-table">
+                            <thead id="primac-personal-header"></thead>
+                            <tbody id="primac-personal-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PRIMAC GODISNJI VIEW -->
+        <div id="primac-godisnji-content" class="container hidden">
+            <div class="section">
+                <!-- Professional Header -->
+                <div class="worker-header primac">
+                    <div class="worker-header-icon">📅</div>
+                    <div>
+                        <h1 class="worker-header-title">Godišnji prikaz</h1>
+                        <p class="worker-header-subtitle">Mjesečna rekapitulacija sječe</p>
                     </div>
                 </div>
 
-                <!-- DETALJNI PREGLED TAB -->
-                <div id="primac-personal-detalji" class="submenu-content hidden">
-                    <!-- Mjesečni dijagram sječe -->
-                    <div class="worker-chart-card primac">
-                        <h3 class="worker-chart-title">📊 Mjesečna sječa - Grafički prikaz</h3>
-                        <canvas id="primac-chart" class="worker-chart-canvas"></canvas>
+                <!-- Godišnja tabela -->
+                <div class="worker-table-card">
+                    <div class="worker-table-card-header">
+                        <h3 class="worker-table-card-title">
+                            📅 Godišnja rekapitulacija po mjesecima
+                        </h3>
+                        <span class="worker-table-card-badge" id="primac-godisnji-year-badge">2025</span>
                     </div>
-
-                    <!-- Controls -->
-                    <div class="controls-bar">
-                        <input type="text" class="search-input" id="primac-personal-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterPrimacPersonalTable()">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('primac-personal')">📥 Export CSV</button>
-                    </div>
-
-                    <!-- Modern Table Card -->
-                    <div class="worker-table-card">
-                        <div class="worker-table-card-header">
-                            <h3 class="worker-table-card-title">
-                                📋 Sječa po odjelima
-                            </h3>
-                            <span class="worker-table-card-badge" id="primac-row-count">0 redova</span>
-                        </div>
-                        <div style="overflow-x: auto;">
-                            <table class="worker-table" id="primac-personal-table">
-                                <thead id="primac-personal-header"></thead>
-                                <tbody id="primac-personal-body"></tbody>
-                            </table>
-                        </div>
+                    <div style="overflow-x: auto;">
+                        <table class="worker-table" id="primac-godisnji-main-table">
+                            <thead id="primac-godisnji-main-header"></thead>
+                            <tbody id="primac-godisnji-main-body"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -3010,9 +3013,10 @@
             const userType = currentUser.type; // 'primac', 'otpremac', ili nešto drugo
 
             if (userType === 'primac') {
-                // Primač vidi četiri prikaza: pregled, po odjelima, dodavanje, i moje sječe
+                // Primač vidi pet prikaza: pregled, godišnji prikaz, po odjelima, dodavanje, i moje sječe
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('primac-personal')">👷 Pregled sječe u tekućoj godini</button>
+                    <button class="tab" onclick="switchTab('primac-godisnji')">📅 Godišnji prikaz</button>
                     <button class="tab" onclick="switchTab('primac-odjeli')">🏭 Prikaz po odjelima</button>
                     <button class="tab" onclick="switchTab('add-sjeca')">➕ Dodaj sječu</button>
                     <button class="tab" onclick="switchTab('my-sjece')">📝 Moje sječe</button>
@@ -3091,6 +3095,7 @@
             document.getElementById('otpremaci-content').classList.add('hidden');
             document.getElementById('kupci-content').classList.add('hidden');
             document.getElementById('primac-personal-content').classList.add('hidden');
+            document.getElementById('primac-godisnji-content').classList.add('hidden');
             document.getElementById('otpremac-personal-content').classList.add('hidden');
             document.getElementById('primac-odjeli-content').classList.add('hidden');
             document.getElementById('otpremac-odjeli-content').classList.add('hidden');
@@ -3115,6 +3120,9 @@
                 loadKupci();
             } else if (tab === 'primac-personal') {
                 loadPrimacPersonal();
+            } else if (tab === 'primac-godisnji') {
+                loadPrimacGodisnji();
+                document.getElementById('primac-godisnji-content').classList.remove('hidden');
             } else if (tab === 'otpremac-personal') {
                 loadOtpremacPersonal();
             } else if (tab === 'primac-odjeli') {
@@ -4723,7 +4731,7 @@
                         ${data.sortimentiNazivi.map(s => `<th class="sortiment-col">${s}</th>`).join('')}
                     </tr>
                 `;
-                document.getElementById('primac-godisnji-header').innerHTML = headerHTML;
+                document.getElementById('primac-godisnji-main-header').innerHTML = headerHTML;
 
                 // Create body
                 let totalSortimenti = {};
@@ -4766,8 +4774,8 @@
                     </tr>
                 `;
 
-                document.getElementById('primac-godisnji-body').innerHTML = bodyWithTotals;
-                document.getElementById('primac-godisnji-year').textContent = year;
+                document.getElementById('primac-godisnji-main-body').innerHTML = bodyWithTotals;
+                document.getElementById('primac-godisnji-year-badge').textContent = year;
 
             } catch (error) {
                 showError('Greška', 'Greška pri učitavanju godišnjeg prikaza: ' + error.message);
