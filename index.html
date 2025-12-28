@@ -8035,7 +8035,22 @@
                                 projekatTotal = stanjeMatch.redovi.projekat.reduce((sum, val) => sum + (val || 0), 0);
                                 radilisteNaziv = stanjeMatch.radiliste || '';
                                 zadnjiDatum = stanjeMatch.zadnjiDatum;
+
+                                // DEBUG: Log projekat sources za GRMEČ JASENICA 39
+                                if (odjel.odjel.includes('JASENICA 39') || odjel.odjel.includes('GRMEČ')) {
+                                    console.log('=== DEBUG GRMEČ JASENICA 39 ===');
+                                    console.log('Odjel name:', odjel.odjel);
+                                    console.log('odjel.projekat (U11 from handleOdjeli):', odjel.projekat);
+                                    console.log('projekatTotal (STANJE ODJELA red 10):', projekatTotal);
+                                    console.log('stanjeMatch.odjelNaziv:', stanjeMatch.odjelNaziv);
+                                    console.log('stanjeMatch.redovi.projekat:', stanjeMatch.redovi.projekat);
+                                }
                             }
+                        }
+
+                        // DEBUG: Check for duplicate odjeli
+                        if (odjeliStats[odjel.odjel]) {
+                            console.warn('DUPLICATE ODJEL DETECTED:', odjel.odjel, 'Previous:', odjeliStats[odjel.odjel], 'New:', odjel);
                         }
 
                         odjeliStats[odjel.odjel] = {
@@ -8378,15 +8393,20 @@
                 const zadnjiDatum = stats.zadnjiDatumUnosa || '';
                 const procenat = projekat > 0 ? ((ostvareno / projekat) * 100) : 0;
 
-                // Kriterijum 1: KRITIČNO - Nije bilo unosa > 5 dana + projekat daleko veći od posječenog
-                if (zadnjiDatum && projekat > 0) {
+                // FILTER: Ne prikazuj alerte za odjele gdje je zadnji unos stariji od 30 dana
+                if (zadnjiDatum) {
                     const dateParts = zadnjiDatum.split('.');
                     if (dateParts.length === 3) {
                         const lastEntry = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
                         const daysSinceEntry = Math.floor((today - lastEntry) / (1000 * 60 * 60 * 24));
 
-                        // KRITIČNO: Više od 5 dana + posječeno manje od 50% projekta
-                        if (daysSinceEntry > 5 && procenat < 50) {
+                        if (daysSinceEntry > 30) {
+                            console.log(`Skipping alert for ${odjel} - zadnji unos prije ${daysSinceEntry} dana (> 30 dana)`);
+                            return; // Skip ovaj odjel kompletno
+                        }
+
+                        // Kriterijum 1: KRITIČNO - Nije bilo unosa > 5 dana + projekat daleko veći od posječenog
+                        if (projekat > 0 && daysSinceEntry > 5 && procenat < 50) {
                             criticalAlerts.push({
                                 odjel,
                                 reason: `${daysSinceEntry} dana bez unosa, ${procenat.toFixed(0)}% plana`,
@@ -8398,6 +8418,7 @@
                 }
 
                 // Kriterijum 2: UPOZORENJE - Posječena masa > 110% projekta (blizu 115% limite za aneks)
+                // Samo ako nije preskočen zbog 30-day filtera
                 if (projekat > 0 && procenat > 110) {
                     warningAlerts.push({
                         odjel,
@@ -8467,12 +8488,15 @@
                 izvodjac = izvodjac.trim(); // Remove whitespace
 
                 if (!izvodjac || izvodjac === '') {
+                    console.log('Skipping odjel with empty izvođač:', odjel, stats);
                     return; // Skip empty izvođači
                 }
 
                 // Normalize for grouping (uppercase, trim)
                 const normalizedName = izvodjac.toUpperCase();
                 const sjeca = stats.sječa || 0;
+
+                console.log(`Adding odjel ${odjel} to izvođač ${normalizedName}: ${sjeca} m³`);
 
                 if (!izvodjaciMap[normalizedName]) {
                     izvodjaciMap[normalizedName] = 0;
@@ -8482,6 +8506,10 @@
             });
 
             console.log('Izvođači grouped (normalized):', izvodjaciMap);
+
+            // Calculate and log total suma
+            const totalSuma = Object.values(izvodjaciMap).reduce((sum, val) => sum + val, 0);
+            console.log('TOTAL SUMA SVIH IZVOĐAČA:', totalSuma.toFixed(2), 'm³');
 
             // Sort by volume and use original names for display
             const sorted = Object.entries(izvodjaciMap)
