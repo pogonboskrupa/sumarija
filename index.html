@@ -774,10 +774,10 @@
         /* Gradient Headers for Worker Views */
         .worker-header {
             background: linear-gradient(135deg, #047857 0%, #059669 50%, #10b981 100%);
-            padding: 32px 24px;
-            border-radius: 16px 16px 0 0;
-            margin: -24px -24px 24px -24px;
-            box-shadow: 0 8px 24px rgba(4, 120, 87, 0.15);
+            padding: 20px 24px;
+            border-radius: 12px 12px 0 0;
+            margin: -24px -24px 20px -24px;
+            box-shadow: 0 4px 12px rgba(4, 120, 87, 0.15);
         }
 
         .worker-header.primac {
@@ -790,24 +790,24 @@
 
         .worker-header-title {
             color: white;
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 800;
-            margin: 0 0 8px 0;
+            margin: 0 0 6px 0;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .worker-header-subtitle {
             color: rgba(255, 255, 255, 0.95);
-            font-size: 15px;
+            font-size: 13px;
             margin: 0;
             font-weight: 600;
             text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
         }
 
         .worker-header-icon {
-            font-size: 36px;
+            font-size: 28px;
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
         }
 
@@ -883,7 +883,7 @@
             padding: 14px 12px;
             text-align: left;
             font-weight: 700;
-            font-size: 12px;
+            font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             border-bottom: 3px solid rgba(255, 255, 255, 0.2);
@@ -900,8 +900,9 @@
         .worker-table td {
             padding: 12px;
             border-bottom: 1px solid #f3f4f6;
-            color: #1f2937;
-            font-weight: 500;
+            color: #111827;
+            font-weight: 600;
+            font-size: 14px;
         }
 
         .worker-table tbody tr {
@@ -1273,6 +1274,38 @@
             margin-left: 4px;
         }
 
+        /* Worker Chart Container */
+        .worker-chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .worker-chart-card.primac {
+            border-top: 3px solid #047857;
+        }
+
+        .worker-chart-card.otpremac {
+            border-top: 3px solid #2563eb;
+        }
+
+        .worker-chart-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0 0 16px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .worker-chart-canvas {
+            max-height: 300px;
+        }
+
         /* Responsive Design for Workers */
         @media (max-width: 768px) {
             .worker-header {
@@ -1386,6 +1419,19 @@
                 font-size: 15px;
                 font-weight: 800;
                 color: #000000;
+            }
+
+            /* Chart responsive */
+            .worker-chart-card {
+                padding: 16px;
+            }
+
+            .worker-chart-title {
+                font-size: 14px;
+            }
+
+            .worker-chart-canvas {
+                max-height: 250px;
             }
         }
     </style>
@@ -1786,6 +1832,12 @@
                     </div>
                 </div>
 
+                <!-- Mjesečni dijagram sječe -->
+                <div class="worker-chart-card primac">
+                    <h3 class="worker-chart-title">📊 Mjesečna sječa - Grafički prikaz</h3>
+                    <canvas id="primac-chart" class="worker-chart-canvas"></canvas>
+                </div>
+
                 <!-- Controls -->
                 <div class="controls-bar">
                     <input type="text" class="search-input" id="primac-personal-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterPrimacPersonalTable()">
@@ -1820,6 +1872,12 @@
                         <h1 class="worker-header-title">Pregled otpreme</h1>
                         <p class="worker-header-subtitle">Vaši unosi za tekuću godinu - kompletan pregled po odjelima i kupcima</p>
                     </div>
+                </div>
+
+                <!-- Mjesečni dijagram otpreme -->
+                <div class="worker-chart-card otpremac">
+                    <h3 class="worker-chart-title">📊 Mjesečna otprema - Grafički prikaz</h3>
+                    <canvas id="otpremac-chart" class="worker-chart-canvas"></canvas>
                 </div>
 
                 <!-- Controls -->
@@ -4428,6 +4486,135 @@
             }
         }
 
+        // ========================================
+        // WORKER MONTHLY CHART
+        // ========================================
+
+        let primacChart = null;
+        let otpremacChart = null;
+
+        function createWorkerMonthlyChart(canvasId, unosi, colorPrimary, colorSecondary) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+
+            // Destroy existing chart if exists
+            if (canvasId === 'primac-chart' && primacChart) {
+                primacChart.destroy();
+            }
+            if (canvasId === 'otpremac-chart' && otpremacChart) {
+                otpremacChart.destroy();
+            }
+
+            // Group by month
+            const monthlyData = {};
+            const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
+
+            // Initialize all months to 0
+            for (let i = 1; i <= 12; i++) {
+                monthlyData[i] = 0;
+            }
+
+            // Sum up by month
+            unosi.forEach(u => {
+                const dateParts = u.datum.split('.');
+                if (dateParts.length >= 2) {
+                    const mjesec = parseInt(dateParts[1]);
+                    monthlyData[mjesec] += u.ukupno || 0;
+                }
+            });
+
+            // Prepare data for chart
+            const labels = mjeseci;
+            const values = mjeseci.map((_, idx) => monthlyData[idx + 1]);
+
+            // Create gradient
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, colorPrimary);
+            gradient.addColorStop(1, colorSecondary);
+
+            // Create chart
+            const chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Količina (m³)',
+                        data: values,
+                        backgroundColor: gradient,
+                        borderColor: colorPrimary,
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2.5,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Ukupno: ' + context.parsed.y.toFixed(2) + ' m³';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                font: {
+                                    size: 11,
+                                    weight: '600'
+                                },
+                                color: '#6b7280',
+                                callback: function(value) {
+                                    return value.toFixed(0) + ' m³';
+                                }
+                            },
+                            grid: {
+                                color: '#f3f4f6',
+                                drawBorder: false
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: 12,
+                                    weight: '700'
+                                },
+                                color: '#374151'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Store chart reference
+            if (canvasId === 'primac-chart') {
+                primacChart = chart;
+            } else if (canvasId === 'otpremac-chart') {
+                otpremacChart = chart;
+            }
+        }
+
         // Load primac personal data
         async function loadPrimacPersonal() {
             document.getElementById('loading-screen').classList.remove('hidden');
@@ -4500,6 +4687,9 @@
                 `;
 
                 document.getElementById('primac-personal-body').innerHTML = bodyWithTotals;
+
+                // Create monthly chart
+                createWorkerMonthlyChart('primac-chart', data.unosi, '#047857', '#10b981');
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('primac-personal-content').classList.remove('hidden');
@@ -4584,6 +4774,9 @@
                 `;
 
                 document.getElementById('otpremac-personal-body').innerHTML = bodyWithTotals;
+
+                // Create monthly chart
+                createWorkerMonthlyChart('otpremac-chart', data.unosi, '#1e40af', '#3b82f6');
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('otpremac-personal-content').classList.remove('hidden');
