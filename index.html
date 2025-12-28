@@ -8047,7 +8047,7 @@
                             datumZadnjeSjece: odjel.datumZadnjeSjece || '',
                             radiliste: radilisteNaziv || odjel.radiliste || '',
                             izvođač: odjel.izvođač || '',
-                            zadnjiDatumUnosa: zadnjiDatum
+                            zadnjiDatumUnosa: odjel.datumZadnjeSjece || '' // Use formatted date from odjel, not stanjeMatch
                         };
                     });
                 }
@@ -8366,6 +8366,7 @@
 
         // Render Performance Alerts Banner
         function renderPerformanceAlerts(odjeliStats) {
+            console.log('renderPerformanceAlerts called with:', odjeliStats);
             const lowPerformers = [];
 
             Object.entries(odjeliStats).forEach(([odjel, stats]) => {
@@ -8378,6 +8379,7 @@
                 }
             });
 
+            console.log('Low performers found:', lowPerformers);
             const banner = document.getElementById('performance-alerts-banner');
 
             if (lowPerformers.length > 0) {
@@ -8404,6 +8406,7 @@
 
         // Render Top Izvođači Performance
         function renderIzvodjaciPerformance(odjeliStats) {
+            console.log('renderIzvodjaciPerformance called with:', odjeliStats);
             const izvodjaciMap = {};
 
             // Group by izvođač
@@ -8417,11 +8420,15 @@
                 izvodjaciMap[izvodjac] += sjeca;
             });
 
+            console.log('Izvođači grouped:', izvodjaciMap);
+
             // Sort by volume
             const sorted = Object.entries(izvodjaciMap)
-                .filter(([name]) => name !== 'Nepoznat')
+                .filter(([name]) => name !== 'Nepoznat' && name !== '')
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 10);
+
+            console.log('Top izvođači sorted:', sorted);
 
             const html = sorted.length > 0
                 ? sorted.map(([izvodjac, volume], index) => {
@@ -8443,6 +8450,7 @@
 
         // Render Sortimenti Breakdown (Četinari vs Lišćari)
         function renderSortimentiBreakdown(stanjeOdjelaRaw) {
+            console.log('renderSortimentiBreakdown called with:', stanjeOdjelaRaw);
             let cetinariTotal = 0;
             let liscariTotal = 0;
 
@@ -8469,6 +8477,8 @@
                     }
                 });
             }
+
+            console.log('Sortimenti totals - Četinari:', cetinariTotal, 'Lišćari:', liscariTotal);
 
             const total = cetinariTotal + liscariTotal;
             const cetinariProcenat = total > 0 ? ((cetinariTotal / total) * 100) : 50;
@@ -8500,6 +8510,7 @@
 
         // Render Timeline - Zadnji Unosi
         function renderTimelineUnosi(odjeliStats) {
+            console.log('renderTimelineUnosi called with:', odjeliStats);
             const timeline = [];
 
             Object.entries(odjeliStats).forEach(([odjel, stats]) => {
@@ -8508,6 +8519,8 @@
                     timeline.push({ odjel, datum: zadnjiDatum });
                 }
             });
+
+            console.log('Timeline entries:', timeline);
 
             // Sort by date (most recent first)
             timeline.sort((a, b) => {
