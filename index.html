@@ -1851,12 +1851,30 @@
 
                 <!-- Submenu Tabs -->
                 <div class="submenu" style="margin-bottom: 24px;">
-                    <button class="submenu-tab active" onclick="switchPrimacPersonalTab('detalji')">📋 Detaljni pregled</button>
-                    <button class="submenu-tab" onclick="switchPrimacPersonalTab('godisnji')">📅 Godišnji prikaz</button>
+                    <button class="submenu-tab active" onclick="switchPrimacPersonalTab('godisnji')">📅 Godišnji prikaz</button>
+                    <button class="submenu-tab" onclick="switchPrimacPersonalTab('detalji')">📋 Detaljni pregled</button>
+                </div>
+
+                <!-- GODIŠNJI PRIKAZ TAB -->
+                <div id="primac-personal-godisnji" class="submenu-content">
+                    <div class="worker-table-card">
+                        <div class="worker-table-card-header">
+                            <h3 class="worker-table-card-title">
+                                📅 Godišnja rekapitulacija po mjesecima
+                            </h3>
+                            <span class="worker-table-card-badge" id="primac-godisnji-year">2025</span>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table class="worker-table" id="primac-godisnji-table">
+                                <thead id="primac-godisnji-header"></thead>
+                                <tbody id="primac-godisnji-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- DETALJNI PREGLED TAB -->
-                <div id="primac-personal-detalji" class="submenu-content">
+                <div id="primac-personal-detalji" class="submenu-content hidden">
                     <!-- Mjesečni dijagram sječe -->
                     <div class="worker-chart-card primac">
                         <h3 class="worker-chart-title">📊 Mjesečna sječa - Grafički prikaz</h3>
@@ -1881,24 +1899,6 @@
                             <table class="worker-table" id="primac-personal-table">
                                 <thead id="primac-personal-header"></thead>
                                 <tbody id="primac-personal-body"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- GODIŠNJI PRIKAZ TAB -->
-                <div id="primac-personal-godisnji" class="submenu-content hidden">
-                    <div class="worker-table-card">
-                        <div class="worker-table-card-header">
-                            <h3 class="worker-table-card-title">
-                                📅 Godišnja rekapitulacija po mjesecima
-                            </h3>
-                            <span class="worker-table-card-badge" id="primac-godisnji-year">2025</span>
-                        </div>
-                        <div style="overflow-x: auto;">
-                            <table class="worker-table" id="primac-godisnji-table">
-                                <thead id="primac-godisnji-header"></thead>
-                                <tbody id="primac-godisnji-body"></tbody>
                             </table>
                         </div>
                     </div>
@@ -4721,7 +4721,6 @@
                     <tr>
                         <th>Mjesec</th>
                         ${data.sortimentiNazivi.map(s => `<th class="sortiment-col">${s}</th>`).join('')}
-                        <th class="ukupno-col">Ukupno</th>
                     </tr>
                 `;
                 document.getElementById('primac-godisnji-header').innerHTML = headerHTML;
@@ -4750,7 +4749,6 @@
                         <tr class="mjesec-${mjesecNum}">
                             <td style="font-weight: 700;">${mjesec}</td>
                             ${sortimentiCells}
-                            <td class="ukupno-col">${monthData.ukupno > 0 ? monthData.ukupno.toFixed(2) : '-'}</td>
                         </tr>
                     `;
                 }).join('');
@@ -4765,7 +4763,6 @@
                     <tr class="totals-row">
                         <td style="text-align: left;">GODIŠNJE UKUPNO</td>
                         ${totalsCells}
-                        <td class="ukupno-col">${totalUkupno.toFixed(2)}</td>
                     </tr>
                 `;
 
@@ -4855,6 +4852,9 @@
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('primac-personal-content').classList.remove('hidden');
+
+                // Load godišnji prikaz by default (it's the first tab)
+                loadPrimacGodisnji();
 
             } catch (error) {
                 showError('Greška', 'Greška pri učitavanju podataka: ' + error.message);
