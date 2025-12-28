@@ -429,7 +429,23 @@
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
             document.getElementById('user-name').textContent = currentUser.fullName;
-            document.getElementById('user-role').textContent = currentUser.role === 'admin' ? 'Administrator' : currentUser.type;
+
+            // Set user role display
+            let roleDisplay = currentUser.type;
+            if (currentUser.role === 'admin') {
+                roleDisplay = 'Administrator';
+            } else if (currentUser.type === 'OPERATIVA') {
+                roleDisplay = 'Operativa';
+            }
+            document.getElementById('user-role').textContent = roleDisplay;
+
+            // Show/Hide OPERATIVA tab based on user role
+            const operativaTab = document.querySelector('.tab[onclick*="operativa"]');
+            if (currentUser.role === 'admin' || currentUser.type === 'OPERATIVA') {
+                operativaTab.style.display = 'block';
+            } else {
+                operativaTab.style.display = 'none';
+            }
         }
         
         function logout() {
@@ -703,6 +719,12 @@
 
         // Switch between Admin and Operativa views
         function switchView(view) {
+            // Check if user has access to operativa view
+            if (view === 'operativa' && currentUser.role !== 'admin' && currentUser.type !== 'OPERATIVA') {
+                console.warn('Unauthorized access attempt to Operativa view');
+                return;
+            }
+
             // Update tab active state
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.classList.remove('active');
