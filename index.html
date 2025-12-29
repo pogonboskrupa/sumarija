@@ -288,6 +288,116 @@
         .kupci-table .totals-row td { border-bottom: 3px solid #10b981; padding: 12px 6px; }
 
         /* ============================================
+           EXPERT TABLE STYLES - Premium Design
+           ============================================ */
+        .expert-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .expert-table thead th {
+            background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+            color: white;
+            padding: 18px 16px;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 3px solid #06b6d4;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            text-align: left;
+        }
+        .expert-table thead th:first-child {
+            border-top-left-radius: 8px;
+            position: sticky;
+            left: 0;
+            z-index: 20;
+            background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+        }
+        .expert-table thead th:last-child {
+            border-top-right-radius: 8px;
+            background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+            border-bottom-color: #10b981;
+        }
+        .expert-table tbody tr {
+            transition: all 0.2s ease;
+        }
+        .expert-table tbody tr:nth-child(odd) {
+            background: #f0f9ff;
+        }
+        .expert-table tbody tr:nth-child(even) {
+            background: white;
+        }
+        .expert-table tbody tr:hover {
+            background: #e0f2fe;
+            transform: scale(1.005);
+            box-shadow: 0 2px 8px rgba(8, 145, 178, 0.15);
+        }
+        .expert-table tbody td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e0e7ff;
+            font-size: 15px;
+        }
+        .expert-table tbody td:first-child {
+            font-weight: 600;
+            color: #0c4a6e;
+            position: sticky;
+            left: 0;
+            background: inherit;
+            z-index: 5;
+        }
+        .expert-table tbody tr:nth-child(odd) td:first-child {
+            background: #f0f9ff;
+        }
+        .expert-table tbody tr:nth-child(even) td:first-child {
+            background: white;
+        }
+        .expert-table tbody tr:hover td:first-child {
+            background: #e0f2fe;
+        }
+        .expert-table tbody td:last-child {
+            font-weight: 700;
+            color: #047857;
+            background: #f0fdf4;
+            text-align: right;
+        }
+        .expert-table tbody td.sortiment-value {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            color: #0e7490;
+        }
+        .expert-table tfoot tr {
+            background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+            font-weight: 700;
+            font-size: 16px;
+        }
+        .expert-table tfoot td {
+            padding: 18px 16px;
+            color: white;
+            border-top: 3px solid #10b981;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .expert-table tfoot td:first-child {
+            font-size: 15px;
+            position: sticky;
+            left: 0;
+            background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+            z-index: 15;
+        }
+        .expert-table tfoot td:last-child {
+            text-align: right;
+            font-size: 18px;
+            background: linear-gradient(135deg, #065f46 0%, #064e3b 100%);
+        }
+
+        /* ============================================
            MONTHLY SORTIMENTI TABLE STYLES
            ============================================ */
         .mjesecni-table-wrapper table {
@@ -2136,6 +2246,7 @@
                 <button class="submenu-tab active" onclick="switchOtremaciSubmenu('monthly')">📊 Mjesečni prikaz</button>
                 <button class="submenu-tab" onclick="switchOtremaciSubmenu('daily')">📅 Po danima</button>
                 <button class="submenu-tab" onclick="switchOtremaciSubmenu('radilista')">🏗️ Radilišta</button>
+                <button class="submenu-tab" onclick="switchOtremaciSubmenu('po-kupcima')" id="otpremaci-po-kupcima-tab">🏢 Otprema u <span id="current-month-name">tekućem mjesecu</span></button>
             </div>
 
             <!-- Mjesečni prikaz -->
@@ -2201,6 +2312,26 @@
                         <thead id="otpremaci-radilista-recap-header"></thead>
                         <tbody id="otpremaci-radilista-recap-body"></tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Prikaz otpreme po kupcima u tekućem mjesecu -->
+            <div id="otpremaci-po-kupcima-view" class="submenu-content hidden">
+                <div class="section">
+                    <h3 style="color: #0891b2; text-align: center; margin-bottom: 20px; font-size: 24px;">
+                        🏢 Otprema po kupcima - <span id="otpremaci-po-kupcima-month-title"></span>
+                    </h3>
+                    <div class="controls-bar">
+                        <input type="text" class="search-input" id="otpremaci-po-kupcima-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterOtremaciPoKupcimaTable()">
+                        <button class="btn btn-primary" onclick="exportTableToCSV('otpremaci-po-kupcima')">📥 Export CSV</button>
+                    </div>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="expert-table" id="otpremaci-po-kupcima-table">
+                            <thead id="otpremaci-po-kupcima-header"></thead>
+                            <tbody id="otpremaci-po-kupcima-body"></tbody>
+                            <tfoot id="otpremaci-po-kupcima-footer"></tfoot>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -4239,6 +4370,7 @@
             document.getElementById('otpremaci-monthly-view').classList.add('hidden');
             document.getElementById('otpremaci-daily-view').classList.add('hidden');
             document.getElementById('otpremaci-radilista-view').classList.add('hidden');
+            document.getElementById('otpremaci-po-kupcima-view').classList.add('hidden');
 
             // Show selected view
             if (view === 'monthly') {
@@ -4254,6 +4386,12 @@
                 // Load radilista data if not already loaded
                 if (!document.getElementById('otpremaci-radilista-header').innerHTML) {
                     loadOtremaciByRadiliste();
+                }
+            } else if (view === 'po-kupcima') {
+                document.getElementById('otpremaci-po-kupcima-view').classList.remove('hidden');
+                // Load kupci data if not already loaded
+                if (!document.getElementById('otpremaci-po-kupcima-header').innerHTML) {
+                    loadOtremaciPoKupcima();
                 }
             }
         }
@@ -6187,6 +6325,128 @@
         function filterKupciMjesecniTable() {
             const searchInput = document.getElementById('kupci-mjesecni-search').value.toLowerCase();
             const rows = document.querySelectorAll('#kupci-mjesecni-body tr');
+
+            rows.forEach(row => {
+                const kupac = row.getAttribute('data-kupac') || '';
+                if (kupac.includes(searchInput)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Load otpreme po kupcima u tekućem mjesecu
+        async function loadOtremaciPoKupcima() {
+            console.log('Loading Otpremaci po kupcima...');
+
+            try {
+                const year = new Date().getFullYear();
+                const url = `${API_URL}?path=kupci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, 'cache_kupci_' + year);
+
+                console.log('Kupci data for otpreme:', data);
+
+                if (data.error || !data.mjesecni || !data.sortimentiNazivi) {
+                    throw new Error(data.error || 'Nema podataka');
+                }
+
+                // Update dynamic month name in tab and title
+                const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
+                const currentMjesec = mjeseci[new Date().getMonth()];
+                document.getElementById('current-month-name').textContent = currentMjesec;
+                document.getElementById('otpremaci-po-kupcima-month-title').textContent = currentMjesec + ' ' + year;
+
+                // Renderuj expert tabelu
+                renderOtremaciPoKupcimaExpertTable(data.mjesecni, data.sortimentiNazivi);
+
+            } catch (error) {
+                console.error('Error loading otpremaci po kupcima:', error);
+                document.getElementById('otpremaci-po-kupcima-body').innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #dc2626;">Greška pri učitavanju: ' + error.message + '</td></tr>';
+            }
+        }
+
+        // Renderuj expert tabelu sa sortiranjem i rekapitulacijom
+        function renderOtremaciPoKupcimaExpertTable(mjesecni, sortimentiNazivi) {
+            const headerElem = document.getElementById('otpremaci-po-kupcima-header');
+            const bodyElem = document.getElementById('otpremaci-po-kupcima-body');
+            const footerElem = document.getElementById('otpremaci-po-kupcima-footer');
+
+            // Filtruj samo trenutni mjesec
+            const currentDate = new Date();
+            const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
+            const currentMjesec = mjeseci[currentDate.getMonth()];
+
+            let filteredData = mjesecni.filter(red => red.mjesec === currentMjesec);
+
+            if (!filteredData || filteredData.length === 0) {
+                headerElem.innerHTML = '';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za tekući mjesec (' + currentMjesec + ')</td></tr>';
+                footerElem.innerHTML = '';
+                return;
+            }
+
+            // SORTIRANJE: Od najvećeg ka najmanjem po ukupnoj količini
+            filteredData.sort((a, b) => (b.ukupno || 0) - (a.ukupno || 0));
+
+            // HEADER sa svim sortimentima
+            let headerHtml = '<tr><th>Kupac</th>';
+            sortimentiNazivi.forEach(sortiment => {
+                if (sortiment !== 'SVEUKUPNO') {
+                    headerHtml += `<th style="text-align: right;">${sortiment}</th>`;
+                }
+            });
+            headerHtml += '<th style="text-align: right;">UKUPNO (m³)</th></tr>';
+            headerElem.innerHTML = headerHtml;
+
+            // BODY redovi + računanje rekapitulacije
+            let bodyHtml = '';
+            const totals = {};
+            let grandTotal = 0;
+
+            // Inicijalizuj sve sortimente na 0
+            sortimentiNazivi.forEach(sortiment => {
+                totals[sortiment] = 0;
+            });
+
+            filteredData.forEach((red, index) => {
+                bodyHtml += `<tr data-kupac="${(red.kupac || '').toLowerCase()}">`;
+                bodyHtml += `<td>${red.kupac || '-'}</td>`;
+
+                sortimentiNazivi.forEach(sortiment => {
+                    if (sortiment !== 'SVEUKUPNO') {
+                        const kolicina = red.sortimenti[sortiment] || 0;
+                        totals[sortiment] += kolicina;
+                        const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
+                        bodyHtml += `<td class="sortiment-value">${display}</td>`;
+                    }
+                });
+
+                const ukupno = red.ukupno || 0;
+                grandTotal += ukupno;
+                bodyHtml += `<td>${ukupno.toFixed(2)}</td>`;
+                bodyHtml += '</tr>';
+            });
+            bodyElem.innerHTML = bodyHtml;
+
+            // FOOTER - Rekapitulacija mjeseca
+            let footerHtml = '<tr><td>📊 REKAPITULACIJA ' + currentMjesec.toUpperCase() + '</td>';
+            sortimentiNazivi.forEach(sortiment => {
+                if (sortiment !== 'SVEUKUPNO') {
+                    const total = totals[sortiment] || 0;
+                    const display = total > 0 ? total.toFixed(2) : '-';
+                    footerHtml += `<td style="text-align: right;">${display}</td>`;
+                }
+            });
+            footerHtml += `<td>${grandTotal.toFixed(2)}</td>`;
+            footerHtml += '</tr>';
+            footerElem.innerHTML = footerHtml;
+        }
+
+        // Filter funkcija za otpreme po kupcima
+        function filterOtremaciPoKupcimaTable() {
+            const searchInput = document.getElementById('otpremaci-po-kupcima-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#otpremaci-po-kupcima-body tr');
 
             rows.forEach(row => {
                 const kupac = row.getAttribute('data-kupac') || '';
