@@ -1890,7 +1890,7 @@
                     </div>
                 </div>
                 <div class="header-center">
-                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cdefs%3E%3ClinearGradient id='treeGrad' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23047857;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23065f46;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='60' cy='60' r='58' fill='%23f0fdf4' stroke='%23047857' stroke-width='3'/%3E%3Cpath d='M60 25 L70 45 L65 45 L75 60 L70 60 L80 75 L40 75 L50 60 L45 60 L55 45 L50 45 Z' fill='url(%23treeGrad)'/%3E%3Crect x='56' y='75' width='8' height='15' fill='%2378350f' rx='1'/%3E%3Ctext x='60' y='105' font-family='Arial,sans-serif' font-size='10' font-weight='bold' fill='%23047857' text-anchor='middle'%3EŠPD%3C/text%3E%3C/svg%3E" alt="ŠPD Unsko-Sanske Šume Logo" class="company-logo" id="company-logo">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 280'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23fef08a;stop-opacity:1'/%3E%3Cstop offset='100%25' style='stop-color:%23fde047;stop-opacity:1'/%3E%3C/linearGradient%3E%3ClinearGradient id='tree' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23047857;stop-opacity:1'/%3E%3Cstop offset='100%25' style='stop-color:%23065f46;stop-opacity:1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='5' y='5' width='190' height='270' rx='35' fill='url(%23bg)' stroke='%2359b9a4' stroke-width='8'/%3E%3Ctext x='25' y='50' font-family='Arial,sans-serif' font-size='14' font-weight='700' fill='%23047857' writing-mode='tb' letter-spacing='2'%3ESPD UNISKO-SANSKE SUME%3C/text%3E%3Cpath d='M100 60 L115 95 L108 95 L118 125 L112 125 L125 155 L75 155 L88 125 L82 125 L92 95 L85 95 Z' fill='url(%23tree)'/%3E%3Crect x='96' y='155' width='8' height='20' fill='%235d4037' rx='1'/%3E%3Cellipse cx='145' cy='85' rx='25' ry='35' fill='%23a7d5a6' opacity='0.6'/%3E%3Cpath d='M145 50 Q120 70 120 100 Q120 130 145 150 Q145 130 145 100 Q145 70 145 50 Z' fill='%23a7d5a6' opacity='0.5'/%3E%3Cpath d='M135 110 Q145 95 145 75 L145 150 Q120 130 120 100 Q120 115 135 110 Z M155 110 Q145 95 145 75 L145 150 Q170 130 170 100 Q170 115 155 110 Z' fill='%2378b877' opacity='0.4'/%3E%3Cellipse cx='145' cy='155' rx='20' ry='15' fill='%23a7d5a6' opacity='0.5'/%3E%3Cellipse cx='160' cy='140' rx='18' ry='22' fill='%23a7d5a6' opacity='0.4'/%3E%3Cpath d='M115 200 Q145 180 175 200 Q175 220 145 245 Q115 220 115 200 Z' fill='%2378b877' stroke='%23047857' stroke-width='4'/%3E%3Cpath d='M125 210 Q145 195 165 210 L145 230 Z' fill='%23fde047' opacity='0.3'/%3E%3Ctext x='100' y='260' font-family='Arial,sans-serif' font-size='16' font-weight='700' fill='%23dc2626' text-anchor='middle'%3EBOSANSKA%3C/text%3E%3Ctext x='100' y='275' font-family='Arial,sans-serif' font-size='16' font-weight='700' fill='%23dc2626' text-anchor='middle'%3EKRUPA%3C/text%3E%3C/svg%3E" alt="ŠPD Unsko-Sanske Šume Logo" class="company-logo" id="company-logo">
                 </div>
                 <div class="header-right">
                     <div class="header-user">
@@ -5958,28 +5958,148 @@
 
             try {
                 const year = new Date().getFullYear();
-                const url = `${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_kupci_otpremaci_' + year);
+                const url = `${API_URL}?path=kupci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, 'cache_kupci_' + year);
 
-                console.log('Kupci data from otpremaci:', data);
+                console.log('Kupci data:', data);
 
                 if (data.error || !data.godisnji || !data.sortimentiNazivi) {
                     throw new Error(data.error || 'Nema podataka');
                 }
 
-                // Render Top 5 by sortimenti categories
-                renderKupciTop5BySortimenti(data);
+                // Renderuj godišnju tabelu po kupcima i sortimentima
+                renderKupciGodisnjiTable(data.godisnji, data.sortimentiNazivi);
 
-                // Render Top 10 total otprema
-                renderKupciTop10(data.godisnji);
-
-                // Render mjesečni trend
-                renderKupciMjesecniTrend();
+                // Renderuj mjesečnu tabelu za trenutni mjesec
+                renderKupciMjesecniTable(data.mjesecni, data.sortimentiNazivi);
 
             } catch (error) {
                 console.error('Error loading kupci:', error);
-                document.getElementById('kupci-top-10-list').innerHTML = '<p style="color: #dc2626; text-align: center; padding: 20px;">Greška pri učitavanju: ' + error.message + '</p>';
+                document.getElementById('kupci-godisnji-body').innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #dc2626;">Greška pri učitavanju: ' + error.message + '</td></tr>';
+                document.getElementById('kupci-mjesecni-body').innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #dc2626;">Greška pri učitavanju: ' + error.message + '</td></tr>';
             }
+        }
+
+        // Renderuj godišnju tabelu po kupcima i sortimentima
+        function renderKupciGodisnjiTable(godisnji, sortimentiNazivi) {
+            const headerElem = document.getElementById('kupci-godisnji-header');
+            const bodyElem = document.getElementById('kupci-godisnji-body');
+
+            if (!godisnji || godisnji.length === 0) {
+                headerElem.innerHTML = '';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za godišnji prikaz</td></tr>';
+                return;
+            }
+
+            // Header sa svim sortimentima
+            let headerHtml = '<tr style="background: #047857;"><th style="color: white; font-weight: 700; position: sticky; left: 0; background: #047857; z-index: 10;">Kupac</th>';
+            sortimentiNazivi.forEach(sortiment => {
+                if (sortiment !== 'SVEUKUPNO') {
+                    headerHtml += `<th style="color: white; font-weight: 700; text-align: right;">${sortiment}</th>`;
+                }
+            });
+            headerHtml += '<th style="color: white; font-weight: 700; text-align: right; background: #065f46;">UKUPNO (m³)</th></tr>';
+            headerElem.innerHTML = headerHtml;
+
+            // Body redovi
+            let bodyHtml = '';
+            godisnji.forEach((kupac, index) => {
+                const rowBg = index % 2 === 0 ? '#f0fdf4' : 'white';
+                bodyHtml += `<tr style="background: ${rowBg};" data-kupac="${(kupac.kupac || '').toLowerCase()}">`;
+                bodyHtml += `<td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 5;">${kupac.kupac || '-'}</td>`;
+
+                sortimentiNazivi.forEach(sortiment => {
+                    if (sortiment !== 'SVEUKUPNO') {
+                        const kolicina = kupac.sortimenti[sortiment] || 0;
+                        const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
+                        const color = kolicina > 0 ? '#047857' : '#9ca3af';
+                        bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; color: ${color};">${display}</td>`;
+                    }
+                });
+
+                bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 700; color: #047857; background: #d1fae5;">${(kupac.ukupno || 0).toFixed(2)}</td>`;
+                bodyHtml += '</tr>';
+            });
+            bodyElem.innerHTML = bodyHtml;
+        }
+
+        // Renderuj mjesečnu tabelu za trenutni mjesec
+        function renderKupciMjesecniTable(mjesecni, sortimentiNazivi) {
+            const headerElem = document.getElementById('kupci-mjesecni-header');
+            const bodyElem = document.getElementById('kupci-mjesecni-body');
+
+            // Filtruj samo trenutni mjesec
+            const currentDate = new Date();
+            const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
+            const currentMjesec = mjeseci[currentDate.getMonth()];
+
+            const filteredData = mjesecni.filter(red => red.mjesec === currentMjesec);
+
+            if (!filteredData || filteredData.length === 0) {
+                headerElem.innerHTML = '';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za tekući mjesec (' + currentMjesec + ')</td></tr>';
+                return;
+            }
+
+            // Header sa svim sortimentima
+            let headerHtml = '<tr style="background: #0369a1;"><th style="color: white; font-weight: 700; position: sticky; left: 0; background: #0369a1; z-index: 10;">Kupac</th>';
+            sortimentiNazivi.forEach(sortiment => {
+                if (sortiment !== 'SVEUKUPNO') {
+                    headerHtml += `<th style="color: white; font-weight: 700; text-align: right;">${sortiment}</th>`;
+                }
+            });
+            headerHtml += '<th style="color: white; font-weight: 700; text-align: right; background: #075985;">UKUPNO (m³)</th></tr>';
+            headerElem.innerHTML = headerHtml;
+
+            // Body redovi
+            let bodyHtml = '';
+            filteredData.forEach((red, index) => {
+                const rowBg = index % 2 === 0 ? '#e0f2fe' : 'white';
+                bodyHtml += `<tr style="background: ${rowBg};" data-kupac="${(red.kupac || '').toLowerCase()}">`;
+                bodyHtml += `<td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 5;">${red.kupac || '-'}</td>`;
+
+                sortimentiNazivi.forEach(sortiment => {
+                    if (sortiment !== 'SVEUKUPNO') {
+                        const kolicina = red.sortimenti[sortiment] || 0;
+                        const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
+                        const color = kolicina > 0 ? '#0369a1' : '#9ca3af';
+                        bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; color: ${color};">${display}</td>`;
+                    }
+                });
+
+                bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 700; color: #0369a1; background: #bae6fd;">${(red.ukupno || 0).toFixed(2)}</td>`;
+                bodyHtml += '</tr>';
+            });
+            bodyElem.innerHTML = bodyHtml;
+        }
+
+        // Filter funkcije za kupce
+        function filterKupciGodisnjiTable() {
+            const searchInput = document.getElementById('kupci-godisnji-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#kupci-godisnji-body tr');
+
+            rows.forEach(row => {
+                const kupac = row.getAttribute('data-kupac') || '';
+                if (kupac.includes(searchInput)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        function filterKupciMjesecniTable() {
+            const searchInput = document.getElementById('kupci-mjesecni-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#kupci-mjesecni-body tr');
+
+            rows.forEach(row => {
+                const kupac = row.getAttribute('data-kupac') || '';
+                if (kupac.includes(searchInput)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
         }
 
         // Render Top 5 Kupaca po sortimentima
