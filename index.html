@@ -3007,6 +3007,85 @@
             </div>
         </div>
 
+        <!-- POSLOVOĐA CONTENT - STANJE ODJELA -->
+        <div id="poslovodja-stanje-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>📊 Stanje Odjela</h1>
+                    <p>Pregled stanja odjela sa vaših radilišta</p>
+                </div>
+                <div class="page-header-right">
+                    <button class="btn btn-primary" onclick="loadPoslovodjaStanje()">🔄 Osvježi</button>
+                </div>
+            </div>
+            <div id="poslovodja-radilista-info" class="section" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list"></span></p>
+            </div>
+            <div class="section">
+                <table class="monthly-table" id="poslovodja-stanje-table">
+                    <thead id="poslovodja-stanje-header"></thead>
+                    <tbody id="poslovodja-stanje-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- POSLOVOĐA CONTENT - ZADNJE SJEČE -->
+        <div id="poslovodja-sjece-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>🌲 Zadnjih 10 Sječa</h1>
+                    <p>Najnovije sječe sa vaših radilišta</p>
+                </div>
+                <div class="page-header-right">
+                    <button class="btn btn-primary" onclick="loadPoslovodjaSjece()">🔄 Osvježi</button>
+                </div>
+            </div>
+            <div class="section">
+                <table class="monthly-table" id="poslovodja-sjece-table">
+                    <thead>
+                        <tr>
+                            <th>Datum</th>
+                            <th>Odjel</th>
+                            <th>Radilište</th>
+                            <th>Primač</th>
+                            <th>Sortiment</th>
+                            <th>Količina (m³)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="poslovodja-sjece-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- POSLOVOĐA CONTENT - ZADNJE OTPREME -->
+        <div id="poslovodja-otpreme-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>🚛 Zadnjih 10 Otprema</h1>
+                    <p>Najnovije otpreme sa vaših radilišta</p>
+                </div>
+                <div class="page-header-right">
+                    <button class="btn btn-primary" onclick="loadPoslovodjaOtpreme()">🔄 Osvježi</button>
+                </div>
+            </div>
+            <div class="section">
+                <table class="monthly-table" id="poslovodja-otpreme-table">
+                    <thead>
+                        <tr>
+                            <th>Datum</th>
+                            <th>Odjel</th>
+                            <th>Radilište</th>
+                            <th>Otpremač</th>
+                            <th>Kupac</th>
+                            <th>Sortiment</th>
+                            <th>Količina (m³)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="poslovodja-otpreme-body"></tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- IZVJEŠTAJI CONTENT -->
         <div id="izvjestaji-content" class="container hidden">
             <div class="page-header">
@@ -3507,6 +3586,13 @@
         let currentPassword = null;
         let odjeliList = [];
 
+        // POSLOVOĐA RADILIŠTA MAPPING
+        const POSLOVODJA_RADILISTA = {
+            'HARBAŠ MEHMEDALIJA': ['BJELAJSKE UVALE', 'VOJSKOVA'],
+            'JASMIN PORIĆ': ['RADIĆKE UVALE', 'BAŠTRA ĆORKOVAČA'],
+            'IRFAN HADŽIPAŠIĆ': ['TURSKE VODE']
+        };
+
         // Load odjeli list from API
         async function loadOdjeli() {
             try {
@@ -3642,6 +3728,14 @@
                     <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Mjesečni pregled</button>
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                 `;
+            } else if (userType === 'POSLOVOĐA') {
+                // POSLOVOĐA vidi: Stanje odjela, Zadnje sječe, Zadnje otpreme, Izvještaji
+                tabsMenu.innerHTML = `
+                    <button class="tab active" onclick="switchTab('poslovodja-stanje')">📊 Stanje Odjela</button>
+                    <button class="tab" onclick="switchTab('poslovodja-sjece')">🌲 Zadnjih 10 Sječa</button>
+                    <button class="tab" onclick="switchTab('poslovodja-otpreme')">🚛 Zadnjih 10 Otprema</button>
+                    <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
+                `;
             } else {
                 // Admin korisnici - bez OPERATIVA tab-a (admin se loguje kao OPERATIVA tip ako želi vidjeti operativa podatke)
                 tabsMenu.innerHTML = `
@@ -3723,6 +3817,9 @@
             document.getElementById('mjesecni-sortimenti-content').classList.add('hidden');
             document.getElementById('izvjestaji-content').classList.add('hidden');
             document.getElementById('operativa-content').classList.add('hidden');
+            document.getElementById('poslovodja-stanje-content').classList.add('hidden');
+            document.getElementById('poslovodja-sjece-content').classList.add('hidden');
+            document.getElementById('poslovodja-otpreme-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
@@ -3786,6 +3883,12 @@
 
                 // Load mjesečni izvještaj by default
                 switchIzvjestajiSubTab('mjesecni');
+            } else if (tab === 'poslovodja-stanje') {
+                loadPoslovodjaStanje();
+            } else if (tab === 'poslovodja-sjece') {
+                loadPoslovodjaSjece();
+            } else if (tab === 'poslovodja-otpreme') {
+                loadPoslovodjaOtpreme();
             }
         }
 
