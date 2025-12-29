@@ -3033,7 +3033,7 @@
         <div id="poslovodja-realizacija-content" class="container hidden">
             <div class="page-header">
                 <div class="page-header-left">
-                    <h1>🏗️ Odjeli u Realizaciji</h1>
+                    <h1>🏗️ Odjeli u realizaciji</h1>
                     <p>Trenutni odjeli u radilištu koji vodite</p>
                 </div>
                 <div class="page-header-right">
@@ -3765,7 +3765,7 @@
                 // POSLOVOĐA vidi: STANJE ODJELA, ODJELI U REALIZACIJI, ZADNJIH 5 DANA, SUMA MJESECA, IZVJEŠTAJI
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('poslovodja-stanje')">📊 Stanje Odjela</button>
-                    <button class="tab" onclick="switchTab('poslovodja-realizacija')">🏗️ Odjeli u Realizaciji</button>
+                    <button class="tab" onclick="switchTab('poslovodja-realizacija')">🏗️ Odjeli u realizaciji</button>
                     <button class="tab" onclick="switchTab('poslovodja-zadnjih5')">📅 Zadnjih 5 Dana</button>
                     <button class="tab" onclick="switchTab('poslovodja-suma')">📈 Suma Mjeseca</button>
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
@@ -4481,16 +4481,14 @@
                 return;
             }
 
-            // Build header
+            // Build header - redosled: Radnik (Primac), Odjel, Datum, Sortiment, Količina
             let headerHtml = `
-                <tr>
-                    <th>Datum</th>
-                    <th>Odjel</th>
-                    <th>Radilište</th>
-                    <th>Sortiment</th>
-                    <th>F/L Č.</th>
-                    <th>Količina (m³)</th>
-                    <th>Primac</th>
+                <tr style="background: #059669;">
+                    <th style="color: white; font-weight: 700;">Primac</th>
+                    <th style="color: white; font-weight: 700;">Odjel</th>
+                    <th style="color: white; font-weight: 700;">Datum</th>
+                    <th style="color: white; font-weight: 700;">Sortiment</th>
+                    <th style="color: white; font-weight: 700;">Količina (m³)</th>
                 </tr>
             `;
             headerElem.innerHTML = headerHtml;
@@ -4501,13 +4499,11 @@
                 const rowBg = index % 2 === 0 ? '#f0fdf4' : 'white';
                 bodyHtml += `
                     <tr style="background: ${rowBg};">
-                        <td style="font-weight: 600;">${primka.datum || '-'}</td>
+                        <td style="font-weight: 600;">${primka.primac || '-'}</td>
                         <td>${primka.odjel || '-'}</td>
-                        <td>${primka.radiliste || '-'}</td>
+                        <td style="font-weight: 500;">${primka.datum || '-'}</td>
                         <td>${primka.sortiment || '-'}</td>
-                        <td style="text-align: center;">${primka.brojCetinara || '-'}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 600; color: #059669;">${(primka.kolicina || 0).toFixed(2)}</td>
-                        <td>${primka.primac || '-'}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 700; color: #059669;">${(primka.kolicina || 0).toFixed(2)}</td>
                     </tr>
                 `;
             });
@@ -4526,17 +4522,14 @@
                 return;
             }
 
-            // Build header
+            // Build header - redosled: Radnik (Otpremac), Odjel, Datum, Sortiment, Količina
             let headerHtml = `
-                <tr>
-                    <th>Datum</th>
-                    <th>Odjel</th>
-                    <th>Radilište</th>
-                    <th>Sortiment</th>
-                    <th>F/L Č.</th>
-                    <th>Količina (m³)</th>
-                    <th>Kupac</th>
-                    <th>Otpremac</th>
+                <tr style="background: #dc2626;">
+                    <th style="color: white; font-weight: 700;">Otpremac</th>
+                    <th style="color: white; font-weight: 700;">Odjel</th>
+                    <th style="color: white; font-weight: 700;">Datum</th>
+                    <th style="color: white; font-weight: 700;">Sortiment</th>
+                    <th style="color: white; font-weight: 700;">Količina (m³)</th>
                 </tr>
             `;
             headerElem.innerHTML = headerHtml;
@@ -4547,14 +4540,11 @@
                 const rowBg = index % 2 === 0 ? '#fef2f2' : 'white';
                 bodyHtml += `
                     <tr style="background: ${rowBg};">
-                        <td style="font-weight: 600;">${otprema.datum || '-'}</td>
+                        <td style="font-weight: 600;">${otprema.otpremac || '-'}</td>
                         <td>${otprema.odjel || '-'}</td>
-                        <td>${otprema.radiliste || '-'}</td>
+                        <td style="font-weight: 500;">${otprema.datum || '-'}</td>
                         <td>${otprema.sortiment || '-'}</td>
-                        <td style="text-align: center;">${otprema.brojCetinara || '-'}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 600; color: #dc2626;">${(otprema.kolicina || 0).toFixed(2)}</td>
-                        <td>${otprema.kupac || '-'}</td>
-                        <td>${otprema.otpremac || '-'}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 700; color: #dc2626;">${(otprema.kolicina || 0).toFixed(2)}</td>
                     </tr>
                 `;
             });
