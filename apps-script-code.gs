@@ -68,6 +68,10 @@ function doGet(e) {
       return handlePrimaciByRadiliste(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'primaci-by-izvodjac') {
       return handlePrimaciByIzvodjac(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'primke') {
+      return handlePrimke(e.parameter.username, e.parameter.password);
+    } else if (path === 'otpreme') {
+      return handleOtpreme(e.parameter.username, e.parameter.password);
     }
 
     return createJsonResponse({ error: 'Unknown path' }, false);
@@ -3487,6 +3491,161 @@ function handlePrimaciByIzvodjac(year, username, password) {
 
   } catch (error) {
     Logger.log('ERROR in handlePrimaciByIzvodjac: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+// ========================================
+// HANDLE PRIMKE - Vraća sve pojedinačne primke
+// ========================================
+function handlePrimke(username, password) {
+  try {
+    // Autentikacija
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    Logger.log('=== HANDLE PRIMKE START ===');
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const pendingSheet = ss.getSheetByName("PENDING_PRIMKA");
+
+    const primke = [];
+
+    if (pendingSheet) {
+      const data = pendingSheet.getDataRange().getValues();
+
+      // Skip header row (row 0)
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        const odjel = row[0];       // A - ODJEL
+        const datum = row[1];       // B - DATUM
+        const primac = row[2];      // C - PRIMAČ
+        const status = row[21];     // V - STATUS (može biti PENDING ili APPROVED)
+
+        // Skip empty rows
+        if (!datum || !odjel) continue;
+
+        // Formatuj datum
+        const datumObj = parseDate(datum);
+        const datumStr = formatDate(datumObj);
+
+        // Parse radilište iz odjel naziva (npr. "BJELAJSKE UVALE - ODJEL 1" -> "BJELAJSKE UVALE")
+        const radiliste = odjel.includes(' - ') ? odjel.split(' - ')[0].trim() : '';
+
+        // Sortimenti su u kolonama D-U (indeksi 3-20)
+        // Za pojedinačnu primku trebamo svaki sortiment kao poseban zapis
+        const sortimentiNazivi = [
+          "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+          "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+          "F/L L", "I L", "II L", "III L", "TRUPCI",
+          "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+        ];
+
+        // Dodaj svaki sortiment kao poseban zapis (ako ima količinu)
+        for (let j = 0; j < 17; j++) { // Bez SVEUKUPNO (zadnji je agregirani)
+          const kolicina = parseFloat(row[3 + j]) || 0;
+          if (kolicina > 0) {
+            primke.push({
+              datum: datumStr,
+              odjel: odjel,
+              radiliste: radiliste,
+              sortiment: sortimentiNazivi[j],
+              kolicina: kolicina,
+              primac: primac,
+              status: status
+            });
+          }
+        }
+      }
+    }
+
+    Logger.log('=== HANDLE PRIMKE END ===');
+    Logger.log('Broj primki: ' + primke.length);
+
+    return createJsonResponse({ primke: primke }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handlePrimke: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+// ========================================
+// HANDLE OTPREME - Vraća sve pojedinačne otpreme
+// ========================================
+function handleOtpreme(username, password) {
+  try {
+    // Autentikacija
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    Logger.log('=== HANDLE OTPREME START ===');
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const pendingSheet = ss.getSheetByName("PENDING_OTPREMA");
+
+    const otpreme = [];
+
+    if (pendingSheet) {
+      const data = pendingSheet.getDataRange().getValues();
+
+      // Skip header row (row 0)
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        const odjel = row[0];       // A - ODJEL
+        const datum = row[1];       // B - DATUM
+        const otpremac = row[2];    // C - OTPREMAČ
+        const kupac = row[21];      // V - KUPAC
+        const status = row[23];     // X - STATUS (može biti PENDING ili APPROVED)
+
+        // Skip empty rows
+        if (!datum || !odjel) continue;
+
+        // Formatuj datum
+        const datumObj = parseDate(datum);
+        const datumStr = formatDate(datumObj);
+
+        // Parse radilište iz odjel naziva
+        const radiliste = odjel.includes(' - ') ? odjel.split(' - ')[0].trim() : '';
+
+        // Sortimenti su u kolonama D-U (indeksi 3-20)
+        const sortimentiNazivi = [
+          "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+          "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+          "F/L L", "I L", "II L", "III L", "TRUPCI",
+          "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+        ];
+
+        // Dodaj svaki sortiment kao poseban zapis (ako ima količinu)
+        for (let j = 0; j < 17; j++) { // Bez SVEUKUPNO
+          const kolicina = parseFloat(row[3 + j]) || 0;
+          if (kolicina > 0) {
+            otpreme.push({
+              datum: datumStr,
+              odjel: odjel,
+              radiliste: radiliste,
+              sortiment: sortimentiNazivi[j],
+              kolicina: kolicina,
+              otpremac: otpremac,
+              kupac: kupac || '',
+              status: status
+            });
+          }
+        }
+      }
+    }
+
+    Logger.log('=== HANDLE OTPREME END ===');
+    Logger.log('Broj otprema: ' + otpreme.length);
+
+    return createJsonResponse({ otpreme: otpreme }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleOtpreme: ' + error.toString());
     return createJsonResponse({ error: error.toString() }, false);
   }
 }
