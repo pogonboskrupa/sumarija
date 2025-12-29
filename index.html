@@ -256,7 +256,21 @@
         body.dark-mode .kupci-table tbody tr:hover { background: #064e3b; }
         .kupci-table tbody tr:nth-child(even):hover { background: #ecfdf5; }
         body.dark-mode .kupci-table tbody tr:nth-child(even):hover { background: #065f46; }
-        .kupci-table .sortiment-col { min-width: 62px; max-width: 75px; text-align: right; font-family: 'Courier New', monospace; }
+        .kupci-table .sortiment-col {
+            min-width: 85px;
+            max-width: 110px;
+            text-align: right;
+            font-family: 'Courier New', monospace;
+        }
+        .kupci-table thead .sortiment-col {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 10px 5px;
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.3;
+        }
         .kupci-table .ukupno-col {
             font-weight: bold; background: linear-gradient(to right, #f0fdf4 0%, #dcfce7 100%);
             min-width: 95px; border-left: 3px solid #10b981; text-align: right;
@@ -281,38 +295,53 @@
         .mjesecni-table-wrapper th {
             background: #1e40af !important;
             color: white !important;
-            padding: 8px 4px !important;
-            font-size: 11px !important;
+            padding: 12px 8px !important;
+            font-size: 12px !important;
+            font-weight: 700;
             text-align: center;
             border: 1px solid #1e3a8a;
             position: sticky !important;
             top: 0;
             z-index: 10;
-            white-space: nowrap;
-            max-width: 70px;
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.3;
+            min-width: 85px;
+            max-width: 110px;
         }
         .mjesecni-table-wrapper td {
-            padding: 6px 3px !important;
-            font-size: 11px !important;
+            padding: 8px 10px !important;
+            font-size: 12px !important;
             text-align: right;
             border: 1px solid #e5e7eb;
             white-space: nowrap;
+            min-width: 85px;
+            max-width: 110px;
         }
         .mjesecni-table-wrapper tbody tr:hover {
             background: #dbeafe !important;
         }
-        /* Bold columns styling */
-        .mjesecni-table-wrapper .col-cetinari { background: #fef3c7; font-weight: 700; }
-        .mjesecni-table-wrapper .col-liscari { background: #d1fae5; font-weight: 700; }
-        .mjesecni-table-wrapper .col-sveukupno { background: #e0e7ff; font-weight: 700; }
-        /* Group separators */
+        /* Bold columns styling - only for body cells */
+        .mjesecni-table-wrapper tbody .col-cetinari {
+            background: #d1fae5;
+            font-weight: 700;
+        }
+        .mjesecni-table-wrapper tbody .col-liscari {
+            background: #fed7aa;
+            font-weight: 700;
+        }
+        .mjesecni-table-wrapper tbody .col-sveukupno {
+            background: #fecaca;
+            font-weight: 700;
+        }
+        /* Group separators - thicker for better visibility */
         .mjesecni-table-wrapper .group-cetvrti th,
         .mjesecni-table-wrapper .group-cetvrti td {
-            border-left: 2px solid #2563eb !important;
+            border-left: 3px solid #2563eb !important;
         }
         .mjesecni-table-wrapper .group-ogrevno th,
         .mjesecni-table-wrapper .group-ogrevno td {
-            border-left: 2px solid #059669 !important;
+            border-left: 3px solid #059669 !important;
         }
         /* Mobile optimization */
         @media (max-width: 768px) {
@@ -6244,16 +6273,31 @@
 
             console.log('Rendering table with', sortimenti.length, 'sortimenti and', data.mjeseci.length, 'months');
 
-            // Build header
-            let headerHtml = '<tr><th style="min-width: 60px; max-width: 70px; position: sticky; left: 0; background: #1e40af !important; color: white; z-index: 20;">MJESEC</th>';
+            // Build header with optimized styling
+            let headerHtml = '<tr>';
+            headerHtml += '<th style="min-width: 80px; max-width: 90px; position: sticky; left: 0; background: #1e40af !important; color: white; z-index: 20; font-size: 12px; font-weight: 700; padding: 12px 8px; text-align: center; border-right: 3px solid #1e3a8a;">MJESEC</th>';
+
             for (let i = 0; i < sortimenti.length; i++) {
                 const colClass = getColumnGroup(sortimenti[i]);
                 let extraClass = '';
-                if (sortimenti[i] === 'ČETINARI') extraClass = ' col-cetinari';
-                else if (sortimenti[i] === 'LIŠĆARI') extraClass = ' col-liscari';
-                else if (sortimenti[i] === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+                let bgColor = '#3b82f6'; // Default blue
+                let borderColor = '#2563eb';
 
-                headerHtml += '<th class="sortiment-col ' + colClass + extraClass + '">' + sortimenti[i] + '</th>';
+                if (sortimenti[i] === 'ČETINARI') {
+                    extraClass = ' col-cetinari';
+                    bgColor = '#059669'; // Green for četinari aggregate
+                    borderColor = '#047857';
+                } else if (sortimenti[i] === 'LIŠĆARI') {
+                    extraClass = ' col-liscari';
+                    bgColor = '#d97706'; // Orange for lišćari aggregate
+                    borderColor = '#b45309';
+                } else if (sortimenti[i] === 'SVEUKUPNO') {
+                    extraClass = ' col-sveukupno';
+                    bgColor = '#dc2626'; // Red for total
+                    borderColor = '#b91c1c';
+                }
+
+                headerHtml += '<th class="sortiment-col ' + colClass + extraClass + '" style="background: ' + bgColor + ' !important; color: white !important; border: 1px solid ' + borderColor + ';">' + sortimenti[i] + '</th>';
             }
             headerHtml += '</tr>';
             headerElem.innerHTML = headerHtml;
@@ -6262,11 +6306,12 @@
             let bodyHtml = '';
             const totals = {}; // Total per sortiment
 
-            // Month rows
+            // Month rows with improved styling
             for (let m = 0; m < 12; m++) {
-                const rowStyle = m % 2 === 0 ? 'background: #f9fafb;' : '';
-                bodyHtml += '<tr style="' + rowStyle + '">';
-                bodyHtml += '<td style="font-weight: 700; font-size: 14px; min-width: 60px; max-width: 70px; position: sticky; left: 0; background: ' + (m % 2 === 0 ? '#f9fafb' : 'white') + '; z-index: 9; border-right: 2px solid #1e40af;">' + mjeseci[m] + '</td>';
+                const rowBg = m % 2 === 0 ? '#f9fafb' : 'white';
+                const rowHoverBg = m % 2 === 0 ? '#f3f4f6' : '#f9fafb';
+                bodyHtml += '<tr style="background: ' + rowBg + ';" onmouseover="this.style.background=\'' + rowHoverBg + '\'" onmouseout="this.style.background=\'' + rowBg + '\'">';
+                bodyHtml += '<td style="font-weight: 700; font-size: 13px; min-width: 80px; max-width: 90px; position: sticky; left: 0; background: ' + rowBg + '; z-index: 9; border-right: 3px solid #1e40af; text-align: center; padding: 10px 8px;">' + mjeseci[m] + '</td>';
 
                 for (let s = 0; s < sortimenti.length; s++) {
                     const sortiment = sortimenti[s];
@@ -6274,11 +6319,16 @@
                     const displayVal = value > 0 ? value.toFixed(2) : '-';
                     const colClass = getColumnGroup(sortiment);
                     let extraClass = '';
+                    let fontWeight = value > 0 ? 'font-weight: 600;' : 'color: #9ca3af;';
+
                     if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
                     else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
-                    else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+                    else if (sortiment === 'SVEUKUPNO') {
+                        extraClass = ' col-sveukupno';
+                        fontWeight = value > 0 ? 'font-weight: 700;' : 'color: #9ca3af;';
+                    }
 
-                    bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '">' + displayVal + '</td>';
+                    bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="' + fontWeight + ' padding: 8px 10px; font-size: 12px;">' + displayVal + '</td>';
 
                     // Add to totals
                     if (!totals[sortiment]) totals[sortiment] = 0;
@@ -6288,39 +6338,57 @@
                 bodyHtml += '</tr>';
             }
 
-            // UKUPNO row
-            bodyHtml += '<tr style="background: #e5e7eb; font-weight: 700; border-top: 3px solid #374151; border-bottom: 2px solid #374151;">';
-            bodyHtml += '<td style="min-width: 60px; max-width: 70px; position: sticky; left: 0; background: #e5e7eb; z-index: 9; border-right: 2px solid #1e40af;">UKUPNO</td>';
+            // UKUPNO row with improved styling
+            bodyHtml += '<tr style="background: linear-gradient(to bottom, #e5e7eb, #d1d5db); font-weight: 700; border-top: 3px solid #374151; border-bottom: 2px solid #374151;">';
+            bodyHtml += '<td style="min-width: 80px; max-width: 90px; position: sticky; left: 0; background: #e5e7eb; z-index: 9; border-right: 3px solid #1e40af; text-align: center; font-size: 13px; padding: 12px 8px; color: #1f2937;">📊 UKUPNO</td>';
             for (let s = 0; s < sortimenti.length; s++) {
                 const sortiment = sortimenti[s];
                 const total = totals[sortiment] || 0;
                 const colClass = getColumnGroup(sortiment);
                 let extraClass = '';
-                if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
-                else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
-                else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+                let cellBg = '#e5e7eb';
 
-                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '">' + total.toFixed(2) + '</td>';
+                if (sortiment === 'ČETINARI') {
+                    extraClass = ' col-cetinari';
+                    cellBg = '#d1fae5';
+                } else if (sortiment === 'LIŠĆARI') {
+                    extraClass = ' col-liscari';
+                    cellBg = '#fed7aa';
+                } else if (sortiment === 'SVEUKUPNO') {
+                    extraClass = ' col-sveukupno';
+                    cellBg = '#fecaca';
+                }
+
+                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 800; font-size: 13px; padding: 12px 10px; background: ' + cellBg + ';">' + total.toFixed(2) + '</td>';
             }
             bodyHtml += '</tr>';
 
             // Calculate grand total from SVEUKUPNO
             const grandTotal = totals['SVEUKUPNO'] || 0;
 
-            // %UDIO row
+            // %UDIO row with improved styling
             bodyHtml += '<tr style="background: #f3f4f6; font-style: italic; color: #374151; border-bottom: 3px solid #374151;">';
-            bodyHtml += '<td style="min-width: 60px; max-width: 70px; position: sticky; left: 0; background: #f3f4f6; z-index: 9; border-right: 2px solid #1e40af;">% UDIO</td>';
+            bodyHtml += '<td style="min-width: 80px; max-width: 90px; position: sticky; left: 0; background: #f3f4f6; z-index: 9; border-right: 3px solid #1e40af; text-align: center; font-size: 12px; padding: 10px 8px; font-weight: 600;">% UDIO</td>';
             for (let s = 0; s < sortimenti.length; s++) {
                 const sortiment = sortimenti[s];
                 const total = totals[sortiment] || 0;
                 const percentage = grandTotal > 0 ? ((total / grandTotal) * 100).toFixed(1) : '0.0';
                 const colClass = getColumnGroup(sortiment);
                 let extraClass = '';
-                if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
-                else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
-                else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+                let cellBg = '#f3f4f6';
 
-                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '">' + percentage + '%</td>';
+                if (sortiment === 'ČETINARI') {
+                    extraClass = ' col-cetinari';
+                    cellBg = '#ecfdf5';
+                } else if (sortiment === 'LIŠĆARI') {
+                    extraClass = ' col-liscari';
+                    cellBg = '#fff7ed';
+                } else if (sortiment === 'SVEUKUPNO') {
+                    extraClass = ' col-sveukupno';
+                    cellBg = '#fef2f2';
+                }
+
+                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 700; font-size: 12px; padding: 10px; background: ' + cellBg + ';">' + percentage + '%</td>';
             }
             bodyHtml += '</tr>';
 
