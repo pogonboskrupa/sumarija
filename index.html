@@ -1904,6 +1904,7 @@
                         </button>
                         <div class="user-menu-dropdown" id="user-menu-dropdown">
                             <div class="user-menu-item" onclick="toggleDarkMode(); toggleUserMenu();">🌙 Dark Mode</div>
+                            <div class="user-menu-item" onclick="preloadAllViews(); toggleUserMenu();">⚡ Učitaj sve prikaze</div>
                             <div class="user-menu-item" onclick="clearAllCache()">🗑️ Obriši keš</div>
                             <div class="user-menu-item danger" onclick="logout()">🚪 Odjavi se</div>
                         </div>
@@ -3756,6 +3757,101 @@
             toggleUserMenu(); // Close menu
             showInfo('Keš obrisan', 'Stranica će se osvježiti.');
             window.location.reload();
+        }
+
+        // Preload all views function
+        async function preloadAllViews() {
+            showInfo('⚡ Učitavanje...', 'Učitavam sve prikaze u pozadini. Ovo može potrajati.');
+
+            const year = new Date().getFullYear();
+            let totalLoaded = 0;
+            let totalFailed = 0;
+
+            try {
+                // Determine user type
+                const userType = currentUser.type;
+
+                if (userType === 'ADMIN') {
+                    // Admin views to preload
+                    const views = [
+                        { name: 'Dashboard', fn: () => fetchWithCache(`${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_dashboard_' + year) },
+                        { name: 'Primaci', fn: () => fetchWithCache(`${API_URL}?path=primaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_primaci_' + year) },
+                        { name: 'Otpremaci', fn: () => fetchWithCache(`${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_otpremaci_' + year) },
+                        { name: 'Kupci', fn: () => fetchWithCache(`${API_URL}?path=kupci&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_kupci_' + year) },
+                        { name: 'Odjeli', fn: () => fetchWithCache(`${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_odjeli_' + year) },
+                        { name: 'Operativa', fn: () => fetchWithCache(`${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_operativa_' + year) },
+                        { name: 'Stanje Odjela', fn: () => fetchWithCache(`${API_URL}?path=stanje_odjela&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_stanje_odjela_' + year) },
+                        { name: 'Pending Unosi', fn: () => fetchWithCache(`${API_URL}?path=pending_unosi&username=${currentUser.username}&password=${currentPassword}`, 'cache_pending_unosi') },
+                        { name: 'Mjesečni Sortimenti', fn: () => fetchWithCache(`${API_URL}?path=mjesecni_sortimenti&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_mjesecni_sortimenti_' + year) }
+                    ];
+
+                    console.log(`Preloading ${views.length} admin views...`);
+
+                    for (const view of views) {
+                        try {
+                            console.log(`Loading ${view.name}...`);
+                            await view.fn();
+                            totalLoaded++;
+                            console.log(`✓ ${view.name} loaded`);
+                        } catch (error) {
+                            totalFailed++;
+                            console.error(`✗ ${view.name} failed:`, error);
+                        }
+                    }
+
+                } else if (userType === 'POSLOVOĐA') {
+                    // Poslovodja views to preload
+                    const views = [
+                        { name: 'Stanje Odjela', fn: () => fetchWithCache(`${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_poslovodja_odjeli_' + year) },
+                        { name: 'Odjeli u realizaciji', fn: () => fetchWithCache(`${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_poslovodja_realizacija_' + year) },
+                        { name: 'Zadnjih 5 dana - Primke', fn: () => fetchWithCache(`${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`, 'cache_poslovodja_primke') },
+                        { name: 'Zadnjih 5 dana - Otpreme', fn: () => fetchWithCache(`${API_URL}?path=otpreme&username=${currentUser.username}&password=${currentPassword}`, 'cache_poslovodja_otpreme') },
+                        { name: 'Suma mjeseca', fn: () => fetchWithCache(`${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`, 'cache_poslovodja_suma_primke') }
+                    ];
+
+                    console.log(`Preloading ${views.length} poslovodja views...`);
+
+                    for (const view of views) {
+                        try {
+                            console.log(`Loading ${view.name}...`);
+                            await view.fn();
+                            totalLoaded++;
+                            console.log(`✓ ${view.name} loaded`);
+                        } catch (error) {
+                            totalFailed++;
+                            console.error(`✗ ${view.name} failed:`, error);
+                        }
+                    }
+
+                } else if (userType === 'PRIMAC' || userType === 'OTPREMAC') {
+                    // Worker views to preload
+                    const path = userType === 'PRIMAC' ? 'primke' : 'otpreme';
+                    const views = [
+                        { name: 'Moje unose', fn: () => fetchWithCache(`${API_URL}?path=${path}&username=${currentUser.username}&password=${currentPassword}`, `cache_my_${path}`) },
+                        { name: 'Godišnji prikaz', fn: () => fetchWithCache(`${API_URL}?path=${path}&username=${currentUser.username}&password=${currentPassword}`, `cache_godisnji_${path}`) }
+                    ];
+
+                    console.log(`Preloading ${views.length} worker views...`);
+
+                    for (const view of views) {
+                        try {
+                            console.log(`Loading ${view.name}...`);
+                            await view.fn();
+                            totalLoaded++;
+                            console.log(`✓ ${view.name} loaded`);
+                        } catch (error) {
+                            totalFailed++;
+                            console.error(`✗ ${view.name} failed:`, error);
+                        }
+                    }
+                }
+
+                showSuccess('⚡ Učitano!', `Učitano ${totalLoaded} prikaza. Skrolanje je sada instantno!`);
+
+            } catch (error) {
+                console.error('Preload error:', error);
+                showError('Greška', 'Nije uspjelo učitavanje svih prikaza.');
+            }
         }
 
         // Toggle user menu dropdown
