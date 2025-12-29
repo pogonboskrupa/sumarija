@@ -482,11 +482,16 @@
 
         /* Cache indicator */
         .cache-indicator {
-            padding: 12px 24px;
-            text-align: center;
-            font-size: 14px;
-            font-weight: 600;
-            border-bottom: 2px solid #e5e7eb;
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 4px 8px;
+            font-size: 10px;
+            font-weight: 500;
+            border-radius: 4px;
+            z-index: 9999;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 200px;
             transition: all 0.3s ease;
         }
         .btn-clear-cache {
@@ -3540,7 +3545,7 @@
             const hours = Math.round(age / 3600000);
 
             if (isStale) {
-                indicator.innerHTML = `⚠️ Offline - koristeći keširane podatke (${minutes} min staro)`;
+                indicator.innerHTML = `⚠️ Keš ${minutes}m`;
                 indicator.style.background = '#fef3c7';
                 indicator.style.color = '#92400e';
             } else {
@@ -3549,15 +3554,12 @@
                 if (hours > 0) {
                     timeStr = `${hours}h`;
                 } else if (minutes > 0) {
-                    timeStr = `${minutes} min`;
+                    timeStr = `${minutes}m`;
                 } else {
                     timeStr = `${seconds}s`;
                 }
 
-                const currentHour = new Date().getHours();
-                const cacheStatus = currentHour < 8 ? 'osvježava se uskoro' : 'važeći do kraja dana';
-
-                indicator.innerHTML = `⚡ Brzo učitavanje (${timeStr} staro, ${cacheStatus})`;
+                indicator.innerHTML = `⚡ ${timeStr}`;
                 indicator.style.background = '#d1fae5';
                 indicator.style.color = '#047857';
             }
