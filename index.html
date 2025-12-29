@@ -3029,63 +3029,6 @@
             </div>
         </div>
 
-        <!-- POSLOVOĐA CONTENT - ZADNJE SJEČE -->
-        <div id="poslovodja-sjece-content" class="container hidden">
-            <div class="page-header">
-                <div class="page-header-left">
-                    <h1>🌲 Zadnjih 10 Sječa</h1>
-                    <p>Najnovije sječe sa vaših radilišta</p>
-                </div>
-                <div class="page-header-right">
-                    <button class="btn btn-primary" onclick="loadPoslovodjaSjece()">🔄 Osvježi</button>
-                </div>
-            </div>
-            <div class="section">
-                <table class="monthly-table" id="poslovodja-sjece-table">
-                    <thead>
-                        <tr>
-                            <th>Datum</th>
-                            <th>Odjel</th>
-                            <th>Radilište</th>
-                            <th>Primač</th>
-                            <th>Sortiment</th>
-                            <th>Količina (m³)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="poslovodja-sjece-body"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- POSLOVOĐA CONTENT - ZADNJE OTPREME -->
-        <div id="poslovodja-otpreme-content" class="container hidden">
-            <div class="page-header">
-                <div class="page-header-left">
-                    <h1>🚛 Zadnjih 10 Otprema</h1>
-                    <p>Najnovije otpreme sa vaših radilišta</p>
-                </div>
-                <div class="page-header-right">
-                    <button class="btn btn-primary" onclick="loadPoslovodjaOtpreme()">🔄 Osvježi</button>
-                </div>
-            </div>
-            <div class="section">
-                <table class="monthly-table" id="poslovodja-otpreme-table">
-                    <thead>
-                        <tr>
-                            <th>Datum</th>
-                            <th>Odjel</th>
-                            <th>Radilište</th>
-                            <th>Otpremač</th>
-                            <th>Kupac</th>
-                            <th>Sortiment</th>
-                            <th>Količina (m³)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="poslovodja-otpreme-body"></tbody>
-                </table>
-            </div>
-        </div>
-
         <!-- IZVJEŠTAJI CONTENT -->
         <div id="izvjestaji-content" class="container hidden">
             <div class="page-header">
@@ -3729,11 +3672,9 @@
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                 `;
             } else if (userType === 'POSLOVOĐA') {
-                // POSLOVOĐA vidi: Stanje odjela, Zadnje sječe, Zadnje otpreme, Izvještaji
+                // POSLOVOĐA vidi: STANJE ODJELA (glavni) i IZVJEŠTAJI
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('poslovodja-stanje')">📊 Stanje Odjela</button>
-                    <button class="tab" onclick="switchTab('poslovodja-sjece')">🌲 Zadnjih 10 Sječa</button>
-                    <button class="tab" onclick="switchTab('poslovodja-otpreme')">🚛 Zadnjih 10 Otprema</button>
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                 `;
             } else {
@@ -3777,8 +3718,6 @@
             document.getElementById('pending-unosi-content').classList.add('hidden');
             document.getElementById('operativa-content').classList.add('hidden');
             document.getElementById('poslovodja-stanje-content').classList.add('hidden');
-            document.getElementById('poslovodja-sjece-content').classList.add('hidden');
-            document.getElementById('poslovodja-otpreme-content').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
         }
         
@@ -3823,8 +3762,6 @@
             document.getElementById('izvjestaji-content').classList.add('hidden');
             document.getElementById('operativa-content').classList.add('hidden');
             document.getElementById('poslovodja-stanje-content').classList.add('hidden');
-            document.getElementById('poslovodja-sjece-content').classList.add('hidden');
-            document.getElementById('poslovodja-otpreme-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
@@ -3890,10 +3827,6 @@
                 switchIzvjestajiSubTab('mjesecni');
             } else if (tab === 'poslovodja-stanje') {
                 loadPoslovodjaStanje();
-            } else if (tab === 'poslovodja-sjece') {
-                loadPoslovodjaSjece();
-            } else if (tab === 'poslovodja-otpreme') {
-                loadPoslovodjaOtpreme();
             }
         }
 
@@ -4243,189 +4176,6 @@
                         <td style="text-align: right; font-family: 'Courier New', monospace;">${(odjel.otprema || 0).toFixed(2)}</td>
                         <td ${percentClass} style="text-align: right; font-family: 'Courier New', monospace;">${procenat}%</td>
                         <td>${odjel.datumZadnjeSjece || '-'}</td>
-                    </tr>
-                `;
-            });
-
-            bodyElem.innerHTML = bodyHtml;
-        }
-
-        // Load zadnjih 10 SJEČA za poslovođu
-        async function loadPoslovodjaSjece() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('poslovodja-sjece-content').classList.add('hidden');
-
-            try {
-                const radilista = getPoslovodjaRadilista();
-                console.log('Loading sječe for radilišta:', radilista);
-
-                // Get current year and month
-                const currentDate = new Date();
-                const year = currentDate.getFullYear();
-                const month = currentDate.getMonth();
-
-                // Load primaci-daily data for current month
-                const url = `${API_URL}?path=primaci-daily&year=${year}&month=${month}&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, `cache_poslovo dja_sjece_${year}_${month}`);
-
-                console.log('Primaci data:', data);
-
-                if (data.error || !data.data) {
-                    throw new Error(data.error || 'Nema podataka o sječama');
-                }
-
-                // Filter by radilišta and get last 10
-                const filtered = data.data.filter(row => {
-                    const rowRadiliste = (row.radiliste || '').toUpperCase().trim();
-                    return radilista.some(r => rowRadiliste.includes(r.toUpperCase()));
-                });
-
-                // Sort by date descending and take last 10
-                const sorted = filtered.sort((a, b) => {
-                    const dateA = new Date(a.datum.split('.').reverse().join('-'));
-                    const dateB = new Date(b.datum.split('.').reverse().join('-'));
-                    return dateB - dateA;
-                }).slice(0, 10);
-
-                console.log('Filtered sječe:', sorted);
-
-                // Render table
-                renderPoslovodjaSjeceTable(sorted, data.sortimentiNazivi);
-
-                document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('poslovodja-sjece-content').classList.remove('hidden');
-
-            } catch (error) {
-                console.error('Error loading poslovođa sječe:', error);
-                showError('Greška', 'Greška pri učitavanju sječa: ' + error.message);
-                document.getElementById('loading-screen').classList.add('hidden');
-            }
-        }
-
-        // Render Sječe table
-        function renderPoslovodjaSjeceTable(sjece, sortimentiNazivi) {
-            const bodyElem = document.getElementById('poslovodja-sjece-body');
-
-            if (sjece.length === 0) {
-                bodyElem.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #6b7280;">Nema sječa u tekućem mjesecu</td></tr>';
-                return;
-            }
-
-            let bodyHtml = '';
-            sjece.forEach((row, index) => {
-                const rowBg = index % 2 === 0 ? '#f9fafb' : 'white';
-
-                // Get main sortiment and količina
-                let mainSortiment = '';
-                let kolicina = 0;
-                sortimentiNazivi.forEach(s => {
-                    const val = row.sortimenti[s] || 0;
-                    if (val > kolicina) {
-                        kolicina = val;
-                        mainSortiment = s;
-                    }
-                });
-
-                bodyHtml += `
-                    <tr style="background: ${rowBg};">
-                        <td>${row.datum || ''}</td>
-                        <td style="font-weight: 600;">${row.odjel || ''}</td>
-                        <td>${row.radiliste || '-'}</td>
-                        <td>${row.primac || '-'}</td>
-                        <td>${mainSortiment}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 600;">${kolicina.toFixed(2)} m³</td>
-                    </tr>
-                `;
-            });
-
-            bodyElem.innerHTML = bodyHtml;
-        }
-
-        // Load zadnjih 10 OTPREMA za poslovođu
-        async function loadPoslovodjaOtpreme() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('poslovodja-otpreme-content').classList.add('hidden');
-
-            try {
-                const radilista = getPoslovodjaRadilista();
-                console.log('Loading otpreme for radilišta:', radilista);
-
-                // Get current year and month
-                const currentDate = new Date();
-                const year = currentDate.getFullYear();
-                const month = currentDate.getMonth();
-
-                // Load otpremaci-daily data for current month
-                const url = `${API_URL}?path=otpremaci-daily&year=${year}&month=${month}&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, `cache_poslovodja_otpreme_${year}_${month}`);
-
-                console.log('Otpremaci data:', data);
-
-                if (data.error || !data.data) {
-                    throw new Error(data.error || 'Nema podataka o otpremama');
-                }
-
-                // Filter by radilišta and get last 10
-                const filtered = data.data.filter(row => {
-                    const rowRadiliste = (row.radiliste || '').toUpperCase().trim();
-                    return radilista.some(r => rowRadiliste.includes(r.toUpperCase()));
-                });
-
-                // Sort by date descending and take last 10
-                const sorted = filtered.sort((a, b) => {
-                    const dateA = new Date(a.datum.split('.').reverse().join('-'));
-                    const dateB = new Date(b.datum.split('.').reverse().join('-'));
-                    return dateB - dateA;
-                }).slice(0, 10);
-
-                console.log('Filtered otpreme:', sorted);
-
-                // Render table
-                renderPoslovodjaOtpremeTable(sorted, data.sortimentiNazivi);
-
-                document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('poslovodja-otpreme-content').classList.remove('hidden');
-
-            } catch (error) {
-                console.error('Error loading poslovođa otpreme:', error);
-                showError('Greška', 'Greška pri učitavanju otprema: ' + error.message);
-                document.getElementById('loading-screen').classList.add('hidden');
-            }
-        }
-
-        // Render Otpreme table
-        function renderPoslovodjaOtpremeTable(otpreme, sortimentiNazivi) {
-            const bodyElem = document.getElementById('poslovodja-otpreme-body');
-
-            if (otpreme.length === 0) {
-                bodyElem.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: #6b7280;">Nema otprema u tekućem mjesecu</td></tr>';
-                return;
-            }
-
-            let bodyHtml = '';
-            otpreme.forEach((row, index) => {
-                const rowBg = index % 2 === 0 ? '#f9fafb' : 'white';
-
-                // Get main sortiment and količina
-                let mainSortiment = '';
-                let kolicina = 0;
-                sortimentiNazivi.forEach(s => {
-                    const val = row.sortimenti[s] || 0;
-                    if (val > kolicina) {
-                        kolicina = val;
-                        mainSortiment = s;
-                    }
-                });
-
-                bodyHtml += `
-                    <tr style="background: ${rowBg};">
-                        <td>${row.datum || ''}</td>
-                        <td style="font-weight: 600;">${row.odjel || ''}</td>
-                        <td>${row.radiliste || '-'}</td>
-                        <td>${row.otpremac || '-'}</td>
-                        <td>${row.kupac || '-'}</td>
-                        <td>${mainSortiment}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 600;">${kolicina.toFixed(2)} m³</td>
                     </tr>
                 `;
             });
