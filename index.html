@@ -6272,9 +6272,11 @@
                 return;
             }
 
-            const sortimenti = data.sortimenti; // Array of sortiment names
+            const sortimenti = data.sortimenti.filter(s => s && s.trim() !== ''); // Filter out empty sortiment names
             const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
 
+            console.log('Original sortimenti:', data.sortimenti);
+            console.log('Filtered sortimenti:', sortimenti);
             console.log('Rendering table with', sortimenti.length, 'sortimenti and', data.mjeseci.length, 'months');
 
             // Build header with optimized styling
