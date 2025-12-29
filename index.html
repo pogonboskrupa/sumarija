@@ -6297,7 +6297,7 @@
                     borderColor = '#b91c1c';
                 }
 
-                headerHtml += '<th class="sortiment-col ' + colClass + extraClass + '" style="background: ' + bgColor + ' !important; color: white !important; border: 1px solid ' + borderColor + ';">' + sortimenti[i] + '</th>';
+                headerHtml += '<th class="sortiment-col ' + colClass + extraClass + '" style="background: ' + bgColor + ' !important; color: white !important; border: 1px solid ' + borderColor + '; min-width: 85px; max-width: 110px; padding: 12px 8px; font-size: 12px; font-weight: 700; text-align: center; white-space: normal; word-wrap: break-word; line-height: 1.3;">' + sortimenti[i] + '</th>';
             }
             headerHtml += '</tr>';
             headerElem.innerHTML = headerHtml;
@@ -6319,16 +6319,22 @@
                     const displayVal = value > 0 ? value.toFixed(2) : '-';
                     const colClass = getColumnGroup(sortiment);
                     let extraClass = '';
-                    let fontWeight = value > 0 ? 'font-weight: 600;' : 'color: #9ca3af;';
+                    let fontWeight = value > 0 ? 'font-weight: 600;' : 'font-weight: 400; color: #9ca3af;';
+                    let cellBg = 'transparent';
 
-                    if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
-                    else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
-                    else if (sortiment === 'SVEUKUPNO') {
+                    if (sortiment === 'ČETINARI') {
+                        extraClass = ' col-cetinari';
+                        cellBg = value > 0 ? '#d1fae5' : 'transparent';
+                    } else if (sortiment === 'LIŠĆARI') {
+                        extraClass = ' col-liscari';
+                        cellBg = value > 0 ? '#fed7aa' : 'transparent';
+                    } else if (sortiment === 'SVEUKUPNO') {
                         extraClass = ' col-sveukupno';
-                        fontWeight = value > 0 ? 'font-weight: 700;' : 'color: #9ca3af;';
+                        fontWeight = value > 0 ? 'font-weight: 700;' : 'font-weight: 400; color: #9ca3af;';
+                        cellBg = value > 0 ? '#fecaca' : 'transparent';
                     }
 
-                    bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="' + fontWeight + ' padding: 8px 10px; font-size: 12px;">' + displayVal + '</td>';
+                    bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="' + fontWeight + ' padding: 8px 10px; font-size: 12px; min-width: 85px; max-width: 110px; text-align: right; border: 1px solid #e5e7eb; background: ' + cellBg + ';">' + displayVal + '</td>';
 
                     // Add to totals
                     if (!totals[sortiment]) totals[sortiment] = 0;
@@ -6359,7 +6365,7 @@
                     cellBg = '#fecaca';
                 }
 
-                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 800; font-size: 13px; padding: 12px 10px; background: ' + cellBg + ';">' + total.toFixed(2) + '</td>';
+                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 800; font-size: 13px; padding: 12px 10px; background: ' + cellBg + '; min-width: 85px; max-width: 110px; text-align: right; border: 1px solid #9ca3af;">' + total.toFixed(2) + '</td>';
             }
             bodyHtml += '</tr>';
 
@@ -6388,7 +6394,7 @@
                     cellBg = '#fef2f2';
                 }
 
-                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 700; font-size: 12px; padding: 10px; background: ' + cellBg + ';">' + percentage + '%</td>';
+                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 700; font-size: 12px; padding: 10px; background: ' + cellBg + '; min-width: 85px; max-width: 110px; text-align: right; border: 1px solid #d1d5db; font-style: italic;">' + percentage + '%</td>';
             }
             bodyHtml += '</tr>';
 
