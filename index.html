@@ -3414,6 +3414,101 @@
             </div>
         </div>
 
+        <!-- UPOREDBA GODINA CONTENT -->
+        <div id="uporedba-godina-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>📊 Uporedba godina</h1>
+                    <p>Side-by-side prikaz sječe i otpreme po godinama</p>
+                </div>
+            </div>
+
+            <!-- Izbor godina za usporedbu -->
+            <div class="section">
+                <div class="controls-bar" style="justify-content: center; align-items: center; gap: 24px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <label for="uporedba-year1" style="font-weight: 600; font-size: 16px;">📅 Godina 1:</label>
+                        <select id="uporedba-year1" class="year-select" onchange="loadUporedbaGodina()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
+                            <option value="2023">2023</option>
+                            <option value="2024">2024</option>
+                            <option value="2025" selected>2025</option>
+                            <option value="2026">2026</option>
+                        </select>
+                    </div>
+                    <span style="font-size: 24px; font-weight: bold;">VS</span>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <label for="uporedba-year2" style="font-weight: 600; font-size: 16px;">📅 Godina 2:</label>
+                        <select id="uporedba-year2" class="year-select" onchange="loadUporedbaGodina()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #2563eb; min-width: 120px;">
+                            <option value="2023">2023</option>
+                            <option value="2024">2024</option>
+                            <option value="2025">2025</option>
+                            <option value="2026" selected>2026</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mjesečna usporedba -->
+            <div class="section">
+                <h2>📅 Mjesečna usporedba sječe i otpreme</h2>
+                <div style="overflow-x: auto;">
+                    <table class="expert-table" id="uporedba-mjesecna-table">
+                        <thead id="uporedba-mjesecna-header"></thead>
+                        <tbody id="uporedba-mjesecna-body"></tbody>
+                        <tfoot id="uporedba-mjesecna-footer"></tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Godišnje ukupno -->
+            <div class="section">
+                <h2>📊 Godišnje ukupno i razlike</h2>
+                <div style="overflow-x: auto;">
+                    <table class="expert-table" id="uporedba-ukupno-table">
+                        <thead id="uporedba-ukupno-header"></thead>
+                        <tbody id="uporedba-ukupno-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Top 10 odjela -->
+            <div class="section">
+                <h2>🏆 Top 10 odjela po realizaciji</h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                    <div>
+                        <h3 id="uporedba-top10-year1-title" style="text-align: center; margin-bottom: 16px;">Godina 2025</h3>
+                        <div style="overflow-x: auto;">
+                            <table class="expert-table" id="uporedba-top10-year1-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Odjel</th>
+                                        <th style="text-align: right;">Sječa (m³)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="uporedba-top10-year1-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 id="uporedba-top10-year2-title" style="text-align: center; margin-bottom: 16px;">Godina 2026</h3>
+                        <div style="overflow-x: auto;">
+                            <table class="expert-table" id="uporedba-top10-year2-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Odjel</th>
+                                        <th style="text-align: right;">Sječa (m³)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="uporedba-top10-year2-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- IZVJEŠTAJI CONTENT -->
         <div id="izvjestaji-content" class="container hidden">
             <div class="page-header">
@@ -4276,6 +4371,7 @@
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz otpreme</button>
                     <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
                     <button class="tab" onclick="switchTab('dinamika')">📊 Dinamika</button>
+                    <button class="tab" onclick="switchTab('uporedba-godina')">📊 Uporedba godina</button>
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                     <button class="tab notification-badge" onclick="switchTab('pending-unosi')">
                         📋 Dodani unosi
@@ -4360,6 +4456,7 @@
             document.getElementById('poslovodja-zadnjih5-content').classList.add('hidden');
             document.getElementById('poslovodja-suma-content').classList.add('hidden');
             document.getElementById('dinamika-content').classList.add('hidden');
+            document.getElementById('uporedba-godina-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
@@ -4397,6 +4494,8 @@
                 loadMjesecniSortimenti();
             } else if (tab === 'dinamika') {
                 loadDinamika();
+            } else if (tab === 'uporedba-godina') {
+                loadUporedbaGodina();
             } else if (tab === 'izvjestaji') {
                 // Initialize dropdowns to current month/year if not already set
                 const currentDate = new Date();
@@ -10545,6 +10644,269 @@
                 }
             }
         });
+
+        // ============================================
+        // UPOREDBA GODINA FUNKCIJE
+        // ============================================
+
+        // Load uporedba godina
+        async function loadUporedbaGodina() {
+            console.log('Loading Uporedba Godina...');
+            document.getElementById('uporedba-godina-content').classList.remove('hidden');
+
+            const year1 = parseInt(document.getElementById('uporedba-year1').value);
+            const year2 = parseInt(document.getElementById('uporedba-year2').value);
+
+            console.log(`Comparing ${year1} vs ${year2}`);
+
+            try {
+                showInfo('🔄 Učitavanje...', 'Učitavam podatke za usporedbu...');
+
+                // Fetch dashboard data za obje godine (paralelno)
+                const url1 = `${API_URL}?path=dashboard&year=${year1}&username=${currentUser.username}&password=${currentPassword}`;
+                const url2 = `${API_URL}?path=dashboard&year=${year2}&username=${currentUser.username}&password=${currentPassword}`;
+
+                const [data1, data2] = await Promise.all([
+                    fetchWithCache(url1, 'cache_dashboard_' + year1),
+                    fetchWithCache(url2, 'cache_dashboard_' + year2)
+                ]);
+
+                console.log('Data Year 1:', data1);
+                console.log('Data Year 2:', data2);
+
+                if (data1.error || data2.error) {
+                    throw new Error(data1.error || data2.error);
+                }
+
+                // Renderuj tabele
+                renderMjesecnaUporedba(data1, data2, year1, year2);
+                renderGodisnjuUporedbu(data1, data2, year1, year2);
+                renderTop10Odjela(data1, data2, year1, year2);
+
+                hideInfo();
+
+            } catch (error) {
+                console.error('Error loading uporedba:', error);
+                showError('Greška', 'Greška pri učitavanju usporedbe: ' + error.message);
+            }
+        }
+
+        // Render mjesečna usporedba
+        function renderMjesecnaUporedba(data1, data2, year1, year2) {
+            const headerElem = document.getElementById('uporedba-mjesecna-header');
+            const bodyElem = document.getElementById('uporedba-mjesecna-body');
+            const footerElem = document.getElementById('uporedba-mjesecna-footer');
+
+            const mjeseci1 = data1.mjesecniPregled || [];
+            const mjeseci2 = data2.mjesecniPregled || [];
+
+            // Header
+            headerElem.innerHTML = `
+                <tr>
+                    <th rowspan="2">Mjesec</th>
+                    <th colspan="3" style="text-align: center; background: #047857; color: white;">${year1}</th>
+                    <th colspan="3" style="text-align: center; background: #2563eb; color: white;">${year2}</th>
+                    <th colspan="2" style="text-align: center; background: #7c3aed; color: white;">Razlika</th>
+                </tr>
+                <tr>
+                    <th style="text-align: right;">Sječa</th>
+                    <th style="text-align: right;">Otprema</th>
+                    <th style="text-align: right;">Zaliha</th>
+                    <th style="text-align: right;">Sječa</th>
+                    <th style="text-align: right;">Otprema</th>
+                    <th style="text-align: right;">Zaliha</th>
+                    <th style="text-align: right;">Δ Sječa</th>
+                    <th style="text-align: right;">Δ Otprema</th>
+                </tr>
+            `;
+
+            // Body
+            let bodyHtml = '';
+            let totalSjeca1 = 0, totalOtprema1 = 0;
+            let totalSjeca2 = 0, totalOtprema2 = 0;
+
+            for (let i = 0; i < 12; i++) {
+                const m1 = mjeseci1[i] || { mjesec: '', ukupnoPrimka: 0, ukupnoOtprema: 0, zaliha: 0 };
+                const m2 = mjeseci2[i] || { mjesec: '', ukupnoPrimka: 0, ukupnoOtprema: 0, zaliha: 0 };
+
+                const sjeca1 = parseFloat(m1.ukupnoPrimka) || 0;
+                const otprema1 = parseFloat(m1.ukupnoOtprema) || 0;
+                const zaliha1 = parseFloat(m1.zaliha) || 0;
+
+                const sjeca2 = parseFloat(m2.ukupnoPrimka) || 0;
+                const otprema2 = parseFloat(m2.ukupnoOtprema) || 0;
+                const zaliha2 = parseFloat(m2.zaliha) || 0;
+
+                const deltaSjeca = sjeca2 - sjeca1;
+                const deltaOtprema = otprema2 - otprema1;
+
+                totalSjeca1 += sjeca1;
+                totalOtprema1 += otprema1;
+                totalSjeca2 += sjeca2;
+                totalOtprema2 += otprema2;
+
+                const deltaClass1 = deltaSjeca >= 0 ? 'positive-diff' : 'negative-diff';
+                const deltaClass2 = deltaOtprema >= 0 ? 'positive-diff' : 'negative-diff';
+
+                bodyHtml += `
+                    <tr>
+                        <td style="font-weight: 600;">${m1.mjesec || m2.mjesec || '-'}</td>
+                        <td class="sortiment-value">${sjeca1.toFixed(2)}</td>
+                        <td class="sortiment-value">${otprema1.toFixed(2)}</td>
+                        <td class="sortiment-value">${zaliha1.toFixed(2)}</td>
+                        <td class="sortiment-value">${sjeca2.toFixed(2)}</td>
+                        <td class="sortiment-value">${otprema2.toFixed(2)}</td>
+                        <td class="sortiment-value">${zaliha2.toFixed(2)}</td>
+                        <td class="${deltaClass1}" style="text-align: right; font-weight: 600;">${deltaSjeca >= 0 ? '+' : ''}${deltaSjeca.toFixed(2)}</td>
+                        <td class="${deltaClass2}" style="text-align: right; font-weight: 600;">${deltaOtprema >= 0 ? '+' : ''}${deltaOtprema.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+            bodyElem.innerHTML = bodyHtml;
+
+            // Footer
+            const totalDeltaSjeca = totalSjeca2 - totalSjeca1;
+            const totalDeltaOtprema = totalOtprema2 - totalOtprema1;
+            const deltaClass1 = totalDeltaSjeca >= 0 ? 'positive-diff' : 'negative-diff';
+            const deltaClass2 = totalDeltaOtprema >= 0 ? 'positive-diff' : 'negative-diff';
+
+            footerElem.innerHTML = `
+                <tr style="font-weight: bold; font-size: 16px;">
+                    <td>UKUPNO</td>
+                    <td class="sortiment-value">${totalSjeca1.toFixed(2)}</td>
+                    <td class="sortiment-value">${totalOtprema1.toFixed(2)}</td>
+                    <td></td>
+                    <td class="sortiment-value">${totalSjeca2.toFixed(2)}</td>
+                    <td class="sortiment-value">${totalOtprema2.toFixed(2)}</td>
+                    <td></td>
+                    <td class="${deltaClass1}" style="text-align: right;">${totalDeltaSjeca >= 0 ? '+' : ''}${totalDeltaSjeca.toFixed(2)}</td>
+                    <td class="${deltaClass2}" style="text-align: right;">${totalDeltaOtprema >= 0 ? '+' : ''}${totalDeltaOtprema.toFixed(2)}</td>
+                </tr>
+            `;
+        }
+
+        // Render godišnju usporedbu
+        function renderGodisnjuUporedbu(data1, data2, year1, year2) {
+            const headerElem = document.getElementById('uporedba-ukupno-header');
+            const bodyElem = document.getElementById('uporedba-ukupno-body');
+
+            const mjeseci1 = data1.mjesecniPregled || [];
+            const mjeseci2 = data2.mjesecniPregled || [];
+
+            let totalSjeca1 = 0, totalOtprema1 = 0, totalDinamika1 = 0;
+            let totalSjeca2 = 0, totalOtprema2 = 0, totalDinamika2 = 0;
+
+            mjeseci1.forEach(m => {
+                totalSjeca1 += parseFloat(m.ukupnoPrimka) || 0;
+                totalOtprema1 += parseFloat(m.ukupnoOtprema) || 0;
+                totalDinamika1 += parseFloat(m.dinamika) || 0;
+            });
+
+            mjeseci2.forEach(m => {
+                totalSjeca2 += parseFloat(m.ukupnoPrimka) || 0;
+                totalOtprema2 += parseFloat(m.ukupnoOtprema) || 0;
+                totalDinamika2 += parseFloat(m.dinamika) || 0;
+            });
+
+            const realizacijaSjeca1 = totalDinamika1 > 0 ? (totalSjeca1 / totalDinamika1 * 100) : 0;
+            const realizacijaSjeca2 = totalDinamika2 > 0 ? (totalSjeca2 / totalDinamika2 * 100) : 0;
+
+            const deltaSjeca = totalSjeca2 - totalSjeca1;
+            const deltaOtprema = totalOtprema2 - totalOtprema1;
+            const deltaRealizacija = realizacijaSjeca2 - realizacijaSjeca1;
+
+            // Header
+            headerElem.innerHTML = `
+                <tr>
+                    <th>Pokazatelj</th>
+                    <th style="text-align: right; background: #047857; color: white;">${year1}</th>
+                    <th style="text-align: right; background: #2563eb; color: white;">${year2}</th>
+                    <th style="text-align: right; background: #7c3aed; color: white;">Razlika</th>
+                    <th style="text-align: right; background: #7c3aed; color: white;">% Promjene</th>
+                </tr>
+            `;
+
+            // Body
+            const percentChangeSjeca = totalSjeca1 > 0 ? ((deltaSjeca / totalSjeca1) * 100) : 0;
+            const percentChangeOtprema = totalOtprema1 > 0 ? ((deltaOtprema / totalOtprema1) * 100) : 0;
+
+            bodyElem.innerHTML = `
+                <tr>
+                    <td style="font-weight: 600;">Ukupna Sječa (m³)</td>
+                    <td class="sortiment-value">${totalSjeca1.toFixed(2)}</td>
+                    <td class="sortiment-value">${totalSjeca2.toFixed(2)}</td>
+                    <td class="${deltaSjeca >= 0 ? 'positive-diff' : 'negative-diff'}" style="text-align: right; font-weight: 600;">${deltaSjeca >= 0 ? '+' : ''}${deltaSjeca.toFixed(2)}</td>
+                    <td class="${percentChangeSjeca >= 0 ? 'positive-diff' : 'negative-diff'}" style="text-align: right; font-weight: 600;">${percentChangeSjeca >= 0 ? '+' : ''}${percentChangeSjeca.toFixed(1)}%</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600;">Ukupna Otprema (m³)</td>
+                    <td class="sortiment-value">${totalOtprema1.toFixed(2)}</td>
+                    <td class="sortiment-value">${totalOtprema2.toFixed(2)}</td>
+                    <td class="${deltaOtprema >= 0 ? 'positive-diff' : 'negative-diff'}" style="text-align: right; font-weight: 600;">${deltaOtprema >= 0 ? '+' : ''}${deltaOtprema.toFixed(2)}</td>
+                    <td class="${percentChangeOtprema >= 0 ? 'positive-diff' : 'negative-diff'}" style="text-align: right; font-weight: 600;">${percentChangeOtprema >= 0 ? '+' : ''}${percentChangeOtprema.toFixed(1)}%</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600;">Planirana Dinamika (m³)</td>
+                    <td class="sortiment-value">${totalDinamika1.toFixed(2)}</td>
+                    <td class="sortiment-value">${totalDinamika2.toFixed(2)}</td>
+                    <td style="text-align: right;">-</td>
+                    <td style="text-align: right;">-</td>
+                </tr>
+                <tr style="background: linear-gradient(135deg, #047857 0%, #065f46 100%); color: white;">
+                    <td style="font-weight: 700;">Realizacija Sječe (%)</td>
+                    <td style="text-align: right; font-weight: 700;">${realizacijaSjeca1.toFixed(1)}%</td>
+                    <td style="text-align: right; font-weight: 700;">${realizacijaSjeca2.toFixed(1)}%</td>
+                    <td style="text-align: right; font-weight: 700;">${deltaRealizacija >= 0 ? '+' : ''}${deltaRealizacija.toFixed(1)}%</td>
+                    <td style="text-align: right;">-</td>
+                </tr>
+            `;
+        }
+
+        // Render Top 10 odjela
+        function renderTop10Odjela(data1, data2, year1, year2) {
+            const body1 = document.getElementById('uporedba-top10-year1-body');
+            const body2 = document.getElementById('uporedba-top10-year2-body');
+
+            document.getElementById('uporedba-top10-year1-title').textContent = `Godina ${year1}`;
+            document.getElementById('uporedba-top10-year2-title').textContent = `Godina ${year2}`;
+
+            const odjeli1 = data1.odjeli || [];
+            const odjeli2 = data2.odjeli || [];
+
+            // Sort by primka descending
+            const top10_1 = odjeli1.sort((a, b) => (parseFloat(b.primka) || 0) - (parseFloat(a.primka) || 0)).slice(0, 10);
+            const top10_2 = odjeli2.sort((a, b) => (parseFloat(b.primka) || 0) - (parseFloat(a.primka) || 0)).slice(0, 10);
+
+            // Render Year 1
+            let html1 = '';
+            top10_1.forEach((odjel, idx) => {
+                const primka = parseFloat(odjel.primka) || 0;
+                const medalEmoji = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '';
+                html1 += `
+                    <tr>
+                        <td style="text-align: center;">${medalEmoji} ${idx + 1}</td>
+                        <td style="font-weight: 600;">${odjel.odjel || '-'}</td>
+                        <td class="sortiment-value">${primka.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            body1.innerHTML = html1;
+
+            // Render Year 2
+            let html2 = '';
+            top10_2.forEach((odjel, idx) => {
+                const primka = parseFloat(odjel.primka) || 0;
+                const medalEmoji = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '';
+                html2 += `
+                    <tr>
+                        <td style="text-align: center;">${medalEmoji} ${idx + 1}</td>
+                        <td style="font-weight: 600;">${odjel.odjel || '-'}</td>
+                        <td class="sortiment-value">${primka.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            body2.innerHTML = html2;
+        }
 
     </script>
 </body>
