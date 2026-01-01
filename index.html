@@ -4311,7 +4311,7 @@
 
             // Dinamički kreiraj tab-ove na osnovu tipa korisnika
             const tabsMenu = document.getElementById('tabs-menu');
-            const userType = currentUser.type; // 'primac', 'otpremac', ili nešto drugo
+            const userType = (currentUser.type || '').toLowerCase(); // Case-insensitive
 
             if (userType === 'primac') {
                 // Primač vidi pet prikaza: pregled, godišnji prikaz, po odjelima, dodavanje, i moje sječe
@@ -4330,7 +4330,7 @@
                     <button class="tab" onclick="switchTab('add-otprema')">➕ Dodaj otpremu</button>
                     <button class="tab" onclick="switchTab('my-otpreme')">📝 Moje otpreme</button>
                 `;
-            } else if (userType === 'OPERATIVA') {
+            } else if (userType === 'operativa') {
                 // OPERATIVA korisnik vidi samo analytics dashboards
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
@@ -4339,7 +4339,7 @@
                     <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Mjesečni pregled</button>
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                 `;
-            } else if (userType === 'POSLOVOĐA') {
+            } else if (userType === 'poslovođa' || userType === 'poslovodja') {
                 // POSLOVOĐA vidi: STANJE ODJELA, ODJELI U REALIZACIJI, ZADNJIH 5 DANA, SUMA MJESECA, IZVJEŠTAJI
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('poslovodja-stanje')">📊 Stanje Odjela</button>
@@ -4399,12 +4399,12 @@
         
         // Load initial data based on user type
         function loadData() {
-            const userType = currentUser.type;
+            const userType = (currentUser.type || '').toLowerCase();
             if (userType === 'primac') {
                 loadPrimacPersonal();
             } else if (userType === 'otpremac') {
                 loadOtpremacPersonal();
-            } else if (userType === 'POSLOVOĐA') {
+            } else if (userType === 'poslovođa' || userType === 'poslovodja') {
                 loadPoslovodjaStanje();
             } else {
                 loadDashboard();
@@ -4775,7 +4775,11 @@
 
         // Helper: Get radilišta for current poslovodja
         function getPoslovodjaRadilista() {
-            if (!currentUser || currentUser.type !== 'POSLOVOĐA') {
+            if (!currentUser) {
+                return [];
+            }
+            const userType = (currentUser.type || '').toLowerCase();
+            if (userType !== 'poslovođa' && userType !== 'poslovodja') {
                 return [];
             }
             const fullName = currentUser.fullName.toUpperCase().trim();
