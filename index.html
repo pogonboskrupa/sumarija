@@ -10602,16 +10602,12 @@
             try {
                 showInfo('💾 Spremanje...', 'Spremam mjesečnu dinamiku...');
 
-                const url = `${API_URL}?path=save_dinamika`;
+                // Koristi GET sa URL parametrima da izbjegneš CORS problem
+                const mjeseciJson = encodeURIComponent(JSON.stringify(mjeseci));
+                const url = `${API_URL}?path=save_dinamika&username=${encodeURIComponent(currentUser.username)}&password=${encodeURIComponent(currentPassword)}&godina=${year}&mjeseci=${mjeseciJson}`;
+
                 const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: currentUser.username,
-                        password: currentPassword,
-                        godina: year,
-                        mjeseci: mjeseci
-                    })
+                    method: 'GET'
                 });
 
                 const result = await response.json();

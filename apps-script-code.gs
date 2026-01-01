@@ -114,6 +114,8 @@ function doGet(e) {
       return handleOtpreme(e.parameter.username, e.parameter.password);
     } else if (path === 'get_dinamika') {
       return handleGetDinamika(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'save_dinamika') {
+      return handleSaveDinamika(e.parameter);
     }
 
     return createJsonResponse({ error: 'Unknown path' }, false);
@@ -3823,12 +3825,18 @@ function handleSaveDinamika(params) {
     const allData = dinamikaSheet.getDataRange().getValues();
     const godina = parseInt(params.godina);
 
+    // Parse mjeseci JSON ako je string (dolazi iz GET parametra)
+    let mjeseciObj = params.mjeseci;
+    if (typeof params.mjeseci === 'string') {
+      mjeseciObj = JSON.parse(params.mjeseci);
+    }
+
     // Pripremi red podataka - 12 mjesečnih vrijednosti
     let mjesecneVrijednosti = [];
     let ukupno = 0;
     for (let i = 1; i <= 12; i++) {
       const mjesecKey = String(i).padStart(2, '0');
-      const value = parseFloat(params.mjeseci[mjesecKey]) || 0;
+      const value = parseFloat(mjeseciObj[mjesecKey]) || 0;
       mjesecneVrijednosti.push(value);
       ukupno += value;
     }
