@@ -4082,10 +4082,12 @@
             let totalFailed = 0;
 
             try {
-                // Determine user type
-                const userType = currentUser.type;
+                // Determine user type (case-insensitive)
+                const userType = (currentUser.type || '').toLowerCase();
 
-                if (userType === 'ADMIN') {
+                console.log(`User type detected: ${userType}`);
+
+                if (userType === 'admin') {
                     // Admin views to preload
                     const views = [
                         { name: 'Dashboard', url: `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_dashboard_' + year },
@@ -4095,7 +4097,8 @@
                         { name: 'Odjeli', url: `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_odjeli_' + year },
                         { name: 'Stanje Odjela', url: `${API_URL}?path=stanje_odjela&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_stanje_odjela_' + year },
                         { name: 'Pending Unosi', url: `${API_URL}?path=pending_unosi&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_pending_unosi' },
-                        { name: 'Mjesečni Sortimenti', url: `${API_URL}?path=mjesecni_sortimenti&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_mjesecni_sortimenti_' + year }
+                        { name: 'Mjesečni Sortimenti', url: `${API_URL}?path=mjesecni_sortimenti&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_mjesecni_sortimenti_' + year },
+                        { name: 'Dinamika', url: `${API_URL}?path=get_dinamika&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_dinamika_' + year }
                     ];
 
                     console.log(`Preloading ${views.length} admin views...`);
@@ -4112,7 +4115,7 @@
                         }
                     }
 
-                } else if (userType === 'POSLOVOĐA') {
+                } else if (userType === 'poslovođa' || userType === 'poslovodja') {
                     // Poslovodja views to preload
                     const views = [
                         { name: 'Stanje Odjela', url: `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_poslovodja_odjeli_' + year },
@@ -4136,9 +4139,9 @@
                         }
                     }
 
-                } else if (userType === 'PRIMAC' || userType === 'OTPREMAC') {
+                } else if (userType === 'primac' || userType === 'otpremac') {
                     // Worker views to preload
-                    const path = userType === 'PRIMAC' ? 'primke' : 'otpreme';
+                    const path = userType === 'primac' ? 'primke' : 'otpreme';
                     const views = [
                         { name: 'Moje unose', url: `${API_URL}?path=${path}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: `cache_my_${path}` },
                         { name: 'Godišnji prikaz', url: `${API_URL}?path=${path}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: `cache_godisnji_${path}` }
@@ -4157,6 +4160,8 @@
                             console.error(`✗ ${view.name} failed:`, error);
                         }
                     }
+                } else {
+                    console.warn(`Unknown user type: ${userType}`);
                 }
 
                 if (totalLoaded > 0) {
