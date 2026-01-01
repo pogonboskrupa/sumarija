@@ -3307,6 +3307,97 @@
             </div>
         </div>
 
+        <!-- DINAMIKA CONTENT -->
+        <div id="dinamika-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>📊 Dinamika za tekuću godinu</h1>
+                    <p>Planirana dinamika sječe po odjelima i godinama</p>
+                </div>
+            </div>
+
+            <!-- Izbor godine -->
+            <div class="section">
+                <div class="controls-bar" style="justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <label for="dinamika-year-select" style="font-weight: 600; font-size: 16px;">📅 Izaberi godinu:</label>
+                        <select id="dinamika-year-select" class="year-select" onchange="loadDinamika()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
+                            <option value="2023">2023</option>
+                            <option value="2024">2024</option>
+                            <option value="2025" selected>2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                            <option value="2029">2029</option>
+                            <option value="2030">2030</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="showAddDinamikaForm()" style="font-size: 16px; padding: 12px 24px;">
+                        ➕ Dodaj dinamiku
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabela dinamike -->
+            <div class="section">
+                <h2 id="dinamika-year-title">Dinamika za godinu <span id="dinamika-selected-year">2025</span></h2>
+                <div class="controls-bar">
+                    <input type="text" class="search-input" id="dinamika-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterDinamikaTable()">
+                    <button class="btn btn-primary" onclick="exportTableToCSV('dinamika')">📥 Export CSV</button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="expert-table" id="dinamika-table">
+                        <thead id="dinamika-header"></thead>
+                        <tbody id="dinamika-body"></tbody>
+                        <tfoot id="dinamika-footer"></tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit Dinamika Modal -->
+        <div id="add-dinamika-modal" class="modal hidden">
+            <div class="modal-content" style="max-width: 700px;">
+                <div class="modal-header">
+                    <h2 id="dinamika-modal-title">➕ Dodaj dinamiku</h2>
+                    <button class="modal-close" onclick="closeAddDinamikaForm()">✕</button>
+                </div>
+                <form id="add-dinamika-form" onsubmit="saveDinamika(event)">
+                    <div class="form-group">
+                        <label for="dinamika-godina">Godina*</label>
+                        <select id="dinamika-godina" class="form-control" required>
+                            <option value="2023">2023</option>
+                            <option value="2024">2024</option>
+                            <option value="2025" selected>2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                            <option value="2029">2029</option>
+                            <option value="2030">2030</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="dinamika-odjel">Odjel*</label>
+                        <select id="dinamika-odjel" class="form-control" required>
+                            <option value="">Izaberi odjel...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="dinamika-kolicina">Planirana količina (m³)*</label>
+                        <input type="number" id="dinamika-kolicina" class="form-control" step="0.01" min="0" required placeholder="npr. 1500.50">
+                    </div>
+                    <div class="form-group">
+                        <label for="dinamika-napomena">Napomena (opciono)</label>
+                        <textarea id="dinamika-napomena" class="form-control" rows="3" placeholder="Dodatne napomene..."></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeAddDinamikaForm()">Otkaži</button>
+                        <button type="submit" class="btn btn-primary">💾 Sačuvaj</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- IZVJEŠTAJI CONTENT -->
         <div id="izvjestaji-content" class="container hidden">
             <div class="page-header">
@@ -4168,6 +4259,7 @@
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz sječe</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz otpreme</button>
                     <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
+                    <button class="tab" onclick="switchTab('dinamika')">📊 Dinamika</button>
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                     <button class="tab notification-badge" onclick="switchTab('pending-unosi')">
                         📋 Dodani unosi
@@ -4251,6 +4343,7 @@
             document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
             document.getElementById('poslovodja-zadnjih5-content').classList.add('hidden');
             document.getElementById('poslovodja-suma-content').classList.add('hidden');
+            document.getElementById('dinamika-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
@@ -4286,6 +4379,8 @@
                 loadPendingUnosi();
             } else if (tab === 'mjesecni-sortimenti') {
                 loadMjesecniSortimenti();
+            } else if (tab === 'dinamika') {
+                loadDinamika();
             } else if (tab === 'izvjestaji') {
                 // Initialize dropdowns to current month/year if not already set
                 const currentDate = new Date();
@@ -10315,6 +10410,221 @@
             rows.forEach(row => {
                 const odjelName = row.cells[0].textContent.toLowerCase();
                 if (odjelName.includes(searchValue)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // ============================================
+        // DINAMIKA FUNKCIJE
+        // ============================================
+
+        // Load dinamika data
+        async function loadDinamika() {
+            console.log('Loading Dinamika...');
+            document.getElementById('dinamika-content').classList.remove('hidden');
+
+            const year = document.getElementById('dinamika-year-select').value || new Date().getFullYear();
+            document.getElementById('dinamika-selected-year').textContent = year;
+            document.getElementById('dinamika-godina').value = year;
+
+            try {
+                const url = `${API_URL}?path=get_dinamika&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, 'cache_dinamika_' + year);
+
+                console.log('Dinamika data:', data);
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                renderDinamikaTable(data.dinamika || []);
+
+            } catch (error) {
+                console.error('Error loading dinamika:', error);
+                document.getElementById('dinamika-body').innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #dc2626;">Greška pri učitavanju: ' + error.message + '</td></tr>';
+            }
+        }
+
+        // Render dinamika table
+        function renderDinamikaTable(dinamika) {
+            const headerElem = document.getElementById('dinamika-header');
+            const bodyElem = document.getElementById('dinamika-body');
+            const footerElem = document.getElementById('dinamika-footer');
+
+            if (!dinamika || dinamika.length === 0) {
+                headerElem.innerHTML = '';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema unose dinamike za izabranu godinu. Kliknite "Dodaj dinamiku" za unos.</td></tr>';
+                footerElem.innerHTML = '';
+                return;
+            }
+
+            // Sortiraj po odjelu
+            dinamika.sort((a, b) => (a.odjel || '').localeCompare(b.odjel || ''));
+
+            // Header
+            let headerHtml = '<tr><th>Odjel</th><th style="text-align: right;">Planirana količina (m³)</th><th style="text-align: right;">Napomena</th><th style="text-align: center;">Akcije</th></tr>';
+            headerElem.innerHTML = headerHtml;
+
+            // Body
+            let bodyHtml = '';
+            let total = 0;
+
+            dinamika.forEach((red, index) => {
+                const kolicina = parseFloat(red.kolicina) || 0;
+                total += kolicina;
+
+                bodyHtml += `
+                    <tr data-odjel="${(red.odjel || '').toLowerCase()}">
+                        <td style="font-weight: 600;">${red.odjel || '-'}</td>
+                        <td class="sortiment-value">${kolicina.toFixed(2)}</td>
+                        <td style="font-size: 14px; color: #6b7280;">${red.napomena || '-'}</td>
+                        <td style="text-align: center;">
+                            <button class="btn btn-sm btn-secondary" onclick="editDinamika('${red.id}')" style="padding: 6px 12px; font-size: 13px;">✏️ Izmijeni</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteDinamika('${red.id}')" style="padding: 6px 12px; font-size: 13px; margin-left: 8px;">🗑️ Obriši</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            bodyElem.innerHTML = bodyHtml;
+
+            // Footer
+            let footerHtml = `
+                <tr>
+                    <td style="font-weight: 700;">📊 UKUPNA PLANIRANA DINAMIKA</td>
+                    <td style="text-align: right; font-weight: 700;">${total.toFixed(2)}</td>
+                    <td colspan="2"></td>
+                </tr>
+            `;
+            footerElem.innerHTML = footerHtml;
+        }
+
+        // Show add dinamika form
+        function showAddDinamikaForm() {
+            document.getElementById('add-dinamika-modal').classList.remove('hidden');
+            document.getElementById('dinamika-modal-title').textContent = '➕ Dodaj dinamiku';
+            document.getElementById('add-dinamika-form').reset();
+
+            // Set year to selected year
+            const year = document.getElementById('dinamika-year-select').value;
+            document.getElementById('dinamika-godina').value = year;
+
+            // Populate odjeli dropdown
+            const odjelDropdown = document.getElementById('dinamika-odjel');
+            odjelDropdown.innerHTML = '<option value="">Izaberi odjel...</option>';
+            odjeliList.forEach(odjel => {
+                const option = document.createElement('option');
+                option.value = odjel;
+                option.textContent = odjel;
+                odjelDropdown.appendChild(option);
+            });
+        }
+
+        // Close add dinamika form
+        function closeAddDinamikaForm() {
+            document.getElementById('add-dinamika-modal').classList.add('hidden');
+            document.getElementById('add-dinamika-form').reset();
+        }
+
+        // Save dinamika
+        async function saveDinamika(event) {
+            event.preventDefault();
+
+            const godina = document.getElementById('dinamika-godina').value;
+            const odjel = document.getElementById('dinamika-odjel').value;
+            const kolicina = document.getElementById('dinamika-kolicina').value;
+            const napomena = document.getElementById('dinamika-napomena').value;
+
+            try {
+                showInfo('💾 Spremanje...', 'Spremam dinamiku...');
+
+                const url = `${API_URL}?path=save_dinamika`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: currentUser.username,
+                        password: currentPassword,
+                        godina: godina,
+                        odjel: odjel,
+                        kolicina: kolicina,
+                        napomena: napomena
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess('✅ Spremljeno!', 'Dinamika uspješno dodana.');
+                    closeAddDinamikaForm();
+
+                    // Clear cache and reload
+                    localStorage.removeItem('cache_dinamika_' + godina);
+                    loadDinamika();
+                } else {
+                    throw new Error(result.error || 'Greška pri spremanju');
+                }
+
+            } catch (error) {
+                console.error('Error saving dinamika:', error);
+                showError('Greška', 'Nije uspjelo spremanje dinamike: ' + error.message);
+            }
+        }
+
+        // Edit dinamika
+        function editDinamika(id) {
+            showInfo('ℹ️ Info', 'Edit funkcionalnost će biti dodana uskoro.');
+        }
+
+        // Delete dinamika
+        async function deleteDinamika(id) {
+            if (!confirm('Da li ste sigurni da želite obrisati ovu dinamiku?')) {
+                return;
+            }
+
+            try {
+                showInfo('🗑️ Brisanje...', 'Brišem dinamiku...');
+
+                const url = `${API_URL}?path=delete_dinamika`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: currentUser.username,
+                        password: currentPassword,
+                        id: id
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess('✅ Obrisano!', 'Dinamika uspješno obrisana.');
+
+                    // Clear cache and reload
+                    const year = document.getElementById('dinamika-year-select').value;
+                    localStorage.removeItem('cache_dinamika_' + year);
+                    loadDinamika();
+                } else {
+                    throw new Error(result.error || 'Greška pri brisanju');
+                }
+
+            } catch (error) {
+                console.error('Error deleting dinamika:', error);
+                showError('Greška', 'Nije uspjelo brisanje dinamike: ' + error.message);
+            }
+        }
+
+        // Filter dinamika table
+        function filterDinamikaTable() {
+            const searchInput = document.getElementById('dinamika-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#dinamika-body tr');
+
+            rows.forEach(row => {
+                const odjel = row.getAttribute('data-odjel') || '';
+                if (odjel.includes(searchInput)) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
