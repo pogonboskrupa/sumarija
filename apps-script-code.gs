@@ -10,8 +10,48 @@ const ODJELI_FOLDER_ID = '1NQ0s_F4j9iRDaZafexzP5Bwyv0NXfMMK';                   
 const ADMIN_USERNAME = 'admin';
 const ADMIN_PASSWORD = 'admin';
 
-// Dinamika po mjesecima (plan 2025) - može se ažurirati za 2026
-const DINAMIKA_2025 = [788, 2389, 6027, 5597, 6977, 6934, 7336, 6384, 6997, 7895, 5167, 2016];
+// Dinamika po mjesecima (plan 2025) - ZASTARJELO - koristi se DINAMIKA sheet
+// const DINAMIKA_2025 = [788, 2389, 6027, 5597, 6977, 6934, 7336, 6384, 6997, 7895, 5167, 2016];
+
+// Helper funkcija - učitaj mjesečnu dinamiku iz DINAMIKA sheet-a
+function getDinamikaForYear(year) {
+  try {
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    let dinamikaSheet = ss.getSheetByName("DINAMIKA");
+
+    // Ako sheet ne postoji ili nema podataka, vrati prazne vrijednosti
+    if (!dinamikaSheet) {
+      Logger.log('DINAMIKA sheet does not exist, returning zeros');
+      return Array(12).fill(0);
+    }
+
+    const data = dinamikaSheet.getDataRange().getValues();
+
+    // Pronađi red za traženu godinu
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const rowYear = parseInt(row[0]) || 0;
+
+      if (rowYear === parseInt(year)) {
+        // Vrati mjesečne vrijednosti (kolone 1-12)
+        const mjesecneVrijednosti = [];
+        for (let j = 1; j <= 12; j++) {
+          mjesecneVrijednosti.push(parseFloat(row[j]) || 0);
+        }
+        Logger.log('Found dinamika for year ' + year);
+        return mjesecneVrijednosti;
+      }
+    }
+
+    // Ako nema podataka za godinu, vrati nule
+    Logger.log('No dinamika found for year ' + year + ', returning zeros');
+    return Array(12).fill(0);
+
+  } catch (error) {
+    Logger.log('ERROR in getDinamikaForYear: ' + error.toString());
+    return Array(12).fill(0);
+  }
+}
 
 // Glavni handler za sve zahtjeve
 function doGet(e) {
@@ -732,7 +772,7 @@ function handleDashboard(year, username, password) {
   const otpremaData = otpremaSheet.getDataRange().getValues();
 
   const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
-  const dinamika = DINAMIKA_2025;
+  const dinamika = getDinamikaForYear(year); // Učitaj dinamiku iz DINAMIKA sheet-a
 
   // Inicijalizuj mjesečne sume
   let mjesecnePrimke = Array(12).fill(0);
