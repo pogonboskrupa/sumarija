@@ -72,6 +72,8 @@ function doGet(e) {
       return handlePrimke(e.parameter.username, e.parameter.password);
     } else if (path === 'otpreme') {
       return handleOtpreme(e.parameter.username, e.parameter.password);
+    } else if (path === 'get_dinamika') {
+      return handleGetDinamika(e.parameter.year, e.parameter.username, e.parameter.password);
     }
 
     return createJsonResponse({ error: 'Unknown path' }, false);
@@ -3647,5 +3649,238 @@ function handleOtpreme(username, password) {
   } catch (error) {
     Logger.log('ERROR in handleOtpreme: ' + error.toString());
     return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+// ========================================
+// POST REQUEST HANDLER
+// ========================================
+
+/**
+ * Main handler for POST requests
+ */
+function doPost(e) {
+  try {
+    const path = e.parameter.path;
+    const postData = JSON.parse(e.postData.contents);
+
+    if (path === 'save_dinamika') {
+      return handleSaveDinamika(postData);
+    } else if (path === 'delete_dinamika') {
+      return handleDeleteDinamika(postData);
+    }
+
+    return createJsonResponse({ error: 'Unknown POST path' }, false);
+  } catch (error) {
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+// ========================================
+// DINAMIKA API - Upravljanje godišnjom dinamikom
+// ========================================
+
+/**
+ * Get Dinamika endpoint - vraća dinamiku za odabranu godinu
+ */
+function handleGetDinamika(year, username, password) {
+  try {
+    // Autentikacija
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    // Samo admin može pristupiti dinamici
+    if (loginResult.type !== 'admin') {
+      return createJsonResponse({ error: "Only admin can access dinamika" }, false);
+    }
+
+    Logger.log('=== HANDLE GET DINAMIKA START ===');
+    Logger.log('Year: ' + year);
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    let dinamikaSheet = ss.getSheetByName("DINAMIKA");
+
+    // Ako sheet ne postoji, kreiraj ga
+    if (!dinamikaSheet) {
+      dinamikaSheet = ss.insertSheet("DINAMIKA");
+      const headers = ["ID", "GODINA", "ODJEL", "KOLICINA", "NAPOMENA", "DATUM_KREIRANJA"];
+      dinamikaSheet.appendRow(headers);
+
+      // Formatiraj header
+      const headerRange = dinamikaSheet.getRange(1, 1, 1, headers.length);
+      headerRange.setBackground("#f59e0b");
+      headerRange.setFontColor("white");
+      headerRange.setFontWeight("bold");
+
+      Logger.log('Created new DINAMIKA sheet');
+    }
+
+    const data = dinamikaSheet.getDataRange().getValues();
+    const dinamika = [];
+
+    // Skip header row
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const rowYear = parseInt(row[1]) || 0;
+
+      // Filter by year
+      if (rowYear === parseInt(year)) {
+        dinamika.push({
+          id: row[0],
+          godina: row[1],
+          odjel: row[2],
+          kolicina: parseFloat(row[3]) || 0,
+          napomena: row[4] || '',
+          datumKreiranja: row[5] ? formatDate(parseDate(row[5])) : ''
+        });
+      }
+    }
+
+    Logger.log('=== HANDLE GET DINAMIKA END ===');
+    Logger.log('Broj zapisa: ' + dinamika.length);
+
+    return createJsonResponse({ dinamika: dinamika }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleGetDinamika: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+/**
+ * Save Dinamika endpoint - snima novu dinamiku
+ */
+function handleSaveDinamika(params) {
+  try {
+    // Autentikacija
+    const loginResult = JSON.parse(handleLogin(params.username, params.password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    // Samo admin može dodavati dinamiku
+    if (loginResult.type !== 'admin') {
+      return createJsonResponse({ error: "Only admin can add dinamika" }, false);
+    }
+
+    Logger.log('=== HANDLE SAVE DINAMIKA START ===');
+    Logger.log('Godina: ' + params.godina);
+    Logger.log('Odjel: ' + params.odjel);
+    Logger.log('Kolicina: ' + params.kolicina);
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    let dinamikaSheet = ss.getSheetByName("DINAMIKA");
+
+    // Ako sheet ne postoji, kreiraj ga
+    if (!dinamikaSheet) {
+      dinamikaSheet = ss.insertSheet("DINAMIKA");
+      const headers = ["ID", "GODINA", "ODJEL", "KOLICINA", "NAPOMENA", "DATUM_KREIRANJA"];
+      dinamikaSheet.appendRow(headers);
+
+      // Formatiraj header
+      const headerRange = dinamikaSheet.getRange(1, 1, 1, headers.length);
+      headerRange.setBackground("#f59e0b");
+      headerRange.setFontColor("white");
+      headerRange.setFontWeight("bold");
+    }
+
+    // Generiši ID
+    const allData = dinamikaSheet.getDataRange().getValues();
+    let maxId = 0;
+    for (let i = 1; i < allData.length; i++) {
+      const currentId = parseInt(allData[i][0]) || 0;
+      if (currentId > maxId) maxId = currentId;
+    }
+    const newId = maxId + 1;
+
+    // Pripremi red podataka
+    const newRow = [
+      newId,
+      parseInt(params.godina),
+      params.odjel,
+      parseFloat(params.kolicina) || 0,
+      params.napomena || '',
+      new Date()
+    ];
+
+    // Dodaj red na kraj sheet-a
+    dinamikaSheet.appendRow(newRow);
+
+    Logger.log('=== HANDLE SAVE DINAMIKA END ===');
+    Logger.log('Successfully added new dinamika entry');
+
+    return createJsonResponse({
+      success: true,
+      message: "Dinamika uspješno dodana",
+      id: newId
+    }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleSaveDinamika: ' + error.toString());
+    return createJsonResponse({
+      error: "Greška pri dodavanju dinamike: " + error.toString()
+    }, false);
+  }
+}
+
+/**
+ * Delete Dinamika endpoint - briše postojeću dinamiku
+ */
+function handleDeleteDinamika(params) {
+  try {
+    // Autentikacija
+    const loginResult = JSON.parse(handleLogin(params.username, params.password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    // Samo admin može brisati dinamiku
+    if (loginResult.type !== 'admin') {
+      return createJsonResponse({ error: "Only admin can delete dinamika" }, false);
+    }
+
+    Logger.log('=== HANDLE DELETE DINAMIKA START ===');
+    Logger.log('ID: ' + params.id);
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const dinamikaSheet = ss.getSheetByName("DINAMIKA");
+
+    if (!dinamikaSheet) {
+      return createJsonResponse({ error: "DINAMIKA sheet does not exist" }, false);
+    }
+
+    const data = dinamikaSheet.getDataRange().getValues();
+
+    // Pronađi red sa odgovarajućim ID-om
+    let rowToDelete = -1;
+    for (let i = 1; i < data.length; i++) {
+      if (parseInt(data[i][0]) === parseInt(params.id)) {
+        rowToDelete = i + 1; // +1 jer sheet rows počinju od 1
+        break;
+      }
+    }
+
+    if (rowToDelete === -1) {
+      return createJsonResponse({ error: "Dinamika sa ID " + params.id + " ne postoji" }, false);
+    }
+
+    // Obriši red
+    dinamikaSheet.deleteRow(rowToDelete);
+
+    Logger.log('=== HANDLE DELETE DINAMIKA END ===');
+    Logger.log('Successfully deleted dinamika entry');
+
+    return createJsonResponse({
+      success: true,
+      message: "Dinamika uspješno obrisana"
+    }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleDeleteDinamika: ' + error.toString());
+    return createJsonResponse({
+      error: "Greška pri brisanju dinamike: " + error.toString()
+    }, false);
   }
 }
