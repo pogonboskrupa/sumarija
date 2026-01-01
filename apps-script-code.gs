@@ -56,8 +56,12 @@ function getDinamikaForYear(year) {
 // Glavni handler za sve zahtjeve
 function doGet(e) {
   try {
+    Logger.log('=== DOGET CALLED ===');
+    Logger.log('Full e.parameter: ' + JSON.stringify(e.parameter));
+    Logger.log('e.queryString: ' + e.queryString);
+
     const path = e.parameter.path;
-    Logger.log('doGet called with path: ' + path);
+    Logger.log('Extracted path: ' + path);
 
     if (path === 'login') {
       return handleLogin(e.parameter.username, e.parameter.password);
