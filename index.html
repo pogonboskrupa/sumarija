@@ -2417,9 +2417,15 @@
                 <!-- Professional Header -->
                 <div class="worker-header primac">
                     <div class="worker-header-icon">📅</div>
-                    <div>
+                    <div style="flex: 1;">
                         <h1 class="worker-header-title">Godišnji prikaz</h1>
                         <p class="worker-header-subtitle">Mjesečna rekapitulacija sječe</p>
+                    </div>
+                    <div>
+                        <select id="primac-godisnji-year-select" class="year-select" onchange="loadPrimacGodisnji()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
+                            <option value="2025">2025</option>
+                            <option value="2026" selected>2026</option>
+                        </select>
                     </div>
                 </div>
 
@@ -2429,7 +2435,7 @@
                         <h3 class="worker-table-card-title">
                             📅 Godišnja rekapitulacija po mjesecima
                         </h3>
-                        <span class="worker-table-card-badge" id="primac-godisnji-year-badge">2025</span>
+                        <span class="worker-table-card-badge" id="primac-godisnji-year-badge">2026</span>
                     </div>
                     <div style="overflow-x: auto;">
                         <table class="worker-table" id="primac-godisnji-main-table">
@@ -3490,6 +3496,236 @@
             </div>
         </div>
 
+        <!-- ADMIN IZVJEŠTAJI CONTENT - Kartice sa linkovima -->
+        <div id="izvjestaji-admin-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>📋 Izvještaji</h1>
+                    <p>Odaberite tip izvještaja</p>
+                </div>
+            </div>
+
+            <!-- Kartice sa opcijama izvještaja -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-top: 30px;">
+
+                <!-- Dinamika -->
+                <div class="card" onclick="switchTab('dinamika')" style="cursor: pointer; transition: transform 0.2s; hover: transform: translateY(-4px);">
+                    <div style="padding: 24px;">
+                        <h2 style="margin: 0 0 12px 0; font-size: 24px;">📊 Dinamika</h2>
+                        <p style="color: #6b7280; margin: 0;">Planirana mjesečna dinamika sječe (m³) za tekuću godinu</p>
+                    </div>
+                </div>
+
+                <!-- Uporedba godina -->
+                <div class="card" onclick="switchTab('uporedba-godina')" style="cursor: pointer; transition: transform 0.2s;">
+                    <div style="padding: 24px;">
+                        <h2 style="margin: 0 0 12px 0; font-size: 24px;">📊 Uporedba godina</h2>
+                        <p style="color: #6b7280; margin: 0;">Side-by-side prikaz sječe i otpreme po godinama</p>
+                    </div>
+                </div>
+
+                <!-- Mjesečni izvještaj po odjelima -->
+                <div class="card" onclick="switchTab('izvjestaji')" style="cursor: pointer; transition: transform 0.2s;">
+                    <div style="padding: 24px;">
+                        <h2 style="margin: 0 0 12px 0; font-size: 24px;">📅 Mjesečni izvještaj</h2>
+                        <p style="color: #6b7280; margin: 0;">Detaljan prikaz sječe i otpreme po odjelima</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PRIMAC IZVJEŠTAJI CONTENT -->
+        <div id="izvjestaji-primac-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>📋 Izvještaji sječe</h1>
+                    <p>Sedmični i mjesečni prikazi</p>
+                </div>
+            </div>
+
+            <!-- SUB-MENU TABS -->
+            <div class="sub-tabs" style="margin-bottom: 30px;">
+                <button class="sub-tab active" onclick="switchPrimacIzvjestajiSubTab('sedmicni')">📊 Sedmični izvještaj</button>
+                <button class="sub-tab" onclick="switchPrimacIzvjestajiSubTab('mjesecni')">📅 Mjesečni izvještaj</button>
+            </div>
+
+            <!-- SEDMIČNI IZVJEŠTAJ -->
+            <div id="primac-sedmicni-izvjestaj" class="sub-content">
+                <div class="page-header" style="margin-top: 0;">
+                    <div class="page-header-left">
+                        <h2>📊 Sedmični izvještaj sječe</h2>
+                        <p>Suma sječe po sortimentima za radnu sedmicu</p>
+                    </div>
+                    <div class="page-header-right">
+                        <select id="primac-sedmicni-year" class="year-select" onchange="loadPrimacSedmicni()">
+                            <option value="2025">2025</option>
+                            <option value="2026" selected>2026</option>
+                        </select>
+                        <select id="primac-sedmicni-month" class="month-select" onchange="loadPrimacSedmicni()">
+                            <option value="0">Januar</option>
+                            <option value="1">Februar</option>
+                            <option value="2">Mart</option>
+                            <option value="3">April</option>
+                            <option value="4">Maj</option>
+                            <option value="5">Juni</option>
+                            <option value="6">Juli</option>
+                            <option value="7">August</option>
+                            <option value="8">Septembar</option>
+                            <option value="9">Oktobar</option>
+                            <option value="10">Novembar</option>
+                            <option value="11">Decembar</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div style="overflow-x: auto;">
+                        <table class="expert-table" id="primac-sedmicni-table">
+                            <thead id="primac-sedmicni-header"></thead>
+                            <tbody id="primac-sedmicni-body"></tbody>
+                            <tfoot id="primac-sedmicni-footer"></tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MJESEČNI IZVJEŠTAJ -->
+            <div id="primac-mjesecni-izvjestaj" class="sub-content hidden">
+                <div class="page-header" style="margin-top: 0;">
+                    <div class="page-header-left">
+                        <h2>📅 Mjesečni izvještaj sječe</h2>
+                        <p>Suma sječe po sortimentima za mjesec</p>
+                    </div>
+                    <div class="page-header-right">
+                        <select id="primac-mjesecni-year" class="year-select" onchange="loadPrimacMjesecni()">
+                            <option value="2025">2025</option>
+                            <option value="2026" selected>2026</option>
+                        </select>
+                        <select id="primac-mjesecni-month" class="month-select" onchange="loadPrimacMjesecni()">
+                            <option value="0">Januar</option>
+                            <option value="1">Februar</option>
+                            <option value="2">Mart</option>
+                            <option value="3">April</option>
+                            <option value="4">Maj</option>
+                            <option value="5">Juni</option>
+                            <option value="6">Juli</option>
+                            <option value="7">August</option>
+                            <option value="8">Septembar</option>
+                            <option value="9">Oktobar</option>
+                            <option value="10">Novembar</option>
+                            <option value="11">Decembar</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div style="overflow-x: auto;">
+                        <table class="expert-table" id="primac-mjesecni-table">
+                            <thead id="primac-mjesecni-header"></thead>
+                            <tbody id="primac-mjesecni-body"></tbody>
+                            <tfoot id="primac-mjesecni-footer"></tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OTPREMAC IZVJEŠTAJI CONTENT -->
+        <div id="izvjestaji-otpremac-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>📋 Izvještaji otpreme</h1>
+                    <p>Sedmični i mjesečni prikazi</p>
+                </div>
+            </div>
+
+            <!-- SUB-MENU TABS -->
+            <div class="sub-tabs" style="margin-bottom: 30px;">
+                <button class="sub-tab active" onclick="switchOtpremacIzvjestajiSubTab('sedmicni')">📊 Sedmični izvještaj</button>
+                <button class="sub-tab" onclick="switchOtpremacIzvjestajiSubTab('mjesecni')">📅 Mjesečni izvještaj</button>
+            </div>
+
+            <!-- SEDMIČNI IZVJEŠTAJ -->
+            <div id="otpremac-sedmicni-izvjestaj" class="sub-content">
+                <div class="page-header" style="margin-top: 0;">
+                    <div class="page-header-left">
+                        <h2>📊 Sedmični izvještaj otpreme</h2>
+                        <p>Suma otpreme po sortimentima za radnu sedmicu</p>
+                    </div>
+                    <div class="page-header-right">
+                        <select id="otpremac-sedmicni-year" class="year-select" onchange="loadOtpremacSedmicni()">
+                            <option value="2025">2025</option>
+                            <option value="2026" selected>2026</option>
+                        </select>
+                        <select id="otpremac-sedmicni-month" class="month-select" onchange="loadOtpremacSedmicni()">
+                            <option value="0">Januar</option>
+                            <option value="1">Februar</option>
+                            <option value="2">Mart</option>
+                            <option value="3">April</option>
+                            <option value="4">Maj</option>
+                            <option value="5">Juni</option>
+                            <option value="6">Juli</option>
+                            <option value="7">August</option>
+                            <option value="8">Septembar</option>
+                            <option value="9">Oktobar</option>
+                            <option value="10">Novembar</option>
+                            <option value="11">Decembar</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div style="overflow-x: auto;">
+                        <table class="expert-table" id="otpremac-sedmicni-table">
+                            <thead id="otpremac-sedmicni-header"></thead>
+                            <tbody id="otpremac-sedmicni-body"></tbody>
+                            <tfoot id="otpremac-sedmicni-footer"></tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MJESEČNI IZVJEŠTAJ -->
+            <div id="otpremac-mjesecni-izvjestaj" class="sub-content hidden">
+                <div class="page-header" style="margin-top: 0;">
+                    <div class="page-header-left">
+                        <h2>📅 Mjesečni izvještaj otpreme</h2>
+                        <p>Suma otpreme po sortimentima za mjesec</p>
+                    </div>
+                    <div class="page-header-right">
+                        <select id="otpremac-mjesecni-year" class="year-select" onchange="loadOtpremacMjesecni()">
+                            <option value="2025">2025</option>
+                            <option value="2026" selected>2026</option>
+                        </select>
+                        <select id="otpremac-mjesecni-month" class="month-select" onchange="loadOtpremacMjesecni()">
+                            <option value="0">Januar</option>
+                            <option value="1">Februar</option>
+                            <option value="2">Mart</option>
+                            <option value="3">April</option>
+                            <option value="4">Maj</option>
+                            <option value="5">Juni</option>
+                            <option value="6">Juli</option>
+                            <option value="7">August</option>
+                            <option value="8">Septembar</option>
+                            <option value="9">Oktobar</option>
+                            <option value="10">Novembar</option>
+                            <option value="11">Decembar</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div style="overflow-x: auto;">
+                        <table class="expert-table" id="otpremac-mjesecni-table">
+                            <thead id="otpremac-mjesecni-header"></thead>
+                            <tbody id="otpremac-mjesecni-body"></tbody>
+                            <tfoot id="otpremac-mjesecni-footer"></tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- IZVJEŠTAJI CONTENT -->
         <div id="izvjestaji-content" class="container hidden">
             <div class="page-header">
@@ -4321,6 +4557,7 @@
                     <button class="tab" onclick="switchTab('primac-odjeli')">🏭 Prikaz po odjelima</button>
                     <button class="tab" onclick="switchTab('add-sjeca')">➕ Dodaj sječu</button>
                     <button class="tab" onclick="switchTab('my-sjece')">📝 Moje sječe</button>
+                    <button class="tab" onclick="switchTab('izvjestaji-primac')">📋 Izvještaji</button>
                 `;
             } else if (userType === 'otpremac') {
                 // Otpremač vidi četiri prikaza: pregled, po odjelima, dodavanje, i moje otpreme
@@ -4329,6 +4566,7 @@
                     <button class="tab" onclick="switchTab('otpremac-odjeli')">🏭 Prikaz po odjelima</button>
                     <button class="tab" onclick="switchTab('add-otprema')">➕ Dodaj otpremu</button>
                     <button class="tab" onclick="switchTab('my-otpreme')">📝 Moje otpreme</button>
+                    <button class="tab" onclick="switchTab('izvjestaji-otpremac')">📋 Izvještaji</button>
                 `;
             } else if (userType === 'operativa') {
                 // OPERATIVA korisnik vidi samo analytics dashboards
@@ -4356,9 +4594,7 @@
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz sječe</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz otpreme</button>
                     <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
-                    <button class="tab" onclick="switchTab('dinamika')">📊 Dinamika</button>
-                    <button class="tab" onclick="switchTab('uporedba-godina')">📊 Uporedba godina</button>
-                    <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
+                    <button class="tab" onclick="switchTab('izvjestaji-admin')">📋 Izvještaji</button>
                     <button class="tab notification-badge" onclick="switchTab('pending-unosi')">
                         📋 Dodani unosi
                         <span class="badge-count" id="pending-count-badge"></span>
@@ -4394,6 +4630,9 @@
             document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
             document.getElementById('poslovodja-zadnjih5-content').classList.add('hidden');
             document.getElementById('poslovodja-suma-content').classList.add('hidden');
+            document.getElementById('izvjestaji-admin-content').classList.add('hidden');
+            document.getElementById('izvjestaji-primac-content').classList.add('hidden');
+            document.getElementById('izvjestaji-otpremac-content').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
         }
         
@@ -4436,6 +4675,9 @@
             document.getElementById('pending-unosi-content').classList.add('hidden');
             document.getElementById('mjesecni-sortimenti-content').classList.add('hidden');
             document.getElementById('izvjestaji-content').classList.add('hidden');
+            document.getElementById('izvjestaji-admin-content').classList.add('hidden');
+            document.getElementById('izvjestaji-primac-content').classList.add('hidden');
+            document.getElementById('izvjestaji-otpremac-content').classList.add('hidden');
             document.getElementById('operativa-content').classList.add('hidden');
             document.getElementById('poslovodja-stanje-content').classList.add('hidden');
             document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
@@ -4518,6 +4760,28 @@
                 loadPoslovodjaZadnjih5();
             } else if (tab === 'poslovodja-suma') {
                 loadPoslovodjaSuma();
+            } else if (tab === 'izvjestaji-admin') {
+                document.getElementById('izvjestaji-admin-content').classList.remove('hidden');
+            } else if (tab === 'izvjestaji-primac') {
+                // Set default to current month/year
+                const currentDate = new Date();
+                document.getElementById('primac-sedmicni-year').value = currentDate.getFullYear();
+                document.getElementById('primac-sedmicni-month').value = currentDate.getMonth();
+                document.getElementById('primac-mjesecni-year').value = currentDate.getFullYear();
+                document.getElementById('primac-mjesecni-month').value = currentDate.getMonth();
+
+                document.getElementById('izvjestaji-primac-content').classList.remove('hidden');
+                switchPrimacIzvjestajiSubTab('sedmicni');
+            } else if (tab === 'izvjestaji-otpremac') {
+                // Set default to current month/year
+                const currentDate = new Date();
+                document.getElementById('otpremac-sedmicni-year').value = currentDate.getFullYear();
+                document.getElementById('otpremac-sedmicni-month').value = currentDate.getMonth();
+                document.getElementById('otpremac-mjesecni-year').value = currentDate.getFullYear();
+                document.getElementById('otpremac-mjesecni-month').value = currentDate.getMonth();
+
+                document.getElementById('izvjestaji-otpremac-content').classList.remove('hidden');
+                switchOtpremacIzvjestajiSubTab('sedmicni');
             }
         }
 
@@ -6914,7 +7178,14 @@
         // Load Primac Godišnji Prikaz
         async function loadPrimacGodisnji() {
             try {
-                const year = new Date().getFullYear();
+                // Get year from selector, default to current year
+                const yearSelector = document.getElementById('primac-godisnji-year-select');
+                const year = yearSelector ? yearSelector.value : new Date().getFullYear();
+
+                // Update badge
+                const badge = document.getElementById('primac-godisnji-year-badge');
+                if (badge) badge.textContent = year;
+
                 const url = `${API_URL}?path=primac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
                 const data = await fetchWithCache(url, 'cache_primac_godisnji_' + year);
 
@@ -8281,6 +8552,44 @@
                 document.querySelector('.sub-tab[onclick*="stanje-odjela"]').classList.add('active');
                 document.getElementById('stanje-odjela-izvjestaj').classList.remove('hidden');
                 loadStanjeOdjela();
+            }
+        }
+
+        // Sub-tab switching za primača
+        function switchPrimacIzvjestajiSubTab(subTab) {
+            const subTabs = document.querySelectorAll('#izvjestaji-primac-content .sub-tab');
+            subTabs.forEach(tab => tab.classList.remove('active'));
+
+            document.getElementById('primac-sedmicni-izvjestaj').classList.add('hidden');
+            document.getElementById('primac-mjesecni-izvjestaj').classList.add('hidden');
+
+            if (subTab === 'sedmicni') {
+                document.querySelector('#izvjestaji-primac-content .sub-tab[onclick*="sedmicni"]').classList.add('active');
+                document.getElementById('primac-sedmicni-izvjestaj').classList.remove('hidden');
+                loadPrimacSedmicni();
+            } else if (subTab === 'mjesecni') {
+                document.querySelector('#izvjestaji-primac-content .sub-tab[onclick*="mjesecni"]').classList.add('active');
+                document.getElementById('primac-mjesecni-izvjestaj').classList.remove('hidden');
+                loadPrimacMjesecni();
+            }
+        }
+
+        // Sub-tab switching za otpremača
+        function switchOtpremacIzvjestajiSubTab(subTab) {
+            const subTabs = document.querySelectorAll('#izvjestaji-otpremac-content .sub-tab');
+            subTabs.forEach(tab => tab.classList.remove('active'));
+
+            document.getElementById('otpremac-sedmicni-izvjestaj').classList.add('hidden');
+            document.getElementById('otpremac-mjesecni-izvjestaj').classList.add('hidden');
+
+            if (subTab === 'sedmicni') {
+                document.querySelector('#izvjestaji-otpremac-content .sub-tab[onclick*="sedmicni"]').classList.add('active');
+                document.getElementById('otpremac-sedmicni-izvjestaj').classList.remove('hidden');
+                loadOtpremacSedmicni();
+            } else if (subTab === 'mjesecni') {
+                document.querySelector('#izvjestaji-otpremac-content .sub-tab[onclick*="mjesecni"]').classList.add('active');
+                document.getElementById('otpremac-mjesecni-izvjestaj').classList.remove('hidden');
+                loadOtpremacMjesecni();
             }
         }
 
@@ -10897,6 +11206,345 @@
                 `;
             });
             body2.innerHTML = html2;
+        }
+
+        // ========================================
+        // PRIMAČ/OTPREMAČ IZVJEŠTAJI - Sedmični i Mjesečni
+        // ========================================
+
+        // Load sedmični izvještaj za primača (suma po sortimentima za sedmice)
+        async function loadPrimacSedmicni() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+
+            try {
+                const year = document.getElementById('primac-sedmicni-year').value;
+                const month = document.getElementById('primac-sedmicni-month').value;
+
+                // Load primke data
+                const url = `${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, `cache_primac_sedmicni_${year}_${month}`);
+
+                if (data.error) throw new Error(data.error);
+
+                // Filter by year/month
+                const filteredData = data.filter(row => {
+                    if (!row.datum) return false;
+                    const dateParts = row.datum.split(/[\/\.\-]/);
+                    const day = parseInt(dateParts[0]);
+                    const recordMonth = parseInt(dateParts[1]) - 1;
+                    const recordYear = parseInt(dateParts[2]);
+                    return recordYear === parseInt(year) && recordMonth === parseInt(month);
+                });
+
+                // Get sortimenti list from data
+                const sortimentiSet = new Set();
+                filteredData.forEach(row => {
+                    if (row.sortiment) sortimentiSet.add(row.sortiment);
+                });
+                const sortimentiNazivi = Array.from(sortimentiSet).sort();
+
+                // Group by weeks
+                const weeklyData = groupPrimacOtpremacDataByWeeks(filteredData, year, month, sortimentiNazivi);
+
+                // Render table
+                renderPrimacOtpremacSedmicni(weeklyData, sortimentiNazivi, 'primac-sedmicni', year, month);
+
+                document.getElementById('loading-screen').classList.add('hidden');
+
+            } catch (error) {
+                console.error('Error loading primač sedmični izvještaj:', error);
+                showError('Greška', 'Greška pri učitavanju sedmičnog izvještaja: ' + error.message);
+                document.getElementById('loading-screen').classList.add('hidden');
+            }
+        }
+
+        // Load mjesečni izvještaj za primača (suma po sortimentima za mjesec)
+        async function loadPrimacMjesecni() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+
+            try {
+                const year = document.getElementById('primac-mjesecni-year').value;
+                const month = document.getElementById('primac-mjesecni-month').value;
+
+                // Load primke data
+                const url = `${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, `cache_primac_mjesecni_${year}_${month}`);
+
+                if (data.error) throw new Error(data.error);
+
+                // Filter by year/month
+                const filteredData = data.filter(row => {
+                    if (!row.datum) return false;
+                    const dateParts = row.datum.split(/[\/\.\-]/);
+                    const recordMonth = parseInt(dateParts[1]) - 1;
+                    const recordYear = parseInt(dateParts[2]);
+                    return recordYear === parseInt(year) && recordMonth === parseInt(month);
+                });
+
+                // Get sortimenti list from data
+                const sortimentiSet = new Set();
+                filteredData.forEach(row => {
+                    if (row.sortiment) sortimentiSet.add(row.sortiment);
+                });
+                const sortimentiNazivi = Array.from(sortimentiSet).sort();
+
+                // Sum by sortiment
+                const sortimentiSums = {};
+                sortimentiNazivi.forEach(s => sortimentiSums[s] = 0);
+
+                filteredData.forEach(row => {
+                    if (row.sortiment && row.kolicina) {
+                        const kolicina = parseFloat(row.kolicina) || 0;
+                        sortimentiSums[row.sortiment] += kolicina;
+                    }
+                });
+
+                // Render table
+                renderPrimacOtpremacMjesecni(sortimentiSums, sortimentiNazivi, 'primac-mjesecni', year, month);
+
+                document.getElementById('loading-screen').classList.add('hidden');
+
+            } catch (error) {
+                console.error('Error loading primač mjesečni izvještaj:', error);
+                showError('Greška', 'Greška pri učitavanju mjesečnog izvještaja: ' + error.message);
+                document.getElementById('loading-screen').classList.add('hidden');
+            }
+        }
+
+        // Load sedmični izvještaj za otpremača (suma po sortimentima za sedmice)
+        async function loadOtpremacSedmicni() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+
+            try {
+                const year = document.getElementById('otpremac-sedmicni-year').value;
+                const month = document.getElementById('otpremac-sedmicni-month').value;
+
+                // Load otpreme data
+                const url = `${API_URL}?path=otpreme&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, `cache_otpremac_sedmicni_${year}_${month}`);
+
+                if (data.error) throw new Error(data.error);
+
+                // Filter by year/month
+                const filteredData = data.filter(row => {
+                    if (!row.datum) return false;
+                    const dateParts = row.datum.split(/[\/\.\-]/);
+                    const recordMonth = parseInt(dateParts[1]) - 1;
+                    const recordYear = parseInt(dateParts[2]);
+                    return recordYear === parseInt(year) && recordMonth === parseInt(month);
+                });
+
+                // Get sortimenti list from data
+                const sortimentiSet = new Set();
+                filteredData.forEach(row => {
+                    if (row.sortiment) sortimentiSet.add(row.sortiment);
+                });
+                const sortimentiNazivi = Array.from(sortimentiSet).sort();
+
+                // Group by weeks
+                const weeklyData = groupPrimacOtpremacDataByWeeks(filteredData, year, month, sortimentiNazivi);
+
+                // Render table
+                renderPrimacOtpremacSedmicni(weeklyData, sortimentiNazivi, 'otpremac-sedmicni', year, month);
+
+                document.getElementById('loading-screen').classList.add('hidden');
+
+            } catch (error) {
+                console.error('Error loading otpremač sedmični izvještaj:', error);
+                showError('Greška', 'Greška pri učitavanju sedmičnog izvještaja: ' + error.message);
+                document.getElementById('loading-screen').classList.add('hidden');
+            }
+        }
+
+        // Load mjesečni izvještaj za otpremača (suma po sortimentima za mjesec)
+        async function loadOtpremacMjesecni() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+
+            try {
+                const year = document.getElementById('otpremac-mjesecni-year').value;
+                const month = document.getElementById('otpremac-mjesecni-month').value;
+
+                // Load otpreme data
+                const url = `${API_URL}?path=otpreme&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, `cache_otpremac_mjesecni_${year}_${month}`);
+
+                if (data.error) throw new Error(data.error);
+
+                // Filter by year/month
+                const filteredData = data.filter(row => {
+                    if (!row.datum) return false;
+                    const dateParts = row.datum.split(/[\/\.\-]/);
+                    const recordMonth = parseInt(dateParts[1]) - 1;
+                    const recordYear = parseInt(dateParts[2]);
+                    return recordYear === parseInt(year) && recordMonth === parseInt(month);
+                });
+
+                // Get sortimenti list from data
+                const sortimentiSet = new Set();
+                filteredData.forEach(row => {
+                    if (row.sortiment) sortimentiSet.add(row.sortiment);
+                });
+                const sortimentiNazivi = Array.from(sortimentiSet).sort();
+
+                // Sum by sortiment
+                const sortimentiSums = {};
+                sortimentiNazivi.forEach(s => sortimentiSums[s] = 0);
+
+                filteredData.forEach(row => {
+                    if (row.sortiment && row.kolicina) {
+                        const kolicina = parseFloat(row.kolicina) || 0;
+                        sortimentiSums[row.sortiment] += kolicina;
+                    }
+                });
+
+                // Render table
+                renderPrimacOtpremacMjesecni(sortimentiSums, sortimentiNazivi, 'otpremac-mjesecni', year, month);
+
+                document.getElementById('loading-screen').classList.add('hidden');
+
+            } catch (error) {
+                console.error('Error loading otpremač mjesečni izvještaj:', error);
+                showError('Greška', 'Greška pri učitavanju mjesečnog izvještaja: ' + error.message);
+                document.getElementById('loading-screen').classList.add('hidden');
+            }
+        }
+
+        // Group primac/otpremac data by weeks (simple version - just sum sortimenti per week)
+        function groupPrimacOtpremacDataByWeeks(data, year, month, sortimentiNazivi) {
+            const weeks = [];
+            const weeksMap = new Map();
+
+            const y = parseInt(year);
+            const m = parseInt(month);
+
+            data.forEach(row => {
+                if (!row.datum || !row.sortiment || !row.kolicina) return;
+
+                const dateParts = row.datum.split(/[\/\.\-]/);
+                const day = parseInt(dateParts[0]);
+                const recordMonth = parseInt(dateParts[1]) - 1;
+                const recordYear = parseInt(dateParts[2]);
+
+                if (recordYear !== y || recordMonth !== m) return;
+
+                const datum = new Date(recordYear, recordMonth, day);
+                const weekInfo = getWeekWithinMonth(datum, y, m);
+                const weekKey = weekInfo.weekNumber;
+
+                if (!weeksMap.has(weekKey)) {
+                    weeksMap.set(weekKey, {
+                        weekNumber: weekKey,
+                        weekStart: weekInfo.weekStart,
+                        weekEnd: weekInfo.weekEnd,
+                        sortimentiSums: {}
+                    });
+                    sortimentiNazivi.forEach(s => weeksMap.get(weekKey).sortimentiSums[s] = 0);
+                }
+
+                const week = weeksMap.get(weekKey);
+                const sortiment = row.sortiment;
+                const kolicina = parseFloat(row.kolicina) || 0;
+
+                if (!week.sortimentiSums[sortiment]) {
+                    week.sortimentiSums[sortiment] = 0;
+                }
+                week.sortimentiSums[sortiment] += kolicina;
+            });
+
+            weeksMap.forEach(week => weeks.push(week));
+            weeks.sort((a, b) => a.weekNumber - b.weekNumber);
+
+            return weeks;
+        }
+
+        // Render sedmični izvještaj za primača/otpremača
+        function renderPrimacOtpremacSedmicni(weeklyData, sortimentiNazivi, tablePrefix, year, month) {
+            const header = document.getElementById(`${tablePrefix}-header`);
+            const body = document.getElementById(`${tablePrefix}-body`);
+            const footer = document.getElementById(`${tablePrefix}-footer`);
+
+            // Header
+            let headerHtml = '<tr><th>Sedmica</th>';
+            sortimentiNazivi.forEach(sortiment => {
+                headerHtml += `<th style="text-align: right;">${sortiment}</th>`;
+            });
+            headerHtml += '<th style="text-align: right; font-weight: bold;">UKUPNO</th></tr>';
+            header.innerHTML = headerHtml;
+
+            // Body
+            let bodyHtml = '';
+            const monthTotals = {};
+            sortimentiNazivi.forEach(s => monthTotals[s] = 0);
+            let monthTotal = 0;
+
+            weeklyData.forEach((week, index) => {
+                const rowStyle = index % 2 === 0 ? 'background: #f9fafb;' : '';
+                bodyHtml += `<tr style="${rowStyle}">`;
+                bodyHtml += `<td><strong>Sedmica ${week.weekNumber}</strong><br><span style="color: #6b7280; font-size: 12px;">${week.weekStart} - ${week.weekEnd}</span></td>`;
+
+                let weekTotal = 0;
+                sortimentiNazivi.forEach(sortiment => {
+                    const value = week.sortimentiSums[sortiment] || 0;
+                    monthTotals[sortiment] += value;
+                    weekTotal += value;
+
+                    bodyHtml += `<td style="text-align: right;">${value.toFixed(2)}</td>`;
+                });
+
+                monthTotal += weekTotal;
+                bodyHtml += `<td style="text-align: right; font-weight: bold;">${weekTotal.toFixed(2)}</td>`;
+                bodyHtml += '</tr>';
+            });
+
+            body.innerHTML = bodyHtml;
+
+            // Footer (totals)
+            let footerHtml = '<tr style="background: linear-gradient(135deg, #047857 0%, #065f46 100%); color: white; font-weight: bold;">';
+            footerHtml += '<td>UKUPNO MJESEC</td>';
+            sortimentiNazivi.forEach(sortiment => {
+                const total = monthTotals[sortiment];
+                footerHtml += `<td style="text-align: right;">${total.toFixed(2)}</td>`;
+            });
+            footerHtml += `<td style="text-align: right;">${monthTotal.toFixed(2)}</td>`;
+            footerHtml += '</tr>';
+            footer.innerHTML = footerHtml;
+        }
+
+        // Render mjesečni izvještaj za primača/otpremača
+        function renderPrimacOtpremacMjesecni(sortimentiSums, sortimentiNazivi, tablePrefix, year, month) {
+            const header = document.getElementById(`${tablePrefix}-header`);
+            const body = document.getElementById(`${tablePrefix}-body`);
+            const footer = document.getElementById(`${tablePrefix}-footer`);
+
+            const monthNames = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+
+            // Header
+            let headerHtml = '<tr><th>Sortiment</th><th style="text-align: right;">Količina (m³)</th></tr>';
+            header.innerHTML = headerHtml;
+
+            // Body
+            let bodyHtml = '';
+            let total = 0;
+
+            sortimentiNazivi.forEach((sortiment, index) => {
+                const value = sortimentiSums[sortiment] || 0;
+                total += value;
+
+                const rowStyle = index % 2 === 0 ? 'background: #f9fafb;' : '';
+                bodyHtml += `<tr style="${rowStyle}">`;
+                bodyHtml += `<td><strong>${sortiment}</strong></td>`;
+                bodyHtml += `<td style="text-align: right;">${value.toFixed(2)}</td>`;
+                bodyHtml += '</tr>';
+            });
+
+            body.innerHTML = bodyHtml;
+
+            // Footer (total)
+            let footerHtml = '<tr style="background: linear-gradient(135deg, #047857 0%, #065f46 100%); color: white; font-weight: bold;">';
+            footerHtml += '<td>UKUPNO</td>';
+            footerHtml += `<td style="text-align: right;">${total.toFixed(2)}</td>`;
+            footerHtml += '</tr>';
+            footer.innerHTML = footerHtml;
         }
 
     </script>
