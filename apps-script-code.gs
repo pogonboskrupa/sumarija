@@ -3666,8 +3666,6 @@ function doPost(e) {
 
     if (path === 'save_dinamika') {
       return handleSaveDinamika(postData);
-    } else if (path === 'delete_dinamika') {
-      return handleDeleteDinamika(postData);
     }
 
     return createJsonResponse({ error: 'Unknown POST path' }, false);
@@ -3677,11 +3675,11 @@ function doPost(e) {
 }
 
 // ========================================
-// DINAMIKA API - Upravljanje godišnjom dinamikom
+// DINAMIKA API - Upravljanje mjesečnom dinamikom
 // ========================================
 
 /**
- * Get Dinamika endpoint - vraća dinamiku za odabranu godinu
+ * Get Dinamika endpoint - vraća mjesečnu dinamiku za odabranu godinu
  */
 function handleGetDinamika(year, username, password) {
   try {
@@ -3705,7 +3703,7 @@ function handleGetDinamika(year, username, password) {
     // Ako sheet ne postoji, kreiraj ga
     if (!dinamikaSheet) {
       dinamikaSheet = ss.insertSheet("DINAMIKA");
-      const headers = ["ID", "GODINA", "ODJEL", "KOLICINA", "NAPOMENA", "DATUM_KREIRANJA"];
+      const headers = ["GODINA", "JAN", "FEB", "MAR", "APR", "MAJ", "JUN", "JUL", "AVG", "SEP", "OKT", "NOV", "DEC", "UKUPNO"];
       dinamikaSheet.appendRow(headers);
 
       // Formatiraj header
@@ -3718,28 +3716,26 @@ function handleGetDinamika(year, username, password) {
     }
 
     const data = dinamikaSheet.getDataRange().getValues();
-    const dinamika = [];
+    const dinamika = {};
 
-    // Skip header row
+    // Skip header row, pronađi red za godinu
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
-      const rowYear = parseInt(row[1]) || 0;
+      const rowYear = parseInt(row[0]) || 0;
 
-      // Filter by year
+      // Ako postoji red za traženu godinu
       if (rowYear === parseInt(year)) {
-        dinamika.push({
-          id: row[0],
-          godina: row[1],
-          odjel: row[2],
-          kolicina: parseFloat(row[3]) || 0,
-          napomena: row[4] || '',
-          datumKreiranja: row[5] ? formatDate(parseDate(row[5])) : ''
-        });
+        // Vrati mjesečne vrijednosti
+        for (let j = 1; j <= 12; j++) {
+          const mjesecKey = String(j).padStart(2, '0');
+          dinamika[mjesecKey] = parseFloat(row[j]) || 0;
+        }
+        break;
       }
     }
 
     Logger.log('=== HANDLE GET DINAMIKA END ===');
-    Logger.log('Broj zapisa: ' + dinamika.length);
+    Logger.log('Found data: ' + (Object.keys(dinamika).length > 0));
 
     return createJsonResponse({ dinamika: dinamika }, true);
 
@@ -3750,7 +3746,7 @@ function handleGetDinamika(year, username, password) {
 }
 
 /**
- * Save Dinamika endpoint - snima novu dinamiku
+ * Save Dinamika endpoint - snima mjesečnu dinamiku
  */
 function handleSaveDinamika(params) {
   try {
@@ -3767,8 +3763,6 @@ function handleSaveDinamika(params) {
 
     Logger.log('=== HANDLE SAVE DINAMIKA START ===');
     Logger.log('Godina: ' + params.godina);
-    Logger.log('Odjel: ' + params.odjel);
-    Logger.log('Kolicina: ' + params.kolicina);
 
     const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
     let dinamikaSheet = ss.getSheetByName("DINAMIKA");
@@ -3776,7 +3770,7 @@ function handleSaveDinamika(params) {
     // Ako sheet ne postoji, kreiraj ga
     if (!dinamikaSheet) {
       dinamikaSheet = ss.insertSheet("DINAMIKA");
-      const headers = ["ID", "GODINA", "ODJEL", "KOLICINA", "NAPOMENA", "DATUM_KREIRANJA"];
+      const headers = ["GODINA", "JAN", "FEB", "MAR", "APR", "MAJ", "JUN", "JUL", "AVG", "SEP", "OKT", "NOV", "DEC", "UKUPNO"];
       dinamikaSheet.appendRow(headers);
 
       // Formatiraj header
@@ -3786,101 +3780,55 @@ function handleSaveDinamika(params) {
       headerRange.setFontWeight("bold");
     }
 
-    // Generiši ID
     const allData = dinamikaSheet.getDataRange().getValues();
-    let maxId = 0;
-    for (let i = 1; i < allData.length; i++) {
-      const currentId = parseInt(allData[i][0]) || 0;
-      if (currentId > maxId) maxId = currentId;
+    const godina = parseInt(params.godina);
+
+    // Pripremi red podataka - 12 mjesečnih vrijednosti
+    let mjesecneVrijednosti = [];
+    let ukupno = 0;
+    for (let i = 1; i <= 12; i++) {
+      const mjesecKey = String(i).padStart(2, '0');
+      const value = parseFloat(params.mjeseci[mjesecKey]) || 0;
+      mjesecneVrijednosti.push(value);
+      ukupno += value;
     }
-    const newId = maxId + 1;
 
-    // Pripremi red podataka
-    const newRow = [
-      newId,
-      parseInt(params.godina),
-      params.odjel,
-      parseFloat(params.kolicina) || 0,
-      params.napomena || '',
-      new Date()
-    ];
+    // Provjeri da li već postoji red za ovu godinu
+    let existingRowIndex = -1;
+    for (let i = 1; i < allData.length; i++) {
+      if (parseInt(allData[i][0]) === godina) {
+        existingRowIndex = i;
+        break;
+      }
+    }
 
-    // Dodaj red na kraj sheet-a
-    dinamikaSheet.appendRow(newRow);
+    const newRow = [godina, ...mjesecneVrijednosti, ukupno];
+
+    if (existingRowIndex !== -1) {
+      // Update postojeći red
+      const rowNumber = existingRowIndex + 1; // +1 jer sheet rows počinju od 1
+      const range = dinamikaSheet.getRange(rowNumber, 1, 1, newRow.length);
+      range.setValues([newRow]);
+      Logger.log('Updated existing row for year ' + godina);
+    } else {
+      // Dodaj novi red
+      dinamikaSheet.appendRow(newRow);
+      Logger.log('Added new row for year ' + godina);
+    }
 
     Logger.log('=== HANDLE SAVE DINAMIKA END ===');
-    Logger.log('Successfully added new dinamika entry');
+    Logger.log('Successfully saved dinamika');
 
     return createJsonResponse({
       success: true,
-      message: "Dinamika uspješno dodana",
-      id: newId
+      message: "Mjesečna dinamika uspješno spremljena",
+      ukupno: ukupno
     }, true);
 
   } catch (error) {
     Logger.log('ERROR in handleSaveDinamika: ' + error.toString());
     return createJsonResponse({
-      error: "Greška pri dodavanju dinamike: " + error.toString()
-    }, false);
-  }
-}
-
-/**
- * Delete Dinamika endpoint - briše postojeću dinamiku
- */
-function handleDeleteDinamika(params) {
-  try {
-    // Autentikacija
-    const loginResult = JSON.parse(handleLogin(params.username, params.password).getContent());
-    if (!loginResult.success) {
-      return createJsonResponse({ error: "Unauthorized" }, false);
-    }
-
-    // Samo admin može brisati dinamiku
-    if (loginResult.type !== 'admin') {
-      return createJsonResponse({ error: "Only admin can delete dinamika" }, false);
-    }
-
-    Logger.log('=== HANDLE DELETE DINAMIKA START ===');
-    Logger.log('ID: ' + params.id);
-
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const dinamikaSheet = ss.getSheetByName("DINAMIKA");
-
-    if (!dinamikaSheet) {
-      return createJsonResponse({ error: "DINAMIKA sheet does not exist" }, false);
-    }
-
-    const data = dinamikaSheet.getDataRange().getValues();
-
-    // Pronađi red sa odgovarajućim ID-om
-    let rowToDelete = -1;
-    for (let i = 1; i < data.length; i++) {
-      if (parseInt(data[i][0]) === parseInt(params.id)) {
-        rowToDelete = i + 1; // +1 jer sheet rows počinju od 1
-        break;
-      }
-    }
-
-    if (rowToDelete === -1) {
-      return createJsonResponse({ error: "Dinamika sa ID " + params.id + " ne postoji" }, false);
-    }
-
-    // Obriši red
-    dinamikaSheet.deleteRow(rowToDelete);
-
-    Logger.log('=== HANDLE DELETE DINAMIKA END ===');
-    Logger.log('Successfully deleted dinamika entry');
-
-    return createJsonResponse({
-      success: true,
-      message: "Dinamika uspješno obrisana"
-    }, true);
-
-  } catch (error) {
-    Logger.log('ERROR in handleDeleteDinamika: ' + error.toString());
-    return createJsonResponse({
-      error: "Greška pri brisanju dinamike: " + error.toString()
+      error: "Greška pri spremanju dinamike: " + error.toString()
     }, false);
   }
 }
