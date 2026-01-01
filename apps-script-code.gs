@@ -116,10 +116,13 @@ function doGet(e) {
     } else if (path === 'get_dinamika') {
       return handleGetDinamika(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'save_dinamika') {
-      return handleSaveDinamika(e.parameter);
+      Logger.log('save_dinamika endpoint called');
+      Logger.log('Parameters: ' + JSON.stringify(e.parameter));
+      return handleSaveDinamika(e.parameter.username, e.parameter.password, e.parameter.godina, e.parameter.mjeseci);
     }
 
-    return createJsonResponse({ error: 'Unknown path' }, false);
+    Logger.log('Unknown path: ' + path);
+    return createJsonResponse({ error: 'Unknown path: ' + path }, false);
   } catch (error) {
     return createJsonResponse({ error: error.toString() }, false);
   }
@@ -3791,10 +3794,16 @@ function handleGetDinamika(year, username, password) {
 /**
  * Save Dinamika endpoint - snima mjesečnu dinamiku
  */
-function handleSaveDinamika(params) {
+function handleSaveDinamika(username, password, godina, mjeseciParam) {
   try {
+    Logger.log('=== HANDLE SAVE DINAMIKA START ===');
+    Logger.log('Username: ' + username);
+    Logger.log('Godina: ' + godina);
+    Logger.log('Mjeseci param type: ' + typeof mjeseciParam);
+    Logger.log('Mjeseci param: ' + mjeseciParam);
+
     // Autentikacija
-    const loginResult = JSON.parse(handleLogin(params.username, params.password).getContent());
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
     if (!loginResult.success) {
       return createJsonResponse({ error: "Unauthorized" }, false);
     }
@@ -3803,9 +3812,6 @@ function handleSaveDinamika(params) {
     if (loginResult.type !== 'admin') {
       return createJsonResponse({ error: "Only admin can add dinamika" }, false);
     }
-
-    Logger.log('=== HANDLE SAVE DINAMIKA START ===');
-    Logger.log('Godina: ' + params.godina);
 
     const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
     let dinamikaSheet = ss.getSheetByName("DINAMIKA");
@@ -3824,12 +3830,13 @@ function handleSaveDinamika(params) {
     }
 
     const allData = dinamikaSheet.getDataRange().getValues();
-    const godina = parseInt(params.godina);
+    const godinaInt = parseInt(godina);
 
     // Parse mjeseci JSON ako je string (dolazi iz GET parametra)
-    let mjeseciObj = params.mjeseci;
-    if (typeof params.mjeseci === 'string') {
-      mjeseciObj = JSON.parse(params.mjeseci);
+    let mjeseciObj = mjeseciParam;
+    if (typeof mjeseciParam === 'string') {
+      Logger.log('Parsing mjeseci from string...');
+      mjeseciObj = JSON.parse(mjeseciParam);
     }
 
     // Pripremi red podataka - 12 mjesečnih vrijednosti
@@ -3845,24 +3852,24 @@ function handleSaveDinamika(params) {
     // Provjeri da li već postoji red za ovu godinu
     let existingRowIndex = -1;
     for (let i = 1; i < allData.length; i++) {
-      if (parseInt(allData[i][0]) === godina) {
+      if (parseInt(allData[i][0]) === godinaInt) {
         existingRowIndex = i;
         break;
       }
     }
 
-    const newRow = [godina, ...mjesecneVrijednosti, ukupno];
+    const newRow = [godinaInt, ...mjesecneVrijednosti, ukupno];
 
     if (existingRowIndex !== -1) {
       // Update postojeći red
       const rowNumber = existingRowIndex + 1; // +1 jer sheet rows počinju od 1
       const range = dinamikaSheet.getRange(rowNumber, 1, 1, newRow.length);
       range.setValues([newRow]);
-      Logger.log('Updated existing row for year ' + godina);
+      Logger.log('Updated existing row for year ' + godinaInt);
     } else {
       // Dodaj novi red
       dinamikaSheet.appendRow(newRow);
-      Logger.log('Added new row for year ' + godina);
+      Logger.log('Added new row for year ' + godinaInt);
     }
 
     Logger.log('=== HANDLE SAVE DINAMIKA END ===');
