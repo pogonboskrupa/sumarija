@@ -3311,33 +3311,14 @@
         <div id="dinamika-content" class="container hidden">
             <div class="page-header">
                 <div class="page-header-left">
-                    <h1>📊 Godišnja dinamika</h1>
-                    <p>Planirana mjesečna dinamika sječe (m³)</p>
-                </div>
-            </div>
-
-            <!-- Izbor godine -->
-            <div class="section">
-                <div class="controls-bar" style="justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <label for="dinamika-year-select" style="font-weight: 600; font-size: 16px;">📅 Izaberi godinu:</label>
-                        <select id="dinamika-year-select" class="year-select" onchange="loadDinamika()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
-                            <option value="2023">2023</option>
-                            <option value="2024">2024</option>
-                            <option value="2025" selected>2025</option>
-                            <option value="2026">2026</option>
-                            <option value="2027">2027</option>
-                            <option value="2028">2028</option>
-                            <option value="2029">2029</option>
-                            <option value="2030">2030</option>
-                        </select>
-                    </div>
+                    <h1>📊 Godišnja dinamika <span id="dinamika-selected-year">2026</span></h1>
+                    <p>Planirana mjesečna dinamika sječe (m³) za tekuću godinu</p>
                 </div>
             </div>
 
             <!-- Forma za unos mjesečne dinamike -->
             <div class="section">
-                <h2 id="dinamika-year-title">Mjesečna dinamika za godinu <span id="dinamika-selected-year">2025</span></h2>
+                <h2>Mjesečni plan sječe</h2>
                 <form id="dinamika-form" onsubmit="saveDinamika(event)">
                     <div style="overflow-x: auto;">
                         <table class="expert-table" id="dinamika-table">
@@ -10541,7 +10522,7 @@
             console.log('Loading Dinamika...');
             document.getElementById('dinamika-content').classList.remove('hidden');
 
-            const year = document.getElementById('dinamika-year-select').value || new Date().getFullYear();
+            const year = new Date().getFullYear(); // Tekuća godina (2026)
             document.getElementById('dinamika-selected-year').textContent = year;
 
             try {
@@ -10588,7 +10569,7 @@
         async function saveDinamika(event) {
             event.preventDefault();
 
-            const year = document.getElementById('dinamika-year-select').value;
+            const year = new Date().getFullYear(); // Tekuća godina (2026)
 
             // Prikupi mjesečne vrijednosti
             const mjeseci = {};
@@ -10606,17 +10587,22 @@
                 const mjeseciJson = encodeURIComponent(JSON.stringify(mjeseci));
                 const url = `${API_URL}?path=save_dinamika&username=${encodeURIComponent(currentUser.username)}&password=${encodeURIComponent(currentPassword)}&godina=${year}&mjeseci=${mjeseciJson}`;
 
+                console.log('Saving dinamika URL:', url);
+
                 const response = await fetch(url, {
                     method: 'GET'
                 });
 
                 const result = await response.json();
 
+                console.log('Save response:', result);
+
                 if (result.success) {
                     showSuccess('✅ Spremljeno!', 'Mjesečna dinamika uspješno spremljena.');
 
                     // Clear cache and reload
                     localStorage.removeItem('cache_dinamika_' + year);
+                    localStorage.removeItem('cache_dashboard_' + year);
                     loadDinamika();
                 } else {
                     throw new Error(result.error || 'Greška pri spremanju');
