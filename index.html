@@ -3905,15 +3905,14 @@
                 if (userType === 'ADMIN') {
                     // Admin views to preload
                     const views = [
-                        { name: 'Dashboard', fn: () => fetchWithCache(`${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_dashboard_' + year) },
-                        { name: 'Primaci', fn: () => fetchWithCache(`${API_URL}?path=primaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_primaci_' + year) },
-                        { name: 'Otpremaci', fn: () => fetchWithCache(`${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_otpremaci_' + year) },
-                        { name: 'Kupci', fn: () => fetchWithCache(`${API_URL}?path=kupci&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_kupci_' + year) },
-                        { name: 'Odjeli', fn: () => fetchWithCache(`${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_odjeli_' + year) },
-                        { name: 'Operativa', fn: () => fetchWithCache(`${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_operativa_' + year) },
-                        { name: 'Stanje Odjela', fn: () => fetchWithCache(`${API_URL}?path=stanje_odjela&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_stanje_odjela_' + year) },
-                        { name: 'Pending Unosi', fn: () => fetchWithCache(`${API_URL}?path=pending_unosi&username=${currentUser.username}&password=${currentPassword}`, 'cache_pending_unosi') },
-                        { name: 'Mjesečni Sortimenti', fn: () => fetchWithCache(`${API_URL}?path=mjesecni_sortimenti&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_mjesecni_sortimenti_' + year) }
+                        { name: 'Dashboard', url: `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_dashboard_' + year },
+                        { name: 'Primaci', url: `${API_URL}?path=primaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_primaci_' + year },
+                        { name: 'Otpremaci', url: `${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_otpremaci_' + year },
+                        { name: 'Kupci', url: `${API_URL}?path=kupci&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_kupci_' + year },
+                        { name: 'Odjeli', url: `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_odjeli_' + year },
+                        { name: 'Stanje Odjela', url: `${API_URL}?path=stanje_odjela&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_stanje_odjela_' + year },
+                        { name: 'Pending Unosi', url: `${API_URL}?path=pending_unosi&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_pending_unosi' },
+                        { name: 'Mjesečni Sortimenti', url: `${API_URL}?path=mjesecni_sortimenti&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_mjesecni_sortimenti_' + year }
                     ];
 
                     console.log(`Preloading ${views.length} admin views...`);
@@ -3921,7 +3920,7 @@
                     for (const view of views) {
                         try {
                             console.log(`Loading ${view.name}...`);
-                            await view.fn();
+                            await fetchWithCache(view.url, view.cacheKey);
                             totalLoaded++;
                             console.log(`✓ ${view.name} loaded`);
                         } catch (error) {
@@ -3933,11 +3932,11 @@
                 } else if (userType === 'POSLOVOĐA') {
                     // Poslovodja views to preload
                     const views = [
-                        { name: 'Stanje Odjela', fn: () => fetchWithCache(`${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_poslovodja_odjeli_' + year) },
-                        { name: 'Odjeli u realizaciji', fn: () => fetchWithCache(`${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`, 'cache_poslovodja_realizacija_' + year) },
-                        { name: 'Zadnjih 5 dana - Primke', fn: () => fetchWithCache(`${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`, 'cache_poslovodja_primke') },
-                        { name: 'Zadnjih 5 dana - Otpreme', fn: () => fetchWithCache(`${API_URL}?path=otpreme&username=${currentUser.username}&password=${currentPassword}`, 'cache_poslovodja_otpreme') },
-                        { name: 'Suma mjeseca', fn: () => fetchWithCache(`${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`, 'cache_poslovodja_suma_primke') }
+                        { name: 'Stanje Odjela', url: `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_poslovodja_odjeli_' + year },
+                        { name: 'Odjeli u realizaciji', url: `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_poslovodja_realizacija_' + year },
+                        { name: 'Zadnjih 5 dana - Primke', url: `${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_poslovodja_primke' },
+                        { name: 'Zadnjih 5 dana - Otpreme', url: `${API_URL}?path=otpreme&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_poslovodja_otpreme' },
+                        { name: 'Suma mjeseca', url: `${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_poslovodja_suma_primke' }
                     ];
 
                     console.log(`Preloading ${views.length} poslovodja views...`);
@@ -3945,7 +3944,7 @@
                     for (const view of views) {
                         try {
                             console.log(`Loading ${view.name}...`);
-                            await view.fn();
+                            await fetchWithCache(view.url, view.cacheKey);
                             totalLoaded++;
                             console.log(`✓ ${view.name} loaded`);
                         } catch (error) {
@@ -3958,8 +3957,8 @@
                     // Worker views to preload
                     const path = userType === 'PRIMAC' ? 'primke' : 'otpreme';
                     const views = [
-                        { name: 'Moje unose', fn: () => fetchWithCache(`${API_URL}?path=${path}&username=${currentUser.username}&password=${currentPassword}`, `cache_my_${path}`) },
-                        { name: 'Godišnji prikaz', fn: () => fetchWithCache(`${API_URL}?path=${path}&username=${currentUser.username}&password=${currentPassword}`, `cache_godisnji_${path}`) }
+                        { name: 'Moje unose', url: `${API_URL}?path=${path}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: `cache_my_${path}` },
+                        { name: 'Godišnji prikaz', url: `${API_URL}?path=${path}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: `cache_godisnji_${path}` }
                     ];
 
                     console.log(`Preloading ${views.length} worker views...`);
@@ -3967,7 +3966,7 @@
                     for (const view of views) {
                         try {
                             console.log(`Loading ${view.name}...`);
-                            await view.fn();
+                            await fetchWithCache(view.url, view.cacheKey);
                             totalLoaded++;
                             console.log(`✓ ${view.name} loaded`);
                         } catch (error) {
@@ -3977,7 +3976,11 @@
                     }
                 }
 
-                showSuccess('⚡ Učitano!', `Učitano ${totalLoaded} prikaza. Skrolanje je sada instantno!`);
+                if (totalLoaded > 0) {
+                    showSuccess('⚡ Učitano!', `Učitano ${totalLoaded} prikaza. Skrolanje je sada instantno!`);
+                } else {
+                    showError('Greška', `Nije učitano nijedan prikaz. Provjerite internet konekciju.`);
+                }
 
             } catch (error) {
                 console.error('Preload error:', error);
@@ -6372,16 +6375,29 @@
             const bodyElem = document.getElementById('otpremaci-po-kupcima-body');
             const footerElem = document.getElementById('otpremaci-po-kupcima-footer');
 
+            console.log('renderOtremaciPoKupcimaExpertTable called');
+            console.log('Total mjesecni records:', mjesecni.length);
+
             // Filtruj samo trenutni mjesec
             const currentDate = new Date();
             const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
             const currentMjesec = mjeseci[currentDate.getMonth()];
 
+            console.log('Current month:', currentMjesec);
+            console.log('Available months in data:', [...new Set(mjesecni.map(r => r.mjesec))]);
+
             let filteredData = mjesecni.filter(red => red.mjesec === currentMjesec);
 
+            console.log('Filtered data count:', filteredData.length);
+
             if (!filteredData || filteredData.length === 0) {
+                // DEBUG: Show which months are available
+                const availableMonths = [...new Set(mjesecni.map(r => r.mjesec))].join(', ');
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za tekući mjesec (' + currentMjesec + ')</td></tr>';
+                bodyElem.innerHTML = `<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">
+                    <p>Nema podataka za tekući mjesec: <strong>${currentMjesec}</strong></p>
+                    <p style="margin-top: 10px; font-size: 14px;">Dostupni mjeseci u bazi: ${availableMonths || 'Nema podataka'}</p>
+                </td></tr>`;
                 footerElem.innerHTML = '';
                 return;
             }
