@@ -57,6 +57,7 @@ function getDinamikaForYear(year) {
 function doGet(e) {
   try {
     const path = e.parameter.path;
+    Logger.log('doGet called with path: ' + path);
 
     if (path === 'login') {
       return handleLogin(e.parameter.username, e.parameter.password);
