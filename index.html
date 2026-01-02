@@ -2373,9 +2373,15 @@
                 <!-- Professional Header -->
                 <div class="worker-header primac">
                     <div class="worker-header-icon">👷</div>
-                    <div>
+                    <div style="flex: 1;">
                         <h1 class="worker-header-title">Pregled sječe</h1>
-                        <p class="worker-header-subtitle">Pregled primki u tekućoj godini</p>
+                        <p class="worker-header-subtitle">Pregled primki</p>
+                    </div>
+                    <div>
+                        <select id="primac-personal-year-select" class="year-select" onchange="loadPrimacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
+                            <option value="2025">2025</option>
+                            <option value="2026" selected>2026</option>
+                        </select>
                     </div>
                 </div>
 
@@ -2450,9 +2456,15 @@
                 <!-- Professional Header -->
                 <div class="worker-header otpremac">
                     <div class="worker-header-icon">🚛</div>
-                    <div>
+                    <div style="flex: 1;">
                         <h1 class="worker-header-title">Pregled otpreme</h1>
-                        <p class="worker-header-subtitle">Pregled otpremnica u tekućoj godini</p>
+                        <p class="worker-header-subtitle">Pregled otpremnica</p>
+                    </div>
+                    <div>
+                        <select id="otpremac-personal-year-select" class="year-select" onchange="loadOtpremacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #2563eb; min-width: 120px;">
+                            <option value="2025">2025</option>
+                            <option value="2026" selected>2026</option>
+                        </select>
                     </div>
                 </div>
 
@@ -7294,7 +7306,10 @@
             document.getElementById('primac-personal-content').classList.add('hidden');
 
             try {
-                const year = new Date().getFullYear();
+                // ✅ Čitaj godinu iz selectora umjesto hardkodovane trenutne godine
+                const yearSelector = document.getElementById('primac-personal-year-select');
+                const year = yearSelector ? yearSelector.value : new Date().getFullYear();
+
                 const url = `${API_URL}?path=primac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
                 const data = await fetchWithCache(url, 'cache_primac_detail_' + year);
 
@@ -7382,7 +7397,10 @@
             document.getElementById('otpremac-personal-content').classList.add('hidden');
 
             try {
-                const year = new Date().getFullYear();
+                // ✅ Čitaj godinu iz selectora umjesto hardkodovane trenutne godine
+                const yearSelector = document.getElementById('otpremac-personal-year-select');
+                const year = yearSelector ? yearSelector.value : new Date().getFullYear();
+
                 const url = `${API_URL}?path=otpremac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
                 const data = await fetchWithCache(url, 'cache_otpremac_detail_' + year);
 

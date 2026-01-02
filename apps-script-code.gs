@@ -1703,6 +1703,8 @@ function handlePrimacOdjeli(year, username, password, limit) {
   }
 
   const primkaData = primkaSheet.getDataRange().getValues();
+  Logger.log('Total primka rows: ' + (primkaData.length - 1));
+
   const sortimentiNazivi = [
     "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
     "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
@@ -1712,6 +1714,7 @@ function handlePrimacOdjeli(year, username, password, limit) {
 
   // Map: odjelNaziv -> { sortimenti: {}, ukupno: 0, zadnjiDatum: Date }
   const odjeliMap = {};
+  let matchedRows = 0;
 
   // ✅ OPTIMIZACIJA: Procesiranje svih godina (ne filtriramo po godini)
   for (let i = 1; i < primkaData.length; i++) {
@@ -1725,8 +1728,18 @@ function handlePrimacOdjeli(year, username, password, limit) {
 
     const datumObj = parseDate(datum);
 
-    // Filtriraj samo unose za ovog primača
-    if (String(primac).trim() !== userFullName) continue;
+    // 🔍 DEBUG: Log prvi par redova da vidimo format podataka
+    if (i <= 3) {
+      Logger.log(`Row ${i}: primac="${primac}" vs userFullName="${userFullName}"`);
+    }
+
+    // ✅ CASE-INSENSITIVE matching za primača
+    const primacNormalized = String(primac).trim().toLowerCase();
+    const userNormalized = String(userFullName).trim().toLowerCase();
+
+    if (primacNormalized !== userNormalized) continue;
+
+    matchedRows++;
 
     // Inicijalizuj odjel ako ne postoji
     if (!odjeliMap[odjel]) {
@@ -1790,6 +1803,8 @@ function handlePrimacOdjeli(year, username, password, limit) {
   }));
 
   Logger.log('=== HANDLE PRIMAC ODJELI END ===');
+  Logger.log(`Matched rows: ${matchedRows}`);
+  Logger.log(`Total unique odjeli: ${odjeliArray.length}`);
   Logger.log(`Vraćeno odjela: ${odjeliResult.length} od ${odjeliArray.length}`);
 
   return createJsonResponse({
@@ -1830,6 +1845,8 @@ function handleOtpremacOdjeli(year, username, password, limit) {
   }
 
   const otpremaData = otpremaSheet.getDataRange().getValues();
+  Logger.log('Total otprema rows: ' + (otpremaData.length - 1));
+
   const sortimentiNazivi = [
     "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
     "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
@@ -1839,6 +1856,7 @@ function handleOtpremacOdjeli(year, username, password, limit) {
 
   // Map: odjelNaziv -> { sortimenti: {}, ukupno: 0, zadnjiDatum: Date }
   const odjeliMap = {};
+  let matchedRows = 0;
 
   // ✅ OPTIMIZACIJA: Procesiranje svih godina (ne filtriramo po godini)
   for (let i = 1; i < otpremaData.length; i++) {
@@ -1852,8 +1870,18 @@ function handleOtpremacOdjeli(year, username, password, limit) {
 
     const datumObj = parseDate(datum);
 
-    // Filtriraj samo unose za ovog otpremača
-    if (String(otpremac).trim() !== userFullName) continue;
+    // 🔍 DEBUG: Log prvi par redova da vidimo format podataka
+    if (i <= 3) {
+      Logger.log(`Row ${i}: otpremac="${otpremac}" vs userFullName="${userFullName}"`);
+    }
+
+    // ✅ CASE-INSENSITIVE matching za otpremača
+    const otpremacNormalized = String(otpremac).trim().toLowerCase();
+    const userNormalized = String(userFullName).trim().toLowerCase();
+
+    if (otpremacNormalized !== userNormalized) continue;
+
+    matchedRows++;
 
     // Inicijalizuj odjel ako ne postoji
     if (!odjeliMap[odjel]) {
@@ -1917,6 +1945,8 @@ function handleOtpremacOdjeli(year, username, password, limit) {
   }));
 
   Logger.log('=== HANDLE OTPREMAC ODJELI END ===');
+  Logger.log(`Matched rows: ${matchedRows}`);
+  Logger.log(`Total unique odjeli: ${odjeliArray.length}`);
   Logger.log(`Vraćeno odjela: ${odjeliResult.length} od ${odjeliArray.length}`);
 
   return createJsonResponse({
