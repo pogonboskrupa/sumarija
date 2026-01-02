@@ -11269,9 +11269,12 @@
 
                 // Load primke data
                 const url = `${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, `cache_primac_sedmicni_${year}_${month}`);
+                const response = await fetchWithCache(url, `cache_primac_sedmicni_${year}_${month}`);
 
-                if (data.error) throw new Error(data.error);
+                if (response.error) throw new Error(response.error);
+
+                // ✅ Backend vraća { primke: [...] }, izvuci array
+                const data = response.primke || [];
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {
@@ -11315,9 +11318,12 @@
 
                 // Load primke data
                 const url = `${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, `cache_primac_mjesecni_${year}_${month}`);
+                const response = await fetchWithCache(url, `cache_primac_mjesecni_${year}_${month}`);
 
-                if (data.error) throw new Error(data.error);
+                if (response.error) throw new Error(response.error);
+
+                // ✅ Backend vraća { primke: [...] }, izvuci array
+                const data = response.primke || [];
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {
@@ -11368,9 +11374,12 @@
 
                 // Load otpreme data
                 const url = `${API_URL}?path=otpreme&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, `cache_otpremac_sedmicni_${year}_${month}`);
+                const response = await fetchWithCache(url, `cache_otpremac_sedmicni_${year}_${month}`);
 
-                if (data.error) throw new Error(data.error);
+                if (response.error) throw new Error(response.error);
+
+                // ✅ Backend vraća { otpreme: [...] }, izvuci array
+                const data = response.otpreme || [];
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {
@@ -11413,9 +11422,12 @@
 
                 // Load otpreme data
                 const url = `${API_URL}?path=otpreme&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, `cache_otpremac_mjesecni_${year}_${month}`);
+                const response = await fetchWithCache(url, `cache_otpremac_mjesecni_${year}_${month}`);
 
-                if (data.error) throw new Error(data.error);
+                if (response.error) throw new Error(response.error);
+
+                // ✅ Backend vraća { otpreme: [...] }, izvuci array
+                const data = response.otpreme || [];
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {

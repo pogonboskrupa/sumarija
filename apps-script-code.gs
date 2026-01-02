@@ -3628,7 +3628,9 @@ function handlePrimke(username, password) {
         const datumStr = formatDate(datumObj);
 
         // Parse radilište iz odjel naziva (npr. "BJELAJSKE UVALE - ODJEL 1" -> "BJELAJSKE UVALE")
-        const radiliste = odjel.includes(' - ') ? odjel.split(' - ')[0].trim() : '';
+        // ✅ Konvertuj odjel u string prije poziva .includes()
+        const odjelStr = String(odjel || '');
+        const radiliste = odjelStr.includes(' - ') ? odjelStr.split(' - ')[0].trim() : '';
 
         // Sortimenti su u kolonama D-U (indeksi 3-20)
         // Za pojedinačnu primku trebamo svaki sortiment kao poseban zapis
@@ -3645,7 +3647,7 @@ function handlePrimke(username, password) {
           if (kolicina > 0) {
             primke.push({
               datum: datumStr,
-              odjel: odjel,
+              odjel: odjelStr,  // ✅ Koristi string verziju
               radiliste: radiliste,
               sortiment: sortimentiNazivi[j],
               kolicina: kolicina,
@@ -3706,7 +3708,9 @@ function handleOtpreme(username, password) {
         const datumStr = formatDate(datumObj);
 
         // Parse radilište iz odjel naziva
-        const radiliste = odjel.includes(' - ') ? odjel.split(' - ')[0].trim() : '';
+        // ✅ Konvertuj odjel u string prije poziva .includes()
+        const odjelStr = String(odjel || '');
+        const radiliste = odjelStr.includes(' - ') ? odjelStr.split(' - ')[0].trim() : '';
 
         // Sortimenti su u kolonama D-U (indeksi 3-20)
         const sortimentiNazivi = [
@@ -3722,7 +3726,7 @@ function handleOtpreme(username, password) {
           if (kolicina > 0) {
             otpreme.push({
               datum: datumStr,
-              odjel: odjel,
+              odjel: odjelStr,  // ✅ Koristi string verziju
               radiliste: radiliste,
               sortiment: sortimentiNazivi[j],
               kolicina: kolicina,
