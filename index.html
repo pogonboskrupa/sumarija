@@ -7475,23 +7475,49 @@
         let otpremacOdjeliCurrentPage = 0;
         const otpremacOdjeliPageSize = 5;
 
-        // Load primac odjeli data
+        // Load primac odjeli data (ZADNJIH 6 ODJELA IZ SVIH GODINA)
         async function loadPrimacOdjeli() {
             document.getElementById('loading-screen').classList.remove('hidden');
             document.getElementById('primac-odjeli-content').classList.add('hidden');
 
             try {
-                const year = new Date().getFullYear();
-                const url = `${API_URL}?path=primac-odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_primac_odjeli_' + year);
+                const currentYear = new Date().getFullYear();
+                const years = [currentYear, currentYear - 1];
+                const allOdjeli = [];
 
-                console.log('Primac odjeli data:', data);
+                // Učitaj podatke iz trenutne i prethodne godine
+                for (const year of years) {
+                    try {
+                        const url = `${API_URL}?path=primac-odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                        const data = await fetchWithCache(url, 'cache_primac_odjeli_' + year);
 
-                if (data.error) {
-                    throw new Error(data.error);
+                        if (!data.error && data.odjeli) {
+                            data.odjeli.forEach(odjel => {
+                                odjel._year = year;
+                                allOdjeli.push(odjel);
+                            });
+                        }
+                    } catch (error) {
+                        console.warn(`Nema podataka za ${year}:`, error);
+                    }
                 }
 
-                primacOdjeliData = data;
+                if (allOdjeli.length === 0) {
+                    throw new Error('Nema podataka o odjelima');
+                }
+
+                // Sortiraj po datumu (najnoviji prvi) i uzmi zadnjih 6
+                allOdjeli.sort((a, b) => {
+                    const dateA = a.zadnjiDatum ? new Date(a.zadnjiDatum.split('.').reverse().join('-')) : new Date(0);
+                    const dateB = b.zadnjiDatum ? new Date(b.zadnjiDatum.split('.').reverse().join('-')) : new Date(0);
+                    return dateB - dateA;
+                });
+
+                primacOdjeliData = {
+                    odjeli: allOdjeli.slice(0, 6),
+                    sortimenti: allOdjeli[0]?.sortimenti || []
+                };
+
                 primacOdjeliCurrentPage = 0;
                 renderPrimacOdjeliPage();
 
@@ -7515,9 +7541,10 @@
 
             pageOdjeli.forEach(odjel => {
                 // Kreiraj HTML za odjel sa dve tabele
+                const yearBadge = odjel._year ? `<span style="background: #fbbf24; color: #78350f; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; margin-left: 10px;">${odjel._year}</span>` : '';
                 html += `
                     <div style="margin-bottom: 40px; border: 2px solid #10b981; border-radius: 12px; padding: 20px; background: #f0fdf4;">
-                        <h3 style="color: #047857; margin-bottom: 16px;">📁 ${odjel.odjel}</h3>
+                        <h3 style="color: #047857; margin-bottom: 16px;">📁 ${odjel.odjel} ${yearBadge}</h3>
                         <p style="font-size: 13px; color: #6b7280; margin-bottom: 16px;">Zadnji unos: ${odjel.zadnjiDatum || 'N/A'}</p>
 
                         <!-- Apsolutne vrijednosti -->
@@ -7590,23 +7617,49 @@
             }
         }
 
-        // Load otpremac odjeli data
+        // Load otpremac odjeli data (ZADNJIH 6 ODJELA IZ SVIH GODINA)
         async function loadOtpremacOdjeli() {
             document.getElementById('loading-screen').classList.remove('hidden');
             document.getElementById('otpremac-odjeli-content').classList.add('hidden');
 
             try {
-                const year = new Date().getFullYear();
-                const url = `${API_URL}?path=otpremac-odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_otpremac_odjeli_' + year);
+                const currentYear = new Date().getFullYear();
+                const years = [currentYear, currentYear - 1];
+                const allOdjeli = [];
 
-                console.log('Otpremac odjeli data:', data);
+                // Učitaj podatke iz trenutne i prethodne godine
+                for (const year of years) {
+                    try {
+                        const url = `${API_URL}?path=otpremac-odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                        const data = await fetchWithCache(url, 'cache_otpremac_odjeli_' + year);
 
-                if (data.error) {
-                    throw new Error(data.error);
+                        if (!data.error && data.odjeli) {
+                            data.odjeli.forEach(odjel => {
+                                odjel._year = year;
+                                allOdjeli.push(odjel);
+                            });
+                        }
+                    } catch (error) {
+                        console.warn(`Nema podataka za ${year}:`, error);
+                    }
                 }
 
-                otpremacOdjeliData = data;
+                if (allOdjeli.length === 0) {
+                    throw new Error('Nema podataka o odjelima');
+                }
+
+                // Sortiraj po datumu (najnoviji prvi) i uzmi zadnjih 6
+                allOdjeli.sort((a, b) => {
+                    const dateA = a.zadnjiDatum ? new Date(a.zadnjiDatum.split('.').reverse().join('-')) : new Date(0);
+                    const dateB = b.zadnjiDatum ? new Date(b.zadnjiDatum.split('.').reverse().join('-')) : new Date(0);
+                    return dateB - dateA;
+                });
+
+                otpremacOdjeliData = {
+                    odjeli: allOdjeli.slice(0, 6),
+                    sortimenti: allOdjeli[0]?.sortimenti || []
+                };
+
                 otpremacOdjeliCurrentPage = 0;
                 renderOtpremacOdjeliPage();
 
@@ -7630,9 +7683,10 @@
 
             pageOdjeli.forEach(odjel => {
                 // Kreiraj HTML za odjel sa dve tabele
+                const yearBadge = odjel._year ? `<span style="background: #fbbf24; color: #78350f; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; margin-left: 10px;">${odjel._year}</span>` : '';
                 html += `
                     <div style="margin-bottom: 40px; border: 2px solid #2563eb; border-radius: 12px; padding: 20px; background: #eff6ff;">
-                        <h3 style="color: #1e40af; margin-bottom: 16px;">📁 ${odjel.odjel}</h3>
+                        <h3 style="color: #1e40af; margin-bottom: 16px;">📁 ${odjel.odjel} ${yearBadge}</h3>
                         <p style="font-size: 13px; color: #6b7280; margin-bottom: 16px;">Zadnji unos: ${odjel.zadnjiDatum || 'N/A'}</p>
 
                         <!-- Apsolutne vrijednosti -->
