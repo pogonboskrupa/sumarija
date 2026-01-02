@@ -10189,9 +10189,11 @@
                         let zadnjiDatum = null;
 
                         if (stanjeOdjelaData && stanjeOdjelaData.data && odjel.odjel) {
+                            // ✅ Convert odjel.odjel to string to prevent "includes is not a function" error
+                            const odjelStr = String(odjel.odjel || '').toLowerCase();
                             const stanjeMatch = stanjeOdjelaData.data.find(s =>
-                                s.odjelNaziv.toLowerCase().includes(odjel.odjel.toLowerCase()) ||
-                                odjel.odjel.toLowerCase().includes(s.odjelNaziv.replace('.xlsx', '').toLowerCase())
+                                s.odjelNaziv.toLowerCase().includes(odjelStr) ||
+                                odjelStr.includes(s.odjelNaziv.replace('.xlsx', '').toLowerCase())
                             );
 
                             if (stanjeMatch && stanjeMatch.redovi && stanjeMatch.redovi.projekat) {
@@ -10201,7 +10203,8 @@
                                 zadnjiDatum = stanjeMatch.zadnjiDatum;
 
                                 // DEBUG: Log projekat sources za GRMEČ JASENICA 39
-                                if (odjel.odjel && (odjel.odjel.includes('JASENICA 39') || odjel.odjel.includes('GRMEČ'))) {
+                                const odjelDebugStr = String(odjel.odjel || '');
+                                if (odjel.odjel && (odjelDebugStr.includes('JASENICA 39') || odjelDebugStr.includes('GRMEČ'))) {
                                     console.log('=== DEBUG GRMEČ JASENICA 39 ===');
                                     console.log('Odjel name:', odjel.odjel);
                                     console.log('odjel.projekat (U11 from handleOdjeli):', odjel.projekat);
