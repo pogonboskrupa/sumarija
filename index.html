@@ -8429,7 +8429,8 @@
             const odjeliMap = {};
 
             data.forEach(row => {
-                const odjel = row.odjel;
+                // ✅ Convert odjel to string to prevent "localeCompare/includes is not a function" errors
+                const odjel = String(row.odjel || '');
                 if (!odjeliMap[odjel]) {
                     odjeliMap[odjel] = {};
                     sortimentiNazivi.forEach(s => odjeliMap[odjel][s] = 0);
@@ -8450,7 +8451,7 @@
                 });
             }
 
-            // Sort by odjel name
+            // Sort by odjel name - safe now because odjel is always a string
             result.sort((a, b) => a.odjel.localeCompare(b.odjel));
 
             return result;
@@ -8736,7 +8737,8 @@
                 }
 
                 const week = weeksMap.get(weekKey);
-                const odjel = row.odjel;
+                // ✅ Convert odjel to string to prevent "localeCompare/includes is not a function" errors
+                const odjel = String(row.odjel || '');
 
                 if (!week.odjeliMap[odjel]) {
                     week.odjeliMap[odjel] = {};
