@@ -7493,16 +7493,16 @@
         let otpremacOdjeliCurrentPage = 0;
         const otpremacOdjeliPageSize = 5;
 
-        // Load primac odjeli data (ZADNJIH 6 ODJELA IZ SVIH GODINA)
-        // ✅ OPTIMIZOVANO: Jedan API poziv sa limit=6 (backend procesira sve godine)
+        // Load primac odjeli data (ZADNJIH 15 ODJELA IZ SVIH GODINA)
+        // ✅ OPTIMIZOVANO: Jedan API poziv sa limit=15 (backend procesira sve godine)
         async function loadPrimacOdjeli() {
             document.getElementById('loading-screen').classList.remove('hidden');
             document.getElementById('primac-odjeli-content').classList.add('hidden');
 
             try {
-                // Backend sada vraća top 6 odjela iz svih godina automatski
-                const url = `${API_URL}?path=primac-odjeli&limit=6&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_primac_odjeli_top6');
+                // Backend sada vraća top 15 odjela iz svih godina automatski
+                const url = `${API_URL}?path=primac-odjeli&limit=15&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, 'cache_primac_odjeli_top15');
 
                 if (data.error) {
                     throw new Error(data.error);
@@ -7617,16 +7617,16 @@
             }
         }
 
-        // Load otpremac odjeli data (ZADNJIH 6 ODJELA IZ SVIH GODINA)
-        // ✅ OPTIMIZOVANO: Jedan API poziv sa limit=6 (backend procesira sve godine)
+        // Load otpremac odjeli data (ZADNJIH 15 ODJELA IZ SVIH GODINA)
+        // ✅ OPTIMIZOVANO: Jedan API poziv sa limit=15 (backend procesira sve godine)
         async function loadOtpremacOdjeli() {
             document.getElementById('loading-screen').classList.remove('hidden');
             document.getElementById('otpremac-odjeli-content').classList.add('hidden');
 
             try {
-                // Backend sada vraća top 6 odjela iz svih godina automatski
-                const url = `${API_URL}?path=otpremac-odjeli&limit=6&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_otpremac_odjeli_top6');
+                // Backend sada vraća top 15 odjela iz svih godina automatski
+                const url = `${API_URL}?path=otpremac-odjeli&limit=15&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, 'cache_otpremac_odjeli_top15');
 
                 if (data.error) {
                     throw new Error(data.error);

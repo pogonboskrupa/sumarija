@@ -1688,8 +1688,8 @@ function handlePrimacOdjeli(year, username, password, limit) {
 
   const userFullName = loginResult.fullName;
 
-  // ✅ OPTIMIZACIJA: Limit na broj odjela (default 6)
-  const odjeliLimit = limit ? parseInt(limit) : 6;
+  // ✅ OPTIMIZACIJA: Limit na broj odjela (default 15 - zadnjih 15 odjela)
+  const odjeliLimit = limit ? parseInt(limit) : 15;
 
   Logger.log('=== HANDLE PRIMAC ODJELI START ===');
   Logger.log('User: ' + userFullName);
@@ -1830,8 +1830,8 @@ function handleOtpremacOdjeli(year, username, password, limit) {
 
   const userFullName = loginResult.fullName;
 
-  // ✅ OPTIMIZACIJA: Limit na broj odjela (default 6)
-  const odjeliLimit = limit ? parseInt(limit) : 6;
+  // ✅ OPTIMIZACIJA: Limit na broj odjela (default 15 - zadnjih 15 odjela)
+  const odjeliLimit = limit ? parseInt(limit) : 15;
 
   Logger.log('=== HANDLE OTPREMAC ODJELI START ===');
   Logger.log('User: ' + userFullName);
