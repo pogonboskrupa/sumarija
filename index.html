@@ -117,7 +117,7 @@
         <div id="loading-screen" class="loading">
             <div class="loading-icon">⏳</div>
             <div class="loading-text">Učitavam podatke...</div>
-            <div class="loading-sub">Molimo sačekajte...</div>
+            <div class="loading-sub">Ovo može trajati do 10 sekundi...</div>
         </div>
         
         <div id="content-screen" class="container hidden">
@@ -192,8 +192,8 @@
 
         // API konfiguracija
         const API_CONFIG = {
-            timeout: 15000,      // 15 sekundi timeout
-            maxRetries: 3,       // Maksimalno 3 pokušaja
+            timeout: 8000,       // 8 sekundi timeout (smanjeno sa 15s)
+            maxRetries: 2,       // Maksimalno 2 pokušaja (smanjeno sa 3)
             retryDelay: 2000     // Početni delay 2 sekunde (eksponencijalni backoff)
         };
 
