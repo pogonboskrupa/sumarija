@@ -3947,11 +3947,19 @@
     </div>
 
     <script>
-        // VERSION INFO
-        const APP_VERSION = '2026-01-03-v2-debug';
-        const BUILD_COMMIT = '61ec01f';
-        console.log(`%c🌲 ŠUMARIJA v${APP_VERSION} (${BUILD_COMMIT})`, 'background: #059669; color: white; padding: 8px 12px; border-radius: 4px; font-weight: bold; font-size: 14px;');
-        console.log('%cAko vidiš ovu poruku, koristiš NAJNOVIJU verziju sa debug logging-om!', 'color: #059669; font-weight: bold;');
+        // VERSION INFO - FORCED DEPLOYMENT TEST
+        const APP_VERSION = '2026-01-03-v3-FINAL-FIX';
+        const BUILD_COMMIT = '53e3db8';
+
+        // SUPER VISIBLE VERSION CHECK
+        console.clear();
+        console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
+        console.log(`%c🌲 ŠUMARIJA v${APP_VERSION}`, 'background: #059669; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 18px;');
+        console.log(`%cBuild: ${BUILD_COMMIT}`, 'color: #6b7280; font-size: 12px;');
+        console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
+        console.log('%c✅ NAJNOVIJA VERZIJA SA POPRAVKAMA UČITANA!', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
+        console.log('%cAko vidiš ovu poruku, data.filter greška je popravljena!', 'color: #059669; font-weight: bold;');
+        console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
 
         const API_URL = 'https://script.google.com/macros/s/AKfycbwOyqKvRtbQWQFABXe1Q8fWf2XP9K-msArcOU8BwoyN28fSGfLnPGskR1G8qBIZrMsy/exec';
 
