@@ -11276,10 +11276,34 @@
                 const url = `${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`;
                 const response = await fetchWithCache(url, `cache_primac_sedmicni_${year}_${month}`);
 
+                // 🔍 DEBUG: Log response structure
+                console.log('=== PRIMAC SEDMICNI DEBUG ===');
+                console.log('Response type:', typeof response);
+                console.log('Response keys:', Object.keys(response || {}));
+                console.log('Response:', response);
+                console.log('response.primke type:', typeof response.primke);
+                console.log('Is response.primke array?', Array.isArray(response.primke));
+                console.log('response.primke length:', response.primke?.length);
+
                 if (response.error) throw new Error(response.error);
 
                 // ✅ Backend vraća { primke: [...] }, izvuci array
-                const data = response.primke || [];
+                // Handle different response formats
+                let data;
+                if (Array.isArray(response)) {
+                    // Old backend format: returns array directly
+                    data = response;
+                    console.log('⚠️ Using old format: response is array');
+                } else if (response.primke && Array.isArray(response.primke)) {
+                    // New backend format: returns { primke: [...] }
+                    data = response.primke;
+                    console.log('✅ Using new format: response.primke is array');
+                } else {
+                    console.error('❌ Unknown response format!', response);
+                    data = [];
+                }
+
+                console.log('Final data array length:', data.length);
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {
@@ -11328,7 +11352,16 @@
                 if (response.error) throw new Error(response.error);
 
                 // ✅ Backend vraća { primke: [...] }, izvuci array
-                const data = response.primke || [];
+                // Handle different response formats
+                let data;
+                if (Array.isArray(response)) {
+                    data = response;
+                } else if (response.primke && Array.isArray(response.primke)) {
+                    data = response.primke;
+                } else {
+                    console.error('❌ Unknown response format in loadPrimacMjesecni!', response);
+                    data = [];
+                }
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {
@@ -11384,7 +11417,16 @@
                 if (response.error) throw new Error(response.error);
 
                 // ✅ Backend vraća { otpreme: [...] }, izvuci array
-                const data = response.otpreme || [];
+                // Handle different response formats
+                let data;
+                if (Array.isArray(response)) {
+                    data = response;
+                } else if (response.otpreme && Array.isArray(response.otpreme)) {
+                    data = response.otpreme;
+                } else {
+                    console.error('❌ Unknown response format in loadOtpremacSedmicni!', response);
+                    data = [];
+                }
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {
@@ -11432,7 +11474,16 @@
                 if (response.error) throw new Error(response.error);
 
                 // ✅ Backend vraća { otpreme: [...] }, izvuci array
-                const data = response.otpreme || [];
+                // Handle different response formats
+                let data;
+                if (Array.isArray(response)) {
+                    data = response;
+                } else if (response.otpreme && Array.isArray(response.otpreme)) {
+                    data = response.otpreme;
+                } else {
+                    console.error('❌ Unknown response format in loadOtpremacMjesecni!', response);
+                    data = [];
+                }
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {
