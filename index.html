@@ -3948,8 +3948,8 @@
 
     <script>
         // VERSION INFO - TIMEOUT + SORTIMENTI ORDER FIX
-        const APP_VERSION = '2026-01-04-v5-FULL-FIX';
-        const BUILD_COMMIT = 'pending';
+        const APP_VERSION = '2026-01-04-v6-CACHE-BUST';
+        const BUILD_COMMIT = 'a936a5b';
 
         // SUPER VISIBLE VERSION CHECK
         console.clear();
@@ -4200,6 +4200,12 @@
 
         // Fetch with cache - cache-first strategy
         async function fetchWithCache(url, cacheKey, forceRefresh = false, timeout = 8000) {
+            // DEBUG: Confirm timeout parameter exists
+            if (typeof timeout === 'undefined') {
+                console.error('🔴 CRITICAL: timeout is undefined in fetchWithCache!');
+                timeout = 8000; // Fallback
+            }
+
             // Use smart cache TTL optimized for data entry patterns
             const path = new URL(url).searchParams.get('path');
             const cacheTTL = getSmartCacheTTL();
