@@ -1961,9 +1961,7 @@
         <div class="login-box">
             <!-- Logo Container -->
             <div style="text-align: center; margin-bottom: 24px;">
-                <div style="display: inline-flex; align-items: center; justify-content: center; width: 120px; height: 120px; background: linear-gradient(135deg, #047857 0%, #059669 100%); border-radius: 50%; margin-bottom: 16px; box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3);">
-                    <span style="font-size: 60px;">🌲</span>
-                </div>
+                <img src="logo-zuti.png" alt="ŠPD Unsko-Sanske Šume Logo" style="width: 180px; height: auto; margin-bottom: 16px;">
                 <h3 style="font-size: 16px; font-weight: 700; color: #047857; margin-bottom: 4px; letter-spacing: 0.5px;">ŠPD "UNSKO-SANSKE ŠUME"</h3>
                 <h4 style="font-size: 14px; font-weight: 600; color: #6b7280; margin-bottom: 8px;">BOSANSKA KRUPA</h4>
             </div>
@@ -2000,7 +1998,7 @@
                     </div>
                 </div>
                 <div class="header-center">
-                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 280'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23fef08a;stop-opacity:1'/%3E%3Cstop offset='100%25' style='stop-color:%23fde047;stop-opacity:1'/%3E%3C/linearGradient%3E%3ClinearGradient id='tree' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23047857;stop-opacity:1'/%3E%3Cstop offset='100%25' style='stop-color:%23065f46;stop-opacity:1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='5' y='5' width='190' height='270' rx='35' fill='url(%23bg)' stroke='%2359b9a4' stroke-width='8'/%3E%3Ctext x='25' y='50' font-family='Arial,sans-serif' font-size='14' font-weight='700' fill='%23047857' writing-mode='tb' letter-spacing='2'%3ESPD UNISKO-SANSKE SUME%3C/text%3E%3Cpath d='M100 60 L115 95 L108 95 L118 125 L112 125 L125 155 L75 155 L88 125 L82 125 L92 95 L85 95 Z' fill='url(%23tree)'/%3E%3Crect x='96' y='155' width='8' height='20' fill='%235d4037' rx='1'/%3E%3Cellipse cx='145' cy='85' rx='25' ry='35' fill='%23a7d5a6' opacity='0.6'/%3E%3Cpath d='M145 50 Q120 70 120 100 Q120 130 145 150 Q145 130 145 100 Q145 70 145 50 Z' fill='%23a7d5a6' opacity='0.5'/%3E%3Cpath d='M135 110 Q145 95 145 75 L145 150 Q120 130 120 100 Q120 115 135 110 Z M155 110 Q145 95 145 75 L145 150 Q170 130 170 100 Q170 115 155 110 Z' fill='%2378b877' opacity='0.4'/%3E%3Cellipse cx='145' cy='155' rx='20' ry='15' fill='%23a7d5a6' opacity='0.5'/%3E%3Cellipse cx='160' cy='140' rx='18' ry='22' fill='%23a7d5a6' opacity='0.4'/%3E%3Cpath d='M115 200 Q145 180 175 200 Q175 220 145 245 Q115 220 115 200 Z' fill='%2378b877' stroke='%23047857' stroke-width='4'/%3E%3Cpath d='M125 210 Q145 195 165 210 L145 230 Z' fill='%23fde047' opacity='0.3'/%3E%3Ctext x='100' y='260' font-family='Arial,sans-serif' font-size='16' font-weight='700' fill='%23dc2626' text-anchor='middle'%3EBOSANSKA%3C/text%3E%3Ctext x='100' y='275' font-family='Arial,sans-serif' font-size='16' font-weight='700' fill='%23dc2626' text-anchor='middle'%3EKRUPA%3C/text%3E%3C/svg%3E" alt="ŠPD Unsko-Sanske Šume Logo" class="company-logo" id="company-logo">
+                    <img src="logo-zuti.png" alt="ŠPD Unsko-Sanske Šume Logo" class="company-logo" id="company-logo">
                 </div>
                 <div class="header-right">
                     <div class="header-user">
@@ -2375,9 +2373,15 @@
                 <!-- Professional Header -->
                 <div class="worker-header primac">
                     <div class="worker-header-icon">👷</div>
-                    <div>
+                    <div style="flex: 1;">
                         <h1 class="worker-header-title">Pregled sječe</h1>
-                        <p class="worker-header-subtitle">Pregled primki u tekućoj godini</p>
+                        <p class="worker-header-subtitle">Pregled primki</p>
+                    </div>
+                    <div>
+                        <select id="primac-personal-year-select" class="year-select" onchange="loadPrimacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
+                            <option value="2025">2025</option>
+                            <option value="2026" selected>2026</option>
+                        </select>
                     </div>
                 </div>
 
@@ -2424,8 +2428,7 @@
                     <div>
                         <select id="primac-godisnji-year-select" class="year-select" onchange="loadPrimacGodisnji()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
                             <option value="2025">2025</option>
-                            <option value="2026" selected>2026</option>
-                        </select>
+                            <option value="2026" selected>2026</option></select>
                     </div>
                 </div>
 
@@ -2453,9 +2456,15 @@
                 <!-- Professional Header -->
                 <div class="worker-header otpremac">
                     <div class="worker-header-icon">🚛</div>
-                    <div>
+                    <div style="flex: 1;">
                         <h1 class="worker-header-title">Pregled otpreme</h1>
-                        <p class="worker-header-subtitle">Pregled otpremnica u tekućoj godini</p>
+                        <p class="worker-header-subtitle">Pregled otpremnica</p>
+                    </div>
+                    <div>
+                        <select id="otpremac-personal-year-select" class="year-select" onchange="loadOtpremacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #2563eb; min-width: 120px;">
+                            <option value="2025">2025</option>
+                            <option value="2026" selected>2026</option>
+                        </select>
                     </div>
                 </div>
 
@@ -3416,21 +3425,19 @@
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <label for="uporedba-year1" style="font-weight: 600; font-size: 16px;">📅 Godina 1:</label>
                         <select id="uporedba-year1" class="year-select" onchange="loadUporedbaGodina()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
-                            <option value="2023">2023</option>
-                            <option value="2024">2024</option>
-                            <option value="2025" selected>2025</option>
-                            <option value="2026">2026</option>
-                        </select>
+                            
+                            
+                            <option value="2025">2025</option>
+                            <option value="2026" selected>2026</option></select>
                     </div>
                     <span style="font-size: 24px; font-weight: bold;">VS</span>
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <label for="uporedba-year2" style="font-weight: 600; font-size: 16px;">📅 Godina 2:</label>
                         <select id="uporedba-year2" class="year-select" onchange="loadUporedbaGodina()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #2563eb; min-width: 120px;">
-                            <option value="2023">2023</option>
-                            <option value="2024">2024</option>
+                            
+                            
                             <option value="2025">2025</option>
-                            <option value="2026" selected>2026</option>
-                        </select>
+                            <option value="2026" selected>2026</option></select>
                     </div>
                 </div>
             </div>
@@ -3559,8 +3566,7 @@
                     <div class="page-header-right">
                         <select id="primac-sedmicni-year" class="year-select" onchange="loadPrimacSedmicni()">
                             <option value="2025">2025</option>
-                            <option value="2026" selected>2026</option>
-                        </select>
+                            <option value="2026" selected>2026</option></select>
                         <select id="primac-sedmicni-month" class="month-select" onchange="loadPrimacSedmicni()">
                             <option value="0">Januar</option>
                             <option value="1">Februar</option>
@@ -3599,8 +3605,7 @@
                     <div class="page-header-right">
                         <select id="primac-mjesecni-year" class="year-select" onchange="loadPrimacMjesecni()">
                             <option value="2025">2025</option>
-                            <option value="2026" selected>2026</option>
-                        </select>
+                            <option value="2026" selected>2026</option></select>
                         <select id="primac-mjesecni-month" class="month-select" onchange="loadPrimacMjesecni()">
                             <option value="0">Januar</option>
                             <option value="1">Februar</option>
@@ -3655,8 +3660,7 @@
                     <div class="page-header-right">
                         <select id="otpremac-sedmicni-year" class="year-select" onchange="loadOtpremacSedmicni()">
                             <option value="2025">2025</option>
-                            <option value="2026" selected>2026</option>
-                        </select>
+                            <option value="2026" selected>2026</option></select>
                         <select id="otpremac-sedmicni-month" class="month-select" onchange="loadOtpremacSedmicni()">
                             <option value="0">Januar</option>
                             <option value="1">Februar</option>
@@ -3695,8 +3699,7 @@
                     <div class="page-header-right">
                         <select id="otpremac-mjesecni-year" class="year-select" onchange="loadOtpremacMjesecni()">
                             <option value="2025">2025</option>
-                            <option value="2026" selected>2026</option>
-                        </select>
+                            <option value="2026" selected>2026</option></select>
                         <select id="otpremac-mjesecni-month" class="month-select" onchange="loadOtpremacMjesecni()">
                             <option value="0">Januar</option>
                             <option value="1">Februar</option>
@@ -3752,8 +3755,7 @@
                     <div class="page-header-right">
                         <select id="izvjestaji-year-select" class="year-select" onchange="loadIzvjestaji()">
                             <option value="2025">2025</option>
-                            <option value="2024">2024</option>
-                        </select>
+                            <option value="2026" selected>2026</option></select>
                         <select id="izvjestaji-month-select" class="month-select" onchange="loadIzvjestaji()">
                             <option value="0">Januar</option>
                             <option value="1">Februar</option>
@@ -3814,8 +3816,7 @@
                     <div class="page-header-right">
                         <select id="sedmicni-sjeca-year-select" class="year-select" onchange="loadSedmicniIzvjestajSjeca()">
                             <option value="2025">2025</option>
-                            <option value="2024">2024</option>
-                        </select>
+                            <option value="2026" selected>2026</option></select>
                         <select id="sedmicni-sjeca-month-select" class="month-select" onchange="loadSedmicniIzvjestajSjeca()">
                             <option value="0">Januar</option>
                             <option value="1">Februar</option>
@@ -3846,8 +3847,7 @@
                     <div class="page-header-right">
                         <select id="sedmicni-otprema-year-select" class="year-select" onchange="loadSedmicniIzvjestajOtprema()">
                             <option value="2025">2025</option>
-                            <option value="2024">2024</option>
-                        </select>
+                            <option value="2026" selected>2026</option></select>
                         <select id="sedmicni-otprema-month-select" class="month-select" onchange="loadSedmicniIzvjestajOtprema()">
                             <option value="0">Januar</option>
                             <option value="1">Februar</option>
@@ -3947,6 +3947,20 @@
     </div>
 
     <script>
+        // VERSION INFO - FORCED DEPLOYMENT TEST
+        const APP_VERSION = '2026-01-03-v3-FINAL-FIX';
+        const BUILD_COMMIT = '53e3db8';
+
+        // SUPER VISIBLE VERSION CHECK
+        console.clear();
+        console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
+        console.log(`%c🌲 ŠUMARIJA v${APP_VERSION}`, 'background: #059669; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 18px;');
+        console.log(`%cBuild: ${BUILD_COMMIT}`, 'color: #6b7280; font-size: 12px;');
+        console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
+        console.log('%c✅ NAJNOVIJA VERZIJA SA POPRAVKAMA UČITANA!', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
+        console.log('%cAko vidiš ovu poruku, data.filter greška je popravljena!', 'color: #059669; font-weight: bold;');
+        console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
+
         const API_URL = 'https://script.google.com/macros/s/AKfycbwOyqKvRtbQWQFABXe1Q8fWf2XP9K-msArcOU8BwoyN28fSGfLnPGskR1G8qBIZrMsy/exec';
 
         // ========== PERFORMANCE CONFIGURATION ==========
@@ -4208,10 +4222,16 @@
                 }
             }
 
-            // Cache miss or stale - fetch from network
+            // Cache miss or stale - fetch from network with timeout
             try {
                 console.log(`↻ Fetching fresh data (${path})...`);
-                const response = await fetch(url);
+
+                // Fetch with 8 second timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+                const response = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
                 const data = await response.json();
 
                 // Store in cache
@@ -4225,7 +4245,12 @@
                 return data;
 
             } catch (error) {
-                console.error('Network error:', error);
+                // Handle timeout specifically
+                if (error.name === 'AbortError') {
+                    console.error('Request timeout (8s) - server too slow:', path);
+                } else {
+                    console.error('Network error:', error);
+                }
 
                 // If network fails and we have stale cache, use it
                 if (cached) {
@@ -4238,6 +4263,11 @@
                     } catch (e) {
                         console.error('Stale cache parse error:', e);
                     }
+                }
+
+                // If timeout, show user-friendly message
+                if (error.name === 'AbortError') {
+                    throw new Error('Server je spor, molimo pokušajte ponovo ili koristite keširane podatke.');
                 }
 
                 throw error;
@@ -4636,9 +4666,16 @@
             document.getElementById('loading-screen').classList.remove('hidden');
         }
         
-        // Load initial data based on user type
+        // Load initial data based on user type (OPTIMIZED - lazy loading)
         function loadData() {
             const userType = (currentUser.type || '').toLowerCase();
+
+            // Show loading screen with progress
+            const loadingText = document.querySelector('.loading-text');
+            if (loadingText) {
+                loadingText.textContent = 'Učitavam početni prikaz...';
+            }
+
             if (userType === 'primac') {
                 loadPrimacPersonal();
             } else if (userType === 'otpremac') {
@@ -7283,7 +7320,10 @@
             document.getElementById('primac-personal-content').classList.add('hidden');
 
             try {
-                const year = new Date().getFullYear();
+                // ✅ Čitaj godinu iz selectora umjesto hardkodovane trenutne godine
+                const yearSelector = document.getElementById('primac-personal-year-select');
+                const year = yearSelector ? yearSelector.value : new Date().getFullYear();
+
                 const url = `${API_URL}?path=primac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
                 const data = await fetchWithCache(url, 'cache_primac_detail_' + year);
 
@@ -7371,7 +7411,10 @@
             document.getElementById('otpremac-personal-content').classList.add('hidden');
 
             try {
-                const year = new Date().getFullYear();
+                // ✅ Čitaj godinu iz selectora umjesto hardkodovane trenutne godine
+                const yearSelector = document.getElementById('otpremac-personal-year-select');
+                const year = yearSelector ? yearSelector.value : new Date().getFullYear();
+
                 const url = `${API_URL}?path=otpremac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
                 const data = await fetchWithCache(url, 'cache_otpremac_detail_' + year);
 
@@ -7464,23 +7507,31 @@
         let otpremacOdjeliCurrentPage = 0;
         const otpremacOdjeliPageSize = 5;
 
-        // Load primac odjeli data
+        // Load primac odjeli data (ZADNJIH 15 ODJELA IZ SVIH GODINA)
+        // ✅ OPTIMIZOVANO: Jedan API poziv sa limit=15 (backend procesira sve godine)
         async function loadPrimacOdjeli() {
             document.getElementById('loading-screen').classList.remove('hidden');
             document.getElementById('primac-odjeli-content').classList.add('hidden');
 
             try {
-                const year = new Date().getFullYear();
-                const url = `${API_URL}?path=primac-odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_primac_odjeli_' + year);
-
-                console.log('Primac odjeli data:', data);
+                // Backend sada vraća top 15 odjela iz svih godina automatski
+                const url = `${API_URL}?path=primac-odjeli&limit=15&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, 'cache_primac_odjeli_top15');
 
                 if (data.error) {
                     throw new Error(data.error);
                 }
 
-                primacOdjeliData = data;
+                if (!data.odjeli || data.odjeli.length === 0) {
+                    throw new Error('Nema podataka o odjelima');
+                }
+
+                // Backend već šalje sortiran i limitiran rezultat sa godinom
+                primacOdjeliData = {
+                    odjeli: data.odjeli,
+                    sortimentiNazivi: data.sortimentiNazivi || []
+                };
+
                 primacOdjeliCurrentPage = 0;
                 renderPrimacOdjeliPage();
 
@@ -7504,9 +7555,10 @@
 
             pageOdjeli.forEach(odjel => {
                 // Kreiraj HTML za odjel sa dve tabele
+                const yearBadge = odjel.godina ? `<span style="background: #fbbf24; color: #78350f; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; margin-left: 10px;">${odjel.godina}</span>` : '';
                 html += `
                     <div style="margin-bottom: 40px; border: 2px solid #10b981; border-radius: 12px; padding: 20px; background: #f0fdf4;">
-                        <h3 style="color: #047857; margin-bottom: 16px;">📁 ${odjel.odjel}</h3>
+                        <h3 style="color: #047857; margin-bottom: 16px;">📁 ${odjel.odjel} ${yearBadge}</h3>
                         <p style="font-size: 13px; color: #6b7280; margin-bottom: 16px;">Zadnji unos: ${odjel.zadnjiDatum || 'N/A'}</p>
 
                         <!-- Apsolutne vrijednosti -->
@@ -7579,23 +7631,31 @@
             }
         }
 
-        // Load otpremac odjeli data
+        // Load otpremac odjeli data (ZADNJIH 15 ODJELA IZ SVIH GODINA)
+        // ✅ OPTIMIZOVANO: Jedan API poziv sa limit=15 (backend procesira sve godine)
         async function loadOtpremacOdjeli() {
             document.getElementById('loading-screen').classList.remove('hidden');
             document.getElementById('otpremac-odjeli-content').classList.add('hidden');
 
             try {
-                const year = new Date().getFullYear();
-                const url = `${API_URL}?path=otpremac-odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_otpremac_odjeli_' + year);
-
-                console.log('Otpremac odjeli data:', data);
+                // Backend sada vraća top 15 odjela iz svih godina automatski
+                const url = `${API_URL}?path=otpremac-odjeli&limit=15&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, 'cache_otpremac_odjeli_top15');
 
                 if (data.error) {
                     throw new Error(data.error);
                 }
 
-                otpremacOdjeliData = data;
+                if (!data.odjeli || data.odjeli.length === 0) {
+                    throw new Error('Nema podataka o odjelima');
+                }
+
+                // Backend već šalje sortiran i limitiran rezultat sa godinom
+                otpremacOdjeliData = {
+                    odjeli: data.odjeli,
+                    sortimentiNazivi: data.sortimentiNazivi || []
+                };
+
                 otpremacOdjeliCurrentPage = 0;
                 renderOtpremacOdjeliPage();
 
@@ -7619,9 +7679,10 @@
 
             pageOdjeli.forEach(odjel => {
                 // Kreiraj HTML za odjel sa dve tabele
+                const yearBadge = odjel.godina ? `<span style="background: #fbbf24; color: #78350f; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; margin-left: 10px;">${odjel.godina}</span>` : '';
                 html += `
                     <div style="margin-bottom: 40px; border: 2px solid #2563eb; border-radius: 12px; padding: 20px; background: #eff6ff;">
-                        <h3 style="color: #1e40af; margin-bottom: 16px;">📁 ${odjel.odjel}</h3>
+                        <h3 style="color: #1e40af; margin-bottom: 16px;">📁 ${odjel.odjel} ${yearBadge}</h3>
                         <p style="font-size: 13px; color: #6b7280; margin-bottom: 16px;">Zadnji unos: ${odjel.zadnjiDatum || 'N/A'}</p>
 
                         <!-- Apsolutne vrijednosti -->
@@ -8382,7 +8443,8 @@
             const odjeliMap = {};
 
             data.forEach(row => {
-                const odjel = row.odjel;
+                // ✅ Convert odjel to string to prevent "localeCompare/includes is not a function" errors
+                const odjel = String(row.odjel || '');
                 if (!odjeliMap[odjel]) {
                     odjeliMap[odjel] = {};
                     sortimentiNazivi.forEach(s => odjeliMap[odjel][s] = 0);
@@ -8403,7 +8465,7 @@
                 });
             }
 
-            // Sort by odjel name
+            // Sort by odjel name - safe now because odjel is always a string
             result.sort((a, b) => a.odjel.localeCompare(b.odjel));
 
             return result;
@@ -8689,7 +8751,8 @@
                 }
 
                 const week = weeksMap.get(weekKey);
-                const odjel = row.odjel;
+                // ✅ Convert odjel to string to prevent "localeCompare/includes is not a function" errors
+                const odjel = String(row.odjel || '');
 
                 if (!week.odjeliMap[odjel]) {
                     week.odjeliMap[odjel] = {};
@@ -10141,10 +10204,12 @@
                         let radilisteNaziv = '';
                         let zadnjiDatum = null;
 
-                        if (stanjeOdjelaData && stanjeOdjelaData.data) {
+                        if (stanjeOdjelaData && stanjeOdjelaData.data && odjel.odjel) {
+                            // ✅ Convert odjel.odjel to string to prevent "includes is not a function" error
+                            const odjelStr = String(odjel.odjel || '').toLowerCase();
                             const stanjeMatch = stanjeOdjelaData.data.find(s =>
-                                s.odjelNaziv.toLowerCase().includes(odjel.odjel.toLowerCase()) ||
-                                odjel.odjel.toLowerCase().includes(s.odjelNaziv.replace('.xlsx', '').toLowerCase())
+                                s.odjelNaziv.toLowerCase().includes(odjelStr) ||
+                                odjelStr.includes(s.odjelNaziv.replace('.xlsx', '').toLowerCase())
                             );
 
                             if (stanjeMatch && stanjeMatch.redovi && stanjeMatch.redovi.projekat) {
@@ -10154,7 +10219,8 @@
                                 zadnjiDatum = stanjeMatch.zadnjiDatum;
 
                                 // DEBUG: Log projekat sources za GRMEČ JASENICA 39
-                                if (odjel.odjel.includes('JASENICA 39') || odjel.odjel.includes('GRMEČ')) {
+                                const odjelDebugStr = String(odjel.odjel || '');
+                                if (odjel.odjel && (odjelDebugStr.includes('JASENICA 39') || odjelDebugStr.includes('GRMEČ'))) {
                                     console.log('=== DEBUG GRMEČ JASENICA 39 ===');
                                     console.log('Odjel name:', odjel.odjel);
                                     console.log('odjel.projekat (U11 from handleOdjeli):', odjel.projekat);
@@ -11222,9 +11288,36 @@
 
                 // Load primke data
                 const url = `${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, `cache_primac_sedmicni_${year}_${month}`);
+                const response = await fetchWithCache(url, `cache_primac_sedmicni_${year}_${month}`);
 
-                if (data.error) throw new Error(data.error);
+                // 🔍 DEBUG: Log response structure
+                console.log('=== PRIMAC SEDMICNI DEBUG ===');
+                console.log('Response type:', typeof response);
+                console.log('Response keys:', Object.keys(response || {}));
+                console.log('Response:', response);
+                console.log('response.primke type:', typeof response.primke);
+                console.log('Is response.primke array?', Array.isArray(response.primke));
+                console.log('response.primke length:', response.primke?.length);
+
+                if (response.error) throw new Error(response.error);
+
+                // ✅ Backend vraća { primke: [...] }, izvuci array
+                // Handle different response formats
+                let data;
+                if (Array.isArray(response)) {
+                    // Old backend format: returns array directly
+                    data = response;
+                    console.log('⚠️ Using old format: response is array');
+                } else if (response.primke && Array.isArray(response.primke)) {
+                    // New backend format: returns { primke: [...] }
+                    data = response.primke;
+                    console.log('✅ Using new format: response.primke is array');
+                } else {
+                    console.error('❌ Unknown response format!', response);
+                    data = [];
+                }
+
+                console.log('Final data array length:', data.length);
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {
@@ -11268,9 +11361,21 @@
 
                 // Load primke data
                 const url = `${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, `cache_primac_mjesecni_${year}_${month}`);
+                const response = await fetchWithCache(url, `cache_primac_mjesecni_${year}_${month}`);
 
-                if (data.error) throw new Error(data.error);
+                if (response.error) throw new Error(response.error);
+
+                // ✅ Backend vraća { primke: [...] }, izvuci array
+                // Handle different response formats
+                let data;
+                if (Array.isArray(response)) {
+                    data = response;
+                } else if (response.primke && Array.isArray(response.primke)) {
+                    data = response.primke;
+                } else {
+                    console.error('❌ Unknown response format in loadPrimacMjesecni!', response);
+                    data = [];
+                }
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {
@@ -11321,9 +11426,21 @@
 
                 // Load otpreme data
                 const url = `${API_URL}?path=otpreme&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, `cache_otpremac_sedmicni_${year}_${month}`);
+                const response = await fetchWithCache(url, `cache_otpremac_sedmicni_${year}_${month}`);
 
-                if (data.error) throw new Error(data.error);
+                if (response.error) throw new Error(response.error);
+
+                // ✅ Backend vraća { otpreme: [...] }, izvuci array
+                // Handle different response formats
+                let data;
+                if (Array.isArray(response)) {
+                    data = response;
+                } else if (response.otpreme && Array.isArray(response.otpreme)) {
+                    data = response.otpreme;
+                } else {
+                    console.error('❌ Unknown response format in loadOtpremacSedmicni!', response);
+                    data = [];
+                }
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {
@@ -11366,9 +11483,21 @@
 
                 // Load otpreme data
                 const url = `${API_URL}?path=otpreme&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, `cache_otpremac_mjesecni_${year}_${month}`);
+                const response = await fetchWithCache(url, `cache_otpremac_mjesecni_${year}_${month}`);
 
-                if (data.error) throw new Error(data.error);
+                if (response.error) throw new Error(response.error);
+
+                // ✅ Backend vraća { otpreme: [...] }, izvuci array
+                // Handle different response formats
+                let data;
+                if (Array.isArray(response)) {
+                    data = response;
+                } else if (response.otpreme && Array.isArray(response.otpreme)) {
+                    data = response.otpreme;
+                } else {
+                    console.error('❌ Unknown response format in loadOtpremacMjesecni!', response);
+                    data = [];
+                }
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {
@@ -11529,7 +11658,7 @@
             sortimentiNazivi.forEach((sortiment, index) => {
                 const value = sortimentiSums[sortiment] || 0;
                 total += value;
-
+https://github.com/pogonboskrupa/sumarija/pull/4/conflict?name=index.html&ancestor_oid=21460dfe480901d47a80028e6b54d805be44f0d1&base_oid=ce09ae9e42f7158c6c44b5e900d825474221de70&head_oid=becefa6e2813be2214ebac5ca6f0b18132396799
                 const rowStyle = index % 2 === 0 ? 'background: #f9fafb;' : '';
                 bodyHtml += `<tr style="${rowStyle}">`;
                 bodyHtml += `<td><strong>${sortiment}</strong></td>`;

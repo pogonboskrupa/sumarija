@@ -84,9 +84,9 @@ function doGet(e) {
     } else if (path === 'otpremac-detail') {
       return handleOtpremacDetail(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'primac-odjeli') {
-      return handlePrimacOdjeli(e.parameter.year, e.parameter.username, e.parameter.password);
+      return handlePrimacOdjeli(e.parameter.year, e.parameter.username, e.parameter.password, e.parameter.limit);
     } else if (path === 'otpremac-odjeli') {
-      return handleOtpremacOdjeli(e.parameter.year, e.parameter.username, e.parameter.password);
+      return handleOtpremacOdjeli(e.parameter.year, e.parameter.username, e.parameter.password, e.parameter.limit);
     } else if (path === 'add-sjeca') {
       return handleAddSjeca(e.parameter);
     } else if (path === 'add-otprema') {
@@ -1679,7 +1679,7 @@ function handleOtpremacDetail(year, username, password) {
  * Primac Odjeli endpoint - vraća podatke grupisane po odjelima za specificnog primača
  * Sortiran po zadnjem datumu (najsvježiji prvo)
  */
-function handlePrimacOdjeli(year, username, password) {
+function handlePrimacOdjeli(year, username, password, limit) {
   // Autentikacija
   const loginResult = JSON.parse(handleLogin(username, password).getContent());
   if (!loginResult.success) {
@@ -1688,9 +1688,12 @@ function handlePrimacOdjeli(year, username, password) {
 
   const userFullName = loginResult.fullName;
 
+  // ✅ OPTIMIZACIJA: Limit na broj odjela (default 15 - zadnjih 15 odjela)
+  const odjeliLimit = limit ? parseInt(limit) : 15;
+
   Logger.log('=== HANDLE PRIMAC ODJELI START ===');
   Logger.log('User: ' + userFullName);
-  Logger.log('Year: ' + year);
+  Logger.log('Limit: ' + odjeliLimit);
 
   const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
   const primkaSheet = ss.getSheetByName("INDEX_PRIMKA");
@@ -1700,6 +1703,8 @@ function handlePrimacOdjeli(year, username, password) {
   }
 
   const primkaData = primkaSheet.getDataRange().getValues();
+  Logger.log('Total primka rows: ' + (primkaData.length - 1));
+
   const sortimentiNazivi = [
     "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
     "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
@@ -1709,8 +1714,9 @@ function handlePrimacOdjeli(year, username, password) {
 
   // Map: odjelNaziv -> { sortimenti: {}, ukupno: 0, zadnjiDatum: Date }
   const odjeliMap = {};
+  let matchedRows = 0;
 
-  // Procesiranje PRIMKA podataka - filtrirati samo za ovog primača
+  // ✅ OPTIMIZACIJA: Procesiranje svih godina (ne filtriramo po godini)
   for (let i = 1; i < primkaData.length; i++) {
     const row = primkaData[i];
     const odjel = row[0];     // A - ODJEL
@@ -1721,10 +1727,19 @@ function handlePrimacOdjeli(year, username, password) {
     if (!datum || !primac || !odjel) continue;
 
     const datumObj = parseDate(datum);
-    if (datumObj.getFullYear() !== parseInt(year)) continue;
 
-    // Filtriraj samo unose za ovog primača
-    if (String(primac).trim() !== userFullName) continue;
+    // 🔍 DEBUG: Log prvi par redova da vidimo format podataka
+    if (i <= 3) {
+      Logger.log(`Row ${i}: primac="${primac}" vs userFullName="${userFullName}"`);
+    }
+
+    // ✅ CASE-INSENSITIVE matching za primača
+    const primacNormalized = String(primac).trim().toLowerCase();
+    const userNormalized = String(userFullName).trim().toLowerCase();
+
+    if (primacNormalized !== userNormalized) continue;
+
+    matchedRows++;
 
     // Inicijalizuj odjel ako ne postoji
     if (!odjeliMap[odjel]) {
@@ -1762,7 +1777,8 @@ function handlePrimacOdjeli(year, username, password) {
       sortimenti: odjel.sortimenti,
       ukupno: odjel.ukupno,
       zadnjiDatum: odjel.zadnjiDatum,
-      zadnjiDatumStr: odjel.zadnjiDatum ? formatDate(odjel.zadnjiDatum) : ''
+      zadnjiDatumStr: odjel.zadnjiDatum ? formatDate(odjel.zadnjiDatum) : '',
+      godina: odjel.zadnjiDatum ? odjel.zadnjiDatum.getFullYear() : null
     });
   }
 
@@ -1774,16 +1790,22 @@ function handlePrimacOdjeli(year, username, password) {
     return b.zadnjiDatum - a.zadnjiDatum;
   });
 
+  // ✅ OPTIMIZACIJA: Vrati samo top N odjela (umjesto svih)
+  const topOdjeli = odjeliArray.slice(0, odjeliLimit);
+
   // Ukloni zadnjiDatum objekt (ostavi samo string)
-  const odjeliResult = odjeliArray.map(o => ({
+  const odjeliResult = topOdjeli.map(o => ({
     odjel: o.odjel,
     sortimenti: o.sortimenti,
     ukupno: o.ukupno,
-    zadnjiDatum: o.zadnjiDatumStr
+    zadnjiDatum: o.zadnjiDatumStr,
+    godina: o.godina
   }));
 
   Logger.log('=== HANDLE PRIMAC ODJELI END ===');
-  Logger.log(`Ukupno odjela: ${odjeliResult.length}`);
+  Logger.log(`Matched rows: ${matchedRows}`);
+  Logger.log(`Total unique odjeli: ${odjeliArray.length}`);
+  Logger.log(`Vraćeno odjela: ${odjeliResult.length} od ${odjeliArray.length}`);
 
   return createJsonResponse({
     sortimentiNazivi: sortimentiNazivi,
@@ -1799,7 +1821,7 @@ function handlePrimacOdjeli(year, username, password) {
  * Otpremac Odjeli endpoint - vraća podatke grupisane po odjelima za specificnog otpremača
  * Sortiran po zadnjem datumu (najsvježiji prvo)
  */
-function handleOtpremacOdjeli(year, username, password) {
+function handleOtpremacOdjeli(year, username, password, limit) {
   // Autentikacija
   const loginResult = JSON.parse(handleLogin(username, password).getContent());
   if (!loginResult.success) {
@@ -1808,9 +1830,12 @@ function handleOtpremacOdjeli(year, username, password) {
 
   const userFullName = loginResult.fullName;
 
+  // ✅ OPTIMIZACIJA: Limit na broj odjela (default 15 - zadnjih 15 odjela)
+  const odjeliLimit = limit ? parseInt(limit) : 15;
+
   Logger.log('=== HANDLE OTPREMAC ODJELI START ===');
   Logger.log('User: ' + userFullName);
-  Logger.log('Year: ' + year);
+  Logger.log('Limit: ' + odjeliLimit);
 
   const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
   const otpremaSheet = ss.getSheetByName("INDEX_OTPREMA");
@@ -1820,6 +1845,8 @@ function handleOtpremacOdjeli(year, username, password) {
   }
 
   const otpremaData = otpremaSheet.getDataRange().getValues();
+  Logger.log('Total otprema rows: ' + (otpremaData.length - 1));
+
   const sortimentiNazivi = [
     "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
     "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
@@ -1829,8 +1856,9 @@ function handleOtpremacOdjeli(year, username, password) {
 
   // Map: odjelNaziv -> { sortimenti: {}, ukupno: 0, zadnjiDatum: Date }
   const odjeliMap = {};
+  let matchedRows = 0;
 
-  // Procesiranje OTPREMA podataka - filtrirati samo za ovog otpremača
+  // ✅ OPTIMIZACIJA: Procesiranje svih godina (ne filtriramo po godini)
   for (let i = 1; i < otpremaData.length; i++) {
     const row = otpremaData[i];
     const odjel = row[0];       // A - ODJEL
@@ -1841,10 +1869,19 @@ function handleOtpremacOdjeli(year, username, password) {
     if (!datum || !otpremac || !odjel) continue;
 
     const datumObj = parseDate(datum);
-    if (datumObj.getFullYear() !== parseInt(year)) continue;
 
-    // Filtriraj samo unose za ovog otpremača
-    if (String(otpremac).trim() !== userFullName) continue;
+    // 🔍 DEBUG: Log prvi par redova da vidimo format podataka
+    if (i <= 3) {
+      Logger.log(`Row ${i}: otpremac="${otpremac}" vs userFullName="${userFullName}"`);
+    }
+
+    // ✅ CASE-INSENSITIVE matching za otpremača
+    const otpremacNormalized = String(otpremac).trim().toLowerCase();
+    const userNormalized = String(userFullName).trim().toLowerCase();
+
+    if (otpremacNormalized !== userNormalized) continue;
+
+    matchedRows++;
 
     // Inicijalizuj odjel ako ne postoji
     if (!odjeliMap[odjel]) {
@@ -1882,7 +1919,8 @@ function handleOtpremacOdjeli(year, username, password) {
       sortimenti: odjel.sortimenti,
       ukupno: odjel.ukupno,
       zadnjiDatum: odjel.zadnjiDatum,
-      zadnjiDatumStr: odjel.zadnjiDatum ? formatDate(odjel.zadnjiDatum) : ''
+      zadnjiDatumStr: odjel.zadnjiDatum ? formatDate(odjel.zadnjiDatum) : '',
+      godina: odjel.zadnjiDatum ? odjel.zadnjiDatum.getFullYear() : null
     });
   }
 
@@ -1894,16 +1932,22 @@ function handleOtpremacOdjeli(year, username, password) {
     return b.zadnjiDatum - a.zadnjiDatum;
   });
 
+  // ✅ OPTIMIZACIJA: Vrati samo top N odjela (umjesto svih)
+  const topOdjeli = odjeliArray.slice(0, odjeliLimit);
+
   // Ukloni zadnjiDatum objekt (ostavi samo string)
-  const odjeliResult = odjeliArray.map(o => ({
+  const odjeliResult = topOdjeli.map(o => ({
     odjel: o.odjel,
     sortimenti: o.sortimenti,
     ukupno: o.ukupno,
-    zadnjiDatum: o.zadnjiDatumStr
+    zadnjiDatum: o.zadnjiDatumStr,
+    godina: o.godina
   }));
 
   Logger.log('=== HANDLE OTPREMAC ODJELI END ===');
-  Logger.log(`Ukupno odjela: ${odjeliResult.length}`);
+  Logger.log(`Matched rows: ${matchedRows}`);
+  Logger.log(`Total unique odjeli: ${odjeliArray.length}`);
+  Logger.log(`Vraćeno odjela: ${odjeliResult.length} od ${odjeliArray.length}`);
 
   return createJsonResponse({
     sortimentiNazivi: sortimentiNazivi,
@@ -3584,7 +3628,9 @@ function handlePrimke(username, password) {
         const datumStr = formatDate(datumObj);
 
         // Parse radilište iz odjel naziva (npr. "BJELAJSKE UVALE - ODJEL 1" -> "BJELAJSKE UVALE")
-        const radiliste = odjel.includes(' - ') ? odjel.split(' - ')[0].trim() : '';
+        // ✅ Konvertuj odjel u string prije poziva .includes()
+        const odjelStr = String(odjel || '');
+        const radiliste = odjelStr.includes(' - ') ? odjelStr.split(' - ')[0].trim() : '';
 
         // Sortimenti su u kolonama D-U (indeksi 3-20)
         // Za pojedinačnu primku trebamo svaki sortiment kao poseban zapis
@@ -3601,7 +3647,7 @@ function handlePrimke(username, password) {
           if (kolicina > 0) {
             primke.push({
               datum: datumStr,
-              odjel: odjel,
+              odjel: odjelStr,  // ✅ Koristi string verziju
               radiliste: radiliste,
               sortiment: sortimentiNazivi[j],
               kolicina: kolicina,
@@ -3662,7 +3708,9 @@ function handleOtpreme(username, password) {
         const datumStr = formatDate(datumObj);
 
         // Parse radilište iz odjel naziva
-        const radiliste = odjel.includes(' - ') ? odjel.split(' - ')[0].trim() : '';
+        // ✅ Konvertuj odjel u string prije poziva .includes()
+        const odjelStr = String(odjel || '');
+        const radiliste = odjelStr.includes(' - ') ? odjelStr.split(' - ')[0].trim() : '';
 
         // Sortimenti su u kolonama D-U (indeksi 3-20)
         const sortimentiNazivi = [
@@ -3678,7 +3726,7 @@ function handleOtpreme(username, password) {
           if (kolicina > 0) {
             otpreme.push({
               datum: datumStr,
-              odjel: odjel,
+              odjel: odjelStr,  // ✅ Koristi string verziju
               radiliste: radiliste,
               sortiment: sortimentiNazivi[j],
               kolicina: kolicina,
