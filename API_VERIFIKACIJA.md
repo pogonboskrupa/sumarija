@@ -262,4 +262,7 @@ Nakon što korisnik deploy-a Apps Script:
 ---
 
 **Verifikaciju izvršio:** Claude (AI Assistant)
+
+
 **Datum:** 25.12.2025
+
