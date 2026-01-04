@@ -4190,7 +4190,7 @@
         };
 
         // Fetch with cache - cache-first strategy
-        async function fetchWithCache(url, cacheKey, forceRefresh = false) {
+        async function fetchWithCache(url, cacheKey, forceRefresh = false, timeout = 8000) {
             // Use smart cache TTL optimized for data entry patterns
             const path = new URL(url).searchParams.get('path');
             const cacheTTL = getSmartCacheTTL();
@@ -4247,7 +4247,7 @@
             } catch (error) {
                 // Handle timeout specifically
                 if (error.name === 'AbortError') {
-                    console.error('Request timeout (8s) - server too slow:', path);
+                    console.error(`Request timeout (${timeout/1000}s) - server too slow:`, path);
                 } else {
                     console.error('Network error:', error);
                 }
