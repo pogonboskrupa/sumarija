@@ -3947,9 +3947,9 @@
     </div>
 
     <script>
-        // VERSION INFO - FORCED DEPLOYMENT TEST
-        const APP_VERSION = '2026-01-03-v3-FINAL-FIX';
-        const BUILD_COMMIT = '53e3db8';
+        // VERSION INFO - TIMEOUT FIX FOR ADMIN PANEL
+        const APP_VERSION = '2026-01-04-v4-TIMEOUT-FIX';
+        const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
         console.clear();
@@ -4226,9 +4226,9 @@
             try {
                 console.log(`↻ Fetching fresh data (${path})...`);
 
-                // Fetch with 8 second timeout
+                // Fetch with configurable timeout (default 8s, but can be higher for heavy endpoints)
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 8000);
+                const timeoutId = setTimeout(() => controller.abort(), timeout);
 
                 const response = await fetch(url, { signal: controller.signal });
                 clearTimeout(timeoutId);
@@ -4372,7 +4372,9 @@
                     for (const view of views) {
                         try {
                             console.log(`Loading ${view.name}...`);
-                            await fetchWithCache(view.url, view.cacheKey);
+                            // Use 30s timeout for heavy endpoints (dashboard, odjeli), 8s for others
+                            const timeout = (view.name === 'Dashboard' || view.name === 'Odjeli') ? 30000 : 8000;
+                            await fetchWithCache(view.url, view.cacheKey, false, timeout);
                             totalLoaded++;
                             console.log(`✓ ${view.name} loaded`);
                         } catch (error) {
@@ -4904,9 +4906,9 @@
             try {
                 const year = new Date().getFullYear();
 
-                // Fetch dashboard data with caching
+                // Fetch dashboard data with caching (30s timeout for heavy endpoint)
                 const url = `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_dashboard_' + year);
+                const data = await fetchWithCache(url, 'cache_dashboard_' + year, false, 30000);
 
                 console.log('Dashboard data:', data);
 
@@ -10148,13 +10150,13 @@
         // Load and transform data for OPERATIVA screen
         async function loadStatsForOperativa(year) {
             try {
-                // Fetch dashboard data
+                // Fetch dashboard data (30s timeout for heavy endpoint)
                 const dashboardUrl = `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const dashboardData = await fetchWithCache(dashboardUrl, 'cache_dashboard_' + year);
+                const dashboardData = await fetchWithCache(dashboardUrl, 'cache_dashboard_' + year, false, 30000);
 
-                // Fetch odjeli data
+                // Fetch odjeli data (30s timeout for heavy endpoint)
                 const odjeliUrl = `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const odjeliResponse = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year);
+                const odjeliResponse = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year, false, 30000);
 
                 // **NOVO: Fetch STANJE ODJELA data (sa PROJEKAT podacima iz Excel redova 10-13)**
                 const stanjeOdjelaUrl = `${API_URL}?path=stanje-odjela&username=${currentUser.username}&password=${currentPassword}`;
@@ -11028,13 +11030,13 @@
             try {
                 showInfo('🔄 Učitavanje...', 'Učitavam podatke za usporedbu...');
 
-                // Fetch dashboard data za obje godine (paralelno)
+                // Fetch dashboard data za obje godine (paralelno, 30s timeout for heavy endpoints)
                 const url1 = `${API_URL}?path=dashboard&year=${year1}&username=${currentUser.username}&password=${currentPassword}`;
                 const url2 = `${API_URL}?path=dashboard&year=${year2}&username=${currentUser.username}&password=${currentPassword}`;
 
                 const [data1, data2] = await Promise.all([
-                    fetchWithCache(url1, 'cache_dashboard_' + year1),
-                    fetchWithCache(url2, 'cache_dashboard_' + year2)
+                    fetchWithCache(url1, 'cache_dashboard_' + year1, false, 30000),
+                    fetchWithCache(url2, 'cache_dashboard_' + year2, false, 30000)
                 ]);
 
                 console.log('Data Year 1:', data1);
