@@ -177,6 +177,12 @@ Za pitanja i podršku:
 2. Provjeri Issues na GitHub-u
 3. Kontaktiraj podršku
 
+
+
+
+
+
+force deployment
 ---
 
 **Napomena**: Demo verzija koristi generated mock podatke. Za produkciju, koristi pravi Google Apps Script backend.
