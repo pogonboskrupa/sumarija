@@ -3947,8 +3947,8 @@
     </div>
 
     <script>
-        // VERSION INFO - TIMEOUT FIX FOR ADMIN PANEL
-        const APP_VERSION = '2026-01-04-v4-TIMEOUT-FIX';
+        // VERSION INFO - TIMEOUT + SORTIMENTI ORDER FIX
+        const APP_VERSION = '2026-01-04-v5-FULL-FIX';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -3962,6 +3962,15 @@
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
 
         const API_URL = 'https://script.google.com/macros/s/AKfycbwOyqKvRtbQWQFABXe1Q8fWf2XP9K-msArcOU8BwoyN28fSGfLnPGskR1G8qBIZrMsy/exec';
+
+        // ========== SORTIMENTI ORDER - BUSINESS LOGIC ==========
+        // Fixed order for sortimenti as per business requirements
+        const SORTIMENTI_ORDER = [
+            "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+            "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+            "F/L L", "I L", "II L", "III L", "TRUPCI",
+            "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+        ];
 
         // ========== PERFORMANCE CONFIGURATION ==========
         const MAX_TABLE_ROWS = 50; // Limit initial table rows for performance
@@ -11331,12 +11340,13 @@
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
 
-                // Get sortimenti list from data
-                const sortimentiSet = new Set();
+                // Get sortimenti list from data - use FIXED business order
+                const sortimentiInData = new Set();
                 filteredData.forEach(row => {
-                    if (row.sortiment) sortimentiSet.add(row.sortiment);
+                    if (row.sortiment) sortimentiInData.add(row.sortiment);
                 });
-                const sortimentiNazivi = Array.from(sortimentiSet).sort();
+                // Filter SORTIMENTI_ORDER to only include items that exist in data
+                const sortimentiNazivi = SORTIMENTI_ORDER.filter(s => sortimentiInData.has(s));
 
                 // Group by weeks
                 const weeklyData = groupPrimacOtpremacDataByWeeks(filteredData, year, month, sortimentiNazivi);
@@ -11388,12 +11398,13 @@
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
 
-                // Get sortimenti list from data
-                const sortimentiSet = new Set();
+                // Get sortimenti list from data - use FIXED business order
+                const sortimentiInData = new Set();
                 filteredData.forEach(row => {
-                    if (row.sortiment) sortimentiSet.add(row.sortiment);
+                    if (row.sortiment) sortimentiInData.add(row.sortiment);
                 });
-                const sortimentiNazivi = Array.from(sortimentiSet).sort();
+                // Filter SORTIMENTI_ORDER to only include items that exist in data
+                const sortimentiNazivi = SORTIMENTI_ORDER.filter(s => sortimentiInData.has(s));
 
                 // Sum by sortiment
                 const sortimentiSums = {};
@@ -11453,12 +11464,13 @@
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
 
-                // Get sortimenti list from data
-                const sortimentiSet = new Set();
+                // Get sortimenti list from data - use FIXED business order
+                const sortimentiInData = new Set();
                 filteredData.forEach(row => {
-                    if (row.sortiment) sortimentiSet.add(row.sortiment);
+                    if (row.sortiment) sortimentiInData.add(row.sortiment);
                 });
-                const sortimentiNazivi = Array.from(sortimentiSet).sort();
+                // Filter SORTIMENTI_ORDER to only include items that exist in data
+                const sortimentiNazivi = SORTIMENTI_ORDER.filter(s => sortimentiInData.has(s));
 
                 // Group by weeks
                 const weeklyData = groupPrimacOtpremacDataByWeeks(filteredData, year, month, sortimentiNazivi);
@@ -11510,12 +11522,13 @@
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
 
-                // Get sortimenti list from data
-                const sortimentiSet = new Set();
+                // Get sortimenti list from data - use FIXED business order
+                const sortimentiInData = new Set();
                 filteredData.forEach(row => {
-                    if (row.sortiment) sortimentiSet.add(row.sortiment);
+                    if (row.sortiment) sortimentiInData.add(row.sortiment);
                 });
-                const sortimentiNazivi = Array.from(sortimentiSet).sort();
+                // Filter SORTIMENTI_ORDER to only include items that exist in data
+                const sortimentiNazivi = SORTIMENTI_ORDER.filter(s => sortimentiInData.has(s));
 
                 // Sum by sortiment
                 const sortimentiSums = {};
