@@ -63,6 +63,14 @@ function doGet(e) {
     const path = e.parameter.path;
     Logger.log('Extracted path: ' + path);
 
+    // Ako nema path parametra, servirati HTML stranicu
+    if (!path) {
+      Logger.log('No path parameter - serving HTML');
+      return HtmlService.createHtmlOutputFromFile('index')
+        .setTitle('Šumarija - Aplikacija za praćenje drvne mase')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    }
+
     if (path === 'login') {
       return handleLogin(e.parameter.username, e.parameter.password);
     } else if (path === 'stats') {
@@ -3605,12 +3613,12 @@ function handlePrimke(username, password) {
     Logger.log('=== HANDLE PRIMKE START ===');
 
     const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const pendingSheet = ss.getSheetByName("PENDING_PRIMKA");
+    const indexSheet = ss.getSheetByName("INDEX_PRIMKA");  // ✅ Čita iz INDEX_PRIMKA umjesto PENDING_PRIMKA
 
     const primke = [];
 
-    if (pendingSheet) {
-      const data = pendingSheet.getDataRange().getValues();
+    if (indexSheet) {
+      const data = indexSheet.getDataRange().getValues();
 
       // Skip header row (row 0)
       for (let i = 1; i < data.length; i++) {
@@ -3684,12 +3692,12 @@ function handleOtpreme(username, password) {
     Logger.log('=== HANDLE OTPREME START ===');
 
     const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const pendingSheet = ss.getSheetByName("PENDING_OTPREMA");
+    const indexSheet = ss.getSheetByName("INDEX_OTPREMA");  // ✅ Čita iz INDEX_OTPREMA umjesto PENDING_OTPREMA
 
     const otpreme = [];
 
-    if (pendingSheet) {
-      const data = pendingSheet.getDataRange().getValues();
+    if (indexSheet) {
+      const data = indexSheet.getDataRange().getValues();
 
       // Skip header row (row 0)
       for (let i = 1; i < data.length; i++) {
