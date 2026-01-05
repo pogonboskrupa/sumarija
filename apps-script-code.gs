@@ -63,6 +63,14 @@ function doGet(e) {
     const path = e.parameter.path;
     Logger.log('Extracted path: ' + path);
 
+    // Ako nema path parametra, servirati HTML stranicu
+    if (!path) {
+      Logger.log('No path parameter - serving HTML');
+      return HtmlService.createHtmlOutputFromFile('index')
+        .setTitle('Šumarija - Aplikacija za praćenje drvne mase')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    }
+
     if (path === 'login') {
       return handleLogin(e.parameter.username, e.parameter.password);
     } else if (path === 'stats') {
