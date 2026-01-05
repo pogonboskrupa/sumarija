@@ -2379,7 +2379,6 @@
                     </div>
                     <div>
                         <select id="primac-personal-year-select" class="year-select" onchange="loadPrimacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
-                            <option value="2025">2025</option>
                             <option value="2026" selected>2026</option>
                         </select>
                     </div>
@@ -2427,7 +2426,6 @@
                     </div>
                     <div>
                         <select id="primac-godisnji-year-select" class="year-select" onchange="loadPrimacGodisnji()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
-                            <option value="2025">2025</option>
                             <option value="2026" selected>2026</option></select>
                     </div>
                 </div>
@@ -2462,7 +2460,6 @@
                     </div>
                     <div>
                         <select id="otpremac-personal-year-select" class="year-select" onchange="loadOtpremacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #2563eb; min-width: 120px;">
-                            <option value="2025">2025</option>
                             <option value="2026" selected>2026</option>
                         </select>
                     </div>
@@ -3427,7 +3424,6 @@
                         <select id="uporedba-year1" class="year-select" onchange="loadUporedbaGodina()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
                             
                             
-                            <option value="2025">2025</option>
                             <option value="2026" selected>2026</option></select>
                     </div>
                     <span style="font-size: 24px; font-weight: bold;">VS</span>
@@ -3436,7 +3432,6 @@
                         <select id="uporedba-year2" class="year-select" onchange="loadUporedbaGodina()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #2563eb; min-width: 120px;">
                             
                             
-                            <option value="2025">2025</option>
                             <option value="2026" selected>2026</option></select>
                     </div>
                 </div>
@@ -3565,7 +3560,6 @@
                     </div>
                     <div class="page-header-right">
                         <select id="primac-sedmicni-year" class="year-select" onchange="loadPrimacSedmicni()">
-                            <option value="2025">2025</option>
                             <option value="2026" selected>2026</option></select>
                         <select id="primac-sedmicni-month" class="month-select" onchange="loadPrimacSedmicni()">
                             <option value="0">Januar</option>
@@ -3604,7 +3598,6 @@
                     </div>
                     <div class="page-header-right">
                         <select id="primac-mjesecni-year" class="year-select" onchange="loadPrimacMjesecni()">
-                            <option value="2025">2025</option>
                             <option value="2026" selected>2026</option></select>
                         <select id="primac-mjesecni-month" class="month-select" onchange="loadPrimacMjesecni()">
                             <option value="0">Januar</option>
@@ -3659,7 +3652,6 @@
                     </div>
                     <div class="page-header-right">
                         <select id="otpremac-sedmicni-year" class="year-select" onchange="loadOtpremacSedmicni()">
-                            <option value="2025">2025</option>
                             <option value="2026" selected>2026</option></select>
                         <select id="otpremac-sedmicni-month" class="month-select" onchange="loadOtpremacSedmicni()">
                             <option value="0">Januar</option>
@@ -3698,7 +3690,6 @@
                     </div>
                     <div class="page-header-right">
                         <select id="otpremac-mjesecni-year" class="year-select" onchange="loadOtpremacMjesecni()">
-                            <option value="2025">2025</option>
                             <option value="2026" selected>2026</option></select>
                         <select id="otpremac-mjesecni-month" class="month-select" onchange="loadOtpremacMjesecni()">
                             <option value="0">Januar</option>
@@ -3754,7 +3745,6 @@
                     </div>
                     <div class="page-header-right">
                         <select id="izvjestaji-year-select" class="year-select" onchange="loadIzvjestaji()">
-                            <option value="2025">2025</option>
                             <option value="2026" selected>2026</option></select>
                         <select id="izvjestaji-month-select" class="month-select" onchange="loadIzvjestaji()">
                             <option value="0">Januar</option>
@@ -3815,7 +3805,6 @@
                     </div>
                     <div class="page-header-right">
                         <select id="sedmicni-sjeca-year-select" class="year-select" onchange="loadSedmicniIzvjestajSjeca()">
-                            <option value="2025">2025</option>
                             <option value="2026" selected>2026</option></select>
                         <select id="sedmicni-sjeca-month-select" class="month-select" onchange="loadSedmicniIzvjestajSjeca()">
                             <option value="0">Januar</option>
@@ -3846,7 +3835,6 @@
                     </div>
                     <div class="page-header-right">
                         <select id="sedmicni-otprema-year-select" class="year-select" onchange="loadSedmicniIzvjestajOtprema()">
-                            <option value="2025">2025</option>
                             <option value="2026" selected>2026</option></select>
                         <select id="sedmicni-otprema-month-select" class="month-select" onchange="loadSedmicniIzvjestajOtprema()">
                             <option value="0">Januar</option>
@@ -3947,9 +3935,9 @@
     </div>
 
     <script>
-        // VERSION INFO - FORCED DEPLOYMENT TEST
-        const APP_VERSION = '2026-01-03-v3-FINAL-FIX';
-        const BUILD_COMMIT = '53e3db8';
+        // VERSION INFO - Izvještaji samo za 2026 godinu
+        const APP_VERSION = '2026-01-05-v9-YEAR-2026-ONLY';
+        const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
         console.clear();
@@ -3958,10 +3946,20 @@
         console.log(`%cBuild: ${BUILD_COMMIT}`, 'color: #6b7280; font-size: 12px;');
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
         console.log('%c✅ NAJNOVIJA VERZIJA SA POPRAVKAMA UČITANA!', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
+        console.log('%c🔥 AKO VIDIŠ OVO = TIMEOUT FIX JE AKTIVAN!', 'background: #ef4444; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
         console.log('%cAko vidiš ovu poruku, data.filter greška je popravljena!', 'color: #059669; font-weight: bold;');
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
 
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwOyqKvRtbQWQFABXe1Q8fWf2XP9K-msArcOU8BwoyN28fSGfLnPGskR1G8qBIZrMsy/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwkJ4apCi1yf9WNMVboGUtLVK6ZRWzLAAN-CkyfGbUqCyGm4qMjH3-zVifJUUCgUW2t/exec';
+
+        // ========== SORTIMENTI ORDER - BUSINESS LOGIC ==========
+        // Fixed order for sortimenti as per business requirements
+        const SORTIMENTI_ORDER = [
+            "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
+            "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
+            "F/L L", "I L", "II L", "III L", "TRUPCI",
+            "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+        ];
 
         // ========== PERFORMANCE CONFIGURATION ==========
         const MAX_TABLE_ROWS = 50; // Limit initial table rows for performance
@@ -4190,7 +4188,13 @@
         };
 
         // Fetch with cache - cache-first strategy
-        async function fetchWithCache(url, cacheKey, forceRefresh = false) {
+        async function fetchWithCache(url, cacheKey, forceRefresh = false, timeout = 8000) {
+            // DEBUG: Confirm timeout parameter exists
+            if (typeof timeout === 'undefined') {
+                console.error('🔴 CRITICAL: timeout is undefined in fetchWithCache!');
+                timeout = 8000; // Fallback
+            }
+
             // Use smart cache TTL optimized for data entry patterns
             const path = new URL(url).searchParams.get('path');
             const cacheTTL = getSmartCacheTTL();
@@ -4226,9 +4230,9 @@
             try {
                 console.log(`↻ Fetching fresh data (${path})...`);
 
-                // Fetch with 8 second timeout
+                // Fetch with configurable timeout (default 8s, but can be higher for heavy endpoints)
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 8000);
+                const timeoutId = setTimeout(() => controller.abort(), timeout);
 
                 const response = await fetch(url, { signal: controller.signal });
                 clearTimeout(timeoutId);
@@ -4247,7 +4251,7 @@
             } catch (error) {
                 // Handle timeout specifically
                 if (error.name === 'AbortError') {
-                    console.error('Request timeout (8s) - server too slow:', path);
+                    console.error(`Request timeout (${timeout/1000}s) - server too slow:`, path);
                 } else {
                     console.error('Network error:', error);
                 }
@@ -4372,7 +4376,9 @@
                     for (const view of views) {
                         try {
                             console.log(`Loading ${view.name}...`);
-                            await fetchWithCache(view.url, view.cacheKey);
+                            // Use 30s timeout for heavy endpoints (dashboard, odjeli), 8s for others
+                            const timeout = (view.name === 'Dashboard' || view.name === 'Odjeli') ? 30000 : 8000;
+                            await fetchWithCache(view.url, view.cacheKey, false, timeout);
                             totalLoaded++;
                             console.log(`✓ ${view.name} loaded`);
                         } catch (error) {
@@ -4904,9 +4910,9 @@
             try {
                 const year = new Date().getFullYear();
 
-                // Fetch dashboard data with caching
+                // Fetch dashboard data with caching (30s timeout for heavy endpoint)
                 const url = `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_dashboard_' + year);
+                const data = await fetchWithCache(url, 'cache_dashboard_' + year, false, 30000);
 
                 console.log('Dashboard data:', data);
 
@@ -10148,13 +10154,13 @@
         // Load and transform data for OPERATIVA screen
         async function loadStatsForOperativa(year) {
             try {
-                // Fetch dashboard data
+                // Fetch dashboard data (30s timeout for heavy endpoint)
                 const dashboardUrl = `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const dashboardData = await fetchWithCache(dashboardUrl, 'cache_dashboard_' + year);
+                const dashboardData = await fetchWithCache(dashboardUrl, 'cache_dashboard_' + year, false, 30000);
 
-                // Fetch odjeli data
+                // Fetch odjeli data (30s timeout for heavy endpoint)
                 const odjeliUrl = `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const odjeliResponse = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year);
+                const odjeliResponse = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year, false, 30000);
 
                 // **NOVO: Fetch STANJE ODJELA data (sa PROJEKAT podacima iz Excel redova 10-13)**
                 const stanjeOdjelaUrl = `${API_URL}?path=stanje-odjela&username=${currentUser.username}&password=${currentPassword}`;
@@ -11028,13 +11034,13 @@
             try {
                 showInfo('🔄 Učitavanje...', 'Učitavam podatke za usporedbu...');
 
-                // Fetch dashboard data za obje godine (paralelno)
+                // Fetch dashboard data za obje godine (paralelno, 30s timeout for heavy endpoints)
                 const url1 = `${API_URL}?path=dashboard&year=${year1}&username=${currentUser.username}&password=${currentPassword}`;
                 const url2 = `${API_URL}?path=dashboard&year=${year2}&username=${currentUser.username}&password=${currentPassword}`;
 
                 const [data1, data2] = await Promise.all([
-                    fetchWithCache(url1, 'cache_dashboard_' + year1),
-                    fetchWithCache(url2, 'cache_dashboard_' + year2)
+                    fetchWithCache(url1, 'cache_dashboard_' + year1, false, 30000),
+                    fetchWithCache(url2, 'cache_dashboard_' + year2, false, 30000)
                 ]);
 
                 console.log('Data Year 1:', data1);
@@ -11329,12 +11335,22 @@
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
 
-                // Get sortimenti list from data
-                const sortimentiSet = new Set();
-                filteredData.forEach(row => {
-                    if (row.sortiment) sortimentiSet.add(row.sortiment);
-                });
-                const sortimentiNazivi = Array.from(sortimentiSet).sort();
+                console.log('🔍 FILTERING DEBUG:');
+                console.log(`Selected Year: ${year}, Month: ${month} (0-indexed: ${month})`);
+                console.log(`Total primke from backend: ${data.length}`);
+                console.log(`After filtering by year/month: ${filteredData.length}`);
+
+                // Sample first 5 filtered records
+                if (filteredData.length > 0) {
+                    console.log('Sample filtered data (first 5):');
+                    filteredData.slice(0, 5).forEach((row, i) => {
+                        console.log(`  ${i+1}. Datum: ${row.datum}, Sortiment: ${row.sortiment}, Kolicina: ${row.kolicina}, Odjel: ${row.odjel}`);
+                    });
+                }
+
+                // Get sortimenti list - use ALL sortimenti from SORTIMENTI_ORDER
+                // (not just those that exist in data - show all columns even if zero)
+                const sortimentiNazivi = [...SORTIMENTI_ORDER];
 
                 // Group by weeks
                 const weeklyData = groupPrimacOtpremacDataByWeeks(filteredData, year, month, sortimentiNazivi);
@@ -11386,12 +11402,9 @@
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
 
-                // Get sortimenti list from data
-                const sortimentiSet = new Set();
-                filteredData.forEach(row => {
-                    if (row.sortiment) sortimentiSet.add(row.sortiment);
-                });
-                const sortimentiNazivi = Array.from(sortimentiSet).sort();
+                // Get sortimenti list - use ALL sortimenti from SORTIMENTI_ORDER
+                // (not just those that exist in data - show all columns even if zero)
+                const sortimentiNazivi = [...SORTIMENTI_ORDER];
 
                 // Sum by sortiment
                 const sortimentiSums = {};
@@ -11451,12 +11464,9 @@
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
 
-                // Get sortimenti list from data
-                const sortimentiSet = new Set();
-                filteredData.forEach(row => {
-                    if (row.sortiment) sortimentiSet.add(row.sortiment);
-                });
-                const sortimentiNazivi = Array.from(sortimentiSet).sort();
+                // Get sortimenti list - use ALL sortimenti from SORTIMENTI_ORDER
+                // (not just those that exist in data - show all columns even if zero)
+                const sortimentiNazivi = [...SORTIMENTI_ORDER];
 
                 // Group by weeks
                 const weeklyData = groupPrimacOtpremacDataByWeeks(filteredData, year, month, sortimentiNazivi);
@@ -11508,12 +11518,9 @@
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
 
-                // Get sortimenti list from data
-                const sortimentiSet = new Set();
-                filteredData.forEach(row => {
-                    if (row.sortiment) sortimentiSet.add(row.sortiment);
-                });
-                const sortimentiNazivi = Array.from(sortimentiSet).sort();
+                // Get sortimenti list - use ALL sortimenti from SORTIMENTI_ORDER
+                // (not just those that exist in data - show all columns even if zero)
+                const sortimentiNazivi = [...SORTIMENTI_ORDER];
 
                 // Sum by sortiment
                 const sortimentiSums = {};
@@ -11540,12 +11547,34 @@
 
         // Group primac/otpremac data by weeks (simple version - just sum sortimenti per week)
         function groupPrimacOtpremacDataByWeeks(data, year, month, sortimentiNazivi) {
-            const weeks = [];
             const weeksMap = new Map();
 
             const y = parseInt(year);
             const m = parseInt(month);
 
+            // PRVO: Inicijalizuj SVE sedmice u mjesecu (sa nulama)
+            const firstDayOfMonth = new Date(y, m, 1);
+            const lastDayOfMonth = new Date(y, m + 1, 0);
+
+            // Prođi kroz sve dane mjeseca i determiniši sedmice
+            for (let day = 1; day <= lastDayOfMonth.getDate(); day++) {
+                const datum = new Date(y, m, day);
+                const weekInfo = getWeekWithinMonth(datum, y, m);
+                const weekKey = weekInfo.weekNumber;
+
+                if (!weeksMap.has(weekKey)) {
+                    weeksMap.set(weekKey, {
+                        weekNumber: weekKey,
+                        weekStart: weekInfo.weekStart,
+                        weekEnd: weekInfo.weekEnd,
+                        sortimentiSums: {}
+                    });
+                    // Inicijalizuj sve sortimente sa 0
+                    sortimentiNazivi.forEach(s => weeksMap.get(weekKey).sortimentiSums[s] = 0);
+                }
+            }
+
+            // DRUGO: Popuni podatke iz data array-a
             data.forEach(row => {
                 if (!row.datum || !row.sortiment || !row.kolicina) return;
 
@@ -11560,17 +11589,9 @@
                 const weekInfo = getWeekWithinMonth(datum, y, m);
                 const weekKey = weekInfo.weekNumber;
 
-                if (!weeksMap.has(weekKey)) {
-                    weeksMap.set(weekKey, {
-                        weekNumber: weekKey,
-                        weekStart: weekInfo.weekStart,
-                        weekEnd: weekInfo.weekEnd,
-                        sortimentiSums: {}
-                    });
-                    sortimentiNazivi.forEach(s => weeksMap.get(weekKey).sortimentiSums[s] = 0);
-                }
-
                 const week = weeksMap.get(weekKey);
+                if (!week) return; // Safety check
+
                 const sortiment = row.sortiment;
                 const kolicina = parseFloat(row.kolicina) || 0;
 
@@ -11580,6 +11601,8 @@
                 week.sortimentiSums[sortiment] += kolicina;
             });
 
+            // Konvertuj u array i sortiraj po broju sedmice
+            const weeks = [];
             weeksMap.forEach(week => weeks.push(week));
             weeks.sort((a, b) => a.weekNumber - b.weekNumber);
 
