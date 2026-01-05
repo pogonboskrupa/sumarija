@@ -11347,6 +11347,19 @@
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
 
+                console.log('🔍 FILTERING DEBUG:');
+                console.log(`Selected Year: ${year}, Month: ${month} (0-indexed: ${month})`);
+                console.log(`Total primke from backend: ${data.length}`);
+                console.log(`After filtering by year/month: ${filteredData.length}`);
+
+                // Sample first 5 filtered records
+                if (filteredData.length > 0) {
+                    console.log('Sample filtered data (first 5):');
+                    filteredData.slice(0, 5).forEach((row, i) => {
+                        console.log(`  ${i+1}. Datum: ${row.datum}, Sortiment: ${row.sortiment}, Kolicina: ${row.kolicina}, Odjel: ${row.odjel}`);
+                    });
+                }
+
                 // Get sortimenti list - use ALL sortimenti from SORTIMENTI_ORDER
                 // (not just those that exist in data - show all columns even if zero)
                 const sortimentiNazivi = [...SORTIMENTI_ORDER];
