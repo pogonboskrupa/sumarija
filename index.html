@@ -3947,9 +3947,9 @@
     </div>
 
     <script>
-        // VERSION INFO - TIMEOUT + SORTIMENTI ORDER FIX
-        const APP_VERSION = '2026-01-04-v7-FORCE-DEPLOY';
-        const BUILD_COMMIT = '711e60f-FINAL';
+        // VERSION INFO - COMPLETE FIX: Sortimenti + All Weeks Display
+        const APP_VERSION = '2026-01-05-v8-COMPLETE-FIX';
+        const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
         console.clear();
@@ -11347,13 +11347,9 @@
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
 
-                // Get sortimenti list from data - use FIXED business order
-                const sortimentiInData = new Set();
-                filteredData.forEach(row => {
-                    if (row.sortiment) sortimentiInData.add(row.sortiment);
-                });
-                // Filter SORTIMENTI_ORDER to only include items that exist in data
-                const sortimentiNazivi = SORTIMENTI_ORDER.filter(s => sortimentiInData.has(s));
+                // Get sortimenti list - use ALL sortimenti from SORTIMENTI_ORDER
+                // (not just those that exist in data - show all columns even if zero)
+                const sortimentiNazivi = [...SORTIMENTI_ORDER];
 
                 // Group by weeks
                 const weeklyData = groupPrimacOtpremacDataByWeeks(filteredData, year, month, sortimentiNazivi);
@@ -11405,13 +11401,9 @@
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
 
-                // Get sortimenti list from data - use FIXED business order
-                const sortimentiInData = new Set();
-                filteredData.forEach(row => {
-                    if (row.sortiment) sortimentiInData.add(row.sortiment);
-                });
-                // Filter SORTIMENTI_ORDER to only include items that exist in data
-                const sortimentiNazivi = SORTIMENTI_ORDER.filter(s => sortimentiInData.has(s));
+                // Get sortimenti list - use ALL sortimenti from SORTIMENTI_ORDER
+                // (not just those that exist in data - show all columns even if zero)
+                const sortimentiNazivi = [...SORTIMENTI_ORDER];
 
                 // Sum by sortiment
                 const sortimentiSums = {};
@@ -11471,13 +11463,9 @@
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
 
-                // Get sortimenti list from data - use FIXED business order
-                const sortimentiInData = new Set();
-                filteredData.forEach(row => {
-                    if (row.sortiment) sortimentiInData.add(row.sortiment);
-                });
-                // Filter SORTIMENTI_ORDER to only include items that exist in data
-                const sortimentiNazivi = SORTIMENTI_ORDER.filter(s => sortimentiInData.has(s));
+                // Get sortimenti list - use ALL sortimenti from SORTIMENTI_ORDER
+                // (not just those that exist in data - show all columns even if zero)
+                const sortimentiNazivi = [...SORTIMENTI_ORDER];
 
                 // Group by weeks
                 const weeklyData = groupPrimacOtpremacDataByWeeks(filteredData, year, month, sortimentiNazivi);
@@ -11529,13 +11517,9 @@
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
 
-                // Get sortimenti list from data - use FIXED business order
-                const sortimentiInData = new Set();
-                filteredData.forEach(row => {
-                    if (row.sortiment) sortimentiInData.add(row.sortiment);
-                });
-                // Filter SORTIMENTI_ORDER to only include items that exist in data
-                const sortimentiNazivi = SORTIMENTI_ORDER.filter(s => sortimentiInData.has(s));
+                // Get sortimenti list - use ALL sortimenti from SORTIMENTI_ORDER
+                // (not just those that exist in data - show all columns even if zero)
+                const sortimentiNazivi = [...SORTIMENTI_ORDER];
 
                 // Sum by sortiment
                 const sortimentiSums = {};
@@ -11562,12 +11546,34 @@
 
         // Group primac/otpremac data by weeks (simple version - just sum sortimenti per week)
         function groupPrimacOtpremacDataByWeeks(data, year, month, sortimentiNazivi) {
-            const weeks = [];
             const weeksMap = new Map();
 
             const y = parseInt(year);
             const m = parseInt(month);
 
+            // PRVO: Inicijalizuj SVE sedmice u mjesecu (sa nulama)
+            const firstDayOfMonth = new Date(y, m, 1);
+            const lastDayOfMonth = new Date(y, m + 1, 0);
+
+            // Prođi kroz sve dane mjeseca i determiniši sedmice
+            for (let day = 1; day <= lastDayOfMonth.getDate(); day++) {
+                const datum = new Date(y, m, day);
+                const weekInfo = getWeekWithinMonth(datum, y, m);
+                const weekKey = weekInfo.weekNumber;
+
+                if (!weeksMap.has(weekKey)) {
+                    weeksMap.set(weekKey, {
+                        weekNumber: weekKey,
+                        weekStart: weekInfo.weekStart,
+                        weekEnd: weekInfo.weekEnd,
+                        sortimentiSums: {}
+                    });
+                    // Inicijalizuj sve sortimente sa 0
+                    sortimentiNazivi.forEach(s => weeksMap.get(weekKey).sortimentiSums[s] = 0);
+                }
+            }
+
+            // DRUGO: Popuni podatke iz data array-a
             data.forEach(row => {
                 if (!row.datum || !row.sortiment || !row.kolicina) return;
 
@@ -11582,17 +11588,9 @@
                 const weekInfo = getWeekWithinMonth(datum, y, m);
                 const weekKey = weekInfo.weekNumber;
 
-                if (!weeksMap.has(weekKey)) {
-                    weeksMap.set(weekKey, {
-                        weekNumber: weekKey,
-                        weekStart: weekInfo.weekStart,
-                        weekEnd: weekInfo.weekEnd,
-                        sortimentiSums: {}
-                    });
-                    sortimentiNazivi.forEach(s => weeksMap.get(weekKey).sortimentiSums[s] = 0);
-                }
-
                 const week = weeksMap.get(weekKey);
+                if (!week) return; // Safety check
+
                 const sortiment = row.sortiment;
                 const kolicina = parseFloat(row.kolicina) || 0;
 
@@ -11602,6 +11600,8 @@
                 week.sortimentiSums[sortiment] += kolicina;
             });
 
+            // Konvertuj u array i sortiraj po broju sedmice
+            const weeks = [];
             weeksMap.forEach(week => weeks.push(week));
             weeks.sort((a, b) => a.weekNumber - b.weekNumber);
 
