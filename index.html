@@ -24,7 +24,7 @@
         .header-left { display: flex; align-items: center; gap: 12px; }
         .header-logo { font-size: 28px; }
         .header-center { display: flex; align-items: center; justify-content: center; flex: 1; margin: 0 20px; }
-        .company-logo { height: 60px; width: auto; object-fit: contain; transition: all 0.3s ease; }
+        .company-logo { height: 120px; width: auto; object-fit: contain; transition: all 0.3s ease; }
         .company-logo:hover { transform: scale(1.05); }
         .header-title h1 { font-size: 18px; font-weight: 700; margin-bottom: 2px; color: #047857; }
         .header-title p { font-size: 12px; color: #6b7280; }
@@ -112,6 +112,12 @@
         .tab { background: transparent; border: none; padding: 14px 20px; font-size: 14px; font-weight: 600; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
         .tab:hover { color: #374151; background: #f9fafb; }
         .tab.active { color: #047857; border-bottom-color: #047857; background: #f0fdf4; }
+
+        /* Tabs submenu for Ostalo */
+        .tabs-submenu { display: flex; gap: 8px; flex-wrap: wrap; }
+        .tab-sub { background: white; border: 2px solid #e5e7eb; padding: 12px 20px; font-size: 14px; font-weight: 600; color: #6b7280; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
+        .tab-sub:hover { color: #047857; background: #f0fdf4; border-color: #059669; }
+        .tab-sub.active { color: white; background: #047857; border-color: #047857; }
 
         /* Submenu styles */
         .submenu { display: flex; gap: 8px; margin-bottom: 24px; padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; }
@@ -1961,7 +1967,7 @@
         <div class="login-box">
             <!-- Logo Container -->
             <div style="text-align: center; margin-bottom: 24px;">
-                <img src="logo-zuti.png" alt="ŠPD Unsko-Sanske Šume Logo" style="width: 180px; height: auto; margin-bottom: 16px;">
+                <img src="logo-zuti.png" alt="ŠPD Unsko-Sanske Šume Logo" style="width: 360px; height: auto; margin-bottom: 16px;">
                 <h3 style="font-size: 16px; font-weight: 700; color: #047857; margin-bottom: 4px; letter-spacing: 0.5px;">ŠPD "UNSKO-SANSKE ŠUME"</h3>
                 <h4 style="font-size: 14px; font-weight: 600; color: #6b7280; margin-bottom: 8px;">BOSANSKA KRUPA</h4>
             </div>
@@ -3920,6 +3926,76 @@
                 <div id="pending-unosi-container"></div>
             </div>
         </div>
+
+        <!-- OSTALO VIEW -->
+        <div id="ostalo-content" class="container hidden">
+            <div class="section">
+                <h2>⚙️ Ostalo</h2>
+                <p style="color: #6b7280; margin-bottom: 32px;">Dodatne funkcionalnosti i pregledi</p>
+
+                <!-- Tab submenu za Ostalo -->
+                <div class="tabs-submenu" style="margin-bottom: 24px;">
+                    <button class="tab-sub active" onclick="switchOstaloTab('dinamika')">📊 Dinamika</button>
+                    <button class="tab-sub" onclick="switchOstaloTab('uporedba-godina')">📈 Uporedba godina</button>
+                </div>
+
+                <!-- Dinamika View -->
+                <div id="ostalo-dinamika-view" class="ostalo-view">
+                    <h3>📊 Dinamika - Pregled realizacije plana <span id="dinamika-selected-year" style="color: #047857;"></span></h3>
+                    <p style="color: #6b7280;">Unos planiranih mjesečnih količina</p>
+                    <div id="dinamika-container">
+                        <div class="chart-card">
+                            <h4 style="margin-bottom: 20px;">Mjesečna dinamika (m³)</h4>
+                            <form id="dinamika-form" onsubmit="saveDinamika(event)">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                                    <div><label>Januar:</label><input type="number" id="dinamika-01" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
+                                    <div><label>Februar:</label><input type="number" id="dinamika-02" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
+                                    <div><label>Mart:</label><input type="number" id="dinamika-03" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
+                                    <div><label>April:</label><input type="number" id="dinamika-04" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
+                                    <div><label>Maj:</label><input type="number" id="dinamika-05" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
+                                    <div><label>Juni:</label><input type="number" id="dinamika-06" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
+                                    <div><label>Juli:</label><input type="number" id="dinamika-07" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
+                                    <div><label>August:</label><input type="number" id="dinamika-08" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
+                                    <div><label>Septembar:</label><input type="number" id="dinamika-09" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
+                                    <div><label>Oktobar:</label><input type="number" id="dinamika-10" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
+                                    <div><label>Novembar:</label><input type="number" id="dinamika-11" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
+                                    <div><label>Decembar:</label><input type="number" id="dinamika-12" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
+                                </div>
+                                <div style="margin-top: 20px; padding: 16px; background: #f0fdf4; border-radius: 8px;">
+                                    <strong>Ukupno:</strong> <span id="dinamika-total" style="font-size: 20px; color: #047857;">0.00</span> m³
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="margin-top: 20px;">Spremi dinamiku</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Uporedba godina View -->
+                <div id="ostalo-uporedba-view" class="ostalo-view hidden">
+                    <h3>📈 Uporedba godina - Tekuća vs Prošla</h3>
+                    <p style="color: #6b7280;">Usporedba sječe i otpreme po godinama</p>
+                    <div id="uporedba-godina-container">
+                        <div class="chart-card">
+                            <h4>Odaberi godine za usporedbu:</h4>
+                            <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+                                <select id="uporedba-year1" onchange="loadUporedbaGodina()" style="padding: 8px 16px; border: 2px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                                    <option value="2026" selected>2026</option>
+                                    <option value="2025">2025</option>
+                                    <option value="2024">2024</option>
+                                </select>
+                                <span style="display: flex; align-items: center; font-weight: bold;">vs</span>
+                                <select id="uporedba-year2" onchange="loadUporedbaGodina()" style="padding: 8px 16px; border: 2px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                                    <option value="2026">2026</option>
+                                    <option value="2025" selected>2025</option>
+                                    <option value="2024">2024</option>
+                                </select>
+                            </div>
+                            <canvas id="uporedba-chart" style="max-height: 400px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Confirm Modal -->
@@ -3939,8 +4015,8 @@
     </div>
 
     <script>
-        // VERSION INFO - Dodato 2025 godina u preglede
-        const APP_VERSION = '2026-01-05-v11-YEAR-2025-2026';
+        // VERSION INFO - Dodato Ostalo meni (Dinamika, Uporedba godina), timeout 60s
+        const APP_VERSION = '2026-01-05-v12-OSTALO-MENU-LOGO';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4639,6 +4715,7 @@
                         📋 Dodani unosi
                         <span class="badge-count" id="pending-count-badge"></span>
                     </button>
+                    <button class="tab" onclick="switchTab('ostalo')">⚙️ Ostalo</button>
                 `;
             }
         }
@@ -4732,6 +4809,7 @@
             document.getElementById('poslovodja-suma-content').classList.add('hidden');
             document.getElementById('dinamika-content').classList.add('hidden');
             document.getElementById('uporedba-godina-content').classList.add('hidden');
+            document.getElementById('ostalo-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
@@ -4829,6 +4907,35 @@
 
                 document.getElementById('izvjestaji-otpremac-content').classList.remove('hidden');
                 switchOtpremacIzvjestajiSubTab('sedmicni');
+            } else if (tab === 'ostalo') {
+                document.getElementById('ostalo-content').classList.remove('hidden');
+                // Load dinamika by default
+                switchOstaloTab('dinamika');
+            }
+        }
+
+        // Switch between Ostalo tabs
+        function switchOstaloTab(view) {
+            // Update submenu buttons
+            const tabs = document.querySelectorAll('.tabs-submenu .tab-sub');
+            tabs.forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Hide all ostalo views
+            document.getElementById('ostalo-dinamika-view').classList.add('hidden');
+            document.getElementById('ostalo-uporedba-view').classList.add('hidden');
+
+            // Show selected view
+            if (view === 'dinamika') {
+                document.getElementById('ostalo-dinamika-view').classList.remove('hidden');
+                if (!document.getElementById('dinamika-container').innerHTML) {
+                    loadDinamika();
+                }
+            } else if (view === 'uporedba-godina') {
+                document.getElementById('ostalo-uporedba-view').classList.remove('hidden');
+                if (!document.getElementById('uporedba-godina-container').innerHTML) {
+                    loadUporedbaGodina();
+                }
             }
         }
 
@@ -4914,9 +5021,9 @@
             try {
                 const year = new Date().getFullYear();
 
-                // Fetch dashboard data with caching (30s timeout for heavy endpoint)
+                // Fetch dashboard data with caching (60s timeout for heavy endpoint)
                 const url = `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_dashboard_' + year, false, 30000);
+                const data = await fetchWithCache(url, 'cache_dashboard_' + year, false, 60000);
 
                 console.log('Dashboard data:', data);
 
@@ -10158,13 +10265,13 @@
         // Load and transform data for OPERATIVA screen
         async function loadStatsForOperativa(year) {
             try {
-                // Fetch dashboard data (30s timeout for heavy endpoint)
+                // Fetch dashboard data (60s timeout for heavy endpoint)
                 const dashboardUrl = `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const dashboardData = await fetchWithCache(dashboardUrl, 'cache_dashboard_' + year, false, 30000);
+                const dashboardData = await fetchWithCache(dashboardUrl, 'cache_dashboard_' + year, false, 60000);
 
-                // Fetch odjeli data (30s timeout for heavy endpoint)
+                // Fetch odjeli data (60s timeout for heavy endpoint)
                 const odjeliUrl = `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const odjeliResponse = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year, false, 30000);
+                const odjeliResponse = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year, false, 60000);
 
                 // **NOVO: Fetch STANJE ODJELA data (sa PROJEKAT podacima iz Excel redova 10-13)**
                 const stanjeOdjelaUrl = `${API_URL}?path=stanje-odjela&username=${currentUser.username}&password=${currentPassword}`;
@@ -10914,7 +11021,7 @@
         // Load dinamika data
         async function loadDinamika() {
             console.log('Loading Dinamika...');
-            document.getElementById('dinamika-content').classList.remove('hidden');
+            const container = document.getElementById('dinamika-container');
 
             const year = new Date().getFullYear(); // Tekuća godina (2026)
             document.getElementById('dinamika-selected-year').textContent = year;
@@ -11028,7 +11135,6 @@
         // Load uporedba godina
         async function loadUporedbaGodina() {
             console.log('Loading Uporedba Godina...');
-            document.getElementById('uporedba-godina-content').classList.remove('hidden');
 
             const year1 = parseInt(document.getElementById('uporedba-year1').value);
             const year2 = parseInt(document.getElementById('uporedba-year2').value);
@@ -11038,13 +11144,13 @@
             try {
                 showInfo('🔄 Učitavanje...', 'Učitavam podatke za usporedbu...');
 
-                // Fetch dashboard data za obje godine (paralelno, 30s timeout for heavy endpoints)
+                // Fetch dashboard data za obje godine (paralelno, 60s timeout for heavy endpoints)
                 const url1 = `${API_URL}?path=dashboard&year=${year1}&username=${currentUser.username}&password=${currentPassword}`;
                 const url2 = `${API_URL}?path=dashboard&year=${year2}&username=${currentUser.username}&password=${currentPassword}`;
 
                 const [data1, data2] = await Promise.all([
-                    fetchWithCache(url1, 'cache_dashboard_' + year1, false, 30000),
-                    fetchWithCache(url2, 'cache_dashboard_' + year2, false, 30000)
+                    fetchWithCache(url1, 'cache_dashboard_' + year1, false, 60000),
+                    fetchWithCache(url2, 'cache_dashboard_' + year2, false, 60000)
                 ]);
 
                 console.log('Data Year 1:', data1);
@@ -11054,10 +11160,79 @@
                     throw new Error(data1.error || data2.error);
                 }
 
-                // Renderuj tabele
-                renderMjesecnaUporedba(data1, data2, year1, year2);
-                renderGodisnjuUporedbu(data1, data2, year1, year2);
-                renderTop10Odjela(data1, data2, year1, year2);
+                // Renderuj graf
+                const mjeseci = data1.mjesecnaStatistika || [];
+                const labels = mjeseci.map(m => m.mjesec);
+                const sjeca1 = mjeseci.map(m => m.sjeca);
+                const otprema1 = mjeseci.map(m => m.otprema);
+
+                const mjeseci2 = data2.mjesecnaStatistika || [];
+                const sjeca2 = mjeseci2.map(m => m.sjeca);
+                const otprema2 = mjeseci2.map(m => m.otprema);
+
+                const ctx = document.getElementById('uporedba-chart');
+                if (window.uporedbaChart) {
+                    window.uporedbaChart.destroy();
+                }
+                window.uporedbaChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: `Sječa ${year1}`,
+                            data: sjeca1,
+                            backgroundColor: 'rgba(5, 150, 105, 0.5)',
+                            borderColor: '#059669',
+                            borderWidth: 2
+                        }, {
+                            label: `Sječa ${year2}`,
+                            data: sjeca2,
+                            backgroundColor: 'rgba(5, 150, 105, 0.2)',
+                            borderColor: '#047857',
+                            borderWidth: 2,
+                            borderDash: [5, 5]
+                        }, {
+                            label: `Otprema ${year1}`,
+                            data: otprema1,
+                            backgroundColor: 'rgba(37, 99, 235, 0.5)',
+                            borderColor: '#2563eb',
+                            borderWidth: 2
+                        }, {
+                            label: `Otprema ${year2}`,
+                            data: otprema2,
+                            backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                            borderColor: '#1d4ed8',
+                            borderWidth: 2,
+                            borderDash: [5, 5]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { position: 'top' },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + context.parsed.y.toFixed(0) + ' m³';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + ' m³';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
 
                 hideInfo();
 
