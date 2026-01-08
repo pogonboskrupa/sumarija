@@ -5126,34 +5126,67 @@
                 }).join('');
                 document.getElementById('dashboard-monthly-table').innerHTML = monthlyHTML;
 
-                // Fetch and populate odjeli table with caching
+                // STALE-WHILE-REVALIDATE: Odjeli table
                 const odjeliUrl = `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const odjeliData = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year);
+                const odjeliCacheKey = 'cache_odjeli_' + year;
 
-                console.log('Odjeli data:', odjeliData);
+                // Helper function to render odjeli table
+                function renderOdjeliTable(odjeliData) {
+                    if (odjeliData.error) {
+                        console.error('Odjeli API error:', odjeliData.error);
+                        document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri učitavanju podataka o odjelima</td></tr>';
+                    } else if (odjeliData.odjeli && odjeliData.odjeli.length > 0) {
+                        const odjeliHTML = odjeliData.odjeli.map(o => {
+                            const realizacijaColor = o.realizacija >= 100 ? 'green' : (o.realizacija >= 80 ? 'blue' : 'red');
+                            return `
+                                <tr>
+                                    <td style="font-weight: 500;">${o.odjel}</td>
+                                    <td class="right green">${o.sjeca.toFixed(2)}</td>
+                                    <td class="right blue">${o.otprema.toFixed(2)}</td>
+                                    <td class="right">${o.sumaPanj.toFixed(2)}</td>
+                                    <td>${o.radiliste || '-'}</td>
+                                    <td>${o.izvođač || '-'}</td>
+                                    <td>${o.datumZadnjeSjece || '-'}</td>
+                                    <td class="right ${realizacijaColor}">${o.realizacija > 0 ? o.realizacija.toFixed(1) + '%' : '-'}</td>
+                                </tr>
+                            `;
+                        }).join('');
+                        document.getElementById('odjeli-table-body').innerHTML = odjeliHTML;
+                    } else {
+                        document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #6b7280;">Nema podataka o odjelima</td></tr>';
+                    }
+                }
 
-                if (odjeliData.error) {
-                    console.error('Odjeli API error:', odjeliData.error);
-                    document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri učitavanju podataka o odjelima</td></tr>';
-                } else if (odjeliData.odjeli && odjeliData.odjeli.length > 0) {
-                    const odjeliHTML = odjeliData.odjeli.map(o => {
-                        const realizacijaColor = o.realizacija >= 100 ? 'green' : (o.realizacija >= 80 ? 'blue' : 'red');
-                        return `
-                            <tr>
-                                <td style="font-weight: 500;">${o.odjel}</td>
-                                <td class="right green">${o.sjeca.toFixed(2)}</td>
-                                <td class="right blue">${o.otprema.toFixed(2)}</td>
-                                <td class="right">${o.sumaPanj.toFixed(2)}</td>
-                                <td>${o.radiliste || '-'}</td>
-                                <td>${o.izvođač || '-'}</td>
-                                <td>${o.datumZadnjeSjece || '-'}</td>
-                                <td class="right ${realizacijaColor}">${o.realizacija > 0 ? o.realizacija.toFixed(1) + '%' : '-'}</td>
-                            </tr>
-                        `;
-                    }).join('');
-                    document.getElementById('odjeli-table-body').innerHTML = odjeliHTML;
-                } else {
-                    document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #6b7280;">Nema podataka o odjelima</td></tr>';
+                // STEP 1: Check if we have cached odjeli data
+                let hasCachedData = false;
+                const cachedOdjeli = localStorage.getItem(odjeliCacheKey);
+                if (cachedOdjeli) {
+                    try {
+                        const parsed = JSON.parse(cachedOdjeli);
+                        // If cache exists (even if stale), show it IMMEDIATELY
+                        if (parsed.data && parsed.data.odjeli) {
+                            console.log(`📦 Showing cached odjeli data while fetching fresh...`);
+                            renderOdjeliTable(parsed.data);
+                            hasCachedData = true;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Failed to parse cached odjeli:', e);
+                    }
+                }
+
+                // STEP 2: Fetch fresh data in background (120s timeout)
+                try {
+                    const odjeliData = await fetchWithCache(odjeliUrl, odjeliCacheKey, false, 120000);
+                    console.log('✅ Fresh odjeli data:', odjeliData);
+                    renderOdjeliTable(odjeliData);
+                } catch (error) {
+                    // If we already showed cached data, don't show error
+                    if (!hasCachedData) {
+                        console.error('❌ Failed to fetch odjeli data:', error);
+                        document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri učitavanju podataka o odjelima</td></tr>';
+                    } else {
+                        console.warn('⚠️ Failed to fetch fresh odjeli, showing cached version');
+                    }
                 }
 
                 // Load pending count for badge (admin only)
