@@ -3822,8 +3822,8 @@
     </div>
 
     <script>
-        // VERSION INFO - Stanje odjela: automatsko filtriranje (tekuća godina + aktivnost ILI otprema < sječa)
-        const APP_VERSION = '2026-01-08-v17-STANJE-ODJELA-FILTER';
+        // VERSION INFO - Stanje odjela: 60s timeout + automatsko filtriranje
+        const APP_VERSION = '2026-01-08-v18-STANJE-ODJELA-60s';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -8875,9 +8875,9 @@
             document.getElementById('loading-screen').classList.remove('hidden');
 
             try {
-                // Load data from backend
+                // Load data from backend with 60s timeout
                 const url = API_URL + '?path=stanje-odjela&username=' + currentUser.username + '&password=' + currentPassword;
-                const data = await fetchWithCache(url, `cache_stanje_odjela`);
+                const data = await fetchWithCache(url, `cache_stanje_odjela`, false, 60000);
 
                 if (data.error) throw new Error(data.error);
 
