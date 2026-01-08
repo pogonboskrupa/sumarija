@@ -2043,6 +2043,22 @@
         
         <!-- DASHBOARD CONTENT (Šumarija Krupa) -->
         <div id="dashboard-content" class="container hidden">
+            <!-- Page Header with Year Selector -->
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h2>🌲 Šumarija Krupa</h2>
+                    <p style="color: #6b7280;">Pogon gospodarenja Bos. Krupa - Evidencija sječe i otpreme</p>
+                </div>
+                <div class="page-header-right">
+                    <select id="dashboard-year-select" class="year-select" style="min-width: 120px; margin-right: 12px;" onchange="changeDashboardYear()">
+                        <option value="2026">2026</option>
+                        <option value="2025" selected>2025</option>
+                        <option value="2024">2024</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="loadDashboard()">🔄 Osvježi</button>
+                </div>
+            </div>
+
             <!-- Summary Cards -->
             <div class="summary-cards" id="summary-cards"></div>
 
@@ -3822,8 +3838,8 @@
     </div>
 
     <script>
-        // VERSION INFO - Stanje odjela: 60s timeout + automatsko filtriranje
-        const APP_VERSION = '2026-01-08-v18-STANJE-ODJELA-60s';
+        // VERSION INFO - Dashboard: Year selector dropdown (default: 2025)
+        const APP_VERSION = '2026-01-08-v19-DASHBOARD-YEAR-SELECTOR';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4820,12 +4836,19 @@
         }
 
         // Load dashboard data
+        // Funkcija za promjenu godine na Dashboard-u
+        function changeDashboardYear() {
+            loadDashboard();
+        }
+
         async function loadDashboard() {
             document.getElementById('loading-screen').classList.remove('hidden');
             document.getElementById('dashboard-content').classList.add('hidden');
 
             try {
-                const year = new Date().getFullYear();
+                // Uzmi godinu iz dropdown-a (default: 2025)
+                const yearSelect = document.getElementById('dashboard-year-select');
+                const year = yearSelect ? parseInt(yearSelect.value) : 2025;
 
                 // Fetch dashboard data with caching (60s timeout for heavy endpoint)
                 const url = `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
