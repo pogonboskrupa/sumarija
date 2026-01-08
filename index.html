@@ -3838,8 +3838,8 @@
     </div>
 
     <script>
-        // VERSION INFO - STALE-WHILE-REVALIDATE: 120s timeout + show cached data immediately
-        const APP_VERSION = '2026-01-08-v22-STALE-WHILE-REVALIDATE';
+        // VERSION INFO - NULL GUARD: Prevent currentUser.username crash on initial load
+        const APP_VERSION = '2026-01-08-v23-NULL-GUARD';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4609,6 +4609,12 @@
         
         // Load initial data based on user type (OPTIMIZED - lazy loading)
         function loadData() {
+            // GUARD: Don't load if user is not logged in
+            if (!currentUser || !currentPassword) {
+                console.warn('⚠️ loadData() called but user not logged in - skipping');
+                return;
+            }
+
             const userType = (currentUser.type || '').toLowerCase();
 
             // Show loading screen with progress
