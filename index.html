@@ -4952,10 +4952,60 @@
 
             try {
                 const year = new Date().getFullYear();
-
-                // Fetch dashboard data with caching (30s timeout for heavy endpoint)
+                const cacheKey = 'cache_dashboard_' + year;
                 const url = `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_dashboard_' + year, false, 30000);
+
+                // STALE-WHILE-REVALIDATE: Check cache first
+                let hasCachedData = false;
+                const cachedDashboard = localStorage.getItem(cacheKey);
+                if (cachedDashboard) {
+                    try {
+                        const parsed = JSON.parse(cachedDashboard);
+                        if (parsed.data && parsed.data.mjesecnaStatistika) {
+                            console.log(`📦 Showing cached dashboard while fetching fresh data...`);
+                            await renderDashboard(parsed.data);
+                            hasCachedData = true;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Failed to parse cached dashboard:', e);
+                    }
+                }
+
+                // FETCH FRESH DATA (120s timeout for slow backend)
+                try {
+                    const data = await fetchWithCache(url, cacheKey, false, 120000);
+
+                    // Render fresh data (silently if we already showed cache)
+                    if (!hasCachedData) {
+                        console.log('✅ Showing fresh dashboard data');
+                    } else {
+                        console.log('🔄 Updating dashboard with fresh data');
+                    }
+                    await renderDashboard(data);
+
+                } catch (error) {
+                    // If we have cached data, don't show error
+                    if (!hasCachedData) {
+                        throw error;
+                    } else {
+                        console.warn('⚠️ Failed to fetch fresh data, showing cached version:', error);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Dashboard error:', error);
+                document.getElementById('loading-screen').innerHTML = `
+                    <div class="loading-icon">⚠️</div>
+                    <div class="loading-text">Greška pri učitavanju</div>
+                    <div class="loading-sub">${error.message}</div>
+                    <button class="btn btn-primary" style="margin-top: 20px;" onclick="loadDashboard()">🔄 Pokušaj ponovo</button>
+                `;
+            }
+        }
+
+        // Separate render function for dashboard
+        async function renderDashboard(data) {
+                const year = new Date().getFullYear();
 
                 console.log('Dashboard data:', data);
 
@@ -5109,14 +5159,9 @@
                 // Load pending count for badge (admin only)
                 loadPendingCount();
 
+                // Show content (in case it was hidden during initial load)
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('dashboard-content').classList.remove('hidden');
-
-            } catch (error) {
-                console.error('Dashboard error:', error);
-                showError('Greška', 'Greška pri učitavanju dashboard podataka: ' + error.message);
-                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
-            }
         }
 
         // ========================================
