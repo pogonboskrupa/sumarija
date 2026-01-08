@@ -3822,8 +3822,8 @@
     </div>
 
     <script>
-        // VERSION INFO - Stanje odjela premješten iz Izvještaji submeni u glavni tab (2. pozicija)
-        const APP_VERSION = '2026-01-08-v16-STANJE-ODJELA-MAIN-TAB';
+        // VERSION INFO - Stanje odjela: automatsko filtriranje (tekuća godina + aktivnost ILI otprema < sječa)
+        const APP_VERSION = '2026-01-08-v17-STANJE-ODJELA-FILTER';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -8900,15 +8900,42 @@
             }
         }
 
+        // Helper funkcija za filtriranje odjela prema kriterijima
+        function filterStanjeOdjelaByKriteriji(data, sortimentiNazivi) {
+            const currentYear = new Date().getFullYear();
+            const sveukupnoIndex = sortimentiNazivi.indexOf('SVEUKUPNO');
+
+            return data.filter(odjel => {
+                // Provjeri da li odjel ima zadnji datum u tekućoj godini
+                const odjelYear = odjel.zadnjiDatum ? new Date(odjel.zadnjiDatum).getFullYear() : null;
+                const jeTekucaGodina = odjelYear === currentYear;
+
+                // Uzmi SVEUKUPNO vrijednosti za sječu i otpremu
+                const sjecaSveukupno = odjel.redovi.sjeca[sveukupnoIndex] || 0;
+                const otpremaSveukupno = odjel.redovi.otprema[sveukupnoIndex] || 0;
+
+                // Prikaži ako:
+                // 1. Tekuća godina I ima aktivnost (sječa > 0 ili otprema > 0)
+                // 2. ILI otprema < sječa
+                const imaAktivnost = sjecaSveukupno > 0 || otpremaSveukupno > 0;
+                const otpremaIspodSjece = otpremaSveukupno < sjecaSveukupno;
+
+                return (jeTekucaGodina && imaAktivnost) || otpremaIspodSjece;
+            });
+        }
+
         function populateStanjeOdjelaDropdown(data) {
             const select = document.getElementById('stanje-odjela-select');
 
             // Očisti postojeće opcije osim "Sva radilišta"
             select.innerHTML = '<option value="">Sva radilišta</option>';
 
-            // Izvuci unique radilišta
+            // Filtriraj podatke prema kriterijima prije nego što izvučeš radilišta
+            const filteredData = filterStanjeOdjelaByKriteriji(data, stanjeOdjelaSortimenti);
+
+            // Izvuci unique radilišta SAMO iz filtriranih podataka
             const radilistaSet = new Set();
-            data.forEach(odjel => {
+            filteredData.forEach(odjel => {
                 if (odjel.radiliste) {
                     radilistaSet.add(odjel.radiliste);
                 }
@@ -8945,10 +8972,18 @@
                 return;
             }
 
+            // Filtriraj podatke prema kriterijima (tekuća godina sa aktivnošću ili otprema < sječa)
+            const filteredData = filterStanjeOdjelaByKriteriji(data, sortimentiNazivi);
+
+            if (filteredData.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;">Nema odjela koji zadovoljavaju kriterije (tekuća godina sa aktivnošću ili otprema ispod sječe)</div>';
+                return;
+            }
+
             let html = '';
 
             // Za svaki odjel kreiraj zasebnu sekciju
-            data.forEach((odjelData, odjelIndex) => {
+            filteredData.forEach((odjelData, odjelIndex) => {
                 const radiliste = odjelData.radiliste || odjelData.odjelNaziv;
                 const odjelNaziv = odjelData.odjelNaziv;
                 const redovi = odjelData.redovi;
