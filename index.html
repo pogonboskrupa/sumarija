@@ -95,7 +95,7 @@
         .bar-item.green { background: #059669; }
         .bar-item.blue { background: #2563eb; }
         .chart-svg { width: 100%; height: 300px; margin-top: 20px; }
-        .monthly-table { margin-top: 20px; min-width: 800px; }
+        .monthly-table { margin-top: 20px; min-width: 800px; width: auto; }
         .monthly-table th, .monthly-table td { white-space: nowrap; }
         .monthly-table tbody tr:hover { background: #f9fafb; }
         .progress-bar-container { background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 4px; }
@@ -292,7 +292,7 @@
            EXPERT TABLE STYLES - Premium Design
            ============================================ */
         .expert-table {
-            width: 100%;
+            width: auto;
             border-collapse: separate;
             border-spacing: 0;
             font-size: 16px;
@@ -664,8 +664,8 @@
             .card-value { font-size: 24px; }
 
             /* Tables */
-            table { font-size: 11px; }
-            th, td { padding: 8px 6px; }
+            table { font-size: 11px; min-width: max-content; }
+            th, td { padding: 8px 6px; white-space: nowrap; }
             th { font-size: 10px; }
 
             /* Table wrappers - enable horizontal scroll */
@@ -1025,7 +1025,7 @@
 
         /* Enhanced Table Styling for Workers */
         .worker-table {
-            width: 100%;
+            width: auto;
             border-collapse: separate;
             border-spacing: 0;
             font-size: 13px;
@@ -1704,7 +1704,7 @@
 
         /* Professional Monthly Table */
         .professional-monthly-table {
-            width: 100%;
+            width: auto;
             border-collapse: separate;
             border-spacing: 0;
             font-size: 15px;
