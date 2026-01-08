@@ -24,7 +24,7 @@
         .header-left { display: flex; align-items: center; gap: 12px; }
         .header-logo { font-size: 28px; }
         .header-center { display: flex; align-items: center; justify-content: center; flex: 1; margin: 0 20px; }
-        .company-logo { height: 120px; width: auto; object-fit: contain; transition: all 0.3s ease; }
+        .company-logo { height: 60px; width: auto; object-fit: contain; transition: all 0.3s ease; }
         .company-logo:hover { transform: scale(1.05); }
         .header-title h1 { font-size: 18px; font-weight: 700; margin-bottom: 2px; color: #047857; }
         .header-title p { font-size: 12px; color: #6b7280; }
@@ -95,7 +95,8 @@
         .bar-item.green { background: #059669; }
         .bar-item.blue { background: #2563eb; }
         .chart-svg { width: 100%; height: 300px; margin-top: 20px; }
-        .monthly-table { margin-top: 20px; }
+        .monthly-table { margin-top: 20px; min-width: 800px; width: auto; }
+        .monthly-table th, .monthly-table td { white-space: nowrap; }
         .monthly-table tbody tr:hover { background: #f9fafb; }
         .progress-bar-container { background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 4px; }
         .progress-bar-fill { background: #059669; height: 100%; border-radius: 4px; transition: width 0.3s ease; }
@@ -112,12 +113,6 @@
         .tab { background: transparent; border: none; padding: 14px 20px; font-size: 14px; font-weight: 600; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
         .tab:hover { color: #374151; background: #f9fafb; }
         .tab.active { color: #047857; border-bottom-color: #047857; background: #f0fdf4; }
-
-        /* Tabs submenu for Ostalo */
-        .tabs-submenu { display: flex; gap: 8px; flex-wrap: wrap; }
-        .tab-sub { background: white; border: 2px solid #e5e7eb; padding: 12px 20px; font-size: 14px; font-weight: 600; color: #6b7280; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
-        .tab-sub:hover { color: #047857; background: #f0fdf4; border-color: #059669; }
-        .tab-sub.active { color: white; background: #047857; border-color: #047857; }
 
         /* Submenu styles */
         .submenu { display: flex; gap: 8px; margin-bottom: 24px; padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; }
@@ -297,13 +292,13 @@
            EXPERT TABLE STYLES - Premium Design
            ============================================ */
         .expert-table {
-            width: 100%;
+            width: auto;
             border-collapse: separate;
             border-spacing: 0;
             font-size: 16px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             border-radius: 8px;
-            overflow: hidden;
+            min-width: 800px;
         }
         .expert-table thead th {
             background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
@@ -318,6 +313,7 @@
             top: 0;
             z-index: 10;
             text-align: left;
+            white-space: nowrap;
         }
         .expert-table thead th:first-child {
             border-top-left-radius: 8px;
@@ -349,6 +345,7 @@
             padding: 14px 16px;
             border-bottom: 1px solid #e0e7ff;
             font-size: 15px;
+            white-space: nowrap;
         }
         .expert-table tbody td:first-child {
             font-weight: 600;
@@ -667,8 +664,8 @@
             .card-value { font-size: 24px; }
 
             /* Tables */
-            table { font-size: 11px; }
-            th, td { padding: 8px 6px; }
+            table { font-size: 11px; min-width: max-content; }
+            th, td { padding: 8px 6px; white-space: nowrap; }
             th { font-size: 10px; }
 
             /* Table wrappers - enable horizontal scroll */
@@ -1028,10 +1025,11 @@
 
         /* Enhanced Table Styling for Workers */
         .worker-table {
-            width: 100%;
+            width: auto;
             border-collapse: separate;
             border-spacing: 0;
             font-size: 13px;
+            min-width: 800px;
         }
 
         .worker-table thead {
@@ -1058,6 +1056,7 @@
             user-select: none;
             transition: background 0.2s;
             color: #ffffff;
+            white-space: nowrap;
             text-shadow:
                 /* Crni outline za jasnoću */
                 -1px -1px 0 rgba(0, 0, 0, 0.9),
@@ -1079,6 +1078,7 @@
             color: #111827;
             font-weight: 600;
             font-size: 14px;
+            white-space: nowrap;
         }
 
         .worker-table tbody tr {
@@ -1704,10 +1704,11 @@
 
         /* Professional Monthly Table */
         .professional-monthly-table {
-            width: 100%;
+            width: auto;
             border-collapse: separate;
             border-spacing: 0;
             font-size: 15px;
+            min-width: 800px;
         }
         .professional-monthly-table thead th {
             background: linear-gradient(to bottom, #047857 0%, #059669 100%);
@@ -1721,6 +1722,7 @@
             position: sticky;
             top: 0;
             z-index: 10;
+            white-space: nowrap;
         }
         .professional-monthly-table tbody tr {
             transition: all 0.2s;
@@ -1735,6 +1737,7 @@
         .professional-monthly-table tbody td {
             padding: 16px 14px;
             border-bottom: 1px solid #e5e7eb;
+            white-space: nowrap;
         }
         .professional-monthly-table tbody td:first-child {
             font-weight: 700;
@@ -1967,7 +1970,7 @@
         <div class="login-box">
             <!-- Logo Container -->
             <div style="text-align: center; margin-bottom: 24px;">
-                <img src="logo-zuti.png" alt="ŠPD Unsko-Sanske Šume Logo" style="width: 220px; height: auto; margin-bottom: 16px;">
+                <img src="logo-zuti.png" alt="ŠPD Unsko-Sanske Šume Logo" style="width: 180px; height: auto; margin-bottom: 16px;">
                 <h3 style="font-size: 16px; font-weight: 700; color: #047857; margin-bottom: 4px; letter-spacing: 0.5px;">ŠPD "UNSKO-SANSKE ŠUME"</h3>
                 <h4 style="font-size: 14px; font-weight: 600; color: #6b7280; margin-bottom: 8px;">BOSANSKA KRUPA</h4>
             </div>
@@ -2043,21 +2046,6 @@
         
         <!-- DASHBOARD CONTENT (Šumarija Krupa) -->
         <div id="dashboard-content" class="container hidden">
-            <!-- Page Header with Year Selector -->
-            <div class="page-header">
-                <div class="page-header-left">
-                    <h2>🌲 Šumarija Krupa</h2>
-                    <p style="color: #6b7280;">Pogon gospodarenja Bos. Krupa - Evidencija sječe i otpreme</p>
-                </div>
-                <div class="page-header-right">
-                    <select id="dashboard-year-select" class="year-select" style="min-width: 120px; margin-right: 12px;" onchange="changeDashboardYear()">
-                        <option value="2026" selected>2026</option>
-                        <option value="2025">2025</option>
-                    </select>
-                    <button class="btn btn-primary" onclick="loadDashboard()">🔄 Osvježi</button>
-                </div>
-            </div>
-
             <!-- Summary Cards -->
             <div class="summary-cards" id="summary-cards"></div>
 
@@ -2068,20 +2056,22 @@
                     <input type="text" class="search-input" id="dashboard-search" placeholder="🔍 Pretraži po mjesecu..." onkeyup="filterDashboardTable()">
                     <button class="btn btn-primary" onclick="exportTableToCSV('dashboard')">📥 Export CSV</button>
                 </div>
-                <table class="professional-monthly-table" id="dashboard-table">
-                    <thead>
-                        <tr>
-                            <th onclick="sortTable(0, 'dashboard-table')" style="text-align: left;">Mjesec ⇅</th>
-                            <th class="right" onclick="sortTable(1, 'dashboard-table')">Ukupna Sječa (m³) ⇅</th>
-                            <th class="right" onclick="sortTable(2, 'dashboard-table')">Ukupna Otprema (m³) ⇅</th>
-                            <th class="right" onclick="sortTable(3, 'dashboard-table')">Zaliha ⇅</th>
-                            <th class="right" onclick="sortTable(4, 'dashboard-table')">Dinamika ⇅</th>
-                            <th class="right" onclick="sortTable(5, 'dashboard-table')">Razlika Sječa - Dinamika ⇅</th>
-                            <th class="right" onclick="sortTable(6, 'dashboard-table')">Razlika Otprema - Dinamika ⇅</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dashboard-monthly-table"></tbody>
-                </table>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="professional-monthly-table" id="dashboard-table">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable(0, 'dashboard-table')" style="text-align: left;">Mjesec ⇅</th>
+                                <th class="right" onclick="sortTable(1, 'dashboard-table')">Ukupna Sječa (m³) ⇅</th>
+                                <th class="right" onclick="sortTable(2, 'dashboard-table')">Ukupna Otprema (m³) ⇅</th>
+                                <th class="right" onclick="sortTable(3, 'dashboard-table')">Zaliha ⇅</th>
+                                <th class="right" onclick="sortTable(4, 'dashboard-table')">Dinamika ⇅</th>
+                                <th class="right" onclick="sortTable(5, 'dashboard-table')">Razlika Sječa - Dinamika ⇅</th>
+                                <th class="right" onclick="sortTable(6, 'dashboard-table')">Razlika Otprema - Dinamika ⇅</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboard-monthly-table"></tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Odjeli Table -->
@@ -2091,7 +2081,8 @@
                     <input type="text" class="search-input" id="odjeli-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterOdjeliTable()">
                     <button class="btn btn-primary" onclick="exportTableToCSV('odjeli')">📥 Export CSV</button>
                 </div>
-                <table class="monthly-table" id="odjeli-table">
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="monthly-table" id="odjeli-table">
                     <thead>
                         <tr>
                             <th onclick="sortTable(0, 'odjeli-table')">Odjel ⇅</th>
@@ -2106,6 +2097,7 @@
                     </thead>
                     <tbody id="odjeli-table-body"></tbody>
                 </table>
+                </div>
             </div>
 
             <!-- Chart -->
@@ -2177,10 +2169,12 @@
                         <input type="text" class="search-input" id="primaci-search" placeholder="🔍 Pretraži po imenu primača..." onkeyup="filterPrimaciTable()">
                         <button class="btn btn-primary" onclick="exportTableToCSV('primaci')">📥 Export CSV</button>
                     </div>
-                    <table class="monthly-table" id="primaci-table">
-                        <thead id="primaci-header"></thead>
-                        <tbody id="primaci-body"></tbody>
-                    </table>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="primaci-table">
+                            <thead id="primaci-header"></thead>
+                            <tbody id="primaci-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -2224,15 +2218,19 @@
                     <div class="controls-bar">
                         <button class="btn btn-primary" onclick="exportTableToCSV('primaci-radilista')">📥 Export CSV</button>
                     </div>
-                    <table class="monthly-table" id="primaci-radilista-table">
-                        <thead id="primaci-radilista-header"></thead>
-                        <tbody id="primaci-radilista-body"></tbody>
-                    </table>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="primaci-radilista-table">
+                            <thead id="primaci-radilista-header"></thead>
+                            <tbody id="primaci-radilista-body"></tbody>
+                        </table>
+                    </div>
                     <h4 style="color: #7c2d12; margin-top: 30px; margin-bottom: 15px;">📊 Godišnja rekapitulacija po sortimentima</h4>
-                    <table class="monthly-table" id="primaci-radilista-recap">
-                        <thead id="primaci-radilista-recap-header"></thead>
-                        <tbody id="primaci-radilista-recap-body"></tbody>
-                    </table>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="primaci-radilista-recap">
+                            <thead id="primaci-radilista-recap-header"></thead>
+                            <tbody id="primaci-radilista-recap-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -2243,15 +2241,19 @@
                     <div class="controls-bar">
                         <button class="btn btn-primary" onclick="exportTableToCSV('primaci-izvodjaci')">📥 Export CSV</button>
                     </div>
-                    <table class="monthly-table" id="primaci-izvodjaci-table">
-                        <thead id="primaci-izvodjaci-header"></thead>
-                        <tbody id="primaci-izvodjaci-body"></tbody>
-                    </table>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="primaci-izvodjaci-table">
+                            <thead id="primaci-izvodjaci-header"></thead>
+                            <tbody id="primaci-izvodjaci-body"></tbody>
+                        </table>
+                    </div>
                     <h4 style="color: #7c2d12; margin-top: 30px; margin-bottom: 15px;">📊 Godišnja rekapitulacija po sortimentima</h4>
-                    <table class="monthly-table" id="primaci-izvodjaci-recap">
-                        <thead id="primaci-izvodjaci-recap-header"></thead>
-                        <tbody id="primaci-izvodjaci-recap-body"></tbody>
-                    </table>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="primaci-izvodjaci-recap">
+                            <thead id="primaci-izvodjaci-recap-header"></thead>
+                            <tbody id="primaci-izvodjaci-recap-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2275,10 +2277,12 @@
                         <input type="text" class="search-input" id="otpremaci-search" placeholder="🔍 Pretraži po imenu otpremača..." onkeyup="filterOtremaciTable()">
                         <button class="btn btn-primary" onclick="exportTableToCSV('otpremaci')">📥 Export CSV</button>
                     </div>
-                    <table class="monthly-table" id="otpremaci-table">
-                        <thead id="otpremaci-header"></thead>
-                        <tbody id="otpremaci-body"></tbody>
-                    </table>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="otpremaci-table">
+                            <thead id="otpremaci-header"></thead>
+                            <tbody id="otpremaci-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -2322,15 +2326,19 @@
                     <div class="controls-bar">
                         <button class="btn btn-primary" onclick="exportTableToCSV('otpremaci-radilista')">📥 Export CSV</button>
                     </div>
-                    <table class="monthly-table" id="otpremaci-radilista-table">
-                        <thead id="otpremaci-radilista-header"></thead>
-                        <tbody id="otpremaci-radilista-body"></tbody>
-                    </table>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="otpremaci-radilista-table">
+                            <thead id="otpremaci-radilista-header"></thead>
+                            <tbody id="otpremaci-radilista-body"></tbody>
+                        </table>
+                    </div>
                     <h4 style="color: #155e75; margin-top: 30px; margin-bottom: 15px;">📊 Godišnja rekapitulacija po sortimentima</h4>
-                    <table class="monthly-table" id="otpremaci-radilista-recap">
-                        <thead id="otpremaci-radilista-recap-header"></thead>
-                        <tbody id="otpremaci-radilista-recap-body"></tbody>
-                    </table>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="otpremaci-radilista-recap">
+                            <thead id="otpremaci-radilista-recap-header"></thead>
+                            <tbody id="otpremaci-radilista-recap-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -2401,7 +2409,6 @@
                     <div>
                         <select id="primac-personal-year-select" class="year-select" onchange="loadPrimacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
                             <option value="2026" selected>2026</option>
-                            <option value="2025">2025</option>
                         </select>
                     </div>
                 </div>
@@ -2448,9 +2455,7 @@
                     </div>
                     <div>
                         <select id="primac-godisnji-year-select" class="year-select" onchange="loadPrimacGodisnji()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
-                            <option value="2026" selected>2026</option>
-                            <option value="2025">2025</option>
-                        </select>
+                            <option value="2026" selected>2026</option></select>
                     </div>
                 </div>
 
@@ -2485,7 +2490,6 @@
                     <div>
                         <select id="otpremac-personal-year-select" class="year-select" onchange="loadOtpremacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #2563eb; min-width: 120px;">
                             <option value="2026" selected>2026</option>
-                            <option value="2025">2025</option>
                         </select>
                     </div>
                 </div>
@@ -3110,19 +3114,21 @@
                     <input type="text" class="search-input" id="analytics-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterAnalyticsTable()">
                     <button class="btn btn-primary" onclick="exportTableToCSV('analytics-odjeli')">📥 Export CSV</button>
                 </div>
-                <table class="monthly-table" id="analytics-odjeli-main-table">
-                    <thead>
-                        <tr>
-                            <th onclick="sortTable(0, 'analytics-odjeli-main-table')">Odjel ⇅</th>
-                            <th class="right" onclick="sortTable(1, 'analytics-odjeli-main-table')">Sječa (m³) ⇅</th>
-                            <th class="right" onclick="sortTable(2, 'analytics-odjeli-main-table')">Otprema (m³) ⇅</th>
-                            <th class="right" onclick="sortTable(3, 'analytics-odjeli-main-table')">Projekat ⇅</th>
-                            <th class="right" onclick="sortTable(4, 'analytics-odjeli-main-table')">% Ostvareno ⇅</th>
-                            <th class="right" onclick="sortTable(5, 'analytics-odjeli-main-table')">Razlika ⇅</th>
-                        </tr>
-                    </thead>
-                    <tbody id="analytics-odjeli-table"></tbody>
-                </table>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="monthly-table" id="analytics-odjeli-main-table">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable(0, 'analytics-odjeli-main-table')">Odjel ⇅</th>
+                                <th class="right" onclick="sortTable(1, 'analytics-odjeli-main-table')">Sječa (m³) ⇅</th>
+                                <th class="right" onclick="sortTable(2, 'analytics-odjeli-main-table')">Otprema (m³) ⇅</th>
+                                <th class="right" onclick="sortTable(3, 'analytics-odjeli-main-table')">Projekat ⇅</th>
+                                <th class="right" onclick="sortTable(4, 'analytics-odjeli-main-table')">% Ostvareno ⇅</th>
+                                <th class="right" onclick="sortTable(5, 'analytics-odjeli-main-table')">Razlika ⇅</th>
+                            </tr>
+                        </thead>
+                        <tbody id="analytics-odjeli-table"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -3247,10 +3253,12 @@
                 <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list"></span></p>
             </div>
             <div class="section">
-                <table class="monthly-table" id="poslovodja-stanje-table">
-                    <thead id="poslovodja-stanje-header"></thead>
-                    <tbody id="poslovodja-stanje-body"></tbody>
-                </table>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="monthly-table" id="poslovodja-stanje-table">
+                        <thead id="poslovodja-stanje-header"></thead>
+                        <tbody id="poslovodja-stanje-body"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -3269,10 +3277,12 @@
                 <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list-2"></span></p>
             </div>
             <div class="section">
-                <table class="monthly-table" id="poslovodja-realizacija-table">
-                    <thead id="poslovodja-realizacija-header"></thead>
-                    <tbody id="poslovodja-realizacija-body"></tbody>
-                </table>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="monthly-table" id="poslovodja-realizacija-table">
+                        <thead id="poslovodja-realizacija-header"></thead>
+                        <tbody id="poslovodja-realizacija-body"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -3294,19 +3304,23 @@
             <!-- PRIMKA Zadnjih 5 dana -->
             <div class="section">
                 <h2 style="color: #059669; margin-bottom: 15px;">🌲 PRIMKA - Zadnjih 5 Dana</h2>
-                <table class="monthly-table" id="poslovodja-primka-table">
-                    <thead id="poslovodja-primka-header"></thead>
-                    <tbody id="poslovodja-primka-body"></tbody>
-                </table>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="monthly-table" id="poslovodja-primka-table">
+                        <thead id="poslovodja-primka-header"></thead>
+                        <tbody id="poslovodja-primka-body"></tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- OTPREMA Zadnjih 5 dana -->
             <div class="section" style="margin-top: 30px;">
                 <h2 style="color: #dc2626; margin-bottom: 15px;">🚛 OTPREMA - Zadnjih 5 Dana</h2>
-                <table class="monthly-table" id="poslovodja-otprema-table">
-                    <thead id="poslovodja-otprema-header"></thead>
-                    <tbody id="poslovodja-otprema-body"></tbody>
-                </table>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="monthly-table" id="poslovodja-otprema-table">
+                        <thead id="poslovodja-otprema-header"></thead>
+                        <tbody id="poslovodja-otprema-body"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -3328,19 +3342,202 @@
             <!-- Suma mjeseca za ODJELE -->
             <div class="section">
                 <h2 style="color: #059669; margin-bottom: 15px;">📊 SUMA MJESECA - Po Odjelima</h2>
-                <table class="monthly-table" id="poslovodja-suma-odjeli-table">
-                    <thead id="poslovodja-suma-odjeli-header"></thead>
-                    <tbody id="poslovodja-suma-odjeli-body"></tbody>
-                </table>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="monthly-table" id="poslovodja-suma-odjeli-table">
+                        <thead id="poslovodja-suma-odjeli-header"></thead>
+                        <tbody id="poslovodja-suma-odjeli-body"></tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Suma mjeseca za RADILIŠTE -->
             <div class="section" style="margin-top: 30px;">
                 <h2 style="color: #dc2626; margin-bottom: 15px;">📍 SUMA MJESECA - Po Radilištima</h2>
-                <table class="monthly-table" id="poslovodja-suma-radiliste-table">
-                    <thead id="poslovodja-suma-radiliste-header"></thead>
-                    <tbody id="poslovodja-suma-radiliste-body"></tbody>
-                </table>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="monthly-table" id="poslovodja-suma-radiliste-table">
+                        <thead id="poslovodja-suma-radiliste-header"></thead>
+                        <tbody id="poslovodja-suma-radiliste-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- DINAMIKA CONTENT -->
+        <div id="dinamika-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>📊 Godišnja dinamika <span id="dinamika-selected-year">2026</span></h1>
+                    <p>Planirana mjesečna dinamika sječe (m³) za tekuću godinu</p>
+                </div>
+            </div>
+
+            <!-- Forma za unos mjesečne dinamike -->
+            <div class="section">
+                <h2>Mjesečni plan sječe</h2>
+                <form id="dinamika-form" onsubmit="saveDinamika(event)">
+                    <div style="overflow-x: auto;">
+                        <table class="expert-table" id="dinamika-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 200px;">Mjesec</th>
+                                    <th style="width: 250px;">Planirana količina (m³)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Januar</strong></td>
+                                    <td><input type="number" id="dinamika-01" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Februar</strong></td>
+                                    <td><input type="number" id="dinamika-02" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Mart</strong></td>
+                                    <td><input type="number" id="dinamika-03" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>April</strong></td>
+                                    <td><input type="number" id="dinamika-04" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Maj</strong></td>
+                                    <td><input type="number" id="dinamika-05" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Juni</strong></td>
+                                    <td><input type="number" id="dinamika-06" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Juli</strong></td>
+                                    <td><input type="number" id="dinamika-07" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Avgust</strong></td>
+                                    <td><input type="number" id="dinamika-08" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Septembar</strong></td>
+                                    <td><input type="number" id="dinamika-09" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Oktobar</strong></td>
+                                    <td><input type="number" id="dinamika-10" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Novembar</strong></td>
+                                    <td><input type="number" id="dinamika-11" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Decembar</strong></td>
+                                    <td><input type="number" id="dinamika-12" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr style="background: linear-gradient(135deg, #047857 0%, #065f46 100%); color: white; font-weight: bold; font-size: 16px;">
+                                    <td style="text-align: right; padding: 16px;">UKUPNO GODIŠNJE:</td>
+                                    <td style="padding: 16px;"><span id="dinamika-total">0.00</span> m³</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div style="margin-top: 24px; text-align: right;">
+                        <button type="submit" class="btn btn-primary" style="font-size: 16px; padding: 12px 32px;">
+                            💾 Spremi dinamiku
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- UPOREDBA GODINA CONTENT -->
+        <div id="uporedba-godina-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>📊 Uporedba godina</h1>
+                    <p>Side-by-side prikaz sječe i otpreme po godinama</p>
+                </div>
+            </div>
+
+            <!-- Izbor godina za usporedbu -->
+            <div class="section">
+                <div class="controls-bar" style="justify-content: center; align-items: center; gap: 24px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <label for="uporedba-year1" style="font-weight: 600; font-size: 16px;">📅 Godina 1:</label>
+                        <select id="uporedba-year1" class="year-select" onchange="loadUporedbaGodina()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
+                            
+                            
+                            <option value="2026" selected>2026</option></select>
+                    </div>
+                    <span style="font-size: 24px; font-weight: bold;">VS</span>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <label for="uporedba-year2" style="font-weight: 600; font-size: 16px;">📅 Godina 2:</label>
+                        <select id="uporedba-year2" class="year-select" onchange="loadUporedbaGodina()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #2563eb; min-width: 120px;">
+                            
+                            
+                            <option value="2026" selected>2026</option></select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mjesečna usporedba -->
+            <div class="section">
+                <h2>📅 Mjesečna usporedba sječe i otpreme</h2>
+                <div style="overflow-x: auto;">
+                    <table class="expert-table" id="uporedba-mjesecna-table">
+                        <thead id="uporedba-mjesecna-header"></thead>
+                        <tbody id="uporedba-mjesecna-body"></tbody>
+                        <tfoot id="uporedba-mjesecna-footer"></tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Godišnje ukupno -->
+            <div class="section">
+                <h2>📊 Godišnje ukupno i razlike</h2>
+                <div style="overflow-x: auto;">
+                    <table class="expert-table" id="uporedba-ukupno-table">
+                        <thead id="uporedba-ukupno-header"></thead>
+                        <tbody id="uporedba-ukupno-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Top 10 odjela -->
+            <div class="section">
+                <h2>🏆 Top 10 odjela po realizaciji</h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                    <div>
+                        <h3 id="uporedba-top10-year1-title" style="text-align: center; margin-bottom: 16px;">Godina 2025</h3>
+                        <div style="overflow-x: auto;">
+                            <table class="expert-table" id="uporedba-top10-year1-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Odjel</th>
+                                        <th style="text-align: right;">Sječa (m³)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="uporedba-top10-year1-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 id="uporedba-top10-year2-title" style="text-align: center; margin-bottom: 16px;">Godina 2026</h3>
+                        <div style="overflow-x: auto;">
+                            <table class="expert-table" id="uporedba-top10-year2-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Odjel</th>
+                                        <th style="text-align: right;">Sječa (m³)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="uporedba-top10-year2-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -3355,6 +3552,22 @@
 
             <!-- Kartice sa opcijama izvještaja -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-top: 30px;">
+
+                <!-- Dinamika -->
+                <div class="card" onclick="switchTab('dinamika')" style="cursor: pointer; transition: transform 0.2s; hover: transform: translateY(-4px);">
+                    <div style="padding: 24px;">
+                        <h2 style="margin: 0 0 12px 0; font-size: 24px;">📊 Dinamika</h2>
+                        <p style="color: #6b7280; margin: 0;">Planirana mjesečna dinamika sječe (m³) za tekuću godinu</p>
+                    </div>
+                </div>
+
+                <!-- Uporedba godina -->
+                <div class="card" onclick="switchTab('uporedba-godina')" style="cursor: pointer; transition: transform 0.2s;">
+                    <div style="padding: 24px;">
+                        <h2 style="margin: 0 0 12px 0; font-size: 24px;">📊 Uporedba godina</h2>
+                        <p style="color: #6b7280; margin: 0;">Side-by-side prikaz sječe i otpreme po godinama</p>
+                    </div>
+                </div>
 
                 <!-- Mjesečni izvještaj po odjelima -->
                 <div class="card" onclick="switchTab('izvjestaji')" style="cursor: pointer; transition: transform 0.2s;">
@@ -3564,6 +3777,7 @@
                 <button class="sub-tab active" onclick="switchIzvjestajiSubTab('mjesecni')">📅 Mjesečni izvještaj</button>
                 <button class="sub-tab" onclick="switchIzvjestajiSubTab('sedmicni-sjeca')">📊 Sedmični izvještaj sječe</button>
                 <button class="sub-tab" onclick="switchIzvjestajiSubTab('sedmicni-otprema')">📊 Sedmični izvještaj otpreme</button>
+                <button class="sub-tab" onclick="switchIzvjestajiSubTab('stanje-odjela')">📦 Stanje odjela</button>
             </div>
 
             <!-- MJESEČNI IZVJEŠTAJ -->
@@ -3685,24 +3899,21 @@
                 <div id="sedmicni-otprema-container"></div>
             </div>
 
-        </div>
-
-        <!-- STANJE ODJELA VIEW - Samostalan glavni tab -->
-        <div id="stanje-odjela-content" class="container hidden">
-            <div class="page-header">
-                <div class="page-header-left">
-                    <h2>📦 Stanje odjela</h2>
-                    <p style="color: #6b7280;">Trenutno stanje radilišta - sortirano po najsvježijim unosima sječe</p>
+            <!-- STANJE ODJELA -->
+            <div id="stanje-odjela-izvjestaj" class="sub-content hidden">
+                <div class="page-header" style="margin-top: 0;">
+                    <div class="page-header-left">
+                        <h2>📦 Stanje odjela</h2>
+                        <p style="color: #6b7280;">Trenutno stanje radilišta - sortirano po najsvježijim unosima sječe</p>
+                    </div>
+                    <div class="page-header-right">
+                        <select id="stanje-odjela-select" class="year-select" style="min-width: 250px; margin-right: 12px;" onchange="filterStanjeOdjela()">
+                            <option value="">Sva radilišta</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="loadStanjeOdjela()">🔄 Osvježi</button>
+                    </div>
                 </div>
-                <div class="page-header-right">
-                    <select id="stanje-odjela-select" class="year-select" style="min-width: 250px; margin-right: 12px;" onchange="filterStanjeOdjela()">
-                        <option value="">Sva radilišta</option>
-                    </select>
-                    <button class="btn btn-primary" onclick="loadStanjeOdjela()">🔄 Osvježi</button>
-                </div>
-            </div>
 
-            <div class="section">
                 <!-- Container za sve odjele -->
                 <div id="stanje-odjela-container"></div>
             </div>
@@ -3748,74 +3959,6 @@
                 <div id="pending-unosi-container"></div>
             </div>
         </div>
-
-        <!-- OSTALO VIEW -->
-        <div id="ostalo-content" class="container hidden">
-            <div class="section">
-                <h2>⚙️ Ostalo</h2>
-                <p style="color: #6b7280; margin-bottom: 32px;">Dodatne funkcionalnosti i pregledi</p>
-
-                <!-- Tab submenu za Ostalo -->
-                <div class="tabs-submenu" style="margin-bottom: 24px;">
-                    <button class="tab-sub active" onclick="switchOstaloTab('dinamika')">📊 Dinamika</button>
-                    <button class="tab-sub" onclick="switchOstaloTab('uporedba-godina')">📈 Uporedba godina</button>
-                </div>
-
-                <!-- Dinamika View -->
-                <div id="ostalo-dinamika-view" class="ostalo-view">
-                    <h3>📊 Dinamika - Pregled realizacije plana <span id="dinamika-selected-year" style="color: #047857;"></span></h3>
-                    <p style="color: #6b7280;">Unos planiranih mjesečnih količina</p>
-                    <div id="dinamika-container">
-                        <div class="chart-card">
-                            <h4 style="margin-bottom: 20px;">Mjesečna dinamika (m³)</h4>
-                            <form id="dinamika-form" onsubmit="saveDinamika(event)">
-                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-                                    <div><label>Januar:</label><input type="number" id="dinamika-01" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
-                                    <div><label>Februar:</label><input type="number" id="dinamika-02" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
-                                    <div><label>Mart:</label><input type="number" id="dinamika-03" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
-                                    <div><label>April:</label><input type="number" id="dinamika-04" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
-                                    <div><label>Maj:</label><input type="number" id="dinamika-05" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
-                                    <div><label>Juni:</label><input type="number" id="dinamika-06" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
-                                    <div><label>Juli:</label><input type="number" id="dinamika-07" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
-                                    <div><label>August:</label><input type="number" id="dinamika-08" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
-                                    <div><label>Septembar:</label><input type="number" id="dinamika-09" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
-                                    <div><label>Oktobar:</label><input type="number" id="dinamika-10" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
-                                    <div><label>Novembar:</label><input type="number" id="dinamika-11" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
-                                    <div><label>Decembar:</label><input type="number" id="dinamika-12" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></div>
-                                </div>
-                                <div style="margin-top: 20px; padding: 16px; background: #f0fdf4; border-radius: 8px;">
-                                    <strong>Ukupno:</strong> <span id="dinamika-total" style="font-size: 20px; color: #047857;">0.00</span> m³
-                                </div>
-                                <button type="submit" class="btn btn-primary" style="margin-top: 20px;">Spremi dinamiku</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Uporedba godina View -->
-                <div id="ostalo-uporedba-view" class="ostalo-view hidden">
-                    <h3>📈 Uporedba godina - Tekuća vs Prošla</h3>
-                    <p style="color: #6b7280;">Usporedba sječe i otpreme po godinama</p>
-                    <div id="uporedba-godina-container">
-                        <div class="chart-card">
-                            <h4>Odaberi godine za usporedbu:</h4>
-                            <div style="display: flex; gap: 16px; margin-bottom: 24px;">
-                                <select id="uporedba-year1" onchange="loadUporedbaGodina()" style="padding: 8px 16px; border: 2px solid #d1d5db; border-radius: 6px; font-size: 14px;">
-                                    <option value="2026" selected>2026</option>
-                                    <option value="2025">2025</option>
-                                </select>
-                                <span style="display: flex; align-items: center; font-weight: bold;">vs</span>
-                                <select id="uporedba-year2" onchange="loadUporedbaGodina()" style="padding: 8px 16px; border: 2px solid #d1d5db; border-radius: 6px; font-size: 14px;">
-                                    <option value="2026">2026</option>
-                                    <option value="2025" selected>2025</option>
-                                </select>
-                            </div>
-                            <canvas id="uporedba-chart" style="max-height: 400px;"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Confirm Modal -->
@@ -3835,8 +3978,8 @@
     </div>
 
     <script>
-        // VERSION INFO - 2026 PRIORITET: Default godina 2026 + login logo 220px (bilo 360px)
-        const APP_VERSION = '2026-01-08-v24-2026-PRIORITET';
+        // VERSION INFO - Izvještaji samo za 2026 godinu
+        const APP_VERSION = '2026-01-05-v9-YEAR-2026-ONLY';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -3845,9 +3988,9 @@
         console.log(`%c🌲 ŠUMARIJA v${APP_VERSION}`, 'background: #059669; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 18px;');
         console.log(`%cBuild: ${BUILD_COMMIT}`, 'color: #6b7280; font-size: 12px;');
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
-        console.log('%c✅ AKO VIDIŠ VERZIJU v15-TIMEOUT-60s-ALL = IMAŠ NAJNOVIJU VERZIJU!', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
-        console.log('%c⏱️ TIMEOUT ZA ODJELI: 60 SEKUNDI (riješeno "Server je spor")!', 'background: #ef4444; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
-        console.log('%c⚙️ Ostalo meni: Dinamika + Uporedba godina!', 'color: #059669; font-weight: bold; font-size: 14px;');
+        console.log('%c✅ NAJNOVIJA VERZIJA SA POPRAVKAMA UČITANA!', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
+        console.log('%c🔥 AKO VIDIŠ OVO = TIMEOUT FIX JE AKTIVAN!', 'background: #ef4444; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
+        console.log('%cAko vidiš ovu poruku, data.filter greška je popravljena!', 'color: #059669; font-weight: bold;');
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
 
         const API_URL = 'https://script.google.com/macros/s/AKfycbwkJ4apCi1yf9WNMVboGUtLVK6ZRWzLAAN-CkyfGbUqCyGm4qMjH3-zVifJUUCgUW2t/exec';
@@ -4027,15 +4170,14 @@
 
         // ========== CACHING & OFFLINE SUPPORT ==========
 
-        // Register Service Worker for offline support (relative path for GitHub Pages subfolder)
+        // Register Service Worker for offline support
         if ('serviceWorker' in navigator) {
-            const swPath = new URL('./service-worker.js', document.baseURI).pathname;
-            navigator.serviceWorker.register(swPath)
+            navigator.serviceWorker.register('/service-worker.js')
                 .then(registration => {
-                    console.log('✅ Service Worker registered:', registration.scope);
+                    console.log('Service Worker registered:', registration);
                 })
                 .catch(error => {
-                    console.error('❌ Service Worker registration failed:', error);
+                    console.error('Service Worker registration failed:', error);
                 });
         }
 
@@ -4088,10 +4230,7 @@
             'default': 5 * 60 * 1000           // 5 minutes default
         };
 
-        // SINGLE-FLIGHT: Track in-progress fetches to prevent duplicates
-        const activeFetches = new Map();
-
-        // Fetch with cache - cache-first strategy with single-flight pattern
+        // Fetch with cache - cache-first strategy
         async function fetchWithCache(url, cacheKey, forceRefresh = false, timeout = 8000) {
             // DEBUG: Confirm timeout parameter exists
             if (typeof timeout === 'undefined') {
@@ -4101,14 +4240,7 @@
 
             // Use smart cache TTL optimized for data entry patterns
             const path = new URL(url).searchParams.get('path');
-            const year = new URL(url).searchParams.get('year');
             const cacheTTL = getSmartCacheTTL();
-
-            // SINGLE-FLIGHT: If same request is already in progress, return that promise
-            if (activeFetches.has(cacheKey)) {
-                console.log(`⏳ Request already in progress (${path}), waiting...`);
-                return activeFetches.get(cacheKey);
-            }
 
             // If force refresh, clear cache for this key
             if (forceRefresh) {
@@ -4138,72 +4270,55 @@
             }
 
             // Cache miss or stale - fetch from network with timeout
-            // WRAP in promise and track in activeFetches
-            const fetchPromise = (async () => {
-                try {
-                    console.log(`↻ Fetching fresh data (${path})...`);
+            try {
+                console.log(`↻ Fetching fresh data (${path})...`);
 
-                    // PRE-CHECK: Warn about 2026 empty data
-                    if (year === '2026' && (path === 'dashboard' || path === 'odjeli')) {
-                        console.warn(`⚠️ 2026 ima malo podataka - učitavanje može trajati 60+ sekundi...`);
-                        console.warn(`💡 TIP: Koristite 2025 za brži pristup!`);
-                    }
+                // Fetch with configurable timeout (default 8s, but can be higher for heavy endpoints)
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-                    // Fetch with configurable timeout (default 8s, but can be higher for heavy endpoints)
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), timeout);
+                const response = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                const data = await response.json();
 
-                    const response = await fetch(url, { signal: controller.signal });
-                    clearTimeout(timeoutId);
-                    const data = await response.json();
+                // Store in cache
+                localStorage.setItem(cacheKey, JSON.stringify({
+                    data: data,
+                    timestamp: Date.now()
+                }));
 
-                    // Store in cache
-                    localStorage.setItem(cacheKey, JSON.stringify({
-                        data: data,
-                        timestamp: Date.now()
-                    }));
+                console.log(`✓ Fresh data cached (${path})`);
+                hideCacheIndicator();
+                return data;
 
-                    console.log(`✓ Fresh data cached (${path})`);
-                    hideCacheIndicator();
-                    return data;
-
-                } catch (error) {
-                    // Handle timeout specifically
-                    if (error.name === 'AbortError') {
-                        console.error(`⏱️ Request timeout (${timeout/1000}s) - server too slow:`, path);
-                        console.error(`   Year: ${year || 'N/A'}`);
-                    } else {
-                        console.error('Network error:', error);
-                    }
-
-                    // If network fails and we have stale cache, use it
-                    if (cached) {
-                        try {
-                            const cachedData = JSON.parse(cached);
-                            const age = Date.now() - cachedData.timestamp;
-                            console.log(`⚠ Network failed, using stale cache (${Math.round(age / 60000)} min old)`);
-                            showCacheIndicator(age, true);
-                            return cachedData.data;
-                        } catch (e) {
-                            console.error('Stale cache parse error:', e);
-                        }
-                    }
-
-                    // If timeout, show user-friendly message
-                    if (error.name === 'AbortError') {
-                        throw new Error('Server je spor, molimo pokušajte ponovo ili koristite keširane podatke.');
-                    }
-
-                    throw error;
-                } finally {
-                    // ALWAYS clean up from activeFetches
-                    activeFetches.delete(cacheKey);
+            } catch (error) {
+                // Handle timeout specifically
+                if (error.name === 'AbortError') {
+                    console.error(`Request timeout (${timeout/1000}s) - server too slow:`, path);
+                } else {
+                    console.error('Network error:', error);
                 }
-            })();
 
-            // Track this fetch
-            activeFetches.set(cacheKey, fetchPromise);
-            return fetchPromise;
+                // If network fails and we have stale cache, use it
+                if (cached) {
+                    try {
+                        const cachedData = JSON.parse(cached);
+                        const age = Date.now() - cachedData.timestamp;
+                        console.log(`⚠ Network failed, using stale cache (${Math.round(age / 60000)} min old)`);
+                        showCacheIndicator(age, true);
+                        return cachedData.data;
+                    } catch (e) {
+                        console.error('Stale cache parse error:', e);
+                    }
+                }
+
+                // If timeout, show user-friendly message
+                if (error.name === 'AbortError') {
+                    throw new Error('Server je spor, molimo pokušajte ponovo ili koristite keširane podatke.');
+                }
+
+                throw error;
+            }
         }
 
         // Show cache indicator
@@ -4275,8 +4390,7 @@
         async function preloadAllViews() {
             showInfo('⚡ Učitavanje...', 'Učitavam sve prikaze u pozadini. Ovo može potrajati.');
 
-            // Koristi 2026 kao default godinu (tekuća godina je prioritet)
-            const year = 2026;
+            const year = new Date().getFullYear();
             let totalLoaded = 0;
             let totalFailed = 0;
 
@@ -4285,7 +4399,6 @@
                 const userType = (currentUser.type || '').toLowerCase();
 
                 console.log(`User type detected: ${userType}`);
-                console.log(`Preloading data for year: ${year}`);
 
                 if (userType === 'admin') {
                     // Admin views to preload
@@ -4295,9 +4408,9 @@
                         { name: 'Otpremaci', url: `${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_otpremaci_' + year },
                         { name: 'Kupci', url: `${API_URL}?path=kupci&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_kupci_' + year },
                         { name: 'Odjeli', url: `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_odjeli_' + year },
-                        { name: 'Stanje Odjela', url: `${API_URL}?path=stanje-odjela&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_stanje_odjela' },
-                        { name: 'Pending Unosi', url: `${API_URL}?path=pending-unosi&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_pending_unosi' },
-                        { name: 'Mjesečni Sortimenti', url: `${API_URL}?path=mjesecni-sortimenti&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_mjesecni_sortimenti_' + year },
+                        { name: 'Stanje Odjela', url: `${API_URL}?path=stanje_odjela&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_stanje_odjela_' + year },
+                        { name: 'Pending Unosi', url: `${API_URL}?path=pending_unosi&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_pending_unosi' },
+                        { name: 'Mjesečni Sortimenti', url: `${API_URL}?path=mjesecni_sortimenti&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_mjesecni_sortimenti_' + year },
                         { name: 'Dinamika', url: `${API_URL}?path=get_dinamika&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_dinamika_' + year }
                     ];
 
@@ -4306,8 +4419,8 @@
                     for (const view of views) {
                         try {
                             console.log(`Loading ${view.name}...`);
-                            // Use 60s timeout for heavy endpoints, 30s for others
-                            const timeout = (view.name === 'Dashboard' || view.name === 'Odjeli' || view.name === 'Stanje Odjela') ? 60000 : 30000;
+                            // Use 30s timeout for heavy endpoints (dashboard, odjeli), 8s for others
+                            const timeout = (view.name === 'Dashboard' || view.name === 'Odjeli') ? 30000 : 8000;
                             await fetchWithCache(view.url, view.cacheKey, false, timeout);
                             totalLoaded++;
                             console.log(`✓ ${view.name} loaded`);
@@ -4556,7 +4669,6 @@
                 // Admin korisnici - bez OPERATIVA tab-a (admin se loguje kao OPERATIVA tip ako želi vidjeti operativa podatke)
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
-                    <button class="tab" onclick="switchTab('stanje-odjela')">📦 Stanje odjela</button>
                     <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Sječa/otprema po mjesecima</button>
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz sječe</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz otpreme</button>
@@ -4566,7 +4678,6 @@
                         📋 Dodani unosi
                         <span class="badge-count" id="pending-count-badge"></span>
                     </button>
-                    <button class="tab" onclick="switchTab('ostalo')">⚙️ Ostalo</button>
                 `;
             }
         }
@@ -4606,12 +4717,6 @@
         
         // Load initial data based on user type (OPTIMIZED - lazy loading)
         function loadData() {
-            // GUARD: Don't load if user is not logged in
-            if (!currentUser || !currentPassword) {
-                console.warn('⚠️ loadData() called but user not logged in - skipping');
-                return;
-            }
-
             const userType = (currentUser.type || '').toLowerCase();
 
             // Show loading screen with progress
@@ -4664,15 +4769,12 @@
             document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
             document.getElementById('poslovodja-zadnjih5-content').classList.add('hidden');
             document.getElementById('poslovodja-suma-content').classList.add('hidden');
-            document.getElementById('ostalo-content').classList.add('hidden');
-            document.getElementById('stanje-odjela-content').classList.add('hidden');
+            document.getElementById('dinamika-content').classList.add('hidden');
+            document.getElementById('uporedba-godina-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
                 loadDashboard();
-            } else if (tab === 'stanje-odjela') {
-                loadStanjeOdjela();
-                document.getElementById('stanje-odjela-content').classList.remove('hidden');
             } else if (tab === 'operativa') {
                 loadOperativa();
             } else if (tab === 'primaci') {
@@ -4704,6 +4806,10 @@
                 loadPendingUnosi();
             } else if (tab === 'mjesecni-sortimenti') {
                 loadMjesecniSortimenti();
+            } else if (tab === 'dinamika') {
+                loadDinamika();
+            } else if (tab === 'uporedba-godina') {
+                loadUporedbaGodina();
             } else if (tab === 'izvjestaji') {
                 // Initialize dropdowns to current month/year if not already set
                 const currentDate = new Date();
@@ -4762,35 +4868,6 @@
 
                 document.getElementById('izvjestaji-otpremac-content').classList.remove('hidden');
                 switchOtpremacIzvjestajiSubTab('sedmicni');
-            } else if (tab === 'ostalo') {
-                document.getElementById('ostalo-content').classList.remove('hidden');
-                // Load dinamika by default
-                switchOstaloTab('dinamika');
-            }
-        }
-
-        // Switch between Ostalo tabs
-        function switchOstaloTab(view) {
-            // Update submenu buttons
-            const tabs = document.querySelectorAll('.tabs-submenu .tab-sub');
-            tabs.forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
-
-            // Hide all ostalo views
-            document.getElementById('ostalo-dinamika-view').classList.add('hidden');
-            document.getElementById('ostalo-uporedba-view').classList.add('hidden');
-
-            // Show selected view
-            if (view === 'dinamika') {
-                document.getElementById('ostalo-dinamika-view').classList.remove('hidden');
-                if (!document.getElementById('dinamika-container').innerHTML) {
-                    loadDinamika();
-                }
-            } else if (view === 'uporedba-godina') {
-                document.getElementById('ostalo-uporedba-view').classList.remove('hidden');
-                if (!document.getElementById('uporedba-godina-container').innerHTML) {
-                    loadUporedbaGodina();
-                }
             }
         }
 
@@ -4869,60 +4946,66 @@
         }
 
         // Load dashboard data
-        // Helper: Render odjeli table (extracted for stale-while-revalidate pattern)
-        function renderOdjeliTable(odjeliData) {
-            if (!odjeliData) {
-                document.getElementById('odjeli-table-body').innerHTML =
-                    '<tr><td colspan="8" style="text-align: center; color: #6b7280;">Nema podataka o odjelima</td></tr>';
-                return;
-            }
-
-            if (odjeliData.error) {
-                document.getElementById('odjeli-table-body').innerHTML =
-                    '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri učitavanju podataka o odjelima</td></tr>';
-                return;
-            }
-
-            if (odjeliData.odjeli && Array.isArray(odjeliData.odjeli) && odjeliData.odjeli.length > 0) {
-                const odjeliHTML = odjeliData.odjeli.map(o => {
-                    const realizacijaColor = o.realizacija >= 100 ? 'green' : (o.realizacija >= 80 ? 'blue' : 'red');
-                    return `
-                        <tr>
-                            <td style="font-weight: 500;">${o.odjel}</td>
-                            <td class="right green">${(o.sjeca || 0).toFixed(2)}</td>
-                            <td class="right blue">${(o.otprema || 0).toFixed(2)}</td>
-                            <td class="right">${(o.sumaPanj || 0).toFixed(2)}</td>
-                            <td>${o.radiliste || '-'}</td>
-                            <td>${o.izvođač || '-'}</td>
-                            <td>${o.datumZadnjeSjece || '-'}</td>
-                            <td class="right ${realizacijaColor}">${o.realizacija > 0 ? o.realizacija.toFixed(1) + '%' : '-'}</td>
-                        </tr>
-                    `;
-                }).join('');
-                document.getElementById('odjeli-table-body').innerHTML = odjeliHTML;
-            } else {
-                document.getElementById('odjeli-table-body').innerHTML =
-                    '<tr><td colspan="8" style="text-align: center; color: #6b7280;">Nema podataka o odjelima</td></tr>';
-            }
-        }
-
-        // Funkcija za promjenu godine na Dashboard-u
-        function changeDashboardYear() {
-            loadDashboard();
-        }
-
         async function loadDashboard() {
             document.getElementById('loading-screen').classList.remove('hidden');
             document.getElementById('dashboard-content').classList.add('hidden');
 
             try {
-                // Uzmi godinu iz dropdown-a (default: 2026)
-                const yearSelect = document.getElementById('dashboard-year-select');
-                const year = yearSelect ? parseInt(yearSelect.value) : 2026;
-
-                // Fetch dashboard data with caching (60s timeout for heavy endpoint)
+                const year = new Date().getFullYear();
+                const cacheKey = 'cache_dashboard_' + year;
                 const url = `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_dashboard_' + year, false, 60000);
+
+                // STALE-WHILE-REVALIDATE: Check cache first
+                let hasCachedData = false;
+                const cachedDashboard = localStorage.getItem(cacheKey);
+                if (cachedDashboard) {
+                    try {
+                        const parsed = JSON.parse(cachedDashboard);
+                        if (parsed.data && parsed.data.mjesecnaStatistika) {
+                            console.log(`📦 Showing cached dashboard while fetching fresh data...`);
+                            await renderDashboard(parsed.data);
+                            hasCachedData = true;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Failed to parse cached dashboard:', e);
+                    }
+                }
+
+                // FETCH FRESH DATA (120s timeout for slow backend)
+                try {
+                    const data = await fetchWithCache(url, cacheKey, false, 120000);
+
+                    // Render fresh data (silently if we already showed cache)
+                    if (!hasCachedData) {
+                        console.log('✅ Showing fresh dashboard data');
+                    } else {
+                        console.log('🔄 Updating dashboard with fresh data');
+                    }
+                    await renderDashboard(data);
+
+                } catch (error) {
+                    // If we have cached data, don't show error
+                    if (!hasCachedData) {
+                        throw error;
+                    } else {
+                        console.warn('⚠️ Failed to fetch fresh data, showing cached version:', error);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Dashboard error:', error);
+                document.getElementById('loading-screen').innerHTML = `
+                    <div class="loading-icon">⚠️</div>
+                    <div class="loading-text">Greška pri učitavanju</div>
+                    <div class="loading-sub">${error.message}</div>
+                    <button class="btn btn-primary" style="margin-top: 20px;" onclick="loadDashboard()">🔄 Pokušaj ponovo</button>
+                `;
+            }
+        }
+
+        // Separate render function for dashboard
+        async function renderDashboard(data) {
+                const year = new Date().getFullYear();
 
                 console.log('Dashboard data:', data);
 
@@ -4931,29 +5014,18 @@
                     throw new Error('Dashboard API error: ' + data.error);
                 }
 
-                // GUARD: Ensure mjesecnaStatistika exists and is array
-                if (!data.mjesecnaStatistika || !Array.isArray(data.mjesecnaStatistika)) {
-                    console.warn(`⚠️ Nema mjesecnaStatistika za godinu ${year}`);
-                    throw new Error(`Nema podataka za ${year}. godinu. Molimo koristite 2025.`);
+                // Check if data is valid
+                if (!data.mjesecnaStatistika) {
+                    throw new Error('Dashboard data missing mjesecnaStatistika');
                 }
 
-                // GUARD: Check if data is empty (no activity)
-                if (data.mjesecnaStatistika.length === 0) {
-                    console.warn(`⚠️ Prazan niz mjesecnaStatistika za ${year}`);
-                    throw new Error(`${year}. godina nema podataka o sječi/otpremi. Koristite 2025.`);
-                }
-
-                // Calculate summary statistics (safe with default values)
-                const totalSjeca = (data.mjesecnaStatistika || []).reduce((sum, m) => sum + (m.sjeca || 0), 0);
-                const totalOtprema = (data.mjesecnaStatistika || []).reduce((sum, m) => sum + (m.otprema || 0), 0);
+                // Calculate summary statistics
+                const totalSjeca = data.mjesecnaStatistika.reduce((sum, m) => sum + m.sjeca, 0);
+                const totalOtprema = data.mjesecnaStatistika.reduce((sum, m) => sum + m.otprema, 0);
                 const totalStanje = totalSjeca - totalOtprema;
-                const totalDinamika = (data.mjesecnaStatistika || []).reduce((sum, m) => sum + (m.dinamika || 0), 0);
+                const totalDinamika = data.mjesecnaStatistika.reduce((sum, m) => sum + m.dinamika, 0);
                 const razlikaDinamika = totalSjeca - totalDinamika;
-
-                // GUARD: Prevent NaN/Infinity in percentDinamika
-                const percentDinamika = totalDinamika > 0
-                    ? ((totalSjeca / totalDinamika) * 100).toFixed(1)
-                    : '0.0';
+                const percentDinamika = ((totalSjeca / totalDinamika) * 100).toFixed(1);
 
                 // Create summary cards
                 const summaryHTML = `
@@ -5054,66 +5126,42 @@
                 }).join('');
                 document.getElementById('dashboard-monthly-table').innerHTML = monthlyHTML;
 
-                // Fetch and populate odjeli table with caching (120s timeout)
-                // STRATEGY: Show cached data immediately, then refresh in background
+                // Fetch and populate odjeli table with caching
                 const odjeliUrl = `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const odjeliCacheKey = 'cache_odjeli_' + year;
+                const odjeliData = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year);
 
-                // STEP 1: Check if we have cached data
-                const cachedOdjeli = localStorage.getItem(odjeliCacheKey);
-                let hasCachedData = false;
+                console.log('Odjeli data:', odjeliData);
 
-                if (cachedOdjeli) {
-                    try {
-                        const parsed = JSON.parse(cachedOdjeli);
-                        const age = Date.now() - parsed.timestamp;
-
-                        // If cache exists (even if stale), show it IMMEDIATELY
-                        if (parsed.data && parsed.data.odjeli) {
-                            console.log(`📦 Showing cached odjeli data (${Math.round(age/60000)} min old) while fetching fresh...`);
-                            renderOdjeliTable(parsed.data);
-                            hasCachedData = true;
-
-                            // Show UI feedback that we're refreshing
-                            if (age > 5 * 60 * 1000) { // Older than 5 min
-                                showCacheIndicator(age, false);
-                            }
-                        }
-                    } catch (e) {
-                        console.error('Failed to parse cached odjeli:', e);
-                    }
-                }
-
-                // STEP 2: Fetch fresh data in background (120s timeout for slow backend)
-                // Don't block UI if we have cached data
-                try {
-                    const odjeliData = await fetchWithCache(odjeliUrl, odjeliCacheKey, false, 120000);
-                    console.log('✓ Fresh odjeli data received');
-                    renderOdjeliTable(odjeliData);
-                    hideCacheIndicator();
-                } catch (error) {
-                    console.error('Failed to fetch fresh odjeli:', error);
-
-                    // If we already showed cached data, don't show error
-                    if (!hasCachedData) {
-                        document.getElementById('odjeli-table-body').innerHTML =
-                            '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri učitavanju. Molimo osvježite stranicu.</td></tr>';
-                    } else {
-                        console.log('📦 Keeping cached odjeli data due to fetch error');
-                    }
+                if (odjeliData.error) {
+                    console.error('Odjeli API error:', odjeliData.error);
+                    document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri učitavanju podataka o odjelima</td></tr>';
+                } else if (odjeliData.odjeli && odjeliData.odjeli.length > 0) {
+                    const odjeliHTML = odjeliData.odjeli.map(o => {
+                        const realizacijaColor = o.realizacija >= 100 ? 'green' : (o.realizacija >= 80 ? 'blue' : 'red');
+                        return `
+                            <tr>
+                                <td style="font-weight: 500;">${o.odjel}</td>
+                                <td class="right green">${o.sjeca.toFixed(2)}</td>
+                                <td class="right blue">${o.otprema.toFixed(2)}</td>
+                                <td class="right">${o.sumaPanj.toFixed(2)}</td>
+                                <td>${o.radiliste || '-'}</td>
+                                <td>${o.izvođač || '-'}</td>
+                                <td>${o.datumZadnjeSjece || '-'}</td>
+                                <td class="right ${realizacijaColor}">${o.realizacija > 0 ? o.realizacija.toFixed(1) + '%' : '-'}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                    document.getElementById('odjeli-table-body').innerHTML = odjeliHTML;
+                } else {
+                    document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #6b7280;">Nema podataka o odjelima</td></tr>';
                 }
 
                 // Load pending count for badge (admin only)
                 loadPendingCount();
 
+                // Show content (in case it was hidden during initial load)
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('dashboard-content').classList.remove('hidden');
-
-            } catch (error) {
-                console.error('Dashboard error:', error);
-                showError('Greška', 'Greška pri učitavanju dashboard podataka: ' + error.message);
-                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
-            }
         }
 
         // ========================================
@@ -5145,9 +5193,9 @@
                 // Display radilišta
                 document.getElementById('poslovodja-radilista-list').textContent = radilista.join(', ');
 
-                // Load STANJE ODJELA data (60s timeout)
+                // Load STANJE ODJELA data
                 const url = `${API_URL}?path=odjeli&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_odjeli_stanje', false, 60000);
+                const data = await fetchWithCache(url, 'cache_odjeli_stanje');
 
                 console.log('Odjeli data:', data);
 
@@ -5244,9 +5292,9 @@
                 // Display radilišta
                 document.getElementById('poslovodja-radilista-list-2').textContent = radilista.join(', ');
 
-                // Load STANJE ODJELA data (koristimo iste podatke kao za stanje) (60s timeout)
+                // Load STANJE ODJELA data (koristimo iste podatke kao za stanje)
                 const url = `${API_URL}?path=odjeli&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_odjeli_realizacija', false, 60000);
+                const data = await fetchWithCache(url, 'cache_odjeli_realizacija');
 
                 console.log('Odjeli data:', data);
 
@@ -5780,8 +5828,50 @@
 
             try {
                 const year = new Date().getFullYear();
+                const cacheKey = 'cache_primaci_' + year;
                 const url = `${API_URL}?path=primaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_primaci_' + year);
+
+                // STALE-WHILE-REVALIDATE: Check cache first
+                let hasCachedData = false;
+                const cachedPrimaci = localStorage.getItem(cacheKey);
+                if (cachedPrimaci) {
+                    try {
+                        const parsed = JSON.parse(cachedPrimaci);
+                        if (parsed.data && parsed.data.primaci) {
+                            console.log(`📦 Showing cached primaci while fetching fresh data...`);
+                            renderPrimaci(parsed.data);
+                            hasCachedData = true;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Failed to parse cached primaci:', e);
+                    }
+                }
+
+                // FETCH FRESH DATA (120s timeout)
+                try {
+                    const data = await fetchWithCache(url, cacheKey, false, 120000);
+                    if (!hasCachedData) {
+                        console.log('✅ Showing fresh primaci data');
+                    } else {
+                        console.log('🔄 Updating primaci with fresh data');
+                    }
+                    renderPrimaci(data);
+                } catch (error) {
+                    if (!hasCachedData) {
+                        throw error;
+                    } else {
+                        console.warn('⚠️ Failed to fetch fresh primaci, showing cached version:', error);
+                    }
+                }
+
+            } catch (error) {
+                showError('Greška', 'Greška pri učitavanju primača: ' + error.message);
+                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
+            }
+        }
+
+        // Separate render function for primaci
+        function renderPrimaci(data) {
 
                 // Calculate totals per month
                 const monthTotals = new Array(12).fill(0);
@@ -5855,11 +5945,6 @@
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('primaci-content').classList.remove('hidden');
-
-            } catch (error) {
-                showError('Greška', 'Greška pri učitavanju primača: ' + error.message);
-                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
-            }
         }
 
         // Load otpremaci data
@@ -5869,8 +5954,50 @@
 
             try {
                 const year = new Date().getFullYear();
+                const cacheKey = 'cache_otpremaci_' + year;
                 const url = `${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_otpremaci_' + year);
+
+                // STALE-WHILE-REVALIDATE: Check cache first
+                let hasCachedData = false;
+                const cachedOtpremaci = localStorage.getItem(cacheKey);
+                if (cachedOtpremaci) {
+                    try {
+                        const parsed = JSON.parse(cachedOtpremaci);
+                        if (parsed.data && parsed.data.otpremaci) {
+                            console.log(`📦 Showing cached otpremaci while fetching fresh data...`);
+                            renderOtpremaci(parsed.data);
+                            hasCachedData = true;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Failed to parse cached otpremaci:', e);
+                    }
+                }
+
+                // FETCH FRESH DATA (120s timeout)
+                try {
+                    const data = await fetchWithCache(url, cacheKey, false, 120000);
+                    if (!hasCachedData) {
+                        console.log('✅ Showing fresh otpremaci data');
+                    } else {
+                        console.log('🔄 Updating otpremaci with fresh data');
+                    }
+                    renderOtpremaci(data);
+                } catch (error) {
+                    if (!hasCachedData) {
+                        throw error;
+                    } else {
+                        console.warn('⚠️ Failed to fetch fresh otpremaci, showing cached version:', error);
+                    }
+                }
+
+            } catch (error) {
+                showError('Greška', 'Greška pri učitavanju otpremača: ' + error.message);
+                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
+            }
+        }
+
+        // Separate render function for otpremaci
+        function renderOtpremaci(data) {
 
                 // Calculate totals per month
                 const monthTotals = new Array(12).fill(0);
@@ -5944,11 +6071,6 @@
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('otpremaci-content').classList.remove('hidden');
-
-            } catch (error) {
-                showError('Greška', 'Greška pri učitavanju otpremača: ' + error.message);
-                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
-            }
         }
 
         // Helper function to get month name
@@ -8998,9 +9120,9 @@
             document.getElementById('loading-screen').classList.remove('hidden');
 
             try {
-                // Load data from backend with 60s timeout
+                // Load data from backend
                 const url = API_URL + '?path=stanje-odjela&username=' + currentUser.username + '&password=' + currentPassword;
-                const data = await fetchWithCache(url, `cache_stanje_odjela`, false, 60000);
+                const data = await fetchWithCache(url, `cache_stanje_odjela`);
 
                 if (data.error) throw new Error(data.error);
 
@@ -9023,42 +9145,15 @@
             }
         }
 
-        // Helper funkcija za filtriranje odjela prema kriterijima
-        function filterStanjeOdjelaByKriteriji(data, sortimentiNazivi) {
-            const currentYear = new Date().getFullYear();
-            const sveukupnoIndex = sortimentiNazivi.indexOf('SVEUKUPNO');
-
-            return data.filter(odjel => {
-                // Provjeri da li odjel ima zadnji datum u tekućoj godini
-                const odjelYear = odjel.zadnjiDatum ? new Date(odjel.zadnjiDatum).getFullYear() : null;
-                const jeTekucaGodina = odjelYear === currentYear;
-
-                // Uzmi SVEUKUPNO vrijednosti za sječu i otpremu
-                const sjecaSveukupno = odjel.redovi.sjeca[sveukupnoIndex] || 0;
-                const otpremaSveukupno = odjel.redovi.otprema[sveukupnoIndex] || 0;
-
-                // Prikaži ako:
-                // 1. Tekuća godina I ima aktivnost (sječa > 0 ili otprema > 0)
-                // 2. ILI otprema < sječa
-                const imaAktivnost = sjecaSveukupno > 0 || otpremaSveukupno > 0;
-                const otpremaIspodSjece = otpremaSveukupno < sjecaSveukupno;
-
-                return (jeTekucaGodina && imaAktivnost) || otpremaIspodSjece;
-            });
-        }
-
         function populateStanjeOdjelaDropdown(data) {
             const select = document.getElementById('stanje-odjela-select');
 
             // Očisti postojeće opcije osim "Sva radilišta"
             select.innerHTML = '<option value="">Sva radilišta</option>';
 
-            // Filtriraj podatke prema kriterijima prije nego što izvučeš radilišta
-            const filteredData = filterStanjeOdjelaByKriteriji(data, stanjeOdjelaSortimenti);
-
-            // Izvuci unique radilišta SAMO iz filtriranih podataka
+            // Izvuci unique radilišta
             const radilistaSet = new Set();
-            filteredData.forEach(odjel => {
+            data.forEach(odjel => {
                 if (odjel.radiliste) {
                     radilistaSet.add(odjel.radiliste);
                 }
@@ -9095,18 +9190,10 @@
                 return;
             }
 
-            // Filtriraj podatke prema kriterijima (tekuća godina sa aktivnošću ili otprema < sječa)
-            const filteredData = filterStanjeOdjelaByKriteriji(data, sortimentiNazivi);
-
-            if (filteredData.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;">Nema odjela koji zadovoljavaju kriterije (tekuća godina sa aktivnošću ili otprema ispod sječe)</div>';
-                return;
-            }
-
             let html = '';
 
             // Za svaki odjel kreiraj zasebnu sekciju
-            filteredData.forEach((odjelData, odjelIndex) => {
+            data.forEach((odjelData, odjelIndex) => {
                 const radiliste = odjelData.radiliste || odjelData.odjelNaziv;
                 const odjelNaziv = odjelData.odjelNaziv;
                 const redovi = odjelData.redovi;
@@ -10229,13 +10316,13 @@
         // Load and transform data for OPERATIVA screen
         async function loadStatsForOperativa(year) {
             try {
-                // Fetch dashboard data (60s timeout for heavy endpoint)
+                // Fetch dashboard data (30s timeout for heavy endpoint)
                 const dashboardUrl = `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const dashboardData = await fetchWithCache(dashboardUrl, 'cache_dashboard_' + year, false, 60000);
+                const dashboardData = await fetchWithCache(dashboardUrl, 'cache_dashboard_' + year, false, 30000);
 
-                // Fetch odjeli data (60s timeout for heavy endpoint)
+                // Fetch odjeli data (30s timeout for heavy endpoint)
                 const odjeliUrl = `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const odjeliResponse = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year, false, 60000);
+                const odjeliResponse = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year, false, 30000);
 
                 // **NOVO: Fetch STANJE ODJELA data (sa PROJEKAT podacima iz Excel redova 10-13)**
                 const stanjeOdjelaUrl = `${API_URL}?path=stanje-odjela&username=${currentUser.username}&password=${currentPassword}`;
@@ -10985,7 +11072,7 @@
         // Load dinamika data
         async function loadDinamika() {
             console.log('Loading Dinamika...');
-            const container = document.getElementById('dinamika-container');
+            document.getElementById('dinamika-content').classList.remove('hidden');
 
             const year = new Date().getFullYear(); // Tekuća godina (2026)
             document.getElementById('dinamika-selected-year').textContent = year;
@@ -11099,6 +11186,7 @@
         // Load uporedba godina
         async function loadUporedbaGodina() {
             console.log('Loading Uporedba Godina...');
+            document.getElementById('uporedba-godina-content').classList.remove('hidden');
 
             const year1 = parseInt(document.getElementById('uporedba-year1').value);
             const year2 = parseInt(document.getElementById('uporedba-year2').value);
@@ -11108,13 +11196,13 @@
             try {
                 showInfo('🔄 Učitavanje...', 'Učitavam podatke za usporedbu...');
 
-                // Fetch dashboard data za obje godine (paralelno, 60s timeout for heavy endpoints)
+                // Fetch dashboard data za obje godine (paralelno, 30s timeout for heavy endpoints)
                 const url1 = `${API_URL}?path=dashboard&year=${year1}&username=${currentUser.username}&password=${currentPassword}`;
                 const url2 = `${API_URL}?path=dashboard&year=${year2}&username=${currentUser.username}&password=${currentPassword}`;
 
                 const [data1, data2] = await Promise.all([
-                    fetchWithCache(url1, 'cache_dashboard_' + year1, false, 60000),
-                    fetchWithCache(url2, 'cache_dashboard_' + year2, false, 60000)
+                    fetchWithCache(url1, 'cache_dashboard_' + year1, false, 30000),
+                    fetchWithCache(url2, 'cache_dashboard_' + year2, false, 30000)
                 ]);
 
                 console.log('Data Year 1:', data1);
@@ -11124,79 +11212,10 @@
                     throw new Error(data1.error || data2.error);
                 }
 
-                // Renderuj graf
-                const mjeseci = data1.mjesecnaStatistika || [];
-                const labels = mjeseci.map(m => m.mjesec);
-                const sjeca1 = mjeseci.map(m => m.sjeca);
-                const otprema1 = mjeseci.map(m => m.otprema);
-
-                const mjeseci2 = data2.mjesecnaStatistika || [];
-                const sjeca2 = mjeseci2.map(m => m.sjeca);
-                const otprema2 = mjeseci2.map(m => m.otprema);
-
-                const ctx = document.getElementById('uporedba-chart');
-                if (window.uporedbaChart) {
-                    window.uporedbaChart.destroy();
-                }
-                window.uporedbaChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: `Sječa ${year1}`,
-                            data: sjeca1,
-                            backgroundColor: 'rgba(5, 150, 105, 0.5)',
-                            borderColor: '#059669',
-                            borderWidth: 2
-                        }, {
-                            label: `Sječa ${year2}`,
-                            data: sjeca2,
-                            backgroundColor: 'rgba(5, 150, 105, 0.2)',
-                            borderColor: '#047857',
-                            borderWidth: 2,
-                            borderDash: [5, 5]
-                        }, {
-                            label: `Otprema ${year1}`,
-                            data: otprema1,
-                            backgroundColor: 'rgba(37, 99, 235, 0.5)',
-                            borderColor: '#2563eb',
-                            borderWidth: 2
-                        }, {
-                            label: `Otprema ${year2}`,
-                            data: otprema2,
-                            backgroundColor: 'rgba(37, 99, 235, 0.2)',
-                            borderColor: '#1d4ed8',
-                            borderWidth: 2,
-                            borderDash: [5, 5]
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        plugins: {
-                            legend: { position: 'top' },
-                            tooltip: {
-                                mode: 'index',
-                                intersect: false,
-                                callbacks: {
-                                    label: function(context) {
-                                        return context.dataset.label + ': ' + context.parsed.y.toFixed(0) + ' m³';
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(value) {
-                                        return value + ' m³';
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
+                // Renderuj tabele
+                renderMjesecnaUporedba(data1, data2, year1, year2);
+                renderGodisnjuUporedbu(data1, data2, year1, year2);
+                renderTop10Odjela(data1, data2, year1, year2);
 
                 hideInfo();
 
