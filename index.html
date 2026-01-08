@@ -3549,7 +3549,6 @@
                 <button class="sub-tab active" onclick="switchIzvjestajiSubTab('mjesecni')">📅 Mjesečni izvještaj</button>
                 <button class="sub-tab" onclick="switchIzvjestajiSubTab('sedmicni-sjeca')">📊 Sedmični izvještaj sječe</button>
                 <button class="sub-tab" onclick="switchIzvjestajiSubTab('sedmicni-otprema')">📊 Sedmični izvještaj otpreme</button>
-                <button class="sub-tab" onclick="switchIzvjestajiSubTab('stanje-odjela')">📦 Stanje odjela</button>
             </div>
 
             <!-- MJESEČNI IZVJEŠTAJ -->
@@ -3671,21 +3670,24 @@
                 <div id="sedmicni-otprema-container"></div>
             </div>
 
-            <!-- STANJE ODJELA -->
-            <div id="stanje-odjela-izvjestaj" class="sub-content hidden">
-                <div class="page-header" style="margin-top: 0;">
-                    <div class="page-header-left">
-                        <h2>📦 Stanje odjela</h2>
-                        <p style="color: #6b7280;">Trenutno stanje radilišta - sortirano po najsvježijim unosima sječe</p>
-                    </div>
-                    <div class="page-header-right">
-                        <select id="stanje-odjela-select" class="year-select" style="min-width: 250px; margin-right: 12px;" onchange="filterStanjeOdjela()">
-                            <option value="">Sva radilišta</option>
-                        </select>
-                        <button class="btn btn-primary" onclick="loadStanjeOdjela()">🔄 Osvježi</button>
-                    </div>
-                </div>
+        </div>
 
+        <!-- STANJE ODJELA VIEW - Samostalan glavni tab -->
+        <div id="stanje-odjela-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h2>📦 Stanje odjela</h2>
+                    <p style="color: #6b7280;">Trenutno stanje radilišta - sortirano po najsvježijim unosima sječe</p>
+                </div>
+                <div class="page-header-right">
+                    <select id="stanje-odjela-select" class="year-select" style="min-width: 250px; margin-right: 12px;" onchange="filterStanjeOdjela()">
+                        <option value="">Sva radilišta</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="loadStanjeOdjela()">🔄 Osvježi</button>
+                </div>
+            </div>
+
+            <div class="section">
                 <!-- Container za sve odjele -->
                 <div id="stanje-odjela-container"></div>
             </div>
@@ -3820,8 +3822,8 @@
     </div>
 
     <script>
-        // VERSION INFO - Svi odjeli API pozivi sada imaju 60s timeout
-        const APP_VERSION = '2026-01-08-v15-TIMEOUT-60s-ALL';
+        // VERSION INFO - Stanje odjela premješten iz Izvještaji submeni u glavni tab (2. pozicija)
+        const APP_VERSION = '2026-01-08-v16-STANJE-ODJELA-MAIN-TAB';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4511,6 +4513,7 @@
                 // Admin korisnici - bez OPERATIVA tab-a (admin se loguje kao OPERATIVA tip ako želi vidjeti operativa podatke)
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
+                    <button class="tab" onclick="switchTab('stanje-odjela')">📦 Stanje odjela</button>
                     <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Sječa/otprema po mjesecima</button>
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz sječe</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz otpreme</button>
@@ -4613,10 +4616,14 @@
             document.getElementById('poslovodja-zadnjih5-content').classList.add('hidden');
             document.getElementById('poslovodja-suma-content').classList.add('hidden');
             document.getElementById('ostalo-content').classList.add('hidden');
+            document.getElementById('stanje-odjela-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
                 loadDashboard();
+            } else if (tab === 'stanje-odjela') {
+                loadStanjeOdjela();
+                document.getElementById('stanje-odjela-content').classList.remove('hidden');
             } else if (tab === 'operativa') {
                 loadOperativa();
             } else if (tab === 'primaci') {
