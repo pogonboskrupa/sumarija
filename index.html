@@ -5828,8 +5828,50 @@
 
             try {
                 const year = new Date().getFullYear();
+                const cacheKey = 'cache_primaci_' + year;
                 const url = `${API_URL}?path=primaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_primaci_' + year);
+
+                // STALE-WHILE-REVALIDATE: Check cache first
+                let hasCachedData = false;
+                const cachedPrimaci = localStorage.getItem(cacheKey);
+                if (cachedPrimaci) {
+                    try {
+                        const parsed = JSON.parse(cachedPrimaci);
+                        if (parsed.data && parsed.data.primaci) {
+                            console.log(`📦 Showing cached primaci while fetching fresh data...`);
+                            renderPrimaci(parsed.data);
+                            hasCachedData = true;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Failed to parse cached primaci:', e);
+                    }
+                }
+
+                // FETCH FRESH DATA (120s timeout)
+                try {
+                    const data = await fetchWithCache(url, cacheKey, false, 120000);
+                    if (!hasCachedData) {
+                        console.log('✅ Showing fresh primaci data');
+                    } else {
+                        console.log('🔄 Updating primaci with fresh data');
+                    }
+                    renderPrimaci(data);
+                } catch (error) {
+                    if (!hasCachedData) {
+                        throw error;
+                    } else {
+                        console.warn('⚠️ Failed to fetch fresh primaci, showing cached version:', error);
+                    }
+                }
+
+            } catch (error) {
+                showError('Greška', 'Greška pri učitavanju primača: ' + error.message);
+                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
+            }
+        }
+
+        // Separate render function for primaci
+        function renderPrimaci(data) {
 
                 // Calculate totals per month
                 const monthTotals = new Array(12).fill(0);
@@ -5903,11 +5945,6 @@
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('primaci-content').classList.remove('hidden');
-
-            } catch (error) {
-                showError('Greška', 'Greška pri učitavanju primača: ' + error.message);
-                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
-            }
         }
 
         // Load otpremaci data
@@ -5917,8 +5954,50 @@
 
             try {
                 const year = new Date().getFullYear();
+                const cacheKey = 'cache_otpremaci_' + year;
                 const url = `${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_otpremaci_' + year);
+
+                // STALE-WHILE-REVALIDATE: Check cache first
+                let hasCachedData = false;
+                const cachedOtpremaci = localStorage.getItem(cacheKey);
+                if (cachedOtpremaci) {
+                    try {
+                        const parsed = JSON.parse(cachedOtpremaci);
+                        if (parsed.data && parsed.data.otpremaci) {
+                            console.log(`📦 Showing cached otpremaci while fetching fresh data...`);
+                            renderOtpremaci(parsed.data);
+                            hasCachedData = true;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Failed to parse cached otpremaci:', e);
+                    }
+                }
+
+                // FETCH FRESH DATA (120s timeout)
+                try {
+                    const data = await fetchWithCache(url, cacheKey, false, 120000);
+                    if (!hasCachedData) {
+                        console.log('✅ Showing fresh otpremaci data');
+                    } else {
+                        console.log('🔄 Updating otpremaci with fresh data');
+                    }
+                    renderOtpremaci(data);
+                } catch (error) {
+                    if (!hasCachedData) {
+                        throw error;
+                    } else {
+                        console.warn('⚠️ Failed to fetch fresh otpremaci, showing cached version:', error);
+                    }
+                }
+
+            } catch (error) {
+                showError('Greška', 'Greška pri učitavanju otpremača: ' + error.message);
+                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
+            }
+        }
+
+        // Separate render function for otpremaci
+        function renderOtpremaci(data) {
 
                 // Calculate totals per month
                 const monthTotals = new Array(12).fill(0);
@@ -5992,11 +6071,6 @@
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('otpremaci-content').classList.remove('hidden');
-
-            } catch (error) {
-                showError('Greška', 'Greška pri učitavanju otpremača: ' + error.message);
-                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
-            }
         }
 
         // Helper function to get month name
