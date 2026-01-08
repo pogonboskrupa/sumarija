@@ -95,7 +95,8 @@
         .bar-item.green { background: #059669; }
         .bar-item.blue { background: #2563eb; }
         .chart-svg { width: 100%; height: 300px; margin-top: 20px; }
-        .monthly-table { margin-top: 20px; }
+        .monthly-table { margin-top: 20px; min-width: 800px; }
+        .monthly-table th, .monthly-table td { white-space: nowrap; }
         .monthly-table tbody tr:hover { background: #f9fafb; }
         .progress-bar-container { background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 4px; }
         .progress-bar-fill { background: #059669; height: 100%; border-radius: 4px; transition: width 0.3s ease; }
@@ -297,7 +298,7 @@
             font-size: 16px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             border-radius: 8px;
-            overflow: hidden;
+            min-width: 800px;
         }
         .expert-table thead th {
             background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
@@ -312,6 +313,7 @@
             top: 0;
             z-index: 10;
             text-align: left;
+            white-space: nowrap;
         }
         .expert-table thead th:first-child {
             border-top-left-radius: 8px;
@@ -343,6 +345,7 @@
             padding: 14px 16px;
             border-bottom: 1px solid #e0e7ff;
             font-size: 15px;
+            white-space: nowrap;
         }
         .expert-table tbody td:first-child {
             font-weight: 600;
@@ -1026,6 +1029,7 @@
             border-collapse: separate;
             border-spacing: 0;
             font-size: 13px;
+            min-width: 800px;
         }
 
         .worker-table thead {
@@ -1052,6 +1056,7 @@
             user-select: none;
             transition: background 0.2s;
             color: #ffffff;
+            white-space: nowrap;
             text-shadow:
                 /* Crni outline za jasnoću */
                 -1px -1px 0 rgba(0, 0, 0, 0.9),
@@ -1073,6 +1078,7 @@
             color: #111827;
             font-weight: 600;
             font-size: 14px;
+            white-space: nowrap;
         }
 
         .worker-table tbody tr {
@@ -1702,6 +1708,7 @@
             border-collapse: separate;
             border-spacing: 0;
             font-size: 15px;
+            min-width: 800px;
         }
         .professional-monthly-table thead th {
             background: linear-gradient(to bottom, #047857 0%, #059669 100%);
@@ -1715,6 +1722,7 @@
             position: sticky;
             top: 0;
             z-index: 10;
+            white-space: nowrap;
         }
         .professional-monthly-table tbody tr {
             transition: all 0.2s;
@@ -1729,6 +1737,7 @@
         .professional-monthly-table tbody td {
             padding: 16px 14px;
             border-bottom: 1px solid #e5e7eb;
+            white-space: nowrap;
         }
         .professional-monthly-table tbody td:first-child {
             font-weight: 700;
