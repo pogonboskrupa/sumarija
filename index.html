@@ -1967,7 +1967,7 @@
         <div class="login-box">
             <!-- Logo Container -->
             <div style="text-align: center; margin-bottom: 24px;">
-                <img src="logo-zuti.png" alt="ŠPD Unsko-Sanske Šume Logo" style="width: 360px; height: auto; margin-bottom: 16px;">
+                <img src="logo-zuti.png" alt="ŠPD Unsko-Sanske Šume Logo" style="width: 220px; height: auto; margin-bottom: 16px;">
                 <h3 style="font-size: 16px; font-weight: 700; color: #047857; margin-bottom: 4px; letter-spacing: 0.5px;">ŠPD "UNSKO-SANSKE ŠUME"</h3>
                 <h4 style="font-size: 14px; font-weight: 600; color: #6b7280; margin-bottom: 8px;">BOSANSKA KRUPA</h4>
             </div>
@@ -2051,9 +2051,8 @@
                 </div>
                 <div class="page-header-right">
                     <select id="dashboard-year-select" class="year-select" style="min-width: 120px; margin-right: 12px;" onchange="changeDashboardYear()">
-                        <option value="2026">2026</option>
-                        <option value="2025" selected>2025</option>
-                        <option value="2024">2024</option>
+                        <option value="2026" selected>2026</option>
+                        <option value="2025">2025</option>
                     </select>
                     <button class="btn btn-primary" onclick="loadDashboard()">🔄 Osvježi</button>
                 </div>
@@ -3804,13 +3803,11 @@
                                 <select id="uporedba-year1" onchange="loadUporedbaGodina()" style="padding: 8px 16px; border: 2px solid #d1d5db; border-radius: 6px; font-size: 14px;">
                                     <option value="2026" selected>2026</option>
                                     <option value="2025">2025</option>
-                                    <option value="2024">2024</option>
                                 </select>
                                 <span style="display: flex; align-items: center; font-weight: bold;">vs</span>
                                 <select id="uporedba-year2" onchange="loadUporedbaGodina()" style="padding: 8px 16px; border: 2px solid #d1d5db; border-radius: 6px; font-size: 14px;">
                                     <option value="2026">2026</option>
                                     <option value="2025" selected>2025</option>
-                                    <option value="2024">2024</option>
                                 </select>
                             </div>
                             <canvas id="uporedba-chart" style="max-height: 400px;"></canvas>
@@ -3838,8 +3835,8 @@
     </div>
 
     <script>
-        // VERSION INFO - NULL GUARD: Prevent currentUser.username crash on initial load
-        const APP_VERSION = '2026-01-08-v23-NULL-GUARD';
+        // VERSION INFO - 2026 PRIORITET: Default godina 2026 + login logo 220px (bilo 360px)
+        const APP_VERSION = '2026-01-08-v24-2026-PRIORITET';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4278,8 +4275,8 @@
         async function preloadAllViews() {
             showInfo('⚡ Učitavanje...', 'Učitavam sve prikaze u pozadini. Ovo može potrajati.');
 
-            // Koristi 2025 kao default godinu (gdje postoje podaci)
-            const year = 2025;
+            // Koristi 2026 kao default godinu (tekuća godina je prioritet)
+            const year = 2026;
             let totalLoaded = 0;
             let totalFailed = 0;
 
@@ -4919,9 +4916,9 @@
             document.getElementById('dashboard-content').classList.add('hidden');
 
             try {
-                // Uzmi godinu iz dropdown-a (default: 2025)
+                // Uzmi godinu iz dropdown-a (default: 2026)
                 const yearSelect = document.getElementById('dashboard-year-select');
-                const year = yearSelect ? parseInt(yearSelect.value) : 2025;
+                const year = yearSelect ? parseInt(yearSelect.value) : 2026;
 
                 // Fetch dashboard data with caching (60s timeout for heavy endpoint)
                 const url = `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
