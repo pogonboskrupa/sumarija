@@ -3820,8 +3820,8 @@
     </div>
 
     <script>
-        // VERSION INFO - Dinamika i Uporedba godina SAMO u Ostalo meniju
-        const APP_VERSION = '2026-01-08-v14-FORCE-REFRESH';
+        // VERSION INFO - Svi odjeli API pozivi sada imaju 60s timeout
+        const APP_VERSION = '2026-01-08-v15-TIMEOUT-60s-ALL';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -3830,9 +3830,9 @@
         console.log(`%c🌲 ŠUMARIJA v${APP_VERSION}`, 'background: #059669; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 18px;');
         console.log(`%cBuild: ${BUILD_COMMIT}`, 'color: #6b7280; font-size: 12px;');
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
-        console.log('%c✅ AKO VIDIŠ VERZIJU v14-FORCE-REFRESH = IMAŠ NAJNOVIJU VERZIJU!', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
-        console.log('%c🎯 OSTALO MENI POSTOJI - PROVJERITE ADMIN TABOVE!', 'background: #ef4444; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
-        console.log('%c⚙️ Ostalo meni je ZADNJI tab u admin meniju!', 'color: #059669; font-weight: bold; font-size: 14px;');
+        console.log('%c✅ AKO VIDIŠ VERZIJU v15-TIMEOUT-60s-ALL = IMAŠ NAJNOVIJU VERZIJU!', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
+        console.log('%c⏱️ TIMEOUT ZA ODJELI: 60 SEKUNDI (riješeno "Server je spor")!', 'background: #ef4444; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
+        console.log('%c⚙️ Ostalo meni: Dinamika + Uporedba godina!', 'color: #059669; font-weight: bold; font-size: 14px;');
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
 
         const API_URL = 'https://script.google.com/macros/s/AKfycbwkJ4apCi1yf9WNMVboGUtLVK6ZRWzLAAN-CkyfGbUqCyGm4qMjH3-zVifJUUCgUW2t/exec';
@@ -4261,8 +4261,8 @@
                     for (const view of views) {
                         try {
                             console.log(`Loading ${view.name}...`);
-                            // Use 30s timeout for heavy endpoints (dashboard, odjeli), 8s for others
-                            const timeout = (view.name === 'Dashboard' || view.name === 'Odjeli') ? 30000 : 8000;
+                            // Use 60s timeout for heavy endpoints (dashboard, odjeli), 8s for others
+                            const timeout = (view.name === 'Dashboard' || view.name === 'Odjeli') ? 60000 : 8000;
                             await fetchWithCache(view.url, view.cacheKey, false, timeout);
                             totalLoaded++;
                             console.log(`✓ ${view.name} loaded`);
@@ -4943,9 +4943,9 @@
                 }).join('');
                 document.getElementById('dashboard-monthly-table').innerHTML = monthlyHTML;
 
-                // Fetch and populate odjeli table with caching
+                // Fetch and populate odjeli table with caching (60s timeout)
                 const odjeliUrl = `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const odjeliData = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year);
+                const odjeliData = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year, false, 60000);
 
                 console.log('Odjeli data:', odjeliData);
 
@@ -5015,9 +5015,9 @@
                 // Display radilišta
                 document.getElementById('poslovodja-radilista-list').textContent = radilista.join(', ');
 
-                // Load STANJE ODJELA data
+                // Load STANJE ODJELA data (60s timeout)
                 const url = `${API_URL}?path=odjeli&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_odjeli_stanje');
+                const data = await fetchWithCache(url, 'cache_odjeli_stanje', false, 60000);
 
                 console.log('Odjeli data:', data);
 
@@ -5114,9 +5114,9 @@
                 // Display radilišta
                 document.getElementById('poslovodja-radilista-list-2').textContent = radilista.join(', ');
 
-                // Load STANJE ODJELA data (koristimo iste podatke kao za stanje)
+                // Load STANJE ODJELA data (koristimo iste podatke kao za stanje) (60s timeout)
                 const url = `${API_URL}?path=odjeli&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_odjeli_realizacija');
+                const data = await fetchWithCache(url, 'cache_odjeli_realizacija', false, 60000);
 
                 console.log('Odjeli data:', data);
 
