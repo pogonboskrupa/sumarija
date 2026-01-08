@@ -3329,185 +3329,6 @@
             </div>
         </div>
 
-        <!-- DINAMIKA CONTENT -->
-        <div id="dinamika-content" class="container hidden">
-            <div class="page-header">
-                <div class="page-header-left">
-                    <h1>📊 Godišnja dinamika <span id="dinamika-selected-year">2026</span></h1>
-                    <p>Planirana mjesečna dinamika sječe (m³) za tekuću godinu</p>
-                </div>
-            </div>
-
-            <!-- Forma za unos mjesečne dinamike -->
-            <div class="section">
-                <h2>Mjesečni plan sječe</h2>
-                <form id="dinamika-form" onsubmit="saveDinamika(event)">
-                    <div style="overflow-x: auto;">
-                        <table class="expert-table" id="dinamika-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 200px;">Mjesec</th>
-                                    <th style="width: 250px;">Planirana količina (m³)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><strong>Januar</strong></td>
-                                    <td><input type="number" id="dinamika-01" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Februar</strong></td>
-                                    <td><input type="number" id="dinamika-02" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Mart</strong></td>
-                                    <td><input type="number" id="dinamika-03" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>April</strong></td>
-                                    <td><input type="number" id="dinamika-04" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Maj</strong></td>
-                                    <td><input type="number" id="dinamika-05" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Juni</strong></td>
-                                    <td><input type="number" id="dinamika-06" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Juli</strong></td>
-                                    <td><input type="number" id="dinamika-07" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Avgust</strong></td>
-                                    <td><input type="number" id="dinamika-08" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Septembar</strong></td>
-                                    <td><input type="number" id="dinamika-09" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Oktobar</strong></td>
-                                    <td><input type="number" id="dinamika-10" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Novembar</strong></td>
-                                    <td><input type="number" id="dinamika-11" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Decembar</strong></td>
-                                    <td><input type="number" id="dinamika-12" class="form-control" step="0.01" min="0" placeholder="0.00" style="width: 100%;"></td>
-                                </tr>
-                            </tbody>
-                            <tfoot>
-                                <tr style="background: linear-gradient(135deg, #047857 0%, #065f46 100%); color: white; font-weight: bold; font-size: 16px;">
-                                    <td style="text-align: right; padding: 16px;">UKUPNO GODIŠNJE:</td>
-                                    <td style="padding: 16px;"><span id="dinamika-total">0.00</span> m³</td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                    <div style="margin-top: 24px; text-align: right;">
-                        <button type="submit" class="btn btn-primary" style="font-size: 16px; padding: 12px 32px;">
-                            💾 Spremi dinamiku
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- UPOREDBA GODINA CONTENT -->
-        <div id="uporedba-godina-content" class="container hidden">
-            <div class="page-header">
-                <div class="page-header-left">
-                    <h1>📊 Uporedba godina</h1>
-                    <p>Side-by-side prikaz sječe i otpreme po godinama</p>
-                </div>
-            </div>
-
-            <!-- Izbor godina za usporedbu -->
-            <div class="section">
-                <div class="controls-bar" style="justify-content: center; align-items: center; gap: 24px;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <label for="uporedba-year1" style="font-weight: 600; font-size: 16px;">📅 Godina 1:</label>
-                        <select id="uporedba-year1" class="year-select" onchange="loadUporedbaGodina()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
-                            
-                            
-                            <option value="2026" selected>2026</option></select>
-                    </div>
-                    <span style="font-size: 24px; font-weight: bold;">VS</span>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <label for="uporedba-year2" style="font-weight: 600; font-size: 16px;">📅 Godina 2:</label>
-                        <select id="uporedba-year2" class="year-select" onchange="loadUporedbaGodina()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #2563eb; min-width: 120px;">
-                            
-                            
-                            <option value="2026" selected>2026</option></select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mjesečna usporedba -->
-            <div class="section">
-                <h2>📅 Mjesečna usporedba sječe i otpreme</h2>
-                <div style="overflow-x: auto;">
-                    <table class="expert-table" id="uporedba-mjesecna-table">
-                        <thead id="uporedba-mjesecna-header"></thead>
-                        <tbody id="uporedba-mjesecna-body"></tbody>
-                        <tfoot id="uporedba-mjesecna-footer"></tfoot>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Godišnje ukupno -->
-            <div class="section">
-                <h2>📊 Godišnje ukupno i razlike</h2>
-                <div style="overflow-x: auto;">
-                    <table class="expert-table" id="uporedba-ukupno-table">
-                        <thead id="uporedba-ukupno-header"></thead>
-                        <tbody id="uporedba-ukupno-body"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Top 10 odjela -->
-            <div class="section">
-                <h2>🏆 Top 10 odjela po realizaciji</h2>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                    <div>
-                        <h3 id="uporedba-top10-year1-title" style="text-align: center; margin-bottom: 16px;">Godina 2025</h3>
-                        <div style="overflow-x: auto;">
-                            <table class="expert-table" id="uporedba-top10-year1-table">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Odjel</th>
-                                        <th style="text-align: right;">Sječa (m³)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="uporedba-top10-year1-body"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 id="uporedba-top10-year2-title" style="text-align: center; margin-bottom: 16px;">Godina 2026</h3>
-                        <div style="overflow-x: auto;">
-                            <table class="expert-table" id="uporedba-top10-year2-table">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Odjel</th>
-                                        <th style="text-align: right;">Sječa (m³)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="uporedba-top10-year2-body"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- ADMIN IZVJEŠTAJI CONTENT - Kartice sa linkovima -->
         <div id="izvjestaji-admin-content" class="container hidden">
             <div class="page-header">
@@ -3519,22 +3340,6 @@
 
             <!-- Kartice sa opcijama izvještaja -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-top: 30px;">
-
-                <!-- Dinamika -->
-                <div class="card" onclick="switchTab('dinamika')" style="cursor: pointer; transition: transform 0.2s; hover: transform: translateY(-4px);">
-                    <div style="padding: 24px;">
-                        <h2 style="margin: 0 0 12px 0; font-size: 24px;">📊 Dinamika</h2>
-                        <p style="color: #6b7280; margin: 0;">Planirana mjesečna dinamika sječe (m³) za tekuću godinu</p>
-                    </div>
-                </div>
-
-                <!-- Uporedba godina -->
-                <div class="card" onclick="switchTab('uporedba-godina')" style="cursor: pointer; transition: transform 0.2s;">
-                    <div style="padding: 24px;">
-                        <h2 style="margin: 0 0 12px 0; font-size: 24px;">📊 Uporedba godina</h2>
-                        <p style="color: #6b7280; margin: 0;">Side-by-side prikaz sječe i otpreme po godinama</p>
-                    </div>
-                </div>
 
                 <!-- Mjesečni izvještaj po odjelima -->
                 <div class="card" onclick="switchTab('izvjestaji')" style="cursor: pointer; transition: transform 0.2s;">
@@ -4015,8 +3820,8 @@
     </div>
 
     <script>
-        // VERSION INFO - Dodato Ostalo meni (Dinamika, Uporedba godina), timeout 60s
-        const APP_VERSION = '2026-01-05-v12-OSTALO-MENU-LOGO';
+        // VERSION INFO - Dinamika i Uporedba godina SAMO u Ostalo meniju
+        const APP_VERSION = '2026-01-08-v13-OSTALO-CLEAN';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4807,8 +4612,6 @@
             document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
             document.getElementById('poslovodja-zadnjih5-content').classList.add('hidden');
             document.getElementById('poslovodja-suma-content').classList.add('hidden');
-            document.getElementById('dinamika-content').classList.add('hidden');
-            document.getElementById('uporedba-godina-content').classList.add('hidden');
             document.getElementById('ostalo-content').classList.add('hidden');
 
             // Load appropriate content
@@ -4845,10 +4648,6 @@
                 loadPendingUnosi();
             } else if (tab === 'mjesecni-sortimenti') {
                 loadMjesecniSortimenti();
-            } else if (tab === 'dinamika') {
-                loadDinamika();
-            } else if (tab === 'uporedba-godina') {
-                loadUporedbaGodina();
             } else if (tab === 'izvjestaji') {
                 // Initialize dropdowns to current month/year if not already set
                 const currentDate = new Date();
