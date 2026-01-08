@@ -3838,8 +3838,8 @@
     </div>
 
     <script>
-        // VERSION INFO - PRODUCTION FIX: SW path + single-flight + empty data guards
-        const APP_VERSION = '2026-01-08-v21-PRODUCTION-FIX';
+        // VERSION INFO - STALE-WHILE-REVALIDATE: 120s timeout + show cached data immediately
+        const APP_VERSION = '2026-01-08-v22-STALE-WHILE-REVALIDATE';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4866,6 +4866,43 @@
         }
 
         // Load dashboard data
+        // Helper: Render odjeli table (extracted for stale-while-revalidate pattern)
+        function renderOdjeliTable(odjeliData) {
+            if (!odjeliData) {
+                document.getElementById('odjeli-table-body').innerHTML =
+                    '<tr><td colspan="8" style="text-align: center; color: #6b7280;">Nema podataka o odjelima</td></tr>';
+                return;
+            }
+
+            if (odjeliData.error) {
+                document.getElementById('odjeli-table-body').innerHTML =
+                    '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri učitavanju podataka o odjelima</td></tr>';
+                return;
+            }
+
+            if (odjeliData.odjeli && Array.isArray(odjeliData.odjeli) && odjeliData.odjeli.length > 0) {
+                const odjeliHTML = odjeliData.odjeli.map(o => {
+                    const realizacijaColor = o.realizacija >= 100 ? 'green' : (o.realizacija >= 80 ? 'blue' : 'red');
+                    return `
+                        <tr>
+                            <td style="font-weight: 500;">${o.odjel}</td>
+                            <td class="right green">${(o.sjeca || 0).toFixed(2)}</td>
+                            <td class="right blue">${(o.otprema || 0).toFixed(2)}</td>
+                            <td class="right">${(o.sumaPanj || 0).toFixed(2)}</td>
+                            <td>${o.radiliste || '-'}</td>
+                            <td>${o.izvođač || '-'}</td>
+                            <td>${o.datumZadnjeSjece || '-'}</td>
+                            <td class="right ${realizacijaColor}">${o.realizacija > 0 ? o.realizacija.toFixed(1) + '%' : '-'}</td>
+                        </tr>
+                    `;
+                }).join('');
+                document.getElementById('odjeli-table-body').innerHTML = odjeliHTML;
+            } else {
+                document.getElementById('odjeli-table-body').innerHTML =
+                    '<tr><td colspan="8" style="text-align: center; color: #6b7280;">Nema podataka o odjelima</td></tr>';
+            }
+        }
+
         // Funkcija za promjenu godine na Dashboard-u
         function changeDashboardYear() {
             loadDashboard();
@@ -5014,38 +5051,53 @@
                 }).join('');
                 document.getElementById('dashboard-monthly-table').innerHTML = monthlyHTML;
 
-                // Fetch and populate odjeli table with caching (60s timeout)
+                // Fetch and populate odjeli table with caching (120s timeout)
+                // STRATEGY: Show cached data immediately, then refresh in background
                 const odjeliUrl = `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const odjeliData = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year, false, 60000);
+                const odjeliCacheKey = 'cache_odjeli_' + year;
 
-                console.log('Odjeli data:', odjeliData);
+                // STEP 1: Check if we have cached data
+                const cachedOdjeli = localStorage.getItem(odjeliCacheKey);
+                let hasCachedData = false;
 
-                // GUARD: Check if odjeliData exists
-                if (!odjeliData) {
-                    console.warn(`⚠️ odjeliData je null/undefined za ${year}`);
-                    document.getElementById('odjeli-table-body').innerHTML = `<tr><td colspan="8" style="text-align: center; color: #6b7280;">Nema podataka o odjelima za ${year}. godinu</td></tr>`;
-                } else if (odjeliData.error) {
-                    console.error('Odjeli API error:', odjeliData.error);
-                    document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri učitavanju podataka o odjelima</td></tr>';
-                } else if (odjeliData.odjeli && Array.isArray(odjeliData.odjeli) && odjeliData.odjeli.length > 0) {
-                    const odjeliHTML = odjeliData.odjeli.map(o => {
-                        const realizacijaColor = o.realizacija >= 100 ? 'green' : (o.realizacija >= 80 ? 'blue' : 'red');
-                        return `
-                            <tr>
-                                <td style="font-weight: 500;">${o.odjel}</td>
-                                <td class="right green">${o.sjeca.toFixed(2)}</td>
-                                <td class="right blue">${o.otprema.toFixed(2)}</td>
-                                <td class="right">${o.sumaPanj.toFixed(2)}</td>
-                                <td>${o.radiliste || '-'}</td>
-                                <td>${o.izvođač || '-'}</td>
-                                <td>${o.datumZadnjeSjece || '-'}</td>
-                                <td class="right ${realizacijaColor}">${o.realizacija > 0 ? o.realizacija.toFixed(1) + '%' : '-'}</td>
-                            </tr>
-                        `;
-                    }).join('');
-                    document.getElementById('odjeli-table-body').innerHTML = odjeliHTML;
-                } else {
-                    document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #6b7280;">Nema podataka o odjelima</td></tr>';
+                if (cachedOdjeli) {
+                    try {
+                        const parsed = JSON.parse(cachedOdjeli);
+                        const age = Date.now() - parsed.timestamp;
+
+                        // If cache exists (even if stale), show it IMMEDIATELY
+                        if (parsed.data && parsed.data.odjeli) {
+                            console.log(`📦 Showing cached odjeli data (${Math.round(age/60000)} min old) while fetching fresh...`);
+                            renderOdjeliTable(parsed.data);
+                            hasCachedData = true;
+
+                            // Show UI feedback that we're refreshing
+                            if (age > 5 * 60 * 1000) { // Older than 5 min
+                                showCacheIndicator(age, false);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse cached odjeli:', e);
+                    }
+                }
+
+                // STEP 2: Fetch fresh data in background (120s timeout for slow backend)
+                // Don't block UI if we have cached data
+                try {
+                    const odjeliData = await fetchWithCache(odjeliUrl, odjeliCacheKey, false, 120000);
+                    console.log('✓ Fresh odjeli data received');
+                    renderOdjeliTable(odjeliData);
+                    hideCacheIndicator();
+                } catch (error) {
+                    console.error('Failed to fetch fresh odjeli:', error);
+
+                    // If we already showed cached data, don't show error
+                    if (!hasCachedData) {
+                        document.getElementById('odjeli-table-body').innerHTML =
+                            '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri učitavanju. Molimo osvježite stranicu.</td></tr>';
+                    } else {
+                        console.log('📦 Keeping cached odjeli data due to fetch error');
+                    }
                 }
 
                 // Load pending count for badge (admin only)
