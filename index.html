@@ -3838,8 +3838,8 @@
     </div>
 
     <script>
-        // VERSION INFO - Preload fix: 2025 default godina + 60s timeout za sve odjele API pozive
-        const APP_VERSION = '2026-01-08-v20-PRELOAD-FIX';
+        // VERSION INFO - PRODUCTION FIX: SW path + single-flight + empty data guards
+        const APP_VERSION = '2026-01-08-v21-PRODUCTION-FIX';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4030,14 +4030,15 @@
 
         // ========== CACHING & OFFLINE SUPPORT ==========
 
-        // Register Service Worker for offline support
+        // Register Service Worker for offline support (relative path for GitHub Pages subfolder)
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js')
+            const swPath = new URL('./service-worker.js', document.baseURI).pathname;
+            navigator.serviceWorker.register(swPath)
                 .then(registration => {
-                    console.log('Service Worker registered:', registration);
+                    console.log('✅ Service Worker registered:', registration.scope);
                 })
                 .catch(error => {
-                    console.error('Service Worker registration failed:', error);
+                    console.error('❌ Service Worker registration failed:', error);
                 });
         }
 
@@ -4090,7 +4091,10 @@
             'default': 5 * 60 * 1000           // 5 minutes default
         };
 
-        // Fetch with cache - cache-first strategy
+        // SINGLE-FLIGHT: Track in-progress fetches to prevent duplicates
+        const activeFetches = new Map();
+
+        // Fetch with cache - cache-first strategy with single-flight pattern
         async function fetchWithCache(url, cacheKey, forceRefresh = false, timeout = 8000) {
             // DEBUG: Confirm timeout parameter exists
             if (typeof timeout === 'undefined') {
@@ -4100,7 +4104,14 @@
 
             // Use smart cache TTL optimized for data entry patterns
             const path = new URL(url).searchParams.get('path');
+            const year = new URL(url).searchParams.get('year');
             const cacheTTL = getSmartCacheTTL();
+
+            // SINGLE-FLIGHT: If same request is already in progress, return that promise
+            if (activeFetches.has(cacheKey)) {
+                console.log(`⏳ Request already in progress (${path}), waiting...`);
+                return activeFetches.get(cacheKey);
+            }
 
             // If force refresh, clear cache for this key
             if (forceRefresh) {
@@ -4130,55 +4141,72 @@
             }
 
             // Cache miss or stale - fetch from network with timeout
-            try {
-                console.log(`↻ Fetching fresh data (${path})...`);
+            // WRAP in promise and track in activeFetches
+            const fetchPromise = (async () => {
+                try {
+                    console.log(`↻ Fetching fresh data (${path})...`);
 
-                // Fetch with configurable timeout (default 8s, but can be higher for heavy endpoints)
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-                const response = await fetch(url, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                const data = await response.json();
-
-                // Store in cache
-                localStorage.setItem(cacheKey, JSON.stringify({
-                    data: data,
-                    timestamp: Date.now()
-                }));
-
-                console.log(`✓ Fresh data cached (${path})`);
-                hideCacheIndicator();
-                return data;
-
-            } catch (error) {
-                // Handle timeout specifically
-                if (error.name === 'AbortError') {
-                    console.error(`Request timeout (${timeout/1000}s) - server too slow:`, path);
-                } else {
-                    console.error('Network error:', error);
-                }
-
-                // If network fails and we have stale cache, use it
-                if (cached) {
-                    try {
-                        const cachedData = JSON.parse(cached);
-                        const age = Date.now() - cachedData.timestamp;
-                        console.log(`⚠ Network failed, using stale cache (${Math.round(age / 60000)} min old)`);
-                        showCacheIndicator(age, true);
-                        return cachedData.data;
-                    } catch (e) {
-                        console.error('Stale cache parse error:', e);
+                    // PRE-CHECK: Warn about 2026 empty data
+                    if (year === '2026' && (path === 'dashboard' || path === 'odjeli')) {
+                        console.warn(`⚠️ 2026 ima malo podataka - učitavanje može trajati 60+ sekundi...`);
+                        console.warn(`💡 TIP: Koristite 2025 za brži pristup!`);
                     }
-                }
 
-                // If timeout, show user-friendly message
-                if (error.name === 'AbortError') {
-                    throw new Error('Server je spor, molimo pokušajte ponovo ili koristite keširane podatke.');
-                }
+                    // Fetch with configurable timeout (default 8s, but can be higher for heavy endpoints)
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-                throw error;
-            }
+                    const response = await fetch(url, { signal: controller.signal });
+                    clearTimeout(timeoutId);
+                    const data = await response.json();
+
+                    // Store in cache
+                    localStorage.setItem(cacheKey, JSON.stringify({
+                        data: data,
+                        timestamp: Date.now()
+                    }));
+
+                    console.log(`✓ Fresh data cached (${path})`);
+                    hideCacheIndicator();
+                    return data;
+
+                } catch (error) {
+                    // Handle timeout specifically
+                    if (error.name === 'AbortError') {
+                        console.error(`⏱️ Request timeout (${timeout/1000}s) - server too slow:`, path);
+                        console.error(`   Year: ${year || 'N/A'}`);
+                    } else {
+                        console.error('Network error:', error);
+                    }
+
+                    // If network fails and we have stale cache, use it
+                    if (cached) {
+                        try {
+                            const cachedData = JSON.parse(cached);
+                            const age = Date.now() - cachedData.timestamp;
+                            console.log(`⚠ Network failed, using stale cache (${Math.round(age / 60000)} min old)`);
+                            showCacheIndicator(age, true);
+                            return cachedData.data;
+                        } catch (e) {
+                            console.error('Stale cache parse error:', e);
+                        }
+                    }
+
+                    // If timeout, show user-friendly message
+                    if (error.name === 'AbortError') {
+                        throw new Error('Server je spor, molimo pokušajte ponovo ili koristite keširane podatke.');
+                    }
+
+                    throw error;
+                } finally {
+                    // ALWAYS clean up from activeFetches
+                    activeFetches.delete(cacheKey);
+                }
+            })();
+
+            // Track this fetch
+            activeFetches.set(cacheKey, fetchPromise);
+            return fetchPromise;
         }
 
         // Show cache indicator
@@ -4863,18 +4891,29 @@
                     throw new Error('Dashboard API error: ' + data.error);
                 }
 
-                // Check if data is valid
-                if (!data.mjesecnaStatistika) {
-                    throw new Error('Dashboard data missing mjesecnaStatistika');
+                // GUARD: Ensure mjesecnaStatistika exists and is array
+                if (!data.mjesecnaStatistika || !Array.isArray(data.mjesecnaStatistika)) {
+                    console.warn(`⚠️ Nema mjesecnaStatistika za godinu ${year}`);
+                    throw new Error(`Nema podataka za ${year}. godinu. Molimo koristite 2025.`);
                 }
 
-                // Calculate summary statistics
-                const totalSjeca = data.mjesecnaStatistika.reduce((sum, m) => sum + m.sjeca, 0);
-                const totalOtprema = data.mjesecnaStatistika.reduce((sum, m) => sum + m.otprema, 0);
+                // GUARD: Check if data is empty (no activity)
+                if (data.mjesecnaStatistika.length === 0) {
+                    console.warn(`⚠️ Prazan niz mjesecnaStatistika za ${year}`);
+                    throw new Error(`${year}. godina nema podataka o sječi/otpremi. Koristite 2025.`);
+                }
+
+                // Calculate summary statistics (safe with default values)
+                const totalSjeca = (data.mjesecnaStatistika || []).reduce((sum, m) => sum + (m.sjeca || 0), 0);
+                const totalOtprema = (data.mjesecnaStatistika || []).reduce((sum, m) => sum + (m.otprema || 0), 0);
                 const totalStanje = totalSjeca - totalOtprema;
-                const totalDinamika = data.mjesecnaStatistika.reduce((sum, m) => sum + m.dinamika, 0);
+                const totalDinamika = (data.mjesecnaStatistika || []).reduce((sum, m) => sum + (m.dinamika || 0), 0);
                 const razlikaDinamika = totalSjeca - totalDinamika;
-                const percentDinamika = ((totalSjeca / totalDinamika) * 100).toFixed(1);
+
+                // GUARD: Prevent NaN/Infinity in percentDinamika
+                const percentDinamika = totalDinamika > 0
+                    ? ((totalSjeca / totalDinamika) * 100).toFixed(1)
+                    : '0.0';
 
                 // Create summary cards
                 const summaryHTML = `
@@ -4981,10 +5020,14 @@
 
                 console.log('Odjeli data:', odjeliData);
 
-                if (odjeliData.error) {
+                // GUARD: Check if odjeliData exists
+                if (!odjeliData) {
+                    console.warn(`⚠️ odjeliData je null/undefined za ${year}`);
+                    document.getElementById('odjeli-table-body').innerHTML = `<tr><td colspan="8" style="text-align: center; color: #6b7280;">Nema podataka o odjelima za ${year}. godinu</td></tr>`;
+                } else if (odjeliData.error) {
                     console.error('Odjeli API error:', odjeliData.error);
                     document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri učitavanju podataka o odjelima</td></tr>';
-                } else if (odjeliData.odjeli && odjeliData.odjeli.length > 0) {
+                } else if (odjeliData.odjeli && Array.isArray(odjeliData.odjeli) && odjeliData.odjeli.length > 0) {
                     const odjeliHTML = odjeliData.odjeli.map(o => {
                         const realizacijaColor = o.realizacija >= 100 ? 'green' : (o.realizacija >= 80 ? 'blue' : 'red');
                         return `
