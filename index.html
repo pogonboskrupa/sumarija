@@ -3556,12 +3556,100 @@
 
             <!-- Tab submenu za Ostalo -->
             <div class="tabs-sub" style="margin-bottom: 30px;">
-                <button class="tab-sub active" onclick="switchOstaloTab('dinamika')">📊 Dinamika</button>
+                <button class="tab-sub active" onclick="switchOstaloTab('kubikator')">📐 Kubikator</button>
+                <button class="tab-sub" onclick="switchOstaloTab('dinamika')">📊 Dinamika</button>
                 <button class="tab-sub" onclick="switchOstaloTab('uporedba')">📊 Uporedba godina</button>
             </div>
 
+            <!-- KUBIKATOR SUB-CONTENT (DEFAULT) -->
+            <div id="kubikator-sub-content" class="sub-content">
+                <div id="kubikator-content-inner">
+                    <!-- Input forma -->
+                    <div class="card" style="max-width: 600px; margin: 0 auto;">
+                        <h3 style="margin-bottom: 20px;">Unos podataka</h3>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Prečnik na sredini (cm)</label>
+                            <input type="number" id="kubikator-promjer" class="filter-input" placeholder="od 7 do 150 cm" style="width: 100%; font-size: 16px; padding: 12px;" min="7" max="150" step="1">
+                            <small style="color: #6b7280;">Dozvoljen raspon: 7-150 cm</small>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Dužina (m)</label>
+                            <input type="number" id="kubikator-duzina" class="filter-input" placeholder="od 2 do 8 metara (npr. 4.53)" style="width: 100%; font-size: 16px; padding: 12px;" min="2" max="8" step="0.01">
+                            <small style="color: #6b7280;">Dozvoljen raspon: 2-8 m (2 decimale)</small>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="izracunajKubikazu()" style="width: 100%; padding: 16px; font-size: 18px; font-weight: 700;">
+                            🧮 IZRAČUNAJ
+                        </button>
+                    </div>
+
+                    <!-- Rezultat -->
+                    <div id="kubikator-rezultat" class="card" style="max-width: 600px; margin: 30px auto; display: none;">
+                        <h3 style="margin-bottom: 16px; color: #059669;">📊 Zapremina (Oblovina bez kore)</h3>
+                        <div style="text-align: center; font-size: 48px; font-weight: 700; color: #059669; padding: 20px; background: #f0fdf4; border-radius: 12px; margin-bottom: 20px;">
+                            <span id="kubikator-obujam-display">0.00</span> m³
+                        </div>
+                    </div>
+
+                    <!-- Tabela sa rekapitulacijom -->
+                    <div id="kubikator-tabela-container" class="card" style="max-width: 900px; margin: 30px auto; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                        <!-- Header sa naslovom i akcijama -->
+                        <div style="background: linear-gradient(135deg, #047857 0%, #065f46 100%); color: white; padding: 24px; border-radius: 12px 12px 0 0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                                <div>
+                                    <h3 style="margin: 0 0 8px 0; font-size: 22px;">📋 Rekapitulacija mjerenja</h3>
+                                    <p style="margin: 0; opacity: 0.9; font-size: 14px;">📅 Datum: <span id="kubikator-datum"></span></p>
+                                </div>
+                                <div style="display: flex; gap: 10px;">
+                                    <button class="btn btn-secondary" onclick="ocistiKubikator()" style="background: rgba(255,255,255,0.2); border: 2px solid white; color: white; font-weight: 600;">🗑️ Očisti</button>
+                                    <button class="btn btn-primary" onclick="isprintajKubikator()" style="background: white; color: #047857; border: none; font-weight: 700;">🖨️ Isprintaj</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabela -->
+                        <div style="padding: 24px;">
+                            <div style="overflow-x: auto;">
+                                <table class="monthly-table" style="min-width: 700px; box-shadow: none;">
+                                    <thead>
+                                        <tr style="background: #f9fafb; border-bottom: 2px solid #047857;">
+                                            <th style="color: #047857; font-weight: 700; padding: 16px;">R.B.</th>
+                                            <th style="color: #047857; font-weight: 700; padding: 16px;">Prečnik (cm)</th>
+                                            <th style="color: #047857; font-weight: 700; padding: 16px;">Dužina (m)</th>
+                                            <th style="color: #047857; font-weight: 700; padding: 16px;">Zapremina (m³)</th>
+                                            <th style="color: #047857; font-weight: 700; padding: 16px;">Akcija</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="kubikator-tabela-body"></tbody>
+                                </table>
+                            </div>
+
+                            <!-- Ukupno - stilizovano -->
+                            <div style="margin-top: 24px; background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-radius: 12px; padding: 24px; border: 3px solid #059669;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 14px; color: #065f46; font-weight: 600; margin-bottom: 8px; text-transform: uppercase;">Ukupno komada</div>
+                                        <div style="font-size: 36px; font-weight: 700; color: #047857;">
+                                            <span id="kubikator-ukupno-kom">0</span> <span style="font-size: 20px;">kom</span>
+                                        </div>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 14px; color: #065f46; font-weight: 600; margin-bottom: 8px; text-transform: uppercase;">Ukupna zapremina</div>
+                                        <div style="font-size: 36px; font-weight: 700; color: #047857;">
+                                            <span id="kubikator-ukupno-m3">0.00</span> <span style="font-size: 20px;">m³</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- DINAMIKA SUB-CONTENT -->
-            <div id="dinamika-sub-content" class="sub-content">
+            <div id="dinamika-sub-content" class="sub-content hidden">
                 <div id="dinamika-content"></div>
             </div>
 
@@ -3571,7 +3659,7 @@
             </div>
         </div>
 
-        <!-- KUBIKATOR CONTENT -->
+        <!-- KUBIKATOR CONTENT (za PRIMAC, OTPREMAC, POSLOVOĐA) -->
         <div id="kubikator-content" class="container hidden">
             <div class="page-header">
                 <h1>📐 Kubikator</h1>
@@ -4086,7 +4174,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v35-KUBIKATOR-OPTIMIZED';
+        const APP_VERSION = '2026-01-09-v36-KUBIKATOR-REORGANIZED';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4744,6 +4832,7 @@
                     <button class="tab" onclick="switchTab('add-sjeca')">➕ Dodaj sječu</button>
                     <button class="tab" onclick="switchTab('my-sjece')">📝 Moje sječe</button>
                     <button class="tab" onclick="switchTab('izvjestaji-primac')">📋 Izvještaji</button>
+                    <button class="tab" onclick="switchTab('kubikator')">📐 Kubikator</button>
                 `;
             } else if (userType === 'otpremac') {
                 // Otpremač vidi četiri prikaza: pregled, po odjelima, dodavanje, i moje otpreme
@@ -4753,6 +4842,7 @@
                     <button class="tab" onclick="switchTab('add-otprema')">➕ Dodaj otpremu</button>
                     <button class="tab" onclick="switchTab('my-otpreme')">📝 Moje otpreme</button>
                     <button class="tab" onclick="switchTab('izvjestaji-otpremac')">📋 Izvještaji</button>
+                    <button class="tab" onclick="switchTab('kubikator')">📐 Kubikator</button>
                 `;
             } else if (userType === 'operativa') {
                 // OPERATIVA korisnik vidi samo analytics dashboards
@@ -4764,20 +4854,20 @@
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                 `;
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
-                // POSLOVOĐA vidi: STANJE ODJELA, ODJELI U REALIZACIJI, ZADNJIH 5 DANA, SUMA MJESECA, IZVJEŠTAJI
+                // POSLOVOĐA vidi: STANJE ODJELA, ODJELI U REALIZACIJI, ZADNJIH 5 DANA, SUMA MJESECA, IZVJEŠTAJI, KUBIKATOR
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('poslovodja-stanje')">📊 Stanje Odjela</button>
                     <button class="tab" onclick="switchTab('poslovodja-realizacija')">🏗️ Odjeli u realizaciji</button>
                     <button class="tab" onclick="switchTab('poslovodja-zadnjih5')">📅 Zadnjih 5 Dana</button>
                     <button class="tab" onclick="switchTab('poslovodja-suma')">📈 Suma Mjeseca</button>
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
+                    <button class="tab" onclick="switchTab('kubikator')">📐 Kubikator</button>
                 `;
             } else {
                 // Admin korisnici - bez OPERATIVA tab-a (admin se loguje kao OPERATIVA tip ako želi vidjeti operativa podatke)
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
                     <button class="tab" onclick="switchTab('stanje-odjela')">📦 Stanje odjela</button>
-                    <button class="tab" onclick="switchTab('kubikator')">📐 Kubikator</button>
                     <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Sječa/otprema po mjesecima</button>
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz sječe</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz otpreme</button>
@@ -4989,7 +5079,7 @@
                 switchOtpremacIzvjestajiSubTab('sedmicni');
             } else if (tab === 'ostalo') {
                 document.getElementById('ostalo-content').classList.remove('hidden');
-                switchOstaloTab('dinamika'); // Default to Dinamika sub-tab
+                switchOstaloTab('kubikator'); // Default to Kubikator sub-tab
             }
         }
 
@@ -5000,11 +5090,15 @@
             event.target.classList.add('active');
 
             // Hide all Ostalo sub-content
+            document.getElementById('kubikator-sub-content').classList.add('hidden');
             document.getElementById('dinamika-sub-content').classList.add('hidden');
             document.getElementById('uporedba-sub-content').classList.add('hidden');
 
             // Show selected sub-content
-            if (subtab === 'dinamika') {
+            if (subtab === 'kubikator') {
+                document.getElementById('kubikator-sub-content').classList.remove('hidden');
+                // Kubikator doesn't need loading function (static form)
+            } else if (subtab === 'dinamika') {
                 document.getElementById('dinamika-sub-content').classList.remove('hidden');
                 loadDinamika();
             } else if (subtab === 'uporedba') {
