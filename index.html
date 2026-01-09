@@ -4179,7 +4179,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v48-NO-CACHE-FIX';
+        const APP_VERSION = '2026-01-09-v49-KUBIKATOR-HIDE-FIX';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4188,10 +4188,10 @@
         console.log(`%c🌲 ŠUMARIJA v${APP_VERSION}`, 'background: #059669; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 18px;');
         console.log(`%cBuild: ${BUILD_COMMIT}`, 'color: #6b7280; font-size: 12px;');
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
-        console.log('%c✅ v48 - NO-CACHE-FIX + KUBIKATOR DEBUG', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
-        console.log('%c🔥 CACHE CONTROL: AKTIVAN - Verzija v48!', 'background: #ef4444; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
-        console.log('%c📐 KUBIKATOR: Debug logging aktivan!', 'background: #3b82f6; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
-        console.log('%cAKO VIDIŠ v46 ili stariju verziju = OBRIŠI KEŠ!', 'color: #dc2626; font-weight: bold; font-size: 14px;');
+        console.log('%c✅ v49 - KUBIKATOR-HIDE-FIX (FINALNA POPRAVKA!)', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
+        console.log('%c🔥 BUG FIX: Oba kontejnera više nisu vidljiva!', 'background: #ef4444; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
+        console.log('%c📐 KUBIKATOR: Sad vraća TAČAN kontejner!', 'background: #3b82f6; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
+        console.log('%cAKO VIDIŠ v48 ili stariju verziju = Ctrl+Shift+R!', 'color: #dc2626; font-weight: bold; font-size: 14px;');
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
 
         const API_URL = 'https://script.google.com/macros/s/AKfycbwkJ4apCi1yf9WNMVboGUtLVK6ZRWzLAAN-CkyfGbUqCyGm4qMjH3-zVifJUUCgUW2t/exec';
@@ -5079,6 +5079,10 @@
             document.getElementById('ostalo-content').classList.add('hidden');
             document.getElementById('stanje-odjela-content').classList.add('hidden');
             document.getElementById('kubikator-content').classList.add('hidden');
+            // Hide all Ostalo sub-contents
+            document.getElementById('kubikator-sub-content').classList.add('hidden');
+            document.getElementById('dinamika-sub-content').classList.add('hidden');
+            document.getElementById('uporedba-sub-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
