@@ -4176,7 +4176,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v46-KUBIKATOR-CLASS-SELECTORS';
+        const APP_VERSION = '2026-01-09-v47-KUBIKATOR-DEBUG';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -12680,11 +12680,20 @@
             const kubikatorSubContent = document.getElementById('kubikator-sub-content');
             const kubikatorContent = document.getElementById('kubikator-content');
 
+            console.log('🔍 DEBUG getActiveKubikatorContainer:');
+            console.log('  kubikatorSubContent exists:', !!kubikatorSubContent);
+            console.log('  kubikatorSubContent hidden:', kubikatorSubContent ? kubikatorSubContent.classList.contains('hidden') : 'N/A');
+            console.log('  kubikatorContent exists:', !!kubikatorContent);
+            console.log('  kubikatorContent hidden:', kubikatorContent ? kubikatorContent.classList.contains('hidden') : 'N/A');
+
             if (kubikatorSubContent && !kubikatorSubContent.classList.contains('hidden')) {
+                console.log('  ✅ Returning: kubikatorSubContent (ADMIN)');
                 return kubikatorSubContent;
             } else if (kubikatorContent && !kubikatorContent.classList.contains('hidden')) {
+                console.log('  ✅ Returning: kubikatorContent (STANDALONE)');
                 return kubikatorContent;
             }
+            console.log('  ❌ Returning: NULL (no active container)');
             return null;
         }
 
@@ -12708,16 +12717,36 @@
 
         // Izračunaj zapreminu pomoću Huber metode
         function izracunajKubikazu() {
+            console.log('🧮 DEBUG izracunajKubikazu: START');
+
             // Provjeri koji Kubikator je aktivan (admin u Ostalo submenu ili standalone)
             const activeContainer = getActiveKubikatorContainer();
             if (!activeContainer) {
+                console.log('❌ ERROR: No active container!');
                 showError('Greška', 'Kubikator nije aktivan');
                 return;
             }
 
+            console.log('  activeContainer ID:', activeContainer.id);
+
             // Pristupi input poljima iz aktivnog containera
-            const promjerInput = activeContainer.querySelector('.kubikator-promjer').value.trim();
-            const duzinaInput = activeContainer.querySelector('.kubikator-duzina').value.trim();
+            const promjerElement = activeContainer.querySelector('.kubikator-promjer');
+            const duzinaElement = activeContainer.querySelector('.kubikator-duzina');
+
+            console.log('  promjerElement found:', !!promjerElement);
+            console.log('  duzinaElement found:', !!duzinaElement);
+
+            if (!promjerElement || !duzinaElement) {
+                console.log('❌ ERROR: Input elements not found!');
+                showError('Greška', 'Ne mogu pronaći input polja');
+                return;
+            }
+
+            const promjerInput = promjerElement.value.trim();
+            const duzinaInput = duzinaElement.value.trim();
+
+            console.log('  promjerInput value:', promjerInput);
+            console.log('  duzinaInput value:', duzinaInput);
 
             // Provjeri da li su polja prazna
             if (!promjerInput || !duzinaInput) {
