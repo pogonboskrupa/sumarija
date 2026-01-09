@@ -4174,7 +4174,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v38-INSTANT-LOADING-POSLOVODJA';
+        const APP_VERSION = '2026-01-09-v39-CACHE-CLEANUP-QUOTA-FIX';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4476,11 +4476,27 @@
                 clearTimeout(timeoutId);
                 const data = await response.json();
 
-                // Store in cache
-                localStorage.setItem(cacheKey, JSON.stringify({
-                    data: data,
-                    timestamp: Date.now()
-                }));
+                // Store in cache (cleanup first to prevent QuotaExceededError)
+                try {
+                    localStorage.setItem(cacheKey, JSON.stringify({
+                        data: data,
+                        timestamp: Date.now()
+                    }));
+                } catch (quotaError) {
+                    if (quotaError.name === 'QuotaExceededError') {
+                        console.warn('⚠️ LocalStorage full, cleaning up old cache...');
+                        cleanupOldCache();
+                        // Try again after cleanup
+                        try {
+                            localStorage.setItem(cacheKey, JSON.stringify({
+                                data: data,
+                                timestamp: Date.now()
+                            }));
+                        } catch (retryError) {
+                            console.error('❌ Failed to cache even after cleanup:', retryError);
+                        }
+                    }
+                }
 
                 console.log(`✓ Fresh data cached (${path})`);
                 hideCacheIndicator();
@@ -4640,7 +4656,7 @@
                     for (const view of views) {
                         try {
                             console.log(`Loading ${view.name}...`);
-                            await fetchWithCache(view.url, view.cacheKey);
+                            await fetchWithCache(view.url, view.cacheKey, false, 120000); // 120s timeout
                             totalLoaded++;
                             console.log(`✓ ${view.name} loaded`);
                         } catch (error) {
@@ -4700,6 +4716,72 @@
                 dropdown.classList.remove('show');
             }
         });
+
+        // Cache cleanup to prevent QuotaExceededError
+        function cleanupOldCache() {
+            try {
+                const now = Date.now();
+                const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000); // 7 days in ms
+                let deletedCount = 0;
+                let totalSize = 0;
+
+                // Get all cache keys and their sizes
+                const cacheEntries = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('cache_')) {
+                        const value = localStorage.getItem(key);
+                        const size = value ? value.length : 0;
+                        totalSize += size;
+
+                        try {
+                            const parsed = JSON.parse(value);
+                            cacheEntries.push({
+                                key: key,
+                                timestamp: parsed.timestamp || 0,
+                                size: size
+                            });
+                        } catch (e) {
+                            // Invalid cache entry, delete it
+                            localStorage.removeItem(key);
+                            deletedCount++;
+                        }
+                    }
+                }
+
+                console.log(`📊 Cache stats: ${cacheEntries.length} entries, ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
+
+                // Delete old cache entries (older than 7 days)
+                cacheEntries.forEach(entry => {
+                    if (entry.timestamp < sevenDaysAgo) {
+                        localStorage.removeItem(entry.key);
+                        deletedCount++;
+                        console.log(`🗑️ Deleted old cache: ${entry.key}`);
+                    }
+                });
+
+                // If still too large (>4MB), delete largest entries
+                if (totalSize > 4 * 1024 * 1024) {
+                    const sortedBySize = cacheEntries
+                        .filter(e => e.timestamp >= sevenDaysAgo) // Don't delete already deleted
+                        .sort((a, b) => b.size - a.size);
+
+                    // Delete top 20% largest
+                    const toDelete = Math.ceil(sortedBySize.length * 0.2);
+                    for (let i = 0; i < toDelete; i++) {
+                        localStorage.removeItem(sortedBySize[i].key);
+                        deletedCount++;
+                        console.log(`🗑️ Deleted large cache: ${sortedBySize[i].key} (${(sortedBySize[i].size / 1024).toFixed(2)} KB)`);
+                    }
+                }
+
+                if (deletedCount > 0) {
+                    console.log(`✅ Cache cleanup: ${deletedCount} entries deleted`);
+                }
+            } catch (error) {
+                console.error('Cache cleanup error:', error);
+            }
+        }
 
         // ========== END CACHING ==========
 
@@ -4797,6 +4879,10 @@
                     currentPassword = password;
                     localStorage.setItem('sumarija_user', JSON.stringify(data));
                     localStorage.setItem('sumarija_pass', password);
+
+                    // Cleanup old cache on login to prevent storage issues
+                    cleanupOldCache();
+
                     showApp();
                     loadData();
                     loadOdjeli(); // Load odjeli list after manual login
