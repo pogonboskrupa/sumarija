@@ -4010,7 +4010,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v29-STANJE-ODJELA-MAIN-TAB';
+        const APP_VERSION = '2026-01-09-v30-INSTANT-LOADING';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -5008,23 +5008,23 @@
 
         // Load dashboard data
         async function loadDashboard() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('dashboard-content').classList.add('hidden');
-
             try {
                 const year = new Date().getFullYear();
                 const cacheKey = 'cache_dashboard_' + year;
                 const url = `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
 
-                // STALE-WHILE-REVALIDATE: Check cache first
+                // INSTANT LOADING: Check cache FIRST before showing loading screen
                 let hasCachedData = false;
                 const cachedDashboard = localStorage.getItem(cacheKey);
                 if (cachedDashboard) {
                     try {
                         const parsed = JSON.parse(cachedDashboard);
                         if (parsed.data && parsed.data.mjesecnaStatistika) {
-                            console.log(`📦 Showing cached dashboard while fetching fresh data...`);
+                            console.log(`⚡ INSTANT LOAD: Showing cached dashboard (no loading screen)`);
+                            // INSTANT: Render cached data immediately WITHOUT showing loading screen
                             await renderDashboard(parsed.data);
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            document.getElementById('dashboard-content').classList.remove('hidden');
                             hasCachedData = true;
                         }
                     } catch (e) {
@@ -5032,24 +5032,32 @@
                     }
                 }
 
-                // FETCH FRESH DATA (120s timeout for slow backend)
+                // If NO cache, show loading screen NOW
+                if (!hasCachedData) {
+                    document.getElementById('loading-screen').classList.remove('hidden');
+                    document.getElementById('dashboard-content').classList.add('hidden');
+                }
+
+                // FETCH FRESH DATA (120s timeout for slow backend) - always runs in background
                 try {
                     const data = await fetchWithCache(url, cacheKey, false, 120000);
 
-                    // Render fresh data (silently if we already showed cache)
+                    // Render fresh data
                     if (!hasCachedData) {
-                        console.log('✅ Showing fresh dashboard data');
+                        console.log('✅ Showing fresh dashboard data (first load)');
                     } else {
-                        console.log('🔄 Updating dashboard with fresh data');
+                        console.log('🔄 Silently updating dashboard with fresh data');
                     }
                     await renderDashboard(data);
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    document.getElementById('dashboard-content').classList.remove('hidden');
 
                 } catch (error) {
-                    // If we have cached data, don't show error
+                    // If we have cached data, keep showing it (silent failure)
                     if (!hasCachedData) {
                         throw error;
                     } else {
-                        console.warn('⚠️ Failed to fetch fresh data, showing cached version:', error);
+                        console.warn('⚠️ Failed to fetch fresh data, keeping cached version:', error);
                     }
                 }
 
@@ -5061,6 +5069,7 @@
                     <div class="loading-sub">${error.message}</div>
                     <button class="btn btn-primary" style="margin-top: 20px;" onclick="loadDashboard()">🔄 Pokušaj ponovo</button>
                 `;
+                document.getElementById('loading-screen').classList.remove('hidden');
             }
         }
 
@@ -5917,23 +5926,23 @@
 
         // Load primaci data
         async function loadPrimaci() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('primaci-content').classList.add('hidden');
-
             try {
                 const year = new Date().getFullYear();
                 const cacheKey = 'cache_primaci_' + year;
                 const url = `${API_URL}?path=primaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
 
-                // STALE-WHILE-REVALIDATE: Check cache first
+                // INSTANT LOADING: Check cache FIRST before showing loading screen
                 let hasCachedData = false;
                 const cachedPrimaci = localStorage.getItem(cacheKey);
                 if (cachedPrimaci) {
                     try {
                         const parsed = JSON.parse(cachedPrimaci);
                         if (parsed.data && parsed.data.primaci) {
-                            console.log(`📦 Showing cached primaci while fetching fresh data...`);
+                            console.log(`⚡ INSTANT LOAD: Showing cached primaci (no loading screen)`);
+                            // INSTANT: Render cached data immediately WITHOUT showing loading screen
                             renderPrimaci(parsed.data);
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            document.getElementById('primaci-content').classList.remove('hidden');
                             hasCachedData = true;
                         }
                     } catch (e) {
@@ -5941,26 +5950,35 @@
                     }
                 }
 
-                // FETCH FRESH DATA (120s timeout)
+                // If NO cache, show loading screen NOW
+                if (!hasCachedData) {
+                    document.getElementById('loading-screen').classList.remove('hidden');
+                    document.getElementById('primaci-content').classList.add('hidden');
+                }
+
+                // FETCH FRESH DATA (120s timeout) - always runs in background
                 try {
                     const data = await fetchWithCache(url, cacheKey, false, 120000);
                     if (!hasCachedData) {
-                        console.log('✅ Showing fresh primaci data');
+                        console.log('✅ Showing fresh primaci data (first load)');
                     } else {
-                        console.log('🔄 Updating primaci with fresh data');
+                        console.log('🔄 Silently updating primaci with fresh data');
                     }
                     renderPrimaci(data);
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    document.getElementById('primaci-content').classList.remove('hidden');
                 } catch (error) {
                     if (!hasCachedData) {
                         throw error;
                     } else {
-                        console.warn('⚠️ Failed to fetch fresh primaci, showing cached version:', error);
+                        console.warn('⚠️ Failed to fetch fresh primaci, keeping cached version:', error);
                     }
                 }
 
             } catch (error) {
                 showError('Greška', 'Greška pri učitavanju primača: ' + error.message);
                 document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
+                document.getElementById('loading-screen').classList.remove('hidden');
             }
         }
 
@@ -6043,23 +6061,23 @@
 
         // Load otpremaci data
         async function loadOtpremaci() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('otpremaci-content').classList.add('hidden');
-
             try {
                 const year = new Date().getFullYear();
                 const cacheKey = 'cache_otpremaci_' + year;
                 const url = `${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
 
-                // STALE-WHILE-REVALIDATE: Check cache first
+                // INSTANT LOADING: Check cache FIRST before showing loading screen
                 let hasCachedData = false;
                 const cachedOtpremaci = localStorage.getItem(cacheKey);
                 if (cachedOtpremaci) {
                     try {
                         const parsed = JSON.parse(cachedOtpremaci);
                         if (parsed.data && parsed.data.otpremaci) {
-                            console.log(`📦 Showing cached otpremaci while fetching fresh data...`);
+                            console.log(`⚡ INSTANT LOAD: Showing cached otpremaci (no loading screen)`);
+                            // INSTANT: Render cached data immediately WITHOUT showing loading screen
                             renderOtpremaci(parsed.data);
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            document.getElementById('otpremaci-content').classList.remove('hidden');
                             hasCachedData = true;
                         }
                     } catch (e) {
@@ -6067,26 +6085,35 @@
                     }
                 }
 
-                // FETCH FRESH DATA (120s timeout)
+                // If NO cache, show loading screen NOW
+                if (!hasCachedData) {
+                    document.getElementById('loading-screen').classList.remove('hidden');
+                    document.getElementById('otpremaci-content').classList.add('hidden');
+                }
+
+                // FETCH FRESH DATA (120s timeout) - always runs in background
                 try {
                     const data = await fetchWithCache(url, cacheKey, false, 120000);
                     if (!hasCachedData) {
-                        console.log('✅ Showing fresh otpremaci data');
+                        console.log('✅ Showing fresh otpremaci data (first load)');
                     } else {
-                        console.log('🔄 Updating otpremaci with fresh data');
+                        console.log('🔄 Silently updating otpremaci with fresh data');
                     }
                     renderOtpremaci(data);
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    document.getElementById('otpremaci-content').classList.remove('hidden');
                 } catch (error) {
                     if (!hasCachedData) {
                         throw error;
                     } else {
-                        console.warn('⚠️ Failed to fetch fresh otpremaci, showing cached version:', error);
+                        console.warn('⚠️ Failed to fetch fresh otpremaci, keeping cached version:', error);
                     }
                 }
 
             } catch (error) {
                 showError('Greška', 'Greška pri učitavanju otpremača: ' + error.message);
                 document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
+                document.getElementById('loading-screen').classList.remove('hidden');
             }
         }
 
@@ -6952,31 +6979,60 @@
 
         // Load kupci data
         async function loadKupci() {
-            console.log('Loading Kupci screen...');
-            document.getElementById('kupci-content').classList.remove('hidden');
-            document.getElementById('loading-screen').classList.add('hidden');
-
             try {
                 const year = new Date().getFullYear();
+                const cacheKey = 'cache_kupci_' + year;
                 const url = `${API_URL}?path=kupci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_kupci_' + year);
 
-                console.log('Kupci data:', data);
+                // INSTANT LOADING: Check cache FIRST before showing loading screen
+                let hasCachedData = false;
+                const cachedKupci = localStorage.getItem(cacheKey);
+                if (cachedKupci) {
+                    try {
+                        const parsed = JSON.parse(cachedKupci);
+                        if (parsed.data && parsed.data.godisnji && parsed.data.sortimentiNazivi) {
+                            console.log(`⚡ INSTANT LOAD: Showing cached kupci (no loading screen)`);
+                            // INSTANT: Render cached data immediately WITHOUT showing loading screen
+                            renderKupciGodisnjiTable(parsed.data.godisnji, parsed.data.sortimentiNazivi);
+                            renderKupciMjesecniTable(parsed.data.mjesecni, parsed.data.sortimentiNazivi);
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            document.getElementById('kupci-content').classList.remove('hidden');
+                            hasCachedData = true;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Failed to parse cached kupci:', e);
+                    }
+                }
+
+                // If NO cache, show loading screen NOW
+                if (!hasCachedData) {
+                    document.getElementById('loading-screen').classList.remove('hidden');
+                    document.getElementById('kupci-content').classList.add('hidden');
+                }
+
+                // FETCH FRESH DATA (120s timeout) - always runs in background
+                const data = await fetchWithCache(url, cacheKey, false, 120000);
+
+                if (!hasCachedData) {
+                    console.log('✅ Showing fresh kupci data (first load)');
+                } else {
+                    console.log('🔄 Silently updating kupci with fresh data');
+                }
 
                 if (data.error || !data.godisnji || !data.sortimentiNazivi) {
                     throw new Error(data.error || 'Nema podataka');
                 }
 
-                // Renderuj godišnju tabelu po kupcima i sortimentima
                 renderKupciGodisnjiTable(data.godisnji, data.sortimentiNazivi);
-
-                // Renderuj mjesečnu tabelu za trenutni mjesec
                 renderKupciMjesecniTable(data.mjesecni, data.sortimentiNazivi);
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('kupci-content').classList.remove('hidden');
 
             } catch (error) {
                 console.error('Error loading kupci:', error);
                 document.getElementById('kupci-godisnji-body').innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #dc2626;">Greška pri učitavanju: ' + error.message + '</td></tr>';
                 document.getElementById('kupci-mjesecni-body').innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #dc2626;">Greška pri učitavanju: ' + error.message + '</td></tr>';
+                document.getElementById('loading-screen').classList.remove('hidden');
             }
         }
 
