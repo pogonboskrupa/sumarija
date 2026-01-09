@@ -4010,7 +4010,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v31-INSTANT-LOADING-ALL';
+        const APP_VERSION = '2026-01-09-v32-SERVICEWORKER-FIX';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4203,12 +4203,12 @@
 
         // Register Service Worker for offline support
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js')
+            navigator.serviceWorker.register('./service-worker.js')
                 .then(registration => {
-                    console.log('Service Worker registered:', registration);
+                    console.log('✅ Service Worker registered:', registration);
                 })
                 .catch(error => {
-                    console.error('Service Worker registration failed:', error);
+                    console.warn('⚠️ Service Worker registration failed (not critical):', error);
                 });
         }
 

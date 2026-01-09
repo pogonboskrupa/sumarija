@@ -6,8 +6,8 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // Assets to cache immediately on install
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
+  './',
+  './index.html',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'
 ];
 
