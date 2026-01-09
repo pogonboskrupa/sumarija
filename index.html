@@ -3569,7 +3569,7 @@
                         <h3 style="margin-bottom: 20px;">Unos podataka</h3>
 
                         <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Prečnik na sredini (cm)</label>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">⌀ Prečnik na sredini (cm)</label>
                             <input type="number" id="kubikator-promjer" class="filter-input" placeholder="od 7 do 150 cm" style="width: 100%; font-size: 16px; padding: 12px;" min="7" max="150" step="1">
                             <small style="color: #6b7280;">Dozvoljen raspon: 7-150 cm</small>
                         </div>
@@ -3600,7 +3600,7 @@
                             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
                                 <div>
                                     <h3 style="margin: 0 0 8px 0; font-size: 22px;">📋 Rekapitulacija mjerenja</h3>
-                                    <p style="margin: 0; opacity: 0.9; font-size: 14px;">📅 Datum: <span id="kubikator-datum"></span></p>
+                                    <p style="margin: 0; opacity: 0.9; font-size: 16px; font-weight: 600;">DNEVNI IZVJEŠTAJ ZA DAN: <span id="kubikator-datum" style="font-weight: 700;"></span></p>
                                 </div>
                                 <div style="display: flex; gap: 10px;">
                                     <button class="btn btn-secondary" onclick="ocistiKubikator()" style="background: rgba(255,255,255,0.2); border: 2px solid white; color: white; font-weight: 600;">🗑️ Očisti</button>
@@ -3616,7 +3616,7 @@
                                     <thead>
                                         <tr style="background: #f9fafb; border-bottom: 2px solid #047857;">
                                             <th style="color: #047857; font-weight: 700; padding: 16px;">R.B.</th>
-                                            <th style="color: #047857; font-weight: 700; padding: 16px;">Prečnik (cm)</th>
+                                            <th style="color: #047857; font-weight: 700; padding: 16px;">⌀ Prečnik (cm)</th>
                                             <th style="color: #047857; font-weight: 700; padding: 16px;">Dužina (m)</th>
                                             <th style="color: #047857; font-weight: 700; padding: 16px;">Zapremina (m³)</th>
                                             <th style="color: #047857; font-weight: 700; padding: 16px;">Akcija</th>
@@ -3672,7 +3672,7 @@
                     <h3 style="margin-bottom: 20px;">Unos podataka</h3>
 
                     <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Prečnik na sredini (cm)</label>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">⌀ Prečnik na sredini (cm)</label>
                         <input type="number" id="kubikator-promjer" class="filter-input" placeholder="od 7 do 150 cm" style="width: 100%; font-size: 16px; padding: 12px;" min="7" max="150" step="1">
                         <small style="color: #6b7280;">Dozvoljen raspon: 7-150 cm</small>
                     </div>
@@ -3703,7 +3703,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
                             <div>
                                 <h3 style="margin: 0 0 8px 0; font-size: 22px;">📋 Rekapitulacija mjerenja</h3>
-                                <p style="margin: 0; opacity: 0.9; font-size: 14px;">📅 Datum: <span id="kubikator-datum"></span></p>
+                                <p style="margin: 0; opacity: 0.9; font-size: 16px; font-weight: 600;">DNEVNI IZVJEŠTAJ ZA DAN: <span id="kubikator-datum" style="font-weight: 700;"></span></p>
                             </div>
                             <div style="display: flex; gap: 10px;">
                                 <button class="btn btn-secondary" onclick="ocistiKubikator()" style="background: rgba(255,255,255,0.2); border: 2px solid white; color: white; font-weight: 600;">🗑️ Očisti</button>
@@ -3719,7 +3719,7 @@
                                 <thead>
                                     <tr style="background: #f9fafb; border-bottom: 2px solid #047857;">
                                         <th style="color: #047857; font-weight: 700; padding: 16px;">R.B.</th>
-                                        <th style="color: #047857; font-weight: 700; padding: 16px;">Prečnik (cm)</th>
+                                        <th style="color: #047857; font-weight: 700; padding: 16px;">⌀ Prečnik (cm)</th>
                                         <th style="color: #047857; font-weight: 700; padding: 16px;">Dužina (m)</th>
                                         <th style="color: #047857; font-weight: 700; padding: 16px;">Zapremina (m³)</th>
                                         <th style="color: #047857; font-weight: 700; padding: 16px;">Akcija</th>
@@ -4176,7 +4176,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v42-IZVJESTAJI-FILTER-CACHE-750KB';
+        const APP_VERSION = '2026-01-09-v43-KUBIKATOR-FIXES';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -12676,17 +12676,26 @@
 
         // Izračunaj zapreminu pomoću Huber metode
         function izracunajKubikazu() {
-            const promjer = parseFloat(document.getElementById('kubikator-promjer').value);
-            const duzina = parseFloat(document.getElementById('kubikator-duzina').value);
+            const promjerInput = document.getElementById('kubikator-promjer').value.trim();
+            const duzinaInput = document.getElementById('kubikator-duzina').value.trim();
+
+            // Provjeri da li su polja prazna
+            if (!promjerInput || !duzinaInput) {
+                showError('Greška', 'Morate unijeti i prečnik i dužinu');
+                return;
+            }
+
+            const promjer = parseFloat(promjerInput);
+            const duzina = parseFloat(duzinaInput);
 
             // Validacija prečnika (7-150 cm)
-            if (!promjer || promjer < 7 || promjer > 150) {
+            if (isNaN(promjer) || promjer < 7 || promjer > 150) {
                 showError('Greška', 'Prečnik mora biti između 7 i 150 cm');
                 return;
             }
 
             // Validacija dužine (2-8 m)
-            if (!duzina || duzina < 2 || duzina > 8) {
+            if (isNaN(duzina) || duzina < 2 || duzina > 8) {
                 showError('Greška', 'Dužina mora biti između 2 i 8 metara');
                 return;
             }
@@ -12708,9 +12717,12 @@
             document.getElementById('kubikator-obujam-display').textContent = zapremina.toFixed(2);
             document.getElementById('kubikator-rezultat').style.display = 'block';
 
-            // Ažuriraj datum u header-u rekapitulacije
+            // Ažuriraj datum u header-u rekapitulacije - vidljiviji format
             const danas = new Date();
-            const datumStr = danas.toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const dan = String(danas.getDate()).padStart(2, '0');
+            const mjesec = String(danas.getMonth() + 1).padStart(2, '0');
+            const godina = danas.getFullYear();
+            const datumStr = `${dan}.${mjesec}.${godina}`;
             document.getElementById('kubikator-datum').textContent = datumStr;
 
             // Ažuriraj tabelu
@@ -12792,7 +12804,10 @@
             }
 
             const danas = new Date();
-            const datumStr = danas.toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const dan = String(danas.getDate()).padStart(2, '0');
+            const mjesec = String(danas.getMonth() + 1).padStart(2, '0');
+            const godina = danas.getFullYear();
+            const datumStr = `${dan}.${mjesec}.${godina}`;
 
             // Kreiraj print sadržaj
             let printContent = `
@@ -12802,7 +12817,7 @@
                     <style>
                         body { font-family: Arial, sans-serif; padding: 20px; }
                         h1 { color: #047857; margin-bottom: 10px; }
-                        .subtitle { color: #6b7280; margin-bottom: 30px; }
+                        .subtitle { color: #6b7280; margin-bottom: 30px; font-size: 16px; }
                         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
                         th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
                         th { background-color: #047857; color: white; font-weight: 700; }
@@ -12815,14 +12830,14 @@
                     <h1>📐 Kubikator - Rekapitulacija mjerenja</h1>
                     <div class="subtitle">
                         <p><strong>Metoda:</strong> Huber (mjerenje prečnika na sredini)</p>
-                        <p><strong>Datum:</strong> ${datumStr}</p>
+                        <p><strong>DNEVNI IZVJEŠTAJ ZA DAN:</strong> ${datumStr}</p>
                     </div>
 
                     <table>
                         <thead>
                             <tr>
                                 <th>R.B.</th>
-                                <th>Prečnik (cm)</th>
+                                <th>⌀ Prečnik (cm)</th>
                                 <th>Dužina (m)</th>
                                 <th>Zapremina (m³)</th>
                             </tr>
