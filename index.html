@@ -4101,9 +4101,11 @@
                     <p style="color: #6b7280;">Trenutno stanje radilišta - sortirano po najsvježijim unosima sječe</p>
                 </div>
                 <div class="page-header-right">
-                    <select id="stanje-odjela-select" class="year-select" style="min-width: 250px; margin-right: 12px;" onchange="filterStanjeOdjela()">
-                        <option value="">Sva radilišta</option>
-                    </select>
+                    <div id="stanje-odjela-filter-section" style="display: inline-block;">
+                        <select id="stanje-odjela-select" class="year-select" style="min-width: 250px; margin-right: 12px;" onchange="filterStanjeOdjela()">
+                            <option value="">Sva radilišta</option>
+                        </select>
+                    </div>
                     <button class="btn btn-primary" onclick="loadStanjeOdjela()">🔄 Osvježi</button>
                 </div>
             </div>
@@ -4174,7 +4176,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v39-CACHE-CLEANUP-QUOTA-FIX';
+        const APP_VERSION = '2026-01-09-v40-POSLOVODJA-STANJE-ODJELA';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4940,9 +4942,9 @@
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                 `;
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
-                // POSLOVOĐA vidi: STANJE ODJELA, ODJELI U REALIZACIJI, ZADNJIH 5 DANA, SUMA MJESECA, IZVJEŠTAJI, KUBIKATOR
+                // POSLOVOĐA vidi: STANJE ODJELA (kao admin), ODJELI U REALIZACIJI, ZADNJIH 5 DANA, SUMA MJESECA, IZVJEŠTAJI, KUBIKATOR
                 tabsMenu.innerHTML = `
-                    <button class="tab active" onclick="switchTab('poslovodja-stanje')">📊 Stanje Odjela</button>
+                    <button class="tab active" onclick="switchTab('stanje-odjela')">📦 Stanje odjela</button>
                     <button class="tab" onclick="switchTab('poslovodja-realizacija')">🏗️ Odjeli u realizaciji</button>
                     <button class="tab" onclick="switchTab('poslovodja-zadnjih5')">📅 Zadnjih 5 Dana</button>
                     <button class="tab" onclick="switchTab('poslovodja-suma')">📈 Suma Mjeseca</button>
@@ -9807,6 +9809,15 @@
 
         async function loadStanjeOdjela() {
             try {
+                // Detect if user is poslovođa
+                const userType = (currentUser.type || '').toLowerCase();
+                const isPoslovodja = userType === 'poslovođa' || userType === 'poslovodja';
+                const poslovodjaRadilista = isPoslovodja ? getPoslovodjaRadilista() : [];
+
+                if (isPoslovodja) {
+                    console.log(`👤 Poslovođa loading stanje odjela - radilišta:`, poslovodjaRadilista);
+                }
+
                 // Load data from backend - load both current year and previous year (Oct, Nov, Dec)
                 const currentYear = new Date().getFullYear();
                 const cacheKey = `cache_stanje_odjela_${currentYear}`;
@@ -9820,11 +9831,22 @@
                         const parsed = JSON.parse(cachedData);
                         if (parsed.data && parsed.data.data && parsed.data.sortimentiNazivi) {
                             console.log(`⚡ INSTANT LOAD: Showing cached stanje odjela (no loading screen)`);
+
+                            // Filter data for poslovođa
+                            let filteredData = parsed.data.data;
+                            if (isPoslovodja && poslovodjaRadilista.length > 0) {
+                                filteredData = parsed.data.data.filter(odjel => {
+                                    const odjelRadiliste = (odjel.radiliste || '').toUpperCase().trim();
+                                    return poslovodjaRadilista.some(r => odjelRadiliste.includes(r.toUpperCase()));
+                                });
+                                console.log(`✂️ Filtered to ${filteredData.length} odjela for poslovođa radilišta`);
+                            }
+
                             // INSTANT: Render cached data immediately WITHOUT showing loading screen
-                            stanjeOdjelaData = parsed.data.data;
+                            stanjeOdjelaData = filteredData;
                             stanjeOdjelaSortimenti = parsed.data.sortimentiNazivi;
-                            populateStanjeOdjelaDropdown(parsed.data.data);
-                            renderStanjeOdjelaSections(parsed.data.data, parsed.data.sortimentiNazivi);
+                            populateStanjeOdjelaDropdown(filteredData, isPoslovodja);
+                            renderStanjeOdjelaSections(filteredData, parsed.data.sortimentiNazivi);
                             document.getElementById('loading-screen').classList.add('hidden');
                             document.getElementById('stanje-odjela-content').classList.remove('hidden');
                             hasCachedData = true;
@@ -9851,15 +9873,25 @@
 
                 if (data.error) throw new Error(data.error);
 
+                // Filter data for poslovođa
+                let filteredFreshData = data.data;
+                if (isPoslovodja && poslovodjaRadilista.length > 0) {
+                    filteredFreshData = data.data.filter(odjel => {
+                        const odjelRadiliste = (odjel.radiliste || '').toUpperCase().trim();
+                        return poslovodjaRadilista.some(r => odjelRadiliste.includes(r.toUpperCase()));
+                    });
+                    console.log(`✂️ Filtered fresh data to ${filteredFreshData.length} odjela for poslovođa radilišta`);
+                }
+
                 // Sačuvaj podatke globalno
-                stanjeOdjelaData = data.data;
+                stanjeOdjelaData = filteredFreshData;
                 stanjeOdjelaSortimenti = data.sortimentiNazivi;
 
                 // Populiši dropdown sa radilištima
-                populateStanjeOdjelaDropdown(data.data);
+                populateStanjeOdjelaDropdown(filteredFreshData, isPoslovodja);
 
                 // Render sections
-                renderStanjeOdjelaSections(data.data, data.sortimentiNazivi);
+                renderStanjeOdjelaSections(filteredFreshData, data.sortimentiNazivi);
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('stanje-odjela-content').classList.remove('hidden');
@@ -9871,8 +9903,18 @@
             }
         }
 
-        function populateStanjeOdjelaDropdown(data) {
+        function populateStanjeOdjelaDropdown(data, isPoslovodja = false) {
             const select = document.getElementById('stanje-odjela-select');
+            const filterSection = document.getElementById('stanje-odjela-filter-section');
+
+            // Hide filter for poslovođa (already filtered by radilišta)
+            if (isPoslovodja) {
+                if (filterSection) filterSection.style.display = 'none';
+                return;
+            }
+
+            // Show filter for admin
+            if (filterSection) filterSection.style.display = 'block';
 
             // Očisti postojeće opcije osim "Sva radilišta"
             select.innerHTML = '<option value="">Sva radilišta</option>';
