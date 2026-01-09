@@ -3583,22 +3583,6 @@
             <!-- Kartice sa opcijama izvještaja -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-top: 30px;">
 
-                <!-- Dinamika -->
-                <div class="card" onclick="switchTab('dinamika')" style="cursor: pointer; transition: transform 0.2s; hover: transform: translateY(-4px);">
-                    <div style="padding: 24px;">
-                        <h2 style="margin: 0 0 12px 0; font-size: 24px;">📊 Dinamika</h2>
-                        <p style="color: #6b7280; margin: 0;">Planirana mjesečna dinamika sječe (m³) za tekuću godinu</p>
-                    </div>
-                </div>
-
-                <!-- Uporedba godina -->
-                <div class="card" onclick="switchTab('uporedba-godina')" style="cursor: pointer; transition: transform 0.2s;">
-                    <div style="padding: 24px;">
-                        <h2 style="margin: 0 0 12px 0; font-size: 24px;">📊 Uporedba godina</h2>
-                        <p style="color: #6b7280; margin: 0;">Side-by-side prikaz sječe i otpreme po godinama</p>
-                    </div>
-                </div>
-
                 <!-- Mjesečni izvještaj po odjelima -->
                 <div class="card" onclick="switchTab('izvjestaji')" style="cursor: pointer; transition: transform 0.2s;">
                     <div style="padding: 24px;">
@@ -4010,7 +3994,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v32-SERVICEWORKER-FIX';
+        const APP_VERSION = '2026-01-09-v33-STANJE-ODJELA-DEBUG';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -8751,9 +8735,17 @@
                 const primkaUrl = API_URL + '?path=primaci-daily&year=' + year + '&month=' + month + '&username=' + currentUser.username + '&password=' + currentPassword;
                 const primkaData = await fetchWithCache(primkaUrl, `cache_izvjestaji_primka_${year}_${month}`);
 
+                console.log('📊 PRIMKA DATA za mjesečni izvještaj:', primkaData);
+                console.log('📊 PRIMKA DATA.data:', primkaData.data);
+                console.log('📊 Broj primka redova:', primkaData.data ? primkaData.data.length : 0);
+
                 // Load OTPREMA data
                 const otpremaUrl = API_URL + '?path=otpremaci-daily&year=' + year + '&month=' + month + '&username=' + currentUser.username + '&password=' + currentPassword;
                 const otpremaData = await fetchWithCache(otpremaUrl, `cache_izvjestaji_otprema_${year}_${month}`);
+
+                console.log('📊 OTPREMA DATA za mjesečni izvještaj:', otpremaData);
+                console.log('📊 OTPREMA DATA.data:', otpremaData.data);
+                console.log('📊 Broj otprema redova:', otpremaData.data ? otpremaData.data.length : 0);
 
                 if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
                 if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
@@ -8761,6 +8753,9 @@
                 // Aggregate data by odjel
                 const primkaByOdjel = aggregateByOdjel(primkaData.data, primkaData.sortimentiNazivi);
                 const otpremaByOdjel = aggregateByOdjel(otpremaData.data, otpremaData.sortimentiNazivi);
+
+                console.log('📊 PRIMKA BY ODJEL (agregiran):', primkaByOdjel);
+                console.log('📊 OTPREMA BY ODJEL (agregiran):', otpremaByOdjel);
 
                 // Render tables
                 renderIzvjestajiTable(primkaByOdjel, primkaData.sortimentiNazivi, 'primka');
@@ -9283,12 +9278,48 @@
         let stanjeOdjelaSortimenti = [];
 
         async function loadStanjeOdjela() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-
             try {
-                // Load data from backend
-                const url = API_URL + '?path=stanje-odjela&username=' + currentUser.username + '&password=' + currentPassword;
-                const data = await fetchWithCache(url, `cache_stanje_odjela`);
+                // Load data from backend - load both current year and previous year (Oct, Nov, Dec)
+                const currentYear = new Date().getFullYear();
+                const cacheKey = `cache_stanje_odjela_${currentYear}`;
+                const url = API_URL + '?path=stanje-odjela&year=' + currentYear + '&username=' + currentUser.username + '&password=' + currentPassword;
+
+                // INSTANT LOADING: Check cache FIRST before showing loading screen
+                let hasCachedData = false;
+                const cachedData = localStorage.getItem(cacheKey);
+                if (cachedData) {
+                    try {
+                        const parsed = JSON.parse(cachedData);
+                        if (parsed.data && parsed.data.data && parsed.data.sortimentiNazivi) {
+                            console.log(`⚡ INSTANT LOAD: Showing cached stanje odjela (no loading screen)`);
+                            // INSTANT: Render cached data immediately WITHOUT showing loading screen
+                            stanjeOdjelaData = parsed.data.data;
+                            stanjeOdjelaSortimenti = parsed.data.sortimentiNazivi;
+                            populateStanjeOdjelaDropdown(parsed.data.data);
+                            renderStanjeOdjelaSections(parsed.data.data, parsed.data.sortimentiNazivi);
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            document.getElementById('stanje-odjela-content').classList.remove('hidden');
+                            hasCachedData = true;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Failed to parse cached stanje odjela:', e);
+                    }
+                }
+
+                // If NO cache, show loading screen NOW
+                if (!hasCachedData) {
+                    document.getElementById('loading-screen').classList.remove('hidden');
+                    document.getElementById('stanje-odjela-content').classList.add('hidden');
+                }
+
+                // FETCH FRESH DATA (120s timeout) - always runs in background
+                const data = await fetchWithCache(url, cacheKey, false, 120000);
+
+                if (!hasCachedData) {
+                    console.log('✅ Showing fresh stanje odjela data (first load)');
+                } else {
+                    console.log('🔄 Silently updating stanje odjela with fresh data');
+                }
 
                 if (data.error) throw new Error(data.error);
 
@@ -9303,6 +9334,7 @@
                 renderStanjeOdjelaSections(data.data, data.sortimentiNazivi);
 
                 document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('stanje-odjela-content').classList.remove('hidden');
 
             } catch (error) {
                 console.error('Error loading stanje odjela:', error);
