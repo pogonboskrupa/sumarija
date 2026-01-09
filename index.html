@@ -4176,7 +4176,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v40-POSLOVODJA-STANJE-ODJELA';
+        const APP_VERSION = '2026-01-09-v41-MENU-CLEANUP-QUOTA-FIX';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4479,23 +4479,28 @@
                 const data = await response.json();
 
                 // Store in cache (cleanup first to prevent QuotaExceededError)
-                try {
-                    localStorage.setItem(cacheKey, JSON.stringify({
-                        data: data,
-                        timestamp: Date.now()
-                    }));
-                } catch (quotaError) {
-                    if (quotaError.name === 'QuotaExceededError') {
-                        console.warn('⚠️ LocalStorage full, cleaning up old cache...');
-                        cleanupOldCache();
-                        // Try again after cleanup
-                        try {
-                            localStorage.setItem(cacheKey, JSON.stringify({
-                                data: data,
-                                timestamp: Date.now()
-                            }));
-                        } catch (retryError) {
-                            console.error('❌ Failed to cache even after cleanup:', retryError);
+                const cacheObject = JSON.stringify({
+                    data: data,
+                    timestamp: Date.now()
+                });
+
+                // Check size before caching (skip if >1MB)
+                const sizeInMB = cacheObject.length / 1024 / 1024;
+                if (sizeInMB > 1) {
+                    console.warn(`⚠️ Skipping cache for ${path} - too large (${sizeInMB.toFixed(2)} MB)`);
+                } else {
+                    try {
+                        localStorage.setItem(cacheKey, cacheObject);
+                    } catch (quotaError) {
+                        if (quotaError.name === 'QuotaExceededError') {
+                            console.warn('⚠️ LocalStorage full, cleaning up old cache...');
+                            cleanupOldCache();
+                            // Try again after cleanup
+                            try {
+                                localStorage.setItem(cacheKey, cacheObject);
+                            } catch (retryError) {
+                                console.error('❌ Failed to cache even after cleanup:', retryError);
+                            }
                         }
                     }
                 }
@@ -4754,26 +4759,34 @@
                 console.log(`📊 Cache stats: ${cacheEntries.length} entries, ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
 
                 // Delete old cache entries (older than 7 days)
+                const remainingEntries = [];
                 cacheEntries.forEach(entry => {
                     if (entry.timestamp < sevenDaysAgo) {
                         localStorage.removeItem(entry.key);
                         deletedCount++;
                         console.log(`🗑️ Deleted old cache: ${entry.key}`);
+                    } else {
+                        remainingEntries.push(entry);
                     }
                 });
 
-                // If still too large (>4MB), delete largest entries
-                if (totalSize > 4 * 1024 * 1024) {
-                    const sortedBySize = cacheEntries
-                        .filter(e => e.timestamp >= sevenDaysAgo) // Don't delete already deleted
-                        .sort((a, b) => b.size - a.size);
+                // Recalculate size after deleting old entries
+                let remainingSize = remainingEntries.reduce((sum, e) => sum + e.size, 0);
 
-                    // Delete top 20% largest
-                    const toDelete = Math.ceil(sortedBySize.length * 0.2);
+                // If still too large (>2MB), aggressively delete largest entries
+                if (remainingSize > 2 * 1024 * 1024) {
+                    console.warn(`⚠️ Cache too large (${(remainingSize / 1024 / 1024).toFixed(2)} MB), aggressive cleanup...`);
+
+                    const sortedBySize = remainingEntries.sort((a, b) => b.size - a.size);
+
+                    // Delete 50% of largest entries
+                    const toDelete = Math.ceil(sortedBySize.length * 0.5);
                     for (let i = 0; i < toDelete; i++) {
-                        localStorage.removeItem(sortedBySize[i].key);
-                        deletedCount++;
-                        console.log(`🗑️ Deleted large cache: ${sortedBySize[i].key} (${(sortedBySize[i].size / 1024).toFixed(2)} KB)`);
+                        if (sortedBySize[i]) {
+                            localStorage.removeItem(sortedBySize[i].key);
+                            deletedCount++;
+                            console.log(`🗑️ Deleted large cache: ${sortedBySize[i].key} (${(sortedBySize[i].size / 1024).toFixed(2)} KB)`);
+                        }
                     }
                 }
 
@@ -4942,10 +4955,9 @@
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                 `;
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
-                // POSLOVOĐA vidi: STANJE ODJELA (kao admin), ODJELI U REALIZACIJI, ZADNJIH 5 DANA, SUMA MJESECA, IZVJEŠTAJI, KUBIKATOR
+                // POSLOVOĐA vidi: STANJE ODJELA (kao admin), ZADNJIH 5 DANA, SUMA MJESECA, IZVJEŠTAJI, KUBIKATOR
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('stanje-odjela')">📦 Stanje odjela</button>
-                    <button class="tab" onclick="switchTab('poslovodja-realizacija')">🏗️ Odjeli u realizaciji</button>
                     <button class="tab" onclick="switchTab('poslovodja-zadnjih5')">📅 Zadnjih 5 Dana</button>
                     <button class="tab" onclick="switchTab('poslovodja-suma')">📈 Suma Mjeseca</button>
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
