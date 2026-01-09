@@ -4010,7 +4010,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v30-INSTANT-LOADING';
+        const APP_VERSION = '2026-01-09-v31-INSTANT-LOADING-ALL';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -8507,17 +8507,45 @@
 
         // Load monthly sortimenti
         async function loadMjesecniSortimenti() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('mjesecni-sortimenti-content').classList.add('hidden');
-
             try {
                 const year = new Date().getFullYear();
+                const cacheKey = `cache_mjesecni_sortimenti_${year}`;
                 const url = API_URL + '?path=mjesecni-sortimenti&year=' + year + '&username=' + currentUser.username + '&password=' + currentPassword;
 
-                console.log('Fetching mjesečni sortimenti for year:', year);
-                const data = await fetchWithCache(url, `cache_mjesecni_sortimenti_${year}`);
+                // INSTANT LOADING: Check cache FIRST before showing loading screen
+                let hasCachedData = false;
+                const cachedData = localStorage.getItem(cacheKey);
+                if (cachedData) {
+                    try {
+                        const parsed = JSON.parse(cachedData);
+                        if (parsed.data && parsed.data.sjeca && parsed.data.otprema) {
+                            console.log(`⚡ INSTANT LOAD: Showing cached mjesečni sortimenti (no loading screen)`);
+                            // INSTANT: Render cached data immediately WITHOUT showing loading screen
+                            renderMjesecnaTabela(parsed.data.sjeca, 'mjesecna-sjeca');
+                            renderMjesecnaTabela(parsed.data.otprema, 'mjesecna-otprema');
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            document.getElementById('mjesecni-sortimenti-content').classList.remove('hidden');
+                            hasCachedData = true;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Failed to parse cached mjesečni sortimenti:', e);
+                    }
+                }
 
-                console.log('Mjesečni sortimenti response:', data);
+                // If NO cache, show loading screen NOW
+                if (!hasCachedData) {
+                    document.getElementById('loading-screen').classList.remove('hidden');
+                    document.getElementById('mjesecni-sortimenti-content').classList.add('hidden');
+                }
+
+                // FETCH FRESH DATA (120s timeout) - always runs in background
+                const data = await fetchWithCache(url, cacheKey, false, 120000);
+
+                if (!hasCachedData) {
+                    console.log('✅ Showing fresh mjesečni sortimenti data (first load)');
+                } else {
+                    console.log('🔄 Silently updating mjesečni sortimenti with fresh data');
+                }
 
                 if (data.error) {
                     throw new Error(data.error);
@@ -8527,15 +8555,8 @@
                     throw new Error('Invalid data format received from server');
                 }
 
-                console.log('Rendering SJEČA table...');
-                // Render SJEČA table
                 renderMjesecnaTabela(data.sjeca, 'mjesecna-sjeca');
-
-                console.log('Rendering OTPREMA table...');
-                // Render OTPREMA table
                 renderMjesecnaTabela(data.otprema, 'mjesecna-otprema');
-
-                console.log('Tables rendered successfully');
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('mjesecni-sortimenti-content').classList.remove('hidden');
 
