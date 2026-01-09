@@ -114,6 +114,12 @@
         .tab:hover { color: #374151; background: #f9fafb; }
         .tab.active { color: #047857; border-bottom-color: #047857; background: #f0fdf4; }
 
+        /* Tabs submenu for Ostalo */
+        .tabs-sub { display: flex; gap: 8px; margin-bottom: 24px; padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; }
+        .tab-sub { background: white; border: 2px solid #e5e7eb; padding: 12px 24px; font-size: 14px; font-weight: 600; color: #6b7280; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
+        .tab-sub:hover { color: #374151; border-color: #059669; }
+        .tab-sub.active { color: white; background: #059669; border-color: #059669; }
+
         /* Submenu styles */
         .submenu { display: flex; gap: 8px; margin-bottom: 24px; padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; }
         .submenu-tab { background: white; border: 1px solid #d1d5db; padding: 10px 18px; font-size: 13px; font-weight: 600; color: #6b7280; cursor: pointer; border-radius: 6px; transition: all 0.2s; white-space: nowrap; }
@@ -3541,6 +3547,30 @@
             </div>
         </div>
 
+        <!-- OSTALO CONTENT -->
+        <div id="ostalo-content" class="container hidden">
+            <div class="page-header">
+                <h1>⚙️ Ostalo</h1>
+                <p>Dodatne opcije i prikazi</p>
+            </div>
+
+            <!-- Tab submenu za Ostalo -->
+            <div class="tabs-sub" style="margin-bottom: 30px;">
+                <button class="tab-sub active" onclick="switchOstaloTab('dinamika')">📊 Dinamika</button>
+                <button class="tab-sub" onclick="switchOstaloTab('uporedba')">📊 Uporedba godina</button>
+            </div>
+
+            <!-- DINAMIKA SUB-CONTENT -->
+            <div id="dinamika-sub-content" class="sub-content">
+                <div id="dinamika-content"></div>
+            </div>
+
+            <!-- UPOREDBA SUB-CONTENT -->
+            <div id="uporedba-sub-content" class="sub-content hidden">
+                <div id="uporedba-godina-content"></div>
+            </div>
+        </div>
+
         <!-- ADMIN IZVJEŠTAJI CONTENT - Kartice sa linkovima -->
         <div id="izvjestaji-admin-content" class="container hidden">
             <div class="page-header">
@@ -3979,8 +4009,8 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-08-v27-ODJELI-INSTANT';
-        const BUILD_COMMIT = '7185d27';
+        const APP_VERSION = '2026-01-09-v28-OSTALO-MENI-RESTORED';
+        const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
         console.clear();
@@ -4678,6 +4708,7 @@
                         📋 Dodani unosi
                         <span class="badge-count" id="pending-count-badge"></span>
                     </button>
+                    <button class="tab" onclick="switchTab('ostalo')">⚙️ Ostalo</button>
                 `;
             }
         }
@@ -4771,6 +4802,7 @@
             document.getElementById('poslovodja-suma-content').classList.add('hidden');
             document.getElementById('dinamika-content').classList.add('hidden');
             document.getElementById('uporedba-godina-content').classList.add('hidden');
+            document.getElementById('ostalo-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
@@ -4868,6 +4900,29 @@
 
                 document.getElementById('izvjestaji-otpremac-content').classList.remove('hidden');
                 switchOtpremacIzvjestajiSubTab('sedmicni');
+            } else if (tab === 'ostalo') {
+                document.getElementById('ostalo-content').classList.remove('hidden');
+                switchOstaloTab('dinamika'); // Default to Dinamika sub-tab
+            }
+        }
+
+        // Switch between Ostalo sub-tabs
+        function switchOstaloTab(subtab) {
+            // Update sub-tab buttons
+            document.querySelectorAll('#ostalo-content .tab-sub').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Hide all Ostalo sub-content
+            document.getElementById('dinamika-sub-content').classList.add('hidden');
+            document.getElementById('uporedba-sub-content').classList.add('hidden');
+
+            // Show selected sub-content
+            if (subtab === 'dinamika') {
+                document.getElementById('dinamika-sub-content').classList.remove('hidden');
+                loadDinamika();
+            } else if (subtab === 'uporedba') {
+                document.getElementById('uporedba-sub-content').classList.remove('hidden');
+                loadUporedbaGodina();
             }
         }
 
