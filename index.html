@@ -3584,25 +3584,15 @@
                     <h3 style="margin-bottom: 20px;">Unos podataka</h3>
 
                     <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Naziv mjerenja drva</label>
-                        <select id="kubikator-metoda" class="year-select" style="width: 100%;">
-                            <option value="huber">Huber (mjerenje na sredini)</option>
-                        </select>
-                    </div>
-
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Promjer na sredini (cm)</label>
-                        <input type="number" id="kubikator-promjer" class="filter-input" placeholder="npr. 75" style="width: 100%; font-size: 16px; padding: 12px;" min="1" step="0.1">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Prečnik na sredini (cm)</label>
+                        <input type="number" id="kubikator-promjer" class="filter-input" placeholder="od 7 do 150 cm" style="width: 100%; font-size: 16px; padding: 12px;" min="7" max="150" step="1">
+                        <small style="color: #6b7280;">Dozvoljen raspon: 7-150 cm</small>
                     </div>
 
                     <div style="margin-bottom: 20px;">
                         <label style="display: block; margin-bottom: 8px; font-weight: 600;">Dužina (m)</label>
-                        <input type="number" id="kubikator-duzina" class="filter-input" placeholder="npr. 5" style="width: 100%; font-size: 16px; padding: 12px;" min="0.1" step="0.1">
-                    </div>
-
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Količina (kom)</label>
-                        <input type="number" id="kubikator-kolicina" class="filter-input" placeholder="npr. 1" style="width: 100%; font-size: 16px; padding: 12px;" min="1" step="1" value="1">
+                        <input type="number" id="kubikator-duzina" class="filter-input" placeholder="od 2 do 8 metara (npr. 4.53)" style="width: 100%; font-size: 16px; padding: 12px;" min="2" max="8" step="0.01">
+                        <small style="color: #6b7280;">Dozvoljen raspon: 2-8 m (2 decimale)</small>
                     </div>
 
                     <button class="btn btn-primary" onclick="izracunajKubikazu()" style="width: 100%; padding: 16px; font-size: 18px; font-weight: 700;">
@@ -3612,43 +3602,62 @@
 
                 <!-- Rezultat -->
                 <div id="kubikator-rezultat" class="card" style="max-width: 600px; margin: 30px auto; display: none;">
-                    <h3 style="margin-bottom: 16px; color: #059669;">📊 Obujam (Oblovina bez kore)</h3>
+                    <h3 style="margin-bottom: 16px; color: #059669;">📊 Zapremina (Oblovina bez kore)</h3>
                     <div style="text-align: center; font-size: 48px; font-weight: 700; color: #059669; padding: 20px; background: #f0fdf4; border-radius: 12px; margin-bottom: 20px;">
                         <span id="kubikator-obujam-display">0.00</span> m³
                     </div>
                 </div>
 
-                <!-- Tabela sa istorijom izračuna -->
-                <div id="kubikator-tabela-container" class="card" style="max-width: 800px; margin: 30px auto; display: none;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3 style="margin: 0;">📋 Istorija izračuna</h3>
-                        <div>
-                            <button class="btn btn-secondary" onclick="ocistiKubikator()" style="margin-right: 10px;">🗑️ Očisti</button>
-                            <button class="btn btn-primary" onclick="isprintajKubikator()">🖨️ Isprintaj</button>
+                <!-- Tabela sa rekapitulacijom -->
+                <div id="kubikator-tabela-container" class="card" style="max-width: 900px; margin: 30px auto; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                    <!-- Header sa naslovom i akcijama -->
+                    <div style="background: linear-gradient(135deg, #047857 0%, #065f46 100%); color: white; padding: 24px; border-radius: 12px 12px 0 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                            <div>
+                                <h3 style="margin: 0 0 8px 0; font-size: 22px;">📋 Rekapitulacija mjerenja</h3>
+                                <p style="margin: 0; opacity: 0.9; font-size: 14px;">📅 Datum: <span id="kubikator-datum"></span></p>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn btn-secondary" onclick="ocistiKubikator()" style="background: rgba(255,255,255,0.2); border: 2px solid white; color: white; font-weight: 600;">🗑️ Očisti</button>
+                                <button class="btn btn-primary" onclick="isprintajKubikator()" style="background: white; color: #047857; border: none; font-weight: 700;">🖨️ Isprintaj</button>
+                            </div>
                         </div>
                     </div>
 
-                    <div style="overflow-x: auto;">
-                        <table class="monthly-table" style="min-width: 700px;">
-                            <thead>
-                                <tr style="background: #047857;">
-                                    <th style="color: white;">Promjer (cm)</th>
-                                    <th style="color: white;">Dužina (m)</th>
-                                    <th style="color: white;">Količina (kom)</th>
-                                    <th style="color: white;">Obujam (m³)</th>
-                                    <th style="color: white;">Akcija</th>
-                                </tr>
-                            </thead>
-                            <tbody id="kubikator-tabela-body"></tbody>
-                            <tfoot>
-                                <tr style="background: #f9fafb; font-weight: 700;">
-                                    <td colspan="2" style="text-align: right; padding-right: 20px;">UKUPNO:</td>
-                                    <td style="text-align: center;"><span id="kubikator-ukupno-kom">0</span> kom</td>
-                                    <td style="text-align: center; color: #059669; font-size: 18px;"><span id="kubikator-ukupno-m3">0.00</span> m³</td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
+                    <!-- Tabela -->
+                    <div style="padding: 24px;">
+                        <div style="overflow-x: auto;">
+                            <table class="monthly-table" style="min-width: 700px; box-shadow: none;">
+                                <thead>
+                                    <tr style="background: #f9fafb; border-bottom: 2px solid #047857;">
+                                        <th style="color: #047857; font-weight: 700; padding: 16px;">R.B.</th>
+                                        <th style="color: #047857; font-weight: 700; padding: 16px;">Prečnik (cm)</th>
+                                        <th style="color: #047857; font-weight: 700; padding: 16px;">Dužina (m)</th>
+                                        <th style="color: #047857; font-weight: 700; padding: 16px;">Zapremina (m³)</th>
+                                        <th style="color: #047857; font-weight: 700; padding: 16px;">Akcija</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="kubikator-tabela-body"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Ukupno - stilizovano -->
+                        <div style="margin-top: 24px; background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-radius: 12px; padding: 24px; border: 3px solid #059669;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 14px; color: #065f46; font-weight: 600; margin-bottom: 8px; text-transform: uppercase;">Ukupno komada</div>
+                                    <div style="font-size: 36px; font-weight: 700; color: #047857;">
+                                        <span id="kubikator-ukupno-kom">0</span> <span style="font-size: 20px;">kom</span>
+                                    </div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 14px; color: #065f46; font-weight: 600; margin-bottom: 8px; text-transform: uppercase;">Ukupna zapremina</div>
+                                    <div style="font-size: 36px; font-weight: 700; color: #047857;">
+                                        <span id="kubikator-ukupno-m3">0.00</span> <span style="font-size: 20px;">m³</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -4077,7 +4086,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v34-KUBIKATOR';
+        const APP_VERSION = '2026-01-09-v35-KUBIKATOR-OPTIMIZED';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -12153,44 +12162,44 @@
         // Globalna varijabla za čuvanje izračuna
         let kubikatorIzracuni = [];
 
-        // Izračunaj kubikažu pomoću Huber metode
+        // Izračunaj zapreminu pomoću Huber metode
         function izracunajKubikazu() {
             const promjer = parseFloat(document.getElementById('kubikator-promjer').value);
             const duzina = parseFloat(document.getElementById('kubikator-duzina').value);
-            const kolicina = parseInt(document.getElementById('kubikator-kolicina').value);
 
-            // Validacija
-            if (!promjer || promjer <= 0) {
-                showError('Greška', 'Unesite validan promjer (cm)');
-                return;
-            }
-            if (!duzina || duzina <= 0) {
-                showError('Greška', 'Unesite validnu dužinu (m)');
-                return;
-            }
-            if (!kolicina || kolicina <= 0) {
-                showError('Greška', 'Unesite validnu količinu (kom)');
+            // Validacija prečnika (7-150 cm)
+            if (!promjer || promjer < 7 || promjer > 150) {
+                showError('Greška', 'Prečnik mora biti između 7 i 150 cm');
                 return;
             }
 
-            // Huber formula: V = π × (d/200)² × L × n
-            // d = promjer u cm
+            // Validacija dužine (2-8 m)
+            if (!duzina || duzina < 2 || duzina > 8) {
+                showError('Greška', 'Dužina mora biti između 2 i 8 metara');
+                return;
+            }
+
+            // Huber formula: V = π × (d/200)² × L
+            // d = prečnik u cm
             // L = dužina u metrima
-            // n = broj komada
-            const obujamPoKomadu = Math.PI * Math.pow(promjer / 200, 2) * duzina;
-            const ukupanObujam = obujamPoKomadu * kolicina;
+            // Količina je uvijek 1 komad
+            const zapremina = Math.PI * Math.pow(promjer / 200, 2) * duzina;
 
             // Dodaj u listu izračuna
             kubikatorIzracuni.push({
                 promjer: promjer,
                 duzina: duzina,
-                kolicina: kolicina,
-                obujam: ukupanObujam
+                zapremina: zapremina
             });
 
             // Prikaži rezultat
-            document.getElementById('kubikator-obujam-display').textContent = ukupanObujam.toFixed(2);
+            document.getElementById('kubikator-obujam-display').textContent = zapremina.toFixed(2);
             document.getElementById('kubikator-rezultat').style.display = 'block';
+
+            // Ažuriraj datum u header-u rekapitulacije
+            const danas = new Date();
+            const datumStr = danas.toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            document.getElementById('kubikator-datum').textContent = datumStr;
 
             // Ažuriraj tabelu
             azurirajKubikatorTabelu();
@@ -12201,7 +12210,6 @@
             // Očisti input polja za sljedeći unos
             document.getElementById('kubikator-promjer').value = '';
             document.getElementById('kubikator-duzina').value = '';
-            document.getElementById('kubikator-kolicina').value = '1';
         }
 
         // Ažuriraj tabelu sa svim izračunima
@@ -12209,21 +12217,20 @@
             const tbody = document.getElementById('kubikator-tabela-body');
             let html = '';
 
-            let ukupnoKom = 0;
+            let ukupnoKom = kubikatorIzracuni.length;
             let ukupnoM3 = 0;
 
             kubikatorIzracuni.forEach((izracun, index) => {
-                ukupnoKom += izracun.kolicina;
-                ukupnoM3 += izracun.obujam;
+                ukupnoM3 += izracun.zapremina;
 
                 html += `
-                    <tr>
-                        <td style="text-align: center;">${izracun.promjer.toFixed(1)} cm</td>
-                        <td style="text-align: center;">${izracun.duzina.toFixed(1)} m</td>
-                        <td style="text-align: center;">${izracun.kolicina} kom</td>
-                        <td style="text-align: center; font-weight: 600; color: #059669;">${izracun.obujam.toFixed(2)} m³</td>
-                        <td style="text-align: center;">
-                            <button class="btn btn-secondary" onclick="obrisiKubikatorRed(${index})" style="padding: 6px 12px;">🗑️</button>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="text-align: center; padding: 12px; font-weight: 600; color: #6b7280;">${index + 1}.</td>
+                        <td style="text-align: center; padding: 12px;">${izracun.promjer.toFixed(0)} cm</td>
+                        <td style="text-align: center; padding: 12px;">${izracun.duzina.toFixed(2)} m</td>
+                        <td style="text-align: center; padding: 12px; font-weight: 600; color: #059669;">${izracun.zapremina.toFixed(2)} m³</td>
+                        <td style="text-align: center; padding: 12px;">
+                            <button class="btn btn-secondary" onclick="obrisiKubikatorRed(${index})" style="padding: 6px 12px; background: #dc2626; border-color: #dc2626;">🗑️</button>
                         </td>
                     </tr>
                 `;
@@ -12248,7 +12255,7 @@
             } else {
                 // Ažuriraj prikaz zadnjeg izračuna
                 const zadnjiIzracun = kubikatorIzracuni[kubikatorIzracuni.length - 1];
-                document.getElementById('kubikator-obujam-display').textContent = zadnjiIzracun.obujam.toFixed(2);
+                document.getElementById('kubikator-obujam-display').textContent = zadnjiIzracun.zapremina.toFixed(2);
             }
         }
 
@@ -12262,7 +12269,6 @@
                 document.getElementById('kubikator-rezultat').style.display = 'none';
                 document.getElementById('kubikator-promjer').value = '';
                 document.getElementById('kubikator-duzina').value = '';
-                document.getElementById('kubikator-kolicina').value = '1';
             }
         }
 
@@ -12273,6 +12279,9 @@
                 return;
             }
 
+            const danas = new Date();
+            const datumStr = danas.toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
             // Kreiraj print sadržaj
             let printContent = `
                 <html>
@@ -12280,44 +12289,47 @@
                     <title>Kubikator - Izračun zapremine drveta</title>
                     <style>
                         body { font-family: Arial, sans-serif; padding: 20px; }
-                        h1 { color: #047857; }
+                        h1 { color: #047857; margin-bottom: 10px; }
+                        .subtitle { color: #6b7280; margin-bottom: 30px; }
                         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
                         th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
-                        th { background-color: #047857; color: white; }
+                        th { background-color: #047857; color: white; font-weight: 700; }
+                        tr:nth-child(even) { background-color: #f9fafb; }
                         tfoot { background-color: #f9fafb; font-weight: bold; }
                         .ukupno { background-color: #d1fae5; font-size: 18px; color: #047857; }
                     </style>
                 </head>
                 <body>
-                    <h1>📐 Kubikator - Izračun zapremine drveta</h1>
-                    <p><strong>Metoda:</strong> Huber (mjerenje na sredini)</p>
-                    <p><strong>Datum:</strong> ${new Date().toLocaleDateString('sr-RS')}</p>
+                    <h1>📐 Kubikator - Rekapitulacija mjerenja</h1>
+                    <div class="subtitle">
+                        <p><strong>Metoda:</strong> Huber (mjerenje prečnika na sredini)</p>
+                        <p><strong>Datum:</strong> ${datumStr}</p>
+                    </div>
 
                     <table>
                         <thead>
                             <tr>
-                                <th>Promjer (cm)</th>
+                                <th>R.B.</th>
+                                <th>Prečnik (cm)</th>
                                 <th>Dužina (m)</th>
-                                <th>Količina (kom)</th>
-                                <th>Obujam (m³)</th>
+                                <th>Zapremina (m³)</th>
                             </tr>
                         </thead>
                         <tbody>
             `;
 
-            let ukupnoKom = 0;
+            let ukupnoKom = kubikatorIzracuni.length;
             let ukupnoM3 = 0;
 
-            kubikatorIzracuni.forEach(izracun => {
-                ukupnoKom += izracun.kolicina;
-                ukupnoM3 += izracun.obujam;
+            kubikatorIzracuni.forEach((izracun, index) => {
+                ukupnoM3 += izracun.zapremina;
 
                 printContent += `
                     <tr>
-                        <td>${izracun.promjer.toFixed(1)} cm</td>
-                        <td>${izracun.duzina.toFixed(1)} m</td>
-                        <td>${izracun.kolicina} kom</td>
-                        <td>${izracun.obujam.toFixed(2)} m³</td>
+                        <td>${index + 1}.</td>
+                        <td>${izracun.promjer.toFixed(0)} cm</td>
+                        <td>${izracun.duzina.toFixed(2)} m</td>
+                        <td>${izracun.zapremina.toFixed(2)} m³</td>
                     </tr>
                 `;
             });
@@ -12326,8 +12338,7 @@
                         </tbody>
                         <tfoot>
                             <tr class="ukupno">
-                                <td colspan="2"><strong>UKUPNO:</strong></td>
-                                <td><strong>${ukupnoKom} kom</strong></td>
+                                <td colspan="3"><strong>UKUPNO (${ukupnoKom} kom):</strong></td>
                                 <td><strong>${ukupnoM3.toFixed(2)} m³</strong></td>
                             </tr>
                         </tfoot>
