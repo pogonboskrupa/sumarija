@@ -4176,7 +4176,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v44-KUBIKATOR-DUAL-CONTAINER-FIX';
+        const APP_VERSION = '2026-01-09-v45-KUBIKATOR-COMPLETE-FIX';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -5085,6 +5085,7 @@
             } else if (tab === 'kubikator') {
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('kubikator-content').classList.remove('hidden');
+                initKubikator(); // Inicijalizuj datum i učitaj prikaz
             } else if (tab === 'operativa') {
                 loadOperativa();
             } else if (tab === 'primaci') {
@@ -5198,7 +5199,7 @@
             // Show selected sub-content
             if (subtab === 'kubikator') {
                 document.getElementById('kubikator-sub-content').classList.remove('hidden');
-                // Kubikator doesn't need loading function (static form)
+                initKubikator(); // Inicijalizuj datum i učitaj prikaz
             } else if (subtab === 'dinamika') {
                 document.getElementById('dinamika-sub-content').classList.remove('hidden');
                 loadDinamika();
@@ -12674,18 +12675,42 @@
         // Globalna varijabla za čuvanje izračuna
         let kubikatorIzracuni = [];
 
-        // Izračunaj zapreminu pomoću Huber metode
-        function izracunajKubikazu() {
-            // Provjeri koji Kubikator je aktivan (admin u Ostalo submenu ili standalone)
+        // Helper funkcija za pronalaženje aktivnog Kubikator kontejnera
+        function getActiveKubikatorContainer() {
             const kubikatorSubContent = document.getElementById('kubikator-sub-content');
             const kubikatorContent = document.getElementById('kubikator-content');
 
-            let activeContainer;
             if (kubikatorSubContent && !kubikatorSubContent.classList.contains('hidden')) {
-                activeContainer = kubikatorSubContent;
+                return kubikatorSubContent;
             } else if (kubikatorContent && !kubikatorContent.classList.contains('hidden')) {
-                activeContainer = kubikatorContent;
-            } else {
+                return kubikatorContent;
+            }
+            return null;
+        }
+
+        // Inicijalizacija Kubikatora - postavlja datum kada se otvori
+        function initKubikator() {
+            const activeContainer = getActiveKubikatorContainer();
+            if (!activeContainer) return;
+
+            // Postavi datum odmah pri otvaranju
+            const danas = new Date();
+            const dan = String(danas.getDate()).padStart(2, '0');
+            const mjesec = String(danas.getMonth() + 1).padStart(2, '0');
+            const godina = danas.getFullYear();
+            const datumStr = `${dan}.${mjesec}.${godina}`;
+
+            const datumElement = activeContainer.querySelector('#kubikator-datum');
+            if (datumElement) {
+                datumElement.textContent = datumStr;
+            }
+        }
+
+        // Izračunaj zapreminu pomoću Huber metode
+        function izracunajKubikazu() {
+            // Provjeri koji Kubikator je aktivan (admin u Ostalo submenu ili standalone)
+            const activeContainer = getActiveKubikatorContainer();
+            if (!activeContainer) {
                 showError('Greška', 'Kubikator nije aktivan');
                 return;
             }
@@ -12728,9 +12753,11 @@
                 zapremina: zapremina
             });
 
-            // Prikaži rezultat
-            document.getElementById('kubikator-obujam-display').textContent = zapremina.toFixed(2);
-            document.getElementById('kubikator-rezultat').style.display = 'block';
+            // Prikaži rezultat iz aktivnog kontejnera
+            const obujamDisplay = activeContainer.querySelector('#kubikator-obujam-display');
+            const rezultatContainer = activeContainer.querySelector('#kubikator-rezultat');
+            if (obujamDisplay) obujamDisplay.textContent = zapremina.toFixed(2);
+            if (rezultatContainer) rezultatContainer.style.display = 'block';
 
             // Ažuriraj datum u header-u rekapitulacije - vidljiviji format
             const danas = new Date();
@@ -12738,13 +12765,15 @@
             const mjesec = String(danas.getMonth() + 1).padStart(2, '0');
             const godina = danas.getFullYear();
             const datumStr = `${dan}.${mjesec}.${godina}`;
-            document.getElementById('kubikator-datum').textContent = datumStr;
+            const datumElement = activeContainer.querySelector('#kubikator-datum');
+            if (datumElement) datumElement.textContent = datumStr;
 
             // Ažuriraj tabelu
             azurirajKubikatorTabelu();
 
-            // Prikaži tabelu
-            document.getElementById('kubikator-tabela-container').style.display = 'block';
+            // Prikaži tabelu iz aktivnog kontejnera
+            const tabelaContainer = activeContainer.querySelector('#kubikator-tabela-container');
+            if (tabelaContainer) tabelaContainer.style.display = 'block';
 
             // Očisti input polja za sljedeći unos
             activeContainer.querySelector('#kubikator-promjer').value = '';
@@ -12753,9 +12782,13 @@
 
         // Ažuriraj tabelu sa svim izračunima
         function azurirajKubikatorTabelu() {
-            const tbody = document.getElementById('kubikator-tabela-body');
-            let html = '';
+            const activeContainer = getActiveKubikatorContainer();
+            if (!activeContainer) return;
 
+            const tbody = activeContainer.querySelector('#kubikator-tabela-body');
+            if (!tbody) return;
+
+            let html = '';
             let ukupnoKom = kubikatorIzracuni.length;
             let ukupnoM3 = 0;
 
@@ -12777,9 +12810,11 @@
 
             tbody.innerHTML = html;
 
-            // Ažuriraj footer
-            document.getElementById('kubikator-ukupno-kom').textContent = ukupnoKom;
-            document.getElementById('kubikator-ukupno-m3').textContent = ukupnoM3.toFixed(2);
+            // Ažuriraj footer iz aktivnog kontejnera
+            const ukupnoKomEl = activeContainer.querySelector('#kubikator-ukupno-kom');
+            const ukupnoM3El = activeContainer.querySelector('#kubikator-ukupno-m3');
+            if (ukupnoKomEl) ukupnoKomEl.textContent = ukupnoKom;
+            if (ukupnoM3El) ukupnoM3El.textContent = ukupnoM3.toFixed(2);
         }
 
         // Obriši red iz tabele
@@ -12787,14 +12822,20 @@
             kubikatorIzracuni.splice(index, 1);
             azurirajKubikatorTabelu();
 
+            const activeContainer = getActiveKubikatorContainer();
+            if (!activeContainer) return;
+
             // Sakrij tabelu ako nema više izračuna
             if (kubikatorIzracuni.length === 0) {
-                document.getElementById('kubikator-tabela-container').style.display = 'none';
-                document.getElementById('kubikator-rezultat').style.display = 'none';
+                const tabelaContainer = activeContainer.querySelector('#kubikator-tabela-container');
+                const rezultatContainer = activeContainer.querySelector('#kubikator-rezultat');
+                if (tabelaContainer) tabelaContainer.style.display = 'none';
+                if (rezultatContainer) rezultatContainer.style.display = 'none';
             } else {
                 // Ažuriraj prikaz zadnjeg izračuna
                 const zadnjiIzracun = kubikatorIzracuni[kubikatorIzracuni.length - 1];
-                document.getElementById('kubikator-obujam-display').textContent = zadnjiIzracun.zapremina.toFixed(2);
+                const obujamDisplay = activeContainer.querySelector('#kubikator-obujam-display');
+                if (obujamDisplay) obujamDisplay.textContent = zadnjiIzracun.zapremina.toFixed(2);
             }
         }
 
@@ -12802,12 +12843,22 @@
         function ocistiKubikator() {
             if (kubikatorIzracuni.length === 0) return;
 
+            const activeContainer = getActiveKubikatorContainer();
+            if (!activeContainer) return;
+
             if (confirm('Da li ste sigurni da želite obrisati sve izračune?')) {
                 kubikatorIzracuni = [];
-                document.getElementById('kubikator-tabela-container').style.display = 'none';
-                document.getElementById('kubikator-rezultat').style.display = 'none';
-                document.getElementById('kubikator-promjer').value = '';
-                document.getElementById('kubikator-duzina').value = '';
+
+                // Sakrij tabelu i rezultat iz aktivnog kontejnera
+                const tabelaContainer = activeContainer.querySelector('#kubikator-tabela-container');
+                const rezultatContainer = activeContainer.querySelector('#kubikator-rezultat');
+                const promjerInput = activeContainer.querySelector('#kubikator-promjer');
+                const duzinaInput = activeContainer.querySelector('#kubikator-duzina');
+
+                if (tabelaContainer) tabelaContainer.style.display = 'none';
+                if (rezultatContainer) rezultatContainer.style.display = 'none';
+                if (promjerInput) promjerInput.value = '';
+                if (duzinaInput) duzinaInput.value = '';
             }
         }
 
