@@ -4174,7 +4174,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v37-POSLOVODJA-FIX';
+        const APP_VERSION = '2026-01-09-v38-INSTANT-LOADING-POSLOVODJA';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -5461,9 +5461,6 @@
 
         // Load STANJE ODJELA za poslovođu
         async function loadPoslovodjaStanje() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('poslovodja-stanje-content').classList.add('hidden');
-
             try {
                 const radilista = getPoslovodjaRadilista();
                 console.log('Poslovođa radilišta:', radilista);
@@ -5473,11 +5470,52 @@
 
                 // Load STANJE ODJELA data
                 const url = `${API_URL}?path=odjeli&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_odjeli_stanje');
+                const cacheKey = 'cache_odjeli_stanje';
+
+                // INSTANT LOADING: Check cache FIRST
+                let hasCachedData = false;
+                const cachedData = localStorage.getItem(cacheKey);
+                if (cachedData) {
+                    try {
+                        const parsed = JSON.parse(cachedData);
+                        if (parsed.data && parsed.data.odjeli) {
+                            console.log(`⚡ INSTANT LOAD: Showing cached poslovođa odjeli (${parsed.data.odjeli.length} odjela)`);
+
+                            // Filter odjeli by radilišta
+                            const filteredOdjeli = parsed.data.odjeli.filter(odjel => {
+                                const odjelRadiliste = (odjel.radiliste || '').toUpperCase().trim();
+                                return radilista.some(r => odjelRadiliste.includes(r.toUpperCase()));
+                            });
+
+                            // Render stanje odjela table
+                            renderPoslovodjaStanjeTable(filteredOdjeli);
+
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            document.getElementById('poslovodja-stanje-content').classList.remove('hidden');
+                            hasCachedData = true;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Failed to parse cached poslovođa odjeli:', e);
+                    }
+                }
+
+                // If NO cache, show loading screen NOW
+                if (!hasCachedData) {
+                    document.getElementById('loading-screen').classList.remove('hidden');
+                    document.getElementById('poslovodja-stanje-content').classList.add('hidden');
+                }
+
+                // FETCH FRESH DATA (120s timeout for slow server)
+                const data = await fetchWithCache(url, cacheKey, false, 120000);
 
                 console.log('Odjeli data:', data);
 
                 if (data.error || !data.odjeli) {
+                    // If we have cached data, don't show error
+                    if (hasCachedData) {
+                        console.warn('⚠️ Fresh data failed, but cached data is showing');
+                        return;
+                    }
                     throw new Error(data.error || 'Nema podataka o odjelima');
                 }
 
@@ -5497,8 +5535,15 @@
 
             } catch (error) {
                 console.error('Error loading poslovođa stanje:', error);
-                showError('Greška', 'Greška pri učitavanju stanja odjela: ' + error.message);
-                document.getElementById('loading-screen').classList.add('hidden');
+
+                // Only show error if we don't have cached data displayed
+                const isContentVisible = !document.getElementById('poslovodja-stanje-content').classList.contains('hidden');
+                if (!isContentVisible) {
+                    showError('Greška', 'Greška pri učitavanju stanja odjela: ' + error.message);
+                    document.getElementById('loading-screen').classList.add('hidden');
+                } else {
+                    console.warn('⚠️ Error fetching fresh data, but cached data is showing');
+                }
             }
         }
 
@@ -5560,9 +5605,6 @@
 
         // Load ODJELI U REALIZACIJI za poslovođu
         async function loadPoslovodjaRealizacija() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
-
             try {
                 const radilista = getPoslovodjaRadilista();
                 console.log('Poslovođa radilišta:', radilista);
@@ -5572,11 +5614,54 @@
 
                 // Load STANJE ODJELA data (koristimo iste podatke kao za stanje)
                 const url = `${API_URL}?path=odjeli&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_odjeli_realizacija');
+                const cacheKey = 'cache_odjeli_realizacija';
+
+                // INSTANT LOADING: Check cache FIRST
+                let hasCachedData = false;
+                const cachedData = localStorage.getItem(cacheKey);
+                if (cachedData) {
+                    try {
+                        const parsed = JSON.parse(cachedData);
+                        if (parsed.data && parsed.data.odjeli) {
+                            console.log(`⚡ INSTANT LOAD: Showing cached realizacija odjeli (${parsed.data.odjeli.length} odjela)`);
+
+                            // Filter odjeli by radilišta - prikazujemo samo odjele koji su u realizaciji (imaju sječu)
+                            const filteredOdjeli = parsed.data.odjeli.filter(odjel => {
+                                const odjelRadiliste = (odjel.radiliste || '').toUpperCase().trim();
+                                const hasRadiliste = radilista.some(r => odjelRadiliste.includes(r.toUpperCase()));
+                                const uRealizaciji = (odjel.sjeca || 0) > 0; // Samo odjeli koji imaju sječu
+                                return hasRadiliste && uRealizaciji;
+                            });
+
+                            // Render realizacija table (isti format kao stanje)
+                            renderPoslovodjaRealizacijaTable(filteredOdjeli);
+
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            document.getElementById('poslovodja-realizacija-content').classList.remove('hidden');
+                            hasCachedData = true;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Failed to parse cached realizacija odjeli:', e);
+                    }
+                }
+
+                // If NO cache, show loading screen NOW
+                if (!hasCachedData) {
+                    document.getElementById('loading-screen').classList.remove('hidden');
+                    document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
+                }
+
+                // FETCH FRESH DATA (120s timeout for slow server)
+                const data = await fetchWithCache(url, cacheKey, false, 120000);
 
                 console.log('Odjeli data:', data);
 
                 if (data.error || !data.odjeli) {
+                    // If we have cached data, don't show error
+                    if (hasCachedData) {
+                        console.warn('⚠️ Fresh data failed, but cached data is showing');
+                        return;
+                    }
                     throw new Error(data.error || 'Nema podataka o odjelima');
                 }
 
@@ -5598,8 +5683,15 @@
 
             } catch (error) {
                 console.error('Error loading poslovođa realizacija:', error);
-                showError('Greška', 'Greška pri učitavanju odjela u realizaciji: ' + error.message);
-                document.getElementById('loading-screen').classList.add('hidden');
+
+                // Only show error if we don't have cached data displayed
+                const isContentVisible = !document.getElementById('poslovodja-realizacija-content').classList.contains('hidden');
+                if (!isContentVisible) {
+                    showError('Greška', 'Greška pri učitavanju odjela u realizaciji: ' + error.message);
+                    document.getElementById('loading-screen').classList.add('hidden');
+                } else {
+                    console.warn('⚠️ Error fetching fresh data, but cached data is showing');
+                }
             }
         }
 
@@ -5661,9 +5753,6 @@
 
         // Load ZADNJIH 5 DANA (Primka i Otprema) za poslovođu
         async function loadPoslovodjaZadnjih5() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('poslovodja-zadnjih5-content').classList.add('hidden');
-
             try {
                 const radilista = getPoslovodjaRadilista();
                 console.log('Poslovođa radilišta:', radilista);
@@ -5679,20 +5768,78 @@
                 // Load primke i otpreme
                 const primkeUrl = `${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`;
                 const otpremeUrl = `${API_URL}?path=otpreme&username=${currentUser.username}&password=${currentPassword}`;
+                const cacheKeyPrimke = 'cache_primke_zadnjih5';
+                const cacheKeyOtpreme = 'cache_otpreme_zadnjih5';
 
+                // INSTANT LOADING: Check cache FIRST
+                let hasCachedData = false;
+                const cachedPrimke = localStorage.getItem(cacheKeyPrimke);
+                const cachedOtpreme = localStorage.getItem(cacheKeyOtpreme);
+
+                if (cachedPrimke && cachedOtpreme) {
+                    try {
+                        const parsedPrimke = JSON.parse(cachedPrimke);
+                        const parsedOtpreme = JSON.parse(cachedOtpreme);
+                        if (parsedPrimke.data && parsedOtpreme.data) {
+                            console.log(`⚡ INSTANT LOAD: Showing cached zadnjih 5 dana data`);
+
+                            // Filter primke by radilišta i datum (zadnjih 5 dana)
+                            const filteredPrimke = (parsedPrimke.data.primke || []).filter(primka => {
+                                const primkaRadiliste = (primka.radiliste || '').toUpperCase().trim();
+                                const hasRadiliste = radilista.some(r => primkaRadiliste.includes(r.toUpperCase()));
+                                const primkaDatum = new Date(primka.datum);
+                                const withinLast5Days = primkaDatum >= fiveDaysAgo;
+                                return hasRadiliste && withinLast5Days;
+                            });
+
+                            // Filter otpreme by radilišta i datum (zadnjih 5 dana)
+                            const filteredOtpreme = (parsedOtpreme.data.otpreme || []).filter(otprema => {
+                                const otpremaRadiliste = (otprema.radiliste || '').toUpperCase().trim();
+                                const hasRadiliste = radilista.some(r => otpremaRadiliste.includes(r.toUpperCase()));
+                                const otpremaDatum = new Date(otprema.datum);
+                                const withinLast5Days = otpremaDatum >= fiveDaysAgo;
+                                return hasRadiliste && withinLast5Days;
+                            });
+
+                            // Sortiraj po datumu (najnoviji prvi)
+                            filteredPrimke.sort((a, b) => new Date(b.datum) - new Date(a.datum));
+                            filteredOtpreme.sort((a, b) => new Date(b.datum) - new Date(a.datum));
+
+                            // Render tables
+                            renderPoslovodjaPrimkaTable(filteredPrimke);
+                            renderPoslovodjaOtpremaTable(filteredOtpreme);
+
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            document.getElementById('poslovodja-zadnjih5-content').classList.remove('hidden');
+                            hasCachedData = true;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Failed to parse cached zadnjih 5 dana:', e);
+                    }
+                }
+
+                // If NO cache, show loading screen NOW
+                if (!hasCachedData) {
+                    document.getElementById('loading-screen').classList.remove('hidden');
+                    document.getElementById('poslovodja-zadnjih5-content').classList.add('hidden');
+                }
+
+                // FETCH FRESH DATA (120s timeout)
                 const [primkeData, otpremeData] = await Promise.all([
-                    fetchWithCache(primkeUrl, 'cache_primke_zadnjih5'),
-                    fetchWithCache(otpremeUrl, 'cache_otpreme_zadnjih5')
+                    fetchWithCache(primkeUrl, cacheKeyPrimke, false, 120000),
+                    fetchWithCache(otpremeUrl, cacheKeyOtpreme, false, 120000)
                 ]);
 
                 console.log('Primke data:', primkeData);
                 console.log('Otpreme data:', otpremeData);
 
-                if (primkeData.error) {
-                    throw new Error('Greška pri učitavanju primki: ' + primkeData.error);
-                }
-                if (otpremeData.error) {
-                    throw new Error('Greška pri učitavanju otprema: ' + otpremeData.error);
+                if (primkeData.error || otpremeData.error) {
+                    // If we have cached data, don't show error
+                    if (hasCachedData) {
+                        console.warn('⚠️ Fresh data failed, but cached data is showing');
+                        return;
+                    }
+                    throw new Error(primkeData.error || otpremeData.error || 'Greška pri učitavanju podataka');
                 }
 
                 // Filter primke by radilišta i datum (zadnjih 5 dana)
@@ -5735,8 +5882,15 @@
 
             } catch (error) {
                 console.error('Error loading poslovođa zadnjih 5:', error);
-                showError('Greška', 'Greška pri učitavanju zadnjih 5 dana: ' + error.message);
-                document.getElementById('loading-screen').classList.add('hidden');
+
+                // Only show error if we don't have cached data displayed
+                const isContentVisible = !document.getElementById('poslovodja-zadnjih5-content').classList.contains('hidden');
+                if (!isContentVisible) {
+                    showError('Greška', 'Greška pri učitavanju zadnjih 5 dana: ' + error.message);
+                    document.getElementById('loading-screen').classList.add('hidden');
+                } else {
+                    console.warn('⚠️ Error fetching fresh data, but cached data is showing');
+                }
             }
         }
 
@@ -5824,9 +5978,6 @@
 
         // Load SUMA MJESECA za poslovođu
         async function loadPoslovodjaSuma() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('poslovodja-suma-content').classList.add('hidden');
-
             try {
                 const radilista = getPoslovodjaRadilista();
                 console.log('Poslovođa radilišta:', radilista);
@@ -5842,20 +5993,113 @@
                 // Load primke i otpreme
                 const primkeUrl = `${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`;
                 const otpremeUrl = `${API_URL}?path=otpreme&username=${currentUser.username}&password=${currentPassword}`;
+                const cacheKeyPrimke = 'cache_primke_suma';
+                const cacheKeyOtpreme = 'cache_otpreme_suma';
 
+                // INSTANT LOADING: Check cache FIRST
+                let hasCachedData = false;
+                const cachedPrimke = localStorage.getItem(cacheKeyPrimke);
+                const cachedOtpreme = localStorage.getItem(cacheKeyOtpreme);
+
+                if (cachedPrimke && cachedOtpreme) {
+                    try {
+                        const parsedPrimke = JSON.parse(cachedPrimke);
+                        const parsedOtpreme = JSON.parse(cachedOtpreme);
+                        if (parsedPrimke.data && parsedOtpreme.data) {
+                            console.log(`⚡ INSTANT LOAD: Showing cached suma mjeseca data`);
+
+                            // Filter by radilišta i tekući mjesec
+                            const filteredPrimke = (parsedPrimke.data.primke || []).filter(primka => {
+                                const primkaRadiliste = (primka.radiliste || '').toUpperCase().trim();
+                                const hasRadiliste = radilista.some(r => primkaRadiliste.includes(r.toUpperCase()));
+                                const primkaDatum = new Date(primka.datum);
+                                const sameMonth = primkaDatum.getMonth() === currentMonth && primkaDatum.getFullYear() === currentYear;
+                                return hasRadiliste && sameMonth;
+                            });
+
+                            const filteredOtpreme = (parsedOtpreme.data.otpreme || []).filter(otprema => {
+                                const otpremaRadiliste = (otprema.radiliste || '').toUpperCase().trim();
+                                const hasRadiliste = radilista.some(r => otpremaRadiliste.includes(r.toUpperCase()));
+                                const otpremaDatum = new Date(otprema.datum);
+                                const sameMonth = otpremaDatum.getMonth() === currentMonth && otpremaDatum.getFullYear() === currentYear;
+                                return hasRadiliste && sameMonth;
+                            });
+
+                            // Sumiranje po odjelima
+                            const sumePoOdjelima = {};
+                            filteredPrimke.forEach(primka => {
+                                const odjel = primka.odjel || 'Nepoznato';
+                                const radiliste = primka.radiliste || 'Nepoznato';
+                                if (!sumePoOdjelima[odjel]) {
+                                    sumePoOdjelima[odjel] = { odjel: odjel, radiliste: radiliste, primka: 0, otprema: 0 };
+                                }
+                                sumePoOdjelima[odjel].primka += (primka.kolicina || 0);
+                            });
+                            filteredOtpreme.forEach(otprema => {
+                                const odjel = otprema.odjel || 'Nepoznato';
+                                const radiliste = otprema.radiliste || 'Nepoznato';
+                                if (!sumePoOdjelima[odjel]) {
+                                    sumePoOdjelima[odjel] = { odjel: odjel, radiliste: radiliste, primka: 0, otprema: 0 };
+                                }
+                                sumePoOdjelima[odjel].otprema += (otprema.kolicina || 0);
+                            });
+
+                            // Sumiranje po radilištima
+                            const sumePoRadilistima = {};
+                            filteredPrimke.forEach(primka => {
+                                const radiliste = primka.radiliste || 'Nepoznato';
+                                if (!sumePoRadilistima[radiliste]) {
+                                    sumePoRadilistima[radiliste] = { radiliste: radiliste, primka: 0, otprema: 0 };
+                                }
+                                sumePoRadilistima[radiliste].primka += (primka.kolicina || 0);
+                            });
+                            filteredOtpreme.forEach(otprema => {
+                                const radiliste = otprema.radiliste || 'Nepoznato';
+                                if (!sumePoRadilistima[radiliste]) {
+                                    sumePoRadilistima[radiliste] = { radiliste: radiliste, primka: 0, otprema: 0 };
+                                }
+                                sumePoRadilistima[radiliste].otprema += (otprema.kolicina || 0);
+                            });
+
+                            // Convert to arrays
+                            const odjeliArray = Object.values(sumePoOdjelima);
+                            const radilistaArray = Object.values(sumePoRadilistima);
+
+                            // Render tables
+                            renderPoslovodjaSumaOdjeliTable(odjeliArray);
+                            renderPoslovodjaSumaRadilisteTable(radilistaArray);
+
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            document.getElementById('poslovodja-suma-content').classList.remove('hidden');
+                            hasCachedData = true;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Failed to parse cached suma mjeseca:', e);
+                    }
+                }
+
+                // If NO cache, show loading screen NOW
+                if (!hasCachedData) {
+                    document.getElementById('loading-screen').classList.remove('hidden');
+                    document.getElementById('poslovodja-suma-content').classList.add('hidden');
+                }
+
+                // FETCH FRESH DATA (120s timeout)
                 const [primkeData, otpremeData] = await Promise.all([
-                    fetchWithCache(primkeUrl, 'cache_primke_suma'),
-                    fetchWithCache(otpremeUrl, 'cache_otpreme_suma')
+                    fetchWithCache(primkeUrl, cacheKeyPrimke, false, 120000),
+                    fetchWithCache(otpremeUrl, cacheKeyOtpreme, false, 120000)
                 ]);
 
                 console.log('Primke data:', primkeData);
                 console.log('Otpreme data:', otpremeData);
 
-                if (primkeData.error) {
-                    throw new Error('Greška pri učitavanju primki: ' + primkeData.error);
-                }
-                if (otpremeData.error) {
-                    throw new Error('Greška pri učitavanju otprema: ' + otpremeData.error);
+                if (primkeData.error || otpremeData.error) {
+                    // If we have cached data, don't show error
+                    if (hasCachedData) {
+                        console.warn('⚠️ Fresh data failed, but cached data is showing');
+                        return;
+                    }
+                    throw new Error(primkeData.error || otpremeData.error || 'Greška pri učitavanju podataka');
                 }
 
                 // Filter by radilišta i tekući mjesec
@@ -5958,8 +6202,15 @@
 
             } catch (error) {
                 console.error('Error loading poslovođa suma:', error);
-                showError('Greška', 'Greška pri učitavanju mjesečnih suma: ' + error.message);
-                document.getElementById('loading-screen').classList.add('hidden');
+
+                // Only show error if we don't have cached data displayed
+                const isContentVisible = !document.getElementById('poslovodja-suma-content').classList.contains('hidden');
+                if (!isContentVisible) {
+                    showError('Greška', 'Greška pri učitavanju mjesečnih suma: ' + error.message);
+                    document.getElementById('loading-screen').classList.add('hidden');
+                } else {
+                    console.warn('⚠️ Error fetching fresh data, but cached data is showing');
+                }
             }
         }
 
