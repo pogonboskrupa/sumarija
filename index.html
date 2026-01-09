@@ -4176,7 +4176,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v43-KUBIKATOR-FIXES';
+        const APP_VERSION = '2026-01-09-v44-KUBIKATOR-DUAL-CONTAINER-FIX';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -12676,8 +12676,23 @@
 
         // Izračunaj zapreminu pomoću Huber metode
         function izracunajKubikazu() {
-            const promjerInput = document.getElementById('kubikator-promjer').value.trim();
-            const duzinaInput = document.getElementById('kubikator-duzina').value.trim();
+            // Provjeri koji Kubikator je aktivan (admin u Ostalo submenu ili standalone)
+            const kubikatorSubContent = document.getElementById('kubikator-sub-content');
+            const kubikatorContent = document.getElementById('kubikator-content');
+
+            let activeContainer;
+            if (kubikatorSubContent && !kubikatorSubContent.classList.contains('hidden')) {
+                activeContainer = kubikatorSubContent;
+            } else if (kubikatorContent && !kubikatorContent.classList.contains('hidden')) {
+                activeContainer = kubikatorContent;
+            } else {
+                showError('Greška', 'Kubikator nije aktivan');
+                return;
+            }
+
+            // Pristupi input poljima iz aktivnog containera
+            const promjerInput = activeContainer.querySelector('#kubikator-promjer').value.trim();
+            const duzinaInput = activeContainer.querySelector('#kubikator-duzina').value.trim();
 
             // Provjeri da li su polja prazna
             if (!promjerInput || !duzinaInput) {
@@ -12732,8 +12747,8 @@
             document.getElementById('kubikator-tabela-container').style.display = 'block';
 
             // Očisti input polja za sljedeći unos
-            document.getElementById('kubikator-promjer').value = '';
-            document.getElementById('kubikator-duzina').value = '';
+            activeContainer.querySelector('#kubikator-promjer').value = '';
+            activeContainer.querySelector('#kubikator-duzina').value = '';
         }
 
         // Ažuriraj tabelu sa svim izračunima
