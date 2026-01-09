@@ -4176,7 +4176,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v41-MENU-CLEANUP-QUOTA-FIX';
+        const APP_VERSION = '2026-01-09-v42-IZVJESTAJI-FILTER-CACHE-750KB';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4484,10 +4484,11 @@
                     timestamp: Date.now()
                 });
 
-                // Check size before caching (skip if >1MB)
-                const sizeInMB = cacheObject.length / 1024 / 1024;
-                if (sizeInMB > 1) {
-                    console.warn(`⚠️ Skipping cache for ${path} - too large (${sizeInMB.toFixed(2)} MB)`);
+                // Check size before caching (skip if >750KB)
+                const sizeInKB = cacheObject.length / 1024;
+                const sizeInMB = sizeInKB / 1024;
+                if (sizeInKB > 750) {
+                    console.warn(`⚠️ Skipping cache for ${path} - too large (${sizeInMB.toFixed(2)} MB / ${sizeInKB.toFixed(0)} KB)`);
                 } else {
                     try {
                         localStorage.setItem(cacheKey, cacheObject);
@@ -9264,6 +9265,15 @@
             document.getElementById('izvjestaji-content').classList.add('hidden');
 
             try {
+                // Detect if user is poslovođa
+                const userType = (currentUser.type || '').toLowerCase();
+                const isPoslovodja = userType === 'poslovođa' || userType === 'poslovodja';
+                const poslovodjaRadilista = isPoslovodja ? getPoslovodjaRadilista() : [];
+
+                if (isPoslovodja) {
+                    console.log(`👤 Poslovođa loading izvještaji - radilišta:`, poslovodjaRadilista);
+                }
+
                 const year = document.getElementById('izvjestaji-year-select').value;
                 const month = document.getElementById('izvjestaji-month-select').value;
 
@@ -9292,9 +9302,26 @@
                 if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
                 if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
 
+                // Filter data for poslovođa BEFORE aggregation
+                let filteredPrimkaData = primkaData.data;
+                let filteredOtpremaData = otpremaData.data;
+
+                if (isPoslovodja && poslovodjaRadilista.length > 0) {
+                    filteredPrimkaData = primkaData.data.filter(row => {
+                        const radiliste = (row.radiliste || '').toUpperCase().trim();
+                        return poslovodjaRadilista.some(r => radiliste.includes(r.toUpperCase()));
+                    });
+                    filteredOtpremaData = otpremaData.data.filter(row => {
+                        const radiliste = (row.radiliste || '').toUpperCase().trim();
+                        return poslovodjaRadilista.some(r => radiliste.includes(r.toUpperCase()));
+                    });
+                    console.log(`✂️ Filtered primka: ${primkaData.data.length} → ${filteredPrimkaData.length} rows`);
+                    console.log(`✂️ Filtered otprema: ${otpremaData.data.length} → ${filteredOtpremaData.length} rows`);
+                }
+
                 // Aggregate data by odjel
-                const primkaByOdjel = aggregateByOdjel(primkaData.data, primkaData.sortimentiNazivi);
-                const otpremaByOdjel = aggregateByOdjel(otpremaData.data, otpremaData.sortimentiNazivi);
+                const primkaByOdjel = aggregateByOdjel(filteredPrimkaData, primkaData.sortimentiNazivi);
+                const otpremaByOdjel = aggregateByOdjel(filteredOtpremaData, otpremaData.sortimentiNazivi);
 
                 console.log('📊 PRIMKA BY ODJEL (agregiran):', primkaByOdjel);
                 console.log('📊 OTPREMA BY ODJEL (agregiran):', otpremaByOdjel);
