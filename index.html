@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Pametno keširanje - dozvoljava browser cache ali forsira revalidaciju -->
+    <meta http-equiv="Cache-Control" content="public, max-age=300, must-revalidate">
+    <meta http-equiv="Pragma" content="public">
     <title>Šumarija - Preglednik</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -68,6 +71,15 @@
         .notification-badge .badge-count.show { display: block; }
         .badge.success { background: #d1fae5; color: #047857; }
         .badge.warning { background: #fef3c7; color: #92400e; }
+
+        /* Cache Status Indicator */
+        .cache-status { background: #f3f4f6; color: #6b7280; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: help; transition: all 0.2s; }
+        .cache-status:hover { background: #e5e7eb; }
+        .cache-status.cache-fresh { background: #d1fae5; color: #047857; }
+        .cache-status.cache-loading { background: #fef3c7; color: #92400e; }
+        .cache-status.cache-stale { background: #fee2e2; color: #dc2626; }
+        .cache-status-icon { font-size: 12px; }
+        .cache-status-text { white-space: nowrap; }
 
         /* Tables */
         table { width: 100%; border-collapse: collapse; }
@@ -2010,6 +2022,10 @@
                     <img src="logo-zuti.png" alt="ŠPD Unsko-Sanske Šume Logo" class="company-logo" id="company-logo">
                 </div>
                 <div class="header-right">
+                    <div class="cache-status" id="cache-status-indicator" title="Status keširanja podataka">
+                        <span class="cache-status-icon">⏱️</span>
+                        <span class="cache-status-text">Cache...</span>
+                    </div>
                     <div class="header-user">
                         <div class="header-user-name" id="user-name"></div>
                         <div class="header-user-role" id="user-role"></div>
@@ -4181,39 +4197,61 @@
                 });
         }
 
-        // Smart cache TTL - optimized for data entry patterns
-        // Unosi se dodaju radnim danima ujutro do 8h
+        /**
+         * Pametno cache vrijeme usklađeno sa radnim vremenom unosa podataka
+         * Podaci se ubacuju radnim danima od 6:30h do 9:00h (najkasnije 9:00h)
+         */
         function getSmartCacheTTL() {
             const now = new Date();
-            const currentHour = now.getHours();
-            const currentMinutes = now.getMinutes();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const dayOfWeek = now.getDay(); // 0 = Nedjelja, 6 = Subota
 
-            // Prije 8:00 - unosi se još dodaju, kraći cache
-            if (currentHour < 8) {
-                console.log('⏰ Prije 8h - cache 30 minuta (unosi se dodaju)');
-                return 30 * 60 * 1000; // 30 minuta
+            // Vikend - agresivno keširanje (do ponoći)
+            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+            if (isWeekend) {
+                const midnight = new Date(now);
+                midnight.setHours(24, 0, 0, 0);
+                const duration = midnight - now;
+                const hoursRemaining = Math.round(duration / (60 * 60 * 1000) * 10) / 10;
+                console.log(`⏰ VIKEND - cache ${hoursRemaining}h (do ponoći)`);
+                return duration;
             }
 
-            // Poslije 8:00 - podaci stabilni do kraja dana
-            // Cache do 18:00 ili maksimalno 10 sati
-            const endOfWorkDay = new Date(now);
-            endOfWorkDay.setHours(18, 0, 0, 0); // 18:00
+            // Radni dan - provjeravamo precizno vrijeme
+            const currentTimeInMinutes = hours * 60 + minutes;
+            const dataEntryStart = 6 * 60 + 30;  // 6:30
+            const dataEntryEnd = 9 * 60;         // 9:00
 
-            const timeUntilEndOfDay = endOfWorkDay.getTime() - now.getTime();
-            const tenHours = 10 * 60 * 60 * 1000;
-
-            // Ako je već poslije 18h, cache do kraja dana (midnight)
-            if (currentHour >= 18) {
-                console.log('⏰ Poslije 18h - cache 4 sata');
-                return 4 * 60 * 60 * 1000; // 4 sata
+            // Tokom unosa podataka (6:30-9:00) - kraći cache
+            if (currentTimeInMinutes >= dataEntryStart && currentTimeInMinutes < dataEntryEnd) {
+                console.log('⏰ UNOS PODATAKA (6:30-9:00) - cache 10 minuta');
+                return 10 * 60 * 1000; // 10 minuta
             }
 
-            // Inače, cache do kraja radnog dana ili max 10h
-            const cacheDuration = Math.min(timeUntilEndOfDay, tenHours);
-            const hoursRemaining = Math.round(cacheDuration / (60 * 60 * 1000) * 10) / 10;
-            console.log(`⏰ Poslije 8h - cache ${hoursRemaining}h (podaci stabilni)`);
+            // Prije 6:30 ujutro - cache do početka unosa
+            if (currentTimeInMinutes < dataEntryStart) {
+                const minutesUntilDataEntry = dataEntryStart - currentTimeInMinutes;
+                const duration = minutesUntilDataEntry * 60 * 1000;
+                const hoursRemaining = Math.round(duration / (60 * 60 * 1000) * 10) / 10;
+                console.log(`⏰ PRIJE UNOSA - cache ${hoursRemaining}h (do 6:30)`);
+                return duration;
+            }
 
-            return cacheDuration;
+            // Nakon 9:00 - PODACI STABILNI - agresivno keširanje do sljedećeg unosa
+            // Cache do sutra u 6:30 ili do ponoći (što je kraće)
+            const nextDataEntry = new Date(now);
+            nextDataEntry.setDate(nextDataEntry.getDate() + 1);
+            nextDataEntry.setHours(6, 30, 0, 0);
+
+            const midnight = new Date(now);
+            midnight.setHours(24, 0, 0, 0);
+
+            const duration = Math.min(nextDataEntry - now, midnight - now);
+            const hoursRemaining = Math.round(duration / (60 * 60 * 1000) * 10) / 10;
+            console.log(`⏰ NAKON UNOSA (9:00+) - AGRESIVNO cache ${hoursRemaining}h (podaci stabilni do sutra)`);
+
+            return duration;
         }
 
         // Cache configuration - different TTLs for different endpoints
@@ -4566,6 +4604,67 @@
             });
         }
 
+        /**
+         * Ažurira cache status indikator u headeru
+         * Pokazuje korisnicima koliko dugo će podaci biti keširani
+         */
+        function updateCacheStatusIndicator() {
+            const indicator = document.getElementById('cache-status-indicator');
+            if (!indicator) return;
+
+            const iconSpan = indicator.querySelector('.cache-status-icon');
+            const textSpan = indicator.querySelector('.cache-status-text');
+
+            // Dobij pametno cache vrijeme
+            const cacheTTL = getSmartCacheTTL();
+            const hours = cacheTTL / (60 * 60 * 1000);
+            const minutes = cacheTTL / (60 * 1000);
+
+            // Odaberi ikonicu i tekst ovisno o vremenu
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinutes = now.getMinutes();
+            const currentTimeInMinutes = currentHour * 60 + currentMinutes;
+            const dataEntryStart = 6 * 60 + 30;  // 6:30
+            const dataEntryEnd = 9 * 60;         // 9:00
+
+            // Tokom unosa podataka (6:30-9:00)
+            if (currentTimeInMinutes >= dataEntryStart && currentTimeInMinutes < dataEntryEnd) {
+                indicator.className = 'cache-status cache-loading';
+                iconSpan.textContent = '🔄';
+                textSpan.textContent = `Unos podataka (${Math.round(minutes)}min cache)`;
+                indicator.title = 'Podaci se trenutno učitavaju - kraći cache (6:30-9:00)';
+            }
+            // Nakon 9:00 - stabilni podaci
+            else if (currentTimeInMinutes >= dataEntryEnd) {
+                indicator.className = 'cache-status cache-fresh';
+                iconSpan.textContent = '✅';
+                if (hours >= 1) {
+                    textSpan.textContent = `Podaci stabilni (${Math.round(hours * 10) / 10}h cache)`;
+                } else {
+                    textSpan.textContent = `Podaci stabilni (${Math.round(minutes)}min cache)`;
+                }
+                indicator.title = 'Podaci su stabilni do sutra ujutro - agresivno keširanje aktivno';
+            }
+            // Prije 6:30
+            else {
+                indicator.className = 'cache-status cache-fresh';
+                iconSpan.textContent = '💤';
+                if (hours >= 1) {
+                    textSpan.textContent = `Prije unosa (${Math.round(hours * 10) / 10}h cache)`;
+                } else {
+                    textSpan.textContent = `Prije unosa (${Math.round(minutes)}min cache)`;
+                }
+                indicator.title = 'Podaci iz prethodnog dana - cache aktivan do početka unosa (6:30)';
+            }
+        }
+
+        // Periodično ažuriraj cache status (svaka minuta)
+        function startCacheStatusUpdater() {
+            updateCacheStatusIndicator();
+            setInterval(updateCacheStatusIndicator, 60 * 1000); // Svaka minuta
+        }
+
         // Check if already logged in
         window.addEventListener('DOMContentLoaded', () => {
             const savedUser = localStorage.getItem('sumarija_user');
@@ -4575,6 +4674,7 @@
                 currentUser = JSON.parse(savedUser);
                 currentPassword = savedPass;
                 showApp();
+                startCacheStatusUpdater();
                 loadData();
                 loadOdjeli(); // Load odjeli list after auto-login
             }
@@ -4603,6 +4703,7 @@
                     localStorage.setItem('sumarija_user', JSON.stringify(data));
                     localStorage.setItem('sumarija_pass', password);
                     showApp();
+                    startCacheStatusUpdater();
                     loadData();
                     loadOdjeli(); // Load odjeli list after manual login
                 } else {
