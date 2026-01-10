@@ -3184,7 +3184,8 @@
         // Load Primac Godišnji Prikaz
         async function loadPrimacGodisnji() {
             try {
-                const year = new Date().getFullYear();
+                const yearSelect = document.getElementById('primac-godisnji-year-select');
+                const year = yearSelect ? yearSelect.value : new Date().getFullYear();
                 const url = `${API_URL}?path=primac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
                 const data = await fetchWithCache(url, 'cache_primac_godisnji_' + year);
 
@@ -3282,7 +3283,8 @@
             document.getElementById('primac-personal-content').classList.add('hidden');
 
             try {
-                const year = new Date().getFullYear();
+                const yearSelect = document.getElementById('primac-personal-year-select');
+                const year = yearSelect ? yearSelect.value : new Date().getFullYear();
                 const url = `${API_URL}?path=primac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
                 const data = await fetchWithCache(url, 'cache_primac_detail_' + year);
 

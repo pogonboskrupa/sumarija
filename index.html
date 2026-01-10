@@ -2424,6 +2424,7 @@
                     </div>
                     <div>
                         <select id="primac-personal-year-select" class="year-select" onchange="loadPrimacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
+                            <option value="2025">2025</option>
                             <option value="2026" selected>2026</option>
                         </select>
                     </div>
@@ -2471,7 +2472,9 @@
                     </div>
                     <div>
                         <select id="primac-godisnji-year-select" class="year-select" onchange="loadPrimacGodisnji()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
-                            <option value="2026" selected>2026</option></select>
+                            <option value="2025">2025</option>
+                            <option value="2026" selected>2026</option>
+                        </select>
                     </div>
                 </div>
 
@@ -2505,6 +2508,7 @@
                     </div>
                     <div>
                         <select id="otpremac-personal-year-select" class="year-select" onchange="loadOtpremacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #2563eb; min-width: 120px;">
+                            <option value="2025">2025</option>
                             <option value="2026" selected>2026</option>
                         </select>
                     </div>
@@ -11555,38 +11559,16 @@
                 const year = document.getElementById('primac-sedmicni-year').value;
                 const month = document.getElementById('primac-sedmicni-month').value;
 
-                // Load primke data
-                const url = `${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`;
+                // Load primac-detail data (already filtered by current user)
+                const url = `${API_URL}?path=primac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
                 const response = await fetchWithCache(url, `cache_primac_sedmicni_${year}_${month}`);
-
-                // 🔍 DEBUG: Log response structure
-                console.log('=== PRIMAC SEDMICNI DEBUG ===');
-                console.log('Response type:', typeof response);
-                console.log('Response keys:', Object.keys(response || {}));
-                console.log('Response:', response);
-                console.log('response.primke type:', typeof response.primke);
-                console.log('Is response.primke array?', Array.isArray(response.primke));
-                console.log('response.primke length:', response.primke?.length);
 
                 if (response.error) throw new Error(response.error);
 
-                // ✅ Backend vraća { primke: [...] }, izvuci array
-                // Handle different response formats
-                let data;
-                if (Array.isArray(response)) {
-                    // Old backend format: returns array directly
-                    data = response;
-                    console.log('⚠️ Using old format: response is array');
-                } else if (response.primke && Array.isArray(response.primke)) {
-                    // New backend format: returns { primke: [...] }
-                    data = response.primke;
-                    console.log('✅ Using new format: response.primke is array');
-                } else {
-                    console.error('❌ Unknown response format!', response);
-                    data = [];
-                }
-
-                console.log('Final data array length:', data.length);
+                // primac-detail API returns { sortimentiNazivi: [...], unosi: [...] }
+                // where unosi is already formatted with { datum, odjel, sortimenti: {}, ukupno }
+                const data = response.unosi || [];
+                const sortimentiNazivi = response.sortimentiNazivi || [...SORTIMENTI_ORDER];
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {
@@ -11598,25 +11580,26 @@
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
 
-                console.log('🔍 FILTERING DEBUG:');
-                console.log(`Selected Year: ${year}, Month: ${month} (0-indexed: ${month})`);
-                console.log(`Total primke from backend: ${data.length}`);
-                console.log(`After filtering by year/month: ${filteredData.length}`);
-
-                // Sample first 5 filtered records
-                if (filteredData.length > 0) {
-                    console.log('Sample filtered data (first 5):');
-                    filteredData.slice(0, 5).forEach((row, i) => {
-                        console.log(`  ${i+1}. Datum: ${row.datum}, Sortiment: ${row.sortiment}, Kolicina: ${row.kolicina}, Odjel: ${row.odjel}`);
+                // Convert unosi format to primke format for grouping function
+                const primkeFormat = [];
+                filteredData.forEach(unos => {
+                    // Each unos has sortimenti: { "sortiment1": quantity, "sortiment2": quantity, ... }
+                    // Convert to separate rows for each sortiment
+                    Object.keys(unos.sortimenti || {}).forEach(sortiment => {
+                        const kolicina = unos.sortimenti[sortiment];
+                        if (kolicina > 0) {
+                            primkeFormat.push({
+                                datum: unos.datum,
+                                odjel: unos.odjel,
+                                sortiment: sortiment,
+                                kolicina: kolicina
+                            });
+                        }
                     });
-                }
-
-                // Get sortimenti list - use ALL sortimenti from SORTIMENTI_ORDER
-                // (not just those that exist in data - show all columns even if zero)
-                const sortimentiNazivi = [...SORTIMENTI_ORDER];
+                });
 
                 // Group by weeks
-                const weeklyData = groupPrimacOtpremacDataByWeeks(filteredData, year, month, sortimentiNazivi);
+                const weeklyData = groupPrimacOtpremacDataByWeeks(primkeFormat, year, month, sortimentiNazivi);
 
                 // Render table
                 renderPrimacOtpremacSedmicni(weeklyData, sortimentiNazivi, 'primac-sedmicni', year, month);
@@ -11638,23 +11621,15 @@
                 const year = document.getElementById('primac-mjesecni-year').value;
                 const month = document.getElementById('primac-mjesecni-month').value;
 
-                // Load primke data
-                const url = `${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`;
+                // Load primac-detail data (already filtered by current user)
+                const url = `${API_URL}?path=primac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
                 const response = await fetchWithCache(url, `cache_primac_mjesecni_${year}_${month}`);
 
                 if (response.error) throw new Error(response.error);
 
-                // ✅ Backend vraća { primke: [...] }, izvuci array
-                // Handle different response formats
-                let data;
-                if (Array.isArray(response)) {
-                    data = response;
-                } else if (response.primke && Array.isArray(response.primke)) {
-                    data = response.primke;
-                } else {
-                    console.error('❌ Unknown response format in loadPrimacMjesecni!', response);
-                    data = [];
-                }
+                // primac-detail API returns { sortimentiNazivi: [...], unosi: [...] }
+                const data = response.unosi || [];
+                const sortimentiNazivi = response.sortimentiNazivi || [...SORTIMENTI_ORDER];
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {
@@ -11665,19 +11640,18 @@
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
 
-                // Get sortimenti list - use ALL sortimenti from SORTIMENTI_ORDER
-                // (not just those that exist in data - show all columns even if zero)
-                const sortimentiNazivi = [...SORTIMENTI_ORDER];
-
                 // Sum by sortiment
                 const sortimentiSums = {};
                 sortimentiNazivi.forEach(s => sortimentiSums[s] = 0);
 
                 filteredData.forEach(row => {
-                    if (row.sortiment && row.kolicina) {
-                        const kolicina = parseFloat(row.kolicina) || 0;
-                        sortimentiSums[row.sortiment] += kolicina;
-                    }
+                    // row.sortimenti is { "sortiment1": quantity, "sortiment2": quantity, ... }
+                    Object.keys(row.sortimenti || {}).forEach(sortiment => {
+                        const kolicina = parseFloat(row.sortimenti[sortiment]) || 0;
+                        if (sortimentiSums.hasOwnProperty(sortiment)) {
+                            sortimentiSums[sortiment] += kolicina;
+                        }
+                    });
                 });
 
                 // Render table
@@ -11700,23 +11674,15 @@
                 const year = document.getElementById('otpremac-sedmicni-year').value;
                 const month = document.getElementById('otpremac-sedmicni-month').value;
 
-                // Load otpreme data
-                const url = `${API_URL}?path=otpreme&username=${currentUser.username}&password=${currentPassword}`;
+                // Load otpremac-detail data (already filtered by current user)
+                const url = `${API_URL}?path=otpremac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
                 const response = await fetchWithCache(url, `cache_otpremac_sedmicni_${year}_${month}`);
 
                 if (response.error) throw new Error(response.error);
 
-                // ✅ Backend vraća { otpreme: [...] }, izvuci array
-                // Handle different response formats
-                let data;
-                if (Array.isArray(response)) {
-                    data = response;
-                } else if (response.otpreme && Array.isArray(response.otpreme)) {
-                    data = response.otpreme;
-                } else {
-                    console.error('❌ Unknown response format in loadOtpremacSedmicni!', response);
-                    data = [];
-                }
+                // otpremac-detail API returns { sortimentiNazivi: [...], unosi: [...] }
+                const data = response.unosi || [];
+                const sortimentiNazivi = response.sortimentiNazivi || [...SORTIMENTI_ORDER];
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {
@@ -11727,12 +11693,24 @@
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
 
-                // Get sortimenti list - use ALL sortimenti from SORTIMENTI_ORDER
-                // (not just those that exist in data - show all columns even if zero)
-                const sortimentiNazivi = [...SORTIMENTI_ORDER];
+                // Convert unosi format to otpreme format for grouping function
+                const otpremeFormat = [];
+                filteredData.forEach(unos => {
+                    Object.keys(unos.sortimenti || {}).forEach(sortiment => {
+                        const kolicina = unos.sortimenti[sortiment];
+                        if (kolicina > 0) {
+                            otpremeFormat.push({
+                                datum: unos.datum,
+                                odjel: unos.odjel,
+                                sortiment: sortiment,
+                                kolicina: kolicina
+                            });
+                        }
+                    });
+                });
 
                 // Group by weeks
-                const weeklyData = groupPrimacOtpremacDataByWeeks(filteredData, year, month, sortimentiNazivi);
+                const weeklyData = groupPrimacOtpremacDataByWeeks(otpremeFormat, year, month, sortimentiNazivi);
 
                 // Render table
                 renderPrimacOtpremacSedmicni(weeklyData, sortimentiNazivi, 'otpremac-sedmicni', year, month);
@@ -11754,23 +11732,15 @@
                 const year = document.getElementById('otpremac-mjesecni-year').value;
                 const month = document.getElementById('otpremac-mjesecni-month').value;
 
-                // Load otpreme data
-                const url = `${API_URL}?path=otpreme&username=${currentUser.username}&password=${currentPassword}`;
+                // Load otpremac-detail data (already filtered by current user)
+                const url = `${API_URL}?path=otpremac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
                 const response = await fetchWithCache(url, `cache_otpremac_mjesecni_${year}_${month}`);
 
                 if (response.error) throw new Error(response.error);
 
-                // ✅ Backend vraća { otpreme: [...] }, izvuci array
-                // Handle different response formats
-                let data;
-                if (Array.isArray(response)) {
-                    data = response;
-                } else if (response.otpreme && Array.isArray(response.otpreme)) {
-                    data = response.otpreme;
-                } else {
-                    console.error('❌ Unknown response format in loadOtpremacMjesecni!', response);
-                    data = [];
-                }
+                // otpremac-detail API returns { sortimentiNazivi: [...], unosi: [...] }
+                const data = response.unosi || [];
+                const sortimentiNazivi = response.sortimentiNazivi || [...SORTIMENTI_ORDER];
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {
@@ -11781,19 +11751,18 @@
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
 
-                // Get sortimenti list - use ALL sortimenti from SORTIMENTI_ORDER
-                // (not just those that exist in data - show all columns even if zero)
-                const sortimentiNazivi = [...SORTIMENTI_ORDER];
-
                 // Sum by sortiment
                 const sortimentiSums = {};
                 sortimentiNazivi.forEach(s => sortimentiSums[s] = 0);
 
                 filteredData.forEach(row => {
-                    if (row.sortiment && row.kolicina) {
-                        const kolicina = parseFloat(row.kolicina) || 0;
-                        sortimentiSums[row.sortiment] += kolicina;
-                    }
+                    // row.sortimenti is { "sortiment1": quantity, "sortiment2": quantity, ... }
+                    Object.keys(row.sortimenti || {}).forEach(sortiment => {
+                        const kolicina = parseFloat(row.sortimenti[sortiment]) || 0;
+                        if (sortimentiSums.hasOwnProperty(sortiment)) {
+                            sortimentiSums[sortiment] += kolicina;
+                        }
+                    });
                 });
 
                 // Render table
