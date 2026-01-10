@@ -4179,7 +4179,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v51-ADMIN-TABELA-FIX';
+        const APP_VERSION = '2026-01-10-v52-PRODUCTION-CLEAN';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4188,7 +4188,7 @@
         console.log(`%c🌲 ŠUMARIJA v${APP_VERSION}`, 'background: #059669; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 18px;');
         console.log(`%cBuild: ${BUILD_COMMIT}`, 'color: #6b7280; font-size: 12px;');
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
-        console.log('%c✅ v51 - ADMIN-TABELA-FIX (KONAČNO RADI SVE!)', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
+        console.log('%c🚀 v52 - PRODUCTION CLEAN (Optimizovano i spremno!)', 'background: #059669; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
         console.log('%c🔥 KUBIKATOR: Primač/Otpremač/Admin - SVI RADE!', 'background: #ef4444; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
         console.log('%c📐 FIX: Zamijenio preostale ID sa class u admin kontejneru!', 'background: #3b82f6; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
         console.log('%cAKO VIDIŠ v50 ili stariju verziju = Ctrl+Shift+R!', 'color: #dc2626; font-weight: bold; font-size: 14px;');
@@ -9296,17 +9296,9 @@
                 const primkaUrl = API_URL + '?path=primaci-daily&year=' + year + '&month=' + month + '&username=' + currentUser.username + '&password=' + currentPassword;
                 const primkaData = await fetchWithCache(primkaUrl, `cache_izvjestaji_primka_${year}_${month}`);
 
-                console.log('📊 PRIMKA DATA za mjesečni izvještaj:', primkaData);
-                console.log('📊 PRIMKA DATA.data:', primkaData.data);
-                console.log('📊 Broj primka redova:', primkaData.data ? primkaData.data.length : 0);
-
                 // Load OTPREMA data
                 const otpremaUrl = API_URL + '?path=otpremaci-daily&year=' + year + '&month=' + month + '&username=' + currentUser.username + '&password=' + currentPassword;
                 const otpremaData = await fetchWithCache(otpremaUrl, `cache_izvjestaji_otprema_${year}_${month}`);
-
-                console.log('📊 OTPREMA DATA za mjesečni izvještaj:', otpremaData);
-                console.log('📊 OTPREMA DATA.data:', otpremaData.data);
-                console.log('📊 Broj otprema redova:', otpremaData.data ? otpremaData.data.length : 0);
 
                 if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
                 if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
@@ -9324,16 +9316,11 @@
                         const radiliste = (row.radiliste || '').toUpperCase().trim();
                         return poslovodjaRadilista.some(r => radiliste.includes(r.toUpperCase()));
                     });
-                    console.log(`✂️ Filtered primka: ${primkaData.data.length} → ${filteredPrimkaData.length} rows`);
-                    console.log(`✂️ Filtered otprema: ${otpremaData.data.length} → ${filteredOtpremaData.length} rows`);
                 }
 
                 // Aggregate data by odjel
                 const primkaByOdjel = aggregateByOdjel(filteredPrimkaData, primkaData.sortimentiNazivi);
                 const otpremaByOdjel = aggregateByOdjel(filteredOtpremaData, otpremaData.sortimentiNazivi);
-
-                console.log('📊 PRIMKA BY ODJEL (agregiran):', primkaByOdjel);
-                console.log('📊 OTPREMA BY ODJEL (agregiran):', otpremaByOdjel);
 
                 // Render tables
                 renderIzvjestajiTable(primkaByOdjel, primkaData.sortimentiNazivi, 'primka');
@@ -11148,19 +11135,6 @@
                 console.log('Odjeli data for OPERATIVA:', odjeliResponse);
                 console.log('STANJE ODJELA data for OPERATIVA (PROJEKAT source):', stanjeOdjelaData);
 
-                // DEBUG: Log odjeli count and total from API
-                if (odjeliResponse && odjeliResponse.odjeli) {
-                    const odjeliCount = odjeliResponse.odjeli.length;
-                    const totalFromAPI = odjeliResponse.odjeli.reduce((sum, o) => sum + (o.sjeca || 0), 0);
-                    console.log(`=== ODJELI API SUMMARY ===`);
-                    console.log(`Total odjela in API: ${odjeliCount}`);
-                    console.log(`Total sječa from API (direct): ${totalFromAPI.toFixed(2)} m³`);
-                    console.log(`Expected total: ~68171 m³`);
-                    if (Math.abs(totalFromAPI - 68171) > 1000) {
-                        console.warn(`⚠️ SUMA DISCREPANCY: ${(totalFromAPI - 68171).toFixed(2)} m³ difference!`);
-                    }
-                }
-
                 if (dashboardData.error || odjeliResponse.error) {
                     console.error('Error loading OPERATIVA data');
                     return;
@@ -11201,23 +11175,7 @@
                                 projekatTotal = stanjeMatch.redovi.projekat.reduce((sum, val) => sum + (val || 0), 0);
                                 radilisteNaziv = stanjeMatch.radiliste || '';
                                 zadnjiDatum = stanjeMatch.zadnjiDatum;
-
-                                // DEBUG: Log projekat sources za GRMEČ JASENICA 39
-                                const odjelDebugStr = String(odjel.odjel || '');
-                                if (odjel.odjel && (odjelDebugStr.includes('JASENICA 39') || odjelDebugStr.includes('GRMEČ'))) {
-                                    console.log('=== DEBUG GRMEČ JASENICA 39 ===');
-                                    console.log('Odjel name:', odjel.odjel);
-                                    console.log('odjel.projekat (U11 from handleOdjeli):', odjel.projekat);
-                                    console.log('projekatTotal (STANJE ODJELA red 10):', projekatTotal);
-                                    console.log('stanjeMatch.odjelNaziv:', stanjeMatch.odjelNaziv);
-                                    console.log('stanjeMatch.redovi.projekat:', stanjeMatch.redovi.projekat);
-                                }
                             }
-                        }
-
-                        // DEBUG: Check for duplicate odjeli
-                        if (odjeliStats[odjel.odjel]) {
-                            console.warn('DUPLICATE ODJEL DETECTED:', odjel.odjel, 'Previous:', odjeliStats[odjel.odjel], 'New:', odjel);
                         }
 
                         odjeliStats[odjel.odjel] = {
@@ -12274,15 +12232,6 @@
                 const url = `${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`;
                 const response = await fetchWithCache(url, `cache_primac_sedmicni_${year}_${month}`);
 
-                // 🔍 DEBUG: Log response structure
-                console.log('=== PRIMAC SEDMICNI DEBUG ===');
-                console.log('Response type:', typeof response);
-                console.log('Response keys:', Object.keys(response || {}));
-                console.log('Response:', response);
-                console.log('response.primke type:', typeof response.primke);
-                console.log('Is response.primke array?', Array.isArray(response.primke));
-                console.log('response.primke length:', response.primke?.length);
-
                 if (response.error) throw new Error(response.error);
 
                 // ✅ Backend vraća { primke: [...] }, izvuci array
@@ -12291,17 +12240,13 @@
                 if (Array.isArray(response)) {
                     // Old backend format: returns array directly
                     data = response;
-                    console.log('⚠️ Using old format: response is array');
                 } else if (response.primke && Array.isArray(response.primke)) {
                     // New backend format: returns { primke: [...] }
                     data = response.primke;
-                    console.log('✅ Using new format: response.primke is array');
                 } else {
                     console.error('❌ Unknown response format!', response);
                     data = [];
                 }
-
-                console.log('Final data array length:', data.length);
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {
@@ -12312,19 +12257,6 @@
                     const recordYear = parseInt(dateParts[2]);
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
-
-                console.log('🔍 FILTERING DEBUG:');
-                console.log(`Selected Year: ${year}, Month: ${month} (0-indexed: ${month})`);
-                console.log(`Total primke from backend: ${data.length}`);
-                console.log(`After filtering by year/month: ${filteredData.length}`);
-
-                // Sample first 5 filtered records
-                if (filteredData.length > 0) {
-                    console.log('Sample filtered data (first 5):');
-                    filteredData.slice(0, 5).forEach((row, i) => {
-                        console.log(`  ${i+1}. Datum: ${row.datum}, Sortiment: ${row.sortiment}, Kolicina: ${row.kolicina}, Odjel: ${row.odjel}`);
-                    });
-                }
 
                 // Get sortimenti list - use ALL sortimenti from SORTIMENTI_ORDER
                 // (not just those that exist in data - show all columns even if zero)
@@ -12688,20 +12620,11 @@
             const kubikatorSubContent = document.getElementById('kubikator-sub-content');
             const kubikatorContent = document.getElementById('kubikator-content');
 
-            console.log('🔍 DEBUG getActiveKubikatorContainer:');
-            console.log('  kubikatorSubContent exists:', !!kubikatorSubContent);
-            console.log('  kubikatorSubContent hidden:', kubikatorSubContent ? kubikatorSubContent.classList.contains('hidden') : 'N/A');
-            console.log('  kubikatorContent exists:', !!kubikatorContent);
-            console.log('  kubikatorContent hidden:', kubikatorContent ? kubikatorContent.classList.contains('hidden') : 'N/A');
-
             if (kubikatorSubContent && !kubikatorSubContent.classList.contains('hidden')) {
-                console.log('  ✅ Returning: kubikatorSubContent (ADMIN)');
                 return kubikatorSubContent;
             } else if (kubikatorContent && !kubikatorContent.classList.contains('hidden')) {
-                console.log('  ✅ Returning: kubikatorContent (STANDALONE)');
                 return kubikatorContent;
             }
-            console.log('  ❌ Returning: NULL (no active container)');
             return null;
         }
 
@@ -12725,36 +12648,24 @@
 
         // Izračunaj zapreminu pomoću Huber metode
         function izracunajKubikazu() {
-            console.log('🧮 DEBUG izracunajKubikazu: START');
-
             // Provjeri koji Kubikator je aktivan (admin u Ostalo submenu ili standalone)
             const activeContainer = getActiveKubikatorContainer();
             if (!activeContainer) {
-                console.log('❌ ERROR: No active container!');
                 showError('Greška', 'Kubikator nije aktivan');
                 return;
             }
-
-            console.log('  activeContainer ID:', activeContainer.id);
 
             // Pristupi input poljima iz aktivnog containera
             const promjerElement = activeContainer.querySelector('.kubikator-promjer');
             const duzinaElement = activeContainer.querySelector('.kubikator-duzina');
 
-            console.log('  promjerElement found:', !!promjerElement);
-            console.log('  duzinaElement found:', !!duzinaElement);
-
             if (!promjerElement || !duzinaElement) {
-                console.log('❌ ERROR: Input elements not found!');
                 showError('Greška', 'Ne mogu pronaći input polja');
                 return;
             }
 
             const promjerInput = promjerElement.value.trim();
             const duzinaInput = duzinaElement.value.trim();
-
-            console.log('  promjerInput value:', promjerInput);
-            console.log('  duzinaInput value:', duzinaInput);
 
             // Provjeri da li su polja prazna
             if (!promjerInput || !duzinaInput) {
@@ -12819,29 +12730,20 @@
 
         // Ažuriraj tabelu sa svim izračunima
         function azurirajKubikatorTabelu() {
-            console.log('📊 DEBUG azurirajKubikatorTabelu: START');
-
             const activeContainer = getActiveKubikatorContainer();
             if (!activeContainer) {
-                console.log('  ❌ No active container!');
                 return;
             }
 
-            console.log('  activeContainer ID:', activeContainer.id);
-
             const tbody = activeContainer.querySelector('.kubikator-tabela-body');
-            console.log('  tbody found:', !!tbody);
 
             if (!tbody) {
-                console.log('  ❌ tbody not found!');
                 return;
             }
 
             let html = '';
             let ukupnoKom = kubikatorIzracuni.length;
             let ukupnoM3 = 0;
-
-            console.log('  kubikatorIzracuni.length:', ukupnoKom);
 
             kubikatorIzracuni.forEach((izracun, index) => {
                 ukupnoM3 += izracun.zapremina;
@@ -12861,20 +12763,12 @@
 
             tbody.innerHTML = html;
 
-            console.log('  ukupnoKom:', ukupnoKom);
-            console.log('  ukupnoM3:', ukupnoM3.toFixed(2));
-
             // Ažuriraj footer iz aktivnog kontejnera
             const ukupnoKomEl = activeContainer.querySelector('.kubikator-ukupno-kom');
             const ukupnoM3El = activeContainer.querySelector('.kubikator-ukupno-m3');
 
-            console.log('  ukupnoKomEl found:', !!ukupnoKomEl);
-            console.log('  ukupnoM3El found:', !!ukupnoM3El);
-
             if (ukupnoKomEl) ukupnoKomEl.textContent = ukupnoKom;
             if (ukupnoM3El) ukupnoM3El.textContent = ukupnoM3.toFixed(2);
-
-            console.log('  ✅ Table updated!');
         }
 
         // Obriši red iz tabele
