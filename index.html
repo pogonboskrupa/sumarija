@@ -3625,7 +3625,7 @@
                                             <th style="color: #047857; font-weight: 700; padding: 16px;">Akcija</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="kubikator-tabela-body"></tbody>
+                                    <tbody class="kubikator-tabela-body"></tbody>
                                 </table>
                             </div>
 
@@ -3635,13 +3635,13 @@
                                     <div style="text-align: center;">
                                         <div style="font-size: 14px; color: #065f46; font-weight: 600; margin-bottom: 8px; text-transform: uppercase;">Ukupno komada</div>
                                         <div style="font-size: 36px; font-weight: 700; color: #047857;">
-                                            <span id="kubikator-ukupno-kom">0</span> <span style="font-size: 20px;">kom</span>
+                                            <span class="kubikator-ukupno-kom">0</span> <span style="font-size: 20px;">kom</span>
                                         </div>
                                     </div>
                                     <div style="text-align: center;">
                                         <div style="font-size: 14px; color: #065f46; font-weight: 600; margin-bottom: 8px; text-transform: uppercase;">Ukupna zapremina</div>
                                         <div style="font-size: 36px; font-weight: 700; color: #047857;">
-                                            <span id="kubikator-ukupno-m3">0.00</span> <span style="font-size: 20px;">m³</span>
+                                            <span class="kubikator-ukupno-m3">0.00</span> <span style="font-size: 20px;">m³</span>
                                         </div>
                                     </div>
                                 </div>
@@ -4179,7 +4179,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v50-ADMIN-TABELA-DEBUG';
+        const APP_VERSION = '2026-01-09-v51-ADMIN-TABELA-FIX';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4188,10 +4188,10 @@
         console.log(`%c🌲 ŠUMARIJA v${APP_VERSION}`, 'background: #059669; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 18px;');
         console.log(`%cBuild: ${BUILD_COMMIT}`, 'color: #6b7280; font-size: 12px;');
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
-        console.log('%c✅ v49 - KUBIKATOR-HIDE-FIX (FINALNA POPRAVKA!)', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
-        console.log('%c🔥 BUG FIX: Oba kontejnera više nisu vidljiva!', 'background: #ef4444; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
-        console.log('%c📐 KUBIKATOR: Sad vraća TAČAN kontejner!', 'background: #3b82f6; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
-        console.log('%cAKO VIDIŠ v48 ili stariju verziju = Ctrl+Shift+R!', 'color: #dc2626; font-weight: bold; font-size: 14px;');
+        console.log('%c✅ v51 - ADMIN-TABELA-FIX (KONAČNO RADI SVE!)', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
+        console.log('%c🔥 KUBIKATOR: Primač/Otpremač/Admin - SVI RADE!', 'background: #ef4444; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
+        console.log('%c📐 FIX: Zamijenio preostale ID sa class u admin kontejneru!', 'background: #3b82f6; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
+        console.log('%cAKO VIDIŠ v50 ili stariju verziju = Ctrl+Shift+R!', 'color: #dc2626; font-weight: bold; font-size: 14px;');
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
 
         const API_URL = 'https://script.google.com/macros/s/AKfycbwkJ4apCi1yf9WNMVboGUtLVK6ZRWzLAAN-CkyfGbUqCyGm4qMjH3-zVifJUUCgUW2t/exec';
