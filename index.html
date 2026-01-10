@@ -4179,7 +4179,7 @@
 
     <script>
         // VERSION INFO - Izvještaji samo za 2026 godinu
-        const APP_VERSION = '2026-01-09-v49-KUBIKATOR-HIDE-FIX';
+        const APP_VERSION = '2026-01-09-v50-ADMIN-TABELA-DEBUG';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -12819,15 +12819,29 @@
 
         // Ažuriraj tabelu sa svim izračunima
         function azurirajKubikatorTabelu() {
+            console.log('📊 DEBUG azurirajKubikatorTabelu: START');
+
             const activeContainer = getActiveKubikatorContainer();
-            if (!activeContainer) return;
+            if (!activeContainer) {
+                console.log('  ❌ No active container!');
+                return;
+            }
+
+            console.log('  activeContainer ID:', activeContainer.id);
 
             const tbody = activeContainer.querySelector('.kubikator-tabela-body');
-            if (!tbody) return;
+            console.log('  tbody found:', !!tbody);
+
+            if (!tbody) {
+                console.log('  ❌ tbody not found!');
+                return;
+            }
 
             let html = '';
             let ukupnoKom = kubikatorIzracuni.length;
             let ukupnoM3 = 0;
+
+            console.log('  kubikatorIzracuni.length:', ukupnoKom);
 
             kubikatorIzracuni.forEach((izracun, index) => {
                 ukupnoM3 += izracun.zapremina;
@@ -12847,11 +12861,20 @@
 
             tbody.innerHTML = html;
 
+            console.log('  ukupnoKom:', ukupnoKom);
+            console.log('  ukupnoM3:', ukupnoM3.toFixed(2));
+
             // Ažuriraj footer iz aktivnog kontejnera
             const ukupnoKomEl = activeContainer.querySelector('.kubikator-ukupno-kom');
             const ukupnoM3El = activeContainer.querySelector('.kubikator-ukupno-m3');
+
+            console.log('  ukupnoKomEl found:', !!ukupnoKomEl);
+            console.log('  ukupnoM3El found:', !!ukupnoM3El);
+
             if (ukupnoKomEl) ukupnoKomEl.textContent = ukupnoKom;
             if (ukupnoM3El) ukupnoM3El.textContent = ukupnoM3.toFixed(2);
+
+            console.log('  ✅ Table updated!');
         }
 
         // Obriši red iz tabele
