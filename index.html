@@ -2432,8 +2432,26 @@
 
                 <!-- Dnevni dijagram sječe -->
                 <div class="worker-chart-card primac">
-                    <h3 class="worker-chart-title">📊 Dnevni izvještaj sječa</h3>
-                    <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">Prikaz dnevne sječe u tekućem mjesecu</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div>
+                            <h3 class="worker-chart-title" style="margin: 0;">📊 Dnevni izvještaj sječa</h3>
+                            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">Prikaz dnevne sječe po mjesecima</p>
+                        </div>
+                        <select id="primac-daily-month-select" class="year-select" onchange="loadPrimacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 150px;">
+                            <option value="1">Januar</option>
+                            <option value="2">Februar</option>
+                            <option value="3">Mart</option>
+                            <option value="4">April</option>
+                            <option value="5">Maj</option>
+                            <option value="6">Juni</option>
+                            <option value="7">Juli</option>
+                            <option value="8">August</option>
+                            <option value="9">Septembar</option>
+                            <option value="10">Oktobar</option>
+                            <option value="11">Novembar</option>
+                            <option value="12">Decembar</option>
+                        </select>
+                    </div>
                     <canvas id="primac-daily-chart" class="worker-chart-canvas"></canvas>
                 </div>
 

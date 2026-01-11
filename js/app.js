@@ -734,6 +734,13 @@
             } else if (tab === 'kupci') {
                 loadKupci();
             } else if (tab === 'primac-personal') {
+                // Set default month to current month if not already set
+                const currentDate = new Date();
+                const currentMonth = currentDate.getMonth() + 1; // 1-12
+                const monthSelect = document.getElementById('primac-daily-month-select');
+                if (monthSelect && !monthSelect.value) {
+                    monthSelect.value = currentMonth;
+                }
                 loadPrimacPersonal();
             } else if (tab === 'primac-godisnji') {
                 loadPrimacGodisnji();
@@ -3052,6 +3059,9 @@
             if (canvasId === 'otpremac-chart' && otpremacChart) {
                 otpremacChart.destroy();
             }
+            if (canvasId === 'primac-yearly-chart' && primacYearlyChart) {
+                primacYearlyChart.destroy();
+            }
 
             // Group by month
             const monthlyData = {};
@@ -3165,8 +3175,8 @@
             }
         }
 
-        // Create daily chart for current month
-        function createWorkerDailyChart(canvasId, unosi, colorPrimary, colorSecondary) {
+        // Create daily chart for selected month
+        function createWorkerDailyChart(canvasId, unosi, colorPrimary, colorSecondary, selectedMonth = null, selectedYear = null) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
 
@@ -3175,12 +3185,12 @@
                 primacDailyChart.destroy();
             }
 
-            // Get current month
+            // Get current or selected month
             const now = new Date();
-            const currentMonth = now.getMonth() + 1;
-            const currentYear = now.getFullYear();
+            const currentMonth = selectedMonth || (now.getMonth() + 1);
+            const currentYear = selectedYear || now.getFullYear();
 
-            // Filter data for current month
+            // Filter data for selected month
             const currentMonthData = unosi.filter(u => {
                 const dateParts = u.datum.split('.');
                 if (dateParts.length >= 2) {
@@ -3543,8 +3553,10 @@
 
                 document.getElementById('primac-personal-body').innerHTML = bodyWithTotals;
 
-                // Create daily chart for current month
-                createWorkerDailyChart('primac-daily-chart', data.unosi, '#047857', '#10b981');
+                // Create daily chart for selected month
+                const monthSelect = document.getElementById('primac-daily-month-select');
+                const selectedMonth = monthSelect ? parseInt(monthSelect.value) : new Date().getMonth() + 1;
+                createWorkerDailyChart('primac-daily-chart', data.unosi, '#047857', '#10b981', selectedMonth, parseInt(year));
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('primac-personal-content').classList.remove('hidden');
