@@ -3212,16 +3212,15 @@
                 });
             });
 
-            // Get number of days in current month
-            const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-
-            // Prepare data for chart
+            // Prepare data for chart - ONLY working days (when there was activity)
             const labels = [];
             const values = [];
-            for (let i = 1; i <= daysInMonth; i++) {
-                labels.push(i.toString());
-                values.push(dailyData[i] || 0);
-            }
+            const workingDays = Object.keys(dailyData).map(d => parseInt(d)).sort((a, b) => a - b);
+
+            workingDays.forEach(dan => {
+                labels.push(dan + '. ' + getMjesecNaziv(currentMonth).substring(0, 3));
+                values.push(dailyData[dan]);
+            });
 
             // Create gradient
             const ctx = canvas.getContext('2d');
@@ -3229,20 +3228,40 @@
             gradient.addColorStop(0, colorPrimary);
             gradient.addColorStop(1, colorSecondary);
 
-            // Create chart
+            // Create chart with COMBINED bar + line
             const chart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'Količina (m³)',
-                        data: values,
-                        backgroundColor: gradient,
-                        borderColor: colorPrimary,
-                        borderWidth: 2,
-                        borderRadius: 6,
-                        borderSkipped: false,
-                    }]
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: 'Dnevna sječa (m³)',
+                            data: values,
+                            backgroundColor: gradient,
+                            borderColor: colorPrimary,
+                            borderWidth: 2,
+                            borderRadius: 6,
+                            borderSkipped: false,
+                            yAxisID: 'y',
+                        },
+                        {
+                            type: 'line',
+                            label: 'Trend',
+                            data: values,
+                            borderColor: '#dc2626',
+                            backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                            borderWidth: 3,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            pointBackgroundColor: '#dc2626',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            tension: 0.3,
+                            fill: false,
+                            yAxisID: 'y',
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
@@ -3250,7 +3269,16 @@
                     aspectRatio: 2.5,
                     plugins: {
                         legend: {
-                            display: false
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15,
+                                font: {
+                                    size: 12,
+                                    weight: '600'
+                                }
+                            }
                         },
                         tooltip: {
                             backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -3264,17 +3292,23 @@
                             },
                             callbacks: {
                                 title: function(context) {
-                                    const dan = parseInt(context[0].label);
-                                    return dan + '. ' + getMjesecNaziv(currentMonth) + ' ' + currentYear;
+                                    return context[0].label + ' ' + currentYear;
                                 },
                                 label: function(context) {
-                                    return 'Ukupno: ' + context.parsed.y.toFixed(2) + ' m³';
+                                    const datasetLabel = context.dataset.label || '';
+                                    if (datasetLabel === 'Trend') {
+                                        return datasetLabel + ': ' + context.parsed.y.toFixed(2) + ' m³';
+                                    }
+                                    return datasetLabel + ': ' + context.parsed.y.toFixed(2) + ' m³';
                                 },
                                 afterLabel: function(context) {
-                                    const dan = parseInt(context.label);
-                                    if (dailyDetails[dan]) {
-                                        const details = dailyDetails[dan];
-                                        return details.map(d => '  • ' + d.odjel + ': ' + d.ukupno.toFixed(2) + ' m³');
+                                    // Only show details for bar chart
+                                    if (context.dataset.type === 'bar') {
+                                        const dan = workingDays[context.dataIndex];
+                                        if (dailyDetails[dan]) {
+                                            const details = dailyDetails[dan];
+                                            return details.map(d => '  • ' + d.odjel + ': ' + d.ukupno.toFixed(2) + ' m³');
+                                        }
                                     }
                                     return '';
                                 }
@@ -3318,7 +3352,7 @@
                     onClick: (event, elements) => {
                         if (elements.length > 0) {
                             const index = elements[0].index;
-                            const dan = parseInt(labels[index]);
+                            const dan = workingDays[index];
 
                             if (dailyDetails[dan]) {
                                 const details = dailyDetails[dan];
