@@ -2430,10 +2430,11 @@
                     </div>
                 </div>
 
-                <!-- Mjesečni dijagram sječe -->
+                <!-- Dnevni dijagram sječe -->
                 <div class="worker-chart-card primac">
-                    <h3 class="worker-chart-title">📊 Mjesečna sječa - Grafički prikaz</h3>
-                    <canvas id="primac-chart" class="worker-chart-canvas"></canvas>
+                    <h3 class="worker-chart-title">📊 Dnevni izvještaj sječa</h3>
+                    <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">Prikaz dnevne sječe u tekućem mjesecu</p>
+                    <canvas id="primac-daily-chart" class="worker-chart-canvas"></canvas>
                 </div>
 
                 <!-- Controls -->
@@ -2476,6 +2477,13 @@
                             <option value="2026" selected>2026</option>
                         </select>
                     </div>
+                </div>
+
+                <!-- Mjesečni dijagram sječe -->
+                <div class="worker-chart-card primac">
+                    <h3 class="worker-chart-title">📊 Mjesečna sječa - Grafički prikaz</h3>
+                    <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">Mjesečne rekapitulacije za cijelu godinu</p>
+                    <canvas id="primac-yearly-chart" class="worker-chart-canvas"></canvas>
                 </div>
 
                 <!-- Godišnja tabela -->
