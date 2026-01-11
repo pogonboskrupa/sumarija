@@ -4755,8 +4755,54 @@
             setInterval(updateCacheStatusIndicator, 60 * 1000); // Svaka minuta
         }
 
-        // Check if already logged in
+        // Initialize year selectors with current year
+        function initializeYearSelectors() {
+            const currentYear = new Date().getFullYear();
+            const yearSelects = document.querySelectorAll('.year-select, [id*="year"]');
+
+            yearSelects.forEach(select => {
+                if (select.tagName === 'SELECT') {
+                    // Populate with years: current year and 2-3 previous years
+                    const options = [];
+                    for (let i = 0; i <= 3; i++) {
+                        const year = currentYear - i;
+                        options.push(`<option value="${year}" ${i === 0 ? 'selected' : ''}>${year}</option>`);
+                    }
+                    select.innerHTML = options.join('');
+                }
+            });
+
+            // Update any year badges/spans
+            const yearBadges = document.querySelectorAll('[id*="year-badge"], #dinamika-selected-year');
+            yearBadges.forEach(badge => {
+                badge.textContent = currentYear;
+            });
+
+            console.log(`✓ Initialized year selectors to ${currentYear}`);
+        }
+
+        // Main initialization on page load
         window.addEventListener('DOMContentLoaded', () => {
+            // Initialize year selectors first
+            initializeYearSelectors();
+
+            // Load dark mode preference
+            const darkMode = localStorage.getItem('dark-mode');
+            if (darkMode === 'enabled') {
+                document.body.classList.add('dark-mode');
+            }
+
+            // Add event listeners for dinamika calculation inputs
+            for (let i = 1; i <= 12; i++) {
+                const mjesecKey = String(i).padStart(2, '0');
+                const inputId = 'dinamika-' + mjesecKey;
+                const inputElem = document.getElementById(inputId);
+                if (inputElem) {
+                    inputElem.addEventListener('input', calculateDinamikaTotal);
+                }
+            }
+
+            // Check if already logged in
             const savedUser = localStorage.getItem('sumarija_user');
             const savedPass = localStorage.getItem('sumarija_pass');
 
@@ -6099,12 +6145,16 @@
                 const monthTotals = new Array(12).fill(0);
                 let grandTotal = 0;
 
-                data.primaci.forEach(p => {
-                    p.mjeseci.forEach((val, idx) => {
-                        monthTotals[idx] += val;
+                if (data.primaci && Array.isArray(data.primaci)) {
+                    data.primaci.forEach(p => {
+                        if (p.mjeseci && Array.isArray(p.mjeseci)) {
+                            p.mjeseci.forEach((val, idx) => {
+                                monthTotals[idx] += val;
+                            });
+                        }
+                        grandTotal += (p.ukupno || 0);
                     });
-                    grandTotal += p.ukupno;
-                });
+                }
 
                 // Create header with sticky styling
                 const headerHTML = `
@@ -6225,12 +6275,16 @@
                 const monthTotals = new Array(12).fill(0);
                 let grandTotal = 0;
 
-                data.otpremaci.forEach(o => {
-                    o.mjeseci.forEach((val, idx) => {
-                        monthTotals[idx] += val;
+                if (data.otpremaci && Array.isArray(data.otpremaci)) {
+                    data.otpremaci.forEach(o => {
+                        if (o.mjeseci && Array.isArray(o.mjeseci)) {
+                            o.mjeseci.forEach((val, idx) => {
+                                monthTotals[idx] += val;
+                            });
+                        }
+                        grandTotal += (o.ukupno || 0);
                     });
-                    grandTotal += o.ukupno;
-                });
+                }
 
                 // Create header with sticky styling (blue theme)
                 const headerHTML = `
@@ -8156,13 +8210,7 @@
             localStorage.setItem('dark-mode', isDark ? 'enabled' : 'disabled');
         }
 
-        // Load dark mode preference
-        window.addEventListener('DOMContentLoaded', () => {
-            const darkMode = localStorage.getItem('dark-mode');
-            if (darkMode === 'enabled') {
-                document.body.classList.add('dark-mode');
-            }
-        });
+        // Dark mode initialization moved to main DOMContentLoaded listener (line ~4785)
 
         // Filter dashboard table
         function filterDashboardTable() {
@@ -8273,38 +8321,6 @@
                     }
                 }
                 tr[i].style.display = found ? '' : 'none';
-            }
-        }
-
-        // Filter kupci godisnji table
-        function filterKupciGodisnjiTable() {
-            const input = document.getElementById('kupci-godisnji-search');
-            const filter = input.value.toUpperCase();
-            const table = document.getElementById('kupci-godisnji-table');
-            const tr = table.getElementsByTagName('tr');
-
-            for (let i = 1; i < tr.length; i++) {
-                const td = tr[i].getElementsByTagName('td')[0];
-                if (td) {
-                    const txtValue = td.textContent || td.innerText;
-                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
-                }
-            }
-        }
-
-        // Filter kupci mjesecni table
-        function filterKupciMjesecniTable() {
-            const input = document.getElementById('kupci-mjesecni-search');
-            const filter = input.value.toUpperCase();
-            const table = document.getElementById('kupci-mjesecni-table');
-            const tr = table.getElementsByTagName('tr');
-
-            for (let i = 1; i < tr.length; i++) {
-                const td = tr[i].getElementsByTagName('td')[0];
-                if (td) {
-                    const txtValue = td.textContent || td.innerText;
-                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
-                }
             }
         }
 
@@ -11388,18 +11404,7 @@
             }
         }
 
-        // Dodaj event listenere za izračunavanje ukupno nakon što se učita stranica
-        document.addEventListener('DOMContentLoaded', function() {
-            // Dodaj event listenere na sve input polja za mjesece
-            for (let i = 1; i <= 12; i++) {
-                const mjesecKey = String(i).padStart(2, '0');
-                const inputId = 'dinamika-' + mjesecKey;
-                const inputElem = document.getElementById(inputId);
-                if (inputElem) {
-                    inputElem.addEventListener('input', calculateDinamikaTotal);
-                }
-            }
-        });
+        // Dinamika event listeners moved to main DOMContentLoaded listener (line ~4785)
 
         // ============================================
         // UPOREDBA GODINA FUNKCIJE
