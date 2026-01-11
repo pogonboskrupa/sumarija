@@ -1,7 +1,7 @@
 // Service Worker for Šumarija App
 // Provides offline support and smart time-based caching
 
-const CACHE_NAME = 'sumarija-v2'; // Verzija 2 - pametno keširanje
+const CACHE_NAME = 'sumarija-v13-cleanup-charts'; // Verzija 13 - cleanup + dijagrami
 
 // Assets to cache immediately on install
 const STATIC_ASSETS = [

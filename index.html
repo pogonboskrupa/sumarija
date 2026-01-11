@@ -4092,8 +4092,8 @@
     </div>
 
     <script>
-        // VERSION INFO - Dodato Ostalo meni (Dinamika, Uporedba godina), timeout 60s
-        const APP_VERSION = '2026-01-05-v12-OSTALO-MENU-LOGO';
+        // VERSION INFO - Cleanup optimizacije + dnevni/godišnji dijagrami za radnike
+        const APP_VERSION = '2026-01-11-v13-CLEANUP-CHARTS';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4101,6 +4101,7 @@
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
         console.log(`%c🌲 ŠUMARIJA v${APP_VERSION}`, 'background: #059669; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 18px;');
         console.log(`%cBuild: ${BUILD_COMMIT}`, 'color: #6b7280; font-size: 12px;');
+        console.log(`%c📦 Cache: sumarija-v13-cleanup-charts`, 'color: #2563eb; font-size: 12px;');
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
         console.log('%c✅ NAJNOVIJA VERZIJA SA POPRAVKAMA UČITANA!', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
         console.log('%c🔥 AKO VIDIŠ OVO = TIMEOUT FIX JE AKTIVAN!', 'background: #ef4444; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
@@ -4288,11 +4289,36 @@
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/service-worker.js')
                 .then(registration => {
-                    console.log('Service Worker registered:', registration);
+                    console.log('✅ Service Worker registered:', registration);
+
+                    // Automatski aktiviraj novi service worker ako čeka
+                    if (registration.waiting) {
+                        console.log('🔄 Novi Service Worker čeka - aktiviram...');
+                        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    }
+
+                    // Slušaj za updatefound event
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        console.log('🆕 Novi Service Worker pronađen!');
+
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                console.log('✅ Novi Service Worker instaliran - aktiviram...');
+                                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                            }
+                        });
+                    });
                 })
                 .catch(error => {
-                    console.error('Service Worker registration failed:', error);
+                    console.error('❌ Service Worker registration failed:', error);
                 });
+
+            // Slušaj kada novi service worker preuzme kontrolu
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                console.log('🔄 Service Worker updated - reloading...');
+                window.location.reload();
+            });
         }
 
         /**
