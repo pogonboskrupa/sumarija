@@ -2540,9 +2540,35 @@
                     </div>
                 </div>
 
-                <!-- Mjesečni dijagram otpreme -->
+                <!-- Dnevni dijagram otpreme -->
+                <div class="worker-chart-card otpremac">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div>
+                            <h3 class="worker-chart-title" style="margin: 0;">📊 Dnevni izvještaj otpreme</h3>
+                            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">Prikaz dnevne otpreme po mjesecima</p>
+                        </div>
+                        <select id="otpremac-daily-month-select" class="year-select" onchange="loadOtpremacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #2563eb; min-width: 150px;">
+                            <option value="1">Januar</option>
+                            <option value="2">Februar</option>
+                            <option value="3">Mart</option>
+                            <option value="4">April</option>
+                            <option value="5">Maj</option>
+                            <option value="6">Juni</option>
+                            <option value="7">Juli</option>
+                            <option value="8">August</option>
+                            <option value="9">Septembar</option>
+                            <option value="10">Oktobar</option>
+                            <option value="11">Novembar</option>
+                            <option value="12">Decembar</option>
+                        </select>
+                    </div>
+                    <canvas id="otpremac-daily-chart" class="worker-chart-canvas"></canvas>
+                </div>
+
+                <!-- Mjesečni/Godišnji dijagram otpreme -->
                 <div class="worker-chart-card otpremac">
                     <h3 class="worker-chart-title">📊 Mjesečna otprema - Grafički prikaz</h3>
+                    <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">Godišnji pregled otpreme po mjesecima</p>
                     <canvas id="otpremac-chart" class="worker-chart-canvas"></canvas>
                 </div>
 
@@ -7491,6 +7517,284 @@
             }
         }
 
+        // Create daily chart for worker (shows total quantity per day in selected month)
+        let primacDailyChart = null;
+        let otpremacDailyChart = null;
+
+        function createWorkerDailyChart(canvasId, unosi, month, year, colorPrimary, colorSecondary) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+
+            // Destroy existing chart if exists
+            if (canvasId === 'primac-daily-chart' && primacDailyChart) {
+                primacDailyChart.destroy();
+            }
+            if (canvasId === 'otpremac-daily-chart' && otpremacDailyChart) {
+                otpremacDailyChart.destroy();
+            }
+
+            // Filter by selected month
+            const filteredUnosi = unosi.filter(u => {
+                const dateParts = u.datum.split('.');
+                if (dateParts.length >= 2) {
+                    const recordMonth = parseInt(dateParts[1]);
+                    return recordMonth === parseInt(month);
+                }
+                return false;
+            });
+
+            // Group by day
+            const dailyData = {};
+            filteredUnosi.forEach(u => {
+                const dateParts = u.datum.split('.');
+                if (dateParts.length >= 3) {
+                    const day = parseInt(dateParts[0]);
+                    if (!dailyData[day]) {
+                        dailyData[day] = 0;
+                    }
+                    dailyData[day] += u.ukupno || 0;
+                }
+            });
+
+            // Get days in month
+            const daysInMonth = new Date(year, month, 0).getDate();
+
+            // Prepare data for chart - only days with data
+            const labels = [];
+            const values = [];
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                if (dailyData[day] && dailyData[day] > 0) {
+                    labels.push(day + '.');
+                    values.push(dailyData[day]);
+                }
+            }
+
+            // If no data, show message
+            if (values.length === 0) {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.font = '16px sans-serif';
+                ctx.fillStyle = '#6b7280';
+                ctx.textAlign = 'center';
+                ctx.fillText('Nema podataka za izabrani mjesec', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
+            // Create gradient
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, colorPrimary);
+            gradient.addColorStop(1, colorSecondary);
+
+            // Create chart
+            const chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Količina (m³)',
+                        data: values,
+                        backgroundColor: gradient,
+                        borderColor: colorPrimary,
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2.5,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Ukupno: ' + context.parsed.y.toFixed(2) + ' m³';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                font: {
+                                    size: 11,
+                                    weight: '600'
+                                },
+                                color: '#6b7280',
+                                callback: function(value) {
+                                    return value.toFixed(0) + ' m³';
+                                }
+                            },
+                            grid: {
+                                color: '#f3f4f6',
+                                drawBorder: false
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: 11,
+                                    weight: '600'
+                                },
+                                color: '#374151'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Store chart reference
+            if (canvasId === 'primac-daily-chart') {
+                primacDailyChart = chart;
+            } else if (canvasId === 'otpremac-daily-chart') {
+                otpremacDailyChart = chart;
+            }
+        }
+
+        // Create yearly chart (shows total quantity per month)
+        let primacYearlyChart = null;
+        let otpremacYearlyChart = null;
+
+        function createWorkerYearlyChart(canvasId, unosi, colorPrimary, colorSecondary) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+
+            // Destroy existing chart if exists
+            if (canvasId === 'primac-godisnji-chart' && primacYearlyChart) {
+                primacYearlyChart.destroy();
+            }
+            if (canvasId === 'otpremac-godisnji-chart' && otpremacYearlyChart) {
+                otpremacYearlyChart.destroy();
+            }
+
+            // Group by month
+            const monthlyData = {};
+            const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
+
+            // Initialize all months to 0
+            for (let i = 1; i <= 12; i++) {
+                monthlyData[i] = 0;
+            }
+
+            // Sum up by month
+            unosi.forEach(u => {
+                const dateParts = u.datum.split('.');
+                if (dateParts.length >= 2) {
+                    const mjesec = parseInt(dateParts[1]);
+                    monthlyData[mjesec] += u.ukupno || 0;
+                }
+            });
+
+            // Prepare data for chart
+            const labels = mjeseci;
+            const values = mjeseci.map((_, idx) => monthlyData[idx + 1]);
+
+            // Create gradient
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, colorPrimary);
+            gradient.addColorStop(1, colorSecondary);
+
+            // Create chart
+            const chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Količina (m³)',
+                        data: values,
+                        backgroundColor: gradient,
+                        borderColor: colorPrimary,
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2.5,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Ukupno: ' + context.parsed.y.toFixed(2) + ' m³';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                font: {
+                                    size: 11,
+                                    weight: '600'
+                                },
+                                color: '#6b7280',
+                                callback: function(value) {
+                                    return value.toFixed(0) + ' m³';
+                                }
+                            },
+                            grid: {
+                                color: '#f3f4f6',
+                                drawBorder: false
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: 12,
+                                    weight: '700'
+                                },
+                                color: '#374151'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Store chart reference
+            if (canvasId === 'primac-godisnji-chart') {
+                primacYearlyChart = chart;
+            } else if (canvasId === 'otpremac-godisnji-chart') {
+                otpremacYearlyChart = chart;
+            }
+        }
+
         // Switch between Primac Personal tabs
         function switchPrimacPersonalTab(tab) {
             // Update tab buttons
@@ -7608,6 +7912,9 @@
                 document.getElementById('primac-godisnji-main-body').innerHTML = bodyWithTotals;
                 document.getElementById('primac-godisnji-year-badge').textContent = year;
 
+                // Create yearly chart
+                createWorkerYearlyChart('primac-yearly-chart', data.unosi, '#047857', '#10b981');
+
             } catch (error) {
                 showError('Greška', 'Greška pri učitavanju godišnjeg prikaza: ' + error.message);
             }
@@ -7689,8 +7996,19 @@
 
                 document.getElementById('primac-personal-body').innerHTML = bodyWithTotals;
 
-                // Create monthly chart
+                // Create monthly chart (old - not used anymore but keep for compatibility)
                 createWorkerMonthlyChart('primac-chart', data.unosi, '#047857', '#10b981');
+
+                // Create daily chart for selected month
+                const monthSelector = document.getElementById('primac-daily-month-select');
+                const selectedMonth = monthSelector ? monthSelector.value : new Date().getMonth() + 1;
+
+                // Set dropdown to current month if not already set
+                if (monthSelector && !monthSelector.value) {
+                    monthSelector.value = new Date().getMonth() + 1;
+                }
+
+                createWorkerDailyChart('primac-daily-chart', data.unosi, selectedMonth, year, '#047857', '#10b981');
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('primac-personal-content').classList.remove('hidden');
@@ -7782,8 +8100,19 @@
 
                 document.getElementById('otpremac-personal-body').innerHTML = bodyWithTotals;
 
-                // Create monthly chart
+                // Create monthly/yearly chart (shows totals per month)
                 createWorkerMonthlyChart('otpremac-chart', data.unosi, '#1e40af', '#3b82f6');
+
+                // Create daily chart for selected month
+                const monthSelector = document.getElementById('otpremac-daily-month-select');
+                const selectedMonth = monthSelector ? monthSelector.value : new Date().getMonth() + 1;
+
+                // Set dropdown to current month if not already set
+                if (monthSelector && !monthSelector.value) {
+                    monthSelector.value = new Date().getMonth() + 1;
+                }
+
+                createWorkerDailyChart('otpremac-daily-chart', data.unosi, selectedMonth, year, '#1e40af', '#3b82f6');
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('otpremac-personal-content').classList.remove('hidden');
