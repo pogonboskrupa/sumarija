@@ -3038,6 +3038,8 @@
 
         let primacChart = null;
         let otpremacChart = null;
+        let primacDailyChart = null;
+        let primacYearlyChart = null;
 
         function createWorkerMonthlyChart(canvasId, unosi, colorPrimary, colorSecondary) {
             const canvas = document.getElementById(canvasId);
@@ -3158,7 +3160,194 @@
                 primacChart = chart;
             } else if (canvasId === 'otpremac-chart') {
                 otpremacChart = chart;
+            } else if (canvasId === 'primac-yearly-chart') {
+                primacYearlyChart = chart;
             }
+        }
+
+        // Create daily chart for current month
+        function createWorkerDailyChart(canvasId, unosi, colorPrimary, colorSecondary) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+
+            // Destroy existing chart if exists
+            if (primacDailyChart) {
+                primacDailyChart.destroy();
+            }
+
+            // Get current month
+            const now = new Date();
+            const currentMonth = now.getMonth() + 1;
+            const currentYear = now.getFullYear();
+
+            // Filter data for current month
+            const currentMonthData = unosi.filter(u => {
+                const dateParts = u.datum.split('.');
+                if (dateParts.length >= 2) {
+                    const mjesec = parseInt(dateParts[1]);
+                    const godina = parseInt(dateParts[2]);
+                    return mjesec === currentMonth && godina === currentYear;
+                }
+                return false;
+            });
+
+            // Group by day
+            const dailyData = {};
+            const dailyDetails = {}; // Store details for each day
+
+            currentMonthData.forEach(u => {
+                const dateParts = u.datum.split('.');
+                const dan = parseInt(dateParts[0]);
+
+                if (!dailyData[dan]) {
+                    dailyData[dan] = 0;
+                    dailyDetails[dan] = [];
+                }
+
+                dailyData[dan] += u.ukupno || 0;
+                dailyDetails[dan].push({
+                    odjel: u.odjel,
+                    ukupno: u.ukupno,
+                    datum: u.datum
+                });
+            });
+
+            // Get number of days in current month
+            const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+
+            // Prepare data for chart
+            const labels = [];
+            const values = [];
+            for (let i = 1; i <= daysInMonth; i++) {
+                labels.push(i.toString());
+                values.push(dailyData[i] || 0);
+            }
+
+            // Create gradient
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, colorPrimary);
+            gradient.addColorStop(1, colorSecondary);
+
+            // Create chart
+            const chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Količina (m³)',
+                        data: values,
+                        backgroundColor: gradient,
+                        borderColor: colorPrimary,
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2.5,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            callbacks: {
+                                title: function(context) {
+                                    const dan = parseInt(context[0].label);
+                                    return dan + '. ' + getMjesecNaziv(currentMonth) + ' ' + currentYear;
+                                },
+                                label: function(context) {
+                                    return 'Ukupno: ' + context.parsed.y.toFixed(2) + ' m³';
+                                },
+                                afterLabel: function(context) {
+                                    const dan = parseInt(context.label);
+                                    if (dailyDetails[dan]) {
+                                        const details = dailyDetails[dan];
+                                        return details.map(d => '  • ' + d.odjel + ': ' + d.ukupno.toFixed(2) + ' m³');
+                                    }
+                                    return '';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                font: {
+                                    size: 11,
+                                    weight: '600'
+                                },
+                                color: '#6b7280',
+                                callback: function(value) {
+                                    return value.toFixed(0) + ' m³';
+                                }
+                            },
+                            grid: {
+                                color: '#f3f4f6',
+                                drawBorder: false
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: 11,
+                                    weight: '600'
+                                },
+                                color: '#374151',
+                                autoSkip: true,
+                                maxRotation: 0,
+                                minRotation: 0
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const dan = parseInt(labels[index]);
+
+                            if (dailyDetails[dan]) {
+                                const details = dailyDetails[dan];
+                                let message = `<strong>${dan}. ${getMjesecNaziv(currentMonth)} ${currentYear}</strong><br><br>`;
+                                message += `<strong>Ukupno: ${dailyData[dan].toFixed(2)} m³</strong><br><br>`;
+                                message += '<div style="text-align: left; max-height: 400px; overflow-y: auto;">';
+                                details.forEach(d => {
+                                    message += `<div style="margin: 8px 0; padding: 8px; background: #f3f4f6; border-radius: 6px;">`;
+                                    message += `<strong>${d.odjel}</strong><br>`;
+                                    message += `${d.ukupno.toFixed(2)} m³`;
+                                    message += `</div>`;
+                                });
+                                message += '</div>';
+
+                                showInfo('Dnevni izvještaj', message);
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Store chart reference
+            primacDailyChart = chart;
+        }
+
+        // Helper function to get month name
+        function getMjesecNaziv(mjesecNum) {
+            const mjeseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+            return mjeseci[mjesecNum - 1] || '';
         }
 
         // Switch between Primac Personal tabs
@@ -3184,7 +3373,8 @@
         // Load Primac Godišnji Prikaz
         async function loadPrimacGodisnji() {
             try {
-                const year = new Date().getFullYear();
+                const yearSelect = document.getElementById('primac-godisnji-year-select');
+                const year = yearSelect ? yearSelect.value : new Date().getFullYear();
                 const url = `${API_URL}?path=primac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
                 const data = await fetchWithCache(url, 'cache_primac_godisnji_' + year);
 
@@ -3271,6 +3461,9 @@
                 document.getElementById('primac-godisnji-main-body').innerHTML = bodyWithTotals;
                 document.getElementById('primac-godisnji-year-badge').textContent = year;
 
+                // Create yearly chart (monthly data for the whole year)
+                createWorkerMonthlyChart('primac-yearly-chart', data.unosi, '#047857', '#10b981');
+
             } catch (error) {
                 showError('Greška', 'Greška pri učitavanju godišnjeg prikaza: ' + error.message);
             }
@@ -3282,7 +3475,8 @@
             document.getElementById('primac-personal-content').classList.add('hidden');
 
             try {
-                const year = new Date().getFullYear();
+                const yearSelect = document.getElementById('primac-personal-year-select');
+                const year = yearSelect ? yearSelect.value : new Date().getFullYear();
                 const url = `${API_URL}?path=primac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
                 const data = await fetchWithCache(url, 'cache_primac_detail_' + year);
 
@@ -3349,8 +3543,8 @@
 
                 document.getElementById('primac-personal-body').innerHTML = bodyWithTotals;
 
-                // Create monthly chart
-                createWorkerMonthlyChart('primac-chart', data.unosi, '#047857', '#10b981');
+                // Create daily chart for current month
+                createWorkerDailyChart('primac-daily-chart', data.unosi, '#047857', '#10b981');
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('primac-personal-content').classList.remove('hidden');
