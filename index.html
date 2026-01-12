@@ -4212,8 +4212,8 @@
     </div>
 
     <script>
-        // VERSION INFO - No duplicate columns
-        const APP_VERSION = '2026-01-12-v16-NO-DUPLICATE';
+        // VERSION INFO - Debug monthly report
+        const APP_VERSION = '2026-01-12-v17-DEBUG-MONTHLY';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4221,7 +4221,7 @@
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
         console.log(`%c🌲 ŠUMARIJA v${APP_VERSION}`, 'background: #059669; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 18px;');
         console.log(`%cBuild: ${BUILD_COMMIT}`, 'color: #6b7280; font-size: 12px;');
-        console.log(`%c📦 Cache: sumarija-v16-no-duplicate`, 'color: #2563eb; font-size: 12px;');
+        console.log(`%c📦 Cache: sumarija-v17-debug-monthly`, 'color: #2563eb; font-size: 12px;');
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
         console.log('%c✅ NAJNOVIJA VERZIJA SA POPRAVKAMA UČITANA!', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
         console.log('%c🔥 AKO VIDIŠ OVO = TIMEOUT FIX JE AKTIVAN!', 'background: #ef4444; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
@@ -12579,9 +12579,16 @@
 
         // Render mjesečni izvještaj za primača/otpremača
         function renderPrimacOtpremacMjesecni(sortimentiSums, sortimentiNazivi, tablePrefix, year, month) {
+            console.log('renderPrimacOtpremacMjesecni called:', { sortimentiSums, sortimentiNazivi, tablePrefix });
+
             const header = document.getElementById(`${tablePrefix}-header`);
             const body = document.getElementById(`${tablePrefix}-body`);
             const footer = document.getElementById(`${tablePrefix}-footer`);
+
+            if (!header || !body || !footer) {
+                console.error('Table elements not found for prefix:', tablePrefix);
+                return;
+            }
 
             const monthNames = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
 
@@ -12610,6 +12617,7 @@
             });
 
             body.innerHTML = bodyHtml;
+            console.log('Body HTML set:', bodyHtml.substring(0, 200));
 
             // Footer - ne prikazuj footer jer SVEUKUPNO već postoji u body-ju
             footer.innerHTML = '';

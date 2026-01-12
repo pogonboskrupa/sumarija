@@ -1,7 +1,7 @@
 // Service Worker for Šumarija App
 // Provides offline support and smart time-based caching
 
-const CACHE_NAME = 'sumarija-v16-no-duplicate'; // Verzija 16 - Removed duplicate UKUPNO/SVEUKUPNO column
+const CACHE_NAME = 'sumarija-v17-debug-monthly'; // Verzija 17 - Debug monthly report
 
 // Assets to cache immediately on install
 const STATIC_ASSETS = [
