@@ -4212,8 +4212,8 @@
     </div>
 
     <script>
-        // VERSION INFO - UKUPNO calculation fix
-        const APP_VERSION = '2026-01-12-v15-UKUPNO-FIX';
+        // VERSION INFO - No duplicate columns
+        const APP_VERSION = '2026-01-12-v16-NO-DUPLICATE';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4221,7 +4221,7 @@
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
         console.log(`%c🌲 ŠUMARIJA v${APP_VERSION}`, 'background: #059669; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 18px;');
         console.log(`%cBuild: ${BUILD_COMMIT}`, 'color: #6b7280; font-size: 12px;');
-        console.log(`%c📦 Cache: sumarija-v15-ukupno-fix`, 'color: #2563eb; font-size: 12px;');
+        console.log(`%c📦 Cache: sumarija-v16-no-duplicate`, 'color: #2563eb; font-size: 12px;');
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
         console.log('%c✅ NAJNOVIJA VERZIJA SA POPRAVKAMA UČITANA!', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
         console.log('%c🔥 AKO VIDIŠ OVO = TIMEOUT FIX JE AKTIVAN!', 'background: #ef4444; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
@@ -12519,16 +12519,19 @@
             // Header
             let headerHtml = '<tr><th>Sedmica</th>';
             sortimentiNazivi.forEach(sortiment => {
-                headerHtml += `<th style="text-align: right;">${sortiment}</th>`;
+                // ✅ Zelena boja za SVEUKUPNO kolonu
+                const style = sortiment === 'SVEUKUPNO'
+                    ? 'text-align: right; font-weight: bold; background: #059669; color: white;'
+                    : 'text-align: right;';
+                headerHtml += `<th style="${style}">${sortiment}</th>`;
             });
-            headerHtml += '<th style="text-align: right; font-weight: bold;">UKUPNO</th></tr>';
+            headerHtml += '</tr>';
             header.innerHTML = headerHtml;
 
             // Body
             let bodyHtml = '';
             const monthTotals = {};
             sortimentiNazivi.forEach(s => monthTotals[s] = 0);
-            let monthTotal = 0;
 
             weeklyData.forEach((week, index) => {
                 const rowStyle = index % 2 === 0 ? 'background: #f9fafb;' : '';
@@ -12536,16 +12539,22 @@
                 bodyHtml += `<td><strong>Sedmica ${week.weekNumber}</strong><br><span style="color: #6b7280; font-size: 12px;">${week.weekStart} - ${week.weekEnd}</span></td>`;
 
                 sortimentiNazivi.forEach(sortiment => {
-                    const value = week.sortimentiSums[sortiment] || 0;
+                    let value = week.sortimentiSums[sortiment] || 0;
+
+                    // ✅ FIX: SVEUKUPNO = samo ČETINARI + LIŠĆARI (ne sve kolone)
+                    if (sortiment === 'SVEUKUPNO') {
+                        value = (week.sortimentiSums['ČETINARI'] || 0) + (week.sortimentiSums['LIŠĆARI'] || 0);
+                    }
+
                     monthTotals[sortiment] += value;
 
-                    bodyHtml += `<td style="text-align: right;">${value.toFixed(2)}</td>`;
+                    // ✅ Zelena boja za SVEUKUPNO ćelije
+                    const cellStyle = sortiment === 'SVEUKUPNO'
+                        ? 'text-align: right; font-weight: bold; background: #d1fae5;'
+                        : 'text-align: right;';
+                    bodyHtml += `<td style="${cellStyle}">${value.toFixed(2)}</td>`;
                 });
 
-                // ✅ FIX: UKUPNO = samo ČETINARI + LIŠĆARI (ne sve kolone)
-                const weekTotal = (week.sortimentiSums['ČETINARI'] || 0) + (week.sortimentiSums['LIŠĆARI'] || 0);
-                monthTotal += weekTotal;
-                bodyHtml += `<td style="text-align: right; font-weight: bold;">${weekTotal.toFixed(2)}</td>`;
                 bodyHtml += '</tr>';
             });
 
@@ -12555,10 +12564,15 @@
             let footerHtml = '<tr style="background: linear-gradient(135deg, #047857 0%, #065f46 100%); color: white; font-weight: bold;">';
             footerHtml += '<td>UKUPNO MJESEC</td>';
             sortimentiNazivi.forEach(sortiment => {
-                const total = monthTotals[sortiment];
+                let total = monthTotals[sortiment];
+
+                // ✅ FIX: SVEUKUPNO footer = samo ČETINARI + LIŠĆARI totali
+                if (sortiment === 'SVEUKUPNO') {
+                    total = (monthTotals['ČETINARI'] || 0) + (monthTotals['LIŠĆARI'] || 0);
+                }
+
                 footerHtml += `<td style="text-align: right;">${total.toFixed(2)}</td>`;
             });
-            footerHtml += `<td style="text-align: right;">${monthTotal.toFixed(2)}</td>`;
             footerHtml += '</tr>';
             footer.innerHTML = footerHtml;
         }
@@ -12579,25 +12593,26 @@
             let bodyHtml = '';
 
             sortimentiNazivi.forEach((sortiment, index) => {
-                const value = sortimentiSums[sortiment] || 0;
+                let value = sortimentiSums[sortiment] || 0;
+
+                // ✅ FIX: SVEUKUPNO = samo ČETINARI + LIŠĆARI (ne sve kolone)
+                if (sortiment === 'SVEUKUPNO') {
+                    value = (sortimentiSums['ČETINARI'] || 0) + (sortimentiSums['LIŠĆARI'] || 0);
+                }
+
                 const rowStyle = index % 2 === 0 ? 'background: #f9fafb;' : '';
-                bodyHtml += `<tr style="${rowStyle}">`;
+                // ✅ Zelena boja za SVEUKUPNO red
+                const cellStyle = sortiment === 'SVEUKUPNO' ? ' background: #d1fae5; font-weight: 700;' : '';
+                bodyHtml += `<tr style="${rowStyle}${cellStyle}">`;
                 bodyHtml += `<td><strong>${sortiment}</strong></td>`;
-                bodyHtml += `<td style="text-align: right;">${value.toFixed(2)}</td>`;
+                bodyHtml += `<td style="text-align: right; font-weight: ${sortiment === 'SVEUKUPNO' ? 'bold' : 'normal'};">${value.toFixed(2)}</td>`;
                 bodyHtml += '</tr>';
             });
 
             body.innerHTML = bodyHtml;
 
-            // ✅ FIX: UKUPNO = samo ČETINARI + LIŠĆARI (ne sve kolone)
-            const total = (sortimentiSums['ČETINARI'] || 0) + (sortimentiSums['LIŠĆARI'] || 0);
-
-            // Footer (total)
-            let footerHtml = '<tr style="background: linear-gradient(135deg, #047857 0%, #065f46 100%); color: white; font-weight: bold;">';
-            footerHtml += '<td>UKUPNO</td>';
-            footerHtml += `<td style="text-align: right;">${total.toFixed(2)}</td>`;
-            footerHtml += '</tr>';
-            footer.innerHTML = footerHtml;
+            // Footer - ne prikazuj footer jer SVEUKUPNO već postoji u body-ju
+            footer.innerHTML = '';
         }
 
         // ========================================

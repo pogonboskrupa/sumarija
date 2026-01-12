@@ -1,7 +1,7 @@
 // Service Worker for Šumarija App
 // Provides offline support and smart time-based caching
 
-const CACHE_NAME = 'sumarija-v15-ukupno-fix'; // Verzija 15 - UKUPNO calculation fix (ČETINARI + LIŠĆARI)
+const CACHE_NAME = 'sumarija-v16-no-duplicate'; // Verzija 16 - Removed duplicate UKUPNO/SVEUKUPNO column
 
 // Assets to cache immediately on install
 const STATIC_ASSETS = [
