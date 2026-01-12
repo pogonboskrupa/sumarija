@@ -12284,21 +12284,26 @@
 
         // Load mjesečni izvještaj za primača (suma po sortimentima za mjesec)
         async function loadPrimacMjesecni() {
+            console.log('✅ loadPrimacMjesecni CALLED');
             document.getElementById('loading-screen').classList.remove('hidden');
 
             try {
                 const year = document.getElementById('primac-mjesecni-year').value;
                 const month = document.getElementById('primac-mjesecni-month').value;
+                console.log('📅 Year:', year, 'Month:', month);
 
                 // Load primac-detail data (already filtered by current user)
                 const url = `${API_URL}?path=primac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                console.log('🌐 Fetching URL:', url.replace(/password=[^&]*/, 'password=***'));
                 const response = await fetchWithCache(url, `cache_primac_mjesecni_${year}_${month}`);
+                console.log('📦 Response:', { hasError: !!response.error, unosiLength: response.unosi?.length, sortimentiLength: response.sortimentiNazivi?.length });
 
                 if (response.error) throw new Error(response.error);
 
                 // primac-detail API returns { sortimentiNazivi: [...], unosi: [...] }
                 const data = response.unosi || [];
                 const sortimentiNazivi = response.sortimentiNazivi || [...SORTIMENTI_ORDER];
+                console.log('📊 Data length:', data.length, 'Sortimenti count:', sortimentiNazivi.length);
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {
@@ -12308,6 +12313,7 @@
                     const recordYear = parseInt(dateParts[2]);
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
+                console.log('🔍 Filtered data length:', filteredData.length);
 
                 // Sum by sortiment
                 const sortimentiSums = {};
@@ -12322,6 +12328,8 @@
                         }
                     });
                 });
+                console.log('💰 Sortimenti sums (first 3):', Object.fromEntries(Object.entries(sortimentiSums).slice(0, 3)));
+                console.log('💰 ČETINARI:', sortimentiSums['ČETINARI'], 'LIŠĆARI:', sortimentiSums['LIŠĆARI'], 'SVEUKUPNO:', sortimentiSums['SVEUKUPNO']);
 
                 // Render table
                 renderPrimacOtpremacMjesecni(sortimentiSums, sortimentiNazivi, 'primac-mjesecni', year, month);
@@ -12329,7 +12337,7 @@
                 document.getElementById('loading-screen').classList.add('hidden');
 
             } catch (error) {
-                console.error('Error loading primač mjesečni izvještaj:', error);
+                console.error('❌ Error loading primač mjesečni izvještaj:', error);
                 showError('Greška', 'Greška pri učitavanju mjesečnog izvještaja: ' + error.message);
                 document.getElementById('loading-screen').classList.add('hidden');
             }
