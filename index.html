@@ -7921,10 +7921,10 @@
             if (!canvas) return;
 
             // Destroy existing chart if exists
-            if (canvasId === 'primac-godisnji-chart' && primacYearlyChart) {
+            if (canvasId === 'primac-yearly-chart' && primacYearlyChart) {
                 primacYearlyChart.destroy();
             }
-            if (canvasId === 'otpremac-godisnji-chart' && otpremacYearlyChart) {
+            if (canvasId === 'otpremac-yearly-chart' && otpremacYearlyChart) {
                 otpremacYearlyChart.destroy();
             }
 
@@ -8031,9 +8031,9 @@
             });
 
             // Store chart reference
-            if (canvasId === 'primac-godisnji-chart') {
+            if (canvasId === 'primac-yearly-chart') {
                 primacYearlyChart = chart;
-            } else if (canvasId === 'otpremac-godisnji-chart') {
+            } else if (canvasId === 'otpremac-yearly-chart') {
                 otpremacYearlyChart = chart;
             }
         }
