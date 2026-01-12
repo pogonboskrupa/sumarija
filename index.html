@@ -4212,8 +4212,8 @@
     </div>
 
     <script>
-        // VERSION INFO - Debug monthly report
-        const APP_VERSION = '2026-01-12-v17-DEBUG-MONTHLY';
+        // VERSION INFO - Monthly report by departments
+        const APP_VERSION = '2026-01-12-v18-MONTHLY-BY-ODJELI';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4221,7 +4221,7 @@
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
         console.log(`%c🌲 ŠUMARIJA v${APP_VERSION}`, 'background: #059669; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 18px;');
         console.log(`%cBuild: ${BUILD_COMMIT}`, 'color: #6b7280; font-size: 12px;');
-        console.log(`%c📦 Cache: sumarija-v17-debug-monthly`, 'color: #2563eb; font-size: 12px;');
+        console.log(`%c📦 Cache: sumarija-v18-monthly-by-odjeli`, 'color: #2563eb; font-size: 12px;');
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
         console.log('%c✅ NAJNOVIJA VERZIJA SA POPRAVKAMA UČITANA!', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
         console.log('%c🔥 AKO VIDIŠ OVO = TIMEOUT FIX JE AKTIVAN!', 'background: #ef4444; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
@@ -12284,26 +12284,21 @@
 
         // Load mjesečni izvještaj za primača (suma po sortimentima za mjesec)
         async function loadPrimacMjesecni() {
-            console.log('✅ loadPrimacMjesecni CALLED');
             document.getElementById('loading-screen').classList.remove('hidden');
 
             try {
                 const year = document.getElementById('primac-mjesecni-year').value;
                 const month = document.getElementById('primac-mjesecni-month').value;
-                console.log('📅 Year:', year, 'Month:', month);
 
                 // Load primac-detail data (already filtered by current user)
                 const url = `${API_URL}?path=primac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
-                console.log('🌐 Fetching URL:', url.replace(/password=[^&]*/, 'password=***'));
                 const response = await fetchWithCache(url, `cache_primac_mjesecni_${year}_${month}`);
-                console.log('📦 Response:', { hasError: !!response.error, unosiLength: response.unosi?.length, sortimentiLength: response.sortimentiNazivi?.length });
 
                 if (response.error) throw new Error(response.error);
 
                 // primac-detail API returns { sortimentiNazivi: [...], unosi: [...] }
                 const data = response.unosi || [];
                 const sortimentiNazivi = response.sortimentiNazivi || [...SORTIMENTI_ORDER];
-                console.log('📊 Data length:', data.length, 'Sortimenti count:', sortimentiNazivi.length);
 
                 // Filter by year/month
                 const filteredData = data.filter(row => {
@@ -12313,31 +12308,39 @@
                     const recordYear = parseInt(dateParts[2]);
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
-                console.log('🔍 Filtered data length:', filteredData.length);
 
-                // Sum by sortiment
-                const sortimentiSums = {};
-                sortimentiNazivi.forEach(s => sortimentiSums[s] = 0);
-
+                // ✅ NEW: Group by ODJEL (department) instead of just summing
+                const odjeliMap = {};
                 filteredData.forEach(row => {
-                    // row.sortimenti is { "sortiment1": quantity, "sortiment2": quantity, ... }
+                    const odjel = String(row.odjel || 'Nepoznat');
+
+                    if (!odjeliMap[odjel]) {
+                        odjeliMap[odjel] = {};
+                        sortimentiNazivi.forEach(s => odjeliMap[odjel][s] = 0);
+                    }
+
+                    // Sum sortimenti for this odjel
                     Object.keys(row.sortimenti || {}).forEach(sortiment => {
                         const kolicina = parseFloat(row.sortimenti[sortiment]) || 0;
-                        if (sortimentiSums.hasOwnProperty(sortiment)) {
-                            sortimentiSums[sortiment] += kolicina;
+                        if (odjeliMap[odjel].hasOwnProperty(sortiment)) {
+                            odjeliMap[odjel][sortiment] += kolicina;
                         }
                     });
                 });
-                console.log('💰 Sortimenti sums (first 3):', Object.fromEntries(Object.entries(sortimentiSums).slice(0, 3)));
-                console.log('💰 ČETINARI:', sortimentiSums['ČETINARI'], 'LIŠĆARI:', sortimentiSums['LIŠĆARI'], 'SVEUKUPNO:', sortimentiSums['SVEUKUPNO']);
 
-                // Render table
-                renderPrimacOtpremacMjesecni(sortimentiSums, sortimentiNazivi, 'primac-mjesecni', year, month);
+                // Convert to array and sort by odjel name
+                const odjeliData = Object.keys(odjeliMap).map(odjel => ({
+                    odjel: odjel,
+                    sortimenti: odjeliMap[odjel]
+                })).sort((a, b) => a.odjel.localeCompare(b.odjel));
+
+                // Render table grouped by odjeli
+                renderMjesecniByOdjeli(odjeliData, sortimentiNazivi, 'primac-mjesecni', year, month);
 
                 document.getElementById('loading-screen').classList.add('hidden');
 
             } catch (error) {
-                console.error('❌ Error loading primač mjesečni izvještaj:', error);
+                console.error('Error loading primač mjesečni izvještaj:', error);
                 showError('Greška', 'Greška pri učitavanju mjesečnog izvještaja: ' + error.message);
                 document.getElementById('loading-screen').classList.add('hidden');
             }
@@ -12428,22 +12431,33 @@
                     return recordYear === parseInt(year) && recordMonth === parseInt(month);
                 });
 
-                // Sum by sortiment
-                const sortimentiSums = {};
-                sortimentiNazivi.forEach(s => sortimentiSums[s] = 0);
-
+                // ✅ NEW: Group by ODJEL (department) instead of just summing
+                const odjeliMap = {};
                 filteredData.forEach(row => {
-                    // row.sortimenti is { "sortiment1": quantity, "sortiment2": quantity, ... }
+                    const odjel = String(row.odjel || 'Nepoznat');
+
+                    if (!odjeliMap[odjel]) {
+                        odjeliMap[odjel] = {};
+                        sortimentiNazivi.forEach(s => odjeliMap[odjel][s] = 0);
+                    }
+
+                    // Sum sortimenti for this odjel
                     Object.keys(row.sortimenti || {}).forEach(sortiment => {
                         const kolicina = parseFloat(row.sortimenti[sortiment]) || 0;
-                        if (sortimentiSums.hasOwnProperty(sortiment)) {
-                            sortimentiSums[sortiment] += kolicina;
+                        if (odjeliMap[odjel].hasOwnProperty(sortiment)) {
+                            odjeliMap[odjel][sortiment] += kolicina;
                         }
                     });
                 });
 
-                // Render table
-                renderPrimacOtpremacMjesecni(sortimentiSums, sortimentiNazivi, 'otpremac-mjesecni', year, month);
+                // Convert to array and sort by odjel name
+                const odjeliData = Object.keys(odjeliMap).map(odjel => ({
+                    odjel: odjel,
+                    sortimenti: odjeliMap[odjel]
+                })).sort((a, b) => a.odjel.localeCompare(b.odjel));
+
+                // Render table grouped by odjeli
+                renderMjesecniByOdjeli(odjeliData, sortimentiNazivi, 'otpremac-mjesecni', year, month);
 
                 document.getElementById('loading-screen').classList.add('hidden');
 
@@ -12585,10 +12599,8 @@
             footer.innerHTML = footerHtml;
         }
 
-        // Render mjesečni izvještaj za primača/otpremača
-        function renderPrimacOtpremacMjesecni(sortimentiSums, sortimentiNazivi, tablePrefix, year, month) {
-            console.log('renderPrimacOtpremacMjesecni called:', { sortimentiSums, sortimentiNazivi, tablePrefix });
-
+        // ✅ NEW: Render mjesečni izvještaj grupisano po odjelima (tabela kao sedmični izvještaj)
+        function renderMjesecniByOdjeli(odjeliData, sortimentiNazivi, tablePrefix, year, month) {
             const header = document.getElementById(`${tablePrefix}-header`);
             const body = document.getElementById(`${tablePrefix}-body`);
             const footer = document.getElementById(`${tablePrefix}-footer`);
@@ -12600,35 +12612,100 @@
 
             const monthNames = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
 
-            // Header
-            let headerHtml = '<tr><th>Sortiment</th><th style="text-align: right;">Količina (m³)</th></tr>';
-            header.innerHTML = headerHtml;
+            // Header - ODJEL + svi sortimenti
+            let headerHtml = '<tr><th style="position: sticky; left: 0; background: #f9fafb; z-index: 20; min-width: 200px;">Odjel</th>';
+            sortimentiNazivi.forEach(sortiment => {
+                const colClass = getColumnGroup(sortiment);
+                let extraClass = '';
+                let style = 'text-align: right;';
 
-            // Body
-            let bodyHtml = '';
-
-            sortimentiNazivi.forEach((sortiment, index) => {
-                let value = sortimentiSums[sortiment] || 0;
-
-                // ✅ FIX: SVEUKUPNO = samo ČETINARI + LIŠĆARI (ne sve kolone)
-                if (sortiment === 'SVEUKUPNO') {
-                    value = (sortimentiSums['ČETINARI'] || 0) + (sortimentiSums['LIŠĆARI'] || 0);
+                if (sortiment === 'ČETINARI') {
+                    extraClass = ' col-cetinari';
+                    style += ' background: #059669; color: white; font-weight: bold;';
+                } else if (sortiment === 'LIŠĆARI') {
+                    extraClass = ' col-liscari';
+                    style += ' background: #d97706; color: white; font-weight: bold;';
+                } else if (sortiment === 'SVEUKUPNO') {
+                    extraClass = ' col-sveukupno';
+                    style += ' background: #047857; color: white; font-weight: bold;';
                 }
 
-                const rowStyle = index % 2 === 0 ? 'background: #f9fafb;' : '';
-                // ✅ Zelena boja za SVEUKUPNO red
-                const cellStyle = sortiment === 'SVEUKUPNO' ? ' background: #d1fae5; font-weight: 700;' : '';
-                bodyHtml += `<tr style="${rowStyle}${cellStyle}">`;
-                bodyHtml += `<td><strong>${sortiment}</strong></td>`;
-                bodyHtml += `<td style="text-align: right; font-weight: ${sortiment === 'SVEUKUPNO' ? 'bold' : 'normal'};">${value.toFixed(2)}</td>`;
-                bodyHtml += '</tr>';
+                headerHtml += `<th class="sortiment-col ${colClass}${extraClass}" style="${style}">${sortiment}</th>`;
             });
+            headerHtml += '</tr>';
+            header.innerHTML = headerHtml;
+
+            // Body - jedan red po odjelu
+            let bodyHtml = '';
+            const totals = {};
+            sortimentiNazivi.forEach(s => totals[s] = 0);
+
+            if (odjeliData.length === 0) {
+                bodyHtml = '<tr><td colspan="100" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za izabrani mjesec</td></tr>';
+            } else {
+                odjeliData.forEach((row, index) => {
+                    const rowStyle = index % 2 === 0 ? 'background: #f9fafb;' : '';
+                    bodyHtml += `<tr style="${rowStyle}">`;
+                    bodyHtml += `<td style="font-weight: 600; position: sticky; left: 0; background: ${index % 2 === 0 ? '#f9fafb' : 'white'}; z-index: 9;">${row.odjel}</td>`;
+
+                    sortimentiNazivi.forEach(sortiment => {
+                        let value = row.sortimenti[sortiment] || 0;
+
+                        // ✅ FIX: SVEUKUPNO = samo ČETINARI + LIŠĆARI za ovaj odjel
+                        if (sortiment === 'SVEUKUPNO') {
+                            value = (row.sortimenti['ČETINARI'] || 0) + (row.sortimenti['LIŠĆARI'] || 0);
+                        }
+
+                        totals[sortiment] += value;
+
+                        const colClass = getColumnGroup(sortiment);
+                        let extraClass = '';
+                        let cellBg = '';
+
+                        if (sortiment === 'ČETINARI') {
+                            extraClass = ' col-cetinari';
+                            cellBg = value > 0 ? '#d1fae5' : '';
+                        } else if (sortiment === 'LIŠĆARI') {
+                            extraClass = ' col-liscari';
+                            cellBg = value > 0 ? '#fed7aa' : '';
+                        } else if (sortiment === 'SVEUKUPNO') {
+                            extraClass = ' col-sveukupno';
+                            cellBg = value > 0 ? '#d1fae5' : '';
+                        }
+
+                        const displayValue = value === 0 ? '' : value.toFixed(2);
+                        bodyHtml += `<td class="sortiment-col right ${colClass}${extraClass}" style="background: ${cellBg};">${displayValue}</td>`;
+                    });
+
+                    bodyHtml += '</tr>';
+                });
+            }
 
             body.innerHTML = bodyHtml;
-            console.log('Body HTML set:', bodyHtml.substring(0, 200));
 
-            // Footer - ne prikazuj footer jer SVEUKUPNO već postoji u body-ju
-            footer.innerHTML = '';
+            // Footer - UKUPNO MJESEC
+            let footerHtml = '<tr style="background: linear-gradient(135deg, #047857 0%, #065f46 100%); color: white; font-weight: bold;">';
+            footerHtml += '<td style="position: sticky; left: 0; background: #047857; z-index: 9; font-size: 15px; padding: 14px;">📊 UKUPNO MJESEC</td>';
+
+            sortimentiNazivi.forEach(sortiment => {
+                let total = totals[sortiment];
+
+                // ✅ FIX: SVEUKUPNO footer = samo ČETINARI + LIŠĆARI totali
+                if (sortiment === 'SVEUKUPNO') {
+                    total = (totals['ČETINARI'] || 0) + (totals['LIŠĆARI'] || 0);
+                }
+
+                const colClass = getColumnGroup(sortiment);
+                let extraClass = '';
+                if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
+                else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
+                else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+
+                footerHtml += `<td class="sortiment-col right ${colClass}${extraClass}" style="font-weight: 700;">${total.toFixed(2)}</td>`;
+            });
+
+            footerHtml += '</tr>';
+            footer.innerHTML = footerHtml;
         }
 
         // ========================================

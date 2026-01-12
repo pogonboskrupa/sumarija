@@ -1,7 +1,7 @@
 // Service Worker for Šumarija App
 // Provides offline support and smart time-based caching
 
-const CACHE_NAME = 'sumarija-v17-debug-monthly'; // Verzija 17 - Debug monthly report
+const CACHE_NAME = 'sumarija-v18-monthly-by-odjeli'; // Verzija 18 - Monthly report grouped by departments
 
 // Assets to cache immediately on install
 const STATIC_ASSETS = [
