@@ -2439,8 +2439,26 @@
 
                 <!-- Dnevni dijagram sječe -->
                 <div class="worker-chart-card primac">
-                    <h3 class="worker-chart-title">📊 Dnevni izvještaj sječa</h3>
-                    <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">Prikaz dnevne sječe u tekućem mjesecu</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 12px;">
+                        <div>
+                            <h3 class="worker-chart-title" style="margin: 0;">📊 Dnevni izvještaj sječa</h3>
+                            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">Prikaz dnevne sječe po mjesecima</p>
+                        </div>
+                        <select id="primac-daily-month-select" class="year-select" onchange="loadPrimacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 150px;">
+                            <option value="1">Januar</option>
+                            <option value="2">Februar</option>
+                            <option value="3">Mart</option>
+                            <option value="4">April</option>
+                            <option value="5">Maj</option>
+                            <option value="6">Juni</option>
+                            <option value="7">Juli</option>
+                            <option value="8">August</option>
+                            <option value="9">Septembar</option>
+                            <option value="10">Oktobar</option>
+                            <option value="11">Novembar</option>
+                            <option value="12">Decembar</option>
+                        </select>
+                    </div>
                     <canvas id="primac-daily-chart" class="worker-chart-canvas"></canvas>
                 </div>
 
@@ -2532,8 +2550,26 @@
 
                 <!-- Dnevni dijagram otpreme -->
                 <div class="worker-chart-card otpremac">
-                    <h3 class="worker-chart-title">📊 Dnevni izvještaj otpreme</h3>
-                    <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">Prikaz dnevne otpreme u tekućem mjesecu</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 12px;">
+                        <div>
+                            <h3 class="worker-chart-title" style="margin: 0;">📊 Dnevni izvještaj otpreme</h3>
+                            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">Prikaz dnevne otpreme po mjesecima</p>
+                        </div>
+                        <select id="otpremac-daily-month-select" class="year-select" onchange="loadOtpremacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #1e40af; min-width: 150px;">
+                            <option value="1">Januar</option>
+                            <option value="2">Februar</option>
+                            <option value="3">Mart</option>
+                            <option value="4">April</option>
+                            <option value="5">Maj</option>
+                            <option value="6">Juni</option>
+                            <option value="7">Juli</option>
+                            <option value="8">August</option>
+                            <option value="9">Septembar</option>
+                            <option value="10">Oktobar</option>
+                            <option value="11">Novembar</option>
+                            <option value="12">Decembar</option>
+                        </select>
+                    </div>
                     <canvas id="otpremac-daily-chart" class="worker-chart-canvas"></canvas>
                 </div>
 
@@ -4176,8 +4212,8 @@
     </div>
 
     <script>
-        // VERSION INFO - Cleanup optimizacije + dnevni/godišnji dijagrami za radnike
-        const APP_VERSION = '2026-01-11-v13-CLEANUP-CHARTS';
+        // VERSION INFO - Smooth line charts + month selector
+        const APP_VERSION = '2026-01-12-v14-SMOOTH-CHARTS';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4185,7 +4221,7 @@
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
         console.log(`%c🌲 ŠUMARIJA v${APP_VERSION}`, 'background: #059669; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 18px;');
         console.log(`%cBuild: ${BUILD_COMMIT}`, 'color: #6b7280; font-size: 12px;');
-        console.log(`%c📦 Cache: sumarija-v13-cleanup-charts`, 'color: #2563eb; font-size: 12px;');
+        console.log(`%c📦 Cache: sumarija-v14-smooth-charts`, 'color: #2563eb; font-size: 12px;');
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
         console.log('%c✅ NAJNOVIJA VERZIJA SA POPRAVKAMA UČITANA!', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
         console.log('%c🔥 AKO VIDIŠ OVO = TIMEOUT FIX JE AKTIVAN!', 'background: #ef4444; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
@@ -4879,10 +4915,10 @@
             const yearSelects = document.querySelectorAll('.year-select, [id*="year"]');
 
             yearSelects.forEach(select => {
-                if (select.tagName === 'SELECT') {
-                    // Populate with years: current year and 2-3 previous years
+                if (select.tagName === 'SELECT' && !select.id.includes('month')) {
+                    // Populate with years: current year and previous year only
                     const options = [];
-                    for (let i = 0; i <= 3; i++) {
+                    for (let i = 0; i <= 1; i++) {
                         const year = currentYear - i;
                         options.push(`<option value="${year}" ${i === 0 ? 'selected' : ''}>${year}</option>`);
                     }
@@ -7827,15 +7863,15 @@
                 return;
             }
 
-            // Create gradient
+            // Create gradient for fill
             const ctx = canvas.getContext('2d');
             const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-            gradient.addColorStop(0, colorPrimary);
-            gradient.addColorStop(1, colorSecondary);
+            gradient.addColorStop(0, colorPrimary + '33'); // 20% opacity
+            gradient.addColorStop(1, colorSecondary + '11'); // 7% opacity
 
-            // Create chart
+            // Create smooth line chart
             const chart = new Chart(ctx, {
-                type: 'bar',
+                type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
@@ -7843,9 +7879,17 @@
                         data: values,
                         backgroundColor: gradient,
                         borderColor: colorPrimary,
-                        borderWidth: 2,
-                        borderRadius: 6,
-                        borderSkipped: false,
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 5,
+                        pointBackgroundColor: colorPrimary,
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 7,
+                        pointHoverBackgroundColor: colorPrimary,
+                        pointHoverBorderColor: '#fff',
+                        pointHoverBorderWidth: 3,
                     }]
                 },
                 options: {
@@ -8242,9 +8286,17 @@
                 // Create monthly chart
                 createWorkerMonthlyChart('primac-chart', data.unosi, '#047857', '#10b981');
 
-                // Create daily chart for current month
+                // Create daily chart - read month from selector, default to current month
+                const monthSelector = document.getElementById('primac-daily-month-select');
                 const currentMonth = new Date().getMonth() + 1;
-                createWorkerDailyChart('primac-daily-chart', data.unosi, currentMonth, year, '#047857', '#10b981');
+
+                // Set default value to current month if not already set
+                if (monthSelector && !monthSelector.value) {
+                    monthSelector.value = currentMonth;
+                }
+
+                const selectedMonth = monthSelector ? monthSelector.value : currentMonth;
+                createWorkerDailyChart('primac-daily-chart', data.unosi, selectedMonth, year, '#047857', '#10b981');
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('primac-personal-content').classList.remove('hidden');
@@ -8339,9 +8391,17 @@
                 // Create monthly chart
                 createWorkerMonthlyChart('otpremac-chart', data.unosi, '#1e40af', '#3b82f6');
 
-                // Create daily chart for current month
+                // Create daily chart - read month from selector, default to current month
+                const monthSelector = document.getElementById('otpremac-daily-month-select');
                 const currentMonth = new Date().getMonth() + 1;
-                createWorkerDailyChart('otpremac-daily-chart', data.unosi, currentMonth, year, '#1e40af', '#3b82f6');
+
+                // Set default value to current month if not already set
+                if (monthSelector && !monthSelector.value) {
+                    monthSelector.value = currentMonth;
+                }
+
+                const selectedMonth = monthSelector ? monthSelector.value : currentMonth;
+                createWorkerDailyChart('otpremac-daily-chart', data.unosi, selectedMonth, year, '#1e40af', '#3b82f6');
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('otpremac-personal-content').classList.remove('hidden');
