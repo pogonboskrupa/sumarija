@@ -4212,8 +4212,8 @@
     </div>
 
     <script>
-        // VERSION INFO - Smooth line charts + month selector
-        const APP_VERSION = '2026-01-12-v14-SMOOTH-CHARTS';
+        // VERSION INFO - UKUPNO calculation fix
+        const APP_VERSION = '2026-01-12-v15-UKUPNO-FIX';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4221,7 +4221,7 @@
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
         console.log(`%c🌲 ŠUMARIJA v${APP_VERSION}`, 'background: #059669; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 18px;');
         console.log(`%cBuild: ${BUILD_COMMIT}`, 'color: #6b7280; font-size: 12px;');
-        console.log(`%c📦 Cache: sumarija-v14-smooth-charts`, 'color: #2563eb; font-size: 12px;');
+        console.log(`%c📦 Cache: sumarija-v15-ukupno-fix`, 'color: #2563eb; font-size: 12px;');
         console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
         console.log('%c✅ NAJNOVIJA VERZIJA SA POPRAVKAMA UČITANA!', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
         console.log('%c🔥 AKO VIDIŠ OVO = TIMEOUT FIX JE AKTIVAN!', 'background: #ef4444; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
@@ -9806,7 +9806,13 @@
                         else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
                         else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
 
-                        html += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 700;">' + totals[sortiment].toFixed(2) + '</td>';
+                        // ✅ FIX: For SVEUKUPNO, only sum ČETINARI + LIŠĆARI (not all columns)
+                        let totalValue = totals[sortiment];
+                        if (sortiment === 'SVEUKUPNO') {
+                            totalValue = (totals['ČETINARI'] || 0) + (totals['LIŠĆARI'] || 0);
+                        }
+
+                        html += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 700;">' + totalValue.toFixed(2) + '</td>';
                     });
 
                     html += '</tr>';
@@ -12529,15 +12535,15 @@
                 bodyHtml += `<tr style="${rowStyle}">`;
                 bodyHtml += `<td><strong>Sedmica ${week.weekNumber}</strong><br><span style="color: #6b7280; font-size: 12px;">${week.weekStart} - ${week.weekEnd}</span></td>`;
 
-                let weekTotal = 0;
                 sortimentiNazivi.forEach(sortiment => {
                     const value = week.sortimentiSums[sortiment] || 0;
                     monthTotals[sortiment] += value;
-                    weekTotal += value;
 
                     bodyHtml += `<td style="text-align: right;">${value.toFixed(2)}</td>`;
                 });
 
+                // ✅ FIX: UKUPNO = samo ČETINARI + LIŠĆARI (ne sve kolone)
+                const weekTotal = (week.sortimentiSums['ČETINARI'] || 0) + (week.sortimentiSums['LIŠĆARI'] || 0);
                 monthTotal += weekTotal;
                 bodyHtml += `<td style="text-align: right; font-weight: bold;">${weekTotal.toFixed(2)}</td>`;
                 bodyHtml += '</tr>';
@@ -12571,11 +12577,9 @@
 
             // Body
             let bodyHtml = '';
-            let total = 0;
 
             sortimentiNazivi.forEach((sortiment, index) => {
                 const value = sortimentiSums[sortiment] || 0;
-                total += value;
                 const rowStyle = index % 2 === 0 ? 'background: #f9fafb;' : '';
                 bodyHtml += `<tr style="${rowStyle}">`;
                 bodyHtml += `<td><strong>${sortiment}</strong></td>`;
@@ -12584,6 +12588,9 @@
             });
 
             body.innerHTML = bodyHtml;
+
+            // ✅ FIX: UKUPNO = samo ČETINARI + LIŠĆARI (ne sve kolone)
+            const total = (sortimentiSums['ČETINARI'] || 0) + (sortimentiSums['LIŠĆARI'] || 0);
 
             // Footer (total)
             let footerHtml = '<tr style="background: linear-gradient(135deg, #047857 0%, #065f46 100%); color: white; font-weight: bold;">';

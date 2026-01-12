@@ -1,7 +1,7 @@
 // Service Worker for Šumarija App
 // Provides offline support and smart time-based caching
 
-const CACHE_NAME = 'sumarija-v14-smooth-charts'; // Verzija 14 - smooth line charts + month selector
+const CACHE_NAME = 'sumarija-v15-ukupno-fix'; // Verzija 15 - UKUPNO calculation fix (ČETINARI + LIŠĆARI)
 
 // Assets to cache immediately on install
 const STATIC_ASSETS = [
