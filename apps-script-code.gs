@@ -492,6 +492,12 @@ function parseDate(datum) {
 function createJsonResponse(data, success) {
   const output = ContentService.createTextOutput(JSON.stringify(data));
   output.setMimeType(ContentService.MimeType.JSON);
+
+  // ✅ CORS Support - Allow all origins
+  output.setHeader('Access-Control-Allow-Origin', '*');
+  output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
   return output;
 }
 
