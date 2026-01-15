@@ -5721,9 +5721,9 @@
                 // Display radilišta
                 document.getElementById('poslovodja-radilista-list').textContent = radilista.join(', ');
 
-                // Load STANJE ODJELA data
+                // Load STANJE ODJELA data sa povećanim timeout-om (60s)
                 const url = `${API_URL}?path=odjeli&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_odjeli_stanje');
+                const data = await fetchWithCache(url, 'cache_odjeli_stanje', false, 60000);
 
                 console.log('Odjeli data:', data);
 
@@ -5747,7 +5747,35 @@
 
             } catch (error) {
                 console.error('Error loading poslovođa stanje:', error);
-                showError('Greška', 'Greška pri učitavanju stanja odjela: ' + error.message);
+
+                // FALLBACK: Pokušaj učitati keširane podatke ako postoje
+                const cachedData = localStorage.getItem('cache_odjeli_stanje');
+                if (cachedData) {
+                    try {
+                        const parsed = JSON.parse(cachedData);
+                        const radilista = getPoslovodjaRadilista();
+                        console.log('Using cached data as fallback');
+
+                        // Filter odjeli by radilišta
+                        const filteredOdjeli = parsed.data.odjeli.filter(odjel => {
+                            const odjelRadiliste = (odjel.radiliste || '').toUpperCase().trim();
+                            return radilista.some(r => odjelRadiliste.includes(r.toUpperCase()));
+                        });
+
+                        document.getElementById('poslovodja-radilista-list').textContent = radilista.join(', ') + ' (keširani podaci)';
+                        renderPoslovodjaStanjeTable(filteredOdjeli);
+
+                        document.getElementById('loading-screen').classList.add('hidden');
+                        document.getElementById('poslovodja-stanje-content').classList.remove('hidden');
+
+                        showNotification('⚠️ Prikazani keširani podaci zbog sporog servera', 'warning');
+                        return;
+                    } catch (cacheError) {
+                        console.error('Failed to parse cached data:', cacheError);
+                    }
+                }
+
+                showError('Greška', 'Server je spor. Molimo pokušajte ponovo za par minuta.');
                 document.getElementById('loading-screen').classList.add('hidden');
             }
         }
@@ -5758,9 +5786,13 @@
             document.getElementById('poslovodja-stanje-content').classList.add('hidden');
 
             try {
-                // Load STANJE ODJELA data
+                // Load STANJE ODJELA data sa povećanim timeout-om (60s umjesto 8s)
                 const url = `${API_URL}?path=odjeli&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_odjeli_stanje_admin');
+                const cacheKey = 'cache_odjeli_stanje_admin';
+
+                // Pokušaj prvo učitati sa timeout-om od 60s
+                console.log('Loading admin stanje odjela with 60s timeout...');
+                const data = await fetchWithCache(url, cacheKey, false, 60000);
 
                 console.log('Admin - Odjeli data:', data);
 
@@ -5779,7 +5811,28 @@
 
             } catch (error) {
                 console.error('Error loading admin stanje odjela:', error);
-                showError('Greška', 'Greška pri učitavanju stanja odjela: ' + error.message);
+
+                // FALLBACK: Pokušaj učitati keširane podatke ako postoje
+                const cachedData = localStorage.getItem('cache_odjeli_stanje_admin');
+                if (cachedData) {
+                    try {
+                        const parsed = JSON.parse(cachedData);
+                        console.log('Using cached data as fallback');
+
+                        document.getElementById('poslovodja-radilista-list').textContent = 'Sva radilišta (keširani podaci)';
+                        renderPoslovodjaStanjeTable(parsed.data.odjeli);
+
+                        document.getElementById('loading-screen').classList.add('hidden');
+                        document.getElementById('poslovodja-stanje-content').classList.remove('hidden');
+
+                        showNotification('⚠️ Prikazani keširani podaci zbog sporog servera', 'warning');
+                        return;
+                    } catch (cacheError) {
+                        console.error('Failed to parse cached data:', cacheError);
+                    }
+                }
+
+                showError('Greška', 'Server je spor. Molimo pokušajte ponovo za par minuta.');
                 document.getElementById('loading-screen').classList.add('hidden');
             }
         }
@@ -5852,9 +5905,9 @@
                 // Display radilišta
                 document.getElementById('poslovodja-radilista-list-2').textContent = radilista.join(', ');
 
-                // Load STANJE ODJELA data (koristimo iste podatke kao za stanje)
+                // Load STANJE ODJELA data sa povećanim timeout-om (60s)
                 const url = `${API_URL}?path=odjeli&username=${currentUser.username}&password=${currentPassword}`;
-                const data = await fetchWithCache(url, 'cache_odjeli_realizacija');
+                const data = await fetchWithCache(url, 'cache_odjeli_realizacija', false, 60000);
 
                 console.log('Odjeli data:', data);
 
