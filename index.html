@@ -5424,10 +5424,25 @@
 
             } catch (error) {
                 console.error('Dashboard error:', error);
+
+                // Determine error type and show appropriate message
+                let errorTitle = 'Greška pri učitavanju';
+                let errorMessage = error.message;
+                let errorIcon = '⚠️';
+
+                if (error.message && error.message.includes('Server je spor')) {
+                    errorIcon = '⏱️';
+                    errorTitle = 'Vremensko ograničenje prekoračeno';
+                    errorMessage = 'Server ne odgovara dovoljno brzo. Molimo pokušajte ponovo ili pričekajte par minuta.';
+                } else if (error.message && error.message.includes('Nema podataka')) {
+                    errorIcon = '📭';
+                    errorTitle = 'Nema podataka';
+                }
+
                 document.getElementById('loading-screen').innerHTML = `
-                    <div class="loading-icon">⚠️</div>
-                    <div class="loading-text">Greška pri učitavanju</div>
-                    <div class="loading-sub">${error.message}</div>
+                    <div class="loading-icon">${errorIcon}</div>
+                    <div class="loading-text">${errorTitle}</div>
+                    <div class="loading-sub">${errorMessage}</div>
                     <button class="btn btn-primary" style="margin-top: 20px;" onclick="loadDashboard()">🔄 Pokušaj ponovo</button>
                 `;
             }
@@ -5449,13 +5464,28 @@
                     throw new Error('Dashboard data missing mjesecnaStatistika');
                 }
 
-                // Calculate summary statistics
-                const totalSjeca = data.mjesecnaStatistika.reduce((sum, m) => sum + m.sjeca, 0);
-                const totalOtprema = data.mjesecnaStatistika.reduce((sum, m) => sum + m.otprema, 0);
+                // Check if array is not empty
+                if (!Array.isArray(data.mjesecnaStatistika) || data.mjesecnaStatistika.length === 0) {
+                    throw new Error('Nema podataka za prikazivanje. Molimo provjerite da li postoje unosi za ovu godinu.');
+                }
+
+                // Validate that each month has required properties
+                const hasInvalidData = data.mjesecnaStatistika.some(m =>
+                    m.mjesec == null ||
+                    (m.sjeca == null && m.otprema == null && m.dinamika == null)
+                );
+
+                if (hasInvalidData) {
+                    console.warn('⚠️ Some monthly data is incomplete, using fallback values');
+                }
+
+                // Calculate summary statistics (safely handle null/undefined values)
+                const totalSjeca = data.mjesecnaStatistika.reduce((sum, m) => sum + (m.sjeca || 0), 0);
+                const totalOtprema = data.mjesecnaStatistika.reduce((sum, m) => sum + (m.otprema || 0), 0);
                 const totalStanje = totalSjeca - totalOtprema;
-                const totalDinamika = data.mjesecnaStatistika.reduce((sum, m) => sum + m.dinamika, 0);
+                const totalDinamika = data.mjesecnaStatistika.reduce((sum, m) => sum + (m.dinamika || 0), 0);
                 const razlikaDinamika = totalSjeca - totalDinamika;
-                const percentDinamika = ((totalSjeca / totalDinamika) * 100).toFixed(1);
+                const percentDinamika = totalDinamika > 0 ? ((totalSjeca / totalDinamika) * 100).toFixed(1) : '0.0';
 
                 // Create summary cards
                 const summaryHTML = `
@@ -5467,7 +5497,7 @@
                     <div class="summary-card blue">
                         <div class="summary-card-title">Ukupna Otprema</div>
                         <div class="summary-card-value">${totalOtprema.toFixed(0)} m³</div>
-                        <div class="summary-card-subtitle">${((totalOtprema/totalSjeca)*100).toFixed(1)}% od sječe</div>
+                        <div class="summary-card-subtitle">${totalSjeca > 0 ? ((totalOtprema/totalSjeca)*100).toFixed(1) : '0.0'}% od sječe</div>
                     </div>
                     <div class="summary-card">
                         <div class="summary-card-title">Šuma/Panj</div>
@@ -5536,15 +5566,17 @@
                 const monthlyHTML = data.mjesecnaStatistika.map(m => {
                     const razlikaSjeca = m.razlikaSjeca || 0;
                     const razlikaOtprema = m.razlikaOtprema || 0;
-                    const progressPercent = ((m.sjeca / m.dinamika) * 100).toFixed(1);
+                    const sjeca = m.sjeca || 0;
+                    const dinamika = m.dinamika || 0;
+                    const progressPercent = dinamika > 0 ? ((sjeca / dinamika) * 100).toFixed(1) : '0.0';
                     return `
                         <tr>
-                            <td>${m.mjesec}</td>
-                            <td class="number green">${m.sjeca.toFixed(2)}</td>
-                            <td class="number blue">${m.otprema.toFixed(2)}</td>
-                            <td class="number">${m.stanje.toFixed(2)}</td>
+                            <td>${m.mjesec || '-'}</td>
+                            <td class="number green">${(m.sjeca != null && !isNaN(m.sjeca)) ? m.sjeca.toFixed(2) : '0.00'}</td>
+                            <td class="number blue">${(m.otprema != null && !isNaN(m.otprema)) ? m.otprema.toFixed(2) : '0.00'}</td>
+                            <td class="number">${(m.stanje != null && !isNaN(m.stanje)) ? m.stanje.toFixed(2) : '0.00'}</td>
                             <td class="number">
-                                ${m.dinamika.toFixed(2)}
+                                ${(m.dinamika != null && !isNaN(m.dinamika)) ? m.dinamika.toFixed(2) : '0.00'}
                                 <div class="table-progress-bar">
                                     <div class="table-progress-fill" style="width: ${Math.min(progressPercent, 100)}%"></div>
                                 </div>
@@ -5570,14 +5602,14 @@
                         const realizacijaColor = o.realizacija >= 100 ? 'green' : (o.realizacija >= 80 ? 'blue' : 'red');
                         return `
                             <tr>
-                                <td style="font-weight: 500;">${o.odjel}</td>
-                                <td class="right green">${o.sjeca.toFixed(2)}</td>
-                                <td class="right blue">${o.otprema.toFixed(2)}</td>
-                                <td class="right">${o.sumaPanj.toFixed(2)}</td>
+                                <td style="font-weight: 500;">${o.odjel || '-'}</td>
+                                <td class="right green">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
+                                <td class="right blue">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
+                                <td class="right">${(o.sumaPanj != null && !isNaN(o.sumaPanj)) ? o.sumaPanj.toFixed(2) : '0.00'}</td>
                                 <td>${o.radiliste || '-'}</td>
                                 <td>${o.izvođač || '-'}</td>
                                 <td>${o.datumZadnjeSjece || '-'}</td>
-                                <td class="right ${realizacijaColor}">${o.realizacija > 0 ? o.realizacija.toFixed(1) + '%' : '-'}</td>
+                                <td class="right ${realizacijaColor}">${(o.realizacija != null && o.realizacija > 0) ? o.realizacija.toFixed(1) + '%' : '-'}</td>
                             </tr>
                         `;
                     }).join('');
