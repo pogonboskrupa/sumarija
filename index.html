@@ -6178,10 +6178,12 @@
             let bodyHtml = '';
             odjeli.forEach((odjel, index) => {
                 const rowBg = index % 2 === 0 ? '#f9fafb' : 'white';
-                const razlika = odjel.primka - odjel.otprema;
+                const primka = (odjel.primka != null && !isNaN(odjel.primka)) ? odjel.primka : 0;
+                const otprema = (odjel.otprema != null && !isNaN(odjel.otprema)) ? odjel.otprema : 0;
+                const razlika = primka - otprema;
 
-                totalPrimka += odjel.primka;
-                totalOtprema += odjel.otprema;
+                totalPrimka += primka;
+                totalOtprema += otprema;
 
                 let razlikaColor = '#6b7280';
                 if (razlika > 0) razlikaColor = '#059669';
@@ -6189,10 +6191,10 @@
 
                 bodyHtml += `
                     <tr style="background: ${rowBg};">
-                        <td style="font-weight: 600;">${odjel.odjel}</td>
-                        <td>${odjel.radiliste}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace; color: #059669; font-weight: 600;">${odjel.primka.toFixed(2)}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace; color: #dc2626; font-weight: 600;">${odjel.otprema.toFixed(2)}</td>
+                        <td style="font-weight: 600;">${odjel.odjel || '-'}</td>
+                        <td>${odjel.radiliste || '-'}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; color: #059669; font-weight: 600;">${primka.toFixed(2)}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; color: #dc2626; font-weight: 600;">${otprema.toFixed(2)}</td>
                         <td style="text-align: right; font-family: 'Courier New', monospace; color: ${razlikaColor}; font-weight: 700;">${razlika.toFixed(2)}</td>
                     </tr>
                 `;
@@ -6246,10 +6248,12 @@
             let bodyHtml = '';
             radilista.forEach((radiliste, index) => {
                 const rowBg = index % 2 === 0 ? '#f9fafb' : 'white';
-                const razlika = radiliste.primka - radiliste.otprema;
+                const primka = (radiliste.primka != null && !isNaN(radiliste.primka)) ? radiliste.primka : 0;
+                const otprema = (radiliste.otprema != null && !isNaN(radiliste.otprema)) ? radiliste.otprema : 0;
+                const razlika = primka - otprema;
 
-                totalPrimka += radiliste.primka;
-                totalOtprema += radiliste.otprema;
+                totalPrimka += primka;
+                totalOtprema += otprema;
 
                 let razlikaColor = '#6b7280';
                 if (razlika > 0) razlikaColor = '#059669';
@@ -6257,9 +6261,9 @@
 
                 bodyHtml += `
                     <tr style="background: ${rowBg};">
-                        <td style="font-weight: 600;">${radiliste.radiliste}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace; color: #059669; font-weight: 600;">${radiliste.primka.toFixed(2)}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace; color: #dc2626; font-weight: 600;">${radiliste.otprema.toFixed(2)}</td>
+                        <td style="font-weight: 600;">${radiliste.radiliste || '-'}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; color: #059669; font-weight: 600;">${primka.toFixed(2)}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; color: #dc2626; font-weight: 600;">${otprema.toFixed(2)}</td>
                         <td style="text-align: right; font-family: 'Courier New', monospace; color: ${razlikaColor}; font-weight: 700;">${razlika.toFixed(2)}</td>
                     </tr>
                 `;
