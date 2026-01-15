@@ -127,6 +127,9 @@ function doGet(e) {
       return handleOtpreme(e.parameter.username, e.parameter.password);
     } else if (path === 'get_dinamika') {
       return handleGetDinamika(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'manifest') {
+      // 📊 MANIFEST ENDPOINT - Brza provjera verzije podataka
+      return handleManifest();
     } else if (path === 'save_dinamika') {
       Logger.log('save_dinamika endpoint called');
       Logger.log('Parameters: ' + JSON.stringify(e.parameter));
@@ -3945,6 +3948,53 @@ function handleSaveDinamika(username, password, godina, mjeseciParam) {
     Logger.log('ERROR in handleSaveDinamika: ' + error.toString());
     return createJsonResponse({
       error: "Greška pri spremanju dinamike: " + error.toString()
+    }, false);
+  }
+}
+
+// ========== MANIFEST ENDPOINT - Smart Cache Invalidation ==========
+// 📊 Vraća verziju i count podataka za pametnu invalidaciju keša
+function handleManifest() {
+  try {
+    Logger.log('Manifest endpoint called');
+
+    // Otvori spreadsheet sa podacima
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+
+    // Dohvati sheet-ove
+    const primacijaSheet = ss.getSheetByName('Primacija');
+    const otpremaSheet = ss.getSheetByName('Otprema');
+    const odjeliSheet = ss.getSheetByName('Odjeli');
+
+    // Broji redove (minus header red)
+    // getLastRow() vraća broj zadnjeg reda sa podacima
+    const primaciCount = primacijaSheet ? (primacijaSheet.getLastRow() - 1) : 0;
+    const otpremaciCount = otpremaSheet ? (otpremaSheet.getLastRow() - 1) : 0;
+    const odjeliCount = odjeliSheet ? (odjeliSheet.getLastRow() - 1) : 0;
+
+    // Generiši verziju - kombinacija svih count-ova
+    // Kad se doda nova sječa/otprema, count se mijenja → nova verzija
+    const version = `${primaciCount}-${otpremaciCount}-${odjeliCount}`;
+
+    Logger.log(`Manifest generated - Version: ${version}, Primaci: ${primaciCount}, Otpremaci: ${otpremaciCount}, Odjeli: ${odjeliCount}`);
+
+    // Vrati JSON odgovor
+    const manifestData = {
+      version: version,
+      lastUpdated: new Date().toISOString(),
+      data: {
+        primaci_count: primaciCount,
+        otpremaci_count: otpremaciCount,
+        odjeli_count: odjeliCount
+      }
+    };
+
+    return createJsonResponse(manifestData, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleManifest: ' + error.toString());
+    return createJsonResponse({
+      error: 'Greška pri generisanju manifesta: ' + error.toString()
     }, false);
   }
 }
