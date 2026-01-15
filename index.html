@@ -6327,28 +6327,60 @@
                 }
 
             } catch (error) {
-                showError('Greška', 'Greška pri učitavanju primača: ' + error.message);
-                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
+                console.error('Primači error:', error);
+
+                // Determine error type and show appropriate message
+                let errorTitle = 'Greška pri učitavanju primača';
+                let errorMessage = error.message;
+                let errorIcon = '⚠️';
+
+                if (error.message && error.message.includes('Server je spor')) {
+                    errorIcon = '⏱️';
+                    errorTitle = 'Vremensko ograničenje prekoračeno';
+                    errorMessage = 'Server ne odgovara dovoljno brzo. Molimo pokušajte ponovo.';
+                } else if (error.message && error.message.includes('Nema podataka')) {
+                    errorIcon = '📭';
+                    errorTitle = 'Nema podataka';
+                }
+
+                showError('Greška', errorTitle + ': ' + errorMessage);
+                document.getElementById('loading-screen').innerHTML = `
+                    <div class="loading-icon">${errorIcon}</div>
+                    <div class="loading-text">${errorTitle}</div>
+                    <div class="loading-sub">${errorMessage}</div>
+                    <button class="btn btn-primary" style="margin-top: 20px;" onclick="loadPrimaci()">🔄 Pokušaj ponovo</button>
+                `;
             }
         }
 
         // Separate render function for primaci
         function renderPrimaci(data) {
 
+                // Validate data structure
+                if (!data || !data.primaci || !Array.isArray(data.primaci)) {
+                    console.error('Invalid primaci data structure:', data);
+                    showError('Greška', 'Neispravni podaci primača');
+                    return;
+                }
+
+                if (!data.mjeseci || !Array.isArray(data.mjeseci)) {
+                    console.error('Missing mjeseci in primaci data');
+                    showError('Greška', 'Nedostaju mjeseci u podacima');
+                    return;
+                }
+
                 // Calculate totals per month
                 const monthTotals = new Array(12).fill(0);
                 let grandTotal = 0;
 
-                if (data.primaci && Array.isArray(data.primaci)) {
-                    data.primaci.forEach(p => {
-                        if (p.mjeseci && Array.isArray(p.mjeseci)) {
-                            p.mjeseci.forEach((val, idx) => {
-                                monthTotals[idx] += val;
-                            });
-                        }
-                        grandTotal += (p.ukupno || 0);
-                    });
-                }
+                data.primaci.forEach(p => {
+                    if (p.mjeseci && Array.isArray(p.mjeseci)) {
+                        p.mjeseci.forEach((val, idx) => {
+                            monthTotals[idx] += (val || 0);
+                        });
+                    }
+                    grandTotal += (p.ukupno || 0);
+                });
 
                 // Create header with sticky styling
                 const headerHTML = `
@@ -6376,15 +6408,16 @@
                     return `
                         <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
                             <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #059669; padding: 10px; font-size: 11px;">
-                                ${p.primac}
+                                ${p.primac || '-'}
                             </td>
-                            ${p.mjeseci.map((v, mIdx) => {
-                                const displayVal = v > 0 ? v.toFixed(2) : '-';
-                                const fontWeight = v > 0 ? 'font-weight: 500;' : 'color: #9ca3af;';
+                            ${(p.mjeseci && Array.isArray(p.mjeseci) ? p.mjeseci : new Array(12).fill(0)).map((v, mIdx) => {
+                                const val = (v != null && !isNaN(v)) ? v : 0;
+                                const displayVal = val > 0 ? val.toFixed(2) : '-';
+                                const fontWeight = val > 0 ? 'font-weight: 500;' : 'color: #9ca3af;';
                                 return `<td class="right" style="${fontWeight} border: 1px solid #d1fae5; padding: 8px; font-size: 10px; font-family: 'Courier New', monospace;">${displayVal}</td>`;
                             }).join('')}
                             <td class="right" style="font-weight: 700; background: linear-gradient(to right, #d1fae5, #a7f3d0); border: 2px solid #059669; padding: 10px; font-size: 11px; color: #065f46;">
-                                ${p.ukupno.toFixed(2)} m³
+                                ${(p.ukupno != null && !isNaN(p.ukupno)) ? p.ukupno.toFixed(2) : '0.00'} m³
                             </td>
                         </tr>
                     `;
@@ -6396,13 +6429,15 @@
                         <td style="position: sticky; left: 0; background: #d1fae5; z-index: 10; border-right: 3px solid #34d399; padding: 12px; font-size: 12px;">
                             📈 UKUPNO
                         </td>
-                        ${monthTotals.map(total => `
+                        ${monthTotals.map(total => {
+                            const val = (total != null && !isNaN(total)) ? total : 0;
+                            return `
                             <td class="right" style="border: 1px solid #6ee7b7; padding: 10px; font-size: 11px;">
-                                ${total > 0 ? total.toFixed(2) : '-'}
-                            </td>
-                        `).join('')}
+                                ${val > 0 ? val.toFixed(2) : '-'}
+                            </td>`;
+                        }).join('')}
                         <td class="right" style="background: #a7f3d0; border: 2px solid #34d399; padding: 12px; font-size: 13px; font-weight: 900;">
-                            ${grandTotal.toFixed(2)} m³
+                            ${(grandTotal != null && !isNaN(grandTotal)) ? grandTotal.toFixed(2) : '0.00'} m³
                         </td>
                     </tr>
                 `;
@@ -6457,28 +6492,60 @@
                 }
 
             } catch (error) {
-                showError('Greška', 'Greška pri učitavanju otpremača: ' + error.message);
-                document.getElementById('loading-screen').innerHTML = '<div class="loading-icon">❌</div><div class="loading-text">Greška pri učitavanju</div><div class="loading-sub">' + error.message + '</div>';
+                console.error('Otpremači error:', error);
+
+                // Determine error type and show appropriate message
+                let errorTitle = 'Greška pri učitavanju otpremača';
+                let errorMessage = error.message;
+                let errorIcon = '⚠️';
+
+                if (error.message && error.message.includes('Server je spor')) {
+                    errorIcon = '⏱️';
+                    errorTitle = 'Vremensko ograničenje prekoračeno';
+                    errorMessage = 'Server ne odgovara dovoljno brzo. Molimo pokušajte ponovo.';
+                } else if (error.message && error.message.includes('Nema podataka')) {
+                    errorIcon = '📭';
+                    errorTitle = 'Nema podataka';
+                }
+
+                showError('Greška', errorTitle + ': ' + errorMessage);
+                document.getElementById('loading-screen').innerHTML = `
+                    <div class="loading-icon">${errorIcon}</div>
+                    <div class="loading-text">${errorTitle}</div>
+                    <div class="loading-sub">${errorMessage}</div>
+                    <button class="btn btn-primary" style="margin-top: 20px;" onclick="loadOtpremaci()">🔄 Pokušaj ponovo</button>
+                `;
             }
         }
 
         // Separate render function for otpremaci
         function renderOtpremaci(data) {
 
+                // Validate data structure
+                if (!data || !data.otpremaci || !Array.isArray(data.otpremaci)) {
+                    console.error('Invalid otpremaci data structure:', data);
+                    showError('Greška', 'Neispravni podaci otpremača');
+                    return;
+                }
+
+                if (!data.mjeseci || !Array.isArray(data.mjeseci)) {
+                    console.error('Missing mjeseci in otpremaci data');
+                    showError('Greška', 'Nedostaju mjeseci u podacima');
+                    return;
+                }
+
                 // Calculate totals per month
                 const monthTotals = new Array(12).fill(0);
                 let grandTotal = 0;
 
-                if (data.otpremaci && Array.isArray(data.otpremaci)) {
-                    data.otpremaci.forEach(o => {
-                        if (o.mjeseci && Array.isArray(o.mjeseci)) {
-                            o.mjeseci.forEach((val, idx) => {
-                                monthTotals[idx] += val;
-                            });
-                        }
-                        grandTotal += (o.ukupno || 0);
-                    });
-                }
+                data.otpremaci.forEach(o => {
+                    if (o.mjeseci && Array.isArray(o.mjeseci)) {
+                        o.mjeseci.forEach((val, idx) => {
+                            monthTotals[idx] += (val || 0);
+                        });
+                    }
+                    grandTotal += (o.ukupno || 0);
+                });
 
                 // Create header with sticky styling (blue theme)
                 const headerHTML = `
@@ -6506,15 +6573,16 @@
                     return `
                         <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
                             <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #2563eb; padding: 10px; font-size: 11px;">
-                                ${o.otpremac}
+                                ${o.otpremac || '-'}
                             </td>
-                            ${o.mjeseci.map((v, mIdx) => {
-                                const displayVal = v > 0 ? v.toFixed(2) : '-';
-                                const fontWeight = v > 0 ? 'font-weight: 500;' : 'color: #9ca3af;';
+                            ${(o.mjeseci && Array.isArray(o.mjeseci) ? o.mjeseci : new Array(12).fill(0)).map((v, mIdx) => {
+                                const val = (v != null && !isNaN(v)) ? v : 0;
+                                const displayVal = val > 0 ? val.toFixed(2) : '-';
+                                const fontWeight = val > 0 ? 'font-weight: 500;' : 'color: #9ca3af;';
                                 return `<td class="right" style="${fontWeight} border: 1px solid #dbeafe; padding: 8px; font-size: 10px; font-family: 'Courier New', monospace;">${displayVal}</td>`;
                             }).join('')}
                             <td class="right" style="font-weight: 700; background: linear-gradient(to right, #dbeafe, #bfdbfe); border: 2px solid #2563eb; padding: 10px; font-size: 11px; color: #1e40af;">
-                                ${o.ukupno.toFixed(2)} m³
+                                ${(o.ukupno != null && !isNaN(o.ukupno)) ? o.ukupno.toFixed(2) : '0.00'} m³
                             </td>
                         </tr>
                     `;
@@ -6526,13 +6594,15 @@
                         <td style="position: sticky; left: 0; background: #dbeafe; z-index: 10; border-right: 3px solid #60a5fa; padding: 12px; font-size: 12px;">
                             📈 UKUPNO
                         </td>
-                        ${monthTotals.map(total => `
+                        ${monthTotals.map(total => {
+                            const val = (total != null && !isNaN(total)) ? total : 0;
+                            return `
                             <td class="right" style="border: 1px solid #93c5fd; padding: 10px; font-size: 11px;">
-                                ${total > 0 ? total.toFixed(2) : '-'}
-                            </td>
-                        `).join('')}
+                                ${val > 0 ? val.toFixed(2) : '-'}
+                            </td>`;
+                        }).join('')}
                         <td class="right" style="background: #bfdbfe; border: 2px solid #60a5fa; padding: 12px; font-size: 13px; font-weight: 900;">
-                            ${grandTotal.toFixed(2)} m³
+                            ${(grandTotal != null && !isNaN(grandTotal)) ? grandTotal.toFixed(2) : '0.00'} m³
                         </td>
                     </tr>
                 `;
