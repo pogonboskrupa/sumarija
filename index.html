@@ -2039,6 +2039,9 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Instant Offline-First Modules -->
+    <script src="idb-helper.js"></script>
+    <script src="data-sync.js"></script>
 </head>
 <body>
     <!-- Toast Notification Container -->
@@ -4213,6 +4216,17 @@
         // SUPER VISIBLE VERSION CHECK
         console.clear();
 
+        // ========== SERVICE WORKER REGISTRATION ==========
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then((registration) => {
+                    console.log('[SW] Service worker registered:', registration.scope);
+                })
+                .catch((error) => {
+                    console.error('[SW] Service worker registration failed:', error);
+                });
+        }
+
         const API_URL = 'https://script.google.com/macros/s/AKfycbwkJ4apCi1yf9WNMVboGUtLVK6ZRWzLAAN-CkyfGbUqCyGm4qMjH3-zVifJUUCgUW2t/exec';
 
         // ========== PERFORMANCE METRICS ==========
@@ -5154,6 +5168,13 @@
                 `;
             }
 
+            // 🚀 Initialize Delta Sync System
+            if (window.DataSync) {
+                DataSync.initSyncConfig(API_URL, currentUser.username, currentPassword);
+                DataSync.startSmartSync();
+                console.log('[APP] Delta Sync initialized and started');
+            }
+
             // 🚀 Start manifest checker after login
             startManifestChecker();
         }
@@ -5161,6 +5182,12 @@
         function logout() {
             // 📊 Log final cache stats before logout
             logCacheStats();
+
+            // Stop Delta Sync
+            if (window.DataSync) {
+                DataSync.stopSmartSync();
+                DataSync.logSyncMetrics();
+            }
 
             // Cleanup intervals to prevent memory leaks
             if (cacheStatusIntervalId) {

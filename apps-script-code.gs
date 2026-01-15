@@ -130,6 +130,15 @@ function doGet(e) {
     } else if (path === 'manifest') {
       // 📊 MANIFEST ENDPOINT - Brza provjera verzije podataka
       return handleManifest();
+    } else if (path === 'manifest_data') {
+      // 📊 MANIFEST DATA ENDPOINT - Za delta sync (primka + otprema row counts)
+      return handleManifestData(e.parameter.username, e.parameter.password);
+    } else if (path === 'delta_primka') {
+      // 🔄 DELTA PRIMKA - Vraća samo nove redove (fromRow do toRow)
+      return handleDeltaPrimka(e.parameter.username, e.parameter.password, e.parameter.fromRow, e.parameter.toRow);
+    } else if (path === 'delta_otprema') {
+      // 🔄 DELTA OTPREMA - Vraća samo nove redove (fromRow do toRow)
+      return handleDeltaOtprema(e.parameter.username, e.parameter.password, e.parameter.fromRow, e.parameter.toRow);
     } else if (path === 'save_dinamika') {
       Logger.log('save_dinamika endpoint called');
       Logger.log('Parameters: ' + JSON.stringify(e.parameter));
@@ -3996,5 +4005,192 @@ function handleManifest() {
     return createJsonResponse({
       error: 'Greška pri generisanju manifesta: ' + error.toString()
     }, false);
+  }
+}
+
+// ========== MANIFEST DATA ENDPOINT - Delta Sync Row Counts ==========
+// Vraća broj redova u Primacija i Otprema za delta sync
+function handleManifestData(username, password) {
+  try {
+    Logger.log('Manifest Data endpoint called');
+
+    // Provjeri autentikaciju
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    // Otvori spreadsheet sa podacima
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+
+    // Dohvati sheet-ove
+    const primacijaSheet = ss.getSheetByName('Primacija');
+    const otpremaSheet = ss.getSheetByName('Otprema');
+
+    // Broji redove (minus header red)
+    const primkaRowCount = primacijaSheet ? (primacijaSheet.getLastRow() - 1) : 0;
+    const otpremaRowCount = otpremaSheet ? (otpremaSheet.getLastRow() - 1) : 0;
+
+    Logger.log(`Manifest Data: Primka=${primkaRowCount}, Otprema=${otpremaRowCount}`);
+
+    // Vrati JSON odgovor
+    const manifestData = {
+      primkaRowCount: primkaRowCount,
+      otpremaRowCount: otpremaRowCount,
+      lastUpdated: new Date().toISOString()
+    };
+
+    return createJsonResponse(manifestData, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleManifestData: ' + error.toString());
+    return createJsonResponse({
+      error: 'Greška pri generisanju manifest data: ' + error.toString()
+    }, false);
+  }
+}
+
+// ========== DELTA PRIMKA ENDPOINT - Vraća samo nove redove ==========
+function handleDeltaPrimka(username, password, fromRow, toRow) {
+  try {
+    Logger.log(`Delta Primka endpoint called - fromRow: ${fromRow}, toRow: ${toRow}`);
+
+    // Provjeri autentikaciju
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    // Parse parametri
+    const fromRowInt = parseInt(fromRow);
+    const toRowInt = parseInt(toRow);
+
+    if (isNaN(fromRowInt) || isNaN(toRowInt) || fromRowInt < 1 || toRowInt < fromRowInt) {
+      return createJsonResponse({ error: 'Invalid row range' }, false);
+    }
+
+    // Otvori spreadsheet
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const primacijaSheet = ss.getSheetByName('Primacija');
+
+    if (!primacijaSheet) {
+      return createJsonResponse({ error: 'Primacija sheet not found' }, false);
+    }
+
+    const lastRow = primacijaSheet.getLastRow();
+
+    // Adjust toRow if it exceeds lastRow
+    const actualToRow = Math.min(toRowInt, lastRow - 1); // -1 for header
+    const numRows = actualToRow - fromRowInt + 1;
+
+    if (numRows <= 0) {
+      Logger.log('No new rows to fetch');
+      return createJsonResponse({ rows: [] }, true);
+    }
+
+    // Fetch rows (fromRow+1 jer je red 1 header)
+    const startRow = fromRowInt + 1; // +1 for header
+    const data = primacijaSheet.getRange(startRow, 1, numRows, primacijaSheet.getLastColumn()).getValues();
+
+    // Convert to JSON objects sa rowIndex
+    const rows = data.map((row, index) => ({
+      rowIndex: fromRowInt + index,
+      datum: row[0] ? formatDateHelper(row[0]) : '',
+      odjel: row[1] || '',
+      radiliste: row[2] || '',
+      izvodjac: row[3] || '',
+      primac: row[4] || '',
+      sortiment: row[5] || '',
+      kubici: parseFloat(row[6]) || 0
+    }));
+
+    Logger.log(`Delta Primka: Returning ${rows.length} rows`);
+    return createJsonResponse({ rows: rows }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleDeltaPrimka: ' + error.toString());
+    return createJsonResponse({
+      error: 'Greška pri fetchovanju delta primka: ' + error.toString()
+    }, false);
+  }
+}
+
+// ========== DELTA OTPREMA ENDPOINT - Vraća samo nove redove ==========
+function handleDeltaOtprema(username, password, fromRow, toRow) {
+  try {
+    Logger.log(`Delta Otprema endpoint called - fromRow: ${fromRow}, toRow: ${toRow}`);
+
+    // Provjeri autentikaciju
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    // Parse parametri
+    const fromRowInt = parseInt(fromRow);
+    const toRowInt = parseInt(toRow);
+
+    if (isNaN(fromRowInt) || isNaN(toRowInt) || fromRowInt < 1 || toRowInt < fromRowInt) {
+      return createJsonResponse({ error: 'Invalid row range' }, false);
+    }
+
+    // Otvori spreadsheet
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const otpremaSheet = ss.getSheetByName('Otprema');
+
+    if (!otpremaSheet) {
+      return createJsonResponse({ error: 'Otprema sheet not found' }, false);
+    }
+
+    const lastRow = otpremaSheet.getLastRow();
+
+    // Adjust toRow if it exceeds lastRow
+    const actualToRow = Math.min(toRowInt, lastRow - 1); // -1 for header
+    const numRows = actualToRow - fromRowInt + 1;
+
+    if (numRows <= 0) {
+      Logger.log('No new rows to fetch');
+      return createJsonResponse({ rows: [] }, true);
+    }
+
+    // Fetch rows (fromRow+1 jer je red 1 header)
+    const startRow = fromRowInt + 1; // +1 for header
+    const data = otpremaSheet.getRange(startRow, 1, numRows, otpremaSheet.getLastColumn()).getValues();
+
+    // Convert to JSON objects sa rowIndex
+    const rows = data.map((row, index) => ({
+      rowIndex: fromRowInt + index,
+      datum: row[0] ? formatDateHelper(row[0]) : '',
+      odjel: row[1] || '',
+      radiliste: row[2] || '',
+      kupac: row[3] || '',
+      otpremac: row[4] || '',
+      sortiment: row[5] || '',
+      kubici: parseFloat(row[6]) || 0
+    }));
+
+    Logger.log(`Delta Otprema: Returning ${rows.length} rows`);
+    return createJsonResponse({ rows: rows }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleDeltaOtprema: ' + error.toString());
+    return createJsonResponse({
+      error: 'Greška pri fetchovanju delta otprema: ' + error.toString()
+    }, false);
+  }
+}
+
+// Helper funkcija za formatiranje datuma
+function formatDateHelper(dateValue) {
+  if (!dateValue) return '';
+
+  try {
+    const date = new Date(dateValue);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch (e) {
+    return String(dateValue);
   }
 }
