@@ -5307,9 +5307,9 @@
                 // Odmah prikaži Mjesečni izvještaj umjesto menija
                 switchTab('izvjestaji');
             } else if (tab === 'stanje-odjela-admin') {
-                // Prikaži Stanje odjela izvještaj
-                document.getElementById('izvjestaji-content').classList.remove('hidden');
-                switchIzvjestajiSubTab('stanje-odjela');
+                // Prikaži samo Stanje odjela za admina (SVE odjele, bez filtriranja)
+                document.getElementById('poslovodja-stanje-content').classList.remove('hidden');
+                loadAdminStanjeOdjela();
             } else if (tab === 'izvjestaji-primac') {
                 // Set default to current month/year
                 const currentDate = new Date();
@@ -5747,6 +5747,38 @@
 
             } catch (error) {
                 console.error('Error loading poslovođa stanje:', error);
+                showError('Greška', 'Greška pri učitavanju stanja odjela: ' + error.message);
+                document.getElementById('loading-screen').classList.add('hidden');
+            }
+        }
+
+        // Load STANJE ODJELA za admina (SVE odjele bez filtriranja)
+        async function loadAdminStanjeOdjela() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+            document.getElementById('poslovodja-stanje-content').classList.add('hidden');
+
+            try {
+                // Load STANJE ODJELA data
+                const url = `${API_URL}?path=odjeli&username=${currentUser.username}&password=${currentPassword}`;
+                const data = await fetchWithCache(url, 'cache_odjeli_stanje_admin');
+
+                console.log('Admin - Odjeli data:', data);
+
+                if (data.error || !data.odjeli) {
+                    throw new Error(data.error || 'Nema podataka o odjelima');
+                }
+
+                // Prikaži SVE odjele (bez filtriranja)
+                document.getElementById('poslovodja-radilista-list').textContent = 'Sva radilišta';
+
+                // Render stanje odjela table
+                renderPoslovodjaStanjeTable(data.odjeli);
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('poslovodja-stanje-content').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error loading admin stanje odjela:', error);
                 showError('Greška', 'Greška pri učitavanju stanja odjela: ' + error.message);
                 document.getElementById('loading-screen').classList.add('hidden');
             }
