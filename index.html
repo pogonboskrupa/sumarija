@@ -4194,6 +4194,103 @@
 
         const API_URL = 'https://script.google.com/macros/s/AKfycbwkJ4apCi1yf9WNMVboGUtLVK6ZRWzLAAN-CkyfGbUqCyGm4qMjH3-zVifJUUCgUW2t/exec';
 
+        // ========== PERFORMANCE METRICS ==========
+        const perfMetrics = {
+            pageLoadStart: performance.now(),
+            cacheHits: 0,
+            cacheMisses: 0,
+            apiCalls: 0,
+            apiErrors: 0
+        };
+
+        function logPerformance(action, duration) {
+            console.log(`⚡ [PERF] ${action}: ${duration.toFixed(0)}ms`);
+        }
+
+        function logCacheStats() {
+            const hitRate = perfMetrics.cacheHits / (perfMetrics.cacheHits + perfMetrics.cacheMisses) * 100;
+            console.log(`📊 [CACHE] Hits: ${perfMetrics.cacheHits}, Misses: ${perfMetrics.cacheMisses}, Hit Rate: ${hitRate.toFixed(1)}%`);
+            console.log(`📡 [API] Calls: ${perfMetrics.apiCalls}, Errors: ${perfMetrics.apiErrors}`);
+        }
+
+        // ========== MANIFEST-BASED SMART INVALIDATION ==========
+        let cachedManifest = null;
+        let manifestCheckInterval = null;
+
+        async function checkManifest() {
+            const startTime = performance.now();
+            try {
+                const url = buildApiUrl('manifest');
+                const response = await fetch(url, {
+                    signal: AbortSignal.timeout(10000) // 10s timeout za manifest
+                });
+                const manifest = await response.json();
+
+                logPerformance('Manifest check', performance.now() - startTime);
+
+                // Provjeri da li se version promijenio
+                if (cachedManifest && cachedManifest.version !== manifest.version) {
+                    console.log('🔄 [MANIFEST] Version changed! Invalidating cache...');
+                    // Invalidate cache za promijenjene tabele
+                    invalidateCachesByManifest(manifest);
+                }
+
+                cachedManifest = manifest;
+                localStorage.setItem('manifest', JSON.stringify(manifest));
+
+                return manifest;
+            } catch (error) {
+                console.error('[MANIFEST] Check failed:', error);
+                // Fallback na cached manifest ako postoji
+                const cached = localStorage.getItem('manifest');
+                return cached ? JSON.parse(cached) : null;
+            }
+        }
+
+        function invalidateCachesByManifest(newManifest) {
+            // Pametna invalidacija - brišemo samo keširane podatke koji su se promijenili
+            const year = new Date().getFullYear();
+            const cachesToInvalidate = [
+                'cache_primaci_' + year,
+                'cache_otpremaci_' + year,
+                'cache_odjeli_' + year,
+                'cache_dashboard_' + year
+            ];
+
+            cachesToInvalidate.forEach(key => {
+                localStorage.removeItem(key);
+                console.log(`🗑️ [CACHE] Invalidated: ${key}`);
+            });
+        }
+
+        function startManifestChecker() {
+            // Provjeri odmah
+            checkManifest();
+
+            // Zatim provjeri periodično
+            const now = new Date();
+            const hour = now.getHours();
+
+            // Češće između 07:00-09:00 (svake 2 min), rijetko van toga (svaki 10 min)
+            const interval = (hour >= 7 && hour < 9) ? 2 * 60 * 1000 : 10 * 60 * 1000;
+
+            if (manifestCheckInterval) {
+                clearInterval(manifestCheckInterval);
+            }
+
+            manifestCheckInterval = setInterval(checkManifest, interval);
+            console.log(`🔄 [MANIFEST] Checker started (interval: ${interval/1000/60} min)`);
+        }
+
+        function stopManifestChecker() {
+            if (manifestCheckInterval) {
+                clearInterval(manifestCheckInterval);
+                manifestCheckInterval = null;
+            }
+        }
+
+        // ========== END PERFORMANCE & MANIFEST ==========
+
         // ========== SORTIMENTI ORDER - BUSINESS LOGIC ==========
         // Fixed order for sortimenti as per business requirements
         const SORTIMENTI_ORDER = [
@@ -4495,17 +4592,25 @@
 
                     // If cache is fresh, return it immediately
                     if (age < cacheTTL) {
+                        perfMetrics.cacheHits++;
                         showCacheIndicator(age);
+                        logPerformance(`Cache HIT: ${path}`, age);
                         return cachedData.data;
                     } else {
+                        perfMetrics.cacheMisses++;
                     }
                 } catch (e) {
                     console.error('Cache parse error:', e);
+                    perfMetrics.cacheMisses++;
                 }
+            } else {
+                perfMetrics.cacheMisses++;
             }
 
             // Cache miss or stale - fetch from network with timeout
             try {
+                perfMetrics.apiCalls++;
+                const fetchStart = performance.now();
 
                 // Fetch with configurable timeout (default 8s, but can be higher for heavy endpoints)
                 const controller = new AbortController();
@@ -4514,6 +4619,8 @@
                 const response = await fetch(url, { signal: controller.signal });
                 clearTimeout(timeoutId);
                 const data = await response.json();
+
+                logPerformance(`API call: ${path}`, performance.now() - fetchStart);
 
                 // Store in cache
                 localStorage.setItem(cacheKey, JSON.stringify({
@@ -4525,6 +4632,8 @@
                 return data;
 
             } catch (error) {
+                perfMetrics.apiErrors++;
+
                 // Handle timeout specifically
                 if (error.name === 'AbortError') {
                     console.error(`Request timeout (${timeout/1000}s) - server too slow:`, path);
@@ -4912,7 +5021,12 @@
                 loadOdjeli(); // Load odjeli list after auto-login
             }
         });
-        
+
+        // Log cache statistics when page is closed
+        window.addEventListener('beforeunload', () => {
+            logCacheStats();
+        });
+
         // Login form
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -5018,14 +5132,23 @@
                     <button class="tab" onclick="switchTab('ostalo')">⚙️ Ostalo</button>
                 `;
             }
+
+            // 🚀 Start manifest checker after login
+            startManifestChecker();
         }
-        
+
         function logout() {
+            // 📊 Log final cache stats before logout
+            logCacheStats();
+
             // Cleanup intervals to prevent memory leaks
             if (cacheStatusIntervalId) {
                 clearInterval(cacheStatusIntervalId);
                 cacheStatusIntervalId = null;
             }
+
+            // Stop manifest checker
+            stopManifestChecker();
 
             // Cleanup chart instances to prevent memory leaks
             if (window.dashboardChart) {
