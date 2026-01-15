@@ -4618,106 +4618,78 @@
 
         // Preload all views function
         async function preloadAllViews() {
-            showInfo('⚡ Učitavanje...', 'Učitavam sve prikaze u pozadini. Ovo može potrajati.');
-
             const year = new Date().getFullYear();
             let totalLoaded = 0;
             let totalFailed = 0;
+            let totalViews = 0;
 
             try {
                 // Determine user type (case-insensitive)
                 const userType = (currentUser.type || '').toLowerCase();
 
+                let allViews = [];
 
                 if (userType === 'admin') {
-                    // 🚀 TURBO MODE: Preload samo Dashboard (najvažnije!), ostalo u pozadini
-                    const criticalViews = [
-                        { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year }
+                    // 🚀 KOMPLETNI PRELOAD - SVE UČITAJ!
+                    allViews = [
+                        { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year, timeout: 180000 },
+                        { name: 'Odjeli', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_odjeli_' + year, timeout: 180000 },
+                        { name: 'Primaci', url: buildApiUrl('primaci', { year }), cacheKey: 'cache_primaci_' + year, timeout: 180000 },
+                        { name: 'Otpremaci', url: buildApiUrl('otpremaci', { year }), cacheKey: 'cache_otpremaci_' + year, timeout: 180000 },
+                        { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
+                        { name: 'Stanje Odjela Admin', url: buildApiUrl('odjeli'), cacheKey: 'cache_odjeli_stanje_admin', timeout: 180000 },
+                        { name: 'Pending Unosi', url: buildApiUrl('pending_unosi'), cacheKey: 'cache_pending_unosi', timeout: 120000 },
+                        { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni_sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year, timeout: 120000 },
+                        { name: 'Dinamika', url: buildApiUrl('get_dinamika', { year }), cacheKey: 'cache_dinamika_' + year, timeout: 120000 }
                     ];
-
-                    // Background preload - ne čekamo! (fire and forget)
-                    const backgroundViews = [
-                        { name: 'Odjeli', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_odjeli_' + year },
-                        { name: 'Primaci', url: buildApiUrl('primaci', { year }), cacheKey: 'cache_primaci_' + year },
-                        { name: 'Otpremaci', url: buildApiUrl('otpremaci', { year }), cacheKey: 'cache_otpremaci_' + year },
-                        { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year }
-                    ];
-
-                    // Load critical views ONLY (fast!)
-                    for (const view of criticalViews) {
-                        try {
-                            await fetchWithCache(view.url, view.cacheKey, false, 180000); // 3min timeout
-                            totalLoaded++;
-                        } catch (error) {
-                            totalFailed++;
-                            console.error(`✗ ${view.name} failed:`, error);
-                        }
-                    }
-
-                    // 🔄 Background preload (non-blocking!) - korisnik može već raditi!
-                    backgroundViews.forEach(view => {
-                        fetchWithCache(view.url, view.cacheKey, false, 180000).catch(err => {
-                            console.error(`Background preload failed for ${view.name}:`, err);
-                        });
-                    });
 
                 } else if (userType === 'poslovođa' || userType === 'poslovodja') {
-                    // 🚀 TURBO: Samo kritični view, ostalo u pozadini
-                    const criticalViews = [
-                        { name: 'Stanje Odjela', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_poslovodja_odjeli_' + year }
+                    allViews = [
+                        { name: 'Stanje Odjela', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_poslovodja_odjeli_' + year, timeout: 180000 },
+                        { name: 'Odjeli u realizaciji', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_poslovodja_realizacija_' + year, timeout: 180000 },
+                        { name: 'Zadnjih 5 dana - Primke', url: buildApiUrl('primke'), cacheKey: 'cache_poslovodja_primke', timeout: 120000 },
+                        { name: 'Zadnjih 5 dana - Otpreme', url: buildApiUrl('otpreme'), cacheKey: 'cache_poslovodja_otpreme', timeout: 120000 },
+                        { name: 'Suma mjeseca', url: buildApiUrl('primke'), cacheKey: 'cache_poslovodja_suma_primke', timeout: 120000 }
                     ];
-
-                    const backgroundViews = [
-                        { name: 'Odjeli u realizaciji', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_poslovodja_realizacija_' + year },
-                        { name: 'Zadnjih 5 dana - Primke', url: buildApiUrl('primke'), cacheKey: 'cache_poslovodja_primke' },
-                        { name: 'Zadnjih 5 dana - Otpreme', url: buildApiUrl('otpreme'), cacheKey: 'cache_poslovodja_otpreme' }
-                    ];
-
-                    for (const view of criticalViews) {
-                        try {
-                            await fetchWithCache(view.url, view.cacheKey, false, 180000);
-                            totalLoaded++;
-                        } catch (error) {
-                            totalFailed++;
-                            console.error(`✗ ${view.name} failed:`, error);
-                        }
-                    }
-
-                    // Background preload
-                    backgroundViews.forEach(view => {
-                        fetchWithCache(view.url, view.cacheKey, false, 180000).catch(err => {
-                            console.error(`Background preload failed for ${view.name}:`, err);
-                        });
-                    });
 
                 } else if (userType === 'primac' || userType === 'otpremac') {
-                    // 🚀 TURBO: Workers get instant access (minimal preload)
                     const path = userType === 'primac' ? 'primke' : 'otpreme';
-                    const views = [
-                        { name: 'Moje unose', url: buildApiUrl(path), cacheKey: `cache_my_${path}` }
+                    allViews = [
+                        { name: 'Moje unose', url: buildApiUrl(path), cacheKey: `cache_my_${path}`, timeout: 120000 },
+                        { name: 'Godišnji prikaz', url: buildApiUrl(path), cacheKey: `cache_godisnji_${path}`, timeout: 120000 }
                     ];
-
-                    for (const view of views) {
-                        try {
-                            await fetchWithCache(view.url, view.cacheKey, false, 120000); // 2min
-                            totalLoaded++;
-                        } catch (error) {
-                            totalFailed++;
-                            console.error(`✗ ${view.name} failed:`, error);
-                        }
-                    }
-                } else {
                 }
 
+                totalViews = allViews.length;
+                showInfo('⚡ Učitavanje...', `Učitavam ${totalViews} prikaza u pozadini...`);
+
+                // 🚀 PARALELNO UČITAVANJE - sve istovremeno!
+                const promises = allViews.map(view =>
+                    fetchWithCache(view.url, view.cacheKey, false, view.timeout)
+                        .then(() => {
+                            totalLoaded++;
+                            return { success: true, name: view.name };
+                        })
+                        .catch(error => {
+                            totalFailed++;
+                            console.error(`✗ ${view.name} failed:`, error);
+                            return { success: false, name: view.name };
+                        })
+                );
+
+                // Čekaj da SVI završe
+                await Promise.all(promises);
+
+                // Prikaži rezultat
                 if (totalLoaded > 0) {
-                    showSuccess('⚡ Učitano!', `Učitano ${totalLoaded} prikaza. Skrolanje je sada instantno!`);
+                    showSuccess('⚡ Gotovo!', `✅ Učitano ${totalLoaded}/${totalViews} prikaza!\n${totalFailed > 0 ? `⚠️ ${totalFailed} nije uspjelo` : '🎉 Sve uspješno!'}`);
                 } else {
-                    showError('Greška', `Nije učitano nijedan prikaz. Provjerite internet konekciju.`);
+                    showError('Greška', `Nije učitano nijedan prikaz. Server je možda nedostupan.`);
                 }
 
             } catch (error) {
                 console.error('Preload error:', error);
-                showError('Greška', 'Nije uspjelo učitavanje svih prikaza.');
+                showError('Greška', 'Greška pri učitavanju prikaza.');
             }
         }
 
@@ -6383,40 +6355,49 @@
 
         // Load primaci data
         async function loadPrimaci() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('primaci-content').classList.add('hidden');
-
             try {
                 const year = new Date().getFullYear();
                 const cacheKey = 'cache_primaci_' + year;
                 const url = buildApiUrl('primaci', { year });
 
-                // STALE-WHILE-REVALIDATE: Check cache first
+                // 🚀 INSTANT SHOW: Check cache first
                 let hasCachedData = false;
                 const cachedPrimaci = localStorage.getItem(cacheKey);
                 if (cachedPrimaci) {
                     try {
                         const parsed = JSON.parse(cachedPrimaci);
                         if (parsed.data && parsed.data.primaci) {
+                            // ✨ INSTANT: Show cached data immediately
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            document.getElementById('primaci-content').classList.remove('hidden');
                             renderPrimaci(parsed.data);
                             hasCachedData = true;
+
+                            // Show cache indicator
+                            const age = Date.now() - parsed.timestamp;
+                            showCacheIndicator(age);
                         }
                     } catch (e) {
+                        console.error('Cache parse error:', e);
                     }
                 }
 
-                // FETCH FRESH DATA (120s timeout)
+                // If no cache, show loading screen
+                if (!hasCachedData) {
+                    document.getElementById('loading-screen').classList.remove('hidden');
+                    document.getElementById('primaci-content').classList.add('hidden');
+                }
+
+                // 🔄 BACKGROUND REFRESH (180s timeout)
                 try {
-                    const data = await fetchWithCache(url, cacheKey, false, 120000);
-                    if (!hasCachedData) {
-                    } else {
-                    }
+                    const data = await fetchWithCache(url, cacheKey, false, 180000);
                     renderPrimaci(data);
+                    hideCacheIndicator();
                 } catch (error) {
                     if (!hasCachedData) {
                         throw error;
-                    } else {
                     }
+                    // Silently fail if we have cached data
                 }
 
             } catch (error) {
@@ -6543,40 +6524,49 @@
 
         // Load otpremaci data
         async function loadOtpremaci() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('otpremaci-content').classList.add('hidden');
-
             try {
                 const year = new Date().getFullYear();
                 const cacheKey = 'cache_otpremaci_' + year;
                 const url = buildApiUrl('otpremaci', { year });
 
-                // STALE-WHILE-REVALIDATE: Check cache first
+                // 🚀 INSTANT SHOW: Check cache first
                 let hasCachedData = false;
                 const cachedOtpremaci = localStorage.getItem(cacheKey);
                 if (cachedOtpremaci) {
                     try {
                         const parsed = JSON.parse(cachedOtpremaci);
                         if (parsed.data && parsed.data.otpremaci) {
+                            // ✨ INSTANT: Show cached data immediately
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            document.getElementById('otpremaci-content').classList.remove('hidden');
                             renderOtpremaci(parsed.data);
                             hasCachedData = true;
+
+                            // Show cache indicator
+                            const age = Date.now() - parsed.timestamp;
+                            showCacheIndicator(age);
                         }
                     } catch (e) {
+                        console.error('Cache parse error:', e);
                     }
                 }
 
-                // FETCH FRESH DATA (120s timeout)
+                // If no cache, show loading screen
+                if (!hasCachedData) {
+                    document.getElementById('loading-screen').classList.remove('hidden');
+                    document.getElementById('otpremaci-content').classList.add('hidden');
+                }
+
+                // 🔄 BACKGROUND REFRESH (180s timeout)
                 try {
-                    const data = await fetchWithCache(url, cacheKey, false, 120000);
-                    if (!hasCachedData) {
-                    } else {
-                    }
+                    const data = await fetchWithCache(url, cacheKey, false, 180000);
                     renderOtpremaci(data);
+                    hideCacheIndicator();
                 } catch (error) {
                     if (!hasCachedData) {
                         throw error;
-                    } else {
                     }
+                    // Silently fail if we have cached data
                 }
 
             } catch (error) {
@@ -7472,24 +7462,54 @@
 
         // Load kupci data
         async function loadKupci() {
-            document.getElementById('kupci-content').classList.remove('hidden');
-            document.getElementById('loading-screen').classList.add('hidden');
-
             try {
                 const year = new Date().getFullYear();
+                const cacheKey = 'cache_kupci_' + year;
                 const url = buildApiUrl('kupci', { year });
-                const data = await fetchWithCache(url, 'cache_kupci_' + year);
 
+                // 🚀 INSTANT SHOW: Check cache first
+                let hasCachedData = false;
+                const cachedKupci = localStorage.getItem(cacheKey);
+                if (cachedKupci) {
+                    try {
+                        const parsed = JSON.parse(cachedKupci);
+                        if (parsed.data && parsed.data.godisnji) {
+                            // ✨ INSTANT: Show cached data immediately
+                            document.getElementById('kupci-content').classList.remove('hidden');
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            renderKupciGodisnjiTable(parsed.data.godisnji, parsed.data.sortimentiNazivi);
+                            renderKupciMjesecniTable(parsed.data.mjesecni, parsed.data.sortimentiNazivi);
+                            hasCachedData = true;
 
-                if (data.error || !data.godisnji || !data.sortimentiNazivi) {
-                    throw new Error(data.error || 'Nema podataka');
+                            // Show cache indicator
+                            const age = Date.now() - parsed.timestamp;
+                            showCacheIndicator(age);
+                        }
+                    } catch (e) {
+                        console.error('Cache parse error:', e);
+                    }
                 }
 
-                // Renderuj godišnju tabelu po kupcima i sortimentima
-                renderKupciGodisnjiTable(data.godisnji, data.sortimentiNazivi);
+                // If no cache, prepare for fresh load
+                if (!hasCachedData) {
+                    document.getElementById('kupci-content').classList.remove('hidden');
+                    document.getElementById('loading-screen').classList.add('hidden');
+                }
 
-                // Renderuj mjesečnu tabelu za trenutni mjesec
+                // 🔄 BACKGROUND REFRESH (180s timeout)
+                const data = await fetchWithCache(url, cacheKey, false, 180000);
+
+                if (data.error || !data.godisnji || !data.sortimentiNazivi) {
+                    if (!hasCachedData) {
+                        throw new Error(data.error || 'Nema podataka');
+                    }
+                    return; // Silently fail if we have cached data
+                }
+
+                // Update with fresh data
+                renderKupciGodisnjiTable(data.godisnji, data.sortimentiNazivi);
                 renderKupciMjesecniTable(data.mjesecni, data.sortimentiNazivi);
+                hideCacheIndicator();
 
             } catch (error) {
                 console.error('Error loading kupci:', error);
