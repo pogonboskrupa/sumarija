@@ -4004,15 +4004,7 @@
                 </div>
             </div>
 
-            <!-- SUB-MENU TABS -->
-            <div class="sub-tabs" style="margin-bottom: 30px;">
-                <button class="sub-tab active" onclick="switchIzvjestajiSubTab('mjesecni')">📅 Mjesečni izvještaj</button>
-                <button class="sub-tab" onclick="switchIzvjestajiSubTab('sedmicni-sjeca')">📊 Sedmični izvještaj sječe</button>
-                <button class="sub-tab" onclick="switchIzvjestajiSubTab('sedmicni-otprema')">📊 Sedmični izvještaj otpreme</button>
-                <button class="sub-tab" onclick="switchIzvjestajiSubTab('stanje-odjela')">📦 Stanje odjela</button>
-            </div>
-
-            <!-- MJESEČNI IZVJEŠTAJ -->
+            <!-- MJESEČNI IZVJEŠTAJ (bez podmenija) -->
             <div id="mjesecni-izvjestaj" class="sub-content">
                 <div class="page-header" style="margin-top: 0;">
                     <div class="page-header-left">
@@ -4069,85 +4061,6 @@
                         </table>
                     </div>
                 </div>
-            </div>
-
-            <!-- SEDMIČNI IZVJEŠTAJ SJEČE -->
-            <div id="sedmicni-sjeca-izvjestaj" class="sub-content hidden">
-                <div class="page-header" style="margin-top: 0;">
-                    <div class="page-header-left">
-                        <h2>📊 Sedmični izvještaj sječe</h2>
-                        <p style="color: #6b7280;">Sve sedmice u mjesecu - od najnovije ka najstarijoj</p>
-                    </div>
-                    <div class="page-header-right">
-                        <select id="sedmicni-sjeca-year-select" class="year-select" onchange="loadSedmicniIzvjestajSjeca()">
-                            <option value="2026" selected>2026</option></select>
-                        <select id="sedmicni-sjeca-month-select" class="month-select" onchange="loadSedmicniIzvjestajSjeca()">
-                            <option value="0">Januar</option>
-                            <option value="1">Februar</option>
-                            <option value="2">Mart</option>
-                            <option value="3">April</option>
-                            <option value="4">Maj</option>
-                            <option value="5">Juni</option>
-                            <option value="6">Juli</option>
-                            <option value="7">August</option>
-                            <option value="8">Septembar</option>
-                            <option value="9">Oktobar</option>
-                            <option value="10">Novembar</option>
-                            <option value="11">Decembar</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div id="sedmicni-sjeca-container"></div>
-            </div>
-
-            <!-- SEDMIČNI IZVJEŠTAJ OTPREME -->
-            <div id="sedmicni-otprema-izvjestaj" class="sub-content hidden">
-                <div class="page-header" style="margin-top: 0;">
-                    <div class="page-header-left">
-                        <h2>📊 Sedmični izvještaj otpreme</h2>
-                        <p style="color: #6b7280;">Sve sedmice u mjesecu - od najnovije ka najstarijoj</p>
-                    </div>
-                    <div class="page-header-right">
-                        <select id="sedmicni-otprema-year-select" class="year-select" onchange="loadSedmicniIzvjestajOtprema()">
-                            <option value="2026" selected>2026</option></select>
-                        <select id="sedmicni-otprema-month-select" class="month-select" onchange="loadSedmicniIzvjestajOtprema()">
-                            <option value="0">Januar</option>
-                            <option value="1">Februar</option>
-                            <option value="2">Mart</option>
-                            <option value="3">April</option>
-                            <option value="4">Maj</option>
-                            <option value="5">Juni</option>
-                            <option value="6">Juli</option>
-                            <option value="7">August</option>
-                            <option value="8">Septembar</option>
-                            <option value="9">Oktobar</option>
-                            <option value="10">Novembar</option>
-                            <option value="11">Decembar</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div id="sedmicni-otprema-container"></div>
-            </div>
-
-            <!-- STANJE ODJELA -->
-            <div id="stanje-odjela-izvjestaj" class="sub-content hidden">
-                <div class="page-header" style="margin-top: 0;">
-                    <div class="page-header-left">
-                        <h2>📦 Stanje odjela</h2>
-                        <p style="color: #6b7280;">Trenutno stanje radilišta - sortirano po najsvježijim unosima sječe</p>
-                    </div>
-                    <div class="page-header-right">
-                        <select id="stanje-odjela-select" class="year-select" style="min-width: 250px; margin-right: 12px;" onchange="filterStanjeOdjela()">
-                            <option value="">Sva radilišta</option>
-                        </select>
-                        <button class="btn btn-primary" onclick="loadStanjeOdjela()">🔄 Osvježi</button>
-                    </div>
-                </div>
-
-                <!-- Container za sve odjele -->
-                <div id="stanje-odjela-container"></div>
             </div>
         </div>
 
@@ -5822,57 +5735,62 @@
 
         // Load STANJE ODJELA za admina (SVE odjele bez filtriranja)
         async function loadAdminStanjeOdjela() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('poslovodja-stanje-content').classList.add('hidden');
-
             try {
-                // Load STANJE ODJELA data sa povećanim timeout-om (60s umjesto 8s)
-                const url = `${API_URL}?path=odjeli&username=${currentUser.username}&password=${currentPassword}`;
+                // 🚀 TURBO MODE: INSTANT SHOW cached data
                 const cacheKey = 'cache_odjeli_stanje_admin';
+                const cachedData = localStorage.getItem(cacheKey);
 
-                // Pokušaj prvo učitati sa timeout-om od 60s
-                console.log('Loading admin stanje odjela with 60s timeout...');
-                const data = await fetchWithCache(url, cacheKey, false, 60000);
+                let hasCachedData = false;
+                if (cachedData) {
+                    try {
+                        const parsed = JSON.parse(cachedData);
+                        if (parsed.data && parsed.data.odjeli) {
+                            // ✨ INSTANT: Show cached data immediately
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            document.getElementById('poslovodja-stanje-content').classList.remove('hidden');
+                            document.getElementById('poslovodja-radilista-list').textContent = 'Sva radilišta';
+                            renderPoslovodjaStanjeTable(parsed.data.odjeli);
+                            hasCachedData = true;
 
-                console.log('Admin - Odjeli data:', data);
-
-                if (data.error || !data.odjeli) {
-                    throw new Error(data.error || 'Nema podataka o odjelima');
+                            // Show cache indicator
+                            const age = Date.now() - parsed.timestamp;
+                            showCacheIndicator(age);
+                        }
+                    } catch (e) {
+                        console.error('Cache parse error:', e);
+                    }
                 }
 
-                // Prikaži SVE odjele (bez filtriranja)
-                document.getElementById('poslovodja-radilista-list').textContent = 'Sva radilišta';
+                // If no cache, show loading screen
+                if (!hasCachedData) {
+                    document.getElementById('loading-screen').classList.remove('hidden');
+                    document.getElementById('poslovodja-stanje-content').classList.add('hidden');
+                }
 
-                // Render stanje odjela table
+                // 🔄 BACKGROUND REFRESH: Fetch fresh data (180s timeout)
+                const url = buildApiUrl('odjeli');
+                const data = await fetchWithCache(url, cacheKey, false, 180000);
+
+                if (data.error || !data.odjeli) {
+                    if (!hasCachedData) {
+                        throw new Error(data.error || 'Nema podataka o odjelima');
+                    }
+                    return; // Silently fail if we have cached data
+                }
+
+                // Update with fresh data
+                document.getElementById('poslovodja-radilista-list').textContent = 'Sva radilišta';
                 renderPoslovodjaStanjeTable(data.odjeli);
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('poslovodja-stanje-content').classList.remove('hidden');
 
+                // Hide cache indicator when fresh data arrives
+                hideCacheIndicator();
+
             } catch (error) {
                 console.error('Error loading admin stanje odjela:', error);
-
-                // FALLBACK: Pokušaj učitati keširane podatke ako postoje
-                const cachedData = localStorage.getItem('cache_odjeli_stanje_admin');
-                if (cachedData) {
-                    try {
-                        const parsed = JSON.parse(cachedData);
-                        console.log('Using cached data as fallback');
-
-                        document.getElementById('poslovodja-radilista-list').textContent = 'Sva radilišta (keširani podaci)';
-                        renderPoslovodjaStanjeTable(parsed.data.odjeli);
-
-                        document.getElementById('loading-screen').classList.add('hidden');
-                        document.getElementById('poslovodja-stanje-content').classList.remove('hidden');
-
-                        showNotification('⚠️ Prikazani keširani podaci zbog sporog servera', 'warning');
-                        return;
-                    } catch (cacheError) {
-                        console.error('Failed to parse cached data:', cacheError);
-                    }
-                }
-
-                showError('Greška', 'Server je spor. Molimo pokušajte ponovo za par minuta.');
+                showError('Greška', 'Greška pri učitavanju stanja odjela: ' + error.message);
                 document.getElementById('loading-screen').classList.add('hidden');
             }
         }
@@ -9723,33 +9641,11 @@
         // ========================================
 
         function switchIzvjestajiSubTab(subTab) {
-            // Remove active class from all sub-tabs
-            const subTabs = document.querySelectorAll('.sub-tab');
-            subTabs.forEach(tab => tab.classList.remove('active'));
-
-            // Hide all sub-contents
-            document.getElementById('mjesecni-izvjestaj').classList.add('hidden');
-            document.getElementById('sedmicni-sjeca-izvjestaj').classList.add('hidden');
-            document.getElementById('sedmicni-otprema-izvjestaj').classList.add('hidden');
-            document.getElementById('stanje-odjela-izvjestaj').classList.add('hidden');
-
-            // Show selected sub-content and activate tab
-            if (subTab === 'mjesecni') {
-                document.querySelector('.sub-tab[onclick*="mjesecni"]').classList.add('active');
-                document.getElementById('mjesecni-izvjestaj').classList.remove('hidden');
+            // Pojednostavljena funkcija - samo mjesečni izvještaj (podmeniji uklonjeni)
+            const mjesecniElem = document.getElementById('mjesecni-izvjestaj');
+            if (mjesecniElem) {
+                mjesecniElem.classList.remove('hidden');
                 loadIzvjestaji();
-            } else if (subTab === 'sedmicni-sjeca') {
-                document.querySelector('.sub-tab[onclick*="sedmicni-sjeca"]').classList.add('active');
-                document.getElementById('sedmicni-sjeca-izvjestaj').classList.remove('hidden');
-                loadSedmicniIzvjestajSjeca();
-            } else if (subTab === 'sedmicni-otprema') {
-                document.querySelector('.sub-tab[onclick*="sedmicni-otprema"]').classList.add('active');
-                document.getElementById('sedmicni-otprema-izvjestaj').classList.remove('hidden');
-                loadSedmicniIzvjestajOtprema();
-            } else if (subTab === 'stanje-odjela') {
-                document.querySelector('.sub-tab[onclick*="stanje-odjela"]').classList.add('active');
-                document.getElementById('stanje-odjela-izvjestaj').classList.remove('hidden');
-                loadStanjeOdjela();
             }
         }
 
