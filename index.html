@@ -9237,29 +9237,52 @@
             }
             bodyHtml += '</tr>';
 
-            // Calculate grand total from SVEUKUPNO
+            // ✅ NEW: Procentualno učešće (group-based percentages)
+            const cetinariTotal = totals['ČETINARI'] || 0;
+            const liscariTotal = totals['LIŠĆARI'] || 0;
             const grandTotal = totals['SVEUKUPNO'] || 0;
 
-            // %UDIO row with improved styling
             bodyHtml += '<tr style="background: #f3f4f6; font-style: italic; color: #374151; border-bottom: 3px solid #374151;">';
-            bodyHtml += '<td style="min-width: 80px; max-width: 90px; position: sticky; left: 0; background: #f3f4f6; z-index: 9; border-right: 3px solid #1e40af; text-align: center; font-size: 12px; padding: 10px 8px; font-weight: 600;">% UDIO</td>';
+            bodyHtml += '<td style="min-width: 80px; max-width: 90px; position: sticky; left: 0; background: #f3f4f6; z-index: 9; border-right: 3px solid #1e40af; text-align: center; font-size: 12px; padding: 10px 8px; font-weight: 600;">% UČEŠĆE</td>';
+
             for (let s = 0; s < sortimenti.length; s++) {
                 const sortiment = sortimenti[s];
                 const total = totals[sortiment] || 0;
-                const percentage = grandTotal > 0 ? ((total / grandTotal) * 100).toFixed(1) : '0.0';
                 const colClass = getColumnGroup(sortiment);
                 let extraClass = '';
                 let cellBg = '#f3f4f6';
+                let percentage = '0.0';
 
+                // ✅ Determine percentage based on group
                 if (sortiment === 'ČETINARI') {
+                    // ČETINARI as % of SVEUKUPNO
+                    percentage = grandTotal > 0 ? ((total / grandTotal) * 100).toFixed(1) : '0.0';
                     extraClass = ' col-cetinari';
                     cellBg = '#ecfdf5';
                 } else if (sortiment === 'LIŠĆARI') {
+                    // LIŠĆARI as % of SVEUKUPNO
+                    percentage = grandTotal > 0 ? ((total / grandTotal) * 100).toFixed(1) : '0.0';
                     extraClass = ' col-liscari';
                     cellBg = '#fff7ed';
                 } else if (sortiment === 'SVEUKUPNO') {
+                    // SVEUKUPNO is always 100%
+                    percentage = '100.0';
                     extraClass = ' col-sveukupno';
                     cellBg = '#fef2f2';
+                } else {
+                    // Individual sortimenti - determine if četinari or lišćari group
+                    const cetinariSortimenti = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'CEL.DUGA', 'CEL.CIJEPANA', 'TRUPCI Č'];
+                    const liscariSortimenti = ['F/L L', 'I L', 'II L', 'III L', 'OGR.DUGI', 'OGR.CIJEPANI', 'TRUPCI', 'TRUPCI L'];
+
+                    if (cetinariSortimenti.includes(sortiment)) {
+                        // Četinari sortiment: % of ČETINARI total
+                        percentage = cetinariTotal > 0 ? ((total / cetinariTotal) * 100).toFixed(1) : '0.0';
+                        cellBg = '#ecfdf5';
+                    } else if (liscariSortimenti.includes(sortiment)) {
+                        // Lišćari sortiment: % of LIŠĆARI total
+                        percentage = liscariTotal > 0 ? ((total / liscariTotal) * 100).toFixed(1) : '0.0';
+                        cellBg = '#fff7ed';
+                    }
                 }
 
                 bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 700; font-size: 12px; padding: 10px; background: ' + cellBg + '; min-width: 85px; max-width: 110px; text-align: right; border: 1px solid #d1d5db; font-style: italic;">' + percentage + '%</td>';
