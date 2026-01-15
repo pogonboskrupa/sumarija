@@ -3402,6 +3402,27 @@
             </div>
         </div>
 
+        <!-- ADMIN STANJE ODJELA CONTENT -->
+        <div id="stanje-odjela-admin-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>📦 Stanje Odjela</h1>
+                    <p>Pregled stanja svih odjela</p>
+                </div>
+                <div class="page-header-right">
+                    <button class="btn btn-primary" onclick="loadAdminStanjeOdjela()">🔄 Osvježi</button>
+                </div>
+            </div>
+            <div class="section">
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="monthly-table" id="admin-stanje-table">
+                        <thead id="admin-stanje-header"></thead>
+                        <tbody id="admin-stanje-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- POSLOVOĐA CONTENT - ODJELI U REALIZACIJI -->
         <div id="poslovodja-realizacija-content" class="container hidden">
             <div class="page-header">
@@ -5266,6 +5287,7 @@
             document.getElementById('izvjestaji-primac-content').classList.add('hidden');
             document.getElementById('izvjestaji-otpremac-content').classList.add('hidden');
             document.getElementById('operativa-content').classList.add('hidden');
+            document.getElementById('stanje-odjela-admin-content').classList.add('hidden');
             document.getElementById('poslovodja-stanje-content').classList.add('hidden');
             document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
             document.getElementById('poslovodja-zadnjih5-content').classList.add('hidden');
@@ -5354,7 +5376,7 @@
                 switchTab('izvjestaji');
             } else if (tab === 'stanje-odjela-admin') {
                 // Prikaži samo Stanje odjela za admina (SVE odjele, bez filtriranja)
-                document.getElementById('poslovodja-stanje-content').classList.remove('hidden');
+                document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
                 loadAdminStanjeOdjela();
             } else if (tab === 'izvjestaji-primac') {
                 // Set default to current month/year
@@ -5842,9 +5864,8 @@
                         if (parsed.data && parsed.data.odjeli) {
                             // ✨ INSTANT: Show cached data immediately
                             document.getElementById('loading-screen').classList.add('hidden');
-                            document.getElementById('poslovodja-stanje-content').classList.remove('hidden');
-                            document.getElementById('poslovodja-radilista-list').textContent = 'Sva radilišta';
-                            renderPoslovodjaStanjeTable(parsed.data.odjeli);
+                            document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
+                            renderAdminStanjeTable(parsed.data.odjeli);
                             hasCachedData = true;
 
                             // Show cache indicator
@@ -5859,7 +5880,7 @@
                 // If no cache, show loading screen
                 if (!hasCachedData) {
                     document.getElementById('loading-screen').classList.remove('hidden');
-                    document.getElementById('poslovodja-stanje-content').classList.add('hidden');
+                    document.getElementById('stanje-odjela-admin-content').classList.add('hidden');
                 }
 
                 // 🔄 BACKGROUND REFRESH: Fetch fresh data (180s timeout)
@@ -5874,11 +5895,10 @@
                 }
 
                 // Update with fresh data
-                document.getElementById('poslovodja-radilista-list').textContent = 'Sva radilišta';
-                renderPoslovodjaStanjeTable(data.odjeli);
+                renderAdminStanjeTable(data.odjeli);
 
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('poslovodja-stanje-content').classList.remove('hidden');
+                document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
 
                 // Hide cache indicator when fresh data arrives
                 hideCacheIndicator();
@@ -5888,6 +5908,62 @@
                 showError('Greška', 'Greška pri učitavanju stanja odjela: ' + error.message);
                 document.getElementById('loading-screen').classList.add('hidden');
             }
+        }
+
+        // Render Stanje Odjela table for admin
+        function renderAdminStanjeTable(odjeli) {
+            const headerElem = document.getElementById('admin-stanje-header');
+            const bodyElem = document.getElementById('admin-stanje-body');
+
+            if (odjeli.length === 0) {
+                headerElem.innerHTML = '';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka o odjelima</td></tr>';
+                return;
+            }
+
+            // Build header
+            let headerHtml = `
+                <tr>
+                    <th>Odjel</th>
+                    <th>Radilište</th>
+                    <th>Izvođač</th>
+                    <th>Projekat (m³)</th>
+                    <th>Sječa (m³)</th>
+                    <th>Otprema (m³)</th>
+                    <th>Realizacija (%)</th>
+                    <th>Zadnji Unos</th>
+                </tr>
+            `;
+            headerElem.innerHTML = headerHtml;
+
+            // Build body
+            let bodyHtml = '';
+            odjeli.forEach((odjel, index) => {
+                const rowBg = index % 2 === 0 ? '#f9fafb' : 'white';
+                const projekat = odjel.projekat || 0;
+                const sjeca = odjel.sjeca || 0;
+                const procenat = projekat > 0 ? ((sjeca / projekat) * 100).toFixed(1) : '0.0';
+
+                let percentClass = '';
+                if (procenat < 50) percentClass = 'style="color: #dc2626; font-weight: 700;"';
+                else if (procenat >= 100) percentClass = 'style="color: #059669; font-weight: 700;"';
+                else percentClass = 'style="color: #d97706; font-weight: 600;"';
+
+                bodyHtml += `
+                    <tr style="background: ${rowBg};">
+                        <td style="font-weight: 600;">${odjel.odjel || ''}</td>
+                        <td>${odjel.radiliste || '-'}</td>
+                        <td>${odjel.izvođač || '-'}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace;">${projekat.toFixed(2)}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 600;">${sjeca.toFixed(2)}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace;">${(odjel.otprema || 0).toFixed(2)}</td>
+                        <td ${percentClass} style="text-align: right; font-family: 'Courier New', monospace;">${procenat}%</td>
+                        <td>${odjel.datumZadnjeSjece || '-'}</td>
+                    </tr>
+                `;
+            });
+
+            bodyElem.innerHTML = bodyHtml;
         }
 
         // Render Stanje Odjela table for poslovođa
