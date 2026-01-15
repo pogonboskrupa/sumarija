@@ -1977,6 +1977,66 @@
         * {
             -webkit-overflow-scrolling: touch;
         }
+
+        /* ========================================
+           TEXT OUTLINE EFFECTS - DIZAJNERSKA PRAVILA
+           ======================================== */
+
+        /* Bijela boja sa crnim outline - za tamnje podloge */
+        .text-outline-light {
+            color: white !important;
+            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000,
+                         -1px 1px 0 #000, 1px 1px 0 #000,
+                         -2px 0 0 #000, 2px 0 0 #000,
+                         0 -2px 0 #000, 0 2px 0 #000;
+            font-weight: 700;
+        }
+
+        /* Crna boja sa bijelim outline - za svijetle podloge */
+        .text-outline-dark {
+            color: black !important;
+            text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff,
+                         -1px 1px 0 #fff, 1px 1px 0 #fff,
+                         -2px 0 0 #fff, 2px 0 0 #fff,
+                         0 -2px 0 #fff, 0 2px 0 #fff;
+            font-weight: 700;
+        }
+
+        /* Zelena boja sa žutim outline - za naziv firme */
+        .text-outline-firma {
+            color: #059669 !important;
+            text-shadow: -1px -1px 0 #fbbf24, 1px -1px 0 #fbbf24,
+                         -1px 1px 0 #fbbf24, 1px 1px 0 #fbbf24,
+                         -2px 0 0 #fbbf24, 2px 0 0 #fbbf24,
+                         0 -2px 0 #fbbf24, 0 2px 0 #fbbf24;
+            font-weight: 700;
+        }
+
+        /* Primjena na specifične elemente */
+        .table-number-dark {
+            color: white !important;
+            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000,
+                         -1px 1px 0 #000, 1px 1px 0 #000;
+            font-weight: 600;
+        }
+
+        .table-number-light {
+            color: black !important;
+            text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff,
+                         -1px 1px 0 #fff, 1px 1px 0 #fff;
+            font-weight: 600;
+        }
+
+        /* KPI brojevi - dinamičko */
+        .kpi-value-light {
+            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000,
+                         -1px 1px 0 #000, 1px 1px 0 #000;
+        }
+
+        .kpi-value-dark {
+            text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff,
+                         -1px 1px 0 #fff, 1px 1px 0 #fff;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -1989,7 +2049,7 @@
             <!-- Logo Container -->
             <div style="text-align: center; margin-bottom: 24px;">
                 <img src="logo-zuti.png" alt="ŠPD Unsko-Sanske Šume Logo" style="width: 180px; height: auto; margin-bottom: 16px;">
-                <h3 style="font-size: 16px; font-weight: 700; color: #047857; margin-bottom: 4px; letter-spacing: 0.5px;">ŠPD "UNSKO-SANSKE ŠUME"</h3>
+                <h3 class="text-outline-firma" style="font-size: 16px; margin-bottom: 4px; letter-spacing: 0.5px;">ŠPD "UNSKO-SANSKE ŠUME"</h3>
                 <h4 style="font-size: 14px; font-weight: 600; color: #6b7280; margin-bottom: 8px;">BOSANSKA KRUPA</h4>
             </div>
 
@@ -2019,7 +2079,7 @@
             <div class="header-content">
                 <div class="header-left">
                     <div class="header-title">
-                        <p style="font-size: 20px; color: #047857; margin-bottom: 4px; font-weight: 700; letter-spacing: 0.5px;">ŠPD "UNSKO-SANSKE ŠUME" D.O.O. BOS.KRUPA</p>
+                        <p class="text-outline-firma" style="font-size: 20px; margin-bottom: 4px; letter-spacing: 0.5px;">ŠPD "UNSKO-SANSKE ŠUME" D.O.O. BOS.KRUPA</p>
                         <h1>Pogon gospodarenja Bos. Krupa</h1>
                         <p>Evidencija sječe i otpreme</p>
                     </div>
@@ -5491,22 +5551,22 @@
                 const summaryHTML = `
                     <div class="summary-card green">
                         <div class="summary-card-title">Ukupna Sječa</div>
-                        <div class="summary-card-value">${totalSjeca.toFixed(0)} m³</div>
+                        <div class="summary-card-value text-outline-dark">${totalSjeca.toFixed(0)} m³</div>
                         <div class="summary-card-subtitle">${percentDinamika}% dinamike</div>
                     </div>
                     <div class="summary-card blue">
                         <div class="summary-card-title">Ukupna Otprema</div>
-                        <div class="summary-card-value">${totalOtprema.toFixed(0)} m³</div>
+                        <div class="summary-card-value text-outline-dark">${totalOtprema.toFixed(0)} m³</div>
                         <div class="summary-card-subtitle">${totalSjeca > 0 ? ((totalOtprema/totalSjeca)*100).toFixed(1) : '0.0'}% od sječe</div>
                     </div>
                     <div class="summary-card">
                         <div class="summary-card-title">Šuma/Panj</div>
-                        <div class="summary-card-value">${totalStanje.toFixed(0)} m³</div>
+                        <div class="summary-card-value text-outline-dark">${totalStanje.toFixed(0)} m³</div>
                         <div class="summary-card-subtitle">Preostalo u šumi</div>
                     </div>
                     <div class="summary-card ${razlikaDinamika >= 0 ? 'green' : 'red'}">
                         <div class="summary-card-title">Razlika sa Dinamikom</div>
-                        <div class="summary-card-value">${(razlikaDinamika >= 0 ? '+' : '') + razlikaDinamika.toFixed(0)} m³</div>
+                        <div class="summary-card-value text-outline-dark">${(razlikaDinamika >= 0 ? '+' : '') + razlikaDinamika.toFixed(0)} m³</div>
                         <div class="summary-card-subtitle">${razlikaDinamika >= 0 ? 'Iznad plana' : 'Ispod plana'}</div>
                     </div>
                 `;
