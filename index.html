@@ -4278,15 +4278,6 @@
 
         // SUPER VISIBLE VERSION CHECK
         console.clear();
-        console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
-        console.log(`%c🌲 ŠUMARIJA v${APP_VERSION}`, 'background: #059669; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 18px;');
-        console.log(`%cBuild: ${BUILD_COMMIT}`, 'color: #6b7280; font-size: 12px;');
-        console.log(`%c📦 Cache: sumarija-v18-monthly-by-odjeli`, 'color: #2563eb; font-size: 12px;');
-        console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
-        console.log('%c✅ NAJNOVIJA VERZIJA SA POPRAVKAMA UČITANA!', 'background: #10b981; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
-        console.log('%c🔥 AKO VIDIŠ OVO = TIMEOUT FIX JE AKTIVAN!', 'background: #ef4444; color: white; padding: 8px 12px; font-weight: bold; font-size: 14px;');
-        console.log('%cAko vidiš ovu poruku, data.filter greška je popravljena!', 'color: #059669; font-weight: bold;');
-        console.log('%c═══════════════════════════════════════════════', 'color: #059669; font-weight: bold;');
 
         const API_URL = 'https://script.google.com/macros/s/AKfycbwkJ4apCi1yf9WNMVboGUtLVK6ZRWzLAAN-CkyfGbUqCyGm4qMjH3-zVifJUUCgUW2t/exec';
 
@@ -4469,22 +4460,18 @@
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./service-worker.js')
                 .then(registration => {
-                    console.log('✅ Service Worker registered:', registration);
 
                     // Automatski aktiviraj novi service worker ako čeka
                     if (registration.waiting) {
-                        console.log('🔄 Novi Service Worker čeka - aktiviram...');
                         registration.waiting.postMessage({ type: 'SKIP_WAITING' });
                     }
 
                     // Slušaj za updatefound event
                     registration.addEventListener('updatefound', () => {
                         const newWorker = registration.installing;
-                        console.log('🆕 Novi Service Worker pronađen!');
 
                         newWorker.addEventListener('statechange', () => {
                             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                console.log('✅ Novi Service Worker instaliran - aktiviram...');
                                 newWorker.postMessage({ type: 'SKIP_WAITING' });
                             }
                         });
@@ -4496,7 +4483,6 @@
 
             // Slušaj kada novi service worker preuzme kontrolu
             navigator.serviceWorker.addEventListener('controllerchange', () => {
-                console.log('🔄 Service Worker updated - reloading...');
                 window.location.reload();
             });
         }
@@ -4518,7 +4504,6 @@
                 midnight.setHours(24, 0, 0, 0);
                 const duration = midnight - now;
                 const hoursRemaining = Math.round(duration / (60 * 60 * 1000) * 10) / 10;
-                console.log(`⏰ VIKEND - cache ${hoursRemaining}h (do ponoći)`);
                 return duration;
             }
 
@@ -4529,7 +4514,6 @@
 
             // Tokom unosa podataka (6:30-9:00) - kraći cache
             if (currentTimeInMinutes >= dataEntryStart && currentTimeInMinutes < dataEntryEnd) {
-                console.log('⏰ UNOS PODATAKA (6:30-9:00) - cache 10 minuta');
                 return 10 * 60 * 1000; // 10 minuta
             }
 
@@ -4538,7 +4522,6 @@
                 const minutesUntilDataEntry = dataEntryStart - currentTimeInMinutes;
                 const duration = minutesUntilDataEntry * 60 * 1000;
                 const hoursRemaining = Math.round(duration / (60 * 60 * 1000) * 10) / 10;
-                console.log(`⏰ PRIJE UNOSA - cache ${hoursRemaining}h (do 6:30)`);
                 return duration;
             }
 
@@ -4553,7 +4536,6 @@
 
             const duration = Math.min(nextDataEntry - now, midnight - now);
             const hoursRemaining = Math.round(duration / (60 * 60 * 1000) * 10) / 10;
-            console.log(`⏰ NAKON UNOSA (9:00+) - AGRESIVNO cache ${hoursRemaining}h (podaci stabilni do sutra)`);
 
             return duration;
         }
@@ -4587,7 +4569,6 @@
             // If force refresh, clear cache for this key
             if (forceRefresh) {
                 localStorage.removeItem(cacheKey);
-                console.log(`🔄 Force refresh: cleared cache for ${cacheKey}`);
             }
 
             // Check cache first
@@ -4600,11 +4581,9 @@
 
                     // If cache is fresh, return it immediately
                     if (age < cacheTTL) {
-                        console.log(`✓ Cache hit (${path}): ${Math.round(age / 1000)}s old`);
                         showCacheIndicator(age);
                         return cachedData.data;
                     } else {
-                        console.log(`⚠ Cache stale (${path}): ${Math.round(age / 1000)}s old, fetching fresh...`);
                     }
                 } catch (e) {
                     console.error('Cache parse error:', e);
@@ -4613,7 +4592,6 @@
 
             // Cache miss or stale - fetch from network with timeout
             try {
-                console.log(`↻ Fetching fresh data (${path})...`);
 
                 // Fetch with configurable timeout (default 8s, but can be higher for heavy endpoints)
                 const controller = new AbortController();
@@ -4629,7 +4607,6 @@
                     timestamp: Date.now()
                 }));
 
-                console.log(`✓ Fresh data cached (${path})`);
                 hideCacheIndicator();
                 return data;
 
@@ -4646,7 +4623,6 @@
                     try {
                         const cachedData = JSON.parse(cached);
                         const age = Date.now() - cachedData.timestamp;
-                        console.log(`⚠ Network failed, using stale cache (${Math.round(age / 60000)} min old)`);
                         showCacheIndicator(age, true);
                         return cachedData.data;
                     } catch (e) {
@@ -4707,7 +4683,6 @@
             const keys = Object.keys(localStorage);
             const matchingKeys = keys.filter(k => k.includes(pattern));
             matchingKeys.forEach(k => localStorage.removeItem(k));
-            console.log(`🗑️  Cleared ${matchingKeys.length} cache entries matching '${pattern}'`);
             return matchingKeys.length;
         }
 
@@ -4716,7 +4691,6 @@
             const keys = Object.keys(localStorage);
             const cacheKeys = keys.filter(k => k.startsWith('cache_'));
             cacheKeys.forEach(k => localStorage.removeItem(k));
-            console.log(`Cleared ${cacheKeys.length} cache entries`);
 
             // Clear Service Worker cache
             if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
@@ -4740,32 +4714,28 @@
                 // Determine user type (case-insensitive)
                 const userType = (currentUser.type || '').toLowerCase();
 
-                console.log(`User type detected: ${userType}`);
 
                 if (userType === 'admin') {
                     // Admin views to preload
                     const views = [
-                        { name: 'Dashboard', url: `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_dashboard_' + year },
-                        { name: 'Primaci', url: `${API_URL}?path=primaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_primaci_' + year },
-                        { name: 'Otpremaci', url: `${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_otpremaci_' + year },
-                        { name: 'Kupci', url: `${API_URL}?path=kupci&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_kupci_' + year },
-                        { name: 'Odjeli', url: `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_odjeli_' + year },
-                        { name: 'Stanje Odjela', url: `${API_URL}?path=stanje_odjela&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_stanje_odjela_' + year },
-                        { name: 'Pending Unosi', url: `${API_URL}?path=pending_unosi&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_pending_unosi' },
-                        { name: 'Mjesečni Sortimenti', url: `${API_URL}?path=mjesecni_sortimenti&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_mjesecni_sortimenti_' + year },
-                        { name: 'Dinamika', url: `${API_URL}?path=get_dinamika&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_dinamika_' + year }
+                        { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year },
+                        { name: 'Primaci', url: buildApiUrl('primaci', { year }), cacheKey: 'cache_primaci_' + year },
+                        { name: 'Otpremaci', url: buildApiUrl('otpremaci', { year }), cacheKey: 'cache_otpremaci_' + year },
+                        { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year },
+                        { name: 'Odjeli', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_odjeli_' + year },
+                        { name: 'Stanje Odjela', url: buildApiUrl('stanje_odjela', { year }), cacheKey: 'cache_stanje_odjela_' + year },
+                        { name: 'Pending Unosi', url: buildApiUrl('pending_unosi'), cacheKey: 'cache_pending_unosi' },
+                        { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni_sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year },
+                        { name: 'Dinamika', url: buildApiUrl('get_dinamika', { year }), cacheKey: 'cache_dinamika_' + year }
                     ];
 
-                    console.log(`Preloading ${views.length} admin views...`);
 
                     for (const view of views) {
                         try {
-                            console.log(`Loading ${view.name}...`);
                             // Use 30s timeout for heavy endpoints (dashboard, odjeli), 8s for others
                             const timeout = (view.name === 'Dashboard' || view.name === 'Odjeli') ? 30000 : 8000;
                             await fetchWithCache(view.url, view.cacheKey, false, timeout);
                             totalLoaded++;
-                            console.log(`✓ ${view.name} loaded`);
                         } catch (error) {
                             totalFailed++;
                             console.error(`✗ ${view.name} failed:`, error);
@@ -4775,21 +4745,18 @@
                 } else if (userType === 'poslovođa' || userType === 'poslovodja') {
                     // Poslovodja views to preload
                     const views = [
-                        { name: 'Stanje Odjela', url: `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_poslovodja_odjeli_' + year },
-                        { name: 'Odjeli u realizaciji', url: `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_poslovodja_realizacija_' + year },
-                        { name: 'Zadnjih 5 dana - Primke', url: `${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_poslovodja_primke' },
-                        { name: 'Zadnjih 5 dana - Otpreme', url: `${API_URL}?path=otpreme&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_poslovodja_otpreme' },
-                        { name: 'Suma mjeseca', url: `${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`, cacheKey: 'cache_poslovodja_suma_primke' }
+                        { name: 'Stanje Odjela', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_poslovodja_odjeli_' + year },
+                        { name: 'Odjeli u realizaciji', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_poslovodja_realizacija_' + year },
+                        { name: 'Zadnjih 5 dana - Primke', url: buildApiUrl('primke'), cacheKey: 'cache_poslovodja_primke' },
+                        { name: 'Zadnjih 5 dana - Otpreme', url: buildApiUrl('otpreme'), cacheKey: 'cache_poslovodja_otpreme' },
+                        { name: 'Suma mjeseca', url: buildApiUrl('primke'), cacheKey: 'cache_poslovodja_suma_primke' }
                     ];
 
-                    console.log(`Preloading ${views.length} poslovodja views...`);
 
                     for (const view of views) {
                         try {
-                            console.log(`Loading ${view.name}...`);
                             await fetchWithCache(view.url, view.cacheKey);
                             totalLoaded++;
-                            console.log(`✓ ${view.name} loaded`);
                         } catch (error) {
                             totalFailed++;
                             console.error(`✗ ${view.name} failed:`, error);
@@ -4800,25 +4767,21 @@
                     // Worker views to preload
                     const path = userType === 'primac' ? 'primke' : 'otpreme';
                     const views = [
-                        { name: 'Moje unose', url: `${API_URL}?path=${path}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: `cache_my_${path}` },
-                        { name: 'Godišnji prikaz', url: `${API_URL}?path=${path}&username=${currentUser.username}&password=${currentPassword}`, cacheKey: `cache_godisnji_${path}` }
+                        { name: 'Moje unose', url: buildApiUrl(path), cacheKey: `cache_my_${path}` },
+                        { name: 'Godišnji prikaz', url: buildApiUrl(path), cacheKey: `cache_godisnji_${path}` }
                     ];
 
-                    console.log(`Preloading ${views.length} worker views...`);
 
                     for (const view of views) {
                         try {
-                            console.log(`Loading ${view.name}...`);
                             await fetchWithCache(view.url, view.cacheKey);
                             totalLoaded++;
-                            console.log(`✓ ${view.name} loaded`);
                         } catch (error) {
                             totalFailed++;
                             console.error(`✗ ${view.name} failed:`, error);
                         }
                     }
                 } else {
-                    console.warn(`Unknown user type: ${userType}`);
                 }
 
                 if (totalLoaded > 0) {
@@ -4853,6 +4816,26 @@
         let currentUser = null;
         let currentPassword = null;
         let odjeliList = [];
+        let cacheStatusIntervalId = null;
+
+        // Helper function to build secure API URLs with encoded credentials
+        function buildApiUrl(path, additionalParams = {}) {
+            const params = new URLSearchParams();
+            params.append('path', path);
+            if (currentUser && currentUser.username) {
+                params.append('username', currentUser.username);
+            }
+            if (currentPassword) {
+                params.append('password', currentPassword);
+            }
+            // Add any additional parameters
+            for (const [key, value] of Object.entries(additionalParams)) {
+                if (value !== null && value !== undefined) {
+                    params.append(key, value);
+                }
+            }
+            return `${API_URL}?${params.toString()}`;
+        }
 
         // POSLOVOĐA RADILIŠTA MAPPING
         const POSLOVODJA_RADILISTA = {
@@ -4965,8 +4948,12 @@
 
         // Periodično ažuriraj cache status (svaka minuta)
         function startCacheStatusUpdater() {
+            // Clear existing interval if any to prevent memory leaks
+            if (cacheStatusIntervalId) {
+                clearInterval(cacheStatusIntervalId);
+            }
             updateCacheStatusIndicator();
-            setInterval(updateCacheStatusIndicator, 60 * 1000); // Svaka minuta
+            cacheStatusIntervalId = setInterval(updateCacheStatusIndicator, 60 * 1000); // Svaka minuta
         }
 
         // Initialize year selectors with current year
@@ -4992,7 +4979,6 @@
                 badge.textContent = currentYear;
             });
 
-            console.log(`✓ Initialized year selectors to ${currentYear}`);
         }
 
         // Main initialization on page load
@@ -5138,6 +5124,46 @@
         }
         
         function logout() {
+            // Cleanup intervals to prevent memory leaks
+            if (cacheStatusIntervalId) {
+                clearInterval(cacheStatusIntervalId);
+                cacheStatusIntervalId = null;
+            }
+
+            // Cleanup chart instances to prevent memory leaks
+            if (window.dashboardChart) {
+                window.dashboardChart.destroy();
+                window.dashboardChart = null;
+            }
+            if (window.uporedbaChart) {
+                window.uporedbaChart.destroy();
+                window.uporedbaChart = null;
+            }
+            if (primacChart) {
+                primacChart.destroy();
+                primacChart = null;
+            }
+            if (otpremacChart) {
+                otpremacChart.destroy();
+                otpremacChart = null;
+            }
+            if (primacDailyChart) {
+                primacDailyChart.destroy();
+                primacDailyChart = null;
+            }
+            if (otpremacDailyChart) {
+                otpremacDailyChart.destroy();
+                otpremacDailyChart = null;
+            }
+            if (primacYearlyChart) {
+                primacYearlyChart.destroy();
+                primacYearlyChart = null;
+            }
+            if (otpremacYearlyChart) {
+                otpremacYearlyChart.destroy();
+                otpremacYearlyChart = null;
+            }
+
             currentUser = null;
             currentPassword = null;
             localStorage.removeItem('sumarija_user');
@@ -5449,7 +5475,7 @@
             try {
                 const year = new Date().getFullYear();
                 const cacheKey = 'cache_dashboard_' + year;
-                const url = `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('dashboard', { year });
 
                 // STALE-WHILE-REVALIDATE: Check cache first
                 let hasCachedData = false;
@@ -5458,12 +5484,10 @@
                     try {
                         const parsed = JSON.parse(cachedDashboard);
                         if (parsed.data && parsed.data.mjesecnaStatistika) {
-                            console.log(`📦 Showing cached dashboard while fetching fresh data...`);
                             await renderDashboard(parsed.data);
                             hasCachedData = true;
                         }
                     } catch (e) {
-                        console.warn('⚠️ Failed to parse cached dashboard:', e);
                     }
                 }
 
@@ -5473,9 +5497,7 @@
 
                     // Render fresh data (silently if we already showed cache)
                     if (!hasCachedData) {
-                        console.log('✅ Showing fresh dashboard data');
                     } else {
-                        console.log('🔄 Updating dashboard with fresh data');
                     }
                     await renderDashboard(data);
 
@@ -5484,7 +5506,6 @@
                     if (!hasCachedData) {
                         throw error;
                     } else {
-                        console.warn('⚠️ Failed to fetch fresh data, showing cached version:', error);
                     }
                 }
 
@@ -5518,7 +5539,6 @@
         async function renderDashboard(data) {
                 const year = new Date().getFullYear();
 
-                console.log('Dashboard data:', data);
 
                 // Check for errors
                 if (data.error) {
@@ -5655,10 +5675,9 @@
                 document.getElementById('dashboard-monthly-table').innerHTML = monthlyHTML;
 
                 // Fetch and populate odjeli table with caching
-                const odjeliUrl = `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const odjeliUrl = buildApiUrl('odjeli', { year });
                 const odjeliData = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year);
 
-                console.log('Odjeli data:', odjeliData);
 
                 if (odjeliData.error) {
                     console.error('Odjeli API error:', odjeliData.error);
@@ -5716,16 +5735,14 @@
 
             try {
                 const radilista = getPoslovodjaRadilista();
-                console.log('Poslovođa radilišta:', radilista);
 
                 // Display radilišta
                 document.getElementById('poslovodja-radilista-list').textContent = radilista.join(', ');
 
                 // Load STANJE ODJELA data sa povećanim timeout-om (60s)
-                const url = `${API_URL}?path=odjeli&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('odjeli');
                 const data = await fetchWithCache(url, 'cache_odjeli_stanje', false, 60000);
 
-                console.log('Odjeli data:', data);
 
                 if (data.error || !data.odjeli) {
                     throw new Error(data.error || 'Nema podataka o odjelima');
@@ -5737,7 +5754,6 @@
                     return radilista.some(r => odjelRadiliste.includes(r.toUpperCase()));
                 });
 
-                console.log('Filtered odjeli:', filteredOdjeli);
 
                 // Render stanje odjela table
                 renderPoslovodjaStanjeTable(filteredOdjeli);
@@ -5900,16 +5916,14 @@
 
             try {
                 const radilista = getPoslovodjaRadilista();
-                console.log('Poslovođa radilišta:', radilista);
 
                 // Display radilišta
                 document.getElementById('poslovodja-radilista-list-2').textContent = radilista.join(', ');
 
                 // Load STANJE ODJELA data sa povećanim timeout-om (60s)
-                const url = `${API_URL}?path=odjeli&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('odjeli');
                 const data = await fetchWithCache(url, 'cache_odjeli_realizacija', false, 60000);
 
-                console.log('Odjeli data:', data);
 
                 if (data.error || !data.odjeli) {
                     throw new Error(data.error || 'Nema podataka o odjelima');
@@ -5923,7 +5937,6 @@
                     return hasRadiliste && uRealizaciji;
                 });
 
-                console.log('Filtered odjeli u realizaciji:', filteredOdjeli);
 
                 // Render realizacija table (isti format kao stanje)
                 renderPoslovodjaRealizacijaTable(filteredOdjeli);
@@ -6001,7 +6014,6 @@
 
             try {
                 const radilista = getPoslovodjaRadilista();
-                console.log('Poslovođa radilišta:', radilista);
 
                 // Display radilišta
                 document.getElementById('poslovodja-radilista-list-3').textContent = radilista.join(', ');
@@ -6012,16 +6024,14 @@
                 fiveDaysAgo.setDate(today.getDate() - 5);
 
                 // Load primke i otpreme
-                const primkeUrl = `${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`;
-                const otpremeUrl = `${API_URL}?path=otpreme&username=${currentUser.username}&password=${currentPassword}`;
+                const primkeUrl = buildApiUrl('primke');
+                const otpremeUrl = buildApiUrl('otpreme');
 
                 const [primkeData, otpremeData] = await Promise.all([
                     fetchWithCache(primkeUrl, 'cache_primke_zadnjih5'),
                     fetchWithCache(otpremeUrl, 'cache_otpreme_zadnjih5')
                 ]);
 
-                console.log('Primke data:', primkeData);
-                console.log('Otpreme data:', otpremeData);
 
                 if (primkeData.error) {
                     throw new Error('Greška pri učitavanju primki: ' + primkeData.error);
@@ -6058,8 +6068,6 @@
                 filteredPrimke.sort((a, b) => new Date(b.datum) - new Date(a.datum));
                 filteredOtpreme.sort((a, b) => new Date(b.datum) - new Date(a.datum));
 
-                console.log('Filtered primke (zadnjih 5 dana):', filteredPrimke);
-                console.log('Filtered otpreme (zadnjih 5 dana):', filteredOtpreme);
 
                 // Render tables
                 renderPoslovodjaPrimkaTable(filteredPrimke);
@@ -6164,7 +6172,6 @@
 
             try {
                 const radilista = getPoslovodjaRadilista();
-                console.log('Poslovođa radilišta:', radilista);
 
                 // Display radilišta
                 document.getElementById('poslovodja-radilista-list-4').textContent = radilista.join(', ');
@@ -6175,16 +6182,14 @@
                 const currentMonth = currentDate.getMonth(); // 0-11
 
                 // Load primke i otpreme
-                const primkeUrl = `${API_URL}?path=primke&username=${currentUser.username}&password=${currentPassword}`;
-                const otpremeUrl = `${API_URL}?path=otpreme&username=${currentUser.username}&password=${currentPassword}`;
+                const primkeUrl = buildApiUrl('primke');
+                const otpremeUrl = buildApiUrl('otpreme');
 
                 const [primkeData, otpremeData] = await Promise.all([
                     fetchWithCache(primkeUrl, 'cache_primke_suma'),
                     fetchWithCache(otpremeUrl, 'cache_otpreme_suma')
                 ]);
 
-                console.log('Primke data:', primkeData);
-                console.log('Otpreme data:', otpremeData);
 
                 if (primkeData.error) {
                     throw new Error('Greška pri učitavanju primki: ' + primkeData.error);
@@ -6216,8 +6221,6 @@
                     return hasRadiliste && sameMonth;
                 });
 
-                console.log('Filtered primke (trenutni mjesec):', filteredPrimke);
-                console.log('Filtered otpreme (trenutni mjesec):', filteredOtpreme);
 
                 // Sumiranje po odjelima
                 const sumePoOdjelima = {};
@@ -6281,8 +6284,6 @@
                 const odjeliArray = Object.values(sumePoOdjelima);
                 const radilistaArray = Object.values(sumePoRadilistima);
 
-                console.log('Sume po odjelima:', odjeliArray);
-                console.log('Sume po radilištima:', radilistaArray);
 
                 // Render tables
                 renderPoslovodjaSumaOdjeliTable(odjeliArray);
@@ -6446,7 +6447,7 @@
             try {
                 const year = new Date().getFullYear();
                 const cacheKey = 'cache_primaci_' + year;
-                const url = `${API_URL}?path=primaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('primaci', { year });
 
                 // STALE-WHILE-REVALIDATE: Check cache first
                 let hasCachedData = false;
@@ -6455,12 +6456,10 @@
                     try {
                         const parsed = JSON.parse(cachedPrimaci);
                         if (parsed.data && parsed.data.primaci) {
-                            console.log(`📦 Showing cached primaci while fetching fresh data...`);
                             renderPrimaci(parsed.data);
                             hasCachedData = true;
                         }
                     } catch (e) {
-                        console.warn('⚠️ Failed to parse cached primaci:', e);
                     }
                 }
 
@@ -6468,16 +6467,13 @@
                 try {
                     const data = await fetchWithCache(url, cacheKey, false, 120000);
                     if (!hasCachedData) {
-                        console.log('✅ Showing fresh primaci data');
                     } else {
-                        console.log('🔄 Updating primaci with fresh data');
                     }
                     renderPrimaci(data);
                 } catch (error) {
                     if (!hasCachedData) {
                         throw error;
                     } else {
-                        console.warn('⚠️ Failed to fetch fresh primaci, showing cached version:', error);
                     }
                 }
 
@@ -6611,7 +6607,7 @@
             try {
                 const year = new Date().getFullYear();
                 const cacheKey = 'cache_otpremaci_' + year;
-                const url = `${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('otpremaci', { year });
 
                 // STALE-WHILE-REVALIDATE: Check cache first
                 let hasCachedData = false;
@@ -6620,12 +6616,10 @@
                     try {
                         const parsed = JSON.parse(cachedOtpremaci);
                         if (parsed.data && parsed.data.otpremaci) {
-                            console.log(`📦 Showing cached otpremaci while fetching fresh data...`);
                             renderOtpremaci(parsed.data);
                             hasCachedData = true;
                         }
                     } catch (e) {
-                        console.warn('⚠️ Failed to parse cached otpremaci:', e);
                     }
                 }
 
@@ -6633,16 +6627,13 @@
                 try {
                     const data = await fetchWithCache(url, cacheKey, false, 120000);
                     if (!hasCachedData) {
-                        console.log('✅ Showing fresh otpremaci data');
                     } else {
-                        console.log('🔄 Updating otpremaci with fresh data');
                     }
                     renderOtpremaci(data);
                 } catch (error) {
                     if (!hasCachedData) {
                         throw error;
                     } else {
-                        console.warn('⚠️ Failed to fetch fresh otpremaci, showing cached version:', error);
                     }
                 }
 
@@ -6788,11 +6779,9 @@
                     monthSelect.value = month;
                 }
 
-                const url = `${API_URL}?path=primaci-daily&year=${year}&month=${month}&username=${currentUser.username}&password=${currentPassword}`;
-                console.log('Loading primaci daily from:', url);
+                const url = buildApiUrl('primaci-daily', { year, month });
                 const data = await fetchWithCache(url, `cache_primaci_daily_${year}_${month}`);
 
-                console.log('Primaci daily data received:', data);
 
                 if (data.error) {
                     console.error('Error loading primaci daily:', data.error);
@@ -6805,7 +6794,6 @@
                 }
 
                 if (!data.data || data.data.length === 0) {
-                    console.log('No data available for current month');
                     document.getElementById('primaci-daily-header').innerHTML = `
                         <tr>
                             <th style="background: #ea580c; color: white; padding: 12px;">
@@ -6957,7 +6945,6 @@
 
                 document.getElementById('primaci-daily-body').innerHTML = bodyHTML;
 
-                console.log('Primaci daily table rendered with', data.data.length, 'rows');
 
             } catch (error) {
                 console.error('Error in loadPrimaciDaily:', error);
@@ -6982,11 +6969,9 @@
                     monthSelect.value = month;
                 }
 
-                const url = `${API_URL}?path=otpremaci-daily&year=${year}&month=${month}&username=${currentUser.username}&password=${currentPassword}`;
-                console.log('Loading otpremaci daily from:', url);
+                const url = buildApiUrl('otpremaci-daily', { year, month });
                 const data = await fetchWithCache(url, `cache_otpremaci_daily_${year}_${month}`);
 
-                console.log('Otpremaci daily data received:', data);
 
                 if (data.error) {
                     console.error('Error loading otpremaci daily:', data.error);
@@ -6999,7 +6984,6 @@
                 }
 
                 if (!data.data || data.data.length === 0) {
-                    console.log('No data available for current month');
                     document.getElementById('otpremaci-daily-header').innerHTML = `
                         <tr>
                             <th style="background: #0891b2; color: white; padding: 12px;">
@@ -7156,7 +7140,6 @@
 
                 document.getElementById('otpremaci-daily-body').innerHTML = bodyHTML;
 
-                console.log('Otpremaci daily table rendered with', data.data.length, 'rows');
 
             } catch (error) {
                 console.error('Error in loadOtremaciDaily:', error);
@@ -7176,11 +7159,10 @@
         async function loadPrimaciByRadiliste() {
             try {
                 const year = new Date().getFullYear();
-                const url = `${API_URL}?path=primaci-by-radiliste&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('primaci-by-radiliste', { year });
 
                 const data = await fetchWithCache(url, `cache_primaci_radiliste_${year}`);
 
-                console.log('Primaci by radiliste data received:', data);
 
                 if (data.error) {
                     console.error('Error loading primaci by radiliste:', data.error);
@@ -7286,7 +7268,6 @@
                 });
                 document.getElementById('primaci-radilista-recap-body').innerHTML = recapBodyHTML;
 
-                console.log('Primaci by radiliste rendered');
 
             } catch (error) {
                 console.error('Error in loadPrimaciByRadiliste:', error);
@@ -7302,11 +7283,10 @@
         async function loadPrimaciByIzvodjac() {
             try {
                 const year = new Date().getFullYear();
-                const url = `${API_URL}?path=primaci-by-izvodjac&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('primaci-by-izvodjac', { year });
 
                 const data = await fetchWithCache(url, `cache_primaci_izvodjac_${year}`);
 
-                console.log('Primaci by izvodjac data received:', data);
 
                 if (data.error) {
                     console.error('Error loading primaci by izvodjac:', data.error);
@@ -7412,7 +7392,6 @@
                 });
                 document.getElementById('primaci-izvodjaci-recap-body').innerHTML = recapBodyHTML;
 
-                console.log('Primaci by izvodjac rendered');
 
             } catch (error) {
                 console.error('Error in loadPrimaciByIzvodjac:', error);
@@ -7428,11 +7407,10 @@
         async function loadOtremaciByRadiliste() {
             try {
                 const year = new Date().getFullYear();
-                const url = `${API_URL}?path=otpremaci-by-radiliste&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('otpremaci-by-radiliste', { year });
 
                 const data = await fetchWithCache(url, `cache_otpremaci_radiliste_${year}`);
 
-                console.log('Otpremaci by radiliste data received:', data);
 
                 if (data.error) {
                     console.error('Error loading otpremaci by radiliste:', data.error);
@@ -7538,7 +7516,6 @@
                 });
                 document.getElementById('otpremaci-radilista-recap-body').innerHTML = recapBodyHTML;
 
-                console.log('Otpremaci by radiliste rendered');
 
             } catch (error) {
                 console.error('Error in loadOtremaciByRadiliste:', error);
@@ -7553,16 +7530,14 @@
 
         // Load kupci data
         async function loadKupci() {
-            console.log('Loading Kupci screen...');
             document.getElementById('kupci-content').classList.remove('hidden');
             document.getElementById('loading-screen').classList.add('hidden');
 
             try {
                 const year = new Date().getFullYear();
-                const url = `${API_URL}?path=kupci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('kupci', { year });
                 const data = await fetchWithCache(url, 'cache_kupci_' + year);
 
-                console.log('Kupci data:', data);
 
                 if (data.error || !data.godisnji || !data.sortimentiNazivi) {
                     throw new Error(data.error || 'Nema podataka');
@@ -7705,14 +7680,12 @@
 
         // Load otpreme po kupcima u tekućem mjesecu
         async function loadOtremaciPoKupcima() {
-            console.log('Loading Otpremaci po kupcima...');
 
             try {
                 const year = new Date().getFullYear();
-                const url = `${API_URL}?path=kupci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('kupci', { year });
                 const data = await fetchWithCache(url, 'cache_kupci_' + year);
 
-                console.log('Kupci data for otpreme:', data);
 
                 if (data.error || !data.mjesecni || !data.sortimentiNazivi) {
                     throw new Error(data.error || 'Nema podataka');
@@ -7739,20 +7712,15 @@
             const bodyElem = document.getElementById('otpremaci-po-kupcima-body');
             const footerElem = document.getElementById('otpremaci-po-kupcima-footer');
 
-            console.log('renderOtremaciPoKupcimaExpertTable called');
-            console.log('Total mjesecni records:', mjesecni.length);
 
             // Filtruj samo trenutni mjesec
             const currentDate = new Date();
             const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
             const currentMjesec = mjeseci[currentDate.getMonth()];
 
-            console.log('Current month:', currentMjesec);
-            console.log('Available months in data:', [...new Set(mjesecni.map(r => r.mjesec))]);
 
             let filteredData = mjesecni.filter(red => red.mjesec === currentMjesec);
 
-            console.log('Filtered data count:', filteredData.length);
 
             if (!filteredData || filteredData.length === 0) {
                 // DEBUG: Show which months are available
@@ -7840,7 +7808,6 @@
 
         // Render Top 5 Kupaca po sortimentima
         function renderKupciTop5BySortimenti(data) {
-            console.log('renderKupciTop5BySortimenti called');
 
             // Define sortimenti categories and their indices
             const sortimentiCategories = {
@@ -7902,7 +7869,6 @@
 
         // Render Top 10 Kupaca - Total Otprema
         function renderKupciTop10(godisnjiData) {
-            console.log('renderKupciTop10 called');
 
             const sorted = godisnjiData
                 .sort((a, b) => (b.ukupno || 0) - (a.ukupno || 0))
@@ -8370,7 +8336,7 @@
                 const badge = document.getElementById('primac-godisnji-year-badge');
                 if (badge) badge.textContent = year;
 
-                const url = `${API_URL}?path=primac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('primac-detail', { year });
                 const data = await fetchWithCache(url, 'cache_primac_godisnji_' + year);
 
                 if (data.error) {
@@ -8474,10 +8440,9 @@
                 const yearSelector = document.getElementById('primac-personal-year-select');
                 const year = yearSelector ? yearSelector.value : new Date().getFullYear();
 
-                const url = `${API_URL}?path=primac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('primac-detail', { year });
                 const data = await fetchWithCache(url, 'cache_primac_detail_' + year);
 
-                console.log('Primac personal data:', data);
 
                 if (data.error) {
                     throw new Error(data.error);
@@ -8577,10 +8542,9 @@
                 const yearSelector = document.getElementById('otpremac-personal-year-select');
                 const year = yearSelector ? yearSelector.value : new Date().getFullYear();
 
-                const url = `${API_URL}?path=otpremac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('otpremac-detail', { year });
                 const data = await fetchWithCache(url, 'cache_otpremac_detail_' + year);
 
-                console.log('Otpremac personal data:', data);
 
                 if (data.error) {
                     throw new Error(data.error);
@@ -8689,7 +8653,7 @@
 
             try {
                 // Backend sada vraća top 15 odjela iz svih godina automatski
-                const url = `${API_URL}?path=primac-odjeli&limit=15&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('primac-odjeli', { limit: 15 });
                 const data = await fetchWithCache(url, 'cache_primac_odjeli_top15');
 
                 if (data.error) {
@@ -8813,7 +8777,7 @@
 
             try {
                 // Backend sada vraća top 15 odjela iz svih godina automatski
-                const url = `${API_URL}?path=otpremac-odjeli&limit=15&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('otpremac-odjeli', { limit: 15 });
                 const data = await fetchWithCache(url, 'cache_otpremac_odjeli_top15');
 
                 if (data.error) {
@@ -9290,13 +9254,12 @@
 
             try {
                 const year = new Date().getFullYear();
-                const url = API_URL + '?path=pending-unosi&year=' + year + '&username=' + currentUser.username + '&password=' + currentPassword;
+                const url = buildApiUrl('pending-unosi', { year });
 
                 // Don't cache pending entries - always fetch fresh
                 const response = await fetch(url);
                 const data = await response.json();
 
-                console.log('Dodani unosi data:', data);
 
                 if (data.error) {
                     throw new Error(data.error);
@@ -9330,12 +9293,10 @@
 
             try {
                 const year = new Date().getFullYear();
-                const url = API_URL + '?path=mjesecni-sortimenti&year=' + year + '&username=' + currentUser.username + '&password=' + currentPassword;
+                const url = buildApiUrl('mjesecni-sortimenti', { year });
 
-                console.log('Fetching mjesečni sortimenti for year:', year);
                 const data = await fetchWithCache(url, `cache_mjesecni_sortimenti_${year}`);
 
-                console.log('Mjesečni sortimenti response:', data);
 
                 if (data.error) {
                     throw new Error(data.error);
@@ -9345,15 +9306,12 @@
                     throw new Error('Invalid data format received from server');
                 }
 
-                console.log('Rendering SJEČA table...');
                 // Render SJEČA table
                 renderMjesecnaTabela(data.sjeca, 'mjesecna-sjeca');
 
-                console.log('Rendering OTPREMA table...');
                 // Render OTPREMA table
                 renderMjesecnaTabela(data.otprema, 'mjesecna-otprema');
 
-                console.log('Tables rendered successfully');
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('mjesecni-sortimenti-content').classList.remove('hidden');
 
@@ -9367,7 +9325,6 @@
 
         // Render monthly table (SJEČA or OTPREMA)
         function renderMjesecnaTabela(data, tableId) {
-            console.log('renderMjesecnaTabela called with tableId:', tableId, 'data:', data);
 
             const headerElem = document.getElementById(tableId + '-header');
             const bodyElem = document.getElementById(tableId + '-body');
@@ -9378,7 +9335,6 @@
             }
 
             if (!data || !data.sortimenti || data.sortimenti.length === 0) {
-                console.log('No data available for table:', tableId);
                 headerElem.innerHTML = '';
                 bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka</td></tr>';
                 return;
@@ -9394,9 +9350,6 @@
             const sortimenti = data.sortimenti.filter(s => s && s.trim() !== ''); // Filter out empty sortiment names
             const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
 
-            console.log('Original sortimenti:', data.sortimenti);
-            console.log('Filtered sortimenti:', sortimenti);
-            console.log('Rendering table with', sortimenti.length, 'sortimenti and', data.mjeseci.length, 'months');
 
             // Build header with optimized styling
             let headerHtml = '<tr>';
@@ -9568,11 +9521,11 @@
                 document.getElementById('izvjestaji-otprema-title').textContent = mjeseciNazivi[month] + ' ' + year;
 
                 // Load PRIMKA (sječa) data
-                const primkaUrl = API_URL + '?path=primaci-daily&year=' + year + '&month=' + month + '&username=' + currentUser.username + '&password=' + currentPassword;
+                const primkaUrl = buildApiUrl('primaci-daily', { year, month });
                 const primkaData = await fetchWithCache(primkaUrl, `cache_izvjestaji_primka_${year}_${month}`);
 
                 // Load OTPREMA data
-                const otpremaUrl = API_URL + '?path=otpremaci-daily&year=' + year + '&month=' + month + '&username=' + currentUser.username + '&password=' + currentPassword;
+                const otpremaUrl = buildApiUrl('otpremaci-daily', { year, month });
                 const otpremaData = await fetchWithCache(otpremaUrl, `cache_izvjestaji_otprema_${year}_${month}`);
 
                 if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
@@ -9826,7 +9779,7 @@
                 const month = document.getElementById('sedmicni-sjeca-month-select').value;
 
                 // Load PRIMKA (sječa) data
-                const primkaUrl = API_URL + '?path=primaci-daily&year=' + year + '&month=' + month + '&username=' + currentUser.username + '&password=' + currentPassword;
+                const primkaUrl = buildApiUrl('primaci-daily', { year, month });
                 const primkaData = await fetchWithCache(primkaUrl, `cache_sedmicni_sjeca_${year}_${month}`);
 
                 if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
@@ -9854,7 +9807,7 @@
                 const month = document.getElementById('sedmicni-otprema-month-select').value;
 
                 // Load OTPREMA data
-                const otpremaUrl = API_URL + '?path=otpremaci-daily&year=' + year + '&month=' + month + '&username=' + currentUser.username + '&password=' + currentPassword;
+                const otpremaUrl = buildApiUrl('otpremaci-daily', { year, month });
                 const otpremaData = await fetchWithCache(otpremaUrl, `cache_sedmicni_otprema_${year}_${month}`);
 
                 if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
@@ -10118,7 +10071,7 @@
 
             try {
                 // Load data from backend
-                const url = API_URL + '?path=stanje-odjela&username=' + currentUser.username + '&password=' + currentPassword;
+                const url = buildApiUrl('stanje-odjela');
                 const data = await fetchWithCache(url, `cache_stanje_odjela`);
 
                 if (data.error) throw new Error(data.error);
@@ -10293,7 +10246,7 @@
         async function loadPendingCount() {
             try {
                 const year = new Date().getFullYear();
-                const url = API_URL + '?path=pending-unosi&year=' + year + '&username=' + currentUser.username + '&password=' + currentPassword;
+                const url = buildApiUrl('pending-unosi', { year });
                 const response = await fetch(url);
                 const data = await response.json();
 
@@ -10693,7 +10646,7 @@
             document.getElementById('my-sjece-content').classList.add('hidden');
 
             try {
-                const url = API_URL + '?path=my-pending&username=' + currentUser.username + '&password=' + currentPassword + '&tip=sjeca';
+                const url = buildApiUrl('my-pending', { tip: 'sjeca' });
                 const data = await fetchWithCache(url, `cache_my_sjece_${currentUser.username}`);
 
                 if (data.error) {
@@ -10759,7 +10712,7 @@
             document.getElementById('my-otpreme-content').classList.add('hidden');
 
             try {
-                const url = API_URL + '?path=my-pending&username=' + currentUser.username + '&password=' + currentPassword + '&tip=otprema';
+                const url = buildApiUrl('my-pending', { tip: 'otprema' });
                 const data = await fetchWithCache(url, `cache_my_otpreme_${currentUser.username}`);
 
                 if (data.error) {
@@ -11301,7 +11254,6 @@
 
         // Load OPERATIVA screen and populate analytics
         function loadOperativa() {
-            console.log('Loading Operativa screen...');
             document.getElementById('operativa-content').classList.remove('hidden');
             document.getElementById('loading-screen').classList.add('hidden');
 
@@ -11314,31 +11266,23 @@
         async function loadStatsForOperativa(year) {
             try {
                 // Fetch dashboard data (60s timeout for heavy endpoint)
-                const dashboardUrl = `${API_URL}?path=dashboard&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const dashboardUrl = buildApiUrl('dashboard', { year });
                 const dashboardData = await fetchWithCache(dashboardUrl, 'cache_dashboard_' + year, false, 60000);
 
                 // Fetch odjeli data (60s timeout for heavy endpoint)
-                const odjeliUrl = `${API_URL}?path=odjeli&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const odjeliUrl = buildApiUrl('odjeli', { year });
                 const odjeliResponse = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year, false, 60000);
 
                 // **NOVO: Fetch STANJE ODJELA data (sa PROJEKAT podacima iz Excel redova 10-13)**
-                const stanjeOdjelaUrl = `${API_URL}?path=stanje-odjela&username=${currentUser.username}&password=${currentPassword}`;
+                const stanjeOdjelaUrl = buildApiUrl('stanje-odjela');
                 const stanjeOdjelaData = await fetchWithCache(stanjeOdjelaUrl, 'cache_stanje_odjela');
 
-                console.log('Dashboard data for OPERATIVA:', dashboardData);
-                console.log('Odjeli data for OPERATIVA:', odjeliResponse);
-                console.log('STANJE ODJELA data for OPERATIVA (PROJEKAT source):', stanjeOdjelaData);
 
                 // DEBUG: Log odjeli count and total from API
                 if (odjeliResponse && odjeliResponse.odjeli) {
                     const odjeliCount = odjeliResponse.odjeli.length;
                     const totalFromAPI = odjeliResponse.odjeli.reduce((sum, o) => sum + (o.sjeca || 0), 0);
-                    console.log(`=== ODJELI API SUMMARY ===`);
-                    console.log(`Total odjela in API: ${odjeliCount}`);
-                    console.log(`Total sječa from API (direct): ${totalFromAPI.toFixed(2)} m³`);
-                    console.log(`Expected total: ~68171 m³`);
                     if (Math.abs(totalFromAPI - 68171) > 1000) {
-                        console.warn(`⚠️ SUMA DISCREPANCY: ${(totalFromAPI - 68171).toFixed(2)} m³ difference!`);
                     }
                 }
 
@@ -11386,19 +11330,12 @@
                                 // DEBUG: Log projekat sources za GRMEČ JASENICA 39
                                 const odjelDebugStr = String(odjel.odjel || '');
                                 if (odjel.odjel && (odjelDebugStr.includes('JASENICA 39') || odjelDebugStr.includes('GRMEČ'))) {
-                                    console.log('=== DEBUG GRMEČ JASENICA 39 ===');
-                                    console.log('Odjel name:', odjel.odjel);
-                                    console.log('odjel.projekat (U11 from handleOdjeli):', odjel.projekat);
-                                    console.log('projekatTotal (STANJE ODJELA red 10):', projekatTotal);
-                                    console.log('stanjeMatch.odjelNaziv:', stanjeMatch.odjelNaziv);
-                                    console.log('stanjeMatch.redovi.projekat:', stanjeMatch.redovi.projekat);
                                 }
                             }
                         }
 
                         // DEBUG: Check for duplicate odjeli
                         if (odjeliStats[odjel.odjel]) {
-                            console.warn('DUPLICATE ODJEL DETECTED:', odjel.odjel, 'Previous:', odjeliStats[odjel.odjel], 'New:', odjel);
                         }
 
                         odjeliStats[odjel.odjel] = {
@@ -11424,7 +11361,6 @@
                     stanjeOdjelaRaw: stanjeOdjelaData // Pass raw data for additional features
                 };
 
-                console.log('Transformed data for OPERATIVA (enriched with PROJEKAT):', transformedData);
 
                 // Load OPERATIVA with transformed data
                 loadOperativaData(transformedData);
@@ -11436,7 +11372,6 @@
 
         // Main data processing for Operativa screen
         function loadOperativaData(data) {
-            console.log('Processing Operativa data:', data);
 
             // Calculate KPIs
             const totalPrimka = data.totalPrimka || 0;
@@ -11731,7 +11666,6 @@
 
         // Render Performance Alerts Banner
         function renderPerformanceAlerts(odjeliStats) {
-            console.log('renderPerformanceAlerts called with:', odjeliStats);
             const criticalAlerts = []; // 🔴 Kritično: > 5 dana bez unosa + projekat >> posječeno
             const warningAlerts = [];  // ⚠️ Upozorenje: posječena masa > 110% projekta (blizu 115% limite)
 
@@ -11751,7 +11685,6 @@
                         const daysSinceEntry = Math.floor((today - lastEntry) / (1000 * 60 * 60 * 24));
 
                         if (daysSinceEntry > 30) {
-                            console.log(`Skipping alert for ${odjel} - zadnji unos prije ${daysSinceEntry} dana (> 30 dana)`);
                             return; // Skip ovaj odjel kompletno
                         }
 
@@ -11778,8 +11711,6 @@
                 }
             });
 
-            console.log('Critical alerts:', criticalAlerts);
-            console.log('Warning alerts:', warningAlerts);
 
             const banner = document.getElementById('performance-alerts-banner');
 
@@ -11828,7 +11759,6 @@
 
         // Render Top Izvođači Performance
         function renderIzvodjaciPerformance(odjeliStats) {
-            console.log('renderIzvodjaciPerformance called with:', odjeliStats);
             const izvodjaciMap = {};
             const izvodjaciOriginalNames = {}; // Track original names for display
 
@@ -11838,7 +11768,6 @@
                 izvodjac = izvodjac.trim(); // Remove whitespace
 
                 if (!izvodjac || izvodjac === '') {
-                    console.log('Skipping odjel with empty izvođač:', odjel, stats);
                     return; // Skip empty izvođači
                 }
 
@@ -11846,7 +11775,6 @@
                 const normalizedName = izvodjac.toUpperCase();
                 const sjeca = stats.sječa || 0;
 
-                console.log(`Adding odjel ${odjel} to izvođač ${normalizedName}: ${sjeca} m³`);
 
                 if (!izvodjaciMap[normalizedName]) {
                     izvodjaciMap[normalizedName] = 0;
@@ -11855,11 +11783,9 @@
                 izvodjaciMap[normalizedName] += sjeca;
             });
 
-            console.log('Izvođači grouped (normalized):', izvodjaciMap);
 
             // Calculate and log total suma
             const totalSuma = Object.values(izvodjaciMap).reduce((sum, val) => sum + val, 0);
-            console.log('TOTAL SUMA SVIH IZVOĐAČA:', totalSuma.toFixed(2), 'm³');
 
             // Sort by volume and use original names for display
             const sorted = Object.entries(izvodjaciMap)
@@ -11867,7 +11793,6 @@
                 .slice(0, 10)
                 .map(([normalizedName, volume]) => [izvodjaciOriginalNames[normalizedName], volume]);
 
-            console.log('Top izvođači sorted:', sorted);
 
             const html = sorted.length > 0
                 ? sorted.map(([izvodjac, volume], index) => {
@@ -11889,7 +11814,6 @@
 
         // Render Timeline - Zadnji Unosi
         function renderTimelineUnosi(odjeliStats) {
-            console.log('renderTimelineUnosi called with:', odjeliStats);
             const timeline = [];
 
             Object.entries(odjeliStats).forEach(([odjel, stats]) => {
@@ -11899,7 +11823,6 @@
                 }
             });
 
-            console.log('Timeline entries:', timeline);
 
             // Sort by date (most recent first)
             timeline.sort((a, b) => {
@@ -11945,7 +11868,6 @@
 
         // Render Seasonal Analysis (Q1-Q4)
         function renderSeasonalAnalysis(monthlyStats) {
-            console.log('renderSeasonalAnalysis called with:', monthlyStats);
 
             // Define quarters
             const quarters = [
@@ -11990,14 +11912,12 @@
 
         // Render Mjesečni Trend Kupaca
         async function renderKupciMjesecniTrend() {
-            console.log('renderKupciMjesecniTrend called - fetching data...');
 
             try {
                 const year = new Date().getFullYear();
-                const kupciUrl = `${API_URL}?path=otpremaci&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const kupciUrl = buildApiUrl('otpremaci', { year });
                 const kupciData = await fetchWithCache(kupciUrl, 'cache_kupci_' + year);
 
-                console.log('Kupci mjesecni data:', kupciData);
 
                 if (!kupciData || !kupciData.mjesecni) {
                     document.getElementById('kupci-mjesecni-tbody').innerHTML = '<tr><td colspan="14" style="text-align: center; color: #6b7280;">Nema podataka</td></tr>';
@@ -12023,7 +11943,6 @@
                     return { kupac, mjeseci, total };
                 }).sort((a, b) => b.total - a.total).slice(0, 15); // Top 15 kupaca
 
-                console.log('Top 15 kupaca mjesečno:', kupciArray);
 
                 const html = kupciArray.map(k => {
                     return `
@@ -12068,17 +11987,15 @@
 
         // Load dinamika data
         async function loadDinamika() {
-            console.log('Loading Dinamika...');
             const container = document.getElementById('dinamika-container');
 
             const year = new Date().getFullYear(); // Tekuća godina (2026)
             document.getElementById('dinamika-selected-year').textContent = year;
 
             try {
-                const url = `${API_URL}?path=get_dinamika&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('get_dinamika', { year });
                 const data = await fetchWithCache(url, 'cache_dinamika_' + year);
 
-                console.log('Dinamika data:', data);
 
                 if (data.error) {
                     throw new Error(data.error);
@@ -12134,9 +12051,8 @@
 
                 // Koristi GET sa URL parametrima da izbjegneš CORS problem
                 const mjeseciJson = encodeURIComponent(JSON.stringify(mjeseci));
-                const url = `${API_URL}?path=save_dinamika&username=${encodeURIComponent(currentUser.username)}&password=${encodeURIComponent(currentPassword)}&godina=${year}&mjeseci=${mjeseciJson}`;
+                const url = buildApiUrl('save_dinamika', { godina: year, mjeseci: mjeseciJson });
 
-                console.log('Saving dinamika URL:', url);
 
                 const response = await fetch(url, {
                     method: 'GET'
@@ -12144,7 +12060,6 @@
 
                 const result = await response.json();
 
-                console.log('Save response:', result);
 
                 if (result.success) {
                     showSuccess('✅ Spremljeno!', 'Mjesečna dinamika uspješno spremljena.');
@@ -12171,27 +12086,23 @@
 
         // Load uporedba godina
         async function loadUporedbaGodina() {
-            console.log('Loading Uporedba Godina...');
 
             const year1 = parseInt(document.getElementById('uporedba-year1').value);
             const year2 = parseInt(document.getElementById('uporedba-year2').value);
 
-            console.log(`Comparing ${year1} vs ${year2}`);
 
             try {
                 showInfo('🔄 Učitavanje...', 'Učitavam podatke za usporedbu...');
 
                 // Fetch dashboard data za obje godine (paralelno, 60s timeout for heavy endpoints)
-                const url1 = `${API_URL}?path=dashboard&year=${year1}&username=${currentUser.username}&password=${currentPassword}`;
-                const url2 = `${API_URL}?path=dashboard&year=${year2}&username=${currentUser.username}&password=${currentPassword}`;
+                const url1 = buildApiUrl('dashboard', { year: year1 });
+                const url2 = buildApiUrl('dashboard', { year: year2 });
 
                 const [data1, data2] = await Promise.all([
                     fetchWithCache(url1, 'cache_dashboard_' + year1, false, 60000),
                     fetchWithCache(url2, 'cache_dashboard_' + year2, false, 60000)
                 ]);
 
-                console.log('Data Year 1:', data1);
-                console.log('Data Year 2:', data2);
 
                 if (data1.error || data2.error) {
                     throw new Error(data1.error || data2.error);
@@ -12509,7 +12420,7 @@
                 const month = document.getElementById('primac-sedmicni-month').value;
 
                 // Load primac-detail data (already filtered by current user)
-                const url = `${API_URL}?path=primac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('primac-detail', { year });
                 const response = await fetchWithCache(url, `cache_primac_sedmicni_${year}_${month}`);
 
                 if (response.error) throw new Error(response.error);
@@ -12571,7 +12482,7 @@
                 const month = document.getElementById('primac-mjesecni-month').value;
 
                 // Load primac-detail data (already filtered by current user)
-                const url = `${API_URL}?path=primac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('primac-detail', { year });
                 const response = await fetchWithCache(url, `cache_primac_mjesecni_${year}_${month}`);
 
                 if (response.error) throw new Error(response.error);
@@ -12635,7 +12546,7 @@
                 const month = document.getElementById('otpremac-sedmicni-month').value;
 
                 // Load otpremac-detail data (already filtered by current user)
-                const url = `${API_URL}?path=otpremac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('otpremac-detail', { year });
                 const response = await fetchWithCache(url, `cache_otpremac_sedmicni_${year}_${month}`);
 
                 if (response.error) throw new Error(response.error);
@@ -12693,7 +12604,7 @@
                 const month = document.getElementById('otpremac-mjesecni-month').value;
 
                 // Load otpremac-detail data (already filtered by current user)
-                const url = `${API_URL}?path=otpremac-detail&year=${year}&username=${currentUser.username}&password=${currentPassword}`;
+                const url = buildApiUrl('otpremac-detail', { year });
                 const response = await fetchWithCache(url, `cache_otpremac_mjesecni_${year}_${month}`);
 
                 if (response.error) throw new Error(response.error);
