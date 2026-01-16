@@ -3393,7 +3393,15 @@
                 </div>
             </div>
             <div id="poslovodja-radilista-info" class="section" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list"></span></p>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list"></span></p>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <label for="poslovodja-radiliste-select" style="color: #1e40af; font-weight: 600; white-space: nowrap;">Filtriraj po radilištu:</label>
+                        <select id="poslovodja-radiliste-select" onchange="filterPoslovodjaStanje()" style="padding: 8px 12px; border: 2px solid #3b82f6; border-radius: 6px; font-size: 14px; background: white; color: #1e40af; font-weight: 600; cursor: pointer; min-width: 200px;">
+                            <option value="">Sva radilišta</option>
+                        </select>
+                    </div>
+                </div>
             </div>
             <div class="section">
                 <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
@@ -6031,6 +6039,10 @@
         // POSLOVOĐA FUNCTIONS
         // ========================================
 
+        // Globalne varijable za poslovođu stanje odjela
+        let poslovodjaStanjeOdjeliAll = [];
+        let poslovodjaStanjeRadilista = [];
+
         // Helper: Get radilišta for current poslovodja
         function getPoslovodjaRadilista() {
             if (!currentUser) {
@@ -6053,7 +6065,7 @@
                 const radilista = getPoslovodjaRadilista();
 
                 // Display radilišta
-                document.getElementById('poslovodja-radilista-list').textContent = radilista.join(', ');
+                document.getElementById('poslovodja-radilista-list').textContent = radilista.length > 0 ? radilista.join(', ') : 'Sva radilišta';
 
                 // Load STANJE ODJELA data sa povećanim timeout-om (300s - EXTRA PATIENT!)
                 const url = buildApiUrl('odjeli');
@@ -6064,12 +6076,20 @@
                     throw new Error(data.error || 'Nema podataka o odjelima');
                 }
 
-                // Filter odjeli by radilišta
-                const filteredOdjeli = data.odjeli.filter(odjel => {
-                    const odjelRadiliste = (odjel.radiliste || '').toUpperCase().trim();
-                    return radilista.some(r => odjelRadiliste.includes(r.toUpperCase()));
-                });
+                // Sačuvaj sve podatke globalno
+                poslovodjaStanjeOdjeliAll = data.odjeli;
 
+                // Filter odjeli by radilišta (samo ako postoje specifična radilišta)
+                let filteredOdjeli = data.odjeli;
+                if (radilista.length > 0) {
+                    filteredOdjeli = data.odjeli.filter(odjel => {
+                        const odjelRadiliste = (odjel.radiliste || '').toUpperCase().trim();
+                        return radilista.some(r => odjelRadiliste.includes(r.toUpperCase()));
+                    });
+                }
+
+                // Popuni dropdown sa radilištima iz podataka
+                populatePoslovodjaRadilisteDropdown(filteredOdjeli);
 
                 // Render stanje odjela table
                 renderPoslovodjaStanjeTable(filteredOdjeli);
@@ -6088,13 +6108,23 @@
                         const radilista = getPoslovodjaRadilista();
                         console.log('Using cached data as fallback');
 
-                        // Filter odjeli by radilišta
-                        const filteredOdjeli = parsed.data.odjeli.filter(odjel => {
-                            const odjelRadiliste = (odjel.radiliste || '').toUpperCase().trim();
-                            return radilista.some(r => odjelRadiliste.includes(r.toUpperCase()));
-                        });
+                        // Sačuvaj sve podatke globalno
+                        poslovodjaStanjeOdjeliAll = parsed.data.odjeli;
 
-                        document.getElementById('poslovodja-radilista-list').textContent = radilista.join(', ') + ' (keširani podaci)';
+                        // Filter odjeli by radilišta
+                        let filteredOdjeli = parsed.data.odjeli;
+                        if (radilista.length > 0) {
+                            filteredOdjeli = parsed.data.odjeli.filter(odjel => {
+                                const odjelRadiliste = (odjel.radiliste || '').toUpperCase().trim();
+                                return radilista.some(r => odjelRadiliste.includes(r.toUpperCase()));
+                            });
+                        }
+
+                        document.getElementById('poslovodja-radilista-list').textContent = radilista.length > 0 ? radilista.join(', ') + ' (keširani podaci)' : 'Sva radilišta (keširani podaci)';
+
+                        // Popuni dropdown
+                        populatePoslovodjaRadilisteDropdown(filteredOdjeli);
+
                         renderPoslovodjaStanjeTable(filteredOdjeli);
 
                         document.getElementById('loading-screen').classList.add('hidden');
@@ -6110,6 +6140,58 @@
                 showError('Greška', 'Server je spor. Molimo pokušajte ponovo za par minuta.');
                 document.getElementById('loading-screen').classList.add('hidden');
             }
+        }
+
+        // Popuni dropdown sa radilištima
+        function populatePoslovodjaRadilisteDropdown(odjeli) {
+            const select = document.getElementById('poslovodja-radiliste-select');
+
+            // Očisti postojeće opcije osim "Sva radilišta"
+            select.innerHTML = '<option value="">Sva radilišta</option>';
+
+            // Izvuci jedinstvena radilišta iz podataka
+            const radilistaSet = new Set();
+            odjeli.forEach(odjel => {
+                if (odjel.radiliste && odjel.radiliste.trim() !== '') {
+                    radilistaSet.add(odjel.radiliste.trim());
+                }
+            });
+
+            // Sortiraj radilišta i dodaj u dropdown
+            const radilistaArray = Array.from(radilistaSet).sort();
+            poslovodjaStanjeRadilista = radilistaArray;
+
+            radilistaArray.forEach(radiliste => {
+                const option = document.createElement('option');
+                option.value = radiliste;
+                option.textContent = radiliste;
+                select.appendChild(option);
+            });
+        }
+
+        // Filtriraj prikaz po izabranom radilištu
+        function filterPoslovodjaStanje() {
+            const selectedRadiliste = document.getElementById('poslovodja-radiliste-select').value;
+            const radilista = getPoslovodjaRadilista();
+
+            let filteredOdjeli = poslovodjaStanjeOdjeliAll;
+
+            // Primeni filter po hardkodovanim radilištima ako postoje
+            if (radilista.length > 0) {
+                filteredOdjeli = filteredOdjeli.filter(odjel => {
+                    const odjelRadiliste = (odjel.radiliste || '').toUpperCase().trim();
+                    return radilista.some(r => odjelRadiliste.includes(r.toUpperCase()));
+                });
+            }
+
+            // Primeni dodatni filter po izabranom radilištu iz dropdown-a
+            if (selectedRadiliste !== '') {
+                filteredOdjeli = filteredOdjeli.filter(odjel => {
+                    return odjel.radiliste && odjel.radiliste.trim() === selectedRadiliste;
+                });
+            }
+
+            renderPoslovodjaStanjeTable(filteredOdjeli);
         }
 
         // Load STANJE ODJELA za admina (SVE odjele bez filtriranja)
