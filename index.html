@@ -5598,7 +5598,12 @@
                 let errorMessage = error.message;
                 let errorIcon = '⚠️';
 
-                if (error.message && error.message.includes('Server je spor')) {
+                // CORS or network errors
+                if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('CORS'))) {
+                    errorIcon = '🌐';
+                    errorTitle = 'Offline and no cached data available';
+                    errorMessage = 'Ne mogu pristupiti serveru. Provjeri internet vezu ili pokušaj ponovo.';
+                } else if (error.message && error.message.includes('Server je spor')) {
                     errorIcon = '⏱️';
                     errorTitle = 'Vremensko ograničenje prekoračeno';
                     errorMessage = 'Server ne odgovara dovoljno brzo. Molimo pokušajte ponovo ili pričekajte par minuta.';
