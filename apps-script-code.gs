@@ -3484,6 +3484,7 @@ function syncStanjeOdjela() {
 
         // Čitaj naziv radilišta iz PRIMKA sheet, W2 (red 2, kolona 23)
         let radilisteNaziv = fileName; // Fallback ako W2 ne postoji
+        let izvodjacNaziv = ''; // W3 - izvođač
         if (primkaSheet) {
           try {
             const w2Cell = primkaSheet.getRange(2, 23); // Red 2, kolona W (23)
@@ -3491,8 +3492,14 @@ function syncStanjeOdjela() {
             if (w2Value && w2Value.toString().trim() !== '') {
               radilisteNaziv = w2Value.toString().trim();
             }
+
+            const w3Cell = primkaSheet.getRange(3, 23); // Red 3, kolona W (23)
+            const w3Value = w3Cell.getValue();
+            if (w3Value && w3Value.toString().trim() !== '') {
+              izvodjacNaziv = w3Value.toString().trim();
+            }
           } catch (e) {
-            Logger.log('Greška pri čitanju W2: ' + e.toString());
+            Logger.log('Greška pri čitanju W2/W3: ' + e.toString());
           }
         }
 
@@ -3528,6 +3535,7 @@ function syncStanjeOdjela() {
         odjeliData.push({
           odjelNaziv: fileName,
           radiliste: radilisteNaziv,
+          izvodjac: izvodjacNaziv,
           zadnjiDatum: zadnjiDatum ? zadnjiDatum.getTime() : null, // Sačuvaj kao timestamp
           redovi: {
             projekat: projekat,
@@ -3603,7 +3611,7 @@ function syncStanjeOdjela() {
     cacheSheet.clear();
 
     // Postavi zaglavlje
-    const headerRow = ['Odjel Naziv', 'Radilište', 'Zadnji Datum (timestamp)', 'Zadnji Datum (formatted)', 'Red Tip', ...sortimentiNazivi];
+    const headerRow = ['Odjel Naziv', 'Radilište', 'Izvođač', 'Zadnji Datum (timestamp)', 'Zadnji Datum (formatted)', 'Red Tip', ...sortimentiNazivi];
     cacheSheet.getRange(1, 1, 1, headerRow.length).setValues([headerRow]);
     cacheSheet.getRange(1, 1, 1, headerRow.length).setFontWeight('bold');
 
@@ -3613,10 +3621,10 @@ function syncStanjeOdjela() {
       const datumFormatted = odjel.zadnjiDatum ? new Date(odjel.zadnjiDatum).toLocaleDateString('sr-RS') : '';
 
       // 4 reda po odjelu: PROJEKAT, SJEČA, OTPREMA, ZALIHA
-      dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.zadnjiDatum, datumFormatted, 'PROJEKAT', ...odjel.redovi.projekat]);
-      dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.zadnjiDatum, datumFormatted, 'SJEČA', ...odjel.redovi.sjeca]);
-      dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.zadnjiDatum, datumFormatted, 'OTPREMA', ...odjel.redovi.otprema]);
-      dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.zadnjiDatum, datumFormatted, 'ZALIHA', ...odjel.redovi.sumaLager]);
+      dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.izvodjac || '', odjel.zadnjiDatum, datumFormatted, 'PROJEKAT', ...odjel.redovi.projekat]);
+      dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.izvodjac || '', odjel.zadnjiDatum, datumFormatted, 'SJEČA', ...odjel.redovi.sjeca]);
+      dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.izvodjac || '', odjel.zadnjiDatum, datumFormatted, 'OTPREMA', ...odjel.redovi.otprema]);
+      dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.izvodjac || '', odjel.zadnjiDatum, datumFormatted, 'ZALIHA', ...odjel.redovi.sumaLager]);
     });
 
     // Zapiši podatke
@@ -3726,16 +3734,29 @@ function handleStanjeOdjela(username, password) {
       const row = allData[i];
       const odjelNaziv = row[0];
       const radiliste = row[1];
-      const zadnjiDatumTimestamp = row[2];
-      const redTip = row[4]; // PROJEKAT, SJEČA, OTPREMA, ZALIHA
-      const sortimenti = row.slice(5); // Sortimenti počinju od kolone 6
+      const izvodjac = row[2];
+      const zadnjiDatumTimestamp = row[3];
+      const zadnjiDatumFormatted = row[4];
+      const redTip = row[5]; // PROJEKAT, SJEČA, OTPREMA, ZALIHA
+      const sortimenti = row.slice(6); // Sortimenti počinju od kolone 7
+
+      // SVEUKUPNO je zadnja kolona u sortimentima
+      const sveukupno = sortimenti[sortimenti.length - 1] || 0;
 
       // Ako odjel nije u mapi, dodaj ga
       if (!odjeliMap.has(odjelNaziv)) {
         odjeliMap.set(odjelNaziv, {
-          odjelNaziv: odjelNaziv,
+          odjel: odjelNaziv,
           radiliste: radiliste,
           zadnjiDatum: zadnjiDatumTimestamp ? new Date(zadnjiDatumTimestamp) : null,
+          datumZadnjeSjece: zadnjiDatumFormatted,
+          projekat: 0,
+          sjeca: 0,
+          otprema: 0,
+          sumaPanj: 0,
+          izvođač: izvodjac || '',
+          realizacija: 0,
+          zadnjiDatumObj: zadnjiDatumTimestamp ? new Date(zadnjiDatumTimestamp) : null,
           redovi: {
             projekat: [],
             sjeca: [],
@@ -3747,20 +3768,27 @@ function handleStanjeOdjela(username, password) {
 
       const odjel = odjeliMap.get(odjelNaziv);
 
-      // Dodaj sortimente u odgovarajući red
+      // Dodaj sortimente u odgovarajući red (kao nizove za detaljni prikaz)
       if (redTip === 'PROJEKAT') {
         odjel.redovi.projekat = sortimenti.map(v => parseFloat(v) || 0);
+        odjel.projekat = parseFloat(sveukupno) || 0;
       } else if (redTip === 'SJEČA') {
         odjel.redovi.sjeca = sortimenti.map(v => parseFloat(v) || 0);
+        odjel.sjeca = parseFloat(sveukupno) || 0;
       } else if (redTip === 'OTPREMA') {
         odjel.redovi.otprema = sortimenti.map(v => parseFloat(v) || 0);
+        odjel.otprema = parseFloat(sveukupno) || 0;
       } else if (redTip === 'ZALIHA') {
         odjel.redovi.sumaLager = sortimenti.map(v => parseFloat(v) || 0);
+        odjel.sumaPanj = parseFloat(sveukupno) || 0;
       }
     }
 
-    // Konvertuj mapu u niz
+    // Konvertuj mapu u niz i izračunaj realizaciju
     odjeliMap.forEach(odjel => {
+      if (odjel.projekat > 0) {
+        odjel.realizacija = (odjel.sjeca / odjel.projekat) * 100;
+      }
       odjeliData.push(odjel);
     });
 
