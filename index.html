@@ -4884,8 +4884,8 @@
             }
         }
 
-        // Preload all views function
-        async function preloadAllViews() {
+        // Preload all views function (silent = ne prikazuje notifikacije)
+        async function preloadAllViews(silent = false) {
             const year = new Date().getFullYear();
             let totalLoaded = 0;
             let totalFailed = 0;
@@ -4945,18 +4945,25 @@
                 }
 
                 totalViews = allViews.length;
-                showInfo('⚡ Učitavanje...', `Učitavam ${totalViews} prikaza u pozadini...`);
+
+                // Prikaži notifikaciju samo ako NIJE silent mod
+                if (!silent) {
+                    showInfo('⚡ Učitavanje...', `Učitavam ${totalViews} prikaza u pozadini...`);
+                }
+
+                console.log(`[PRELOAD] Starting preload of ${totalViews} views (silent=${silent})...`);
 
                 // 🚀 PARALELNO UČITAVANJE - sve istovremeno!
                 const promises = allViews.map(view =>
                     fetchWithCache(view.url, view.cacheKey, false, view.timeout)
                         .then(() => {
                             totalLoaded++;
+                            console.log(`[PRELOAD] ✓ ${view.name} loaded (${totalLoaded}/${totalViews})`);
                             return { success: true, name: view.name };
                         })
                         .catch(error => {
                             totalFailed++;
-                            console.error(`✗ ${view.name} failed:`, error);
+                            console.error(`[PRELOAD] ✗ ${view.name} failed:`, error);
                             return { success: false, name: view.name };
                         })
                 );
@@ -4964,16 +4971,22 @@
                 // Čekaj da SVI završe
                 await Promise.all(promises);
 
-                // Prikaži rezultat
-                if (totalLoaded > 0) {
-                    showSuccess('⚡ Gotovo!', `✅ Učitano ${totalLoaded}/${totalViews} prikaza!\n${totalFailed > 0 ? `⚠️ ${totalFailed} nije uspjelo` : '🎉 Sve uspješno!'}`);
-                } else {
-                    showError('Greška', `Nije učitano nijedan prikaz. Server je možda nedostupan.`);
+                console.log(`[PRELOAD] Finished! Loaded: ${totalLoaded}/${totalViews}, Failed: ${totalFailed}`);
+
+                // Prikaži rezultat samo ako NIJE silent mod
+                if (!silent) {
+                    if (totalLoaded > 0) {
+                        showSuccess('⚡ Gotovo!', `✅ Učitano ${totalLoaded}/${totalViews} prikaza!\n${totalFailed > 0 ? `⚠️ ${totalFailed} nije uspjelo` : '🎉 Sve uspješno!'}`);
+                    } else {
+                        showError('Greška', `Nije učitano nijedan prikaz. Server je možda nedostupan.`);
+                    }
                 }
 
             } catch (error) {
-                console.error('Preload error:', error);
-                showError('Greška', 'Greška pri učitavanju prikaza.');
+                console.error('[PRELOAD] Error:', error);
+                if (!silent) {
+                    showError('Greška', 'Greška pri učitavanju prikaza.');
+                }
             }
         }
 
@@ -5227,6 +5240,16 @@
                 startCacheStatusUpdater();
                 loadData();
                 loadOdjeli(); // Load odjeli list after auto-login
+
+                // 🚀 AUTO-PRELOAD: Automatski učitaj SVE prikaze u pozadini (silent mod)!
+                console.log('[AUTO-PRELOAD] Starting background preload (auto-login)...');
+                setTimeout(() => {
+                    preloadAllViews(true).then(() => {
+                        console.log('[AUTO-PRELOAD] ✅ All views preloaded in background!');
+                    }).catch(err => {
+                        console.error('[AUTO-PRELOAD] ⚠️ Preload failed:', err);
+                    });
+                }, 2000); // Pokreni nakon 2s (da ne opterećuje initial load)
             }
         });
 
@@ -5261,6 +5284,16 @@
                     startCacheStatusUpdater();
                     loadData();
                     loadOdjeli(); // Load odjeli list after manual login
+
+                    // 🚀 AUTO-PRELOAD: Automatski učitaj SVE prikaze u pozadini (silent mod)!
+                    console.log('[AUTO-PRELOAD] Starting background preload...');
+                    setTimeout(() => {
+                        preloadAllViews(true).then(() => {
+                            console.log('[AUTO-PRELOAD] ✅ All views preloaded in background!');
+                        }).catch(err => {
+                            console.error('[AUTO-PRELOAD] ⚠️ Preload failed:', err);
+                        });
+                    }, 2000); // Pokreni nakon 2s (da ne opterećuje initial load)
                 } else {
                     errorMsg.textContent = data.error || 'Greška pri prijavi';
                     errorMsg.classList.remove('hidden');
