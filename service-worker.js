@@ -109,7 +109,18 @@ self.addEventListener('fetch', (event) => {
             .catch(() => {
                 return caches.match(request)
                     .then((cachedResponse) => {
-                        return cachedResponse || new Response('Offline', { status: 503 });
+                        if (cachedResponse) {
+                            return cachedResponse;
+                        }
+                        // Return proper JSON error response instead of plain text
+                        return new Response(JSON.stringify({
+                            success: false,
+                            error: 'Offline - no cached data available',
+                            offline: true
+                        }), {
+                            status: 503,
+                            headers: { 'Content-Type': 'application/json' }
+                        });
                     });
             })
     );
