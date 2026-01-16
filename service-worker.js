@@ -1,7 +1,7 @@
 // ========== Service Worker - Offline Support ==========
 // Cache static assets, fallback za offline
 
-const CACHE_VERSION = 'v2'; // 🔄 Updated to force Service Worker refresh
+const CACHE_VERSION = 'v3'; // 🔄 Updated to force Service Worker refresh (bypass Apps Script)
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
@@ -61,6 +61,14 @@ self.addEventListener('fetch', (event) => {
 
     if (request.method !== 'GET') {
         return;
+    }
+
+    // 🚨 BYPASS: Don't intercept Google Apps Script requests
+    // This allows CORS errors to surface properly in the browser console
+    // Remove this bypass after deploying Apps Script with CORS headers
+    if (url.hostname === 'script.google.com') {
+        console.log('[SW] BYPASS: Not intercepting Apps Script request:', url.pathname);
+        return; // Let browser handle it directly
     }
 
     // Handle manifest requests
