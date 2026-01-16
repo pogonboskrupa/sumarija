@@ -3550,7 +3550,44 @@ function syncStanjeOdjela() {
       return b.zadnjiDatum - a.zadnjiDatum;
     });
 
-    Logger.log('Broj odjela za cache: ' + odjeliData.length);
+    Logger.log('Broj odjela prije filtriranja: ' + odjeliData.length);
+
+    // FILTRIRANJE ODJELA prema godini i kvartalu
+    const currentYear = new Date().getFullYear(); // 2026
+    const previousYear = currentYear - 1; // 2025
+
+    const filteredOdjeliData = odjeliData.filter(odjel => {
+      if (!odjel.zadnjiDatum) {
+        // Ako nema datum, preskoči
+        return false;
+      }
+
+      const datum = new Date(odjel.zadnjiDatum);
+      const year = datum.getFullYear();
+      const month = datum.getMonth() + 1; // 1-12
+      const quarter = Math.ceil(month / 3); // 1-4
+
+      // Tekuća godina: prikaži samo ako ima sječu ILI otpremu (SVEUKUPNO > 0)
+      if (year === currentYear) {
+        const sjecaSveukupno = odjel.redovi.sjeca[odjel.redovi.sjeca.length - 1] || 0; // Zadnji element je SVEUKUPNO
+        const otpremaSveukupno = odjel.redovi.otprema[odjel.redovi.otprema.length - 1] || 0;
+
+        if (sjecaSveukupno > 0 || otpremaSveukupno > 0) {
+          return true;
+        }
+        return false;
+      }
+
+      // Prošla godina: prikaži samo zadnji kvartal (Q4)
+      if (year === previousYear) {
+        return quarter === 4;
+      }
+
+      // Sve ostale godine: ne prikazuj
+      return false;
+    });
+
+    Logger.log('Broj odjela nakon filtriranja: ' + filteredOdjeliData.length);
 
     // Sada zapiši sve podatke na cache sheet
     const indexSpreadsheet = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
@@ -3572,14 +3609,14 @@ function syncStanjeOdjela() {
 
     // Pripremi podatke za upis
     const dataRows = [];
-    odjeliData.forEach(odjel => {
+    filteredOdjeliData.forEach(odjel => {
       const datumFormatted = odjel.zadnjiDatum ? new Date(odjel.zadnjiDatum).toLocaleDateString('sr-RS') : '';
 
-      // 4 reda po odjelu: PROJEKAT, SJEČA, OTPREMA, ŠUMA-LAGER
+      // 4 reda po odjelu: PROJEKAT, SJEČA, OTPREMA, ZALIHA
       dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.zadnjiDatum, datumFormatted, 'PROJEKAT', ...odjel.redovi.projekat]);
       dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.zadnjiDatum, datumFormatted, 'SJEČA', ...odjel.redovi.sjeca]);
       dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.zadnjiDatum, datumFormatted, 'OTPREMA', ...odjel.redovi.otprema]);
-      dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.zadnjiDatum, datumFormatted, 'ŠUMA-LAGER', ...odjel.redovi.sumaLager]);
+      dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.zadnjiDatum, datumFormatted, 'ZALIHA', ...odjel.redovi.sumaLager]);
     });
 
     // Zapiši podatke
@@ -3595,7 +3632,7 @@ function syncStanjeOdjela() {
     cacheSheet.getRange(1, 1).setFontWeight('bold').setFontColor('blue');
 
     Logger.log('=== SYNC STANJE ODJELA END ===');
-    return { success: true, odjeliCount: odjeliData.length, rowsWritten: dataRows.length };
+    return { success: true, odjeliCount: filteredOdjeliData.length, rowsWritten: dataRows.length };
 
   } catch (error) {
     Logger.log('=== SYNC STANJE ODJELA ERROR ===');
@@ -3634,7 +3671,7 @@ function setupStanjeOdjelaDailyTrigger() {
 /**
  * STANJE ODJELA - Čita trenutno stanje iz cache sheeta
  * Brža verzija koja čita već pripremljene podatke umjesto da prolazi kroz sve odjele
- * Prikazuje po radilištima sa 4 reda: PROJEKAT, SJEČA, OTPREMA, ŠUMA-LAGER
+ * Prikazuje po radilištima sa 4 reda: PROJEKAT, SJEČA, OTPREMA, ZALIHA
  * Sortira po najsvježijim unosima u PRIMKA
  */
 function handleStanjeOdjela(username, password) {
@@ -3690,7 +3727,7 @@ function handleStanjeOdjela(username, password) {
       const odjelNaziv = row[0];
       const radiliste = row[1];
       const zadnjiDatumTimestamp = row[2];
-      const redTip = row[4]; // PROJEKAT, SJEČA, OTPREMA, ŠUMA-LAGER
+      const redTip = row[4]; // PROJEKAT, SJEČA, OTPREMA, ZALIHA
       const sortimenti = row.slice(5); // Sortimenti počinju od kolone 6
 
       // Ako odjel nije u mapi, dodaj ga
@@ -3717,7 +3754,7 @@ function handleStanjeOdjela(username, password) {
         odjel.redovi.sjeca = sortimenti.map(v => parseFloat(v) || 0);
       } else if (redTip === 'OTPREMA') {
         odjel.redovi.otprema = sortimenti.map(v => parseFloat(v) || 0);
-      } else if (redTip === 'ŠUMA-LAGER') {
+      } else if (redTip === 'ZALIHA') {
         odjel.redovi.sumaLager = sortimenti.map(v => parseFloat(v) || 0);
       }
     }
