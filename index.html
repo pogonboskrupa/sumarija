@@ -4922,18 +4922,38 @@
                         { name: 'Otpremaci - Daily', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_daily_' + year + '_' + currentMonth, timeout: 180000 },
                         { name: 'Otpremaci - Po radilištu', url: buildApiUrl('primaci-by-radiliste', { year }), cacheKey: 'cache_otpremaci_radiliste_' + year, timeout: 180000 },
 
+                        // IZVJEŠTAJI - Mjesečni izvještaj za trenutni mjesec (koristi iste endpoint-e kao primaci/otpremaci daily)
+                        { name: 'Izvještaji - Primka', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_primka_' + year + '_' + currentMonth, timeout: 180000 },
+                        { name: 'Izvještaji - Otprema', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_otprema_' + year + '_' + currentMonth, timeout: 180000 },
+
                         // OSTALO meni - SVA 2 PODMENIJA (Kubikator nema API)
                         { name: 'OSTALO - Dinamika', url: buildApiUrl('get_dinamika', { year }), cacheKey: 'cache_dinamika_' + year, timeout: 120000 },
                         { name: 'OSTALO - Uporedba godina', url: buildApiUrl('get_dinamika', { year }), cacheKey: 'cache_uporedba_' + year, timeout: 120000 }
                     ];
 
                 } else if (userType === 'poslovođa' || userType === 'poslovodja') {
+                    const currentMonth = new Date().getMonth(); // 0-11
                     allViews = [
                         { name: 'Stanje Odjela', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_poslovodja_odjeli_' + year, timeout: 180000 },
                         { name: 'Odjeli u realizaciji', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_poslovodja_realizacija_' + year, timeout: 180000 },
                         { name: 'Zadnjih 5 dana - Primke', url: buildApiUrl('primke'), cacheKey: 'cache_poslovodja_primke', timeout: 120000 },
                         { name: 'Zadnjih 5 dana - Otpreme', url: buildApiUrl('otpreme'), cacheKey: 'cache_poslovodja_otpreme', timeout: 120000 },
-                        { name: 'Suma mjeseca', url: buildApiUrl('primke'), cacheKey: 'cache_poslovodja_suma_primke', timeout: 120000 }
+                        { name: 'Suma mjeseca', url: buildApiUrl('primke'), cacheKey: 'cache_poslovodja_suma_primke', timeout: 120000 },
+                        // IZVJEŠTAJI - Mjesečni izvještaj za trenutni mjesec
+                        { name: 'Izvještaji - Primka', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_primka_' + year + '_' + currentMonth, timeout: 180000 },
+                        { name: 'Izvještaji - Otprema', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_otprema_' + year + '_' + currentMonth, timeout: 180000 }
+                    ];
+
+                } else if (userType === 'operativa') {
+                    const currentMonth = new Date().getMonth(); // 0-11
+                    allViews = [
+                        { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year, timeout: 180000 },
+                        { name: 'Operativa (Stats)', url: buildApiUrl('stats', { year }), cacheKey: 'cache_stats_' + year, timeout: 180000 },
+                        { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
+                        { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni-sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year, timeout: 120000 },
+                        // IZVJEŠTAJI - Mjesečni izvještaj za trenutni mjesec
+                        { name: 'Izvještaji - Primka', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_primka_' + year + '_' + currentMonth, timeout: 180000 },
+                        { name: 'Izvještaji - Otprema', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_otprema_' + year + '_' + currentMonth, timeout: 180000 }
                     ];
 
                 } else if (userType === 'primac' || userType === 'otpremac') {
@@ -5575,30 +5595,27 @@
             } else if (tab === 'uporedba-godina') {
                 loadUporedbaGodina();
             } else if (tab === 'izvjestaji') {
-                // Initialize dropdowns to current month/year if not already set
+                // Initialize dropdowns to current month/year
                 const currentDate = new Date();
                 const currentYear = currentDate.getFullYear();
                 const currentMonth = currentDate.getMonth();
 
-                // Set defaults for all izvjestaji dropdowns
-                if (!document.getElementById('izvjestaji-year-select').value) {
-                    document.getElementById('izvjestaji-year-select').value = currentYear;
-                }
-                if (!document.getElementById('izvjestaji-month-select').value) {
-                    document.getElementById('izvjestaji-month-select').value = currentMonth;
-                }
-                if (!document.getElementById('sedmicni-sjeca-year-select').value) {
-                    document.getElementById('sedmicni-sjeca-year-select').value = currentYear;
-                }
-                if (!document.getElementById('sedmicni-sjeca-month-select').value) {
-                    document.getElementById('sedmicni-sjeca-month-select').value = currentMonth;
-                }
-                if (!document.getElementById('sedmicni-otprema-year-select').value) {
-                    document.getElementById('sedmicni-otprema-year-select').value = currentYear;
-                }
-                if (!document.getElementById('sedmicni-otprema-month-select').value) {
-                    document.getElementById('sedmicni-otprema-month-select').value = currentMonth;
-                }
+                console.log('[IZVJEŠTAJI] Initializing tab with year:', currentYear, 'month:', currentMonth);
+
+                // Set defaults for all izvjestaji dropdowns (always set to ensure consistency)
+                document.getElementById('izvjestaji-year-select').value = currentYear;
+                document.getElementById('izvjestaji-month-select').value = currentMonth;
+
+                // Check if sedmicni dropdowns exist (they may not exist for all user types)
+                const sedmicniSjecaYear = document.getElementById('sedmicni-sjeca-year-select');
+                const sedmicniSjecaMonth = document.getElementById('sedmicni-sjeca-month-select');
+                const sedmicniOtpremaYear = document.getElementById('sedmicni-otprema-year-select');
+                const sedmicniOtpremaMonth = document.getElementById('sedmicni-otprema-month-select');
+
+                if (sedmicniSjecaYear) sedmicniSjecaYear.value = currentYear;
+                if (sedmicniSjecaMonth) sedmicniSjecaMonth.value = currentMonth;
+                if (sedmicniOtpremaYear) sedmicniOtpremaYear.value = currentYear;
+                if (sedmicniOtpremaMonth) sedmicniOtpremaMonth.value = currentMonth;
 
                 // Load mjesečni izvještaj by default
                 switchIzvjestajiSubTab('mjesecni');
@@ -9912,12 +9929,13 @@
         // ========================================
 
         async function loadIzvjestaji() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('izvjestaji-content').classList.add('hidden');
+            console.log('[IZVJEŠTAJI] loadIzvjestaji() called');
 
             try {
                 const year = document.getElementById('izvjestaji-year-select').value;
                 const month = document.getElementById('izvjestaji-month-select').value;
+
+                console.log('[IZVJEŠTAJI] Loading data for year:', year, 'month:', month);
 
                 const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
 
@@ -9925,33 +9943,90 @@
                 document.getElementById('izvjestaji-primka-title').textContent = mjeseciNazivi[month] + ' ' + year;
                 document.getElementById('izvjestaji-otprema-title').textContent = mjeseciNazivi[month] + ' ' + year;
 
-                // ⚡ PARALELNO učitavanje PRIMKA i OTPREMA (2x brže!)
-                const primkaUrl = buildApiUrl('primaci-daily', { year, month });
-                const otpremaUrl = buildApiUrl('otpremaci-daily', { year, month });
+                // 🚀 SWR PATTERN: Check cache first for INSTANT display
+                const primkaCacheKey = `cache_izvjestaji_primka_${year}_${month}`;
+                const otpremaCacheKey = `cache_izvjestaji_otprema_${year}_${month}`;
 
-                console.log('[IZVJEŠTAJI] Loading primka and otprema in PARALLEL...');
-                const [primkaData, otpremaData] = await Promise.all([
-                    fetchWithCache(primkaUrl, `cache_izvjestaji_primka_${year}_${month}`, false, 180000),
-                    fetchWithCache(otpremaUrl, `cache_izvjestaji_otprema_${year}_${month}`, false, 180000)
-                ]);
-                console.log('[IZVJEŠTAJI] ✓ Both loaded!');
+                let hasCachedData = false;
+                const cachedPrimka = localStorage.getItem(primkaCacheKey);
+                const cachedOtprema = localStorage.getItem(otpremaCacheKey);
 
-                if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
-                if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
+                if (cachedPrimka && cachedOtprema) {
+                    try {
+                        const parsedPrimka = JSON.parse(cachedPrimka);
+                        const parsedOtprema = JSON.parse(cachedOtprema);
 
-                // Aggregate data by odjel
-                const primkaByOdjel = aggregateByOdjel(primkaData.data, primkaData.sortimentiNazivi);
-                const otpremaByOdjel = aggregateByOdjel(otpremaData.data, otpremaData.sortimentiNazivi);
+                        if (parsedPrimka.data && parsedOtprema.data) {
+                            console.log('[IZVJEŠTAJI] ⚡ INSTANT: Showing cached data');
+                            // ✨ INSTANT: Show cached data immediately WITHOUT loading screen
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            document.getElementById('izvjestaji-content').classList.remove('hidden');
 
-                // Render tables
-                renderIzvjestajiTable(primkaByOdjel, primkaData.sortimentiNazivi, 'primka');
-                renderIzvjestajiTable(otpremaByOdjel, otpremaData.sortimentiNazivi, 'otprema');
+                            // Render cached data
+                            const primkaByOdjel = aggregateByOdjel(parsedPrimka.data.data, parsedPrimka.data.sortimentiNazivi);
+                            const otpremaByOdjel = aggregateByOdjel(parsedOtprema.data.data, parsedOtprema.data.sortimentiNazivi);
+                            renderIzvjestajiTable(primkaByOdjel, parsedPrimka.data.sortimentiNazivi, 'primka');
+                            renderIzvjestajiTable(otpremaByOdjel, parsedOtprema.data.sortimentiNazivi, 'otprema');
 
-                document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('izvjestaji-content').classList.remove('hidden');
+                            hasCachedData = true;
+
+                            // Show cache age indicator
+                            const age = Date.now() - parsedPrimka.timestamp;
+                            showCacheIndicator(age);
+                        }
+                    } catch (e) {
+                        console.error('[IZVJEŠTAJI] Cache parse error:', e);
+                    }
+                }
+
+                // If no cache, show loading screen
+                if (!hasCachedData) {
+                    document.getElementById('loading-screen').classList.remove('hidden');
+                    document.getElementById('izvjestaji-content').classList.add('hidden');
+                }
+
+                // 🔄 BACKGROUND REFRESH: Fetch fresh data in background (180s timeout)
+                try {
+                    console.log('[IZVJEŠTAJI] 🔄 Fetching fresh data in background...');
+                    const primkaUrl = buildApiUrl('primaci-daily', { year, month });
+                    const otpremaUrl = buildApiUrl('otpremaci-daily', { year, month });
+
+                    const [primkaData, otpremaData] = await Promise.all([
+                        fetchWithCache(primkaUrl, primkaCacheKey, false, 180000),
+                        fetchWithCache(otpremaUrl, otpremaCacheKey, false, 180000)
+                    ]);
+
+                    console.log('[IZVJEŠTAJI] ✓ Fresh data loaded!');
+
+                    if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
+                    if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
+
+                    // Aggregate data by odjel
+                    const primkaByOdjel = aggregateByOdjel(primkaData.data, primkaData.sortimentiNazivi);
+                    const otpremaByOdjel = aggregateByOdjel(otpremaData.data, otpremaData.sortimentiNazivi);
+
+                    // Silently update tables with fresh data
+                    renderIzvjestajiTable(primkaByOdjel, primkaData.sortimentiNazivi, 'primka');
+                    renderIzvjestajiTable(otpremaByOdjel, otpremaData.sortimentiNazivi, 'otprema');
+
+                    // Hide cache indicator when fresh data arrives
+                    hideCacheIndicator();
+
+                    console.log('[IZVJEŠTAJI] ✓ Fresh data rendered');
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    document.getElementById('izvjestaji-content').classList.remove('hidden');
+
+                } catch (error) {
+                    // If we have cached data, silently ignore errors - user already has data!
+                    if (!hasCachedData) {
+                        throw error;
+                    } else {
+                        console.warn('[IZVJEŠTAJI] Background refresh failed, but cached data is shown:', error.message);
+                    }
+                }
 
             } catch (error) {
-                console.error('Error loading izvjestaji:', error);
+                console.error('[IZVJEŠTAJI] Error loading izvjestaji:', error);
                 showError('Greška', 'Greška pri učitavanju izvještaja: ' + error.message);
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('izvjestaji-content').classList.remove('hidden');
@@ -10108,10 +10183,14 @@
 
         function switchIzvjestajiSubTab(subTab) {
             // Pojednostavljena funkcija - samo mjesečni izvještaj (podmeniji uklonjeni)
+            console.log('[IZVJEŠTAJI] switchIzvjestajiSubTab called with:', subTab);
             const mjesecniElem = document.getElementById('mjesecni-izvjestaj');
             if (mjesecniElem) {
+                console.log('[IZVJEŠTAJI] Showing mjesecni-izvjestaj element');
                 mjesecniElem.classList.remove('hidden');
                 loadIzvjestaji();
+            } else {
+                console.error('[IZVJEŠTAJI] Element mjesecni-izvjestaj not found!');
             }
         }
 
