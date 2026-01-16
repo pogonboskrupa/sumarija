@@ -152,6 +152,26 @@ function doGet(e) {
   }
 }
 
+// ========================================
+// OPTIONS Handler - CORS Preflight Support
+// ========================================
+// Handles OPTIONS preflight requests from browsers
+// Required for CORS to work properly with cross-origin fetch
+function doOptions(e) {
+  Logger.log('=== DO OPTIONS CALLED (CORS Preflight) ===');
+
+  // Return CORS headers for preflight requests
+  const output = ContentService.createTextOutput('');
+  output.setMimeType(ContentService.MimeType.JSON);
+  output.setHeader('Access-Control-Allow-Origin', '*');
+  output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  output.setHeader('Access-Control-Max-Age', '86400'); // 24 hours cache
+
+  Logger.log('OPTIONS request handled successfully');
+  return output;
+}
+
 // Helper function to verify user credentials
 function verifyUser(username, password) {
   const ss = SpreadsheetApp.openById(KORISNICI_SPREADSHEET_ID);
