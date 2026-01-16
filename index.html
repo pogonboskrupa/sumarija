@@ -3413,7 +3413,8 @@
                     <p>Pregled stanja svih odjela</p>
                 </div>
                 <div class="page-header-right">
-                    <button class="btn btn-primary" onclick="loadAdminStanjeOdjela()">🔄 Osvježi</button>
+                    <button class="btn btn-secondary" onclick="syncStanjeOdjelaCache()">♻️ Ažuriraj cache</button>
+                    <button class="btn btn-primary" onclick="loadAdminStanjeOdjela()">🔄 Osvježi prikaz</button>
                 </div>
             </div>
             <div class="section">
@@ -6122,11 +6123,11 @@
                 if (cachedData) {
                     try {
                         const parsed = JSON.parse(cachedData);
-                        if (parsed.data && parsed.data.odjeli) {
+                        if (parsed.data && parsed.data.data) {
                             // ✨ INSTANT: Show cached data immediately
                             document.getElementById('loading-screen').classList.add('hidden');
                             document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
-                            renderAdminStanjeTable(parsed.data.odjeli);
+                            renderAdminStanjeTable(parsed.data.data);
                             hasCachedData = true;
 
                             // Show cache indicator
@@ -6145,18 +6146,18 @@
                 }
 
                 // 🔄 BACKGROUND REFRESH: Fetch fresh data (300s timeout - EXTRA PATIENT!)
-                const url = buildApiUrl('odjeli');
+                const url = buildApiUrl('stanje-odjela');
                 const data = await fetchWithCache(url, cacheKey, false, 300000);
 
-                if (data.error || !data.odjeli) {
+                if (data.error || !data.data) {
                     if (!hasCachedData) {
-                        throw new Error(data.error || 'Nema podataka o odjelima');
+                        throw new Error(data.error || 'Nema podataka o stanju odjela');
                     }
                     return; // Silently fail if we have cached data
                 }
 
                 // Update with fresh data
-                renderAdminStanjeTable(data.odjeli);
+                renderAdminStanjeTable(data.data);
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
@@ -6167,6 +6168,50 @@
             } catch (error) {
                 console.error('Error loading admin stanje odjela:', error);
                 showError('Greška', 'Greška pri učitavanju stanja odjela: ' + error.message);
+                document.getElementById('loading-screen').classList.add('hidden');
+            }
+        }
+
+        // Ručno ažuriranje cache-a za stanje odjela (samo za admin korisnike)
+        async function syncStanjeOdjelaCache() {
+            try {
+                document.getElementById('loading-screen').classList.remove('hidden');
+
+                // Pozovi sync API endpoint
+                const url = buildApiUrl('sync-stanje-odjela');
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.statusText);
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Invalidate cache nakon uspješnog sync-a
+                const cacheKey = 'cache_odjeli_stanje_admin';
+                localStorage.removeItem(cacheKey);
+                localStorage.removeItem('cache_stanje_odjela_admin');
+
+                document.getElementById('loading-screen').classList.add('hidden');
+
+                // Prikaži success poruku
+                showError('Uspjeh', `Cache uspješno ažuriran!\n\nOdjela: ${data.odjeliCount}\nRedova: ${data.rowsWritten}`);
+
+                // Automatski učitaj nove podatke
+                await loadAdminStanjeOdjela();
+
+            } catch (error) {
+                console.error('Error syncing stanje odjela cache:', error);
+                showError('Greška', 'Greška pri ažuriranju cache-a: ' + error.message);
                 document.getElementById('loading-screen').classList.add('hidden');
             }
         }

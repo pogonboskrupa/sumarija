@@ -117,6 +117,9 @@ function doGet(e) {
       return handleOtremaciDaily(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
     } else if (path === 'stanje-odjela') {
       return handleStanjeOdjela(e.parameter.username, e.parameter.password);
+    } else if (path === 'sync-stanje-odjela') {
+      // Ručno osvježavanje cache-a za stanje odjela (samo za admin korisnike)
+      return handleSyncStanjeOdjela(e.parameter.username, e.parameter.password);
     } else if (path === 'primaci-by-radiliste') {
       return handlePrimaciByRadiliste(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'primaci-by-izvodjac') {
@@ -3434,19 +3437,14 @@ function diagnosticCheckOriginalSheet() {
 }
 
 /**
- * STANJE ODJELA - Čita trenutno stanje iz svih odjela (redovi 10-13, kolone D-U)
- * Prikazuje po radilištima sa 4 reda: PROJEKAT, SJEČA, OTPREMA, ŠUMA-LAGER
- * Sortira po najsvježijim unosima u PRIMKA
+ * SYNC STANJE ODJELA - Sinkronizuje podatke o stanju odjela na cache sheet
+ * Ova funkcija se poziva jednom dnevno automatski ili ručno
+ * Piše podatke na sheet "STANJE_ODJELA_CACHE" u INDEX spreadsheet-u
  */
-function handleStanjeOdjela(username, password) {
-  // Verify user
-  const user = verifyUser(username, password);
-  if (!user) {
-    return createJsonResponse({ error: 'Invalid credentials' }, false);
-  }
-
+function syncStanjeOdjela() {
   try {
-    Logger.log('=== HANDLE STANJE ODJELA START ===');
+    Logger.log('=== SYNC STANJE ODJELA START ===');
+    Logger.log('Vrijeme sinkronizacije: ' + new Date().toString());
 
     // Fiksno sortimentno zaglavlje (D-U kolone)
     const sortimentiNazivi = [
@@ -3530,7 +3528,7 @@ function handleStanjeOdjela(username, password) {
         odjeliData.push({
           odjelNaziv: fileName,
           radiliste: radilisteNaziv,
-          zadnjiDatum: zadnjiDatum,
+          zadnjiDatum: zadnjiDatum ? zadnjiDatum.getTime() : null, // Sačuvaj kao timestamp
           redovi: {
             projekat: projekat,
             sjeca: sjeca,
@@ -3552,8 +3550,193 @@ function handleStanjeOdjela(username, password) {
       return b.zadnjiDatum - a.zadnjiDatum;
     });
 
-    Logger.log('=== HANDLE STANJE ODJELA END ===');
-    Logger.log('Broj odjela: ' + odjeliData.length);
+    Logger.log('Broj odjela za cache: ' + odjeliData.length);
+
+    // Sada zapiši sve podatke na cache sheet
+    const indexSpreadsheet = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    let cacheSheet = indexSpreadsheet.getSheetByName('STANJE_ODJELA_CACHE');
+
+    // Kreiraj sheet ako ne postoji
+    if (!cacheSheet) {
+      Logger.log('Kreiram novi sheet: STANJE_ODJELA_CACHE');
+      cacheSheet = indexSpreadsheet.insertSheet('STANJE_ODJELA_CACHE');
+    }
+
+    // Očisti sheet
+    cacheSheet.clear();
+
+    // Postavi zaglavlje
+    const headerRow = ['Odjel Naziv', 'Radilište', 'Zadnji Datum (timestamp)', 'Zadnji Datum (formatted)', 'Red Tip', ...sortimentiNazivi];
+    cacheSheet.getRange(1, 1, 1, headerRow.length).setValues([headerRow]);
+    cacheSheet.getRange(1, 1, 1, headerRow.length).setFontWeight('bold');
+
+    // Pripremi podatke za upis
+    const dataRows = [];
+    odjeliData.forEach(odjel => {
+      const datumFormatted = odjel.zadnjiDatum ? new Date(odjel.zadnjiDatum).toLocaleDateString('sr-RS') : '';
+
+      // 4 reda po odjelu: PROJEKAT, SJEČA, OTPREMA, ŠUMA-LAGER
+      dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.zadnjiDatum, datumFormatted, 'PROJEKAT', ...odjel.redovi.projekat]);
+      dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.zadnjiDatum, datumFormatted, 'SJEČA', ...odjel.redovi.sjeca]);
+      dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.zadnjiDatum, datumFormatted, 'OTPREMA', ...odjel.redovi.otprema]);
+      dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.zadnjiDatum, datumFormatted, 'ŠUMA-LAGER', ...odjel.redovi.sumaLager]);
+    });
+
+    // Zapiši podatke
+    if (dataRows.length > 0) {
+      cacheSheet.getRange(2, 1, dataRows.length, dataRows[0].length).setValues(dataRows);
+      Logger.log('Zapisano ' + dataRows.length + ' redova na cache sheet');
+    }
+
+    // Dodaj timestamp zadnjeg ažuriranja u A1
+    const metadataRow = ['ZADNJE AŽURIRANJE: ' + new Date().toLocaleString('sr-RS')];
+    cacheSheet.insertRowBefore(1);
+    cacheSheet.getRange(1, 1, 1, metadataRow.length).setValues([metadataRow]);
+    cacheSheet.getRange(1, 1).setFontWeight('bold').setFontColor('blue');
+
+    Logger.log('=== SYNC STANJE ODJELA END ===');
+    return { success: true, odjeliCount: odjeliData.length, rowsWritten: dataRows.length };
+
+  } catch (error) {
+    Logger.log('=== SYNC STANJE ODJELA ERROR ===');
+    Logger.log(error.toString());
+    throw error;
+  }
+}
+
+/**
+ * Setup dnevnog trigger-a za sinkronizaciju stanja odjela
+ * Poziva se ručno jednom da postavi automatsko izvršavanje
+ */
+function setupStanjeOdjelaDailyTrigger() {
+  // Obriši postojeće triggere za ovu funkciju
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(trigger => {
+    if (trigger.getHandlerFunction() === 'syncStanjeOdjela') {
+      ScriptApp.deleteTrigger(trigger);
+      Logger.log('Obrisan stari trigger za syncStanjeOdjela');
+    }
+  });
+
+  // Kreiraj novi trigger koji se izvršava svaki dan u 2:00 AM
+  ScriptApp.newTrigger('syncStanjeOdjela')
+    .timeBased()
+    .atHour(2)
+    .everyDays(1)
+    .create();
+
+  Logger.log('Kreiran novi dnevni trigger za syncStanjeOdjela (izvršavanje u 2:00 AM)');
+
+  // Odmah izvrši prvi put
+  syncStanjeOdjela();
+}
+
+/**
+ * STANJE ODJELA - Čita trenutno stanje iz cache sheeta
+ * Brža verzija koja čita već pripremljene podatke umjesto da prolazi kroz sve odjele
+ * Prikazuje po radilištima sa 4 reda: PROJEKAT, SJEČA, OTPREMA, ŠUMA-LAGER
+ * Sortira po najsvježijim unosima u PRIMKA
+ */
+function handleStanjeOdjela(username, password) {
+  // Verify user
+  const user = verifyUser(username, password);
+  if (!user) {
+    return createJsonResponse({ error: 'Invalid credentials' }, false);
+  }
+
+  try {
+    Logger.log('=== HANDLE STANJE ODJELA START (from cache) ===');
+
+    // Fiksno sortimentno zaglavlje (D-U kolone)
+    const sortimentiNazivi = [
+      'F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'TRUPCI Č',
+      'CEL.DUGA', 'CEL.CIJEPANA', 'ČETINARI',
+      'F/L L', 'I L', 'II L', 'III L', 'TRUPCI L',
+      'OGR. DUGI', 'OGR. CIJEPANI', 'LIŠĆARI',
+      'SVEUKUPNO'
+    ];
+
+    // Otvori cache sheet
+    const indexSpreadsheet = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const cacheSheet = indexSpreadsheet.getSheetByName('STANJE_ODJELA_CACHE');
+
+    if (!cacheSheet) {
+      Logger.log('Cache sheet ne postoji, pozivam syncStanjeOdjela()');
+      syncStanjeOdjela();
+      // Ponovo otvori nakon sinkronizacije
+      const cacheSheetNew = indexSpreadsheet.getSheetByName('STANJE_ODJELA_CACHE');
+      if (!cacheSheetNew) {
+        throw new Error('Nije moguće kreirati cache sheet');
+      }
+      return handleStanjeOdjela(username, password); // Rekurzivno pozovi ponovo
+    }
+
+    // Čitaj podatke sa sheeta (preskoči prve 2 reda: metadata i header)
+    const dataRange = cacheSheet.getDataRange();
+    const allData = dataRange.getValues();
+
+    if (allData.length <= 2) {
+      Logger.log('Cache sheet je prazan, pozivam syncStanjeOdjela()');
+      syncStanjeOdjela();
+      return handleStanjeOdjela(username, password); // Rekurzivno pozovi ponovo
+    }
+
+    // Parse podatke sa sheeta
+    const odjeliData = [];
+    const odjeliMap = new Map(); // Mapa: odjelNaziv -> odjel objekt
+
+    for (let i = 2; i < allData.length; i++) {
+      const row = allData[i];
+      const odjelNaziv = row[0];
+      const radiliste = row[1];
+      const zadnjiDatumTimestamp = row[2];
+      const redTip = row[4]; // PROJEKAT, SJEČA, OTPREMA, ŠUMA-LAGER
+      const sortimenti = row.slice(5); // Sortimenti počinju od kolone 6
+
+      // Ako odjel nije u mapi, dodaj ga
+      if (!odjeliMap.has(odjelNaziv)) {
+        odjeliMap.set(odjelNaziv, {
+          odjelNaziv: odjelNaziv,
+          radiliste: radiliste,
+          zadnjiDatum: zadnjiDatumTimestamp ? new Date(zadnjiDatumTimestamp) : null,
+          redovi: {
+            projekat: [],
+            sjeca: [],
+            otprema: [],
+            sumaLager: []
+          }
+        });
+      }
+
+      const odjel = odjeliMap.get(odjelNaziv);
+
+      // Dodaj sortimente u odgovarajući red
+      if (redTip === 'PROJEKAT') {
+        odjel.redovi.projekat = sortimenti.map(v => parseFloat(v) || 0);
+      } else if (redTip === 'SJEČA') {
+        odjel.redovi.sjeca = sortimenti.map(v => parseFloat(v) || 0);
+      } else if (redTip === 'OTPREMA') {
+        odjel.redovi.otprema = sortimenti.map(v => parseFloat(v) || 0);
+      } else if (redTip === 'ŠUMA-LAGER') {
+        odjel.redovi.sumaLager = sortimenti.map(v => parseFloat(v) || 0);
+      }
+    }
+
+    // Konvertuj mapu u niz
+    odjeliMap.forEach(odjel => {
+      odjeliData.push(odjel);
+    });
+
+    // Već je sortirano u syncStanjeOdjela, ali provjerimo opet
+    odjeliData.sort((a, b) => {
+      if (!a.zadnjiDatum && !b.zadnjiDatum) return 0;
+      if (!a.zadnjiDatum) return 1;
+      if (!b.zadnjiDatum) return -1;
+      return b.zadnjiDatum - a.zadnjiDatum;
+    });
+
+    Logger.log('=== HANDLE STANJE ODJELA END (from cache) ===');
+    Logger.log('Broj odjela iz cache-a: ' + odjeliData.length);
 
     return createJsonResponse({
       data: odjeliData,
@@ -3562,6 +3745,41 @@ function handleStanjeOdjela(username, password) {
 
   } catch (error) {
     Logger.log('=== HANDLE STANJE ODJELA ERROR ===');
+    Logger.log(error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+/**
+ * API Endpoint za ručno osvježavanje cache-a stanja odjela
+ * Samo admin korisnici mogu koristiti ovu funkciju
+ */
+function handleSyncStanjeOdjela(username, password) {
+  // Verify user
+  const user = verifyUser(username, password);
+  if (!user) {
+    return createJsonResponse({ error: 'Invalid credentials' }, false);
+  }
+
+  // Provjeri da li je korisnik admin
+  if (user.tip.toLowerCase() !== 'admin') {
+    return createJsonResponse({ error: 'Samo admin korisnici mogu osvježiti cache' }, false);
+  }
+
+  try {
+    Logger.log('=== HANDLE SYNC STANJE ODJELA START (manual refresh by ' + username + ') ===');
+
+    // Pozovi syncStanjeOdjela() funkciju
+    const result = syncStanjeOdjela();
+
+    Logger.log('=== HANDLE SYNC STANJE ODJELA END ===');
+    return createJsonResponse({
+      message: 'Cache uspješno osvježen',
+      ...result
+    }, true);
+
+  } catch (error) {
+    Logger.log('=== HANDLE SYNC STANJE ODJELA ERROR ===');
     Logger.log(error.toString());
     return createJsonResponse({ error: error.toString() }, false);
   }
