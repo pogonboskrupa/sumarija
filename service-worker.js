@@ -1,7 +1,7 @@
 // ========== Service Worker - Offline Support ==========
 // Cache static assets, fallback za offline
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2'; // 🔄 Updated to force Service Worker refresh
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
