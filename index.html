@@ -4246,6 +4246,20 @@
                 });
         }
 
+        // ========== CLEAN URL AFTER CACHE CLEAR ==========
+        // Ako je stranica učitana sa ?nocache parametrom (nakon hard refresh-a),
+        // očisti URL bez reload-a da bude clean
+        (function cleanUrlAfterCacheClear() {
+            const url = new URL(window.location.href);
+            if (url.searchParams.has('nocache')) {
+                console.log('[URL CLEAN] Removing nocache parameter from URL...');
+                url.searchParams.delete('nocache');
+                // Replace URL without reload (samo mijenja URL bar)
+                window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
+                console.log('[URL CLEAN] ✓ URL cleaned:', window.location.href);
+            }
+        })();
+
         const API_URL = 'https://script.google.com/macros/s/AKfycbyE5IPY-W9bN0Ks3knMkydzzed0C1ggv020sbJDeodJiLIudRWf_P3XvTM63FEm1ojt/exec';
 
         // ========== PERFORMANCE METRICS ==========
@@ -4870,17 +4884,33 @@
                 let allViews = [];
 
                 if (userType === 'admin') {
-                    // 🚀 KOMPLETNI PRELOAD - SVE UČITAJ!
+                    // 🚀 KOMPLETNI PRELOAD - SVE UČITAJ (svi meniji + PODMENIJI)!
+                    const currentMonth = new Date().getMonth(); // 0-11
+
                     allViews = [
+                        // Glavni meniji
                         { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year, timeout: 180000 },
-                        { name: 'Odjeli', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_odjeli_' + year, timeout: 180000 },
-                        { name: 'Primaci', url: buildApiUrl('primaci', { year }), cacheKey: 'cache_primaci_' + year, timeout: 180000 },
-                        { name: 'Otpremaci', url: buildApiUrl('otpremaci', { year }), cacheKey: 'cache_otpremaci_' + year, timeout: 180000 },
+                        { name: 'Operativa (Stats)', url: buildApiUrl('stats', { year }), cacheKey: 'cache_stats_' + year, timeout: 180000 },
+                        { name: 'Stanje Odjela', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_odjeli_' + year, timeout: 180000 },
+                        { name: 'Stanje Odjela Admin', url: buildApiUrl('stanje-odjela'), cacheKey: 'cache_stanje_odjela_admin', timeout: 180000 },
                         { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
-                        { name: 'Stanje Odjela Admin', url: buildApiUrl('odjeli'), cacheKey: 'cache_odjeli_stanje_admin', timeout: 180000 },
-                        { name: 'Pending Unosi', url: buildApiUrl('pending_unosi'), cacheKey: 'cache_pending_unosi', timeout: 120000 },
-                        { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni_sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year, timeout: 120000 },
-                        { name: 'Dinamika', url: buildApiUrl('get_dinamika', { year }), cacheKey: 'cache_dinamika_' + year, timeout: 120000 }
+                        { name: 'Pending Unosi', url: buildApiUrl('pending-unosi'), cacheKey: 'cache_pending_unosi', timeout: 120000 },
+                        { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni-sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year, timeout: 120000 },
+
+                        // PRIMACI meni + SVA 4 PODMENIJA
+                        { name: 'Primaci - Monthly', url: buildApiUrl('primaci', { year }), cacheKey: 'cache_primaci_' + year, timeout: 180000 },
+                        { name: 'Primaci - Daily', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_primaci_daily_' + year + '_' + currentMonth, timeout: 180000 },
+                        { name: 'Primaci - Po radilištu', url: buildApiUrl('primaci-by-radiliste', { year }), cacheKey: 'cache_primaci_radiliste_' + year, timeout: 180000 },
+                        { name: 'Primaci - Po izvođaču', url: buildApiUrl('primaci-by-izvodjac', { year }), cacheKey: 'cache_primaci_izvodjac_' + year, timeout: 180000 },
+
+                        // OTPREMACI meni + SVA 3 PODMENIJA
+                        { name: 'Otpremaci - Monthly', url: buildApiUrl('otpremaci', { year }), cacheKey: 'cache_otpremaci_' + year, timeout: 180000 },
+                        { name: 'Otpremaci - Daily', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_daily_' + year + '_' + currentMonth, timeout: 180000 },
+                        { name: 'Otpremaci - Po radilištu', url: buildApiUrl('primaci-by-radiliste', { year }), cacheKey: 'cache_otpremaci_radiliste_' + year, timeout: 180000 },
+
+                        // OSTALO meni - SVA 2 PODMENIJA (Kubikator nema API)
+                        { name: 'OSTALO - Dinamika', url: buildApiUrl('get_dinamika', { year }), cacheKey: 'cache_dinamika_' + year, timeout: 120000 },
+                        { name: 'OSTALO - Uporedba godina', url: buildApiUrl('get_dinamika', { year }), cacheKey: 'cache_uporedba_' + year, timeout: 120000 }
                     ];
 
                 } else if (userType === 'poslovođa' || userType === 'poslovodja') {
