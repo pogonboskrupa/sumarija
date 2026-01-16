@@ -2100,15 +2100,15 @@
                         <div class="header-user-role" id="user-role"></div>
                     </div>
                     <div class="user-menu">
-                        <button class="user-menu-button" onclick="toggleUserMenu()">
+                        <button class="user-menu-button" onclick="toggleUserMenu(event)">
                             <span>⚙️</span>
                             <span>Meni</span>
                         </button>
                         <div class="user-menu-dropdown" id="user-menu-dropdown">
-                            <div class="user-menu-item" onclick="toggleDarkMode(); toggleUserMenu();">🌙 Dark Mode</div>
-                            <div class="user-menu-item" onclick="preloadAllViews(); toggleUserMenu();">⚡ Učitaj sve prikaze</div>
-                            <div class="user-menu-item" onclick="clearAllCache()">🗑️ Obriši keš</div>
-                            <div class="user-menu-item danger" onclick="logout()">🚪 Odjavi se</div>
+                            <div class="user-menu-item" onclick="event.stopPropagation(); closeUserMenu(); toggleDarkMode();">🌙 Dark Mode</div>
+                            <div class="user-menu-item" onclick="event.stopPropagation(); closeUserMenu(); preloadAllViews();">⚡ Učitaj sve prikaze</div>
+                            <div class="user-menu-item" onclick="event.stopPropagation(); clearAllCache()">🗑️ Obriši keš</div>
+                            <div class="user-menu-item danger" onclick="event.stopPropagation(); logout()">🚪 Odjavi se</div>
                         </div>
                     </div>
                 </div>
@@ -4786,7 +4786,7 @@
                     }
                 }
 
-                toggleUserMenu(); // Close menu
+                closeUserMenu(); // Close menu
                 showSuccess('✅ Keš obrisan', 'Svi keširani podaci su obrisani. Stranica će se osvježiti.');
 
                 // Wait a moment for user to see the message
@@ -4796,7 +4796,7 @@
 
             } catch (error) {
                 console.error('[CACHE] Error clearing cache:', error);
-                toggleUserMenu();
+                closeUserMenu();
                 showError('Greška', 'Nije uspjelo brisanje keša: ' + error.message);
             }
         }
@@ -4879,9 +4879,20 @@
         }
 
         // Toggle user menu dropdown
-        function toggleUserMenu() {
+        function toggleUserMenu(event) {
+            if (event) {
+                event.stopPropagation();
+            }
             const dropdown = document.getElementById('user-menu-dropdown');
             dropdown.classList.toggle('show');
+        }
+
+        // Close user menu dropdown
+        function closeUserMenu() {
+            const dropdown = document.getElementById('user-menu-dropdown');
+            if (dropdown) {
+                dropdown.classList.remove('show');
+            }
         }
 
         // Close user menu when clicking outside
@@ -5221,6 +5232,12 @@
         }
 
         function logout() {
+            // Close user menu first
+            const dropdown = document.getElementById('user-menu-dropdown');
+            if (dropdown) {
+                dropdown.classList.remove('show');
+            }
+
             // 📊 Log final cache stats before logout
             logCacheStats();
 
