@@ -4796,21 +4796,41 @@
             try {
                 console.log('[CACHE CLEAR] Starting COMPLETE cache clear (hard refresh)...');
 
-                // Step 1: Clear ALL localStorage (not just cache_* keys)
-                console.log('[CACHE CLEAR] Step 1: Clearing localStorage...');
+                // Step 1: SAČUVAJ login credentials prije brisanja!
+                console.log('[CACHE CLEAR] Step 1: Saving login credentials...');
+                const savedUser = localStorage.getItem('sumarija_user');
+                const savedPass = localStorage.getItem('sumarija_pass');
+                console.log('[CACHE CLEAR] ✓ Login credentials saved');
+
+                // Step 2: Clear cache_* keys from localStorage (NE briši login!)
+                console.log('[CACHE CLEAR] Step 2: Clearing cache from localStorage...');
                 const localStorageKeys = Object.keys(localStorage);
                 console.log(`[CACHE CLEAR] Found ${localStorageKeys.length} localStorage keys:`, localStorageKeys);
-                localStorage.clear(); // Clear EVERYTHING
-                console.log('[CACHE CLEAR] ✓ localStorage cleared');
 
-                // Step 2: Clear sessionStorage
-                console.log('[CACHE CLEAR] Step 2: Clearing sessionStorage...');
+                // Briši samo cache_* ključeve
+                const cacheKeys = localStorageKeys.filter(k => k.startsWith('cache_'));
+                console.log(`[CACHE CLEAR] Deleting ${cacheKeys.length} cache keys...`);
+                cacheKeys.forEach(k => {
+                    localStorage.removeItem(k);
+                    console.log(`[CACHE CLEAR] - Deleted: ${k}`);
+                });
+                console.log('[CACHE CLEAR] ✓ Cache cleared from localStorage');
+
+                // Step 3: VRATI login credentials natrag!
+                if (savedUser && savedPass) {
+                    localStorage.setItem('sumarija_user', savedUser);
+                    localStorage.setItem('sumarija_pass', savedPass);
+                    console.log('[CACHE CLEAR] ✓ Login credentials restored');
+                }
+
+                // Step 4: Clear sessionStorage (samo non-critical data)
+                console.log('[CACHE CLEAR] Step 4: Clearing sessionStorage...');
                 sessionStorage.clear();
                 console.log('[CACHE CLEAR] ✓ sessionStorage cleared');
 
-                // Step 3: Clear ALL Service Worker caches
+                // Step 5: Clear ALL Service Worker caches
                 if ('caches' in window) {
-                    console.log('[CACHE CLEAR] Step 3: Clearing Service Worker caches...');
+                    console.log('[CACHE CLEAR] Step 5: Clearing Service Worker caches...');
                     const cacheNames = await caches.keys();
                     console.log(`[CACHE CLEAR] Found ${cacheNames.length} SW caches:`, cacheNames);
                     await Promise.all(cacheNames.map(name => {
@@ -4820,9 +4840,9 @@
                     console.log('[CACHE CLEAR] ✓ All Service Worker caches deleted');
                 }
 
-                // Step 4: Unregister ALL Service Workers (force fresh install)
+                // Step 6: Unregister ALL Service Workers (force fresh install)
                 if ('serviceWorker' in navigator) {
-                    console.log('[CACHE CLEAR] Step 4: Unregistering Service Workers...');
+                    console.log('[CACHE CLEAR] Step 6: Unregistering Service Workers...');
                     const registrations = await navigator.serviceWorker.getRegistrations();
                     console.log(`[CACHE CLEAR] Found ${registrations.length} SW registrations`);
                     await Promise.all(registrations.map(registration => {
@@ -4832,10 +4852,10 @@
                     console.log('[CACHE CLEAR] ✓ All Service Workers unregistered');
                 }
 
-                // Step 5: Clear IndexedDB
+                // Step 7: Clear IndexedDB
                 if (window.IDBHelper) {
                     try {
-                        console.log('[CACHE CLEAR] Step 5: Clearing IndexedDB...');
+                        console.log('[CACHE CLEAR] Step 7: Clearing IndexedDB...');
                         await IDBHelper.clearAll();
                         console.log('[CACHE CLEAR] ✓ IndexedDB cleared');
                     } catch (e) {
@@ -4843,24 +4863,18 @@
                     }
                 }
 
-                // Step 6: Set flag to indicate hard reload
-                sessionStorage.setItem('hard-reload', 'true');
-                console.log('[CACHE CLEAR] Step 6: Set hard-reload flag');
-
                 closeUserMenu(); // Close menu
-                showSuccess('✅ Keš obrisan', 'Stranica će se HARD REFRESH-ovati...');
+                showSuccess('✅ Keš obrisan', 'Stranica će se refresh-ovati (ostat ćeš prijavljen)...');
 
-                // Step 7: HARD RELOAD using modern technique
-                console.log('[CACHE CLEAR] Step 7: Initiating HARD RELOAD...');
-                console.log('[CACHE CLEAR] Using location.replace with cache-busting query param');
+                // Step 8: RELOAD bez brisanja login-a (NE koristi location.replace!)
+                console.log('[CACHE CLEAR] Step 8: Initiating page reload...');
+                console.log('[CACHE CLEAR] Login credentials preserved - staying logged in');
 
                 // Wait a moment for user to see the message
                 setTimeout(() => {
-                    // Use location.replace with cache-busting param (like Ctrl+Shift+R)
-                    const url = new URL(window.location.href);
-                    url.searchParams.set('nocache', Date.now());
-                    console.log('[CACHE CLEAR] Reloading to:', url.href);
-                    window.location.replace(url.href);
+                    // Običan reload - login credentials ostaju u localStorage!
+                    console.log('[CACHE CLEAR] Reloading page...');
+                    window.location.reload();
                 }, 800);
 
             } catch (error) {
@@ -5990,9 +6004,9 @@
                 // Display radilišta
                 document.getElementById('poslovodja-radilista-list').textContent = radilista.join(', ');
 
-                // Load STANJE ODJELA data sa povećanim timeout-om (60s)
+                // Load STANJE ODJELA data sa povećanim timeout-om (300s - EXTRA PATIENT!)
                 const url = buildApiUrl('odjeli');
-                const data = await fetchWithCache(url, 'cache_odjeli_stanje', false, 60000);
+                const data = await fetchWithCache(url, 'cache_odjeli_stanje', false, 300000);
 
 
                 if (data.error || !data.odjeli) {
@@ -6080,9 +6094,9 @@
                     document.getElementById('stanje-odjela-admin-content').classList.add('hidden');
                 }
 
-                // 🔄 BACKGROUND REFRESH: Fetch fresh data (180s timeout)
+                // 🔄 BACKGROUND REFRESH: Fetch fresh data (300s timeout - EXTRA PATIENT!)
                 const url = buildApiUrl('odjeli');
-                const data = await fetchWithCache(url, cacheKey, false, 180000);
+                const data = await fetchWithCache(url, cacheKey, false, 300000);
 
                 if (data.error || !data.odjeli) {
                     if (!hasCachedData) {
@@ -9878,13 +9892,16 @@
                 document.getElementById('izvjestaji-primka-title').textContent = mjeseciNazivi[month] + ' ' + year;
                 document.getElementById('izvjestaji-otprema-title').textContent = mjeseciNazivi[month] + ' ' + year;
 
-                // Load PRIMKA (sječa) data
+                // ⚡ PARALELNO učitavanje PRIMKA i OTPREMA (2x brže!)
                 const primkaUrl = buildApiUrl('primaci-daily', { year, month });
-                const primkaData = await fetchWithCache(primkaUrl, `cache_izvjestaji_primka_${year}_${month}`);
-
-                // Load OTPREMA data
                 const otpremaUrl = buildApiUrl('otpremaci-daily', { year, month });
-                const otpremaData = await fetchWithCache(otpremaUrl, `cache_izvjestaji_otprema_${year}_${month}`);
+
+                console.log('[IZVJEŠTAJI] Loading primka and otprema in PARALLEL...');
+                const [primkaData, otpremaData] = await Promise.all([
+                    fetchWithCache(primkaUrl, `cache_izvjestaji_primka_${year}_${month}`, false, 180000),
+                    fetchWithCache(otpremaUrl, `cache_izvjestaji_otprema_${year}_${month}`, false, 180000)
+                ]);
+                console.log('[IZVJEŠTAJI] ✓ Both loaded!');
 
                 if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
                 if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
