@@ -163,12 +163,22 @@ function doOptions(e) {
   // Return CORS headers for preflight requests
   const output = ContentService.createTextOutput('');
   output.setMimeType(ContentService.MimeType.JSON);
-  output.setHeader('Access-Control-Allow-Origin', '*');
-  output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  output.setHeader('Access-Control-Max-Age', '86400'); // 24 hours cache
 
-  Logger.log('OPTIONS request handled successfully');
+  // Try setHeader (V8 runtime), fallback if not available (Rhino)
+  try {
+    if (typeof output.setHeader === 'function') {
+      output.setHeader('Access-Control-Allow-Origin', '*');
+      output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      output.setHeader('Access-Control-Max-Age', '86400'); // 24 hours cache
+      Logger.log('[OPTIONS] CORS headers set successfully');
+    } else {
+      Logger.log('[OPTIONS] WARNING: setHeader not available');
+    }
+  } catch (e) {
+    Logger.log('[OPTIONS] WARNING: setHeader failed: ' + e.toString());
+  }
+
   return output;
 }
 
@@ -513,10 +523,20 @@ function createJsonResponse(data, success) {
   const output = ContentService.createTextOutput(JSON.stringify(data));
   output.setMimeType(ContentService.MimeType.JSON);
 
-  // ✅ CORS Support - Allow all origins
-  output.setHeader('Access-Control-Allow-Origin', '*');
-  output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // ✅ CORS Support - Try setHeader (V8 runtime), fallback if not available (Rhino)
+  try {
+    if (typeof output.setHeader === 'function') {
+      output.setHeader('Access-Control-Allow-Origin', '*');
+      output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      Logger.log('[CORS] Headers set successfully using setHeader()');
+    } else {
+      Logger.log('[CORS] WARNING: setHeader not available (Rhino runtime?)');
+    }
+  } catch (e) {
+    Logger.log('[CORS] WARNING: setHeader failed: ' + e.toString());
+    // Continue without headers - CORS won't work but at least no error
+  }
 
   return output;
 }
