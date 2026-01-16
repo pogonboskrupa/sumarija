@@ -4777,44 +4777,80 @@
             return matchingKeys.length;
         }
 
-        // Clear all cache
+        // Clear all cache - TRUE HARD REFRESH (like Ctrl+Shift+R)
         async function clearAllCache() {
             try {
-                // Clear localStorage cache
-                const keys = Object.keys(localStorage);
-                const cacheKeys = keys.filter(k => k.startsWith('cache_'));
-                cacheKeys.forEach(k => localStorage.removeItem(k));
+                console.log('[CACHE CLEAR] Starting COMPLETE cache clear (hard refresh)...');
 
-                console.log(`[CACHE] Cleared ${cacheKeys.length} localStorage cache entries`);
+                // Step 1: Clear ALL localStorage (not just cache_* keys)
+                console.log('[CACHE CLEAR] Step 1: Clearing localStorage...');
+                const localStorageKeys = Object.keys(localStorage);
+                console.log(`[CACHE CLEAR] Found ${localStorageKeys.length} localStorage keys:`, localStorageKeys);
+                localStorage.clear(); // Clear EVERYTHING
+                console.log('[CACHE CLEAR] ✓ localStorage cleared');
 
-                // Clear Service Worker cache
-                if ('serviceWorker' in navigator) {
-                    const registration = await navigator.serviceWorker.ready;
+                // Step 2: Clear sessionStorage
+                console.log('[CACHE CLEAR] Step 2: Clearing sessionStorage...');
+                sessionStorage.clear();
+                console.log('[CACHE CLEAR] ✓ sessionStorage cleared');
+
+                // Step 3: Clear ALL Service Worker caches
+                if ('caches' in window) {
+                    console.log('[CACHE CLEAR] Step 3: Clearing Service Worker caches...');
                     const cacheNames = await caches.keys();
-                    await Promise.all(cacheNames.map(name => caches.delete(name)));
-                    console.log('[CACHE] Cleared Service Worker caches:', cacheNames);
+                    console.log(`[CACHE CLEAR] Found ${cacheNames.length} SW caches:`, cacheNames);
+                    await Promise.all(cacheNames.map(name => {
+                        console.log(`[CACHE CLEAR] Deleting cache: ${name}`);
+                        return caches.delete(name);
+                    }));
+                    console.log('[CACHE CLEAR] ✓ All Service Worker caches deleted');
                 }
 
-                // Clear IndexedDB cache
+                // Step 4: Unregister ALL Service Workers (force fresh install)
+                if ('serviceWorker' in navigator) {
+                    console.log('[CACHE CLEAR] Step 4: Unregistering Service Workers...');
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    console.log(`[CACHE CLEAR] Found ${registrations.length} SW registrations`);
+                    await Promise.all(registrations.map(registration => {
+                        console.log('[CACHE CLEAR] Unregistering SW:', registration.scope);
+                        return registration.unregister();
+                    }));
+                    console.log('[CACHE CLEAR] ✓ All Service Workers unregistered');
+                }
+
+                // Step 5: Clear IndexedDB
                 if (window.IDBHelper) {
                     try {
+                        console.log('[CACHE CLEAR] Step 5: Clearing IndexedDB...');
                         await IDBHelper.clearAll();
-                        console.log('[CACHE] Cleared IndexedDB');
+                        console.log('[CACHE CLEAR] ✓ IndexedDB cleared');
                     } catch (e) {
-                        console.warn('[CACHE] Failed to clear IndexedDB:', e);
+                        console.warn('[CACHE CLEAR] IndexedDB clear failed (non-critical):', e);
                     }
                 }
 
+                // Step 6: Set flag to indicate hard reload
+                sessionStorage.setItem('hard-reload', 'true');
+                console.log('[CACHE CLEAR] Step 6: Set hard-reload flag');
+
                 closeUserMenu(); // Close menu
-                showSuccess('✅ Keš obrisan', 'Svi keširani podaci su obrisani. Stranica će se osvježiti.');
+                showSuccess('✅ Keš obrisan', 'Stranica će se HARD REFRESH-ovati...');
+
+                // Step 7: HARD RELOAD using modern technique
+                console.log('[CACHE CLEAR] Step 7: Initiating HARD RELOAD...');
+                console.log('[CACHE CLEAR] Using location.replace with cache-busting query param');
 
                 // Wait a moment for user to see the message
                 setTimeout(() => {
-                    window.location.reload(true); // Hard reload
-                }, 1000);
+                    // Use location.replace with cache-busting param (like Ctrl+Shift+R)
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('nocache', Date.now());
+                    console.log('[CACHE CLEAR] Reloading to:', url.href);
+                    window.location.replace(url.href);
+                }, 800);
 
             } catch (error) {
-                console.error('[CACHE] Error clearing cache:', error);
+                console.error('[CACHE CLEAR] ERROR during cache clear:', error);
                 closeUserMenu();
                 showError('Greška', 'Nije uspjelo brisanje keša: ' + error.message);
             }
@@ -5095,6 +5131,28 @@
 
         // Main initialization on page load
         window.addEventListener('DOMContentLoaded', () => {
+            // ========== HARD RELOAD DETECTION ==========
+            // Check if this is a hard reload from "Obriši keš" button
+            const url = new URL(window.location.href);
+            const isHardReload = url.searchParams.has('nocache');
+
+            if (isHardReload) {
+                console.log('[CACHE CLEAR] ✅ HARD RELOAD COMPLETED!');
+                console.log('[CACHE CLEAR] Cleaning URL query parameters...');
+
+                // Clean URL by removing nocache param
+                url.searchParams.delete('nocache');
+                const cleanUrl = url.pathname + url.search + url.hash;
+
+                // Replace URL without reloading page
+                window.history.replaceState({}, document.title, cleanUrl);
+                console.log('[CACHE CLEAR] ✓ URL cleaned:', cleanUrl);
+                console.log('[CACHE CLEAR] All caches cleared, Service Worker unregistered, fresh start!');
+
+                // Show visual confirmation
+                showSuccess('✅ Hard Refresh Završen', 'Svi cache-ovi obrisani, Service Worker reinstaliran!');
+            }
+
             // Initialize year selectors first
             initializeYearSelectors();
 
