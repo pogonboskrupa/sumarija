@@ -5568,6 +5568,9 @@
 
             // 🚀 Setup auto-refresh listener for all panels
             setupAutoRefreshListeners();
+
+            // ⏰ Setup scheduled refresh for weekdays at 10:00 and 12:00
+            setupScheduledRefresh();
         }
 
         // Auto-refresh listeners - sluša "app-data-synced" event i osvježava trenutni panel
@@ -5593,6 +5596,56 @@
             });
 
             console.log('📢 [AUTO-REFRESH] Auto-refresh listeners registered');
+        }
+
+        // Scheduled auto-refresh for Poslovođa and Radnici (Primači/Otpremači) panels
+        // Runs twice daily at 10:00 and 12:00 on weekdays (Monday-Friday)
+        function setupScheduledRefresh() {
+            const REFRESH_TIMES = ['10:00', '12:00']; // HH:MM format
+            let lastRefreshDate = null; // Track last refresh to avoid duplicates
+
+            function checkAndRefresh() {
+                const now = new Date();
+                const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+                const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+                const currentDate = now.toDateString();
+
+                // Check if it's a weekday (Monday-Friday)
+                const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+
+                if (!isWeekday) {
+                    console.log('⏰ [SCHEDULED REFRESH] Skipping - not a weekday (today is ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek] + ')');
+                    return;
+                }
+
+                // Check if current time matches any refresh time
+                const shouldRefresh = REFRESH_TIMES.includes(currentTime);
+
+                if (shouldRefresh && lastRefreshDate !== currentDate + '-' + currentTime) {
+                    console.log('⏰ [SCHEDULED REFRESH] Starting scheduled refresh at ' + currentTime);
+                    lastRefreshDate = currentDate + '-' + currentTime;
+
+                    // Show notification to user
+                    showInfo('🔄 Automatsko ažuriranje', 'Pokretanje zakazanog ažuriranja podataka...');
+
+                    // Trigger refresh for all views
+                    preloadAllViews(true).then(() => {
+                        console.log('⏰ [SCHEDULED REFRESH] ✅ Scheduled refresh completed at ' + currentTime);
+                        showSuccess('✅ Ažuriranje završeno', 'Podaci su automatski osvježeni.');
+                    }).catch(err => {
+                        console.error('⏰ [SCHEDULED REFRESH] ⚠️ Scheduled refresh failed:', err);
+                        showError('⚠️ Greška', 'Automatsko ažuriranje nije uspjelo.');
+                    });
+                }
+            }
+
+            // Check every minute
+            setInterval(checkAndRefresh, 60 * 1000);
+
+            // Also check immediately on startup
+            checkAndRefresh();
+
+            console.log('⏰ [SCHEDULED REFRESH] Scheduler initialized - will refresh at 10:00 and 12:00 on weekdays');
         }
 
         // Cross-tab synchronization - sluša promjene u localStorage između tabova
