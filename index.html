@@ -8119,11 +8119,10 @@
             // Header sa svim sortimentima
             let headerHtml = '<tr style="background: #047857;"><th style="color: white; font-weight: 700; position: sticky; left: 0; background: #047857; z-index: 10;">Kupac</th>';
             sortimentiNazivi.forEach(sortiment => {
-                if (sortiment !== 'SVEUKUPNO') {
-                    headerHtml += `<th style="color: white; font-weight: 700; text-align: right;">${sortiment}</th>`;
-                }
+                const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #065f46;' : '';
+                headerHtml += `<th style="color: white; font-weight: 700; text-align: right;${bgStyle}">${sortiment}</th>`;
             });
-            headerHtml += '<th style="color: white; font-weight: 700; text-align: right; background: #065f46;">UKUPNO (m³)</th></tr>';
+            headerHtml += '</tr>';
             headerElem.innerHTML = headerHtml;
 
             // Body redovi
@@ -8134,15 +8133,13 @@
                 bodyHtml += `<td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 5;">${kupac.kupac || '-'}</td>`;
 
                 sortimentiNazivi.forEach(sortiment => {
-                    if (sortiment !== 'SVEUKUPNO') {
-                        const kolicina = kupac.sortimenti[sortiment] || 0;
-                        const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
-                        const color = kolicina > 0 ? '#047857' : '#9ca3af';
-                        bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; color: ${color};">${display}</td>`;
-                    }
+                    const kolicina = kupac.sortimenti[sortiment] || 0;
+                    const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
+                    const color = kolicina > 0 ? '#047857' : '#9ca3af';
+                    const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #d1fae5; font-weight: 700;' : '';
+                    bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; color: ${color};${bgStyle}">${display}</td>`;
                 });
 
-                bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 700; color: #047857; background: #d1fae5;">${(kupac.ukupno || 0).toFixed(2)}</td>`;
                 bodyHtml += '</tr>';
             });
             bodyElem.innerHTML = bodyHtml;
@@ -8169,11 +8166,10 @@
             // Header sa svim sortimentima
             let headerHtml = '<tr style="background: #0369a1;"><th style="color: white; font-weight: 700; position: sticky; left: 0; background: #0369a1; z-index: 10;">Kupac</th>';
             sortimentiNazivi.forEach(sortiment => {
-                if (sortiment !== 'SVEUKUPNO') {
-                    headerHtml += `<th style="color: white; font-weight: 700; text-align: right;">${sortiment}</th>`;
-                }
+                const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #075985;' : '';
+                headerHtml += `<th style="color: white; font-weight: 700; text-align: right;${bgStyle}">${sortiment}</th>`;
             });
-            headerHtml += '<th style="color: white; font-weight: 700; text-align: right; background: #075985;">UKUPNO (m³)</th></tr>';
+            headerHtml += '</tr>';
             headerElem.innerHTML = headerHtml;
 
             // Body redovi
@@ -8184,15 +8180,13 @@
                 bodyHtml += `<td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 5;">${red.kupac || '-'}</td>`;
 
                 sortimentiNazivi.forEach(sortiment => {
-                    if (sortiment !== 'SVEUKUPNO') {
-                        const kolicina = red.sortimenti[sortiment] || 0;
-                        const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
-                        const color = kolicina > 0 ? '#0369a1' : '#9ca3af';
-                        bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; color: ${color};">${display}</td>`;
-                    }
+                    const kolicina = red.sortimenti[sortiment] || 0;
+                    const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
+                    const color = kolicina > 0 ? '#0369a1' : '#9ca3af';
+                    const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #bae6fd; font-weight: 700;' : '';
+                    bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; color: ${color};${bgStyle}">${display}</td>`;
                 });
 
-                bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 700; color: #0369a1; background: #bae6fd;">${(red.ukupno || 0).toFixed(2)}</td>`;
                 bodyHtml += '</tr>';
             });
             bodyElem.innerHTML = bodyHtml;
