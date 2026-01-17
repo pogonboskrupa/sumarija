@@ -3508,16 +3508,28 @@
                         <button class="btn btn-primary" onclick="exportSumaLagerToCSV()">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                        <table class="monthly-table" id="suma-lager-main-table">
+                        <table class="monthly-table" id="suma-lager-main-table" style="font-size: 11px;">
                             <thead>
                                 <tr>
-                                    <th onclick="sortTable(0, 'suma-lager-main-table')">Odjel ⇅</th>
-                                    <th onclick="sortTable(1, 'suma-lager-main-table')">Radilište ⇅</th>
-                                    <th onclick="sortTable(2, 'suma-lager-main-table')">Izvođač ⇅</th>
-                                    <th class="right" onclick="sortTable(3, 'suma-lager-main-table')">Zaliha (m³) ⇅</th>
-                                    <th class="right" onclick="sortTable(4, 'suma-lager-main-table')">Sječa (m³) ⇅</th>
-                                    <th class="right" onclick="sortTable(5, 'suma-lager-main-table')">Otprema (m³) ⇅</th>
-                                    <th class="right" onclick="sortTable(6, 'suma-lager-main-table')">% Otprema ⇅</th>
+                                    <th style="min-width: 180px;"></th>
+                                    <th class="right" style="min-width: 70px;">F/L Č</th>
+                                    <th class="right" style="min-width: 70px;">I Č</th>
+                                    <th class="right" style="min-width: 70px;">II Č</th>
+                                    <th class="right" style="min-width: 70px;">III Č</th>
+                                    <th class="right" style="min-width: 70px;">RD</th>
+                                    <th class="right" style="min-width: 80px;">TRUPCI Č</th>
+                                    <th class="right" style="min-width: 90px;">CEL.DUGA</th>
+                                    <th class="right" style="min-width: 100px;">CEL.CIJEPANA</th>
+                                    <th class="right" style="min-width: 80px;">ČETINARI</th>
+                                    <th class="right" style="min-width: 70px;">F/L L</th>
+                                    <th class="right" style="min-width: 70px;">I L</th>
+                                    <th class="right" style="min-width: 70px;">II L</th>
+                                    <th class="right" style="min-width: 70px;">III L</th>
+                                    <th class="right" style="min-width: 80px;">TRUPCI L</th>
+                                    <th class="right" style="min-width: 90px;">OGR. DUGI</th>
+                                    <th class="right" style="min-width: 100px;">OGR. CIJEPANI</th>
+                                    <th class="right" style="min-width: 80px;">LIŠĆARI</th>
+                                    <th class="right" style="min-width: 100px; font-weight: 700;">SVEUKUPNO</th>
                                 </tr>
                             </thead>
                             <tbody id="suma-lager-table"></tbody>
@@ -13202,83 +13214,86 @@
             document.getElementById('suma-lager-chart').innerHTML = html;
         }
 
-        // Render Zaliha Table
+        // Render Zaliha Table - Sortimentni prikaz po odjelima
         function renderZalihaTable(zalihaData, sortimentiNazivi) {
             const sorted = zalihaData.sort((a, b) => b.zaliha - a.zaliha);
 
-            const html = sorted.length > 0
-                ? sorted.map((odjel, index) => {
-                    const percentClass = odjel.percentOtprema >= 90 ? 'green'
-                                       : odjel.percentOtprema >= 70 ? 'blue'
-                                       : odjel.percentOtprema >= 50 ? ''
-                                       : 'red';
+            if (sorted.length === 0) {
+                document.getElementById('suma-lager-table').innerHTML =
+                    '<tr><td colspan="19" style="text-align: center; color: #6b7280; padding: 40px;">Nema podataka</td></tr>';
+                return;
+            }
 
-                    const odjelId = `odjel-${index}`;
+            const html = sorted.map((odjel, index) => {
+                const odjelId = `odjel-${index}`;
+                const odjelClass = `odjel-group-${index}`;
 
-                    // Main red sa expand ikonom
-                    let mainRow = `
-                        <tr class="odjel-row" onclick="toggleSortimenti('${odjelId}')" style="cursor: pointer;">
-                            <td style="font-weight: 600;">
-                                <span id="${odjelId}-icon" style="display: inline-block; width: 16px; transition: transform 0.2s;">▶</span>
-                                ${odjel.odjel}
-                            </td>
-                            <td>${odjel.radiliste || '-'}</td>
-                            <td>${odjel.izvodjac || '-'}</td>
-                            <td class="right" style="font-weight: 700; color: #059669;">${odjel.zaliha.toFixed(2)}</td>
-                            <td class="right">${odjel.sjeca.toFixed(2)}</td>
-                            <td class="right">${odjel.otprema.toFixed(2)}</td>
-                            <td class="right ${percentClass}">${odjel.percentOtprema.toFixed(1)}%</td>
+                // Helper funkcija za formatiranje brojeva
+                const formatNumber = (val) => {
+                    if (val === null || val === undefined || val === '') return '0.00';
+                    const num = parseFloat(val);
+                    return isNaN(num) ? '0.00' : num.toFixed(2);
+                };
+
+                // Helper funkcija za renderovanje reda sa sortimentnim podacima
+                const renderSortimentRow = (label, data, bgColor, textColor, isBold = false) => {
+                    const style = `background: ${bgColor}; color: ${textColor}; ${isBold ? 'font-weight: 700;' : ''}`;
+                    const cells = data.map(val =>
+                        `<td class="right" style="${style}">${formatNumber(val)}</td>`
+                    ).join('');
+
+                    return `
+                        <tr class="${odjelClass}" data-odjel="${odjel.odjel.toLowerCase()}">
+                            <td style="${style} padding-left: 20px;">${label}</td>
+                            ${cells}
                         </tr>
                     `;
+                };
 
-                    // Sortimentni red (hidden po defaultu)
-                    let sortimentiRow = '';
-                    if (odjel.sortimenti && odjel.sortimenti.zaliha && odjel.sortimenti.zaliha.length > 0) {
-                        const sortimentHtml = sortimentiNazivi.map((naziv, i) => {
-                            const zalihaVal = odjel.sortimenti.zaliha[i] || 0;
-                            const sjecaVal = odjel.sortimenti.sjeca[i] || 0;
-                            const otpremaVal = odjel.sortimenti.otprema[i] || 0;
+                // Zaglavlje odjela
+                const headerRow = `
+                    <tr class="${odjelClass} odjel-header" data-odjel="${odjel.odjel.toLowerCase()}" style="background: #1f2937;">
+                        <td colspan="19" style="font-weight: 700; color: white; padding: 12px 16px; font-size: 14px;">
+                            ${odjel.odjel}
+                        </td>
+                    </tr>
+                `;
 
-                            // Skip ako su sve vrijednosti 0
-                            if (zalihaVal === 0 && sjecaVal === 0 && otpremaVal === 0) {
-                                return '';
-                            }
+                // Redovi za sortimente
+                const projekatRow = renderSortimentRow(
+                    'PROJEKAT',
+                    odjel.redovi.projekat || [],
+                    '#fef3c7',  // svijetlo žuta
+                    '#92400e',  // tamno smeđa
+                    false
+                );
 
-                            return `
-                                <div style="display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
-                                    <span style="font-weight: 500; color: #1f2937; min-width: 150px;">${naziv}</span>
-                                    <span style="display: flex; gap: 24px;">
-                                        <span style="color: #059669; min-width: 80px; text-align: right;">
-                                            <strong>${typeof zalihaVal === 'number' ? zalihaVal.toFixed(2) : zalihaVal}</strong> m³
-                                        </span>
-                                        <span style="color: #6b7280; min-width: 80px; text-align: right; font-size: 13px;">
-                                            Sječa: ${typeof sjecaVal === 'number' ? sjecaVal.toFixed(2) : sjecaVal} m³
-                                        </span>
-                                        <span style="color: #6b7280; min-width: 80px; text-align: right; font-size: 13px;">
-                                            Otpr: ${typeof otpremaVal === 'number' ? otpremaVal.toFixed(2) : otpremaVal} m³
-                                        </span>
-                                    </span>
-                                </div>
-                            `;
-                        }).filter(x => x).join('');
+                const sjecaRow = renderSortimentRow(
+                    'SJEČA',
+                    odjel.redovi.sjeca || [],
+                    '#d1fae5',  // svijetlo zelena
+                    '#065f46',  // tamno zelena
+                    false
+                );
 
-                        sortimentiRow = `
-                            <tr id="${odjelId}-sortimenti" class="sortimenti-row" style="display: none;">
-                                <td colspan="7" style="padding: 0; background: #f9fafb;">
-                                    <div style="margin: 12px 16px; background: white; border-radius: 6px; border: 1px solid #e5e7eb; overflow: hidden;">
-                                        <div style="background: #f3f4f6; padding: 10px 12px; border-bottom: 2px solid #d1d5db; font-weight: 600; color: #374151;">
-                                            Sortimentni Prikaz - ${odjel.odjel}
-                                        </div>
-                                        ${sortimentHtml || '<div style="padding: 20px; text-align: center; color: #6b7280;">Nema sortimentnih podataka</div>'}
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
-                    }
+                const otpremaRow = renderSortimentRow(
+                    'OTPREMA',
+                    odjel.redovi.otprema || [],
+                    '#dbeafe',  // svijetlo plava
+                    '#1e40af',  // tamno plava
+                    false
+                );
 
-                    return mainRow + sortimentiRow;
-                }).join('')
-                : '<tr><td colspan="7" style="text-align: center; color: #6b7280; padding: 40px;">Nema podataka</td></tr>';
+                const sumaLagerRow = renderSortimentRow(
+                    'ŠUMA-LAGER',
+                    odjel.redovi.sumaLager || [],
+                    '#1f2937',  // tamno siva/crna
+                    '#f9fafb',  // bijela
+                    true
+                );
+
+                return headerRow + projekatRow + sjecaRow + otpremaRow + sumaLagerRow;
+            }).join('');
 
             document.getElementById('suma-lager-table').innerHTML = html;
         }
@@ -13295,21 +13310,33 @@
             }
         }
 
-        // Filter Zaliha Table by search
+        // Filter Zaliha Table by search - prilagođeno za sortimentni prikaz
         function filterSumaLagerTable() {
             const searchInput = document.getElementById('suma-lager-search').value.toLowerCase();
             const table = document.getElementById('suma-lager-main-table');
-            const rows = table.getElementsByTagName('tr');
+            const tbody = table.querySelector('tbody');
+            const rows = tbody ? tbody.getElementsByTagName('tr') : [];
 
-            for (let i = 1; i < rows.length; i++) {
+            // Grupiši redove po odjelu
+            const odjeliGroups = {};
+            for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
-                const text = row.textContent.toLowerCase();
-                if (text.includes(searchInput)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
+                const odjelName = row.getAttribute('data-odjel');
+                if (odjelName) {
+                    if (!odjeliGroups[odjelName]) {
+                        odjeliGroups[odjelName] = [];
+                    }
+                    odjeliGroups[odjelName].push(row);
                 }
             }
+
+            // Filtriraj po odjelu
+            Object.keys(odjeliGroups).forEach(odjelName => {
+                const shouldShow = odjelName.includes(searchInput);
+                odjeliGroups[odjelName].forEach(row => {
+                    row.style.display = shouldShow ? '' : 'none';
+                });
+            });
         }
 
         // Export Suma Lager Table to CSV
