@@ -10239,21 +10239,7 @@
                 bodyHtml += '</tr>';
             });
 
-            // Add UKUPNO row
-            bodyHtml += '<tr style="background: #f9fafb; border-top: 3px solid #1f2937; font-weight: 700;">';
-            bodyHtml += '<td style="position: sticky; left: 0; background: #f9fafb; z-index: 9; font-size: 15px; padding: 14px;">📊 UKUPNO</td>';
-
-            sortimentiNazivi.forEach(sortiment => {
-                const colClass = getColumnGroup(sortiment);
-                let extraClass = '';
-                if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
-                else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
-                else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
-
-                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 700;">' + totals[sortiment].toFixed(2) + '</td>';
-            });
-
-            bodyHtml += '</tr>';
+            // UKUPNO row removed - only SVEUKUPNO column is shown
 
             bodyElem.innerHTML = bodyHtml;
         }
@@ -10265,7 +10251,7 @@
             const table = document.getElementById('izvjestaji-primka-table');
             const tr = table.getElementsByTagName('tr');
 
-            for (let i = 1; i < tr.length - 1; i++) { // Skip header (0) and total row (last)
+            for (let i = 1; i < tr.length; i++) { // Skip header (0) only
                 const td = tr[i].getElementsByTagName('td')[0]; // First column (Odjel)
                 if (td) {
                     const txtValue = td.textContent || td.innerText;
@@ -10285,7 +10271,7 @@
             const table = document.getElementById('izvjestaji-otprema-table');
             const tr = table.getElementsByTagName('tr');
 
-            for (let i = 1; i < tr.length - 1; i++) { // Skip header (0) and total row (last)
+            for (let i = 1; i < tr.length; i++) { // Skip header (0) only
                 const td = tr[i].getElementsByTagName('td')[0]; // First column (Odjel)
                 if (td) {
                     const txtValue = td.textContent || td.innerText;
