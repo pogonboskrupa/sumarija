@@ -3284,79 +3284,6 @@
             </div>
         </div>
 
-        <!-- ŠUMA LAGER CONTENT - Warehouse Inventory Dashboard -->
-        <div id="suma-lager-content" class="container hidden">
-            <div class="page-header">
-                <div class="page-header-left">
-                    <h1>🏭 Šuma Lager - Zaliha</h1>
-                    <p>Pregled trenutnih zaliha drva na lageru po odjelima</p>
-                </div>
-                <div class="page-header-right">
-                    <span class="badge success">Godišnji pregled</span>
-                </div>
-            </div>
-
-            <!-- KPI Metrics Cards -->
-            <div class="cards">
-                <div class="card">
-                    <div class="card-label">Ukupna Zaliha</div>
-                    <div class="card-value green" id="suma-lager-total">0 m³</div>
-                </div>
-                <div class="card">
-                    <div class="card-label">Prosječna Zaliha</div>
-                    <div class="card-value blue" id="suma-lager-average">0 m³</div>
-                </div>
-                <div class="card">
-                    <div class="card-label">Broj Odjela sa Zalihom</div>
-                    <div class="card-value red" id="suma-lager-count">0</div>
-                </div>
-            </div>
-
-            <!-- Top 5 Odjela by Zaliha -->
-            <div class="section">
-                <h2>🏆 Top 5 Odjela - Najveća Zaliha</h2>
-                <p>Pet odjela sa najvećom zalihom drva na lageru</p>
-                <div id="suma-lager-top5">
-                    <p style="color: #6b7280; text-align: center; padding: 20px;">Učitavanje...</p>
-                </div>
-            </div>
-
-            <!-- Zaliha Chart - Bar Chart -->
-            <div class="section">
-                <h2>📊 Grafički Prikaz Zaliha</h2>
-                <p>Top 10 odjela po zalihama (m³)</p>
-                <div class="chart-container" style="height: auto; padding: 20px;">
-                    <div id="suma-lager-chart"></div>
-                </div>
-            </div>
-
-            <!-- Detaljni Pregled - All Odjeli Table -->
-            <div class="section">
-                <h2>📋 Detaljni Pregled - Svi Odjeli</h2>
-                <p>Kompletna tablica svih odjela sa zalihama po sortimentima</p>
-                <div class="controls-bar" style="margin-top: 20px;">
-                    <input type="text" class="search-input" id="suma-lager-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterSumaLagerTable()">
-                    <button class="btn btn-primary" onclick="exportSumaLagerToCSV()">📥 Export CSV</button>
-                </div>
-                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="monthly-table" id="suma-lager-main-table">
-                        <thead>
-                            <tr>
-                                <th onclick="sortTable(0, 'suma-lager-main-table')">Odjel ⇅</th>
-                                <th onclick="sortTable(1, 'suma-lager-main-table')">Radilište ⇅</th>
-                                <th onclick="sortTable(2, 'suma-lager-main-table')">Izvođač ⇅</th>
-                                <th class="right" onclick="sortTable(3, 'suma-lager-main-table')">Zaliha (m³) ⇅</th>
-                                <th class="right" onclick="sortTable(4, 'suma-lager-main-table')">Sječa (m³) ⇅</th>
-                                <th class="right" onclick="sortTable(5, 'suma-lager-main-table')">Otprema (m³) ⇅</th>
-                                <th class="right" onclick="sortTable(6, 'suma-lager-main-table')">% Otprema ⇅</th>
-                            </tr>
-                        </thead>
-                        <tbody id="suma-lager-table"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
         <!-- KUPCI CONTENT -->
         <div id="kupci-content" class="container hidden">
             <div class="page-header">
@@ -3500,19 +3427,96 @@
             <div class="page-header">
                 <div class="page-header-left">
                     <h1>📦 Stanje Odjela</h1>
-                    <p>Pregled stanja svih odjela</p>
+                    <p>Pregled stanja odjela i zaliha</p>
                 </div>
-                <div class="page-header-right">
+            </div>
+
+            <!-- Tab submenu za Stanje Odjela -->
+            <div class="tabs-submenu" style="margin-bottom: 24px;">
+                <button class="tab-sub active" onclick="switchStanjeOdjelaTab('pregled')">📋 Pregled Stanja</button>
+                <button class="tab-sub" onclick="switchStanjeOdjelaTab('suma-lager')">🏭 Šuma Lager</button>
+            </div>
+
+            <!-- Pregled Stanja View (Original Stanje Odjela) -->
+            <div id="stanje-pregled-view" class="stanje-view">
+                <div class="page-header-right" style="margin-bottom: 20px;">
                     <button class="btn btn-secondary" onclick="syncStanjeOdjelaCache()">♻️ Ažuriraj cache</button>
                     <button class="btn btn-primary" onclick="loadAdminStanjeOdjela()">🔄 Osvježi prikaz</button>
                 </div>
+                <div class="section">
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="admin-stanje-table">
+                            <thead id="admin-stanje-header"></thead>
+                            <tbody id="admin-stanje-body"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-            <div class="section">
-                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="monthly-table" id="admin-stanje-table">
-                        <thead id="admin-stanje-header"></thead>
-                        <tbody id="admin-stanje-body"></tbody>
-                    </table>
+
+            <!-- Šuma Lager View -->
+            <div id="stanje-suma-lager-view" class="stanje-view hidden">
+                <div class="page-header-right" style="margin-bottom: 20px;">
+                    <span class="badge success">Godišnji pregled</span>
+                </div>
+
+                <!-- KPI Metrics Cards -->
+                <div class="cards">
+                    <div class="card">
+                        <div class="card-label">Ukupna Zaliha</div>
+                        <div class="card-value green" id="suma-lager-total">0 m³</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Prosječna Zaliha</div>
+                        <div class="card-value blue" id="suma-lager-average">0 m³</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Broj Odjela sa Zalihom</div>
+                        <div class="card-value red" id="suma-lager-count">0</div>
+                    </div>
+                </div>
+
+                <!-- Top 5 Odjela by Zaliha -->
+                <div class="section">
+                    <h2>🏆 Top 5 Odjela - Najveća Zaliha</h2>
+                    <p>Pet odjela sa najvećom zalihom drva na lageru</p>
+                    <div id="suma-lager-top5">
+                        <p style="color: #6b7280; text-align: center; padding: 20px;">Učitavanje...</p>
+                    </div>
+                </div>
+
+                <!-- Zaliha Chart - Bar Chart -->
+                <div class="section">
+                    <h2>📊 Grafički Prikaz Zaliha</h2>
+                    <p>Top 10 odjela po zalihama (m³)</p>
+                    <div class="chart-container" style="height: auto; padding: 20px;">
+                        <div id="suma-lager-chart"></div>
+                    </div>
+                </div>
+
+                <!-- Detaljni Pregled - All Odjeli Table -->
+                <div class="section">
+                    <h2>📋 Detaljni Pregled - Svi Odjeli</h2>
+                    <p>Kompletna tablica svih odjela sa zalihama po sortimentima</p>
+                    <div class="controls-bar" style="margin-top: 20px;">
+                        <input type="text" class="search-input" id="suma-lager-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterSumaLagerTable()">
+                        <button class="btn btn-primary" onclick="exportSumaLagerToCSV()">📥 Export CSV</button>
+                    </div>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="suma-lager-main-table">
+                            <thead>
+                                <tr>
+                                    <th onclick="sortTable(0, 'suma-lager-main-table')">Odjel ⇅</th>
+                                    <th onclick="sortTable(1, 'suma-lager-main-table')">Radilište ⇅</th>
+                                    <th onclick="sortTable(2, 'suma-lager-main-table')">Izvođač ⇅</th>
+                                    <th class="right" onclick="sortTable(3, 'suma-lager-main-table')">Zaliha (m³) ⇅</th>
+                                    <th class="right" onclick="sortTable(4, 'suma-lager-main-table')">Sječa (m³) ⇅</th>
+                                    <th class="right" onclick="sortTable(5, 'suma-lager-main-table')">Otprema (m³) ⇅</th>
+                                    <th class="right" onclick="sortTable(6, 'suma-lager-main-table')">% Otprema ⇅</th>
+                                </tr>
+                            </thead>
+                            <tbody id="suma-lager-table"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -5635,7 +5639,6 @@
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
                     <button class="tab" onclick="switchTab('stanje-odjela-admin')">📦 Stanje odjela</button>
-                    <button class="tab" onclick="switchTab('suma-lager')">🏭 Šuma Lager</button>
                     <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Sječa/otprema po mjesecima</button>
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz sječe</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz otpreme</button>
@@ -5918,7 +5921,6 @@
             document.getElementById('izvjestaji-primac-content').classList.add('hidden');
             document.getElementById('izvjestaji-otpremac-content').classList.add('hidden');
             document.getElementById('operativa-content').classList.add('hidden');
-            document.getElementById('suma-lager-content').classList.add('hidden');
             document.getElementById('stanje-odjela-admin-content').classList.add('hidden');
             document.getElementById('poslovodja-stanje-content').classList.add('hidden');
             document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
@@ -5934,8 +5936,6 @@
                 loadDashboard();
             } else if (tab === 'operativa') {
                 loadOperativa();
-            } else if (tab === 'suma-lager') {
-                loadSumaLager();
             } else if (tab === 'primaci') {
                 loadPrimaci();
             } else if (tab === 'otpremaci') {
@@ -6006,9 +6006,9 @@
                 // Odmah prikaži Mjesečni izvještaj umjesto menija
                 switchTab('izvjestaji');
             } else if (tab === 'stanje-odjela-admin') {
-                // Prikaži samo Stanje odjela za admina (SVE odjele, bez filtriranja)
+                // Prikaži Stanje odjela za admina sa submenu (Pregled Stanja + Šuma Lager)
                 document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
-                loadAdminStanjeOdjela();
+                switchStanjeOdjelaTab('pregled');
             } else if (tab === 'izvjestaji-primac') {
                 // Set default to current month/year
                 const currentDate = new Date();
@@ -6063,6 +6063,37 @@
                 }
             } else if (view === 'kubikator') {
                 document.getElementById('ostalo-kubikator-view').classList.remove('hidden');
+            }
+        }
+
+        // Switch between Stanje Odjela tabs (Pregled Stanja / Šuma Lager)
+        function switchStanjeOdjelaTab(view) {
+            // Update submenu buttons
+            const tabs = document.querySelectorAll('#stanje-odjela-admin-content .tabs-submenu .tab-sub');
+            tabs.forEach(t => t.classList.remove('active'));
+            if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                // If called programmatically, set the active tab based on view
+                tabs.forEach(t => {
+                    if ((view === 'pregled' && t.textContent.includes('Pregled')) ||
+                        (view === 'suma-lager' && t.textContent.includes('Lager'))) {
+                        t.classList.add('active');
+                    }
+                });
+            }
+
+            // Hide all stanje views
+            document.getElementById('stanje-pregled-view').classList.add('hidden');
+            document.getElementById('stanje-suma-lager-view').classList.add('hidden');
+
+            // Show selected view and load data
+            if (view === 'pregled') {
+                document.getElementById('stanje-pregled-view').classList.remove('hidden');
+                loadAdminStanjeOdjela();
+            } else if (view === 'suma-lager') {
+                document.getElementById('stanje-suma-lager-view').classList.remove('hidden');
+                loadSumaLager();
             }
         }
 
@@ -12917,10 +12948,8 @@
 
         // Load ŠUMA LAGER screen and populate data
         function loadSumaLager() {
-            document.getElementById('suma-lager-content').classList.remove('hidden');
-            document.getElementById('loading-screen').classList.add('hidden');
-
             // Load zaliha data from stanje-odjela endpoint
+            // Note: suma-lager is now a submenu within stanje-odjela-admin
             loadZalihaData();
         }
 
