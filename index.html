@@ -2101,6 +2101,12 @@
                         <div class="header-user-name" id="user-name"></div>
                         <div class="header-user-role" id="user-role"></div>
                     </div>
+                    <div class="desktop-view-toggle">
+                        <button class="desktop-view-button" onclick="toggleDesktopView()" id="desktop-view-btn" title="Prebaci na desktop prikaz">
+                            <span>🖥️</span>
+                            <span>Desktop</span>
+                        </button>
+                    </div>
                     <div class="user-menu">
                         <button class="user-menu-button" onclick="toggleUserMenu(event)">
                             <span>⚙️</span>
@@ -2149,8 +2155,8 @@
                         <thead>
                             <tr>
                                 <th onclick="sortTable(0, 'dashboard-table')" style="text-align: left;">Mjesec ⇅</th>
-                                <th class="right" onclick="sortTable(1, 'dashboard-table')">Ukupna Sječa (m³) ⇅</th>
-                                <th class="right" onclick="sortTable(2, 'dashboard-table')">Ukupna Otprema (m³) ⇅</th>
+                                <th class="right" onclick="sortTable(1, 'dashboard-table')">Sječa (m³) ⇅</th>
+                                <th class="right" onclick="sortTable(2, 'dashboard-table')">Otprema (m³) ⇅</th>
                                 <th class="right" onclick="sortTable(3, 'dashboard-table')">Zaliha ⇅</th>
                                 <th class="right" onclick="sortTable(4, 'dashboard-table')">Dinamika ⇅</th>
                                 <th class="right" onclick="sortTable(5, 'dashboard-table')">Razlika Sječa - Dinamika ⇅</th>
@@ -5453,6 +5459,17 @@
                 document.body.classList.add('dark-mode');
             }
 
+            // Load desktop view preference
+            const desktopView = localStorage.getItem('desktop-view');
+            if (desktopView === 'enabled') {
+                document.body.classList.add('force-desktop-view');
+                const btn = document.getElementById('desktop-view-btn');
+                if (btn) {
+                    btn.classList.add('active');
+                    btn.title = 'Prebaci na mobilni prikaz';
+                }
+            }
+
             // Add event listeners for dinamika calculation inputs
             for (let i = 1; i <= 12; i++) {
                 const mjesecKey = String(i).padStart(2, '0');
@@ -6244,12 +6261,12 @@
                 // Create summary cards
                 const summaryHTML = `
                     <div class="summary-card green">
-                        <div class="summary-card-title">Ukupna Sječa</div>
+                        <div class="summary-card-title">Sječa</div>
                         <div class="summary-card-value text-outline-dark">${totalSjeca.toFixed(0)} m³</div>
                         <div class="summary-card-subtitle">${percentDinamika}% dinamike</div>
                     </div>
                     <div class="summary-card blue">
-                        <div class="summary-card-title">Ukupna Otprema</div>
+                        <div class="summary-card-title">Otprema</div>
                         <div class="summary-card-value text-outline-dark">${totalOtprema.toFixed(0)} m³</div>
                         <div class="summary-card-subtitle">${totalSjeca > 0 ? ((totalOtprema/totalSjeca)*100).toFixed(1) : '0.0'}% od sječe</div>
                     </div>
@@ -9823,6 +9840,28 @@
         }
 
         // Dark mode initialization moved to main DOMContentLoaded listener (line ~4785)
+
+        // Desktop view toggle
+        function toggleDesktopView() {
+            document.body.classList.toggle('force-desktop-view');
+            const isDesktopView = document.body.classList.contains('force-desktop-view');
+            localStorage.setItem('desktop-view', isDesktopView ? 'enabled' : 'disabled');
+
+            // Update button state
+            const btn = document.getElementById('desktop-view-btn');
+            if (btn) {
+                if (isDesktopView) {
+                    btn.classList.add('active');
+                    btn.title = 'Prebaci na mobilni prikaz';
+                } else {
+                    btn.classList.remove('active');
+                    btn.title = 'Prebaci na desktop prikaz';
+                }
+            }
+
+            // Force page to re-layout
+            window.scrollTo(0, 0);
+        }
 
         // Filter dashboard table
         function filterDashboardTable() {
@@ -13484,14 +13523,14 @@
 
             bodyElem.innerHTML = `
                 <tr>
-                    <td style="font-weight: 600;">Ukupna Sječa (m³)</td>
+                    <td style="font-weight: 600;">Sječa (m³)</td>
                     <td class="sortiment-value">${totalSjeca1.toFixed(2)}</td>
                     <td class="sortiment-value">${totalSjeca2.toFixed(2)}</td>
                     <td class="${deltaSjeca >= 0 ? 'positive-diff' : 'negative-diff'}" style="text-align: right; font-weight: 600;">${deltaSjeca >= 0 ? '+' : ''}${deltaSjeca.toFixed(2)}</td>
                     <td class="${percentChangeSjeca >= 0 ? 'positive-diff' : 'negative-diff'}" style="text-align: right; font-weight: 600;">${percentChangeSjeca >= 0 ? '+' : ''}${percentChangeSjeca.toFixed(1)}%</td>
                 </tr>
                 <tr>
-                    <td style="font-weight: 600;">Ukupna Otprema (m³)</td>
+                    <td style="font-weight: 600;">Otprema (m³)</td>
                     <td class="sortiment-value">${totalOtprema1.toFixed(2)}</td>
                     <td class="sortiment-value">${totalOtprema2.toFixed(2)}</td>
                     <td class="${deltaOtprema >= 0 ? 'positive-diff' : 'negative-diff'}" style="text-align: right; font-weight: 600;">${deltaOtprema >= 0 ? '+' : ''}${deltaOtprema.toFixed(2)}</td>

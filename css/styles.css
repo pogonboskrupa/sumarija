@@ -17,7 +17,7 @@
         .header-left { display: flex; align-items: center; gap: 12px; }
         .header-logo { font-size: 28px; }
         .header-center { display: flex; align-items: center; justify-content: center; flex: 1; margin: 0 20px; }
-        .company-logo { height: 60px; width: auto; object-fit: contain; transition: all 0.3s ease; }
+        .company-logo { height: 90px; width: auto; object-fit: contain; transition: all 0.3s ease; }
         .company-logo:hover { transform: scale(1.05); }
         .header-title h1 { font-size: 18px; font-weight: 700; margin-bottom: 2px; color: #047857; }
         .header-title p { font-size: 12px; color: #6b7280; }
@@ -25,6 +25,10 @@
         .header-user { text-align: right; }
         .header-user-name { font-size: 13px; font-weight: 600; color: #1f2937; }
         .header-user-role { font-size: 11px; color: #6b7280; }
+        .desktop-view-toggle { }
+        .desktop-view-button { background: #f3f4f6; color: #374151; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
+        .desktop-view-button:hover { background: #e5e7eb; }
+        .desktop-view-button.active { background: #047857; color: white; }
         .user-menu { position: relative; }
         .user-menu-button { background: #f3f4f6; color: #374151; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .user-menu-button:hover { background: #e5e7eb; }
@@ -628,7 +632,7 @@
             .header-content { flex-direction: column; gap: 12px; width: 100%; }
             .header-left { width: 100%; }
             .header-center { margin: 10px 0; }
-            .company-logo { height: 50px; }
+            .company-logo { height: 70px; }
             .header-right { width: 100%; justify-content: space-between; }
             .header-logo { font-size: 24px; }
             .header-title h1 { font-size: 16px; }
@@ -2357,6 +2361,79 @@
         thead th,
         thead th * {
             color: #ffffff !important;
+        }
+
+        /* ============================================ */
+        /* FORCE DESKTOP VIEW - Override all responsive styles */
+        /* ============================================ */
+
+        body.force-desktop-view {
+            min-width: 1200px !important;
+        }
+
+        /* Override all mobile styles when force-desktop-view is active */
+        body.force-desktop-view .header {
+            flex-direction: row !important;
+            padding: 16px 24px !important;
+        }
+
+        body.force-desktop-view .header-content {
+            flex-direction: row !important;
+            gap: 16px !important;
+        }
+
+        body.force-desktop-view .header-left {
+            width: auto !important;
+        }
+
+        body.force-desktop-view .header-center {
+            margin: 0 20px !important;
+        }
+
+        body.force-desktop-view .company-logo {
+            height: 90px !important;
+        }
+
+        body.force-desktop-view .header-right {
+            width: auto !important;
+            gap: 16px !important;
+        }
+
+        body.force-desktop-view .header-title h1 {
+            font-size: 18px !important;
+        }
+
+        body.force-desktop-view .header-title p {
+            font-size: 12px !important;
+        }
+
+        body.force-desktop-view .tabs {
+            overflow-x: visible !important;
+            gap: 4px !important;
+            padding: 0 !important;
+        }
+
+        body.force-desktop-view .tab {
+            padding: 14px 20px !important;
+            font-size: 14px !important;
+        }
+
+        body.force-desktop-view .section {
+            padding: 32px !important;
+        }
+
+        body.force-desktop-view .container {
+            padding: 32px 24px !important;
+        }
+
+        body.force-desktop-view table {
+            font-size: 13px !important;
+        }
+
+        body.force-desktop-view .professional-monthly-table th,
+        body.force-desktop-view .professional-monthly-table td {
+            padding: 14px 18px !important;
+            font-size: 13px !important;
         }
 
         /* ============================================ */
