@@ -3506,14 +3506,15 @@ function syncStanjeOdjela() {
           }
         }
 
-        // Čitaj redove 10-13, kolone D-U (indeksi 3-20)
-        const dataRange = otpremaSheet.getRange(10, 4, 4, 18); // Redovi 10-13, kolona D, 18 kolona
+        // Čitaj cijele redove 10-13 (od kolone A do kraja)
+        const lastColumn = otpremaSheet.getLastColumn();
+        const dataRange = otpremaSheet.getRange(10, 1, 4, lastColumn); // Redovi 10-13, od kolone A
         const dataValues = dataRange.getValues();
 
-        const projekat = dataValues[0].map(v => parseFloat(v) || 0);
-        const sjeca = dataValues[1].map(v => parseFloat(v) || 0);
-        const otprema = dataValues[2].map(v => parseFloat(v) || 0);
-        const sumaLager = dataValues[3].map(v => parseFloat(v) || 0);
+        const projekat = dataValues[0]; // Cijeli red PROJEKAT
+        const sjeca = dataValues[1]; // Cijeli red SJEČA
+        const otprema = dataValues[2]; // Cijeli red OTPREMA
+        const sumaLager = dataValues[3]; // Cijeli red ZALIHA
 
         // Pronađi najsvježiji datum iz PRIMKA sheet
         let zadnjiDatum = null;
@@ -3613,8 +3614,8 @@ function syncStanjeOdjela() {
     // Očisti sheet
     cacheSheet.clear();
 
-    // Postavi zaglavlje
-    const headerRow = ['Odjel Naziv', 'Radilište', 'Izvođač', 'Zadnji Datum (timestamp)', 'Zadnji Datum (formatted)', 'Red Tip', ...sortimentiNazivi];
+    // Postavi zaglavlje - Red Tip + Odjel info + cijeli red iz OTPREMA
+    const headerRow = ['Red Tip', 'Odjel Naziv', 'Radilište', 'Izvođač', 'Zadnji Datum'];
     cacheSheet.getRange(1, 1, 1, headerRow.length).setValues([headerRow]);
     cacheSheet.getRange(1, 1, 1, headerRow.length).setFontWeight('bold');
 
@@ -3624,10 +3625,11 @@ function syncStanjeOdjela() {
       const datumFormatted = odjel.zadnjiDatum ? new Date(odjel.zadnjiDatum).toLocaleDateString('sr-RS') : '';
 
       // 4 reda po odjelu: PROJEKAT, SJEČA, OTPREMA, ZALIHA
-      dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.izvodjac || '', odjel.zadnjiDatum, datumFormatted, 'PROJEKAT', ...odjel.redovi.projekat]);
-      dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.izvodjac || '', odjel.zadnjiDatum, datumFormatted, 'SJEČA', ...odjel.redovi.sjeca]);
-      dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.izvodjac || '', odjel.zadnjiDatum, datumFormatted, 'OTPREMA', ...odjel.redovi.otprema]);
-      dataRows.push([odjel.odjelNaziv, odjel.radiliste, odjel.izvodjac || '', odjel.zadnjiDatum, datumFormatted, 'ZALIHA', ...odjel.redovi.sumaLager]);
+      // Red Tip je prva kolona, zatim odjel info, pa cijeli red iz OTPREMA sheeta
+      dataRows.push(['PROJEKAT', odjel.odjelNaziv, odjel.radiliste, odjel.izvodjac || '', datumFormatted, ...odjel.redovi.projekat]);
+      dataRows.push(['SJEČA', odjel.odjelNaziv, odjel.radiliste, odjel.izvodjac || '', datumFormatted, ...odjel.redovi.sjeca]);
+      dataRows.push(['OTPREMA', odjel.odjelNaziv, odjel.radiliste, odjel.izvodjac || '', datumFormatted, ...odjel.redovi.otprema]);
+      dataRows.push(['ZALIHA', odjel.odjelNaziv, odjel.radiliste, odjel.izvodjac || '', datumFormatted, ...odjel.redovi.sumaLager]);
     });
 
     // Zapiši podatke
@@ -3730,28 +3732,28 @@ function handleStanjeOdjela(username, password) {
     }
 
     // Parse podatke sa sheeta
+    // Nova struktura: [Red Tip, Odjel Naziv, Radilište, Izvođač, Zadnji Datum, ...cijeli red iz OTPREMA]
     const odjeliData = [];
     const odjeliMap = new Map(); // Mapa: odjelNaziv -> odjel objekt
 
     for (let i = 2; i < allData.length; i++) {
       const row = allData[i];
-      const odjelNaziv = row[0];
-      const radiliste = row[1];
-      const izvodjac = row[2];
-      const zadnjiDatumTimestamp = row[3];
+      const redTip = row[0]; // PROJEKAT, SJEČA, OTPREMA, ZALIHA
+      const odjelNaziv = row[1];
+      const radiliste = row[2];
+      const izvodjac = row[3];
       const zadnjiDatumFormatted = row[4];
-      const redTip = row[5]; // PROJEKAT, SJEČA, OTPREMA, ZALIHA
-      const sortimenti = row.slice(6); // Sortimenti počinju od kolone 7
+      const dataRow = row.slice(5); // Cijeli red iz OTPREMA sheeta (sve kolone)
 
-      // SVEUKUPNO je zadnja kolona u sortimentima
-      const sveukupno = sortimenti[sortimenti.length - 1] || 0;
+      // Zadnja kolona u dataRow je SVEUKUPNO (na poziciji koja odgovara koloni U u OTPREMA)
+      const sveukupno = dataRow[dataRow.length - 1] || 0;
 
       // Ako odjel nije u mapi, dodaj ga
       if (!odjeliMap.has(odjelNaziv)) {
         odjeliMap.set(odjelNaziv, {
           odjel: odjelNaziv,
           radiliste: radiliste,
-          zadnjiDatum: zadnjiDatumTimestamp ? new Date(zadnjiDatumTimestamp) : null,
+          zadnjiDatum: zadnjiDatumFormatted,
           datumZadnjeSjece: zadnjiDatumFormatted,
           projekat: 0,
           sjeca: 0,
@@ -3759,7 +3761,7 @@ function handleStanjeOdjela(username, password) {
           sumaPanj: 0,
           izvođač: izvodjac || '',
           realizacija: 0,
-          zadnjiDatumObj: zadnjiDatumTimestamp ? new Date(zadnjiDatumTimestamp) : null,
+          zadnjiDatumObj: null,
           redovi: {
             projekat: [],
             sjeca: [],
@@ -3771,18 +3773,22 @@ function handleStanjeOdjela(username, password) {
 
       const odjel = odjeliMap.get(odjelNaziv);
 
-      // Dodaj sortimente u odgovarajući red (kao nizove za detaljni prikaz)
+      // dataRow sadrži sve kolone iz OTPREMA sheeta (od A do kraja)
+      // Sortimenti su u kolonama D-U (indeksi 3-20 u originalnom sheetu, što je 3-20 u dataRow jer dataRow počinje od A=0)
+      // Izvuci samo sortimente (18 kolona: D-U)
+      const sortimentiData = dataRow.slice(3, 21); // Kolone D-U (indeksi 3-20, slice(3,21) jer je end ekskluzan)
+
       if (redTip === 'PROJEKAT') {
-        odjel.redovi.projekat = sortimenti.map(v => parseFloat(v) || 0);
+        odjel.redovi.projekat = sortimentiData;
         odjel.projekat = parseFloat(sveukupno) || 0;
       } else if (redTip === 'SJEČA') {
-        odjel.redovi.sjeca = sortimenti.map(v => parseFloat(v) || 0);
+        odjel.redovi.sjeca = sortimentiData;
         odjel.sjeca = parseFloat(sveukupno) || 0;
       } else if (redTip === 'OTPREMA') {
-        odjel.redovi.otprema = sortimenti.map(v => parseFloat(v) || 0);
+        odjel.redovi.otprema = sortimentiData;
         odjel.otprema = parseFloat(sveukupno) || 0;
       } else if (redTip === 'ZALIHA') {
-        odjel.redovi.sumaLager = sortimenti.map(v => parseFloat(v) || 0);
+        odjel.redovi.sumaLager = sortimentiData;
         odjel.sumaPanj = parseFloat(sveukupno) || 0;
       }
     }
