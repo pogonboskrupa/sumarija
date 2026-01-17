@@ -3278,6 +3278,79 @@
             </div>
         </div>
 
+        <!-- ŠUMA LAGER CONTENT - Warehouse Inventory Dashboard -->
+        <div id="suma-lager-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>🏭 Šuma Lager - Zaliha</h1>
+                    <p>Pregled trenutnih zaliha drva na lageru po odjelima</p>
+                </div>
+                <div class="page-header-right">
+                    <span class="badge success">Godišnji pregled</span>
+                </div>
+            </div>
+
+            <!-- KPI Metrics Cards -->
+            <div class="cards">
+                <div class="card">
+                    <div class="card-label">Ukupna Zaliha</div>
+                    <div class="card-value green" id="suma-lager-total">0 m³</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Prosječna Zaliha</div>
+                    <div class="card-value blue" id="suma-lager-average">0 m³</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Broj Odjela sa Zalihom</div>
+                    <div class="card-value red" id="suma-lager-count">0</div>
+                </div>
+            </div>
+
+            <!-- Top 5 Odjela by Zaliha -->
+            <div class="section">
+                <h2>🏆 Top 5 Odjela - Najveća Zaliha</h2>
+                <p>Pet odjela sa najvećom zalihom drva na lageru</p>
+                <div id="suma-lager-top5">
+                    <p style="color: #6b7280; text-align: center; padding: 20px;">Učitavanje...</p>
+                </div>
+            </div>
+
+            <!-- Zaliha Chart - Bar Chart -->
+            <div class="section">
+                <h2>📊 Grafički Prikaz Zaliha</h2>
+                <p>Top 10 odjela po zalihama (m³)</p>
+                <div class="chart-container" style="height: auto; padding: 20px;">
+                    <div id="suma-lager-chart"></div>
+                </div>
+            </div>
+
+            <!-- Detaljni Pregled - All Odjeli Table -->
+            <div class="section">
+                <h2>📋 Detaljni Pregled - Svi Odjeli</h2>
+                <p>Kompletna tablica svih odjela sa zalihama po sortimentima</p>
+                <div class="controls-bar" style="margin-top: 20px;">
+                    <input type="text" class="search-input" id="suma-lager-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterSumaLagerTable()">
+                    <button class="btn btn-primary" onclick="exportSumaLagerToCSV()">📥 Export CSV</button>
+                </div>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="monthly-table" id="suma-lager-main-table">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable(0, 'suma-lager-main-table')">Odjel ⇅</th>
+                                <th onclick="sortTable(1, 'suma-lager-main-table')">Radilište ⇅</th>
+                                <th onclick="sortTable(2, 'suma-lager-main-table')">Izvođač ⇅</th>
+                                <th class="right" onclick="sortTable(3, 'suma-lager-main-table')">Zaliha (m³) ⇅</th>
+                                <th class="right" onclick="sortTable(4, 'suma-lager-main-table')">Sječa (m³) ⇅</th>
+                                <th class="right" onclick="sortTable(5, 'suma-lager-main-table')">Otprema (m³) ⇅</th>
+                                <th class="right" onclick="sortTable(6, 'suma-lager-main-table')">% Otprema ⇅</th>
+                            </tr>
+                        </thead>
+                        <tbody id="suma-lager-table"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- KUPCI CONTENT -->
         <div id="kupci-content" class="container hidden">
             <div class="page-header">
@@ -5540,6 +5613,7 @@
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
                     <button class="tab" onclick="switchTab('stanje-odjela-admin')">📦 Stanje odjela</button>
+                    <button class="tab" onclick="switchTab('suma-lager')">🏭 Šuma Lager</button>
                     <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Sječa/otprema po mjesecima</button>
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz sječe</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz otpreme</button>
@@ -5822,6 +5896,7 @@
             document.getElementById('izvjestaji-primac-content').classList.add('hidden');
             document.getElementById('izvjestaji-otpremac-content').classList.add('hidden');
             document.getElementById('operativa-content').classList.add('hidden');
+            document.getElementById('suma-lager-content').classList.add('hidden');
             document.getElementById('stanje-odjela-admin-content').classList.add('hidden');
             document.getElementById('poslovodja-stanje-content').classList.add('hidden');
             document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
@@ -5837,6 +5912,8 @@
                 loadDashboard();
             } else if (tab === 'operativa') {
                 loadOperativa();
+            } else if (tab === 'suma-lager') {
+                loadSumaLager();
             } else if (tab === 'primaci') {
                 loadPrimaci();
             } else if (tab === 'otpremaci') {
@@ -12778,6 +12855,212 @@
             }).join('');
 
             document.getElementById('seasonal-analysis').innerHTML = html;
+        }
+
+        // ============================================
+        // ŠUMA LAGER (ZALIHA) FUNCTIONS
+        // ============================================
+
+        // Load ŠUMA LAGER screen and populate data
+        function loadSumaLager() {
+            document.getElementById('suma-lager-content').classList.remove('hidden');
+            document.getElementById('loading-screen').classList.add('hidden');
+
+            // Load zaliha data from stanje-odjela endpoint
+            loadZalihaData();
+        }
+
+        // Load and process ZALIHA data
+        async function loadZalihaData() {
+            try {
+                // Fetch stanje-odjela data
+                const stanjeOdjelaUrl = buildApiUrl('stanje-odjela');
+                const stanjeData = await fetchWithCache(stanjeOdjelaUrl, 'cache_stanje_odjela_admin', false, 180000);
+
+                if (!stanjeData || !stanjeData.data) {
+                    console.error('No stanje-odjela data available');
+                    return;
+                }
+
+                // Process data - filter only odjeli with zaliha
+                const odjeliData = stanjeData.data;
+                const zalihaData = odjeliData.map(odjel => ({
+                    odjel: odjel.odjel,
+                    radiliste: odjel.radiliste || '',
+                    izvodjac: odjel.izvođač || '',
+                    zaliha: odjel.sumaPanj || 0,
+                    sjeca: odjel.sjeca || 0,
+                    otprema: odjel.otprema || 0,
+                    percentOtprema: odjel.sjeca > 0 ? ((odjel.otprema / odjel.sjeca) * 100) : 0
+                })).filter(o => o.zaliha > 0 || o.sjeca > 0); // Filter odjele sa zalihom ili sječom
+
+                // Calculate KPIs
+                const totalZaliha = zalihaData.reduce((sum, o) => sum + o.zaliha, 0);
+                const avgZaliha = zalihaData.length > 0 ? totalZaliha / zalihaData.length : 0;
+                const countOdjela = zalihaData.filter(o => o.zaliha > 0).length;
+
+                // Update KPI cards
+                document.getElementById('suma-lager-total').textContent = totalZaliha.toFixed(2) + ' m³';
+                document.getElementById('suma-lager-average').textContent = avgZaliha.toFixed(2) + ' m³';
+                document.getElementById('suma-lager-count').textContent = countOdjela;
+
+                // Render components
+                renderZalihaTop5(zalihaData);
+                renderZalihaChart(zalihaData);
+                renderZalihaTable(zalihaData);
+
+            } catch (error) {
+                console.error('Error loading Šuma Lager data:', error);
+            }
+        }
+
+        // Render Top 5 Odjela by Zaliha
+        function renderZalihaTop5(zalihaData) {
+            const sorted = zalihaData
+                .filter(o => o.zaliha > 0)
+                .sort((a, b) => b.zaliha - a.zaliha)
+                .slice(0, 5);
+
+            const html = sorted.length > 0
+                ? sorted.map((odjel, index) => {
+                    const rankClass = index < 3 ? 'top' : '';
+                    const medalColor = index === 0 ? '#fbbf24' : index === 1 ? '#d1d5db' : index === 2 ? '#f97316' : '#6b7280';
+                    return `
+                        <div style="display: flex; align-items: center; gap: 16px; padding: 16px; background: white; border-radius: 8px; margin-bottom: 12px; border: 1px solid #e5e7eb;">
+                            <div style="font-size: 32px; font-weight: 700; color: ${medalColor}; min-width: 40px; text-align: center;">
+                                ${index + 1}
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 4px;">
+                                    ${odjel.odjel}
+                                </div>
+                                <div style="font-size: 12px; color: #6b7280;">
+                                    ${odjel.radiliste ? odjel.radiliste : 'N/A'} • ${odjel.izvodjac ? odjel.izvodjac : 'N/A'}
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 24px; font-weight: 700; color: #059669;">
+                                    ${odjel.zaliha.toFixed(2)} m³
+                                </div>
+                                <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">
+                                    Sječa: ${odjel.sjeca.toFixed(0)} m³
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')
+                : '<p style="color: #6b7280; text-align: center; padding: 20px;">Nema podataka</p>';
+
+            document.getElementById('suma-lager-top5').innerHTML = html;
+        }
+
+        // Render Zaliha Bar Chart
+        function renderZalihaChart(zalihaData) {
+            const sorted = zalihaData
+                .filter(o => o.zaliha > 0)
+                .sort((a, b) => b.zaliha - a.zaliha)
+                .slice(0, 10);
+
+            if (sorted.length === 0) {
+                document.getElementById('suma-lager-chart').innerHTML = '<p style="color: #6b7280; text-align: center; padding: 40px;">Nema podataka za prikaz</p>';
+                return;
+            }
+
+            const maxValue = Math.max(...sorted.map(o => o.zaliha), 1);
+
+            const html = sorted.map((odjel, index) => {
+                const percentage = (odjel.zaliha / maxValue) * 100;
+                const barColor = index < 3 ? '#059669' : index < 6 ? '#2563eb' : '#6b7280';
+                return `
+                    <div style="margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <span style="font-size: 14px; font-weight: 600; color: #1f2937;">${odjel.odjel}</span>
+                            <span style="font-size: 14px; font-weight: 700; color: ${barColor};">${odjel.zaliha.toFixed(2)} m³</span>
+                        </div>
+                        <div style="background: #e5e7eb; height: 32px; border-radius: 6px; overflow: hidden; position: relative;">
+                            <div style="background: ${barColor}; height: 100%; width: ${percentage}%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: flex-end; padding-right: 12px;">
+                                <span style="font-size: 11px; color: white; font-weight: 600;">${percentage.toFixed(0)}%</span>
+                            </div>
+                        </div>
+                        <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">
+                            Sječa: ${odjel.sjeca.toFixed(0)} m³ | Otprema: ${odjel.otprema.toFixed(0)} m³
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('suma-lager-chart').innerHTML = html;
+        }
+
+        // Render Zaliha Table
+        function renderZalihaTable(zalihaData) {
+            const sorted = zalihaData.sort((a, b) => b.zaliha - a.zaliha);
+
+            const html = sorted.length > 0
+                ? sorted.map(odjel => {
+                    const percentClass = odjel.percentOtprema >= 90 ? 'green'
+                                       : odjel.percentOtprema >= 70 ? 'blue'
+                                       : odjel.percentOtprema >= 50 ? ''
+                                       : 'red';
+                    return `
+                        <tr>
+                            <td style="font-weight: 600;">${odjel.odjel}</td>
+                            <td>${odjel.radiliste || '-'}</td>
+                            <td>${odjel.izvodjac || '-'}</td>
+                            <td class="right" style="font-weight: 700; color: #059669;">${odjel.zaliha.toFixed(2)}</td>
+                            <td class="right">${odjel.sjeca.toFixed(2)}</td>
+                            <td class="right">${odjel.otprema.toFixed(2)}</td>
+                            <td class="right ${percentClass}">${odjel.percentOtprema.toFixed(1)}%</td>
+                        </tr>
+                    `;
+                }).join('')
+                : '<tr><td colspan="7" style="text-align: center; color: #6b7280; padding: 40px;">Nema podataka</td></tr>';
+
+            document.getElementById('suma-lager-table').innerHTML = html;
+        }
+
+        // Filter Zaliha Table by search
+        function filterSumaLagerTable() {
+            const searchInput = document.getElementById('suma-lager-search').value.toLowerCase();
+            const table = document.getElementById('suma-lager-main-table');
+            const rows = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchInput)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+        }
+
+        // Export Suma Lager Table to CSV
+        function exportSumaLagerToCSV() {
+            const table = document.getElementById('suma-lager-main-table');
+            let csv = [];
+            const rows = table.querySelectorAll('tr');
+
+            for (let row of rows) {
+                const cols = row.querySelectorAll('td, th');
+                const csvRow = [];
+                for (let col of cols) {
+                    csvRow.push(col.textContent.trim().replace(/,/g, ''));
+                }
+                csv.push(csvRow.join(','));
+            }
+
+            const csvContent = csv.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'suma-lager-zaliha.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         // Render Mjesečni Trend Kupaca
