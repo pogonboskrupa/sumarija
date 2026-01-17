@@ -6592,21 +6592,25 @@
         }
 
         // Load STANJE ODJELA za admina (SVE odjele bez filtriranja)
+        // Prikazuje tekuću godinu + Q4 prošle godine
         async function loadAdminStanjeOdjela() {
             try {
+                const currentYear = new Date().getFullYear();
+                const previousYear = currentYear - 1;
+
                 // 🚀 TURBO MODE: INSTANT SHOW cached data
-                const cacheKey = 'cache_odjeli_stanje_admin';
+                const cacheKey = 'cache_odjeli_stanje_admin_' + currentYear;
                 const cachedData = localStorage.getItem(cacheKey);
 
                 let hasCachedData = false;
                 if (cachedData) {
                     try {
                         const parsed = JSON.parse(cachedData);
-                        if (parsed.data && parsed.data.data) {
+                        if (parsed.data) {
                             // ✨ INSTANT: Show cached data immediately
                             document.getElementById('loading-screen').classList.add('hidden');
                             document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
-                            renderAdminStanjeTable(parsed.data.data);
+                            renderAdminStanjeTable(parsed.data);
                             hasCachedData = true;
 
                             // Show cache indicator
@@ -6624,19 +6628,41 @@
                     document.getElementById('stanje-odjela-admin-content').classList.add('hidden');
                 }
 
-                // 🔄 BACKGROUND REFRESH: Fetch fresh data (300s timeout - EXTRA PATIENT!)
-                const url = buildApiUrl('stanje-odjela');
-                const data = await fetchWithCache(url, cacheKey, false, 300000);
+                // 🔄 BACKGROUND REFRESH: Fetch fresh data for both years
+                console.log(`[STANJE ODJELA] Loading data for ${currentYear} and Q4 ${previousYear}`);
 
-                if (data.error || !data.data) {
+                // Učitaj podatke za tekuću i prošlu godinu paralelno
+                const currentYearUrl = buildApiUrl('odjeli', { year: currentYear });
+                const previousYearUrl = buildApiUrl('odjeli', { year: previousYear });
+
+                const [currentYearData, previousYearData] = await Promise.all([
+                    fetchWithCache(currentYearUrl, `cache_odjeli_${currentYear}`, false, 300000),
+                    fetchWithCache(previousYearUrl, `cache_odjeli_${previousYear}`, false, 300000)
+                ]);
+
+                if (currentYearData.error || !currentYearData.odjeli) {
                     if (!hasCachedData) {
-                        throw new Error(data.error || 'Nema podataka o stanju odjela');
+                        throw new Error(currentYearData.error || 'Nema podataka o odjelima za tekuću godinu');
                     }
                     return; // Silently fail if we have cached data
                 }
 
+                // Kombinuj podatke
+                const combinedData = combineStanjeOdjelaData(
+                    currentYearData.odjeli,
+                    previousYearData,
+                    currentYear,
+                    previousYear
+                );
+
+                // Cache combined data
+                localStorage.setItem(cacheKey, JSON.stringify({
+                    data: combinedData,
+                    timestamp: Date.now()
+                }));
+
                 // Update with fresh data
-                renderAdminStanjeTable(data.data);
+                renderAdminStanjeTable(combinedData);
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
@@ -6649,6 +6675,65 @@
                 showError('Greška', 'Greška pri učitavanju stanja odjela: ' + error.message);
                 document.getElementById('loading-screen').classList.add('hidden');
             }
+        }
+
+        // Kombinuj podatke tekuće godine i Q4 prošle godine
+        function combineStanjeOdjelaData(currentYearOdjeli, previousYearData, currentYear, previousYear) {
+            // Kreiraj mapu odjela za tekuću godinu
+            const odjeliMap = {};
+            currentYearOdjeli.forEach(odjel => {
+                odjeliMap[odjel.odjel] = {
+                    odjel: odjel.odjel,
+                    radiliste: odjel.radiliste,
+                    izvođač: odjel.izvođač,
+                    // Tekuća godina
+                    currentYear: currentYear,
+                    projekat: odjel.projekat || 0,
+                    sjeca: odjel.sjeca || 0,
+                    otprema: odjel.otprema || 0,
+                    zaliha: (odjel.sjeca || 0) - (odjel.otprema || 0),
+                    // Q4 prošle godine (inicijalno 0)
+                    prevYear: previousYear,
+                    prevQ4Sjeca: 0,
+                    prevQ4Otprema: 0,
+                    prevQ4Zaliha: 0
+                };
+            });
+
+            // Dodaj podatke za prošlu godinu (kompletna godina jer Q4 podaci nisu dostupni kroz odjeli endpoint)
+            // Napomena: Za sada prikazujemo totalnu prošlu godinu umesto samo Q4
+            if (previousYearData && previousYearData.odjeli) {
+                previousYearData.odjeli.forEach(prevOdjel => {
+                    const odjelName = prevOdjel.odjel;
+                    if (odjeliMap[odjelName]) {
+                        // Za sada koristimo totalnu sječu/otpremu prošle godine
+                        // TODO: Ako želimo samo Q4, trebamo koristiti primaci-daily endpoint
+                        odjeliMap[odjelName].prevQ4Sjeca = prevOdjel.sjeca || 0;
+                        odjeliMap[odjelName].prevQ4Otprema = prevOdjel.otprema || 0;
+                        odjeliMap[odjelName].prevQ4Zaliha = (prevOdjel.sjeca || 0) - (prevOdjel.otprema || 0);
+                    } else {
+                        // Odjel postoji u prošloj godini ali ne u tekućoj - dodaj ga
+                        odjeliMap[odjelName] = {
+                            odjel: prevOdjel.odjel,
+                            radiliste: prevOdjel.radiliste,
+                            izvođač: prevOdjel.izvođač,
+                            // Tekuća godina (nema podataka)
+                            currentYear: currentYear,
+                            projekat: 0,
+                            sjeca: 0,
+                            otprema: 0,
+                            zaliha: 0,
+                            // Prošla godina
+                            prevYear: previousYear,
+                            prevQ4Sjeca: prevOdjel.sjeca || 0,
+                            prevQ4Otprema: prevOdjel.otprema || 0,
+                            prevQ4Zaliha: (prevOdjel.sjeca || 0) - (prevOdjel.otprema || 0)
+                        };
+                    }
+                });
+            }
+
+            return Object.values(odjeliMap);
         }
 
         // Ručno ažuriranje cache-a za stanje odjela (samo za admin korisnike)
@@ -6727,6 +6812,7 @@
         }
 
         // Render Stanje Odjela table for admin
+        // Prikazuje tekuću godinu + Q4 prošle godine
         function renderAdminStanjeTable(odjeli) {
             const headerElem = document.getElementById('admin-stanje-header');
             const bodyElem = document.getElementById('admin-stanje-body');
@@ -6737,17 +6823,27 @@
                 return;
             }
 
-            // Build header
+            // Uzmi godine iz prvog odjela
+            const currentYear = odjeli[0]?.currentYear || new Date().getFullYear();
+            const prevYear = odjeli[0]?.prevYear || (currentYear - 1);
+
+            // Build header sa grupnim kolonama
             let headerHtml = `
                 <tr>
-                    <th>Odjel</th>
-                    <th>Radilište</th>
-                    <th>Izvođač</th>
-                    <th>Projekat (m³)</th>
-                    <th>Sječa (m³)</th>
-                    <th>Otprema (m³)</th>
-                    <th>Realizacija (%)</th>
-                    <th>Zadnji Unos</th>
+                    <th rowspan="2" style="vertical-align: middle; border-right: 2px solid #d1d5db;">Odjel</th>
+                    <th rowspan="2" style="vertical-align: middle; border-right: 2px solid #d1d5db;">Radilište</th>
+                    <th rowspan="2" style="vertical-align: middle; border-right: 3px solid #1e40af;">Izvođač</th>
+                    <th colspan="4" style="background: #dbeafe; color: #1e40af; text-align: center; border-bottom: 2px solid #1e40af; font-weight: 700;">${currentYear} - Tekuća Godina</th>
+                    <th colspan="3" style="background: #fef3c7; color: #92400e; text-align: center; border-bottom: 2px solid #92400e; font-weight: 700;">${prevYear} - Prošla Godina</th>
+                </tr>
+                <tr>
+                    <th style="background: #eff6ff; color: #1e40af;">Projekat (m³)</th>
+                    <th style="background: #eff6ff; color: #1e40af;">Sječa (m³)</th>
+                    <th style="background: #eff6ff; color: #1e40af;">Otprema (m³)</th>
+                    <th style="background: #eff6ff; color: #1e40af; border-right: 3px solid #1e40af;">🏭 Šuma Lager (m³)</th>
+                    <th style="background: #fffbeb; color: #92400e;">Sječa (m³)</th>
+                    <th style="background: #fffbeb; color: #92400e;">Otprema (m³)</th>
+                    <th style="background: #fffbeb; color: #92400e;">🏭 Šuma Lager (m³)</th>
                 </tr>
             `;
             headerElem.innerHTML = headerHtml;
@@ -6756,25 +6852,42 @@
             let bodyHtml = '';
             odjeli.forEach((odjel, index) => {
                 const rowBg = index % 2 === 0 ? '#f9fafb' : 'white';
+
+                // Tekuća godina
                 const projekat = odjel.projekat || 0;
                 const sjeca = odjel.sjeca || 0;
-                const procenat = projekat > 0 ? ((sjeca / projekat) * 100).toFixed(1) : '0.0';
+                const otprema = odjel.otprema || 0;
+                const zaliha = odjel.zaliha || 0;
 
-                let percentClass = '';
-                if (procenat < 50) percentClass = 'style="color: #dc2626; font-weight: 700;"';
-                else if (procenat >= 100) percentClass = 'style="color: #059669; font-weight: 700;"';
-                else percentClass = 'style="color: #d97706; font-weight: 600;"';
+                // Q4 prošle godine
+                const prevQ4Sjeca = odjel.prevQ4Sjeca || 0;
+                const prevQ4Otprema = odjel.prevQ4Otprema || 0;
+                const prevQ4Zaliha = odjel.prevQ4Zaliha || 0;
+
+                // Color coding za zalihu
+                const zalihaColor = zaliha > 0 ? '#059669' : (zaliha < 0 ? '#dc2626' : '#6b7280');
+                const prevZalihaColor = prevQ4Zaliha > 0 ? '#059669' : (prevQ4Zaliha < 0 ? '#dc2626' : '#6b7280');
+
+                // Highlight redova sa Q4 unosima
+                const hasQ4Data = prevQ4Sjeca > 0 || prevQ4Otprema > 0;
+                const q4RowStyle = hasQ4Data ? 'background: #fffbeb;' : '';
 
                 bodyHtml += `
                     <tr style="background: ${rowBg};">
-                        <td style="font-weight: 600;">${odjel.odjel || ''}</td>
-                        <td>${odjel.radiliste || '-'}</td>
-                        <td>${odjel.izvođač || '-'}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace;">${projekat.toFixed(2)}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 600;">${sjeca.toFixed(2)}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace;">${(odjel.otprema || 0).toFixed(2)}</td>
-                        <td ${percentClass} style="text-align: right; font-family: 'Courier New', monospace;">${procenat}%</td>
-                        <td>${odjel.datumZadnjeSjece || '-'}</td>
+                        <td style="font-weight: 600; border-right: 2px solid #d1d5db;">${odjel.odjel || ''}</td>
+                        <td style="border-right: 2px solid #d1d5db;">${odjel.radiliste || '-'}</td>
+                        <td style="border-right: 3px solid #1e40af;">${odjel.izvođač || '-'}</td>
+
+                        <!-- Tekuća godina -->
+                        <td style="text-align: right; font-family: 'Courier New', monospace; background: #eff6ff;">${projekat.toFixed(2)}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 600; background: #eff6ff;">${sjeca.toFixed(2)}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; background: #eff6ff;">${otprema.toFixed(2)}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 700; color: ${zalihaColor}; background: #eff6ff; border-right: 3px solid #1e40af;">${zaliha.toFixed(2)}</td>
+
+                        <!-- Q4 prošle godine -->
+                        <td style="text-align: right; font-family: 'Courier New', monospace; ${q4RowStyle} ${prevQ4Sjeca > 0 ? 'font-weight: 600;' : 'color: #9ca3af;'}">${prevQ4Sjeca > 0 ? prevQ4Sjeca.toFixed(2) : '-'}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; ${q4RowStyle} ${prevQ4Otprema > 0 ? '' : 'color: #9ca3af;'}">${prevQ4Otprema > 0 ? prevQ4Otprema.toFixed(2) : '-'}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 700; color: ${prevZalihaColor}; ${q4RowStyle}">${hasQ4Data ? prevQ4Zaliha.toFixed(2) : '-'}</td>
                     </tr>
                 `;
             });
