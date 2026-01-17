@@ -5468,6 +5468,11 @@
                     btn.classList.add('active');
                     btn.title = 'Prebaci na mobilni prikaz';
                 }
+                // Set viewport for desktop view
+                let viewport = document.querySelector('meta[name=viewport]');
+                if (viewport) {
+                    viewport.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes');
+                }
             }
 
             // Add event listeners for dinamika calculation inputs
@@ -9857,6 +9862,16 @@
                     btn.classList.remove('active');
                     btn.title = 'Prebaci na desktop prikaz';
                 }
+            }
+
+            // Update viewport meta tag for desktop view
+            let viewport = document.querySelector('meta[name=viewport]');
+            if (isDesktopView) {
+                // Force desktop layout with minimum width
+                viewport.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes');
+            } else {
+                // Return to responsive mobile layout
+                viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
             }
 
             // Force page to re-layout

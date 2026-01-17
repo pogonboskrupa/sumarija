@@ -2369,25 +2369,32 @@
 
         body.force-desktop-view {
             min-width: 1200px !important;
+            width: 1200px !important;
+            overflow-x: auto !important;
         }
 
         /* Override all mobile styles when force-desktop-view is active */
         body.force-desktop-view .header {
             flex-direction: row !important;
             padding: 16px 24px !important;
+            flex-wrap: nowrap !important;
         }
 
         body.force-desktop-view .header-content {
             flex-direction: row !important;
             gap: 16px !important;
+            flex-wrap: nowrap !important;
+            justify-content: space-between !important;
         }
 
         body.force-desktop-view .header-left {
             width: auto !important;
+            flex-shrink: 0 !important;
         }
 
         body.force-desktop-view .header-center {
             margin: 0 20px !important;
+            flex: 0 0 auto !important;
         }
 
         body.force-desktop-view .company-logo {
@@ -2397,6 +2404,8 @@
         body.force-desktop-view .header-right {
             width: auto !important;
             gap: 16px !important;
+            flex-wrap: nowrap !important;
+            flex-shrink: 0 !important;
         }
 
         body.force-desktop-view .header-title h1 {
@@ -2407,8 +2416,17 @@
             font-size: 12px !important;
         }
 
+        body.force-desktop-view .header-user {
+            display: block !important;
+        }
+
+        body.force-desktop-view .tabs-container {
+            overflow-x: auto !important;
+        }
+
         body.force-desktop-view .tabs {
-            overflow-x: visible !important;
+            display: flex !important;
+            flex-wrap: nowrap !important;
             gap: 4px !important;
             padding: 0 !important;
         }
@@ -2416,6 +2434,7 @@
         body.force-desktop-view .tab {
             padding: 14px 20px !important;
             font-size: 14px !important;
+            white-space: nowrap !important;
         }
 
         body.force-desktop-view .section {
@@ -2424,16 +2443,31 @@
 
         body.force-desktop-view .container {
             padding: 32px 24px !important;
+            max-width: 1200px !important;
         }
 
         body.force-desktop-view table {
             font-size: 13px !important;
+            width: 100% !important;
         }
 
         body.force-desktop-view .professional-monthly-table th,
         body.force-desktop-view .professional-monthly-table td {
             padding: 14px 18px !important;
             font-size: 13px !important;
+        }
+
+        body.force-desktop-view .cards {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+        }
+
+        body.force-desktop-view .summary-cards {
+            grid-template-columns: repeat(4, 1fr) !important;
+        }
+
+        /* Prevent text from wrapping unnecessarily */
+        body.force-desktop-view .text-outline-firma {
+            font-size: 20px !important;
         }
 
         /* ============================================ */
