@@ -1,14 +1,14 @@
 // ========== Service Worker - Offline Support ==========
 // Cache static assets, fallback za offline
 
-const CACHE_VERSION = 'v3'; // 🔄 Updated to force Service Worker refresh (bypass Apps Script)
+const CACHE_VERSION = 'v4'; // 🔄 Updated paths for GitHub Pages deployment
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
-    '/',
-    '/index.html',
-    '/idb-helper.js',
-    '/data-sync.js'
+    '/sumarija/',
+    '/sumarija/index.html',
+    '/sumarija/idb-helper.js',
+    '/sumarija/data-sync.js'
 ];
 
 // Install event - cache static assets

@@ -4670,6 +4670,7 @@
             }
 
             // Check cache first
+            const cacheCheckStart = performance.now();
             const cached = localStorage.getItem(cacheKey);
             if (cached) {
                 try {
@@ -4681,7 +4682,8 @@
                     if (age < cacheTTL) {
                         perfMetrics.cacheHits++;
                         showCacheIndicator(age);
-                        logPerformance(`Cache HIT: ${path}`, age);
+                        const cacheRetrievalTime = performance.now() - cacheCheckStart;
+                        logPerformance(`Cache HIT: ${path} (age: ${(age/1000).toFixed(1)}s)`, cacheRetrievalTime);
                         return cachedData.data;
                     } else {
                         perfMetrics.cacheMisses++;
@@ -5020,6 +5022,7 @@
         }
 
         // Preload all views function (silent = ne prikazuje notifikacije)
+        let preloadScheduled = false; // Prevent duplicate preload scheduling
         async function preloadAllViews(silent = false) {
             const year = new Date().getFullYear();
             let totalLoaded = 0;
@@ -5398,14 +5401,19 @@
                 loadOdjeli(); // Load odjeli list after auto-login
 
                 // 🚀 AUTO-PRELOAD: Automatski učitaj SVE prikaze u pozadini (silent mod)!
-                console.log('[AUTO-PRELOAD] Starting background preload (auto-login)...');
-                setTimeout(() => {
-                    preloadAllViews(true).then(() => {
-                        console.log('[AUTO-PRELOAD] ✅ All views preloaded in background!');
-                    }).catch(err => {
-                        console.error('[AUTO-PRELOAD] ⚠️ Preload failed:', err);
-                    });
-                }, 15000); // Pokreni nakon 15s (da ne opterećuje initial load)
+                if (!preloadScheduled) {
+                    console.log('[AUTO-PRELOAD] Scheduling background preload (auto-login)...');
+                    preloadScheduled = true;
+                    setTimeout(() => {
+                        preloadAllViews(true).then(() => {
+                            console.log('[AUTO-PRELOAD] ✅ All views preloaded in background!');
+                            preloadScheduled = false; // Reset after completion
+                        }).catch(err => {
+                            console.error('[AUTO-PRELOAD] ⚠️ Preload failed:', err);
+                            preloadScheduled = false; // Reset after error
+                        });
+                    }, 15000); // Pokreni nakon 15s (da ne opterećuje initial load)
+                }
             }
         });
 
@@ -5442,14 +5450,19 @@
                     loadOdjeli(); // Load odjeli list after manual login
 
                     // 🚀 AUTO-PRELOAD: Automatski učitaj SVE prikaze u pozadini (silent mod)!
-                    console.log('[AUTO-PRELOAD] Starting background preload...');
-                    setTimeout(() => {
-                        preloadAllViews(true).then(() => {
-                            console.log('[AUTO-PRELOAD] ✅ All views preloaded in background!');
-                        }).catch(err => {
-                            console.error('[AUTO-PRELOAD] ⚠️ Preload failed:', err);
-                        });
-                    }, 15000); // Pokreni nakon 15s (da ne opterećuje initial load)
+                    if (!preloadScheduled) {
+                        console.log('[AUTO-PRELOAD] Scheduling background preload (manual login)...');
+                        preloadScheduled = true;
+                        setTimeout(() => {
+                            preloadAllViews(true).then(() => {
+                                console.log('[AUTO-PRELOAD] ✅ All views preloaded in background!');
+                                preloadScheduled = false; // Reset after completion
+                            }).catch(err => {
+                                console.error('[AUTO-PRELOAD] ⚠️ Preload failed:', err);
+                                preloadScheduled = false; // Reset after error
+                            });
+                        }, 15000); // Pokreni nakon 15s (da ne opterećuje initial load)
+                    }
                 } else {
                     errorMsg.textContent = data.error || 'Greška pri prijavi';
                     errorMsg.classList.remove('hidden');
