@@ -4918,7 +4918,67 @@
 
                 if (data.success) {
                     console.log('[SYNC INDEX] ✅ Index synchronization completed successfully');
-                    showSuccess('✅ Indeksiranje završeno', 'INDEX sheet-ovi uspješno osvježeni!');
+
+                    // 🚀 Invalidate SVE cache-ove koji koriste INDEX podatke
+                    const year = new Date().getFullYear();
+                    const month = new Date().getMonth();
+                    const cacheKeysToInvalidate = [
+                        // Glavni prikazi
+                        'cache_primaci_' + year,
+                        'cache_otpremaci_' + year,
+                        'cache_odjeli_' + year,
+                        'cache_dashboard_' + year,
+                        'cache_stats_' + year,
+                        'cache_kupci_' + year,
+                        'cache_stanje_odjela_admin',
+
+                        // Podmeniji - Primaci
+                        'cache_primaci_daily_' + year + '_' + month,
+                        'cache_primaci_radiliste_' + year,
+                        'cache_primaci_izvodjac_' + year,
+
+                        // Podmeniji - Otpremaci
+                        'cache_otpremaci_daily_' + year + '_' + month,
+                        'cache_otpremaci_radiliste_' + year,
+
+                        // POSLOVOĐA paneli
+                        'cache_poslovodja_odjeli_' + year,
+                        'cache_poslovodja_realizacija_' + year,
+                        'cache_poslovodja_zadnjih5_' + year,
+                        'cache_poslovodja_suma_' + year,
+
+                        // Izvještaji
+                        'cache_izvjestaji_primka_' + year + '_' + month,
+                        'cache_izvjestaji_otprema_' + year + '_' + month,
+
+                        // Ostalo
+                        'cache_dinamika_' + year,
+                        'cache_uporedba_' + year,
+                        'cache_mjesecni_sortimenti_' + year
+                    ];
+
+                    cacheKeysToInvalidate.forEach(key => {
+                        localStorage.removeItem(key);
+                        console.log(`🗑️ [SYNC INDEX] Invalidated cache: ${key}`);
+                    });
+
+                    // 🚀 Update APP DATA VERSION - svi paneli će vidjeti promjenu
+                    const newVersion = Date.now().toString();
+                    localStorage.setItem('app_data_version', newVersion);
+                    window.APP_DATA_VERSION = newVersion;
+                    console.log(`📦 [SYNC INDEX] Updated app_data_version to: ${newVersion}`);
+
+                    // 🚀 Emit custom event - svi paneli će biti obavješteni
+                    window.dispatchEvent(new CustomEvent('app-data-synced', {
+                        detail: {
+                            version: newVersion,
+                            type: 'index-sync',
+                            timestamp: new Date().toISOString()
+                        }
+                    }));
+                    console.log('📢 [SYNC INDEX] Emitted "app-data-synced" event');
+
+                    showSuccess('✅ Indeksiranje završeno', 'INDEX sheet-ovi uspješno osvježeni! Svi paneli su obavješteni.');
 
                     // Osvježi sve prikaze nakon indeksiranja
                     console.log('[SYNC INDEX] Refreshing all views...');
@@ -5113,6 +5173,9 @@
         let currentPassword = null;
         let odjeliList = [];
         let cacheStatusIntervalId = null;
+
+        // Global data version for cache invalidation across panels
+        window.APP_DATA_VERSION = localStorage.getItem('app_data_version') || '1';
 
         // Helper function to build secure API URLs with encoded credentials
         function buildApiUrl(path, additionalParams = {}) {
@@ -5484,6 +5547,70 @@
 
             // 🚀 Start manifest checker after login
             startManifestChecker();
+
+            // 🚀 Setup cross-tab synchronization - sluša promjene u localStorage između tabova
+            setupCrossTabSync();
+
+            // 🚀 Setup auto-refresh listener for all panels
+            setupAutoRefreshListeners();
+        }
+
+        // Auto-refresh listeners - sluša "app-data-synced" event i osvježava trenutni panel
+        function setupAutoRefreshListeners() {
+            window.addEventListener('app-data-synced', (event) => {
+                const { version, type, timestamp } = event.detail;
+                console.log(`📢 [AUTO-REFRESH] Received "app-data-synced" event:`, event.detail);
+
+                // Proveri da li je event već obrađen u triggerSyncIndex() ili syncStanjeOdjelaCache()
+                // Ako jeste, ne radi ništa (preloadAllViews je već pozvan)
+                if (type === 'index-sync' || type === 'stanje-odjela-sync') {
+                    console.log(`📢 [AUTO-REFRESH] Event type "${type}" - preloadAllViews already called in trigger function`);
+                    // preloadAllViews je već pozvan u triggerSyncIndex() ili syncStanjeOdjelaCache()
+                    // Ne trebamo ništa dodatno
+                    return;
+                }
+
+                // Ako je neki drugi tip eventa, osvježi sve prikaze
+                console.log(`📢 [AUTO-REFRESH] Refreshing all views for event type: ${type}`);
+                preloadAllViews(true).then(() => {
+                    console.log('📢 [AUTO-REFRESH] ✅ All views refreshed');
+                });
+            });
+
+            console.log('📢 [AUTO-REFRESH] Auto-refresh listeners registered');
+        }
+
+        // Cross-tab synchronization - sluša promjene u localStorage između tabova
+        function setupCrossTabSync() {
+            window.addEventListener('storage', (event) => {
+                // Storage event se emituje samo u DRUGIM tabovima (ne u onom koji je napravio promjenu)
+                if (event.key === 'app_data_version') {
+                    const newVersion = event.newValue;
+                    const oldVersion = event.oldValue;
+
+                    if (newVersion !== oldVersion) {
+                        console.log(`📢 [CROSS-TAB SYNC] Data synced from another tab! Version: ${newVersion}`);
+                        console.log(`   Old version: ${oldVersion} → New version: ${newVersion}`);
+
+                        // Updateuj lokalnu verziju
+                        window.APP_DATA_VERSION = newVersion;
+
+                        // Prikaži notifikaciju
+                        showInfo('🔄 Podaci osvježeni', 'Drugi tab je pokrenuo indeksiranje. Osvježavam podatke...');
+
+                        // Osvježi trenutni prikaz nakon 1.5 sekundi
+                        setTimeout(() => {
+                            // Preload sve prikaze u pozadini
+                            preloadAllViews(true).then(() => {
+                                console.log('📢 [CROSS-TAB SYNC] ✅ All views refreshed after cross-tab sync');
+                                showSuccess('✅ Podatke osvježeni', 'Prikazujem najnovije podatke.');
+                            });
+                        }, 1500);
+                    }
+                }
+            });
+
+            console.log('📢 [CROSS-TAB SYNC] Cross-tab synchronization listener registered');
         }
 
         function logout() {
@@ -6350,15 +6477,46 @@
                     throw new Error(data.error);
                 }
 
-                // Invalidate cache nakon uspješnog sync-a
-                const cacheKey = 'cache_odjeli_stanje_admin';
-                localStorage.removeItem(cacheKey);
-                localStorage.removeItem('cache_stanje_odjela_admin');
+                // 🚀 Invalidate SVE cache-ove koji koriste STANJE ODJELA podatke
+                const year = new Date().getFullYear();
+                const cacheKeysToInvalidate = [
+                    'cache_odjeli_stanje',
+                    'cache_odjeli_stanje_admin',
+                    'cache_stanje_odjela_admin',
+                    'cache_odjeli_' + year,
+                    'cache_poslovodja_odjeli_' + year,
+                    'cache_poslovodja_realizacija_' + year,
+                    'cache_poslovodja_zadnjih5_' + year,
+                    'cache_poslovodja_suma_' + year
+                ];
+
+                cacheKeysToInvalidate.forEach(key => {
+                    localStorage.removeItem(key);
+                    console.log(`🗑️ [SYNC STANJE] Invalidated cache: ${key}`);
+                });
+
+                // 🚀 Update APP DATA VERSION - svi paneli će vidjeti promjenu
+                const newVersion = Date.now().toString();
+                localStorage.setItem('app_data_version', newVersion);
+                window.APP_DATA_VERSION = newVersion;
+                console.log(`📦 [SYNC STANJE] Updated app_data_version to: ${newVersion}`);
+
+                // 🚀 Emit custom event - svi paneli će biti obavješteni
+                window.dispatchEvent(new CustomEvent('app-data-synced', {
+                    detail: {
+                        version: newVersion,
+                        type: 'stanje-odjela-sync',
+                        timestamp: new Date().toISOString(),
+                        odjeliCount: data.odjeliCount,
+                        rowsWritten: data.rowsWritten
+                    }
+                }));
+                console.log('📢 [SYNC STANJE] Emitted "app-data-synced" event');
 
                 document.getElementById('loading-screen').classList.add('hidden');
 
                 // Prikaži success poruku
-                showError('Uspjeh', `Cache uspješno ažuriran!\n\nOdjela: ${data.odjeliCount}\nRedova: ${data.rowsWritten}`);
+                showSuccess('✅ Stanje odjela osvježeno', `Cache uspješno ažuriran!\n\nOdjela: ${data.odjeliCount}\nRedova: ${data.rowsWritten}\n\nSvi paneli su obavješteni.`);
 
                 // Automatski učitaj nove podatke
                 await loadAdminStanjeOdjela();
