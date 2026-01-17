@@ -2107,6 +2107,7 @@
                         <div class="user-menu-dropdown" id="user-menu-dropdown">
                             <div class="user-menu-item" onclick="event.stopPropagation(); closeUserMenu(); toggleDarkMode();">🌙 Dark Mode</div>
                             <div class="user-menu-item" onclick="event.stopPropagation(); closeUserMenu(); preloadAllViews();">⚡ Učitaj sve prikaze</div>
+                            <div class="user-menu-item" id="sync-index-menu-item" onclick="event.stopPropagation(); closeUserMenu(); triggerSyncIndex();" style="display: none;">🔄 Pokreni indeksiranje</div>
                             <div class="user-menu-item" onclick="event.stopPropagation(); clearAllCache()">🗑️ Obriši keš</div>
                             <div class="user-menu-item danger" onclick="event.stopPropagation(); logout()">🚪 Odjavi se</div>
                         </div>
@@ -4902,6 +4903,41 @@
             }
         }
 
+        // Trigger sync index - Pokreće indeksiranje INDEX sheet-ova (samo za admin)
+        async function triggerSyncIndex() {
+            try {
+                console.log('[SYNC INDEX] Starting manual index synchronization...');
+
+                // Prikaži notifikaciju
+                showInfo('🔄 Indeksiranje...', 'Pokrećem indeksiranje INDEX sheet-ova...');
+
+                // Pozovi API endpoint
+                const url = buildApiUrl('sync-index');
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.success) {
+                    console.log('[SYNC INDEX] ✅ Index synchronization completed successfully');
+                    showSuccess('✅ Indeksiranje završeno', 'INDEX sheet-ovi uspješno osvježeni!');
+
+                    // Osvježi sve prikaze nakon indeksiranja
+                    console.log('[SYNC INDEX] Refreshing all views...');
+                    setTimeout(() => {
+                        preloadAllViews(true).then(() => {
+                            console.log('[SYNC INDEX] ✅ All views refreshed after sync');
+                        });
+                    }, 2000);
+                } else {
+                    console.error('[SYNC INDEX] ✗ Index synchronization failed:', data.error);
+                    showError('❌ Greška', data.error || 'Indeksiranje nije uspjelo');
+                }
+
+            } catch (error) {
+                console.error('[SYNC INDEX] ERROR:', error);
+                showError('❌ Greška', 'Greška pri indeksiranju: ' + error.message);
+            }
+        }
+
         // Helper: Queue processor - limitira paralelne API pozive
         async function processQueue(items, processor, maxConcurrent = 3) {
             const results = [];
@@ -5370,9 +5406,17 @@
             document.getElementById('user-name').textContent = currentUser.fullName;
             document.getElementById('user-role').textContent = currentUser.role === 'admin' ? 'Administrator' : currentUser.type;
 
+            // Prikaži "Pokreni indeksiranje" meni item samo za admin korisnike
+            const syncIndexMenuItem = document.getElementById('sync-index-menu-item');
+            const userType = (currentUser.type || '').toLowerCase(); // Case-insensitive
+            if (userType === 'admin') {
+                syncIndexMenuItem.style.display = 'block';
+            } else {
+                syncIndexMenuItem.style.display = 'none';
+            }
+
             // Dinamički kreiraj tab-ove na osnovu tipa korisnika
             const tabsMenu = document.getElementById('tabs-menu');
-            const userType = (currentUser.type || '').toLowerCase(); // Case-insensitive
 
             if (userType === 'primac') {
                 // Primač vidi šest prikaza: pregled, godišnji prikaz, po odjelima, dodavanje, moje sječe, i kubikator

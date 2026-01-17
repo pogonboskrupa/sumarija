@@ -120,6 +120,9 @@ function doGet(e) {
     } else if (path === 'sync-stanje-odjela') {
       // Ručno osvježavanje cache-a za stanje odjela (samo za admin korisnike)
       return handleSyncStanjeOdjela(e.parameter.username, e.parameter.password);
+    } else if (path === 'sync-index') {
+      // Ručno pokretanje indeksiranja INDEX sheet-ova (samo za admin korisnike)
+      return handleSyncIndex(e.parameter.username, e.parameter.password);
     } else if (path === 'primaci-by-radiliste') {
       return handlePrimaciByRadiliste(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'primaci-by-izvodjac') {
@@ -3845,6 +3848,41 @@ function handleSyncStanjeOdjela(username, password) {
 
   } catch (error) {
     Logger.log('=== HANDLE SYNC STANJE ODJELA ERROR ===');
+    Logger.log(error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+/**
+ * API Endpoint za ručno pokretanje indeksiranja INDEX sheet-ova
+ * Samo admin korisnici mogu koristiti ovu funkciju
+ */
+function handleSyncIndex(username, password) {
+  // Verify user
+  const user = verifyUser(username, password);
+  if (!user) {
+    return createJsonResponse({ error: 'Invalid credentials' }, false);
+  }
+
+  // Provjeri da li je korisnik admin
+  if (user.tip.toLowerCase() !== 'admin') {
+    return createJsonResponse({ error: 'Samo admin korisnici mogu pokrenuti indeksiranje' }, false);
+  }
+
+  try {
+    Logger.log('=== HANDLE SYNC INDEX START (manual trigger by ' + username + ') ===');
+
+    // Pozovi syncIndexSheet() funkciju
+    syncIndexSheet();
+
+    Logger.log('=== HANDLE SYNC INDEX END ===');
+    return createJsonResponse({
+      message: 'Indeksiranje uspješno pokrenuto i završeno',
+      success: true
+    }, true);
+
+  } catch (error) {
+    Logger.log('=== HANDLE SYNC INDEX ERROR ===');
     Logger.log(error.toString());
     return createJsonResponse({ error: error.toString() }, false);
   }
