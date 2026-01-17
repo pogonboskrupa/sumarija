@@ -251,13 +251,22 @@ function isPeakHours() {
 }
 
 function startSmartSync() {
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=Sunday, 6=Saturday
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+    // Vikend: ISKLJUČI data sync (nema unosa)
+    if (isWeekend) {
+        console.log('[SYNC] Smart sync SKIPPED (weekend - no data entry expected)');
+        return;
+    }
+
     // Stop existing interval
     if (syncIntervalId) {
         clearInterval(syncIntervalId);
     }
 
     // Reset peak hours flag at start of day
-    const now = new Date();
     if (now.getHours() < SYNC_CONFIG.PEAK_HOURS_START) {
         peakHoursUpdateDone = false;
     }

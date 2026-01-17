@@ -4341,11 +4341,20 @@
         }
 
         function startManifestChecker() {
+            const now = new Date();
+            const dayOfWeek = now.getDay(); // 0=Sunday, 6=Saturday
+            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+            // Vikend: ISKLJUČI manifest checker (nema unosa)
+            if (isWeekend) {
+                console.log(`🔄 [MANIFEST] Checker SKIPPED (weekend - no data entry expected)`);
+                return;
+            }
+
             // Provjeri odmah
             checkManifest();
 
             // Zatim provjeri periodično
-            const now = new Date();
             const hour = now.getHours();
 
             // Češće između 07:00-09:00 (svake 2 min), rijetko van toga (svaki 10 min)
@@ -4893,6 +4902,27 @@
             }
         }
 
+        // Helper: Queue processor - limitira paralelne API pozive
+        async function processQueue(items, processor, maxConcurrent = 3) {
+            const results = [];
+            const executing = [];
+
+            for (const item of items) {
+                const promise = processor(item).then(result => {
+                    executing.splice(executing.indexOf(promise), 1);
+                    return result;
+                });
+                results.push(promise);
+                executing.push(promise);
+
+                if (executing.length >= maxConcurrent) {
+                    await Promise.race(executing);
+                }
+            }
+
+            return Promise.all(results);
+        }
+
         // Preload all views function (silent = ne prikazuje notifikacije)
         async function preloadAllViews(silent = false) {
             const year = new Date().getFullYear();
@@ -4982,23 +5012,19 @@
 
                 console.log(`[PRELOAD] Starting preload of ${totalViews} views (silent=${silent})...`);
 
-                // 🚀 PARALELNO UČITAVANJE - sve istovremeno!
-                const promises = allViews.map(view =>
-                    fetchWithCache(view.url, view.cacheKey, false, view.timeout)
-                        .then(() => {
-                            totalLoaded++;
-                            console.log(`[PRELOAD] ✓ ${view.name} loaded (${totalLoaded}/${totalViews})`);
-                            return { success: true, name: view.name };
-                        })
-                        .catch(error => {
-                            totalFailed++;
-                            console.error(`[PRELOAD] ✗ ${view.name} failed:`, error);
-                            return { success: false, name: view.name };
-                        })
-                );
-
-                // Čekaj da SVI završe
-                await Promise.all(promises);
+                // 🚀 OPTIMIZIRANO UČITAVANJE - max 3 paralelna poziva!
+                await processQueue(allViews, async (view) => {
+                    try {
+                        await fetchWithCache(view.url, view.cacheKey, false, view.timeout);
+                        totalLoaded++;
+                        console.log(`[PRELOAD] ✓ ${view.name} loaded (${totalLoaded}/${totalViews})`);
+                        return { success: true, name: view.name };
+                    } catch (error) {
+                        totalFailed++;
+                        console.error(`[PRELOAD] ✗ ${view.name} failed:`, error);
+                        return { success: false, name: view.name };
+                    }
+                }, 3); // Max 3 paralelna poziva
 
                 console.log(`[PRELOAD] Finished! Loaded: ${totalLoaded}/${totalViews}, Failed: ${totalFailed}`);
 
@@ -5082,8 +5108,10 @@
         async function loadOdjeli() {
             try {
                 const url = API_URL + '?path=get-odjeli-list';
-                const response = await fetch(url);
-                const data = await response.json();
+                const cacheKey = 'cache_odjeli_list';
+
+                // 🚀 Koristi cache sa TTL od 6 sati (odjeli se ne mijenjaju često)
+                const data = await fetchWithCache(url, cacheKey, false, 30000);
 
                 if (data.success && data.odjeli) {
                     odjeliList = data.odjeli;
@@ -5278,7 +5306,7 @@
                     }).catch(err => {
                         console.error('[AUTO-PRELOAD] ⚠️ Preload failed:', err);
                     });
-                }, 2000); // Pokreni nakon 2s (da ne opterećuje initial load)
+                }, 15000); // Pokreni nakon 15s (da ne opterećuje initial load)
             }
         });
 
@@ -5322,7 +5350,7 @@
                         }).catch(err => {
                             console.error('[AUTO-PRELOAD] ⚠️ Preload failed:', err);
                         });
-                    }, 2000); // Pokreni nakon 2s (da ne opterećuje initial load)
+                    }, 15000); // Pokreni nakon 15s (da ne opterećuje initial load)
                 } else {
                     errorMsg.textContent = data.error || 'Greška pri prijavi';
                     errorMsg.classList.remove('hidden');
