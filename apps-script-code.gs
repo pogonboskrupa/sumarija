@@ -3971,7 +3971,7 @@ function azurirajStanjeZaliha() {
     const folder = DriveApp.getFolderById(ODJELI_FOLDER_ID);
     const files = folder.getFilesByType(MimeType.GOOGLE_SHEETS);
 
-    const MAX_ODJELA = 50; // Limit da ne traje predugo
+    const MAX_ODJELA = 25; // Limit da ne traje predugo i da ne prekorači execution time
 
     // 4. PRVI PROLAZ: Prikupi sve odjele sa datumima zadnjeg unosa
     Logger.log('Prikupljam odjele i njihove datume...');
@@ -4177,55 +4177,41 @@ function formatirajStanjeZalihaSheet(sheet) {
     // 2. Pročitaj SVE vrednosti ODJEDNOM
     const allValues = sheet.getRange(1, 1, lastRow, lastCol).getValues();
 
-    // 3. Kreiraj formatiranje matrice - umjesto pojedinačnih poziva
-    const backgrounds = [];
-    const fontColors = [];
-    const fontWeights = [];
-    const fontSizes = [];
-    const horizontalAlignments = [];
-
-    // Inicijalizuj matrice sa default vrednostima
-    for (let row = 0; row < lastRow; row++) {
-      backgrounds[row] = [];
-      fontColors[row] = [];
-      fontWeights[row] = [];
-      fontSizes[row] = [];
-      horizontalAlignments[row] = [];
-
-      for (let col = 0; col < lastCol; col++) {
-        backgrounds[row][col] = '#FFFFFF'; // Default white
-        fontColors[row][col] = '#000000'; // Default black
-        fontWeights[row][col] = 'normal';
-        fontSizes[row][col] = 10;
-        horizontalAlignments[row][col] = 'left';
-      }
-    }
+    // 3. Kreiraj matrice - ALI PAMETNO: Fill samo kada je potrebno
+    // Umjesto da inicijalizujem sve ćelije, kreiram prazne nizove
+    const backgrounds = Array(lastRow).fill(null).map(() => Array(lastCol).fill('#FFFFFF'));
+    const fontColors = Array(lastRow).fill(null).map(() => Array(lastCol).fill('#000000'));
+    const fontWeights = Array(lastRow).fill(null).map(() => Array(lastCol).fill('normal'));
+    const fontSizes = Array(lastRow).fill(null).map(() => Array(lastCol).fill(10));
+    const horizontalAlignments = Array(lastRow).fill(null).map(() => Array(lastCol).fill('left'));
 
     // 4. Postavi formatiranje za svaki red prema tipu
     for (let row = 0; row < lastRow; row++) {
       const cellValue = allValues[row][0];
 
       if (!cellValue || cellValue === '') {
-        continue; // Prazan red
+        continue; // Prazan red - ostavi default
       }
 
       // ODJEL zaglavlje (plavo)
       if (cellValue.toString().startsWith('ODJEL ')) {
-        for (let col = 0; col < lastCol; col++) {
-          backgrounds[row][col] = '#4A86E8';
-          fontColors[row][col] = 'white';
-          fontWeights[row][col] = 'bold';
-          fontSizes[row][col] = 12;
-          horizontalAlignments[row][col] = 'center';
-        }
+        const bgRow = Array(lastCol).fill('#4A86E8');
+        const fcRow = Array(lastCol).fill('white');
+        const fwRow = Array(lastCol).fill('bold');
+        const fsRow = Array(lastCol).fill(12);
+        const haRow = Array(lastCol).fill('center');
+
+        backgrounds[row] = bgRow;
+        fontColors[row] = fcRow;
+        fontWeights[row] = fwRow;
+        fontSizes[row] = fsRow;
+        horizontalAlignments[row] = haRow;
       }
       // SORTIMENTI zaglavlje (zeleno)
       else if (cellValue.toString().startsWith('SORTIMENTI:')) {
-        for (let col = 0; col < lastCol; col++) {
-          backgrounds[row][col] = '#93C47D';
-          fontWeights[row][col] = 'bold';
-          horizontalAlignments[row][col] = 'center';
-        }
+        backgrounds[row] = Array(lastCol).fill('#93C47D');
+        fontWeights[row] = Array(lastCol).fill('bold');
+        horizontalAlignments[row] = Array(lastCol).fill('center');
       }
       // Redovi sa podacima (PROJEKAT, SJEČA, OTPREMA, ŠUMA LAGER)
       else {
@@ -4234,7 +4220,7 @@ function formatirajStanjeZalihaSheet(sheet) {
         fontWeights[row][0] = 'bold';
         horizontalAlignments[row][0] = 'left';
 
-        // Kolone sa brojevima (od D nadalje)
+        // Kolone sa brojevima (od D nadalje) - center align
         for (let col = 3; col < lastCol; col++) {
           horizontalAlignments[row][col] = 'center';
         }
