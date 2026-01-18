@@ -4088,13 +4088,16 @@ function azurirajStanjeZaliha() {
         // Red 2: SORTIMENTI zaglavlje (prazne kolone B i C, pa onda sortimenti od D)
         allData.push(['SORTIMENTI:', '', '', ...sortimentiZaglavlje]);
 
-        // Red 3: SJEČA + podaci iz reda 11
+        // Red 3: PROJEKAT + podaci iz reda 10
+        allData.push(['PROJEKAT', '', '', ...projekatRed]);
+
+        // Red 4: SJEČA + podaci iz reda 11
         allData.push(['SJEČA', '', '', ...sjecaRed]);
 
-        // Red 4: OTPREMA + podaci iz reda 12
+        // Red 5: OTPREMA + podaci iz reda 12
         allData.push(['OTPREMA', '', '', ...otpremaRed]);
 
-        // Red 5: ŠUMA LAGER + podaci iz reda 13
+        // Red 6: ŠUMA LAGER + podaci iz reda 13
         allData.push(['ŠUMA LAGER', '', '', ...sumaLagerRed]);
 
       } catch (error) {
@@ -4154,7 +4157,7 @@ function azurirajStanjeZaliha() {
 
 /**
  * Formatira STANJE ZALIHA sheet za bolji prikaz
- * OPTIMIZOVANO: Koristi batch operacije umjesto pojedinačnih API poziva
+ * ULTRA OPTIMIZOVANO: Koristi BATCH operacije - formatira sve odjednom
  */
 function formatirajStanjeZalihaSheet(sheet) {
   try {
@@ -4163,62 +4166,99 @@ function formatirajStanjeZalihaSheet(sheet) {
 
     if (lastRow === 0) return;
 
-    Logger.log(`Formatiranje sheet-a: ${lastRow} redova, ${lastCol} kolona`);
+    Logger.log(`Formatiranje sheet-a: ${lastRow} redova, ${lastCol} kolona - START`);
 
-    // Podesi širinu kolona (batch operacija)
-    sheet.setColumnWidth(1, 200); // Prva kolona šira za labele
+    // 1. Podesi širinu kolona (batch operacija)
+    sheet.setColumnWidth(1, 200);
     if (lastCol > 1) {
-      sheet.setColumnWidths(2, lastCol - 1, 80); // Ostale kolone za brojeve
+      sheet.setColumnWidths(2, lastCol - 1, 80);
     }
 
-    // Pročitaj SVE vrednosti ODJEDNOM (batch read)
+    // 2. Pročitaj SVE vrednosti ODJEDNOM
     const allValues = sheet.getRange(1, 1, lastRow, lastCol).getValues();
 
-    // Prolazi kroz sve redove i formatira ih
+    // 3. Kreiraj formatiranje matrice - umjesto pojedinačnih poziva
+    const backgrounds = [];
+    const fontColors = [];
+    const fontWeights = [];
+    const fontSizes = [];
+    const horizontalAlignments = [];
+
+    // Inicijalizuj matrice sa default vrednostima
     for (let row = 0; row < lastRow; row++) {
-      const cellValue = allValues[row][0]; // Vrednost u koloni A
-      const actualRow = row + 1; // Google Sheets redovi počinju od 1
+      backgrounds[row] = [];
+      fontColors[row] = [];
+      fontWeights[row] = [];
+      fontSizes[row] = [];
+      horizontalAlignments[row] = [];
 
-      // Prazan red (separator)
+      for (let col = 0; col < lastCol; col++) {
+        backgrounds[row][col] = '#FFFFFF'; // Default white
+        fontColors[row][col] = '#000000'; // Default black
+        fontWeights[row][col] = 'normal';
+        fontSizes[row][col] = 10;
+        horizontalAlignments[row][col] = 'left';
+      }
+    }
+
+    // 4. Postavi formatiranje za svaki red prema tipu
+    for (let row = 0; row < lastRow; row++) {
+      const cellValue = allValues[row][0];
+
       if (!cellValue || cellValue === '') {
-        continue;
+        continue; // Prazan red
       }
 
-      // Zaglavlje odjela (počinje sa "ODJEL ")
+      // ODJEL zaglavlje (plavo)
       if (cellValue.toString().startsWith('ODJEL ')) {
-        sheet.getRange(actualRow, 1, 1, lastCol)
-          .setBackground('#4A86E8')
-          .setFontColor('white')
-          .setFontWeight('bold')
-          .setFontSize(12)
-          .setHorizontalAlignment('center');
+        for (let col = 0; col < lastCol; col++) {
+          backgrounds[row][col] = '#4A86E8';
+          fontColors[row][col] = 'white';
+          fontWeights[row][col] = 'bold';
+          fontSizes[row][col] = 12;
+          horizontalAlignments[row][col] = 'center';
+        }
       }
-      // Sortimenti zaglavlje
+      // SORTIMENTI zaglavlje (zeleno)
       else if (cellValue.toString().startsWith('SORTIMENTI:')) {
-        sheet.getRange(actualRow, 1, 1, lastCol)
-          .setBackground('#93C47D')
-          .setFontWeight('bold')
-          .setHorizontalAlignment('center');
+        for (let col = 0; col < lastCol; col++) {
+          backgrounds[row][col] = '#93C47D';
+          fontWeights[row][col] = 'bold';
+          horizontalAlignments[row][col] = 'center';
+        }
       }
-      // Ostali redovi sa podacima (SJEČA, OTPREMA, ŠUMA LAGER)
+      // Redovi sa podacima (PROJEKAT, SJEČA, OTPREMA, ŠUMA LAGER)
       else {
-        sheet.getRange(actualRow, 1)
-          .setFontWeight('bold')
-          .setBackground('#F3F3F3');
+        // Prva kolona - label
+        backgrounds[row][0] = '#F3F3F3';
+        fontWeights[row][0] = 'bold';
+        horizontalAlignments[row][0] = 'left';
 
-        // Brojevi u ostalim kolonama (od D nadalje, kolone 4+)
-        if (lastCol > 3) {
-          sheet.getRange(actualRow, 4, 1, lastCol - 3)
-            .setHorizontalAlignment('center')
-            .setNumberFormat('#,##0.00');
+        // Kolone sa brojevima (od D nadalje)
+        for (let col = 3; col < lastCol; col++) {
+          horizontalAlignments[row][col] = 'center';
         }
       }
     }
 
-    // Zamrzni prvu kolonu
+    // 5. Primjeni SVE formatiranje ODJEDNOM - jedan API poziv po tipu formatiranja
+    const fullRange = sheet.getRange(1, 1, lastRow, lastCol);
+
+    fullRange.setBackgrounds(backgrounds);
+    fullRange.setFontColors(fontColors);
+    fullRange.setFontWeights(fontWeights);
+    fullRange.setFontSizes(fontSizes);
+    fullRange.setHorizontalAlignments(horizontalAlignments);
+
+    // 6. Setuj number format samo za kolone sa brojevima (D nadalje)
+    if (lastCol > 3) {
+      sheet.getRange(1, 4, lastRow, lastCol - 3).setNumberFormat('#,##0.00');
+    }
+
+    // 7. Zamrzni prvu kolonu
     sheet.setFrozenColumns(1);
 
-    Logger.log('Formatiranje završeno');
+    Logger.log('Formatiranje završeno - END');
 
   } catch (error) {
     Logger.log('ERROR u formatirajStanjeZalihaSheet: ' + error.toString());
