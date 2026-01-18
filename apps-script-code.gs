@@ -3977,14 +3977,17 @@ function azurirajStanjeZaliha() {
 
     // 4. Iteriraj kroz sve spreadsheet-ove u folderu
     Logger.log('Počinjem čitanje spreadsheet-ova...');
-    while (files.hasNext()) {
+
+    const MAX_ODJELA = 50; // Limit da ne traje predugo
+
+    while (files.hasNext() && processedCount < MAX_ODJELA) {
       const file = files.next();
       const odjelNaziv = file.getName(); // Naziv fajla = Odjel
       processedCount++;
 
       try {
+        Logger.log(`[${processedCount}/${MAX_ODJELA}] Processing: ${odjelNaziv}`);
         const odjelSS = SpreadsheetApp.open(file);
-        Logger.log(`[${processedCount}] Processing: ${odjelNaziv}`);
 
         // Provjeri da li postoje i PRIMKA i OTPREMA listovi
         const primkaSheet = odjelSS.getSheetByName('PRIMKA');
@@ -4089,6 +4092,7 @@ function azurirajStanjeZaliha() {
 
 /**
  * Formatira STANJE ZALIHA sheet za bolji prikaz
+ * OPTIMIZOVANO: Koristi batch operacije umjesto pojedinačnih API poziva
  */
 function formatirajStanjeZalihaSheet(sheet) {
   try {
@@ -4097,19 +4101,30 @@ function formatirajStanjeZalihaSheet(sheet) {
 
     if (lastRow === 0) return;
 
-    // Podesi širinu kolona
+    Logger.log(`Formatiranje sheet-a: ${lastRow} redova, ${lastCol} kolona`);
+
+    // Podesi širinu kolona (batch operacija)
     sheet.setColumnWidth(1, 200); // Prva kolona šira za labele
-    for (let i = 2; i <= lastCol; i++) {
-      sheet.setColumnWidth(i, 80); // Ostale kolone za brojeve
+    if (lastCol > 1) {
+      sheet.setColumnWidths(2, lastCol - 1, 80); // Ostale kolone za brojeve
     }
 
-    // Prolazi kroz sve redove i formatira ih
-    for (let row = 1; row <= lastRow; row++) {
-      const cellValue = sheet.getRange(row, 1).getValue();
+    // Pročitaj SVE vrednosti ODJEDNOM (batch read)
+    const allValues = sheet.getRange(1, 1, lastRow, lastCol).getValues();
 
-      // Zaglavlje odjela (redovi sa samo jednom vrijednošću)
-      if (cellValue && sheet.getRange(row, 2).getValue() === '') {
-        sheet.getRange(row, 1, 1, lastCol)
+    // Prolazi kroz sve redove i formatira ih
+    for (let row = 0; row < lastRow; row++) {
+      const cellValue = allValues[row][0]; // Vrednost u koloni A
+      const actualRow = row + 1; // Google Sheets redovi počinju od 1
+
+      // Prazan red (separator)
+      if (!cellValue || cellValue === '') {
+        continue;
+      }
+
+      // Zaglavlje odjela (počinje sa "ODJEL ")
+      if (cellValue.toString().startsWith('ODJEL ')) {
+        sheet.getRange(actualRow, 1, 1, lastCol)
           .setBackground('#4A86E8')
           .setFontColor('white')
           .setFontWeight('bold')
@@ -4117,21 +4132,21 @@ function formatirajStanjeZalihaSheet(sheet) {
           .setHorizontalAlignment('center');
       }
       // Sortimenti zaglavlje
-      else if (cellValue && cellValue.toString().includes('SORTIMENTI')) {
-        sheet.getRange(row, 1, 1, lastCol)
+      else if (cellValue.toString().startsWith('SORTIMENTI:')) {
+        sheet.getRange(actualRow, 1, 1, lastCol)
           .setBackground('#93C47D')
           .setFontWeight('bold')
           .setHorizontalAlignment('center');
       }
-      // Ostali redovi sa podacima
-      else if (cellValue) {
-        sheet.getRange(row, 1)
+      // Ostali redovi sa podacima (SJEČA, OTPREMA, ŠUMA LAGER)
+      else {
+        sheet.getRange(actualRow, 1)
           .setFontWeight('bold')
           .setBackground('#F3F3F3');
 
-        // Brojevi u ostalim kolonama
-        if (lastCol > 1) {
-          sheet.getRange(row, 2, 1, lastCol - 1)
+        // Brojevi u ostalim kolonama (od D nadalje, kolone 4+)
+        if (lastCol > 3) {
+          sheet.getRange(actualRow, 4, 1, lastCol - 3)
             .setHorizontalAlignment('center')
             .setNumberFormat('#,##0.00');
         }
