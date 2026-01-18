@@ -3923,3 +3923,284 @@ function formatDateHelper(dateValue) {
     return String(dateValue);
   }
 }
+
+// ========== STANJE ZALIHA FUNKCIONALNOST ==========
+
+/**
+ * Kreira ili ažurira meni kada se otvori INDEX spreadsheet
+ */
+function onOpen() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ui = SpreadsheetApp.getUi();
+
+    ui.createMenu('STANJE ZALIHA')
+      .addItem('Osvježi podatke', 'azurirajStanjeZaliha')
+      .addToUi();
+
+    Logger.log('Meni STANJE ZALIHA kreiran uspješno');
+  } catch (error) {
+    Logger.log('ERROR u onOpen: ' + error.toString());
+  }
+}
+
+/**
+ * Glavna funkcija koja ažurira STANJE ZALIHA sheet
+ * Čita podatke iz svih fajlova u ODJELI folderu i prikazuje stanje zaliha po odjelima
+ */
+function azurirajStanjeZaliha() {
+  try {
+    Logger.log('=== AŽURIRANJE STANJE ZALIHA - START ===');
+
+    // 1. Otvori INDEX spreadsheet
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+
+    // 2. Kreiraj ili očisti STANJE ZALIHA sheet
+    let stanjeSheet = ss.getSheetByName('STANJE ZALIHA');
+
+    if (!stanjeSheet) {
+      Logger.log('Kreiram novi sheet STANJE ZALIHA');
+      stanjeSheet = ss.insertSheet('STANJE ZALIHA');
+    } else {
+      Logger.log('Čistim postojeći sheet STANJE ZALIHA');
+      stanjeSheet.clear();
+    }
+
+    // 3. Otvori folder sa odjelima
+    Logger.log('Otvaranje foldera ODJELI: ' + ODJELI_FOLDER_ID);
+    const folder = DriveApp.getFolderById(ODJELI_FOLDER_ID);
+    const files = folder.getFilesByType(MimeType.GOOGLE_SHEETS);
+
+    let allData = []; // Svi redovi koji će biti upisani u sheet
+    let processedCount = 0;
+    let errorCount = 0;
+
+    // 4. Iteriraj kroz sve spreadsheet-ove u folderu
+    Logger.log('Počinjem čitanje spreadsheet-ova...');
+    while (files.hasNext()) {
+      const file = files.next();
+      const odjelNaziv = file.getName(); // Naziv fajla = Odjel
+      processedCount++;
+
+      try {
+        const odjelSS = SpreadsheetApp.open(file);
+        Logger.log(`[${processedCount}] Processing: ${odjelNaziv}`);
+
+        // Provjeri da li postoje i PRIMKA i OTPREMA listovi
+        const primkaSheet = odjelSS.getSheetByName('PRIMKA');
+        const otpremaSheet = odjelSS.getSheetByName('OTPREMA');
+
+        if (!primkaSheet || !otpremaSheet) {
+          Logger.log(`  Preskačem - nema PRIMKA ili OTPREMA list`);
+          continue;
+        }
+
+        // 5. Čitaj podatke iz OTPREMA lista
+        // Red 10: PROJEKAT (D10:U10)
+        // Red 11: SJEČA (D11:U11)
+        // Red 12: OTPREMA (D12:U12)
+        // Red 13: Šuma-lager (D13:U13)
+
+        const projekatRed = otpremaSheet.getRange('D10:U10').getValues()[0];
+        const sjecaRed = otpremaSheet.getRange('D11:U11').getValues()[0];
+        const otpremaRed = otpremaSheet.getRange('D12:U12').getValues()[0];
+        const sumaLagerRed = otpremaSheet.getRange('D13:U13').getValues()[0];
+
+        Logger.log(`  Pročitani podaci za ${odjelNaziv}`);
+
+        // 6. Formatiranje podataka za prikaz
+        // Dodaj prazan red prije svakog odjela (osim prvog)
+        if (allData.length > 0) {
+          allData.push([]); // Prazan red kao separator
+        }
+
+        // Red 1: Zaglavlje sa imenom odjela
+        allData.push([odjelNaziv]);
+
+        // Red 2: SORTIMENTI zaglavlje + podaci iz reda 10
+        allData.push(['SORTIMENTI - PROJEKAT', ...projekatRed]);
+
+        // Red 3: SJEČA + podaci iz reda 11
+        allData.push(['SJEČA', ...sjecaRed]);
+
+        // Red 4: OTPREMA + podaci iz reda 12
+        allData.push(['OTPREMA', ...otpremaRed]);
+
+        // Red 5: Šuma-lager + podaci iz reda 13
+        allData.push(['Šuma-lager', ...sumaLagerRed]);
+
+      } catch (error) {
+        Logger.log(`ERROR processing ${odjelNaziv}: ${error.toString()}`);
+        errorCount++;
+        // Nastavi sa sledećim odjelom
+      }
+    }
+
+    Logger.log(`Procesovano ${processedCount} odjela (${errorCount} grešaka)`);
+
+    // 7. Upiši sve podatke u STANJE ZALIHA sheet
+    if (allData.length > 0) {
+      Logger.log(`Upisujem ${allData.length} redova u STANJE ZALIHA sheet`);
+
+      // Pronađi maksimalnu širinu (broj kolona) svih redova
+      let maxCols = 0;
+      for (let i = 0; i < allData.length; i++) {
+        if (allData[i].length > maxCols) {
+          maxCols = allData[i].length;
+        }
+      }
+
+      // Normalizuj sve redove da imaju istu dužinu (popuni sa praznim stringovima)
+      for (let i = 0; i < allData.length; i++) {
+        while (allData[i].length < maxCols) {
+          allData[i].push('');
+        }
+      }
+
+      Logger.log(`Maksimalan broj kolona: ${maxCols}`);
+      stanjeSheet.getRange(1, 1, allData.length, maxCols).setValues(allData);
+
+      // 8. Formatiraj sheet
+      formatirajStanjeZalihaSheet(stanjeSheet);
+
+      Logger.log('Podaci uspješno upisani i formatirani');
+    } else {
+      Logger.log('Nema podataka za upisivanje');
+    }
+
+    Logger.log('=== AŽURIRANJE STANJE ZALIHA - END ===');
+
+    // Prikaži poruku korisniku
+    if (SpreadsheetApp.getUi) {
+      SpreadsheetApp.getUi().alert(`Ažurirano! Procesovano ${processedCount} odjela (${errorCount} grešaka).`);
+    }
+
+  } catch (error) {
+    Logger.log('ERROR u azurirajStanjeZaliha: ' + error.toString());
+
+    if (SpreadsheetApp.getUi) {
+      SpreadsheetApp.getUi().alert('Greška: ' + error.toString());
+    }
+    throw error;
+  }
+}
+
+/**
+ * Formatira STANJE ZALIHA sheet za bolji prikaz
+ */
+function formatirajStanjeZalihaSheet(sheet) {
+  try {
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+
+    if (lastRow === 0) return;
+
+    // Podesi širinu kolona
+    sheet.setColumnWidth(1, 200); // Prva kolona šira za labele
+    for (let i = 2; i <= lastCol; i++) {
+      sheet.setColumnWidth(i, 80); // Ostale kolone za brojeve
+    }
+
+    // Prolazi kroz sve redove i formatira ih
+    for (let row = 1; row <= lastRow; row++) {
+      const cellValue = sheet.getRange(row, 1).getValue();
+
+      // Zaglavlje odjela (redovi sa samo jednom vrijednošću)
+      if (cellValue && sheet.getRange(row, 2).getValue() === '') {
+        sheet.getRange(row, 1, 1, lastCol)
+          .setBackground('#4A86E8')
+          .setFontColor('white')
+          .setFontWeight('bold')
+          .setFontSize(12)
+          .setHorizontalAlignment('center');
+      }
+      // Sortimenti zaglavlje
+      else if (cellValue && cellValue.toString().includes('SORTIMENTI')) {
+        sheet.getRange(row, 1, 1, lastCol)
+          .setBackground('#93C47D')
+          .setFontWeight('bold')
+          .setHorizontalAlignment('center');
+      }
+      // Ostali redovi sa podacima
+      else if (cellValue) {
+        sheet.getRange(row, 1)
+          .setFontWeight('bold')
+          .setBackground('#F3F3F3');
+
+        // Brojevi u ostalim kolonama
+        if (lastCol > 1) {
+          sheet.getRange(row, 2, 1, lastCol - 1)
+            .setHorizontalAlignment('center')
+            .setNumberFormat('#,##0.00');
+        }
+      }
+    }
+
+    // Zamrzni prvu kolonu
+    sheet.setFrozenColumns(1);
+
+    Logger.log('Formatiranje završeno');
+
+  } catch (error) {
+    Logger.log('ERROR u formatirajStanjeZalihaSheet: ' + error.toString());
+  }
+}
+
+/**
+ * Postavlja timer za automatsko dnevno ažuriranje STANJE ZALIHA
+ * Poziva se samo jednom da kreira trigger
+ */
+function postaviAutomatskoAzuriranjeStanjeZaliha() {
+  try {
+    // Prvo obriši postojeće triggere za ovu funkciju
+    const triggers = ScriptApp.getProjectTriggers();
+    for (let i = 0; i < triggers.length; i++) {
+      if (triggers[i].getHandlerFunction() === 'azurirajStanjeZalihaAutomatski') {
+        ScriptApp.deleteTrigger(triggers[i]);
+        Logger.log('Obrisan postojeći trigger');
+      }
+    }
+
+    // Kreiraj novi trigger - svaki dan u 10:00
+    ScriptApp.newTrigger('azurirajStanjeZalihaAutomatski')
+      .timeBased()
+      .everyDays(1)
+      .atHour(10)
+      .create();
+
+    Logger.log('Automatsko ažuriranje postavljeno za svaki dan u 10:00');
+
+    if (SpreadsheetApp.getUi) {
+      SpreadsheetApp.getUi().alert('Automatsko ažuriranje postavljeno za svaki dan u 10:00');
+    }
+
+  } catch (error) {
+    Logger.log('ERROR u postaviAutomatskoAzuriranjeStanjeZaliha: ' + error.toString());
+
+    if (SpreadsheetApp.getUi) {
+      SpreadsheetApp.getUi().alert('Greška: ' + error.toString());
+    }
+  }
+}
+
+/**
+ * Funkcija koja se poziva automatski svaki dan
+ * Ažurira STANJE ZALIHA samo radnim danima
+ */
+function azurirajStanjeZalihaAutomatski() {
+  try {
+    const danas = new Date();
+    const danUNedelji = danas.getDay(); // 0 = nedjelja, 6 = subota
+
+    // Ažuriraj samo radnim danima (ponedeljak-petak)
+    if (danUNedelji >= 1 && danUNedelji <= 5) {
+      Logger.log('Automatsko ažuriranje STANJE ZALIHA - radni dan');
+      azurirajStanjeZaliha();
+    } else {
+      Logger.log('Automatsko ažuriranje STANJE ZALIHA - preskočeno (vikend)');
+    }
+
+  } catch (error) {
+    Logger.log('ERROR u azurirajStanjeZalihaAutomatski: ' + error.toString());
+  }
+}
