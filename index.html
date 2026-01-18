@@ -5715,13 +5715,14 @@
             console.log('📢 [AUTO-REFRESH] Auto-refresh listeners registered');
         }
 
-        // Scheduled auto-refresh for Poslovođa and Radnici (Primači/Otpremači) panels
-        // Runs twice daily at 10:00 and 12:00 on weekdays (Monday-Friday)
+        // Scheduled auto-refresh for STANJE ODJELA data
+        // Runs ONCE daily at 10:00 on weekdays (Monday-Friday)
+        // ⏰ AUTOMATSKO AŽURIRANJE: RADNIM DANIMA U 10H
         function setupScheduledRefresh() {
-            const REFRESH_TIMES = ['10:00', '12:00']; // HH:MM format
+            const REFRESH_TIME = '10:00'; // HH:MM format - SAMO JEDNOM DNEVNO U 10H
             let lastRefreshDate = null; // Track last refresh to avoid duplicates
 
-            function checkAndRefresh() {
+            async function checkAndRefresh() {
                 const now = new Date();
                 const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
                 const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
@@ -5731,28 +5732,41 @@
                 const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
 
                 if (!isWeekday) {
-                    console.log('⏰ [SCHEDULED REFRESH] Skipping - not a weekday (today is ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek] + ')');
+                    console.log('⏰ [STANJE ODJELA AUTO-UPDATE] Skipping - not a weekday (today is ' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek] + ')');
                     return;
                 }
 
-                // Check if current time matches any refresh time
-                const shouldRefresh = REFRESH_TIMES.includes(currentTime);
+                // Check if current time is 10:00
+                const shouldRefresh = currentTime === REFRESH_TIME;
 
                 if (shouldRefresh && lastRefreshDate !== currentDate + '-' + currentTime) {
-                    console.log('⏰ [SCHEDULED REFRESH] Starting scheduled refresh at ' + currentTime);
+                    console.log('⏰ [STANJE ODJELA AUTO-UPDATE] Starting scheduled STANJE ODJELA refresh at 10:00');
                     lastRefreshDate = currentDate + '-' + currentTime;
 
                     // Show notification to user
-                    showInfo('🔄 Automatsko ažuriranje', 'Pokretanje zakazanog ažuriranja podataka...');
+                    showInfo('🔄 Automatsko ažuriranje', 'Ažuriram podatke STANJE ODJELA sa Google Sheets...');
 
-                    // Trigger refresh for all views
-                    preloadAllViews(true).then(() => {
-                        console.log('⏰ [SCHEDULED REFRESH] ✅ Scheduled refresh completed at ' + currentTime);
-                        showSuccess('✅ Ažuriranje završeno', 'Podaci su automatski osvježeni.');
-                    }).catch(err => {
-                        console.error('⏰ [SCHEDULED REFRESH] ⚠️ Scheduled refresh failed:', err);
-                        showError('⚠️ Greška', 'Automatsko ažuriranje nije uspjelo.');
-                    });
+                    try {
+                        // Provjeri da li je korisnik admin
+                        const userType = (currentUser.type || '').toLowerCase();
+                        const isAdmin = userType === 'admin' || userType === 'administrator';
+
+                        if (isAdmin) {
+                            // ✅ ADMIN: Pozovi sync endpoint da osvježiš podatke sa Google Sheets
+                            console.log('⏰ [STANJE ODJELA AUTO-UPDATE] User is admin - calling syncStanjeOdjelaCache()');
+                            await syncStanjeOdjelaCache();
+                            console.log('⏰ [STANJE ODJELA AUTO-UPDATE] ✅ Admin sync completed at 10:00');
+                        } else {
+                            // ✅ NON-ADMIN: Samo učitaj sve prikaze (admin je već osvježio podatke)
+                            console.log('⏰ [STANJE ODJELA AUTO-UPDATE] User is not admin - calling preloadAllViews()');
+                            await preloadAllViews(true);
+                            console.log('⏰ [STANJE ODJELA AUTO-UPDATE] ✅ Data refresh completed at 10:00');
+                            showSuccess('✅ Podaci osvježeni', 'STANJE ODJELA podaci su automatski ažurirani.');
+                        }
+                    } catch (err) {
+                        console.error('⏰ [STANJE ODJELA AUTO-UPDATE] ⚠️ Scheduled refresh failed:', err);
+                        showError('⚠️ Greška', 'Automatsko ažuriranje nije uspjelo: ' + err.message);
+                    }
                 }
             }
 
@@ -5762,7 +5776,7 @@
             // Also check immediately on startup
             checkAndRefresh();
 
-            console.log('⏰ [SCHEDULED REFRESH] Scheduler initialized - will refresh at 10:00 and 12:00 on weekdays');
+            console.log('⏰ [STANJE ODJELA AUTO-UPDATE] Scheduler initialized - will refresh STANJE ODJELA at 10:00 on weekdays');
         }
 
         // Cross-tab synchronization - sluša promjene u localStorage između tabova
@@ -6610,30 +6624,30 @@
         }
 
         // Load STANJE ODJELA za admina (SVE odjele bez filtriranja)
-        // Prikazuje tekuću godinu + Q4 prošle godine
+        // Koristi /stanje-odjela endpoint koji čita iz INDEX cache-a (STANJE_ODJELA_CACHE)
         async function loadAdminStanjeOdjela() {
             try {
                 const currentYear = new Date().getFullYear();
-                const previousYear = currentYear - 1;
 
                 // 🚀 TURBO MODE: INSTANT SHOW cached data
-                const cacheKey = 'cache_odjeli_stanje_admin_' + currentYear;
+                const cacheKey = 'cache_stanje_odjela_admin';
                 const cachedData = localStorage.getItem(cacheKey);
 
                 let hasCachedData = false;
                 if (cachedData) {
                     try {
                         const parsed = JSON.parse(cachedData);
-                        if (parsed.data) {
+                        if (parsed.data && parsed.data.length > 0) {
                             // ✨ INSTANT: Show cached data immediately
                             document.getElementById('loading-screen').classList.add('hidden');
                             document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
-                            renderAdminStanjeTable(parsed.data);
+                            renderAdminStanjeTableFromCache(parsed.data, parsed.sortimentiNazivi);
                             hasCachedData = true;
 
                             // Show cache indicator
                             const age = Date.now() - parsed.timestamp;
                             showCacheIndicator(age);
+                            console.log(`[STANJE ODJELA] Showing cached data (age: ${Math.floor(age / 1000 / 60)}min)`);
                         }
                     } catch (e) {
                         console.error('Cache parse error:', e);
@@ -6646,47 +6660,45 @@
                     document.getElementById('stanje-odjela-admin-content').classList.add('hidden');
                 }
 
-                // 🔄 BACKGROUND REFRESH: Fetch fresh data for both years
-                console.log(`[STANJE ODJELA] Loading data for ${currentYear} and Q4 ${previousYear}`);
+                // 🔄 BACKGROUND REFRESH: Fetch fresh data from /stanje-odjela endpoint (uses INDEX cache)
+                console.log(`[STANJE ODJELA] Loading fresh data from /stanje-odjela endpoint (INDEX cache)...`);
 
-                // Učitaj podatke za tekuću i prošlu godinu paralelno
-                const currentYearUrl = buildApiUrl('odjeli', { year: currentYear });
-                const previousYearUrl = buildApiUrl('odjeli', { year: previousYear });
+                const url = buildApiUrl('stanje-odjela');
+                const data = await fetchWithCache(url, cacheKey, false, 300000);
 
-                const [currentYearData, previousYearData] = await Promise.all([
-                    fetchWithCache(currentYearUrl, `cache_odjeli_${currentYear}`, false, 300000),
-                    fetchWithCache(previousYearUrl, `cache_odjeli_${previousYear}`, false, 300000)
-                ]);
-
-                if (currentYearData.error || !currentYearData.odjeli) {
+                if (data.error) {
                     if (!hasCachedData) {
-                        throw new Error(currentYearData.error || 'Nema podataka o odjelima za tekuću godinu');
+                        throw new Error(data.error);
                     }
+                    console.error('[STANJE ODJELA] Error fetching fresh data:', data.error);
                     return; // Silently fail if we have cached data
                 }
 
-                // Kombinuj podatke
-                const combinedData = combineStanjeOdjelaData(
-                    currentYearData.odjeli,
-                    previousYearData,
-                    currentYear,
-                    previousYear
-                );
+                if (!data.data || data.data.length === 0) {
+                    if (!hasCachedData) {
+                        throw new Error('Nema podataka o stanju odjela');
+                    }
+                    console.warn('[STANJE ODJELA] No data returned from endpoint');
+                    return; // Silently fail if we have cached data
+                }
 
-                // Cache combined data
+                // Cache new data
                 localStorage.setItem(cacheKey, JSON.stringify({
-                    data: combinedData,
+                    data: data.data,
+                    sortimentiNazivi: data.sortimentiNazivi,
                     timestamp: Date.now()
                 }));
 
                 // Update with fresh data
-                renderAdminStanjeTable(combinedData);
+                renderAdminStanjeTableFromCache(data.data, data.sortimentiNazivi);
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
 
                 // Hide cache indicator when fresh data arrives
                 hideCacheIndicator();
+
+                console.log(`[STANJE ODJELA] Fresh data loaded successfully (${data.data.length} odjela)`);
 
             } catch (error) {
                 console.error('Error loading admin stanje odjela:', error);
@@ -6752,6 +6764,68 @@
             }
 
             return Object.values(odjeliMap);
+        }
+
+        // Render Stanje Odjela table from /stanje-odjela endpoint (INDEX cache)
+        // Prikazuje podatke iz STANJE_ODJELA_CACHE sheet-a
+        function renderAdminStanjeTableFromCache(odjeliData, sortimentiNazivi) {
+            const headerElem = document.getElementById('admin-stanje-header');
+            const bodyElem = document.getElementById('admin-stanje-body');
+
+            if (!odjeliData || odjeliData.length === 0) {
+                headerElem.innerHTML = '';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka o odjelima</td></tr>';
+                return;
+            }
+
+            const currentYear = new Date().getFullYear();
+
+            // Build header - samo tekuća godina
+            let headerHtml = `
+                <tr>
+                    <th rowspan="2" style="vertical-align: middle; border-right: 2px solid #d1d5db;">Odjel</th>
+                    <th rowspan="2" style="vertical-align: middle; border-right: 2px solid #d1d5db;">Radilište</th>
+                    <th rowspan="2" style="vertical-align: middle; border-right: 3px solid #1e40af;">Izvođač</th>
+                    <th colspan="4" style="background: #dbeafe; color: #1e40af; text-align: center; border-bottom: 2px solid #1e40af; font-weight: 700;">${currentYear} - Tekuća Godina</th>
+                </tr>
+                <tr>
+                    <th style="background: #eff6ff; color: #1e40af;">Projekat (m³)</th>
+                    <th style="background: #eff6ff; color: #1e40af;">Sječa (m³)</th>
+                    <th style="background: #eff6ff; color: #1e40af;">Otprema (m³)</th>
+                    <th style="background: #eff6ff; color: #1e40af; border-right: 3px solid #1e40af;">🏭 Šuma Lager (m³)</th>
+                </tr>
+            `;
+            headerElem.innerHTML = headerHtml;
+
+            // Build body
+            let bodyHtml = '';
+            odjeliData.forEach((odjel, index) => {
+                const rowBg = index % 2 === 0 ? '#f9fafb' : 'white';
+
+                const projekat = odjel.projekat || 0;
+                const sjeca = odjel.sjeca || 0;
+                const otprema = odjel.otprema || 0;
+                const zaliha = odjel.sumaPanj || 0; // sumaPanj je zaliha iz INDEX cache-a
+
+                // Color coding za zalihu
+                const zalihaColor = zaliha > 0 ? '#059669' : (zaliha < 0 ? '#dc2626' : '#6b7280');
+
+                bodyHtml += `
+                    <tr style="background: ${rowBg};">
+                        <td style="font-weight: 600; border-right: 2px solid #d1d5db;">${odjel.odjel || ''}</td>
+                        <td style="border-right: 2px solid #d1d5db;">${odjel.radiliste || '-'}</td>
+                        <td style="border-right: 3px solid #1e40af;">${odjel.izvođač || '-'}</td>
+
+                        <!-- Tekuća godina -->
+                        <td style="text-align: right; font-family: 'Courier New', monospace; background: #eff6ff;">${projekat.toFixed(2)}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 600; background: #eff6ff;">${sjeca.toFixed(2)}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; background: #eff6ff;">${otprema.toFixed(2)}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 700; color: ${zalihaColor}; background: #eff6ff; border-right: 3px solid #1e40af;">${zaliha.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            bodyElem.innerHTML = bodyHtml;
         }
 
         // Ručno ažuriranje cache-a za stanje odjela (samo za admin korisnike)
