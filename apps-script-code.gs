@@ -3757,14 +3757,13 @@ function handleStanjeOdjela(username, password) {
     const cacheSheet = indexSpreadsheet.getSheetByName('STANJE_ODJELA_CACHE');
 
     if (!cacheSheet) {
-      Logger.log('Cache sheet ne postoji, pozivam syncStanjeOdjela()');
-      syncStanjeOdjela();
-      // Ponovo otvori nakon sinkronizacije
-      const cacheSheetNew = indexSpreadsheet.getSheetByName('STANJE_ODJELA_CACHE');
-      if (!cacheSheetNew) {
-        throw new Error('Nije moguće kreirati cache sheet');
-      }
-      return handleStanjeOdjela(username, password); // Rekurzivno pozovi ponovo
+      Logger.log('⚠️ Cache sheet ne postoji - vraćam prazan rezultat');
+      return createJsonResponse({
+        data: [],
+        sortimentiNazivi: sortimentiNazivi,
+        cacheStatus: 'not_created',
+        message: 'INDEX cache nije kreiran. Kliknite "Ažuriraj cache" da kreirate podatke.'
+      }, true);
     }
 
     // Čitaj podatke sa sheeta (preskoči prve 2 reda: metadata i header)
@@ -3772,9 +3771,13 @@ function handleStanjeOdjela(username, password) {
     const allData = dataRange.getValues();
 
     if (allData.length <= 2) {
-      Logger.log('Cache sheet je prazan, pozivam syncStanjeOdjela()');
-      syncStanjeOdjela();
-      return handleStanjeOdjela(username, password); // Rekurzivno pozovi ponovo
+      Logger.log('⚠️ Cache sheet je prazan - vraćam prazan rezultat');
+      return createJsonResponse({
+        data: [],
+        sortimentiNazivi: sortimentiNazivi,
+        cacheStatus: 'empty',
+        message: 'INDEX cache je prazan. Kliknite "Ažuriraj cache" da učitate podatke.'
+      }, true);
     }
 
     // Parse podatke sa sheeta

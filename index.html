@@ -6674,6 +6674,42 @@
                     return; // Silently fail if we have cached data
                 }
 
+                // Provjeri da li backend vrati prazan cache status
+                if (data.cacheStatus === 'not_created' || data.cacheStatus === 'empty') {
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
+
+                    const headerElem = document.getElementById('admin-stanje-header');
+                    const bodyElem = document.getElementById('admin-stanje-body');
+
+                    headerElem.innerHTML = '';
+                    bodyElem.innerHTML = `
+                        <tr>
+                            <td colspan="100%" style="text-align: center; padding: 60px 20px;">
+                                <div style="max-width: 600px; margin: 0 auto;">
+                                    <div style="font-size: 64px; margin-bottom: 20px;">📦</div>
+                                    <h3 style="color: #1e40af; margin-bottom: 10px; font-size: 20px;">INDEX Cache nije ažuran</h3>
+                                    <p style="color: #6b7280; margin-bottom: 30px; line-height: 1.6;">
+                                        ${data.message || 'Podaci STANJE ODJELA nisu još učitani u INDEX cache.'}
+                                    </p>
+                                    <button
+                                        class="btn btn-primary"
+                                        onclick="syncStanjeOdjelaCache()"
+                                        style="font-size: 16px; padding: 12px 32px;">
+                                        ♻️ Ažuriraj Cache Sada
+                                    </button>
+                                    <p style="color: #9ca3af; margin-top: 20px; font-size: 14px;">
+                                        ⏰ Nakon ažuriranja, podaci će se automatski osvježavati radnim danima u 10:00
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+
+                    console.warn(`[STANJE ODJELA] Cache status: ${data.cacheStatus} - showing prompt to user`);
+                    return;
+                }
+
                 if (!data.data || data.data.length === 0) {
                     if (!hasCachedData) {
                         throw new Error('Nema podataka o stanju odjela');
