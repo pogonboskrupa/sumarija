@@ -3996,11 +3996,13 @@ function azurirajStanjeZaliha() {
         }
 
         // 5. Čitaj podatke iz OTPREMA lista
-        // Red 10: PROJEKAT (D10:U10)
+        // Red 9: Zaglavlje sortimenata (D9:U9)
+        // Red 10: PROJEKAT - količine (D10:U10)
         // Red 11: SJEČA (D11:U11)
         // Red 12: OTPREMA (D12:U12)
         // Red 13: Šuma-lager (D13:U13)
 
+        const sortimentiZaglavlje = otpremaSheet.getRange('D9:U9').getValues()[0];
         const projekatRed = otpremaSheet.getRange('D10:U10').getValues()[0];
         const sjecaRed = otpremaSheet.getRange('D11:U11').getValues()[0];
         const otpremaRed = otpremaSheet.getRange('D12:U12').getValues()[0];
@@ -4015,19 +4017,19 @@ function azurirajStanjeZaliha() {
         }
 
         // Red 1: Zaglavlje sa imenom odjela
-        allData.push([odjelNaziv]);
+        allData.push(['ODJEL ' + odjelNaziv]);
 
-        // Red 2: SORTIMENTI zaglavlje + podaci iz reda 10
-        allData.push(['SORTIMENTI - PROJEKAT', ...projekatRed]);
+        // Red 2: SORTIMENTI zaglavlje (prazne kolone B i C, pa onda sortimenti od D)
+        allData.push(['SORTIMENTI:', '', '', ...sortimentiZaglavlje]);
 
         // Red 3: SJEČA + podaci iz reda 11
-        allData.push(['SJEČA', ...sjecaRed]);
+        allData.push(['SJEČA', '', '', ...sjecaRed]);
 
         // Red 4: OTPREMA + podaci iz reda 12
-        allData.push(['OTPREMA', ...otpremaRed]);
+        allData.push(['OTPREMA', '', '', ...otpremaRed]);
 
-        // Red 5: Šuma-lager + podaci iz reda 13
-        allData.push(['Šuma-lager', ...sumaLagerRed]);
+        // Red 5: ŠUMA LAGER + podaci iz reda 13
+        allData.push(['ŠUMA LAGER', '', '', ...sumaLagerRed]);
 
       } catch (error) {
         Logger.log(`ERROR processing ${odjelNaziv}: ${error.toString()}`);
