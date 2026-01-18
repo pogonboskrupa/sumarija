@@ -3449,6 +3449,17 @@ function syncStanjeOdjela() {
     Logger.log('=== SYNC STANJE ODJELA START ===');
     Logger.log('Vrijeme sinkronizacije: ' + new Date().toString());
 
+    // Provjera da li je radni dan (ponedjeljak-petak)
+    const danas = new Date();
+    const dan = danas.getDay(); // 0=nedjelja, 1=ponedjeljak, ..., 6=subota
+
+    if (dan === 0 || dan === 6) {
+      Logger.log('SKIP: Danas je vikend (dan=' + dan + '), preskačem sinkronizaciju');
+      return { success: false, message: 'Vikend - nema sinkronizacije' };
+    }
+
+    Logger.log('Radni dan potvrđen (dan=' + dan + '), nastavljam sa sinkronizacijom');
+
     // Fiksno sortimentno zaglavlje (D-U kolone)
     const sortimentiNazivi = [
       'F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'TRUPCI Č',
@@ -3703,14 +3714,14 @@ function setupStanjeOdjelaDailyTrigger() {
     }
   });
 
-  // Kreiraj novi trigger koji se izvršava svaki dan u 2:00 AM
+  // Kreiraj novi trigger koji se izvršava svaki dan u 10:00 AM
   ScriptApp.newTrigger('syncStanjeOdjela')
     .timeBased()
-    .atHour(2)
+    .atHour(10)
     .everyDays(1)
     .create();
 
-  Logger.log('Kreiran novi dnevni trigger za syncStanjeOdjela (izvršavanje u 2:00 AM)');
+  Logger.log('Kreiran novi dnevni trigger za syncStanjeOdjela (izvršavanje u 10:00 AM)');
 
   // Odmah izvrši prvi put
   syncStanjeOdjela();
