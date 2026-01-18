@@ -3506,24 +3506,57 @@ function syncStanjeOdjela() {
           }
         }
 
-        // Čitaj cijele redove 10-13 (od kolone A do kraja)
-        const lastColumn = otpremaSheet.getLastColumn();
-        const dataRange = otpremaSheet.getRange(10, 1, 4, lastColumn); // Redovi 10-13, od kolone A
-        const dataValues = dataRange.getValues();
+        // Čitaj podatke sa pravih mjesta prema Google Apps Script logici:
+        // - PROJEKAT iz PRIMKA D11:U11 (red 11, kolone D-U = 4-21)
+        // - SJEČA iz OTPREMA D11:U11 (red 11, kolone D-U = 4-21)
+        // - OTPREMA iz OTPREMA D12:U12 (red 12, kolone D-U = 4-21)
+        // - ZALIHA = SJEČA - OTPREMA (izračunato)
 
-        const projekat = dataValues[0]; // Cijeli red PROJEKAT
-        const sjeca = dataValues[1]; // Cijeli red SJEČA
-        const otprema = dataValues[2]; // Cijeli red OTPREMA
-        const sumaLager = dataValues[3]; // Cijeli red ZALIHA
-
-        // Pronađi najsvježiji datum iz PRIMKA sheet
-        let zadnjiDatum = null;
+        let projekatRow = [];
         if (primkaSheet) {
-          const primkaData = primkaSheet.getDataRange().getValues();
+          try {
+            // PRIMKA D11:U11 - red 11, kolone 4-21 (D=4, U=21, to je 18 kolona)
+            const primkaProjekatRange = primkaSheet.getRange(11, 4, 1, 18);
+            projekatRow = primkaProjekatRange.getValues()[0];
+          } catch (e) {
+            Logger.log('Greška pri čitanju PROJEKAT iz PRIMKA: ' + e.toString());
+            projekatRow = new Array(18).fill(0);
+          }
+        } else {
+          projekatRow = new Array(18).fill(0);
+        }
 
-          for (let i = 1; i < primkaData.length; i++) {
-            const row = primkaData[i];
-            const datum = row[0]; // Kolona A - datum
+        // OTPREMA D11:U11 - red 11, kolone 4-21 (SJEČA)
+        const otpremaSjecaRange = otpremaSheet.getRange(11, 4, 1, 18);
+        const sjecaRow = otpremaSjecaRange.getValues()[0];
+
+        // OTPREMA D12:U12 - red 12, kolone 4-21 (OTPREMA)
+        const otpremaOtpremaRange = otpremaSheet.getRange(12, 4, 1, 18);
+        const otpremaRow = otpremaOtpremaRange.getValues()[0];
+
+        // ZALIHA = SJEČA - OTPREMA (izračunato element po element)
+        const sumaLagerRow = sjecaRow.map((s, idx) => {
+          const sjecaVal = parseFloat(s) || 0;
+          const otpremaVal = parseFloat(otpremaRow[idx]) || 0;
+          return parseFloat((sjecaVal - otpremaVal).toFixed(2));
+        });
+
+        // Sada kreiraj cijele redove sa svim kolonama (od A do kraja)
+        // Za kompatibilnost sa postojećim kodom, kreiraj prazne kolone za A-C, pa dodaj D-U
+        const emptyPrefix = ['', '', '']; // Kolone A, B, C (prazne)
+        const projekat = [...emptyPrefix, ...projekatRow];
+        const sjeca = [...emptyPrefix, ...sjecaRow];
+        const otprema = [...emptyPrefix, ...otpremaRow];
+        const sumaLager = [...emptyPrefix, ...sumaLagerRow];
+
+        // Pronađi najsvježiji datum iz OTPREMA sheet, kolona B (redovi 14-500)
+        let zadnjiDatum = null;
+        try {
+          const otpremaDateRange = otpremaSheet.getRange('B14:B500');
+          const otpremaDates = otpremaDateRange.getValues();
+
+          for (let i = 0; i < otpremaDates.length; i++) {
+            const datum = otpremaDates[i][0];
 
             if (!datum) continue;
 
@@ -3534,6 +3567,8 @@ function syncStanjeOdjela() {
               zadnjiDatum = datumObj;
             }
           }
+        } catch (e) {
+          Logger.log('Greška pri čitanju datuma iz OTPREMA B14:B500: ' + e.toString());
         }
 
         odjeliData.push({
