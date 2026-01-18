@@ -3971,23 +3971,85 @@ function azurirajStanjeZaliha() {
     const folder = DriveApp.getFolderById(ODJELI_FOLDER_ID);
     const files = folder.getFilesByType(MimeType.GOOGLE_SHEETS);
 
-    let allData = []; // Svi redovi koji će biti upisani u sheet
+    const MAX_ODJELA = 50; // Limit da ne traje predugo
+
+    // 4. PRVI PROLAZ: Prikupi sve odjele sa datumima zadnjeg unosa
+    Logger.log('Prikupljam odjele i njihove datume...');
+    let odjeliSaDatumima = [];
+
+    while (files.hasNext()) {
+      const file = files.next();
+      const odjelNaziv = file.getName();
+
+      try {
+        const odjelSS = SpreadsheetApp.open(file);
+        const primkaSheet = odjelSS.getSheetByName('PRIMKA');
+
+        if (!primkaSheet) {
+          continue; // Preskoči ako nema PRIMKA
+        }
+
+        // Pronađi maksimalni datum u PRIMKA listu (kolona B)
+        const lastRow = primkaSheet.getLastRow();
+        if (lastRow < 2) {
+          continue; // Nema podataka, samo zaglavlje
+        }
+
+        // Pročitaj sve datume iz kolone B (od reda 2 nadalje)
+        const datumi = primkaSheet.getRange(2, 2, lastRow - 1, 1).getValues();
+
+        // Pronađi maksimalni datum
+        let maxDatum = null;
+        for (let i = 0; i < datumi.length; i++) {
+          const datum = datumi[i][0];
+          if (datum && datum instanceof Date) {
+            if (!maxDatum || datum > maxDatum) {
+              maxDatum = datum;
+            }
+          }
+        }
+
+        // Dodaj u niz ako ima validan datum
+        if (maxDatum) {
+          odjeliSaDatumima.push({
+            file: file,
+            naziv: odjelNaziv,
+            maxDatum: maxDatum
+          });
+          Logger.log(`  ${odjelNaziv}: zadnji unos ${maxDatum.toLocaleDateString()}`);
+        }
+
+      } catch (error) {
+        Logger.log(`  ERROR prikupljanje ${odjelNaziv}: ${error.toString()}`);
+      }
+    }
+
+    Logger.log(`Prikupljeno ${odjeliSaDatumima.length} odjela sa datumima`);
+
+    // 5. Sortiraj po datumu (najnoviji prvi)
+    odjeliSaDatumima.sort(function(a, b) {
+      return b.maxDatum - a.maxDatum; // Descending
+    });
+
+    Logger.log('Odjeli sortirani po svježini (najnoviji prvi)');
+
+    // 6. DRUGI PROLAZ: Procesuj samo prvih MAX_ODJELA najsvježijih
+    let allData = [];
     let processedCount = 0;
     let errorCount = 0;
 
-    // 4. Iteriraj kroz sve spreadsheet-ove u folderu
-    Logger.log('Počinjem čitanje spreadsheet-ova...');
+    const odjeliZaObraditi = odjeliSaDatumima.slice(0, MAX_ODJELA);
+    Logger.log(`Procesujem ${odjeliZaObraditi.length} najsvježijih odjela...`);
 
-    const MAX_ODJELA = 50; // Limit da ne traje predugo
-
-    while (files.hasNext() && processedCount < MAX_ODJELA) {
-      const file = files.next();
-      const odjelNaziv = file.getName(); // Naziv fajla = Odjel
+    for (let i = 0; i < odjeliZaObraditi.length; i++) {
+      const odjelInfo = odjeliZaObraditi[i];
+      const odjelNaziv = odjelInfo.naziv;
+      const datumStr = odjelInfo.maxDatum.toLocaleDateString();
       processedCount++;
 
       try {
-        Logger.log(`[${processedCount}/${MAX_ODJELA}] Processing: ${odjelNaziv}`);
-        const odjelSS = SpreadsheetApp.open(file);
+        Logger.log(`[${processedCount}/${odjeliZaObraditi.length}] ${odjelNaziv} (${datumStr})`);
+        const odjelSS = SpreadsheetApp.open(odjelInfo.file);
 
         // Provjeri da li postoje i PRIMKA i OTPREMA listovi
         const primkaSheet = odjelSS.getSheetByName('PRIMKA');
@@ -3995,10 +4057,11 @@ function azurirajStanjeZaliha() {
 
         if (!primkaSheet || !otpremaSheet) {
           Logger.log(`  Preskačem - nema PRIMKA ili OTPREMA list`);
+          errorCount++;
           continue;
         }
 
-        // 5. Čitaj podatke iz OTPREMA lista
+        // 7. Čitaj podatke iz OTPREMA lista
         // Red 9: Zaglavlje sortimenata (D9:U9)
         // Red 10: PROJEKAT - količine (D10:U10)
         // Red 11: SJEČA (D11:U11)
@@ -4013,7 +4076,7 @@ function azurirajStanjeZaliha() {
 
         Logger.log(`  Pročitani podaci za ${odjelNaziv}`);
 
-        // 6. Formatiranje podataka za prikaz
+        // 8. Formatiranje podataka za prikaz
         // Dodaj prazan red prije svakog odjela (osim prvog)
         if (allData.length > 0) {
           allData.push([]); // Prazan red kao separator
@@ -4037,13 +4100,12 @@ function azurirajStanjeZaliha() {
       } catch (error) {
         Logger.log(`ERROR processing ${odjelNaziv}: ${error.toString()}`);
         errorCount++;
-        // Nastavi sa sledećim odjelom
       }
     }
 
     Logger.log(`Procesovano ${processedCount} odjela (${errorCount} grešaka)`);
 
-    // 7. Upiši sve podatke u STANJE ZALIHA sheet
+    // 9. Upiši sve podatke u STANJE ZALIHA sheet
     if (allData.length > 0) {
       Logger.log(`Upisujem ${allData.length} redova u STANJE ZALIHA sheet`);
 
@@ -4065,7 +4127,7 @@ function azurirajStanjeZaliha() {
       Logger.log(`Maksimalan broj kolona: ${maxCols}`);
       stanjeSheet.getRange(1, 1, allData.length, maxCols).setValues(allData);
 
-      // 8. Formatiraj sheet
+      // 10. Formatiraj sheet
       formatirajStanjeZalihaSheet(stanjeSheet);
 
       Logger.log('Podaci uspješno upisani i formatirani');
