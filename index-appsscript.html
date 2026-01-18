@@ -3383,51 +3383,6 @@
             </div>
         </div>
 
-        <!-- POSLOVOĐA CONTENT - STANJE ODJELA -->
-        <div id="poslovodja-stanje-content" class="container hidden">
-            <div class="page-header">
-                <div class="page-header-left">
-                    <h1>📊 Stanje Odjela</h1>
-                    <p>Pregled stanja odjela sa vaših radilišta</p>
-                </div>
-                <div class="page-header-right">
-                    <button class="btn btn-primary" onclick="loadPoslovodjaStanje()">🔄 Osvježi</button>
-                </div>
-            </div>
-            <div id="poslovodja-radilista-info" class="section" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list"></span></p>
-            </div>
-            <div class="section">
-                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="monthly-table" id="poslovodja-stanje-table">
-                        <thead id="poslovodja-stanje-header"></thead>
-                        <tbody id="poslovodja-stanje-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- ADMIN STANJE ODJELA CONTENT -->
-        <div id="stanje-odjela-admin-content" class="container hidden">
-            <div class="page-header">
-                <div class="page-header-left">
-                    <h1>📦 Stanje Odjela</h1>
-                    <p>Pregled stanja svih odjela</p>
-                </div>
-                <div class="page-header-right">
-                    <button class="btn btn-primary" onclick="loadAdminStanjeOdjela()">🔄 Osvježi</button>
-                </div>
-            </div>
-            <div class="section">
-                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="monthly-table" id="admin-stanje-table">
-                        <thead id="admin-stanje-header"></thead>
-                        <tbody id="admin-stanje-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
         <!-- POSLOVOĐA CONTENT - ODJELI U REALIZACIJI -->
         <div id="poslovodja-realizacija-content" class="container hidden">
             <div class="page-header">
@@ -4857,7 +4812,6 @@
                         { name: 'Primaci', url: buildApiUrl('primaci', { year }), cacheKey: 'cache_primaci_' + year, timeout: 180000 },
                         { name: 'Otpremaci', url: buildApiUrl('otpremaci', { year }), cacheKey: 'cache_otpremaci_' + year, timeout: 180000 },
                         { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
-                        { name: 'Stanje Odjela Admin', url: buildApiUrl('odjeli'), cacheKey: 'cache_odjeli_stanje_admin', timeout: 180000 },
                         { name: 'Pending Unosi', url: buildApiUrl('pending_unosi'), cacheKey: 'cache_pending_unosi', timeout: 120000 },
                         { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni_sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year, timeout: 120000 },
                         { name: 'Dinamika', url: buildApiUrl('get_dinamika', { year }), cacheKey: 'cache_dinamika_' + year, timeout: 120000 }
@@ -4865,7 +4819,6 @@
 
                 } else if (userType === 'poslovođa' || userType === 'poslovodja') {
                     allViews = [
-                        { name: 'Stanje Odjela', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_poslovodja_odjeli_' + year, timeout: 180000 },
                         { name: 'Odjeli u realizaciji', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_poslovodja_realizacija_' + year, timeout: 180000 },
                         { name: 'Zadnjih 5 dana - Primke', url: buildApiUrl('primke'), cacheKey: 'cache_poslovodja_primke', timeout: 120000 },
                         { name: 'Zadnjih 5 dana - Otpreme', url: buildApiUrl('otpreme'), cacheKey: 'cache_poslovodja_otpreme', timeout: 120000 },
@@ -5251,10 +5204,9 @@
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                 `;
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
-                // POSLOVOĐA vidi: STANJE ODJELA, ODJELI U REALIZACIJI, ZADNJIH 5 DANA, SUMA MJESECA, IZVJEŠTAJI
+                // POSLOVOĐA vidi: ODJELI U REALIZACIJI, ZADNJIH 5 DANA, SUMA MJESECA, IZVJEŠTAJI
                 tabsMenu.innerHTML = `
-                    <button class="tab active" onclick="switchTab('poslovodja-stanje')">📊 Stanje Odjela</button>
-                    <button class="tab" onclick="switchTab('poslovodja-realizacija')">🏗️ Odjeli u realizaciji</button>
+                    <button class="tab active" onclick="switchTab('poslovodja-realizacija')">🏗️ Odjeli u realizaciji</button>
                     <button class="tab" onclick="switchTab('poslovodja-zadnjih5')">📅 Zadnjih 5 Dana</button>
                     <button class="tab" onclick="switchTab('poslovodja-suma')">📈 Suma Mjeseca</button>
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
@@ -5263,7 +5215,6 @@
                 // Admin korisnici - bez OPERATIVA tab-a (admin se loguje kao OPERATIVA tip ako želi vidjeti operativa podatke)
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
-                    <button class="tab" onclick="switchTab('stanje-odjela-admin')">📦 Stanje odjela</button>
                     <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Sječa/otprema po mjesecima</button>
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz sječe</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz otpreme</button>
@@ -5482,8 +5433,6 @@
             document.getElementById('izvjestaji-primac-content').classList.add('hidden');
             document.getElementById('izvjestaji-otpremac-content').classList.add('hidden');
             document.getElementById('operativa-content').classList.add('hidden');
-            document.getElementById('stanje-odjela-admin-content').classList.add('hidden');
-            document.getElementById('poslovodja-stanje-content').classList.add('hidden');
             document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
             document.getElementById('poslovodja-zadnjih5-content').classList.add('hidden');
             document.getElementById('poslovodja-suma-content').classList.add('hidden');
@@ -5569,10 +5518,6 @@
             } else if (tab === 'izvjestaji-admin') {
                 // Odmah prikaži Mjesečni izvještaj umjesto menija
                 switchTab('izvjestaji');
-            } else if (tab === 'stanje-odjela-admin') {
-                // Prikaži samo Stanje odjela za admina (SVE odjele, bez filtriranja)
-                document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
-                loadAdminStanjeOdjela();
             } else if (tab === 'izvjestaji-primac') {
                 // Set default to current month/year
                 const currentDate = new Date();
@@ -5982,7 +5927,7 @@
             return POSLOVODJA_RADILISTA[fullName] || [];
         }
 
-        // Load STANJE ODJELA za poslovođu
+        // Load odjele za poslovođu
         async function loadPoslovodjaStanje() {
             document.getElementById('loading-screen').classList.remove('hidden');
             document.getElementById('poslovodja-stanje-content').classList.add('hidden');
@@ -5993,7 +5938,7 @@
                 // Display radilišta
                 document.getElementById('poslovodja-radilista-list').textContent = radilista.join(', ');
 
-                // Load STANJE ODJELA data sa povećanim timeout-om (60s)
+                // Load odjele data sa povećanim timeout-om (60s)
                 const url = buildApiUrl('odjeli');
                 const data = await fetchWithCache(url, 'cache_odjeli_stanje', false, 60000);
 
@@ -6009,7 +5954,7 @@
                 });
 
 
-                // Render stanje odjela table
+                // Render odjele table
                 renderPoslovodjaStanjeTable(filteredOdjeli);
 
                 document.getElementById('loading-screen').classList.add('hidden');
@@ -6050,178 +5995,6 @@
             }
         }
 
-        // Load STANJE ODJELA za admina (SVE odjele bez filtriranja)
-        async function loadAdminStanjeOdjela() {
-            try {
-                // 🚀 TURBO MODE: INSTANT SHOW cached data
-                const cacheKey = 'cache_odjeli_stanje_admin';
-                const cachedData = localStorage.getItem(cacheKey);
-
-                let hasCachedData = false;
-                if (cachedData) {
-                    try {
-                        const parsed = JSON.parse(cachedData);
-                        if (parsed.data && parsed.data.odjeli) {
-                            // ✨ INSTANT: Show cached data immediately
-                            document.getElementById('loading-screen').classList.add('hidden');
-                            document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
-                            renderAdminStanjeTable(parsed.data.odjeli);
-                            hasCachedData = true;
-
-                            // Show cache indicator
-                            const age = Date.now() - parsed.timestamp;
-                            showCacheIndicator(age);
-                        }
-                    } catch (e) {
-                        console.error('Cache parse error:', e);
-                    }
-                }
-
-                // If no cache, show loading screen
-                if (!hasCachedData) {
-                    document.getElementById('loading-screen').classList.remove('hidden');
-                    document.getElementById('stanje-odjela-admin-content').classList.add('hidden');
-                }
-
-                // 🔄 BACKGROUND REFRESH: Fetch fresh data (180s timeout)
-                const url = buildApiUrl('odjeli');
-                const data = await fetchWithCache(url, cacheKey, false, 180000);
-
-                if (data.error || !data.odjeli) {
-                    if (!hasCachedData) {
-                        throw new Error(data.error || 'Nema podataka o odjelima');
-                    }
-                    return; // Silently fail if we have cached data
-                }
-
-                // Update with fresh data
-                renderAdminStanjeTable(data.odjeli);
-
-                document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
-
-                // Hide cache indicator when fresh data arrives
-                hideCacheIndicator();
-
-            } catch (error) {
-                console.error('Error loading admin stanje odjela:', error);
-                showError('Greška', 'Greška pri učitavanju stanja odjela: ' + error.message);
-                document.getElementById('loading-screen').classList.add('hidden');
-            }
-        }
-
-        // Render Stanje Odjela table for admin
-        function renderAdminStanjeTable(odjeli) {
-            const headerElem = document.getElementById('admin-stanje-header');
-            const bodyElem = document.getElementById('admin-stanje-body');
-
-            if (odjeli.length === 0) {
-                headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka o odjelima</td></tr>';
-                return;
-            }
-
-            // Build header
-            let headerHtml = `
-                <tr>
-                    <th>Odjel</th>
-                    <th>Radilište</th>
-                    <th>Izvođač</th>
-                    <th>Projekat (m³)</th>
-                    <th>Sječa (m³)</th>
-                    <th>Otprema (m³)</th>
-                    <th>Realizacija (%)</th>
-                    <th>Zadnji Unos</th>
-                </tr>
-            `;
-            headerElem.innerHTML = headerHtml;
-
-            // Build body
-            let bodyHtml = '';
-            odjeli.forEach((odjel, index) => {
-                const rowBg = index % 2 === 0 ? '#f9fafb' : 'white';
-                const projekat = odjel.projekat || 0;
-                const sjeca = odjel.sjeca || 0;
-                const procenat = projekat > 0 ? ((sjeca / projekat) * 100).toFixed(1) : '0.0';
-
-                let percentClass = '';
-                if (procenat < 50) percentClass = 'style="color: #dc2626; font-weight: 700;"';
-                else if (procenat >= 100) percentClass = 'style="color: #059669; font-weight: 700;"';
-                else percentClass = 'style="color: #d97706; font-weight: 600;"';
-
-                bodyHtml += `
-                    <tr style="background: ${rowBg};">
-                        <td style="font-weight: 600;">${odjel.odjel || ''}</td>
-                        <td>${odjel.radiliste || '-'}</td>
-                        <td>${odjel.izvođač || '-'}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace;">${projekat.toFixed(2)}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 600;">${sjeca.toFixed(2)}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace;">${(odjel.otprema || 0).toFixed(2)}</td>
-                        <td ${percentClass} style="text-align: right; font-family: 'Courier New', monospace;">${procenat}%</td>
-                        <td>${odjel.datumZadnjeSjece || '-'}</td>
-                    </tr>
-                `;
-            });
-
-            bodyElem.innerHTML = bodyHtml;
-        }
-
-        // Render Stanje Odjela table for poslovođa
-        function renderPoslovodjaStanjeTable(odjeli) {
-            const headerElem = document.getElementById('poslovodja-stanje-header');
-            const bodyElem = document.getElementById('poslovodja-stanje-body');
-
-            if (odjeli.length === 0) {
-                headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema odjela na vašim radilištima</td></tr>';
-                return;
-            }
-
-            // Build header
-            let headerHtml = `
-                <tr>
-                    <th>Odjel</th>
-                    <th>Radilište</th>
-                    <th>Izvođač</th>
-                    <th>Projekat (m³)</th>
-                    <th>Sječa (m³)</th>
-                    <th>Otprema (m³)</th>
-                    <th>Realizacija (%)</th>
-                    <th>Zadnji Unos</th>
-                </tr>
-            `;
-            headerElem.innerHTML = headerHtml;
-
-            // Build body
-            let bodyHtml = '';
-            odjeli.forEach((odjel, index) => {
-                const rowBg = index % 2 === 0 ? '#f9fafb' : 'white';
-                const projekat = odjel.projekat || 0;
-                const sjeca = odjel.sjeca || 0;
-                const procenat = projekat > 0 ? ((sjeca / projekat) * 100).toFixed(1) : '0.0';
-
-                let percentClass = '';
-                if (procenat < 50) percentClass = 'style="color: #dc2626; font-weight: 700;"';
-                else if (procenat >= 100) percentClass = 'style="color: #059669; font-weight: 700;"';
-                else percentClass = 'style="color: #d97706; font-weight: 600;"';
-
-                bodyHtml += `
-                    <tr style="background: ${rowBg};">
-                        <td style="font-weight: 600;">${odjel.odjel || ''}</td>
-                        <td>${odjel.radiliste || '-'}</td>
-                        <td>${odjel.izvođač || '-'}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace;">${projekat.toFixed(2)}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 600;">${sjeca.toFixed(2)}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace;">${(odjel.otprema || 0).toFixed(2)}</td>
-                        <td ${percentClass} style="text-align: right; font-family: 'Courier New', monospace;">${procenat}%</td>
-                        <td>${odjel.datumZadnjeSjece || '-'}</td>
-                    </tr>
-                `;
-            });
-
-            bodyElem.innerHTML = bodyHtml;
-        }
-
         // Load ODJELI U REALIZACIJI za poslovođu
         async function loadPoslovodjaRealizacija() {
             document.getElementById('loading-screen').classList.remove('hidden');
@@ -6233,7 +6006,7 @@
                 // Display radilišta
                 document.getElementById('poslovodja-radilista-list-2').textContent = radilista.join(', ');
 
-                // Load STANJE ODJELA data sa povećanim timeout-om (60s)
+                // Load odjele data sa povećanim timeout-om (60s)
                 const url = buildApiUrl('odjeli');
                 const data = await fetchWithCache(url, 'cache_odjeli_realizacija', false, 60000);
 
@@ -6275,7 +6048,7 @@
                 return;
             }
 
-            // Build header (isti kao stanje odjela)
+            // Build header
             let headerHtml = `
                 <tr>
                     <th>Odjel</th>
@@ -10397,190 +10170,6 @@
             container.innerHTML = html;
         }
 
-        // ========================================
-        // STANJE ODJELA - Trenutno stanje iz fajla ODJELI
-        // ========================================
-
-        // Globalne varijable za stanje odjela
-        let stanjeOdjelaData = [];
-        let stanjeOdjelaSortimenti = [];
-
-        async function loadStanjeOdjela() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-
-            try {
-                // Load data from backend
-                const url = buildApiUrl('stanje-odjela');
-                const data = await fetchWithCache(url, `cache_stanje_odjela`);
-
-                if (data.error) throw new Error(data.error);
-
-                // Sačuvaj podatke globalno
-                stanjeOdjelaData = data.data;
-                stanjeOdjelaSortimenti = data.sortimentiNazivi;
-
-                // Populiši dropdown sa radilištima
-                populateStanjeOdjelaDropdown(data.data);
-
-                // Render sections
-                renderStanjeOdjelaSections(data.data, data.sortimentiNazivi);
-
-                document.getElementById('loading-screen').classList.add('hidden');
-
-            } catch (error) {
-                console.error('Error loading stanje odjela:', error);
-                showError('Greška', 'Greška pri učitavanju stanja odjela: ' + error.message);
-                document.getElementById('loading-screen').classList.add('hidden');
-            }
-        }
-
-        function populateStanjeOdjelaDropdown(data) {
-            const select = document.getElementById('stanje-odjela-select');
-
-            // Očisti postojeće opcije osim "Sva radilišta"
-            select.innerHTML = '<option value="">Sva radilišta</option>';
-
-            // Izvuci unique radilišta
-            const radilistaSet = new Set();
-            data.forEach(odjel => {
-                if (odjel.radiliste) {
-                    radilistaSet.add(odjel.radiliste);
-                }
-            });
-
-            // Sortiraj i dodaj u dropdown
-            const radilista = Array.from(radilistaSet).sort();
-            radilista.forEach(radiliste => {
-                const option = document.createElement('option');
-                option.value = radiliste;
-                option.textContent = radiliste;
-                select.appendChild(option);
-            });
-        }
-
-        function filterStanjeOdjela() {
-            const selectedRadiliste = document.getElementById('stanje-odjela-select').value;
-
-            if (selectedRadiliste === '') {
-                // Prikaži sve
-                renderStanjeOdjelaSections(stanjeOdjelaData, stanjeOdjelaSortimenti);
-            } else {
-                // Filtriraj samo izabrano radilište
-                const filteredData = stanjeOdjelaData.filter(odjel => odjel.radiliste === selectedRadiliste);
-                renderStanjeOdjelaSections(filteredData, stanjeOdjelaSortimenti);
-            }
-        }
-
-        function renderStanjeOdjelaSections(data, sortimentiNazivi) {
-            const container = document.getElementById('stanje-odjela-container');
-
-            if (data.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka</div>';
-                return;
-            }
-
-            let html = '';
-
-            // Za svaki odjel kreiraj zasebnu sekciju
-            data.forEach((odjelData, odjelIndex) => {
-                const radiliste = odjelData.radiliste || odjelData.odjelNaziv;
-                const odjelNaziv = odjelData.odjelNaziv;
-                const redovi = odjelData.redovi;
-
-                // Sekcija za svaki odjel
-                html += '<div class="section" style="margin-bottom: 40px; border: 2px solid #d1d5db; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">';
-
-                // Header radilišta
-                html += '<div style="background: linear-gradient(135deg, #047857 0%, #059669 100%); padding: 16px 24px; border-bottom: 3px solid #10b981;">';
-                html += '<h3 style="margin: 0; color: white; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 12px;">';
-                html += '<span style="font-size: 24px;">🏭</span>';
-                html += '<div>';
-                html += '<div>' + radiliste + '</div>';
-                html += '<div style="font-size: 12px; font-weight: 400; opacity: 0.9; margin-top: 4px;">(' + odjelNaziv + ')</div>';
-                html += '</div>';
-                html += '</h3>';
-                html += '</div>';
-
-                // Tabela sa sortimentnim zaglavljem
-                html += '<div style="overflow-x: auto;">';
-                html += '<table style="width: 100%; border-collapse: collapse; background: white;">';
-
-                // Sortimentno zaglavlje
-                html += '<thead>';
-                html += '<tr style="background: #f0fdf4; border-bottom: 2px solid #10b981;">';
-                html += '<th style="padding: 14px 16px; text-align: left; font-weight: 700; color: #047857; border-right: 1px solid #d1d5db; min-width: 180px; position: sticky; left: 0; background: #f0fdf4; z-index: 10;">Vrsta</th>';
-
-                sortimentiNazivi.forEach((sortiment, index) => {
-                    const colClass = getColumnGroup(sortiment);
-                    let bgColor = '#f0fdf4';
-                    let textColor = '#047857';
-
-                    if (sortiment === 'ČETINARI') {
-                        bgColor = '#dbeafe';
-                        textColor = '#1e40af';
-                    } else if (sortiment === 'LIŠĆARI') {
-                        bgColor = '#fef3c7';
-                        textColor = '#92400e';
-                    } else if (sortiment === 'SVEUKUPNO') {
-                        bgColor = '#ede9fe';
-                        textColor = '#5b21b6';
-                    }
-
-                    const borderRight = index < sortimentiNazivi.length - 1 ? 'border-right: 1px solid #d1d5db;' : '';
-                    html += '<th style="padding: 14px 12px; text-align: right; font-weight: 700; font-size: 13px; color: ' + textColor + '; background: ' + bgColor + '; ' + borderRight + ' white-space: nowrap;">' + sortiment + '</th>';
-                });
-
-                html += '</tr>';
-                html += '</thead>';
-
-                // Body sa 4 reda
-                html += '<tbody>';
-
-                const vrste = [
-                    { naziv: 'PROJEKAT', data: redovi.projekat, icon: '📋', bg: '#fef3c7', color: '#92400e', borderColor: '#fbbf24' },
-                    { naziv: 'SJEČA', data: redovi.sjeca, icon: '🌲', bg: '#d1fae5', color: '#065f46', borderColor: '#10b981' },
-                    { naziv: 'OTPREMA', data: redovi.otprema, icon: '🚛', bg: '#dbeafe', color: '#1e40af', borderColor: '#3b82f6' },
-                    { naziv: 'ZALIHA', data: redovi.sumaLager, icon: '📦', bg: '#e9d5ff', color: '#6b21a8', borderColor: '#a855f7' }
-                ];
-
-                vrste.forEach((vrsta, vrstaIndex) => {
-                    const borderBottom = vrstaIndex < vrste.length - 1 ? 'border-bottom: 1px solid #e5e7eb;' : '';
-
-                    html += '<tr style="' + borderBottom + '">';
-                    html += '<td style="padding: 12px 16px; font-weight: 700; color: ' + vrsta.color + '; background: ' + vrsta.bg + '; border-right: 3px solid ' + vrsta.borderColor + '; position: sticky; left: 0; z-index: 5;">';
-                    html += '<span style="display: inline-flex; align-items: center; gap: 8px;">';
-                    html += '<span style="font-size: 20px;">' + vrsta.icon + '</span>';
-                    html += '<span>' + vrsta.naziv + '</span>';
-                    html += '</span>';
-                    html += '</td>';
-
-                    vrsta.data.forEach((value, index) => {
-                        const sortiment = sortimentiNazivi[index];
-                        let bgColor = 'white';
-
-                        if (sortiment === 'ČETINARI') bgColor = '#eff6ff';
-                        else if (sortiment === 'LIŠĆARI') bgColor = '#fffbeb';
-                        else if (sortiment === 'SVEUKUPNO') bgColor = '#faf5ff';
-
-                        const borderRight = index < sortimentiNazivi.length - 1 ? 'border-right: 1px solid #e5e7eb;' : '';
-                        const displayValue = value === 0 ? '-' : value.toFixed(2);
-                        const fontWeight = sortiment === 'SVEUKUPNO' ? 'font-weight: 700;' : '';
-
-                        html += '<td style="padding: 12px; text-align: right; background: ' + bgColor + '; ' + borderRight + ' ' + fontWeight + ' color: #374151;">' + displayValue + '</td>';
-                    });
-
-                    html += '</tr>';
-                });
-
-                html += '</tbody>';
-                html += '</table>';
-                html += '</div>';
-                html += '</div>';
-            });
-
-            container.innerHTML = html;
-        }
-
         // Load pending count (for badge only)
         async function loadPendingCount() {
             try {
@@ -10850,7 +10439,6 @@
                     clearCacheByPattern('dashboard');
                     clearCacheByPattern('izvjestaji');
                     clearCacheByPattern('sedmicni_sjeca');
-                    clearCacheByPattern('stanje_odjela');
                     clearCacheByPattern('my_sjece');
                 } else {
                     throw new Error(result.error || 'Unknown error');
@@ -10930,7 +10518,6 @@
                     clearCacheByPattern('kupci');
                     clearCacheByPattern('izvjestaji');
                     clearCacheByPattern('sedmicni_otprema');
-                    clearCacheByPattern('stanje_odjela');
                     clearCacheByPattern('my_otpreme');
                 } else {
                     throw new Error(result.error || 'Unknown error');
@@ -11612,19 +11199,6 @@
                 const odjeliUrl = buildApiUrl('odjeli', { year });
                 const odjeliResponse = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year, false, 60000);
 
-                // **NOVO: Fetch STANJE ODJELA data (sa PROJEKAT podacima iz Excel redova 10-13)**
-                const stanjeOdjelaUrl = buildApiUrl('stanje-odjela');
-                const stanjeOdjelaData = await fetchWithCache(stanjeOdjelaUrl, 'cache_stanje_odjela');
-
-
-                // DEBUG: Log odjeli count and total from API
-                if (odjeliResponse && odjeliResponse.odjeli) {
-                    const odjeliCount = odjeliResponse.odjeli.length;
-                    const totalFromAPI = odjeliResponse.odjeli.reduce((sum, o) => sum + (o.sjeca || 0), 0);
-                    if (Math.abs(totalFromAPI - 68171) > 1000) {
-                    }
-                }
-
                 if (dashboardData.error || odjeliResponse.error) {
                     console.error('Error loading OPERATIVA data');
                     return;
@@ -11643,50 +11217,20 @@
                     dinamika: m.dinamika || 0
                 }));
 
-                // **IMPROVED: Enrich odjeli data with PROJEKAT from STANJE ODJELA (red 10 Excel)**
+                // Transform odjeli data
                 const odjeliStats = {};
                 if (odjeliResponse.odjeli && odjeliResponse.odjeli.length > 0) {
                     odjeliResponse.odjeli.forEach(odjel => {
-                        // Find matching odjel in STANJE ODJELA data
-                        let projekatTotal = 0;
-                        let radilisteNaziv = '';
-                        let zadnjiDatum = null;
-
-                        if (stanjeOdjelaData && stanjeOdjelaData.data && odjel.odjel) {
-                            // ✅ Convert odjel.odjel to string to prevent "includes is not a function" error
-                            const odjelStr = String(odjel.odjel || '').toLowerCase();
-                            const stanjeMatch = stanjeOdjelaData.data.find(s =>
-                                s.odjelNaziv.toLowerCase().includes(odjelStr) ||
-                                odjelStr.includes(s.odjelNaziv.replace('.xlsx', '').toLowerCase())
-                            );
-
-                            if (stanjeMatch && stanjeMatch.redovi && stanjeMatch.redovi.projekat) {
-                                // Sum all sortimenti from projekat row (red 10 iz Excel-a)
-                                projekatTotal = stanjeMatch.redovi.projekat.reduce((sum, val) => sum + (val || 0), 0);
-                                radilisteNaziv = stanjeMatch.radiliste || '';
-                                zadnjiDatum = stanjeMatch.zadnjiDatum;
-
-                                // DEBUG: Log projekat sources za GRMEČ JASENICA 39
-                                const odjelDebugStr = String(odjel.odjel || '');
-                                if (odjel.odjel && (odjelDebugStr.includes('JASENICA 39') || odjelDebugStr.includes('GRMEČ'))) {
-                                }
-                            }
-                        }
-
-                        // DEBUG: Check for duplicate odjeli
-                        if (odjeliStats[odjel.odjel]) {
-                        }
-
                         odjeliStats[odjel.odjel] = {
                             sječa: odjel.sjeca || 0,
                             otprema: odjel.otprema || 0,
-                            projekat: (odjel.projekat && odjel.projekat > 0) ? odjel.projekat : projekatTotal, // Use odjel.projekat (U11) as primary source
+                            projekat: odjel.projekat || 0,
                             ukupnoPosjeklo: odjel.sjeca || 0,
                             zadnjaSjeca: odjel.zadnjaSjeca || 0,
                             datumZadnjeSjece: odjel.datumZadnjeSjece || '',
-                            radiliste: radilisteNaziv || odjel.radiliste || '',
-                            izvođač: (odjel.izvođač || '').trim(), // Trim whitespace to prevent duplicates
-                            zadnjiDatumUnosa: odjel.datumZadnjeSjece || '' // Use formatted date from odjel, not stanjeMatch
+                            radiliste: odjel.radiliste || '',
+                            izvođač: (odjel.izvođač || '').trim(),
+                            zadnjiDatumUnosa: odjel.datumZadnjeSjece || ''
                         };
                     });
                 }
@@ -11696,8 +11240,7 @@
                     totalPrimka,
                     totalOtprema,
                     monthlyStats,
-                    odjeliStats,
-                    stanjeOdjelaRaw: stanjeOdjelaData // Pass raw data for additional features
+                    odjeliStats
                 };
 
 
