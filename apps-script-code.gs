@@ -117,6 +117,12 @@ function doGet(e) {
       return handleOtremaciDaily(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
     } else if (path === 'stanje-odjela') {
       return handleStanjeOdjela(e.parameter.username, e.parameter.password);
+    } else if (path === 'sync-stanje-odjela') {
+      // Ručno osvježavanje cache-a za stanje odjela (samo za admin korisnike)
+      return handleSyncStanjeOdjela(e.parameter.username, e.parameter.password);
+    } else if (path === 'sync-index') {
+      // Ručno pokretanje indeksiranja INDEX sheet-ova (samo za admin korisnike)
+      return handleSyncIndex(e.parameter.username, e.parameter.password);
     } else if (path === 'primaci-by-radiliste') {
       return handlePrimaciByRadiliste(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'primaci-by-izvodjac') {
@@ -127,6 +133,18 @@ function doGet(e) {
       return handleOtpreme(e.parameter.username, e.parameter.password);
     } else if (path === 'get_dinamika') {
       return handleGetDinamika(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'manifest') {
+      // 📊 MANIFEST ENDPOINT - Brza provjera verzije podataka
+      return handleManifest();
+    } else if (path === 'manifest_data') {
+      // 📊 MANIFEST DATA ENDPOINT - Za delta sync (primka + otprema row counts)
+      return handleManifestData(e.parameter.username, e.parameter.password);
+    } else if (path === 'delta_primka') {
+      // 🔄 DELTA PRIMKA - Vraća samo nove redove (fromRow do toRow)
+      return handleDeltaPrimka(e.parameter.username, e.parameter.password, e.parameter.fromRow, e.parameter.toRow);
+    } else if (path === 'delta_otprema') {
+      // 🔄 DELTA OTPREMA - Vraća samo nove redove (fromRow do toRow)
+      return handleDeltaOtprema(e.parameter.username, e.parameter.password, e.parameter.fromRow, e.parameter.toRow);
     } else if (path === 'save_dinamika') {
       Logger.log('save_dinamika endpoint called');
       Logger.log('Parameters: ' + JSON.stringify(e.parameter));
@@ -138,6 +156,36 @@ function doGet(e) {
   } catch (error) {
     return createJsonResponse({ error: error.toString() }, false);
   }
+}
+
+// ========================================
+// OPTIONS Handler - CORS Preflight Support
+// ========================================
+// Handles OPTIONS preflight requests from browsers
+// Required for CORS to work properly with cross-origin fetch
+function doOptions(e) {
+  Logger.log('=== DO OPTIONS CALLED (CORS Preflight) ===');
+
+  // Return CORS headers for preflight requests
+  const output = ContentService.createTextOutput('');
+  output.setMimeType(ContentService.MimeType.JSON);
+
+  // Try setHeader (V8 runtime), fallback if not available (Rhino)
+  try {
+    if (typeof output.setHeader === 'function') {
+      output.setHeader('Access-Control-Allow-Origin', '*');
+      output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      output.setHeader('Access-Control-Max-Age', '86400'); // 24 hours cache
+      Logger.log('[OPTIONS] CORS headers set successfully');
+    } else {
+      Logger.log('[OPTIONS] WARNING: setHeader not available');
+    }
+  } catch (e) {
+    Logger.log('[OPTIONS] WARNING: setHeader failed: ' + e.toString());
+  }
+
+  return output;
 }
 
 // Helper function to verify user credentials
@@ -480,7 +528,97 @@ function parseDate(datum) {
 function createJsonResponse(data, success) {
   const output = ContentService.createTextOutput(JSON.stringify(data));
   output.setMimeType(ContentService.MimeType.JSON);
+
+  // ✅ CORS Support - Try setHeader (V8 runtime), fallback if not available (Rhino)
+  try {
+    if (typeof output.setHeader === 'function') {
+      output.setHeader('Access-Control-Allow-Origin', '*');
+      output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      Logger.log('[CORS] Headers set successfully using setHeader()');
+    } else {
+      Logger.log('[CORS] WARNING: setHeader not available (Rhino runtime?)');
+    }
+  } catch (e) {
+    Logger.log('[CORS] WARNING: setHeader failed: ' + e.toString());
+    // Continue without headers - CORS won't work but at least no error
+  }
+
   return output;
+}
+
+// ========================================
+// CACHESERVICE - In-Memory Caching for 10-20x Speed Boost
+// ========================================
+
+const CACHE_TTL = 180; // 3 minute cache (180 seconds)
+
+// Get cached data if available and fresh
+function getCachedData(key) {
+  try {
+    const cache = CacheService.getScriptCache();
+    const cached = cache.get(key);
+
+    if (cached) {
+      Logger.log(`[CACHE] HIT: ${key}`);
+      return JSON.parse(cached);
+    }
+
+    Logger.log(`[CACHE] MISS: ${key}`);
+    return null;
+  } catch (error) {
+    Logger.log(`[CACHE] Error reading cache for ${key}: ${error}`);
+    return null;
+  }
+}
+
+// Set cached data with TTL
+function setCachedData(key, data, ttl = CACHE_TTL) {
+  try {
+    const cache = CacheService.getScriptCache();
+    cache.put(key, JSON.stringify(data), ttl);
+    Logger.log(`[CACHE] SET: ${key} (TTL: ${ttl}s)`);
+    return true;
+  } catch (error) {
+    Logger.log(`[CACHE] Error writing cache for ${key}: ${error}`);
+    return false;
+  }
+}
+
+// Invalidate all cache entries (call on data write)
+function invalidateAllCache() {
+  try {
+    const cache = CacheService.getScriptCache();
+    cache.removeAll();
+    Logger.log('[CACHE] Invalidated all cache entries');
+    return true;
+  } catch (error) {
+    Logger.log(`[CACHE] Error invalidating cache: ${error}`);
+    return false;
+  }
+}
+
+// Invalidate cache for specific year
+function invalidateCacheForYear(year) {
+  try {
+    const cache = CacheService.getScriptCache();
+    // Remove all common cache keys for this year
+    const keysToRemove = [
+      `dashboard_${year}`,
+      `primaci_${year}`,
+      `otpremaci_${year}`,
+      `kupci_${year}`,
+      `mjesecni_sortimenti_${year}`,
+      `stats_${year}`
+    ];
+
+    keysToRemove.forEach(key => cache.remove(key));
+    Logger.log(`[CACHE] Invalidated cache for year ${year}`);
+    return true;
+  } catch (error) {
+    Logger.log(`[CACHE] Error invalidating cache for year: ${error}`);
+    return false;
+  }
 }
 
 // ========================================
@@ -737,6 +875,9 @@ function syncIndexSheet() {
       Logger.log(`✓ INDEX_OTPREMA: upisano ${otpremaRows.length} redova`);
     }
 
+    // 🚀 CACHE: Invalidate all cache after successful sync
+    invalidateAllCache();
+
     const endTime = new Date();
     const duration = (endTime - startTime) / 1000; // sekunde
 
@@ -776,6 +917,13 @@ function handleDashboard(year, username, password) {
   const loginResult = JSON.parse(handleLogin(username, password).getContent());
   if (!loginResult.success) {
     return createJsonResponse({ error: "Unauthorized" }, false);
+  }
+
+  // 🚀 CACHE: Try to get from cache first
+  const cacheKey = `dashboard_${year}`;
+  const cached = getCachedData(cacheKey);
+  if (cached) {
+    return createJsonResponse(cached, true);
   }
 
   const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
@@ -889,10 +1037,14 @@ function handleDashboard(year, username, password) {
     return b.zadnjaSječa.localeCompare(a.zadnjaSječa);
   });
 
-  return createJsonResponse({
+  // 🚀 CACHE: Store result before returning
+  const result = {
     mjesecnaStatistika: mjesecnaStatistika,
     odjeli: odjeliPrikaz
-  }, true);
+  };
+  setCachedData(cacheKey, result, CACHE_TTL);
+
+  return createJsonResponse(result, true);
 }
 
 
@@ -1051,6 +1203,13 @@ function handlePrimaci(year, username, password) {
     return createJsonResponse({ error: "Unauthorized" }, false);
   }
 
+  // 🚀 CACHE: Try to get from cache first
+  const cacheKey = `primaci_${year}`;
+  const cached = getCachedData(cacheKey);
+  if (cached) {
+    return createJsonResponse(cached, true);
+  }
+
   const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
   const primkaSheet = ss.getSheetByName("INDEX_PRIMKA");
 
@@ -1104,10 +1263,14 @@ function handlePrimaci(year, username, password) {
   // Sortiraj po ukupnoj količini (od najvećeg ka najmanjem)
   primaciPrikaz.sort((a, b) => b.ukupno - a.ukupno);
 
-  return createJsonResponse({
+  // 🚀 CACHE: Store result before returning
+  const result = {
     mjeseci: mjeseci,
     primaci: primaciPrikaz
-  }, true);
+  };
+  setCachedData(cacheKey, result, CACHE_TTL);
+
+  return createJsonResponse(result, true);
 }
 
 // ========================================
@@ -1122,6 +1285,13 @@ function handleOtpremaci(year, username, password) {
   const loginResult = JSON.parse(handleLogin(username, password).getContent());
   if (!loginResult.success) {
     return createJsonResponse({ error: "Unauthorized" }, false);
+  }
+
+  // 🚀 CACHE: Try to get from cache first
+  const cacheKey = `otpremaci_${year}`;
+  const cached = getCachedData(cacheKey);
+  if (cached) {
+    return createJsonResponse(cached, true);
   }
 
   const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
@@ -1177,10 +1347,14 @@ function handleOtpremaci(year, username, password) {
   // Sortiraj po ukupnoj količini (od najvećeg ka najmanjem)
   otpremaciPrikaz.sort((a, b) => b.ukupno - a.ukupno);
 
-  return createJsonResponse({
+  // 🚀 CACHE: Store result before returning
+  const result = {
     mjeseci: mjeseci,
     otpremaci: otpremaciPrikaz
-  }, true);
+  };
+  setCachedData(cacheKey, result, CACHE_TTL);
+
+  return createJsonResponse(result, true);
 }
 
 // ========================================
@@ -1195,6 +1369,13 @@ function handleKupci(year, username, password) {
   const loginResult = JSON.parse(handleLogin(username, password).getContent());
   if (!loginResult.success) {
     return createJsonResponse({ error: "Unauthorized" }, false);
+  }
+
+  // 🚀 CACHE: Try to get from cache first
+  const cacheKey = `kupci_${year}`;
+  const cached = getCachedData(cacheKey);
+  if (cached) {
+    return createJsonResponse(cached, true);
   }
 
   const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
@@ -1321,11 +1502,15 @@ function handleKupci(year, username, password) {
 
   Logger.log(`Kupci - Godišnji: ${godisnji.length} kupaca, Mjesečni: ${mjesecni.length} redova`);
 
-  return createJsonResponse({
+  // 🚀 CACHE: Store result before returning
+  const result = {
     sortimentiNazivi: sortimentiNazivi,
     godisnji: godisnji,
     mjesecni: mjesecni
-  }, true);
+  };
+  setCachedData(cacheKey, result, CACHE_TTL);
+
+  return createJsonResponse(result, true);
 }
 
 // ========================================
@@ -2047,6 +2232,9 @@ function handleAddSjeca(params) {
     // Dodaj red na kraj sheet-a
     pendingSheet.appendRow(newRow);
 
+    // 🚀 CACHE: Invalidate all cache after successful write
+    invalidateAllCache();
+
     Logger.log('=== HANDLE ADD SJECA END ===');
     Logger.log('Successfully added new sjeca entry to PENDING');
 
@@ -2154,6 +2342,9 @@ function handleAddOtprema(params) {
 
     // Dodaj red na kraj sheet-a
     pendingSheet.appendRow(newRow);
+
+    // 🚀 CACHE: Invalidate all cache after successful write
+    invalidateAllCache();
 
     Logger.log('=== HANDLE ADD OTPREMA END ===');
     Logger.log('Successfully added new otprema entry to PENDING');
@@ -2625,6 +2816,13 @@ function handleMjesecniSortimenti(year, username, password) {
       return createJsonResponse({ error: "Unauthorized" }, false);
     }
 
+    // 🚀 CACHE: Try to get from cache first
+    const cacheKey = `mjesecni_sortimenti_${year}`;
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+      return createJsonResponse(cached, true);
+    }
+
     Logger.log('=== HANDLE MJESECNI SORTIMENTI START ===');
     Logger.log('Year: ' + year);
 
@@ -2707,7 +2905,8 @@ function handleMjesecniSortimenti(year, username, password) {
 
     Logger.log('=== HANDLE MJESECNI SORTIMENTI END ===');
 
-    return createJsonResponse({
+    // 🚀 CACHE: Store result before returning
+    const result = {
       sjeca: {
         sortimenti: sortimentiNazivi,
         mjeseci: sjecaMjeseci
@@ -2716,7 +2915,10 @@ function handleMjesecniSortimenti(year, username, password) {
         sortimenti: sortimentiNazivi,
         mjeseci: otpremaMjeseci
       }
-    }, true);
+    };
+    setCachedData(cacheKey, result, CACHE_TTL);
+
+    return createJsonResponse(result, true);
 
   } catch (error) {
     Logger.log('ERROR in handleMjesecniSortimenti: ' + error.toString());
@@ -3238,19 +3440,14 @@ function diagnosticCheckOriginalSheet() {
 }
 
 /**
- * STANJE ODJELA - Čita trenutno stanje iz svih odjela (redovi 10-13, kolone D-U)
- * Prikazuje po radilištima sa 4 reda: PROJEKAT, SJEČA, OTPREMA, ŠUMA-LAGER
- * Sortira po najsvježijim unosima u PRIMKA
+ * SYNC STANJE ODJELA - Sinkronizuje podatke o stanju odjela na cache sheet
+ * Ova funkcija se poziva jednom dnevno automatski ili ručno
+ * Piše podatke na sheet "STANJE_ODJELA_CACHE" u INDEX spreadsheet-u
  */
-function handleStanjeOdjela(username, password) {
-  // Verify user
-  const user = verifyUser(username, password);
-  if (!user) {
-    return createJsonResponse({ error: 'Invalid credentials' }, false);
-  }
-
+function syncStanjeOdjela() {
   try {
-    Logger.log('=== HANDLE STANJE ODJELA START ===');
+    Logger.log('=== SYNC STANJE ODJELA START ===');
+    Logger.log('Vrijeme sinkronizacije: ' + new Date().toString());
 
     // Fiksno sortimentno zaglavlje (D-U kolone)
     const sortimentiNazivi = [
@@ -3290,6 +3487,7 @@ function handleStanjeOdjela(username, password) {
 
         // Čitaj naziv radilišta iz PRIMKA sheet, W2 (red 2, kolona 23)
         let radilisteNaziv = fileName; // Fallback ako W2 ne postoji
+        let izvodjacNaziv = ''; // W3 - izvođač
         if (primkaSheet) {
           try {
             const w2Cell = primkaSheet.getRange(2, 23); // Red 2, kolona W (23)
@@ -3297,19 +3495,26 @@ function handleStanjeOdjela(username, password) {
             if (w2Value && w2Value.toString().trim() !== '') {
               radilisteNaziv = w2Value.toString().trim();
             }
+
+            const w3Cell = primkaSheet.getRange(3, 23); // Red 3, kolona W (23)
+            const w3Value = w3Cell.getValue();
+            if (w3Value && w3Value.toString().trim() !== '') {
+              izvodjacNaziv = w3Value.toString().trim();
+            }
           } catch (e) {
-            Logger.log('Greška pri čitanju W2: ' + e.toString());
+            Logger.log('Greška pri čitanju W2/W3: ' + e.toString());
           }
         }
 
-        // Čitaj redove 10-13, kolone D-U (indeksi 3-20)
-        const dataRange = otpremaSheet.getRange(10, 4, 4, 18); // Redovi 10-13, kolona D, 18 kolona
+        // Čitaj cijele redove 10-13 (od kolone A do kraja)
+        const lastColumn = otpremaSheet.getLastColumn();
+        const dataRange = otpremaSheet.getRange(10, 1, 4, lastColumn); // Redovi 10-13, od kolone A
         const dataValues = dataRange.getValues();
 
-        const projekat = dataValues[0].map(v => parseFloat(v) || 0);
-        const sjeca = dataValues[1].map(v => parseFloat(v) || 0);
-        const otprema = dataValues[2].map(v => parseFloat(v) || 0);
-        const sumaLager = dataValues[3].map(v => parseFloat(v) || 0);
+        const projekat = dataValues[0]; // Cijeli red PROJEKAT
+        const sjeca = dataValues[1]; // Cijeli red SJEČA
+        const otprema = dataValues[2]; // Cijeli red OTPREMA
+        const sumaLager = dataValues[3]; // Cijeli red ZALIHA
 
         // Pronađi najsvježiji datum iz PRIMKA sheet
         let zadnjiDatum = null;
@@ -3334,7 +3539,8 @@ function handleStanjeOdjela(username, password) {
         odjeliData.push({
           odjelNaziv: fileName,
           radiliste: radilisteNaziv,
-          zadnjiDatum: zadnjiDatum,
+          izvodjac: izvodjacNaziv,
+          zadnjiDatum: zadnjiDatum ? zadnjiDatum.getTime() : null, // Sačuvaj kao timestamp
           redovi: {
             projekat: projekat,
             sjeca: sjeca,
@@ -3356,8 +3562,255 @@ function handleStanjeOdjela(username, password) {
       return b.zadnjiDatum - a.zadnjiDatum;
     });
 
-    Logger.log('=== HANDLE STANJE ODJELA END ===');
-    Logger.log('Broj odjela: ' + odjeliData.length);
+    Logger.log('Broj odjela prije filtriranja: ' + odjeliData.length);
+
+    // FILTRIRANJE ODJELA prema godini i kvartalu
+    const currentYear = new Date().getFullYear(); // 2026
+    const previousYear = currentYear - 1; // 2025
+
+    const filteredOdjeliData = odjeliData.filter(odjel => {
+      if (!odjel.zadnjiDatum) {
+        // Ako nema datum, preskoči
+        return false;
+      }
+
+      const datum = new Date(odjel.zadnjiDatum);
+      const year = datum.getFullYear();
+      const month = datum.getMonth() + 1; // 1-12
+      const quarter = Math.ceil(month / 3); // 1-4
+
+      // Tekuća godina: prikaži samo ako ima sječu ILI otpremu (SVEUKUPNO > 0)
+      if (year === currentYear) {
+        const sjecaSveukupno = odjel.redovi.sjeca[odjel.redovi.sjeca.length - 1] || 0; // Zadnji element je SVEUKUPNO
+        const otpremaSveukupno = odjel.redovi.otprema[odjel.redovi.otprema.length - 1] || 0;
+
+        if (sjecaSveukupno > 0 || otpremaSveukupno > 0) {
+          return true;
+        }
+        return false;
+      }
+
+      // Prošla godina: prikaži samo zadnji kvartal (Q4)
+      if (year === previousYear) {
+        return quarter === 4;
+      }
+
+      // Sve ostale godine: ne prikazuj
+      return false;
+    });
+
+    Logger.log('Broj odjela nakon filtriranja: ' + filteredOdjeliData.length);
+
+    // Sada zapiši sve podatke na cache sheet
+    const indexSpreadsheet = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    let cacheSheet = indexSpreadsheet.getSheetByName('STANJE_ODJELA_CACHE');
+
+    // Kreiraj sheet ako ne postoji
+    if (!cacheSheet) {
+      Logger.log('Kreiram novi sheet: STANJE_ODJELA_CACHE');
+      cacheSheet = indexSpreadsheet.insertSheet('STANJE_ODJELA_CACHE');
+    }
+
+    // Očisti sheet
+    cacheSheet.clear();
+
+    // Postavi zaglavlje - Red Tip + Odjel info + cijeli red iz OTPREMA
+    const headerRow = ['Red Tip', 'Odjel Naziv', 'Radilište', 'Izvođač', 'Zadnji Datum'];
+    cacheSheet.getRange(1, 1, 1, headerRow.length).setValues([headerRow]);
+    cacheSheet.getRange(1, 1, 1, headerRow.length).setFontWeight('bold');
+
+    // Pripremi podatke za upis
+    const dataRows = [];
+    filteredOdjeliData.forEach(odjel => {
+      const datumFormatted = odjel.zadnjiDatum ? new Date(odjel.zadnjiDatum).toLocaleDateString('sr-RS') : '';
+
+      // 4 reda po odjelu: PROJEKAT, SJEČA, OTPREMA, ZALIHA
+      // Red Tip je prva kolona, zatim odjel info, pa cijeli red iz OTPREMA sheeta
+      dataRows.push(['PROJEKAT', odjel.odjelNaziv, odjel.radiliste, odjel.izvodjac || '', datumFormatted, ...odjel.redovi.projekat]);
+      dataRows.push(['SJEČA', odjel.odjelNaziv, odjel.radiliste, odjel.izvodjac || '', datumFormatted, ...odjel.redovi.sjeca]);
+      dataRows.push(['OTPREMA', odjel.odjelNaziv, odjel.radiliste, odjel.izvodjac || '', datumFormatted, ...odjel.redovi.otprema]);
+      dataRows.push(['ZALIHA', odjel.odjelNaziv, odjel.radiliste, odjel.izvodjac || '', datumFormatted, ...odjel.redovi.sumaLager]);
+    });
+
+    // Zapiši podatke
+    if (dataRows.length > 0) {
+      cacheSheet.getRange(2, 1, dataRows.length, dataRows[0].length).setValues(dataRows);
+      Logger.log('Zapisano ' + dataRows.length + ' redova na cache sheet');
+    }
+
+    // Dodaj timestamp zadnjeg ažuriranja u A1
+    const metadataRow = ['ZADNJE AŽURIRANJE: ' + new Date().toLocaleString('sr-RS')];
+    cacheSheet.insertRowBefore(1);
+    cacheSheet.getRange(1, 1, 1, metadataRow.length).setValues([metadataRow]);
+    cacheSheet.getRange(1, 1).setFontWeight('bold').setFontColor('blue');
+
+    Logger.log('=== SYNC STANJE ODJELA END ===');
+    return { success: true, odjeliCount: filteredOdjeliData.length, rowsWritten: dataRows.length };
+
+  } catch (error) {
+    Logger.log('=== SYNC STANJE ODJELA ERROR ===');
+    Logger.log(error.toString());
+    throw error;
+  }
+}
+
+/**
+ * Setup dnevnog trigger-a za sinkronizaciju stanja odjela
+ * Poziva se ručno jednom da postavi automatsko izvršavanje
+ */
+function setupStanjeOdjelaDailyTrigger() {
+  // Obriši postojeće triggere za ovu funkciju
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(trigger => {
+    if (trigger.getHandlerFunction() === 'syncStanjeOdjela') {
+      ScriptApp.deleteTrigger(trigger);
+      Logger.log('Obrisan stari trigger za syncStanjeOdjela');
+    }
+  });
+
+  // Kreiraj novi trigger koji se izvršava svaki dan u 2:00 AM
+  ScriptApp.newTrigger('syncStanjeOdjela')
+    .timeBased()
+    .atHour(2)
+    .everyDays(1)
+    .create();
+
+  Logger.log('Kreiran novi dnevni trigger za syncStanjeOdjela (izvršavanje u 2:00 AM)');
+
+  // Odmah izvrši prvi put
+  syncStanjeOdjela();
+}
+
+/**
+ * STANJE ODJELA - Čita trenutno stanje iz cache sheeta
+ * Brža verzija koja čita već pripremljene podatke umjesto da prolazi kroz sve odjele
+ * Prikazuje po radilištima sa 4 reda: PROJEKAT, SJEČA, OTPREMA, ZALIHA
+ * Sortira po najsvježijim unosima u PRIMKA
+ */
+function handleStanjeOdjela(username, password) {
+  // Verify user
+  const user = verifyUser(username, password);
+  if (!user) {
+    return createJsonResponse({ error: 'Invalid credentials' }, false);
+  }
+
+  try {
+    Logger.log('=== HANDLE STANJE ODJELA START (from cache) ===');
+
+    // Fiksno sortimentno zaglavlje (D-U kolone)
+    const sortimentiNazivi = [
+      'F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'TRUPCI Č',
+      'CEL.DUGA', 'CEL.CIJEPANA', 'ČETINARI',
+      'F/L L', 'I L', 'II L', 'III L', 'TRUPCI L',
+      'OGR. DUGI', 'OGR. CIJEPANI', 'LIŠĆARI',
+      'SVEUKUPNO'
+    ];
+
+    // Otvori cache sheet
+    const indexSpreadsheet = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const cacheSheet = indexSpreadsheet.getSheetByName('STANJE_ODJELA_CACHE');
+
+    if (!cacheSheet) {
+      Logger.log('Cache sheet ne postoji, pozivam syncStanjeOdjela()');
+      syncStanjeOdjela();
+      // Ponovo otvori nakon sinkronizacije
+      const cacheSheetNew = indexSpreadsheet.getSheetByName('STANJE_ODJELA_CACHE');
+      if (!cacheSheetNew) {
+        throw new Error('Nije moguće kreirati cache sheet');
+      }
+      return handleStanjeOdjela(username, password); // Rekurzivno pozovi ponovo
+    }
+
+    // Čitaj podatke sa sheeta (preskoči prve 2 reda: metadata i header)
+    const dataRange = cacheSheet.getDataRange();
+    const allData = dataRange.getValues();
+
+    if (allData.length <= 2) {
+      Logger.log('Cache sheet je prazan, pozivam syncStanjeOdjela()');
+      syncStanjeOdjela();
+      return handleStanjeOdjela(username, password); // Rekurzivno pozovi ponovo
+    }
+
+    // Parse podatke sa sheeta
+    // Nova struktura: [Red Tip, Odjel Naziv, Radilište, Izvođač, Zadnji Datum, ...cijeli red iz OTPREMA]
+    const odjeliData = [];
+    const odjeliMap = new Map(); // Mapa: odjelNaziv -> odjel objekt
+
+    for (let i = 2; i < allData.length; i++) {
+      const row = allData[i];
+      const redTip = row[0]; // PROJEKAT, SJEČA, OTPREMA, ZALIHA
+      const odjelNaziv = row[1];
+      const radiliste = row[2];
+      const izvodjac = row[3];
+      const zadnjiDatumFormatted = row[4];
+      const dataRow = row.slice(5); // Cijeli red iz OTPREMA sheeta (sve kolone)
+
+      // Zadnja kolona u dataRow je SVEUKUPNO (na poziciji koja odgovara koloni U u OTPREMA)
+      const sveukupno = dataRow[dataRow.length - 1] || 0;
+
+      // Ako odjel nije u mapi, dodaj ga
+      if (!odjeliMap.has(odjelNaziv)) {
+        odjeliMap.set(odjelNaziv, {
+          odjel: odjelNaziv,
+          radiliste: radiliste,
+          zadnjiDatum: zadnjiDatumFormatted,
+          datumZadnjeSjece: zadnjiDatumFormatted,
+          projekat: 0,
+          sjeca: 0,
+          otprema: 0,
+          sumaPanj: 0,
+          izvođač: izvodjac || '',
+          realizacija: 0,
+          zadnjiDatumObj: null,
+          redovi: {
+            projekat: [],
+            sjeca: [],
+            otprema: [],
+            sumaLager: []
+          }
+        });
+      }
+
+      const odjel = odjeliMap.get(odjelNaziv);
+
+      // dataRow sadrži sve kolone iz OTPREMA sheeta (od A do kraja)
+      // Sortimenti su u kolonama D-U (indeksi 3-20 u originalnom sheetu, što je 3-20 u dataRow jer dataRow počinje od A=0)
+      // Izvuci samo sortimente (18 kolona: D-U)
+      const sortimentiData = dataRow.slice(3, 21); // Kolone D-U (indeksi 3-20, slice(3,21) jer je end ekskluzan)
+
+      if (redTip === 'PROJEKAT') {
+        odjel.redovi.projekat = sortimentiData;
+        odjel.projekat = parseFloat(sveukupno) || 0;
+      } else if (redTip === 'SJEČA') {
+        odjel.redovi.sjeca = sortimentiData;
+        odjel.sjeca = parseFloat(sveukupno) || 0;
+      } else if (redTip === 'OTPREMA') {
+        odjel.redovi.otprema = sortimentiData;
+        odjel.otprema = parseFloat(sveukupno) || 0;
+      } else if (redTip === 'ZALIHA') {
+        odjel.redovi.sumaLager = sortimentiData;
+        odjel.sumaPanj = parseFloat(sveukupno) || 0;
+      }
+    }
+
+    // Konvertuj mapu u niz i izračunaj realizaciju
+    odjeliMap.forEach(odjel => {
+      if (odjel.projekat > 0) {
+        odjel.realizacija = (odjel.sjeca / odjel.projekat) * 100;
+      }
+      odjeliData.push(odjel);
+    });
+
+    // Već je sortirano u syncStanjeOdjela, ali provjerimo opet
+    odjeliData.sort((a, b) => {
+      if (!a.zadnjiDatum && !b.zadnjiDatum) return 0;
+      if (!a.zadnjiDatum) return 1;
+      if (!b.zadnjiDatum) return -1;
+      return b.zadnjiDatum - a.zadnjiDatum;
+    });
+
+    Logger.log('=== HANDLE STANJE ODJELA END (from cache) ===');
+    Logger.log('Broj odjela iz cache-a: ' + odjeliData.length);
 
     return createJsonResponse({
       data: odjeliData,
@@ -3366,6 +3819,76 @@ function handleStanjeOdjela(username, password) {
 
   } catch (error) {
     Logger.log('=== HANDLE STANJE ODJELA ERROR ===');
+    Logger.log(error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+/**
+ * API Endpoint za ručno osvježavanje cache-a stanja odjela
+ * Samo admin korisnici mogu koristiti ovu funkciju
+ */
+function handleSyncStanjeOdjela(username, password) {
+  // Verify user
+  const user = verifyUser(username, password);
+  if (!user) {
+    return createJsonResponse({ error: 'Invalid credentials' }, false);
+  }
+
+  // Provjeri da li je korisnik admin
+  if (user.tip.toLowerCase() !== 'admin') {
+    return createJsonResponse({ error: 'Samo admin korisnici mogu osvježiti cache' }, false);
+  }
+
+  try {
+    Logger.log('=== HANDLE SYNC STANJE ODJELA START (manual refresh by ' + username + ') ===');
+
+    // Pozovi syncStanjeOdjela() funkciju
+    const result = syncStanjeOdjela();
+
+    Logger.log('=== HANDLE SYNC STANJE ODJELA END ===');
+    return createJsonResponse({
+      message: 'Cache uspješno osvježen',
+      ...result
+    }, true);
+
+  } catch (error) {
+    Logger.log('=== HANDLE SYNC STANJE ODJELA ERROR ===');
+    Logger.log(error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+/**
+ * API Endpoint za ručno pokretanje indeksiranja INDEX sheet-ova
+ * Samo admin korisnici mogu koristiti ovu funkciju
+ */
+function handleSyncIndex(username, password) {
+  // Verify user
+  const user = verifyUser(username, password);
+  if (!user) {
+    return createJsonResponse({ error: 'Invalid credentials' }, false);
+  }
+
+  // Provjeri da li je korisnik admin
+  if (user.tip.toLowerCase() !== 'admin') {
+    return createJsonResponse({ error: 'Samo admin korisnici mogu pokrenuti indeksiranje' }, false);
+  }
+
+  try {
+    Logger.log('=== HANDLE SYNC INDEX START (manual trigger by ' + username + ') ===');
+
+    // Pozovi syncIndexSheet() funkciju
+    syncIndexSheet();
+
+    Logger.log('=== HANDLE SYNC INDEX END ===');
+    return createJsonResponse({
+      message: 'Indeksiranje uspješno pokrenuto i završeno',
+      success: true
+    }, true);
+
+  } catch (error) {
+    Logger.log('=== HANDLE SYNC INDEX ERROR ===');
     Logger.log(error.toString());
     return createJsonResponse({ error: error.toString() }, false);
   }
@@ -3932,6 +4455,9 @@ function handleSaveDinamika(username, password, godina, mjeseciParam) {
       Logger.log('Added new row for year ' + godinaInt);
     }
 
+    // 🚀 CACHE: Invalidate all cache after successful write
+    invalidateAllCache();
+
     Logger.log('=== HANDLE SAVE DINAMIKA END ===');
     Logger.log('Successfully saved dinamika');
 
@@ -3946,5 +4472,239 @@ function handleSaveDinamika(username, password, godina, mjeseciParam) {
     return createJsonResponse({
       error: "Greška pri spremanju dinamike: " + error.toString()
     }, false);
+  }
+}
+
+// ========== MANIFEST ENDPOINT - Smart Cache Invalidation ==========
+// 📊 Vraća verziju i count podataka za pametnu invalidaciju keša
+function handleManifest() {
+  try {
+    Logger.log('Manifest endpoint called');
+
+    // Otvori spreadsheet sa podacima
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+
+    // Dohvati sheet-ove
+    const primacijaSheet = ss.getSheetByName('Primacija');
+    const otpremaSheet = ss.getSheetByName('Otprema');
+    const odjeliSheet = ss.getSheetByName('Odjeli');
+
+    // Broji redove (minus header red)
+    // getLastRow() vraća broj zadnjeg reda sa podacima
+    const primaciCount = primacijaSheet ? (primacijaSheet.getLastRow() - 1) : 0;
+    const otpremaciCount = otpremaSheet ? (otpremaSheet.getLastRow() - 1) : 0;
+    const odjeliCount = odjeliSheet ? (odjeliSheet.getLastRow() - 1) : 0;
+
+    // Generiši verziju - kombinacija svih count-ova
+    // Kad se doda nova sječa/otprema, count se mijenja → nova verzija
+    const version = `${primaciCount}-${otpremaciCount}-${odjeliCount}`;
+
+    Logger.log(`Manifest generated - Version: ${version}, Primaci: ${primaciCount}, Otpremaci: ${otpremaciCount}, Odjeli: ${odjeliCount}`);
+
+    // Vrati JSON odgovor
+    const manifestData = {
+      version: version,
+      lastUpdated: new Date().toISOString(),
+      data: {
+        primaci_count: primaciCount,
+        otpremaci_count: otpremaciCount,
+        odjeli_count: odjeliCount
+      }
+    };
+
+    return createJsonResponse(manifestData, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleManifest: ' + error.toString());
+    return createJsonResponse({
+      error: 'Greška pri generisanju manifesta: ' + error.toString()
+    }, false);
+  }
+}
+
+// ========== MANIFEST DATA ENDPOINT - Delta Sync Row Counts ==========
+// Vraća broj redova u Primacija i Otprema za delta sync
+function handleManifestData(username, password) {
+  try {
+    Logger.log('Manifest Data endpoint called');
+
+    // Provjeri autentikaciju
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    // Otvori spreadsheet sa podacima
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+
+    // Dohvati sheet-ove
+    const primacijaSheet = ss.getSheetByName('Primacija');
+    const otpremaSheet = ss.getSheetByName('Otprema');
+
+    // Broji redove (minus header red)
+    const primkaRowCount = primacijaSheet ? (primacijaSheet.getLastRow() - 1) : 0;
+    const otpremaRowCount = otpremaSheet ? (otpremaSheet.getLastRow() - 1) : 0;
+
+    Logger.log(`Manifest Data: Primka=${primkaRowCount}, Otprema=${otpremaRowCount}`);
+
+    // Vrati JSON odgovor
+    const manifestData = {
+      primkaRowCount: primkaRowCount,
+      otpremaRowCount: otpremaRowCount,
+      lastUpdated: new Date().toISOString()
+    };
+
+    return createJsonResponse(manifestData, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleManifestData: ' + error.toString());
+    return createJsonResponse({
+      error: 'Greška pri generisanju manifest data: ' + error.toString()
+    }, false);
+  }
+}
+
+// ========== DELTA PRIMKA ENDPOINT - Vraća samo nove redove ==========
+function handleDeltaPrimka(username, password, fromRow, toRow) {
+  try {
+    Logger.log(`Delta Primka endpoint called - fromRow: ${fromRow}, toRow: ${toRow}`);
+
+    // Provjeri autentikaciju
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    // Parse parametri
+    const fromRowInt = parseInt(fromRow);
+    const toRowInt = parseInt(toRow);
+
+    if (isNaN(fromRowInt) || isNaN(toRowInt) || fromRowInt < 1 || toRowInt < fromRowInt) {
+      return createJsonResponse({ error: 'Invalid row range' }, false);
+    }
+
+    // Otvori spreadsheet
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const primacijaSheet = ss.getSheetByName('Primacija');
+
+    if (!primacijaSheet) {
+      return createJsonResponse({ error: 'Primacija sheet not found' }, false);
+    }
+
+    const lastRow = primacijaSheet.getLastRow();
+
+    // Adjust toRow if it exceeds lastRow
+    const actualToRow = Math.min(toRowInt, lastRow - 1); // -1 for header
+    const numRows = actualToRow - fromRowInt + 1;
+
+    if (numRows <= 0) {
+      Logger.log('No new rows to fetch');
+      return createJsonResponse({ rows: [] }, true);
+    }
+
+    // Fetch rows (fromRow+1 jer je red 1 header)
+    const startRow = fromRowInt + 1; // +1 for header
+    const data = primacijaSheet.getRange(startRow, 1, numRows, primacijaSheet.getLastColumn()).getValues();
+
+    // Convert to JSON objects sa rowIndex
+    const rows = data.map((row, index) => ({
+      rowIndex: fromRowInt + index,
+      datum: row[0] ? formatDateHelper(row[0]) : '',
+      odjel: row[1] || '',
+      radiliste: row[2] || '',
+      izvodjac: row[3] || '',
+      primac: row[4] || '',
+      sortiment: row[5] || '',
+      kubici: parseFloat(row[6]) || 0
+    }));
+
+    Logger.log(`Delta Primka: Returning ${rows.length} rows`);
+    return createJsonResponse({ rows: rows }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleDeltaPrimka: ' + error.toString());
+    return createJsonResponse({
+      error: 'Greška pri fetchovanju delta primka: ' + error.toString()
+    }, false);
+  }
+}
+
+// ========== DELTA OTPREMA ENDPOINT - Vraća samo nove redove ==========
+function handleDeltaOtprema(username, password, fromRow, toRow) {
+  try {
+    Logger.log(`Delta Otprema endpoint called - fromRow: ${fromRow}, toRow: ${toRow}`);
+
+    // Provjeri autentikaciju
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    // Parse parametri
+    const fromRowInt = parseInt(fromRow);
+    const toRowInt = parseInt(toRow);
+
+    if (isNaN(fromRowInt) || isNaN(toRowInt) || fromRowInt < 1 || toRowInt < fromRowInt) {
+      return createJsonResponse({ error: 'Invalid row range' }, false);
+    }
+
+    // Otvori spreadsheet
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const otpremaSheet = ss.getSheetByName('Otprema');
+
+    if (!otpremaSheet) {
+      return createJsonResponse({ error: 'Otprema sheet not found' }, false);
+    }
+
+    const lastRow = otpremaSheet.getLastRow();
+
+    // Adjust toRow if it exceeds lastRow
+    const actualToRow = Math.min(toRowInt, lastRow - 1); // -1 for header
+    const numRows = actualToRow - fromRowInt + 1;
+
+    if (numRows <= 0) {
+      Logger.log('No new rows to fetch');
+      return createJsonResponse({ rows: [] }, true);
+    }
+
+    // Fetch rows (fromRow+1 jer je red 1 header)
+    const startRow = fromRowInt + 1; // +1 for header
+    const data = otpremaSheet.getRange(startRow, 1, numRows, otpremaSheet.getLastColumn()).getValues();
+
+    // Convert to JSON objects sa rowIndex
+    const rows = data.map((row, index) => ({
+      rowIndex: fromRowInt + index,
+      datum: row[0] ? formatDateHelper(row[0]) : '',
+      odjel: row[1] || '',
+      radiliste: row[2] || '',
+      kupac: row[3] || '',
+      otpremac: row[4] || '',
+      sortiment: row[5] || '',
+      kubici: parseFloat(row[6]) || 0
+    }));
+
+    Logger.log(`Delta Otprema: Returning ${rows.length} rows`);
+    return createJsonResponse({ rows: rows }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleDeltaOtprema: ' + error.toString());
+    return createJsonResponse({
+      error: 'Greška pri fetchovanju delta otprema: ' + error.toString()
+    }, false);
+  }
+}
+
+// Helper funkcija za formatiranje datuma
+function formatDateHelper(dateValue) {
+  if (!dateValue) return '';
+
+  try {
+    const date = new Date(dateValue);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch (e) {
+    return String(dateValue);
   }
 }

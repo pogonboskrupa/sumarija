@@ -17,7 +17,7 @@
         .header-left { display: flex; align-items: center; gap: 12px; }
         .header-logo { font-size: 28px; }
         .header-center { display: flex; align-items: center; justify-content: center; flex: 1; margin: 0 20px; }
-        .company-logo { height: 60px; width: auto; object-fit: contain; transition: all 0.3s ease; }
+        .company-logo { height: 90px; width: auto; object-fit: contain; transition: all 0.3s ease; }
         .company-logo:hover { transform: scale(1.05); }
         .header-title h1 { font-size: 18px; font-weight: 700; margin-bottom: 2px; color: #047857; }
         .header-title p { font-size: 12px; color: #6b7280; }
@@ -25,6 +25,10 @@
         .header-user { text-align: right; }
         .header-user-name { font-size: 13px; font-weight: 600; color: #1f2937; }
         .header-user-role { font-size: 11px; color: #6b7280; }
+        .desktop-view-toggle { }
+        .desktop-view-button { background: #f3f4f6; color: #374151; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
+        .desktop-view-button:hover { background: #e5e7eb; }
+        .desktop-view-button.active { background: #047857; color: white; }
         .user-menu { position: relative; }
         .user-menu-button { background: #f3f4f6; color: #374151; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .user-menu-button:hover { background: #e5e7eb; }
@@ -628,7 +632,7 @@
             .header-content { flex-direction: column; gap: 12px; width: 100%; }
             .header-left { width: 100%; }
             .header-center { margin: 10px 0; }
-            .company-logo { height: 50px; }
+            .company-logo { height: 70px; }
             .header-right { width: 100%; justify-content: space-between; }
             .header-logo { font-size: 24px; }
             .header-title h1 { font-size: 16px; }
@@ -1942,4 +1946,558 @@
         /* Hardware accelerate scrolling */
         * {
             -webkit-overflow-scrolling: touch;
+        }
+
+        /* ============================================ */
+        /* PROFESSIONAL TABLE STYLES - ADMIN PANEL */
+        /* High Contrast, Windows & Android Optimized */
+        /* ============================================ */
+
+        /* Base table improvements - HIGH CONTRAST */
+        table {
+            font-size: 15px;
+            background: #ffffff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        /* Table headers - DARK TEXT ON LIGHT BACKGROUND */
+        thead {
+            background: #f3f4f6;
+            border-bottom: 3px solid #d1d5db;
+        }
+
+        thead th {
+            color: #1f2937 !important; /* Dark text for high contrast */
+            font-weight: 700;
+            font-size: 13px;
+            padding: 16px 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #9ca3af;
+        }
+
+        /* Table body - HIGH CONTRAST */
+        tbody td {
+            color: #1f2937 !important; /* Dark text always */
+            font-size: 15px;
+            padding: 14px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        /* Row hover effects */
+        tbody tr:hover {
+            background: #f0f9ff !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transform: scale(1.001);
+        }
+
+        /* Zebra striping with good contrast */
+        tbody tr:nth-child(even) {
+            background: #f9fafb;
+        }
+
+        tbody tr:nth-child(odd) {
+            background: #ffffff;
+        }
+
+        /* Sticky first column - enhanced */
+        table td:first-child,
+        table th:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 10;
+            background: inherit;
+            font-weight: 600;
+            border-right: 2px solid #d1d5db;
+            box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Windows-optimized scrollbar */
+        .kupci-table-wrapper::-webkit-scrollbar,
+        .expert-table-wrapper::-webkit-scrollbar,
+        .worker-table-card::-webkit-scrollbar,
+        div[style*="overflow-x"]::-webkit-scrollbar {
+            height: 14px;
+            width: 14px;
+        }
+
+        .kupci-table-wrapper::-webkit-scrollbar-track,
+        .expert-table-wrapper::-webkit-scrollbar-track,
+        .worker-table-card::-webkit-scrollbar-track,
+        div[style*="overflow-x"]::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 8px;
+            margin: 4px;
+        }
+
+        .kupci-table-wrapper::-webkit-scrollbar-thumb,
+        .expert-table-wrapper::-webkit-scrollbar-thumb,
+        .worker-table-card::-webkit-scrollbar-thumb,
+        div[style*="overflow-x"]::-webkit-scrollbar-thumb {
+            background: #9ca3af;
+            border-radius: 8px;
+            border: 2px solid #f3f4f6;
+        }
+
+        .kupci-table-wrapper::-webkit-scrollbar-thumb:hover,
+        .expert-table-wrapper::-webkit-scrollbar-thumb:hover,
+        .worker-table-card::-webkit-scrollbar-thumb:hover,
+        div[style*="overflow-x"]::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+
+        /* Enhanced table wrappers - smooth scrolling */
+        .kupci-table-wrapper,
+        .expert-table-wrapper,
+        .mjesecni-table-wrapper {
+            overflow-x: auto;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+            margin: 0;
+            padding: 0;
+            border-radius: 8px;
+            background: #ffffff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* SVEUKUPNO column - HIGH CONTRAST with green background */
+        .col-sveukupno {
+            background: #d1fae5 !important;
+            color: #065f46 !important; /* Dark green text on light green background */
+            font-weight: 700 !important;
+            border-left: 3px solid #10b981 !important;
+            border-right: 3px solid #10b981 !important;
+        }
+
+        thead .col-sveukupno {
+            background: #10b981 !important;
+            color: #ffffff !important; /* White text on dark green header */
+        }
+
+        /* ČETINARI column - HIGH CONTRAST */
+        .col-cetinari {
+            background: #d1fae5 !important;
+            color: #065f46 !important; /* Dark green on light green */
+            font-weight: 700 !important;
+        }
+
+        thead .col-cetinari {
+            background: #059669 !important;
+            color: #ffffff !important;
+        }
+
+        /* LIŠĆARI column - HIGH CONTRAST */
+        .col-liscari {
+            background: #fed7aa !important;
+            color: #78350f !important; /* Dark brown on light orange */
+            font-weight: 700 !important;
+        }
+
+        thead .col-liscari {
+            background: #f59e0b !important;
+            color: #ffffff !important;
+        }
+
+        /* ============================================ */
+        /* ANDROID MOBILE OPTIMIZATION */
+        /* ============================================ */
+
+        @media (max-width: 768px) {
+            /* Touch-friendly sizing for Android */
+            table {
+                font-size: 14px;
+                min-width: 100%;
+            }
+
+            thead th {
+                padding: 14px 10px;
+                font-size: 11px;
+                line-height: 1.3;
+            }
+
+            tbody td {
+                padding: 12px 10px;
+                font-size: 14px;
+            }
+
+            /* Larger tap targets for mobile */
+            .btn {
+                min-height: 44px;
+                padding: 12px 20px;
+                font-size: 15px;
+            }
+
+            /* Improve scrolling performance on Android */
+            .kupci-table-wrapper,
+            .expert-table-wrapper,
+            .mjesecni-table-wrapper {
+                -webkit-overflow-scrolling: touch;
+                scroll-snap-type: x proximity;
+                overscroll-behavior-x: contain;
+            }
+
+            /* Better sticky columns on mobile */
+            table td:first-child,
+            table th:first-child {
+                min-width: 120px;
+                max-width: 150px;
+                font-size: 13px;
+            }
+
+            /* Horizontal scroll indicator for mobile */
+            .kupci-table-wrapper::after,
+            .expert-table-wrapper::after,
+            .mjesecni-table-wrapper::after {
+                content: '← Swipe →';
+                position: absolute;
+                bottom: 8px;
+                right: 8px;
+                background: rgba(31, 41, 55, 0.8);
+                color: #ffffff;
+                padding: 6px 12px;
+                border-radius: 16px;
+                font-size: 11px;
+                font-weight: 600;
+                pointer-events: none;
+                opacity: 0.7;
+                z-index: 5;
+            }
+
+            /* Hide scroll indicator after interaction */
+            .kupci-table-wrapper:active::after,
+            .expert-table-wrapper:active::after,
+            .mjesecni-table-wrapper:active::after {
+                opacity: 0;
+                transition: opacity 0.3s;
+            }
+        }
+
+        /* Small mobile devices (Android phones in portrait) */
+        @media (max-width: 480px) {
+            thead th {
+                padding: 10px 6px;
+                font-size: 10px;
+            }
+
+            tbody td {
+                padding: 10px 6px;
+                font-size: 13px;
+            }
+
+            table td:first-child,
+            table th:first-child {
+                min-width: 100px;
+                max-width: 120px;
+                font-size: 12px;
+            }
+
+            /* Compact controls for small screens */
+            .controls-bar {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .search-input {
+                width: 100%;
+                font-size: 15px;
+            }
+        }
+
+        /* ============================================ */
+        /* WINDOWS DESKTOP OPTIMIZATION */
+        /* ============================================ */
+
+        @media (min-width: 769px) {
+            /* Larger comfortable sizing for Windows */
+            table {
+                font-size: 15px;
+            }
+
+            thead th {
+                padding: 16px 14px;
+                font-size: 13px;
+            }
+
+            tbody td {
+                padding: 14px;
+                font-size: 15px;
+            }
+
+            /* Better mouse hover effects for Windows */
+            tbody tr:hover {
+                background: #eff6ff !important;
+                cursor: pointer;
+                transition: all 0.15s ease;
+            }
+
+            /* Smooth scrolling for mouse wheel on Windows */
+            .kupci-table-wrapper,
+            .expert-table-wrapper,
+            .mjesecni-table-wrapper {
+                scroll-behavior: smooth;
+            }
+
+            /* Enhanced sticky positioning for wide screens */
+            table td:first-child,
+            table th:first-child {
+                min-width: 160px;
+            }
+        }
+
+        /* Large Windows monitors (1920px+) */
+        @media (min-width: 1920px) {
+            table {
+                font-size: 16px;
+            }
+
+            thead th {
+                padding: 18px 16px;
+                font-size: 14px;
+            }
+
+            tbody td {
+                padding: 16px;
+                font-size: 16px;
+            }
+        }
+
+        /* ============================================ */
+        /* ENHANCED KUPCI TABLES - HIGH CONTRAST */
+        /* ============================================ */
+
+        .kupci-table thead th {
+            background: #047857 !important;
+            color: #ffffff !important; /* White on dark green */
+            border-bottom: 3px solid #065f46;
+        }
+
+        #kupci-godisnji-table thead th {
+            background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important;
+            color: #ffffff !important;
+        }
+
+        #kupci-mjesecni-table thead th {
+            background: linear-gradient(135deg, #0369a1 0%, #075985 100%) !important;
+            color: #ffffff !important;
+        }
+
+        /* Godišnji table - green theme with high contrast */
+        #kupci-godisnji-table tbody tr:nth-child(even) {
+            background: #f0fdf4;
+        }
+
+        #kupci-godisnji-table tbody tr:nth-child(odd) {
+            background: #ffffff;
+        }
+
+        #kupci-godisnji-table tbody tr:hover {
+            background: #dcfce7 !important;
+        }
+
+        /* Mjesečni table - blue theme with high contrast */
+        #kupci-mjesecni-table tbody tr:nth-child(even) {
+            background: #eff6ff;
+        }
+
+        #kupci-mjesecni-table tbody tr:nth-child(odd) {
+            background: #ffffff;
+        }
+
+        #kupci-mjesecni-table tbody tr:hover {
+            background: #dbeafe !important;
+        }
+
+        /* ============================================ */
+        /* IZVJEŠTAJI TABLES - HIGH CONTRAST */
+        /* ============================================ */
+
+        #izvjestaji-primka-table thead th,
+        #izvjestaji-otprema-table thead th {
+            background: #1f2937 !important;
+            color: #ffffff !important; /* White on dark gray */
+            border-bottom: 3px solid #374151;
+        }
+
+        #izvjestaji-primka-table tbody td,
+        #izvjestaji-otprema-table tbody td {
+            color: #1f2937 !important; /* Always dark text */
+        }
+
+        /* ============================================ */
+        /* ACCESSIBILITY & CONTRAST IMPROVEMENTS */
+        /* ============================================ */
+
+        /* Ensure all text is always readable */
+        table * {
+            color: inherit;
+        }
+
+        /* Force high contrast for all table text */
+        table tbody td,
+        table tbody td * {
+            color: #1f2937 !important;
+        }
+
+        /* Exception for colored backgrounds - use appropriate dark text */
+        .col-sveukupno,
+        .col-sveukupno * {
+            color: #065f46 !important;
+        }
+
+        .col-cetinari,
+        .col-cetinari * {
+            color: #065f46 !important;
+        }
+
+        .col-liscari,
+        .col-liscari * {
+            color: #78350f !important;
+        }
+
+        /* Headers always white on dark */
+        thead th,
+        thead th * {
+            color: #ffffff !important;
+        }
+
+        /* ============================================ */
+        /* FORCE DESKTOP VIEW - Override all responsive styles */
+        /* ============================================ */
+
+        body.force-desktop-view {
+            min-width: 1200px !important;
+            width: 1200px !important;
+            overflow-x: auto !important;
+        }
+
+        /* Override all mobile styles when force-desktop-view is active */
+        body.force-desktop-view .header {
+            flex-direction: row !important;
+            padding: 16px 24px !important;
+            flex-wrap: nowrap !important;
+        }
+
+        body.force-desktop-view .header-content {
+            flex-direction: row !important;
+            gap: 16px !important;
+            flex-wrap: nowrap !important;
+            justify-content: space-between !important;
+        }
+
+        body.force-desktop-view .header-left {
+            width: auto !important;
+            flex-shrink: 0 !important;
+        }
+
+        body.force-desktop-view .header-center {
+            margin: 0 20px !important;
+            flex: 0 0 auto !important;
+        }
+
+        body.force-desktop-view .company-logo {
+            height: 90px !important;
+        }
+
+        body.force-desktop-view .header-right {
+            width: auto !important;
+            gap: 16px !important;
+            flex-wrap: nowrap !important;
+            flex-shrink: 0 !important;
+        }
+
+        body.force-desktop-view .header-title h1 {
+            font-size: 18px !important;
+        }
+
+        body.force-desktop-view .header-title p {
+            font-size: 12px !important;
+        }
+
+        body.force-desktop-view .header-user {
+            display: block !important;
+        }
+
+        body.force-desktop-view .tabs-container {
+            overflow-x: auto !important;
+        }
+
+        body.force-desktop-view .tabs {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            gap: 4px !important;
+            padding: 0 !important;
+        }
+
+        body.force-desktop-view .tab {
+            padding: 14px 20px !important;
+            font-size: 14px !important;
+            white-space: nowrap !important;
+        }
+
+        body.force-desktop-view .section {
+            padding: 32px !important;
+        }
+
+        body.force-desktop-view .container {
+            padding: 32px 24px !important;
+            max-width: 1200px !important;
+        }
+
+        body.force-desktop-view table {
+            font-size: 13px !important;
+            width: 100% !important;
+        }
+
+        body.force-desktop-view .professional-monthly-table th,
+        body.force-desktop-view .professional-monthly-table td {
+            padding: 14px 18px !important;
+            font-size: 13px !important;
+        }
+
+        body.force-desktop-view .cards {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+        }
+
+        body.force-desktop-view .summary-cards {
+            grid-template-columns: repeat(4, 1fr) !important;
+        }
+
+        /* Prevent text from wrapping unnecessarily */
+        body.force-desktop-view .text-outline-firma {
+            font-size: 20px !important;
+        }
+
+        /* ============================================ */
+        /* PRINT OPTIMIZATION */
+        /* ============================================ */
+
+        @media print {
+            table {
+                break-inside: avoid;
+                font-size: 10pt;
+            }
+
+            thead {
+                display: table-header-group;
+            }
+
+            tbody tr {
+                break-inside: avoid;
+            }
+
+            /* Ensure contrast in print */
+            tbody td {
+                color: #000000 !important;
+            }
+
+            .col-sveukupno,
+            .col-cetinari,
+            .col-liscari {
+                background: #f3f4f6 !important;
+                color: #000000 !important;
+                border: 1px solid #000000 !important;
+            }
         }
