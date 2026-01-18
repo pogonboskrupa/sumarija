@@ -3948,9 +3948,13 @@ function onOpen() {
  * Glavna funkcija koja ažurira STANJE ZALIHA sheet
  * Čita podatke iz svih fajlova u ODJELI folderu i prikazuje stanje zaliha po odjelima
  */
+/**
+ * ⚡ ULTRA OPTIMIZOVANA verzija - OTVARA SVAKI FAJL SAMO JEDNOM
+ * Eliminisan dupli prolaz koji je uzrokovao "maximum execution time" grešku
+ */
 function azurirajStanjeZaliha() {
   try {
-    Logger.log('=== AŽURIRANJE STANJE ZALIHA - START ===');
+    Logger.log('=== AŽURIRANJE STANJE ZALIHA - START (OPTIMIZED) ===');
 
     // 1. Otvori INDEX spreadsheet
     const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
@@ -3973,26 +3977,31 @@ function azurirajStanjeZaliha() {
 
     const MAX_ODJELA = 25; // Limit da ne traje predugo i da ne prekorači execution time
 
-    // 4. PRVI PROLAZ: Prikupi sve odjele sa datumima zadnjeg unosa
-    Logger.log('Prikupljam odjele i njihove datume...');
-    let odjeliSaDatumima = [];
+    // 4. JEDAN PROLAZ: Prikupi podatke i obradi SVE ODJEDNOM
+    Logger.log('Prikupljam i procesujem odjele (JEDAN PROLAZ)...');
+    let odjeliSaPodacima = [];
 
     while (files.hasNext()) {
       const file = files.next();
       const odjelNaziv = file.getName();
 
       try {
+        // OTVORI FAJL SAMO JEDNOM
         const odjelSS = SpreadsheetApp.open(file);
         const primkaSheet = odjelSS.getSheetByName('PRIMKA');
+        const otpremaSheet = odjelSS.getSheetByName('OTPREMA');
 
-        if (!primkaSheet) {
-          continue; // Preskoči ako nema PRIMKA
+        // Preskoči ako nema potrebnih listova
+        if (!primkaSheet || !otpremaSheet) {
+          Logger.log(`  Preskačem ${odjelNaziv} - nema PRIMKA ili OTPREMA`);
+          continue;
         }
 
         // Pronađi maksimalni datum u PRIMKA listu (kolona B)
         const lastRow = primkaSheet.getLastRow();
         if (lastRow < 2) {
-          continue; // Nema podataka, samo zaglavlje
+          Logger.log(`  Preskačem ${odjelNaziv} - nema podataka`);
+          continue;
         }
 
         // Pročitaj sve datume iz kolone B (od reda 2 nadalje)
@@ -4009,106 +4018,85 @@ function azurirajStanjeZaliha() {
           }
         }
 
-        // Dodaj u niz ako ima validan datum
-        if (maxDatum) {
-          odjeliSaDatumima.push({
-            file: file,
-            naziv: odjelNaziv,
-            maxDatum: maxDatum
-          });
-          Logger.log(`  ${odjelNaziv}: zadnji unos ${maxDatum.toLocaleDateString()}`);
+        if (!maxDatum) {
+          Logger.log(`  Preskačem ${odjelNaziv} - nema validnih datuma`);
+          continue;
         }
 
+        // PROČITAJ SVE POTREBNE PODATKE ODJEDNOM (BATCH READ)
+        const otpremaData = otpremaSheet.getRange('D9:U13').getValues();
+
+        const sortimentiZaglavlje = otpremaData[0]; // Red 9
+        const projekatRed = otpremaData[1];          // Red 10
+        const sjecaRed = otpremaData[2];             // Red 11
+        const otpremaRed = otpremaData[3];           // Red 12
+        const sumaLagerRed = otpremaData[4];         // Red 13
+
+        // SAČUVAJ SVE PODATKE U NIZ
+        odjeliSaPodacima.push({
+          naziv: odjelNaziv,
+          maxDatum: maxDatum,
+          sortimentiZaglavlje: sortimentiZaglavlje,
+          projekatRed: projekatRed,
+          sjecaRed: sjecaRed,
+          otpremaRed: otpremaRed,
+          sumaLagerRed: sumaLagerRed
+        });
+
+        Logger.log(`  ✓ ${odjelNaziv}: ${maxDatum.toLocaleDateString()}`);
+
       } catch (error) {
-        Logger.log(`  ERROR prikupljanje ${odjelNaziv}: ${error.toString()}`);
+        Logger.log(`  ERROR ${odjelNaziv}: ${error.toString()}`);
       }
     }
 
-    Logger.log(`Prikupljeno ${odjeliSaDatumima.length} odjela sa datumima`);
+    Logger.log(`Prikupljeno ${odjeliSaPodacima.length} odjela sa podacima`);
 
     // 5. Sortiraj po datumu (najnoviji prvi)
-    odjeliSaDatumima.sort(function(a, b) {
+    odjeliSaPodacima.sort(function(a, b) {
       return b.maxDatum - a.maxDatum; // Descending
     });
 
     Logger.log('Odjeli sortirani po svježini (najnoviji prvi)');
 
-    // 6. DRUGI PROLAZ: Procesuj samo prvih MAX_ODJELA najsvježijih
+    // 6. Formatiraj podatke za upis (samo prvih MAX_ODJELA)
     let allData = [];
     let processedCount = 0;
-    let errorCount = 0;
 
-    const odjeliZaObraditi = odjeliSaDatumima.slice(0, MAX_ODJELA);
-    Logger.log(`Procesujem ${odjeliZaObraditi.length} najsvježijih odjela...`);
+    const odjeliZaUpis = odjeliSaPodacima.slice(0, MAX_ODJELA);
+    Logger.log(`Formatiram ${odjeliZaUpis.length} najsvježijih odjela za upis...`);
 
-    for (let i = 0; i < odjeliZaObraditi.length; i++) {
-      const odjelInfo = odjeliZaObraditi[i];
-      const odjelNaziv = odjelInfo.naziv;
-      const datumStr = odjelInfo.maxDatum.toLocaleDateString();
+    for (let i = 0; i < odjeliZaUpis.length; i++) {
+      const odjel = odjeliZaUpis[i];
       processedCount++;
 
-      try {
-        Logger.log(`[${processedCount}/${odjeliZaObraditi.length}] ${odjelNaziv} (${datumStr})`);
-        const odjelSS = SpreadsheetApp.open(odjelInfo.file);
-
-        // Provjeri da li postoje i PRIMKA i OTPREMA listovi
-        const primkaSheet = odjelSS.getSheetByName('PRIMKA');
-        const otpremaSheet = odjelSS.getSheetByName('OTPREMA');
-
-        if (!primkaSheet || !otpremaSheet) {
-          Logger.log(`  Preskačem - nema PRIMKA ili OTPREMA list`);
-          errorCount++;
-          continue;
-        }
-
-        // 7. Čitaj podatke iz OTPREMA lista
-        // Red 9: Zaglavlje sortimenata (D9:U9)
-        // Red 10: PROJEKAT - količine (D10:U10)
-        // Red 11: SJEČA (D11:U11)
-        // Red 12: OTPREMA (D12:U12)
-        // Red 13: Šuma-lager (D13:U13)
-
-        const sortimentiZaglavlje = otpremaSheet.getRange('D9:U9').getValues()[0];
-        const projekatRed = otpremaSheet.getRange('D10:U10').getValues()[0];
-        const sjecaRed = otpremaSheet.getRange('D11:U11').getValues()[0];
-        const otpremaRed = otpremaSheet.getRange('D12:U12').getValues()[0];
-        const sumaLagerRed = otpremaSheet.getRange('D13:U13').getValues()[0];
-
-        Logger.log(`  Pročitani podaci za ${odjelNaziv}`);
-
-        // 8. Formatiranje podataka za prikaz
-        // Dodaj prazan red prije svakog odjela (osim prvog)
-        if (allData.length > 0) {
-          allData.push([]); // Prazan red kao separator
-        }
-
-        // Red 1: Zaglavlje sa imenom odjela
-        allData.push(['ODJEL ' + odjelNaziv]);
-
-        // Red 2: SORTIMENTI zaglavlje (prazne kolone B i C, pa onda sortimenti od D)
-        allData.push(['SORTIMENTI:', '', '', ...sortimentiZaglavlje]);
-
-        // Red 3: PROJEKAT + podaci iz reda 10
-        allData.push(['PROJEKAT', '', '', ...projekatRed]);
-
-        // Red 4: SJEČA + podaci iz reda 11
-        allData.push(['SJEČA', '', '', ...sjecaRed]);
-
-        // Red 5: OTPREMA + podaci iz reda 12
-        allData.push(['OTPREMA', '', '', ...otpremaRed]);
-
-        // Red 6: ŠUMA LAGER + podaci iz reda 13
-        allData.push(['ŠUMA LAGER', '', '', ...sumaLagerRed]);
-
-      } catch (error) {
-        Logger.log(`ERROR processing ${odjelNaziv}: ${error.toString()}`);
-        errorCount++;
+      // Dodaj prazan red prije svakog odjela (osim prvog)
+      if (allData.length > 0) {
+        allData.push([]); // Prazan red kao separator
       }
+
+      // Red 1: Zaglavlje sa imenom odjela
+      allData.push(['ODJEL ' + odjel.naziv]);
+
+      // Red 2: SORTIMENTI zaglavlje (prazne kolone B i C, pa onda sortimenti od D)
+      allData.push(['SORTIMENTI:', '', '', ...odjel.sortimentiZaglavlje]);
+
+      // Red 3: PROJEKAT + podaci iz reda 10
+      allData.push(['PROJEKAT', '', '', ...odjel.projekatRed]);
+
+      // Red 4: SJEČA + podaci iz reda 11
+      allData.push(['SJEČA', '', '', ...odjel.sjecaRed]);
+
+      // Red 5: OTPREMA + podaci iz reda 12
+      allData.push(['OTPREMA', '', '', ...odjel.otpremaRed]);
+
+      // Red 6: ŠUMA LAGER + podaci iz reda 13
+      allData.push(['ŠUMA LAGER', '', '', ...odjel.sumaLagerRed]);
     }
 
-    Logger.log(`Procesovano ${processedCount} odjela (${errorCount} grešaka)`);
+    Logger.log(`Formatirano ${processedCount} odjela`);
 
-    // 9. Upiši sve podatke u STANJE ZALIHA sheet
+    // 7. Upiši sve podatke u STANJE ZALIHA sheet
     if (allData.length > 0) {
       Logger.log(`Upisujem ${allData.length} redova u STANJE ZALIHA sheet`);
 
@@ -4130,7 +4118,7 @@ function azurirajStanjeZaliha() {
       Logger.log(`Maksimalan broj kolona: ${maxCols}`);
       stanjeSheet.getRange(1, 1, allData.length, maxCols).setValues(allData);
 
-      // 10. Formatiraj sheet
+      // 8. Formatiraj sheet
       formatirajStanjeZalihaSheet(stanjeSheet);
 
       Logger.log('Podaci uspješno upisani i formatirani');
@@ -4142,8 +4130,10 @@ function azurirajStanjeZaliha() {
 
     // Prikaži poruku korisniku
     if (SpreadsheetApp.getUi) {
-      SpreadsheetApp.getUi().alert(`Ažurirano! Procesovano ${processedCount} odjela (${errorCount} grešaka).`);
+      SpreadsheetApp.getUi().alert(`✓ Ažurirano! Procesovano ${processedCount} najsvježijih odjela.`);
     }
+
+    return { success: true, processedCount: processedCount };
 
   } catch (error) {
     Logger.log('ERROR u azurirajStanjeZaliha: ' + error.toString());
