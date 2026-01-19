@@ -3727,3 +3727,4 @@ function handleDeltaOtprema(username, password, fromRow, toRow) {
       error: 'Greška pri fetchovanju delta otprema: ' + error.toString()
     }, false);
   }
+}
