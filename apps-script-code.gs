@@ -545,8 +545,7 @@ function createJsonResponse(data, success) {
 // ========================================
 // CACHESERVICE - In-Memory Caching for 10-20x Speed Boost
 // ========================================
-
-const CACHE_TTL = 180; // 3 minute cache (180 seconds)
+// Note: CACHE_TTL is defined in main.gs
 
 // Get cached data if available and fresh
 function getCachedData(key) {
