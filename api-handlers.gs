@@ -120,247 +120,10 @@ function handleStats(year, username, password) {
   return createJsonResponse(stats, true);
 }
 
-// Procesiranje PRIMKA sheet-a
-function processPrimkaData(data, stats, year) {
-  // INDEX_PRIMKA struktura:
-  // Kolona A: Odjel, B: Datum, ... U: SVEUKUPNO (indeks 20)
+// Service funkcije (processPrimkaData, processOtpremaData, processOdjeliDetails, createMonthlyStats)
+// su prenesene u services.gs radi eliminacije duplikata
 
-  Logger.log('=== PRIMKA DEBUG ===');
-  Logger.log('Total rows in PRIMKA: ' + data.length);
-
-  let processedRows = 0;
-  let skippedNoDatum = 0;
-  let skippedWrongYear = 0;
-  let totalSum = 0;
-
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
-    const odjel = row[0]; // kolona A - Odjel
-    const datum = row[1]; // kolona B - Datum
-    const kubik = parseFloat(row[20]) || 0; // kolona U (indeks 20) - SVEUKUPNO
-
-    if (!datum || !odjel) {
-      skippedNoDatum++;
-      continue;
-    }
-
-    const datumObj = parseDate(datum);
-    if (datumObj.getFullYear() !== parseInt(year)) {
-      skippedWrongYear++;
-      continue;
-    }
-
-    processedRows++;
-    totalSum += kubik;
-
-    if (processedRows <= 5) {
-      Logger.log('Row ' + i + ': Odjel=' + odjel + ', Datum=' + datum + ', Kubik=' + kubik);
-    }
-
-    // Ukupna primka
-    stats.totalPrimka += kubik;
-
-    // Mjesečna statistika
-    const mjesec = datumObj.getMonth();
-    stats.monthlyStats[mjesec].sječa += kubik;
-
-    // Statistika po odjelima
-    if (!stats.odjeliStats[odjel]) {
-      stats.odjeliStats[odjel] = {
-        sječa: 0,
-        otprema: 0,
-        zadnjaSjeca: 0,
-        datumZadnjeSjece: '',
-        projekat: 0,
-        ukupnoPosjeklo: 0,
-        zadnjiDatum: null
-      };
-    }
-
-    stats.odjeliStats[odjel].sječa += kubik;
-
-    // Provjeri da li je ovo zadnja sječa za odjel
-    if (!stats.odjeliStats[odjel].zadnjiDatum || datumObj > stats.odjeliStats[odjel].zadnjiDatum) {
-      stats.odjeliStats[odjel].zadnjiDatum = datumObj;
-      stats.odjeliStats[odjel].zadnjaSjeca = kubik;
-      stats.odjeliStats[odjel].datumZadnjeSjece = formatDate(datumObj);
-    }
-  }
-
-  Logger.log('Processed rows: ' + processedRows);
-  Logger.log('Skipped (no datum/odjel): ' + skippedNoDatum);
-  Logger.log('Skipped (wrong year): ' + skippedWrongYear);
-  Logger.log('Total PRIMKA sum: ' + totalSum);
-  Logger.log('=== END PRIMKA DEBUG ===');
-}
-
-// Procesiranje OTPREMA sheet-a
-function processOtpremaData(data, stats, year) {
-  // INDEX_OTPREMA struktura: ista kao INDEX_PRIMKA
-  // Kolona A: Odjel, B: Datum, ... U: SVEUKUPNO (indeks 20)
-
-  Logger.log('=== OTPREMA DEBUG ===');
-  Logger.log('Total rows in OTPREMA: ' + data.length);
-
-  let processedRows = 0;
-  let skippedNoDatum = 0;
-  let skippedWrongYear = 0;
-  let totalSum = 0;
-
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
-    const odjel = row[0]; // kolona A - Odjel
-    const datum = row[1]; // kolona B - Datum
-    const kubik = parseFloat(row[20]) || 0; // kolona U (indeks 20) - SVEUKUPNO
-
-    if (!datum || !odjel) {
-      skippedNoDatum++;
-      continue;
-    }
-
-    const datumObj = parseDate(datum);
-    if (datumObj.getFullYear() !== parseInt(year)) {
-      skippedWrongYear++;
-      continue;
-    }
-
-    processedRows++;
-    totalSum += kubik;
-
-    if (processedRows <= 5) {
-      Logger.log('Row ' + i + ': Odjel=' + odjel + ', Datum=' + datum + ', Kubik=' + kubik);
-    }
-
-    stats.totalOtprema += kubik;
-
-    const mjesec = datumObj.getMonth();
-    stats.monthlyStats[mjesec].otprema += kubik;
-
-    if (!stats.odjeliStats[odjel]) {
-      stats.odjeliStats[odjel] = {
-        sječa: 0,
-        otprema: 0,
-        zadnjaSjeca: 0,
-        datumZadnjeSjece: '',
-        projekat: 0,
-        ukupnoPosjeklo: 0
-      };
-    }
-
-    stats.odjeliStats[odjel].otprema += kubik;
-  }
-
-  Logger.log('Processed rows: ' + processedRows);
-  Logger.log('Skipped (no datum/odjel): ' + skippedNoDatum);
-  Logger.log('Skipped (wrong year): ' + skippedWrongYear);
-  Logger.log('Total OTPREMA sum: ' + totalSum);
-  Logger.log('=== END OTPREMA DEBUG ===');
-}
-
-// Procesiranje podataka o projektima (ne koristi se u novoj strukturi)
-function processOdjeliDetails(primkaSheet, stats) {
-  // INDEX_PRIMKA sada ima strukturu: Odjel(A) | Datum(B) | Primač(C) | Sortimenti(D-U)
-  // Ne sadrži podatke o projektovanoj masi i ukupno poseklo
-  // Postavi default vrednosti za sve odjele
-
-  for (let odjel in stats.odjeliStats) {
-    stats.odjeliStats[odjel].projekat = 0;
-    stats.odjeliStats[odjel].ukupnoPosjeklo = stats.odjeliStats[odjel].sječa; // Ukupno poseklo = sječa
-  }
-
-  Logger.log('processOdjeliDetails: postavljene default vrednosti (projekat=0, ukupnoPosjeklo=sječa)');
-}
-
-// Kreiranje prazne mjesečne statistike
-function createMonthlyStats() {
-  const mjeseci = [
-    'Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun',
-    'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'
-  ];
-
-  return mjeseci.map(mjesec => ({
-    mjesec: mjesec,
-    sječa: 0,
-    otprema: 0
-  }));
-}
-
-// Formatiranje datuma
-function formatDate(date) {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}.${month}.${year}`;
-}
-
-/**
- * KRITIČNA FUNKCIJA: Parsira datume iz Google Sheets
- *
- * PROBLEM: Google Sheets vraća datume kao Date objekte ILI stringove
- * Kada su stringovi u formatu "DD/MM/YYYY", JavaScript's new Date() ih
- * interpretira kao "MM/DD/YYYY" što uzrokuje da April i Oktobar budu zamijenjeni!
- *
- * RJEŠENJE: Ova funkcija detektuje format i parsira ispravno
- */
-function parseDate(datum) {
-  // Ako je već Date objekat, vrati ga direktno
-  if (datum instanceof Date) {
-    return datum;
-  }
-
-  // Ako je broj (timestamp), konvertuj u Date
-  if (typeof datum === 'number') {
-    return new Date(datum);
-  }
-
-  // Ako je string, parsuj pažljivo
-  if (typeof datum === 'string') {
-    const str = datum.trim();
-
-    // Format: DD/MM/YYYY ili DD.MM.YYYY ili DD-MM-YYYY
-    const ddmmyyyyPattern = /^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})$/;
-    const match = str.match(ddmmyyyyPattern);
-
-    if (match) {
-      const day = parseInt(match[1], 10);
-      const month = parseInt(match[2], 10) - 1; // JavaScript mjeseci su 0-indexed
-      const year = parseInt(match[3], 10);
-      return new Date(year, month, day);
-    }
-
-    // Fallback: pokušaj sa standardnim parserom (za ISO format)
-    const parsed = new Date(str);
-    if (!isNaN(parsed.getTime())) {
-      return parsed;
-    }
-  }
-
-  // Ako ništa ne radi, vrati nevažeći datum
-  return new Date(NaN);
-}
-
-// Pomoćna funkcija za JSON response
-function createJsonResponse(data, success) {
-  const output = ContentService.createTextOutput(JSON.stringify(data));
-  output.setMimeType(ContentService.MimeType.JSON);
-
-  // ✅ CORS Support - Try setHeader (V8 runtime), fallback if not available (Rhino)
-  try {
-    if (typeof output.setHeader === 'function') {
-      output.setHeader('Access-Control-Allow-Origin', '*');
-      output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-      Logger.log('[CORS] Headers set successfully using setHeader()');
-    } else {
-      Logger.log('[CORS] WARNING: setHeader not available (Rhino runtime?)');
-    }
-  } catch (e) {
-    Logger.log('[CORS] WARNING: setHeader failed: ' + e.toString());
-    // Continue without headers - CORS won't work but at least no error
-  }
-
-  return output;
-}
+// Utility funkcije (formatDate, parseDate, createJsonResponse) su u utils-triggers.gs
 
 // ========================================
 // CACHESERVICE - In-Memory Caching for 10-20x Speed Boost
@@ -828,19 +591,52 @@ function handleDashboard(year, username, password) {
     });
   }
 
+  // Učitaj dodatne podatke iz ODJELI foldera (radilište, izvođač, projekat)
+  const folder = DriveApp.getFolderById(ODJELI_FOLDER_ID);
+  const odjeliDetailsMap = {}; // Map: odjelNaziv -> { radiliste, izvodjac, projekat }
+
+  const files = folder.getFilesByType(MimeType.GOOGLE_SHEETS);
+  while (files.hasNext()) {
+    const file = files.next();
+    const odjelNaziv = file.getName();
+
+    try {
+      const odjelSS = SpreadsheetApp.open(file);
+      const primkaSheet = odjelSS.getSheetByName('PRIMKA');
+
+      if (primkaSheet) {
+        odjeliDetailsMap[odjelNaziv] = {
+          radiliste: primkaSheet.getRange('W2').getValue() || '',
+          izvodjac: primkaSheet.getRange('W3').getValue() || '',
+          projekat: parseFloat(primkaSheet.getRange('U11').getValue()) || 0
+        };
+      }
+    } catch (e) {
+      Logger.log(`Greška pri čitanju odjela ${odjelNaziv}: ${e.toString()}`);
+    }
+  }
+
   // Kreiraj prikaz po odjelima
   const odjeliPrikaz = [];
   for (const odjelNaziv in odjeliMap) {
     const odjel = odjeliMap[odjelNaziv];
+    const details = odjeliDetailsMap[odjelNaziv] || { radiliste: '', izvodjac: '', projekat: 0 };
+
+    // Izračunaj realizaciju %
+    let realizacija = 0;
+    if (details.projekat > 0) {
+      realizacija = (odjel.primka / details.projekat) * 100;
+    }
+
     odjeliPrikaz.push({
       odjel: odjelNaziv,
       sjeca: odjel.primka,
       otprema: odjel.otprema,
       stanje: odjel.primka - odjel.otprema,
       zadnjaSječa: odjel.zadnjaSječa ? formatDate(odjel.zadnjaSječa) : "",
-      radilište: "", // TODO: dodati ako ima u INDEX sheet-u
-      izvođač: "", // TODO: dodati ako ima u INDEX sheet-u
-      realizacija: 0 // TODO: dodati ako ima plan podatke
+      radilište: details.radiliste,
+      izvođač: details.izvodjac,
+      realizacija: realizacija
     });
   }
 
