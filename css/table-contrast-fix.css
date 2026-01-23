@@ -1,0 +1,123 @@
+/* ============================================ */
+/* 📊 TABLE CONTRAST FIX */
+/* Bolja čitljivost tabela - tamnije boje */
+/* ============================================ */
+
+/* Fix za LIŠĆARI kolonu - tamnije žuto/narandžasto */
+.col-group-liscari {
+    background: linear-gradient(to bottom, #fbbf24 0%, #f59e0b 100%) !important;
+    border-left: 2px solid #d97706 !important;
+    border-right: 2px solid #d97706 !important;
+    color: #78350f !important;
+    font-weight: 600 !important;
+}
+
+/* Fix za žute highlight redove - tamnija žuta */
+.worker-table tbody tr.mjesec-9 {
+    background: linear-gradient(to right, #fde047 0%, #fbbf24 100%) !important;
+}
+
+.worker-table tbody tr.mjesec-9:hover {
+    background: linear-gradient(to right, #fbbf24 0%, #f59e0b 100%) !important;
+    box-shadow: inset 4px 0 0 #d97706 !important;
+}
+
+/* Fix za narandžaste redove - dublji ton */
+.worker-table tbody tr.mjesec-10 {
+    background: linear-gradient(to right, #fb923c 0%, #f97316 100%) !important;
+}
+
+.worker-table tbody tr.mjesec-10:hover {
+    background: linear-gradient(to right, #f97316 0%, #ea580c 100%) !important;
+    box-shadow: inset 4px 0 0 #c2410c !important;
+}
+
+/* Fix za opće žute background-e */
+[style*="background: #fef3c7"],
+[style*="background: #fef9c3"],
+[style*="background: #fed7aa"] {
+    background: #fde047 !important; /* Tamnija žuta */
+    color: #78350f !important; /* Tamni tekst */
+}
+
+/* Fix za light yellow gradients */
+[style*="linear-gradient(135deg, #fffbeb"],
+[style*="linear-gradient(135deg, #fef3c7"] {
+    background: linear-gradient(135deg, #fde047 0%, #fbbf24 100%) !important;
+}
+
+/* Override inline styles sa světlim bojama */
+.month-row[style*="#fef3c7"],
+.data-row[style*="#fef3c7"],
+td[style*="background: #fef3c7"] {
+    background: #fde047 !important;
+    color: #78350f !important;
+}
+
+/* Općenito pravilo za sve svijetle žute ćelije */
+td[style*="background-color: rgb(254, 243, 199)"],
+td[style*="background-color: rgb(254, 249, 195)"],
+td[style*="background-color: rgb(254, 215, 170)"],
+td[style*="background: linear-gradient"][style*="254, 243"] {
+    background: #fbbf24 !important;
+    color: #78350f !important;
+    font-weight: 500 !important;
+}
+
+/* Fix za izvještaje tabele */
+.izvjestaj-table td[style*="background"],
+.izvjestaj-table th[style*="background"] {
+    /* Osiguraj dovoljnu kontrast */
+}
+
+.izvjestaj-table td[style*="#fef3c7"],
+.izvjestaj-table td[style*="#fef9c3"],
+.izvjestaj-table td[style*="#fed7aa"] {
+    background: #fbbf24 !important;
+    color: #78350f !important;
+}
+
+/* Specifično za mjesečni izvještaj tabele */
+#primac-mjesecni-content table td,
+#otpremac-mjesecni-content table td {
+    min-width: 80px;
+}
+
+#primac-mjesecni-content table td[style*="background"],
+#otpremac-mjesecni-content table td[style*="background"] {
+    font-weight: 500;
+}
+
+/* Svijetle žute ćelije -> Tamnije */
+#primac-mjesecni-content table td[style*="#fef3c7"],
+#primac-mjesecni-content table td[style*="#fef9c3"],
+#primac-mjesecni-content table td[style*="#fed7aa"],
+#otpremac-mjesecni-content table td[style*="#fef3c7"],
+#otpremac-mjesecni-content table td[style*="#fef9c3"],
+#otpremac-mjesecni-content table td[style*="#fed7aa"] {
+    background: #fbbf24 !important;
+    color: #78350f !important;
+    font-weight: 600 !important;
+}
+
+/* Badge warning - tamniji */
+.badge.warning {
+    background: #fbbf24 !important;
+    color: #78350f !important;
+}
+
+/* Cache status warning - tamniji */
+.cache-status.cache-loading {
+    background: #fbbf24 !important;
+    color: #78350f !important;
+}
+
+/* Ensure text contrast na svim svijetlim background-ima */
+*[style*="background: #fef"],
+*[style*="background: #ffc"],
+*[style*="background: #fed"],
+*[style*="background-color: rgb(254, 2"] {
+    color: #78350f !important;
+}
+
+console.log('[TABLE CONTRAST FIX] Loaded - Svijetle žute boje zamijenjene tamnijim');
