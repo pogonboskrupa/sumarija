@@ -6459,11 +6459,6 @@
 
         // Render izvjestaji table (primka or otprema)
         function renderIzvjestajiTable(data, sortimentiNazivi, tip) {
-            // 🔧 REDIRECT: Koristi fixed verziju ako je dostupna
-            if (window.renderIzvjestajiTableFixed) {
-                return window.renderIzvjestajiTableFixed(data, sortimentiNazivi, tip);
-            }
-
             const headerElem = document.getElementById('izvjestaji-' + tip + '-header');
             const bodyElem = document.getElementById('izvjestaji-' + tip + '-body');
 
@@ -6473,84 +6468,69 @@
                 return;
             }
 
-            // Build header
-            let headerHtml = '<tr><th style="position: sticky; left: 0; background: #f9fafb; z-index: 20; min-width: 200px;">Odjel</th>';
+            // Helper - provjera lišćari
+            function isLiscari(s) {
+                return s.includes(' L') || s.includes('OGR.') || s.includes('TRUPCI') || s === 'LIŠĆARI';
+            }
+            // Helper - provjera četinari
+            function isCetinari(s) {
+                return s.includes(' Č') || s.includes('CEL.') || s.includes('RUDNO') || s === 'ČETINARI';
+            }
+
+            // Build header - BEZ KLASA, samo inline stilovi
+            let headerHtml = '<tr><th style="position: sticky; left: 0; background: #f9fafb; z-index: 20; min-width: 200px; padding: 12px; font-weight: 600; text-align: left;">Odjel</th>';
             sortimentiNazivi.forEach(sortiment => {
-                const colClass = getColumnGroup(sortiment);
-                let extraClass = '';
-                let inlineStyle = '';
-
-                if (sortiment === 'ČETINARI') {
-                    extraClass = ' col-cetinari';
-                    inlineStyle = 'background: #059669; color: white; font-weight: 700; padding: 8px;';
-                } else if (sortiment === 'LIŠĆARI') {
-                    extraClass = ' col-liscari';
-                    inlineStyle = 'background: #f59e0b; color: white; font-weight: 700; padding: 8px;';
-                } else if (sortiment === 'SVEUKUPNO') {
-                    extraClass = ' col-sveukupno';
-                    inlineStyle = 'background: #dc2626; color: white; font-weight: 700; padding: 8px;';
-                } else if (sortiment.includes('TRUPCI') || sortiment === 'TRUPCI' || sortiment === 'TRUPCI Č' || sortiment === 'TRUPCI L') {
-                    // TRUPCI kolone - blago tamnija nijansa
-                    inlineStyle = 'background: #ea580c; color: white; font-weight: 700; padding: 8px;';
-                } else if (colClass === 'col-group-liscari') {
-                    // Ostale lišćari sortimenti - ista boja
-                    inlineStyle = 'background: #f59e0b; color: white; font-weight: 700; padding: 8px;';
-                } else if (colClass === 'col-group-cetinari') {
-                    // Pojedinačni četinari sortimenti
-                    inlineStyle = 'background: #059669; color: white; font-weight: 700; padding: 8px;';
+                let bgColor;
+                if (sortiment === 'SVEUKUPNO') {
+                    bgColor = '#dc2626';
+                } else if (isLiscari(sortiment)) {
+                    bgColor = '#f59e0b';
+                } else if (isCetinari(sortiment)) {
+                    bgColor = '#059669';
+                } else {
+                    bgColor = '#6b7280';
                 }
-
-                headerHtml += '<th class="sortiment-col right ' + colClass + extraClass + '" style="' + inlineStyle + '">' + sortiment + '</th>';
+                headerHtml += '<th style="background: ' + bgColor + '; color: white; font-weight: 700; padding: 12px; text-align: right; min-width: 80px;">' + sortiment + '</th>';
             });
             headerHtml += '</tr>';
             headerElem.innerHTML = headerHtml;
 
-            // Build body
+            // Build body - BEZ KLASA, samo inline stilovi
             let bodyHtml = '';
-            const totals = {};
-            sortimentiNazivi.forEach(s => totals[s] = 0);
-
             data.forEach((row, index) => {
-                const rowStyle = index % 2 === 0 ? 'background: #f9fafb;' : '';
-                bodyHtml += '<tr style="' + rowStyle + '">';
-                bodyHtml += '<td style="font-weight: 600; position: sticky; left: 0; background: ' + (index % 2 === 0 ? '#f9fafb' : 'white') + '; z-index: 9;">' + row.odjel + '</td>';
+                const rowBg = index % 2 === 0 ? '#f9fafb' : 'white';
+                bodyHtml += '<tr>';
+                bodyHtml += '<td style="font-weight: 600; position: sticky; left: 0; background: ' + rowBg + '; z-index: 9; padding: 10px; text-align: left;">' + row.odjel + '</td>';
 
                 sortimentiNazivi.forEach(sortiment => {
                     const value = row.sortimenti[sortiment] || 0;
-                    totals[sortiment] += value;
+                    let bgColor = 'transparent', textColor = '#374151';
 
-                    const colClass = getColumnGroup(sortiment);
-                    let extraClass = '';
-                    let inlineStyle = '';
-
-                    if (sortiment === 'ČETINARI') {
-                        extraClass = ' col-cetinari';
-                        inlineStyle = value > 0 ? 'background: #d1fae5; color: #065f46; font-weight: 600; padding: 8px;' : 'padding: 8px;';
-                    } else if (sortiment === 'LIŠĆARI') {
-                        extraClass = ' col-liscari';
-                        inlineStyle = value > 0 ? 'background: #fbbf24; color: #78350f; font-weight: 700; padding: 8px;' : 'padding: 8px;';
-                    } else if (sortiment === 'SVEUKUPNO') {
-                        extraClass = ' col-sveukupno';
-                        inlineStyle = value > 0 ? 'background: #fecaca; color: #7f1d1d; font-weight: 700; padding: 8px;' : 'padding: 8px;';
-                    } else if (sortiment.includes('TRUPCI') || sortiment === 'TRUPCI' || sortiment === 'TRUPCI Č' || sortiment === 'TRUPCI L') {
-                        // TRUPCI kolone - blago tamnija nijansa (#fbbf24 = medium amber)
-                        inlineStyle = value > 0 ? 'background: #fbbf24; color: #78350f; font-weight: 600; padding: 8px;' : 'padding: 8px;';
-                    } else if (colClass === 'col-group-liscari') {
-                        // Ostale lišćari sortimenti - svijetlija nijansa (#fed7aa = light amber)
-                        inlineStyle = value > 0 ? 'background: #fed7aa; color: #78350f; font-weight: 600; padding: 8px;' : 'padding: 8px;';
-                    } else if (colClass === 'col-group-cetinari') {
-                        // Pojedinačni četinari sortimenti
-                        inlineStyle = value > 0 ? 'background: #d1fae5; color: #065f46; font-weight: 600; padding: 8px;' : 'padding: 8px;';
+                    if (value > 0) {
+                        if (sortiment === 'SVEUKUPNO') {
+                            bgColor = '#fecaca';
+                            textColor = '#7f1d1d';
+                        } else if (sortiment === 'LIŠĆARI') {
+                            bgColor = '#fbbf24';
+                            textColor = '#78350f';
+                        } else if (sortiment === 'ČETINARI') {
+                            bgColor = '#a7f3d0';
+                            textColor = '#065f46';
+                        } else if (isLiscari(sortiment)) {
+                            bgColor = '#fed7aa';
+                            textColor = '#78350f';
+                        } else if (isCetinari(sortiment)) {
+                            bgColor = '#d1fae5';
+                            textColor = '#065f46';
+                        }
                     }
 
                     const displayValue = value === 0 ? '' : value.toFixed(2);
-                    bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="' + inlineStyle + '">' + displayValue + '</td>';
+                    bodyHtml += '<td style="background: ' + bgColor + '; color: ' + textColor + '; font-weight: ' + (value > 0 ? '600' : '400') + '; padding: 10px; text-align: right;">' + displayValue + '</td>';
                 });
 
                 bodyHtml += '</tr>';
             });
-
-            // UKUPNO row removed - only SVEUKUPNO column is shown
 
             bodyElem.innerHTML = bodyHtml;
         }
