@@ -6459,6 +6459,11 @@
 
         // Render izvjestaji table (primka or otprema)
         function renderIzvjestajiTable(data, sortimentiNazivi, tip) {
+            // 🔧 REDIRECT: Koristi fixed verziju ako je dostupna
+            if (window.renderIzvjestajiTableFixed) {
+                return window.renderIzvjestajiTableFixed(data, sortimentiNazivi, tip);
+            }
+
             const headerElem = document.getElementById('izvjestaji-' + tip + '-header');
             const bodyElem = document.getElementById('izvjestaji-' + tip + '-body');
 
