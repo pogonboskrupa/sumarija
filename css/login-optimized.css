@@ -9,6 +9,15 @@ body.login-active {
     background-attachment: fixed;
 }
 
+/* 🔧 KRITIČNO: Osiguraj da login screen nestane kada je hidden */
+#login-screen.hidden {
+    display: none !important;
+}
+
+.login-container.hidden {
+    display: none !important;
+}
+
 /* Login container - savršeno centrirano */
 .login-container {
     display: flex;
