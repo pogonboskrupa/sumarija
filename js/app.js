@@ -6480,12 +6480,12 @@
                     inlineStyle = 'background: #059669 !important; color: white !important; font-weight: 700 !important;';
                 } else if (sortiment === 'LIŠĆARI') {
                     extraClass = ' col-liscari';
-                    inlineStyle = 'background: #d97706 !important; color: white !important; font-weight: 700 !important;';
+                    inlineStyle = 'background: #f59e0b !important; color: white !important; font-weight: 700 !important;';
                 } else if (sortiment === 'SVEUKUPNO') {
                     extraClass = ' col-sveukupno';
                 } else if (colClass === 'col-group-liscari') {
-                    // Pojedinačni lišćari sortimenti (TRUPCI, OGR.DUGI, itd.)
-                    inlineStyle = 'background: #d97706 !important; color: white !important; font-weight: 700 !important;';
+                    // Pojedinačni lišćari sortimenti (TRUPCI, OGR.DUGI, itd.) - svi ista boja
+                    inlineStyle = 'background: #f59e0b !important; color: white !important; font-weight: 700 !important;';
                 } else if (colClass === 'col-group-cetinari') {
                     // Pojedinačni četinari sortimenti
                     inlineStyle = 'background: #059669 !important; color: white !important; font-weight: 700 !important;';
@@ -6522,9 +6522,12 @@
                         inlineStyle = value > 0 ? 'background: #fbbf24 !important; color: #78350f !important; font-weight: 700 !important;' : '';
                     } else if (sortiment === 'SVEUKUPNO') {
                         extraClass = ' col-sveukupno';
+                    } else if (sortiment.includes('TRUPCI') || sortiment === 'TRUPCI') {
+                        // TRUPCI kolone - blago tamnija nijansa od ostalih lišćari
+                        inlineStyle = value > 0 ? 'background: #fbbf24 !important; color: #78350f !important; font-weight: 600 !important;' : '';
                     } else if (colClass === 'col-group-liscari') {
-                        // Pojedinačni lišćari sortimenti (TRUPCI, OGR.DUGI, itd.)
-                        inlineStyle = value > 0 ? 'background: #fde047 !important; color: #78350f !important; font-weight: 600 !important;' : '';
+                        // Ostale lišćari sortimenti (F/L L, I L, II L, III L, OGR.DUGI, OGR.CIJEPANI) - ista boja
+                        inlineStyle = value > 0 ? 'background: #fed7aa !important; color: #78350f !important; font-weight: 600 !important;' : '';
                     } else if (colClass === 'col-group-cetinari') {
                         // Pojedinačni četinari sortimenti
                         inlineStyle = value > 0 ? 'background: #d1fae5 !important; color: #065f46 !important; font-weight: 600 !important;' : '';
