@@ -1,0 +1,47 @@
+# Node modules
+node_modules/
+package-lock.json
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build files
+dist/
+build/
+
+# Original monolithic file (keep as backup, don't push to Apps Script)
+apps-script-code.gs
+apps-script-code-improved.gs
+
+# Documentation (don't push to Apps Script)
+*.md
+README.md
+CLASP-DEPLOYMENT.md
+
+# Frontend files (don't push to Apps Script)
+public/
+index.html
+script.js
+style.css

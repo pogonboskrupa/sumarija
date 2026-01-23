@@ -8,18 +8,14 @@
 
     <!-- Preload -->
     <link rel="preload" href="css/main.css" as="style">
-    <link rel="preload" href="css/login-optimized.css" as="style">
     <link rel="preload" href="js/cache-helper.js" as="script">
     <link rel="preload" href="js/api-optimized.js" as="script">
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="alternate icon" type="image/png" href="favicon.png">
 
-    <!-- CSS -->
+    <!-- Main CSS -->
     <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/login-optimized.css">
-    <link rel="stylesheet" href="css/table-contrast-fix.css">
 
     <!-- Preconnect -->
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
@@ -27,9 +23,6 @@
     <!-- Performance Modules -->
     <script src="js/cache-helper.js" defer></script>
     <script src="js/api-optimized.js" defer></script>
-
-    <!-- Fixes -->
-    <script src="js/week-fix.js" defer></script>
 
     <!-- Offline-First -->
     <script src="idb-helper.js" defer></script>
@@ -62,26 +55,24 @@
                 navigator.serviceWorker.register('/service-worker.js').catch(() => {});
             });
         }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const loginScreen = document.getElementById('login-screen');
-            if (loginScreen && !loginScreen.classList.contains('hidden')) {
-                document.body.classList.add('login-active');
-            }
-        });
     </script>
 </head>
-<body class="login-active">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Instant Offline-First Modules -->
+    <script src="idb-helper.js"></script>
+    <script src="data-sync.js"></script>
+</head>
+<body>
     <!-- Toast Notification Container -->
     <div id="toast-container" class="toast-container"></div>
 
-    <!-- LOGIN SCREEN -->
     <div id="login-screen" class="login-container">
         <div class="login-box">
-            <div class="logo-container">
-                <img src="logo-zuti.png" alt="ŠPD Unsko-Sanske Šume Logo">
-                <h3 class="text-outline-firma">ŠPD "UNSKO-SANSKE ŠUME"</h3>
-                <h4 class="company-subtitle">BOSANSKA KRUPA</h4>
+            <!-- Logo Container -->
+            <div style="text-align: center; margin-bottom: 24px;">
+                <img src="logo-zuti.png" alt="ŠPD Unsko-Sanske Šume Logo" style="width: 180px; height: auto; margin-bottom: 16px;">
+                <h3 class="text-outline-firma" style="font-size: 16px; margin-bottom: 4px; letter-spacing: 0.5px;">ŠPD "UNSKO-SANSKE ŠUME"</h3>
+                <h4 style="font-size: 14px; font-weight: 600; color: #6b7280; margin-bottom: 8px;">BOSANSKA KRUPA</h4>
             </div>
 
             <h2>Šumarija</h2>
@@ -92,19 +83,19 @@
                 
                 <div class="form-group">
                     <label>Korisničko ime</label>
-                    <input type="text" id="username" placeholder="Email ili username" required autocomplete="username">
+                    <input type="text" id="username" placeholder="Email ili username" required>
                 </div>
                 
                 <div class="form-group">
                     <label>Šifra</label>
-                    <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+                    <input type="password" id="password" placeholder="••••••••" required>
                 </div>
                 
                 <button type="submit" class="btn" id="login-btn">Prijavi se</button>
             </form>
         </div>
     </div>
-
+    
     <div id="app-screen" class="hidden">
         <div class="header">
             <div class="header-content">
