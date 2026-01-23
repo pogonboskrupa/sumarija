@@ -6477,18 +6477,22 @@
 
                 if (sortiment === 'ČETINARI') {
                     extraClass = ' col-cetinari';
-                    inlineStyle = 'background: #059669 !important; color: white !important; font-weight: 700 !important;';
+                    inlineStyle = 'background: #059669; color: white; font-weight: 700; padding: 8px;';
                 } else if (sortiment === 'LIŠĆARI') {
                     extraClass = ' col-liscari';
-                    inlineStyle = 'background: #d97706 !important; color: white !important; font-weight: 700 !important;';
+                    inlineStyle = 'background: #f59e0b; color: white; font-weight: 700; padding: 8px;';
                 } else if (sortiment === 'SVEUKUPNO') {
                     extraClass = ' col-sveukupno';
+                    inlineStyle = 'background: #dc2626; color: white; font-weight: 700; padding: 8px;';
+                } else if (sortiment.includes('TRUPCI') || sortiment === 'TRUPCI' || sortiment === 'TRUPCI Č' || sortiment === 'TRUPCI L') {
+                    // TRUPCI kolone - blago tamnija nijansa
+                    inlineStyle = 'background: #ea580c; color: white; font-weight: 700; padding: 8px;';
                 } else if (colClass === 'col-group-liscari') {
-                    // Pojedinačni lišćari sortimenti (TRUPCI, OGR.DUGI, itd.)
-                    inlineStyle = 'background: #d97706 !important; color: white !important; font-weight: 700 !important;';
+                    // Ostale lišćari sortimenti - ista boja
+                    inlineStyle = 'background: #f59e0b; color: white; font-weight: 700; padding: 8px;';
                 } else if (colClass === 'col-group-cetinari') {
                     // Pojedinačni četinari sortimenti
-                    inlineStyle = 'background: #059669 !important; color: white !important; font-weight: 700 !important;';
+                    inlineStyle = 'background: #059669; color: white; font-weight: 700; padding: 8px;';
                 }
 
                 headerHtml += '<th class="sortiment-col right ' + colClass + extraClass + '" style="' + inlineStyle + '">' + sortiment + '</th>';
@@ -6516,18 +6520,22 @@
 
                     if (sortiment === 'ČETINARI') {
                         extraClass = ' col-cetinari';
-                        inlineStyle = value > 0 ? 'background: #d1fae5 !important; color: #065f46 !important; font-weight: 600 !important;' : '';
+                        inlineStyle = value > 0 ? 'background: #d1fae5; color: #065f46; font-weight: 600; padding: 8px;' : 'padding: 8px;';
                     } else if (sortiment === 'LIŠĆARI') {
                         extraClass = ' col-liscari';
-                        inlineStyle = value > 0 ? 'background: #fbbf24 !important; color: #78350f !important; font-weight: 700 !important;' : '';
+                        inlineStyle = value > 0 ? 'background: #fbbf24; color: #78350f; font-weight: 700; padding: 8px;' : 'padding: 8px;';
                     } else if (sortiment === 'SVEUKUPNO') {
                         extraClass = ' col-sveukupno';
+                        inlineStyle = value > 0 ? 'background: #fecaca; color: #7f1d1d; font-weight: 700; padding: 8px;' : 'padding: 8px;';
+                    } else if (sortiment.includes('TRUPCI') || sortiment === 'TRUPCI' || sortiment === 'TRUPCI Č' || sortiment === 'TRUPCI L') {
+                        // TRUPCI kolone - blago tamnija nijansa (#fbbf24 = medium amber)
+                        inlineStyle = value > 0 ? 'background: #fbbf24; color: #78350f; font-weight: 600; padding: 8px;' : 'padding: 8px;';
                     } else if (colClass === 'col-group-liscari') {
-                        // Pojedinačni lišćari sortimenti (TRUPCI, OGR.DUGI, itd.)
-                        inlineStyle = value > 0 ? 'background: #fde047 !important; color: #78350f !important; font-weight: 600 !important;' : '';
+                        // Ostale lišćari sortimenti - svijetlija nijansa (#fed7aa = light amber)
+                        inlineStyle = value > 0 ? 'background: #fed7aa; color: #78350f; font-weight: 600; padding: 8px;' : 'padding: 8px;';
                     } else if (colClass === 'col-group-cetinari') {
                         // Pojedinačni četinari sortimenti
-                        inlineStyle = value > 0 ? 'background: #d1fae5 !important; color: #065f46 !important; font-weight: 600 !important;' : '';
+                        inlineStyle = value > 0 ? 'background: #d1fae5; color: #065f46; font-weight: 600; padding: 8px;' : 'padding: 8px;';
                     }
 
                     const displayValue = value === 0 ? '' : value.toFixed(2);
