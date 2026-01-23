@@ -201,77 +201,8 @@ td[style*="background: linear-gradient"][style*="254, 243"] {
 
 /* ============================================ */
 /* 🔧 FIX ZA IZVJEŠTAJE (Mjesečni izvještaj po odjelima) */
-/* Fix za TRUPCI kolone u mjesečnim izvještajima */
+/* CSS PRAVILA OBRISANA - koristi se js/izvjestaji-fix.js sa inline stilovima */
 /* ============================================ */
-
-/* Izvještaji tabele - sve col-group-liscari kolone (TRUPCI i ostali lišćari) */
-#izvjestaji-primka-table .col-group-liscari,
-#izvjestaji-otprema-table .col-group-liscari {
-    background: linear-gradient(to bottom, #fbbf24 0%, #f59e0b 100%) !important;
-    color: #78350f !important;
-    font-weight: 600 !important;
-}
-
-/* Header za TRUPCI i sve lišćari sortimente u izvještajima */
-#izvjestaji-primka-table thead .col-group-liscari,
-#izvjestaji-otprema-table thead .col-group-liscari {
-    background: #d97706 !important;
-    color: white !important;
-    font-weight: 700 !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-/* Body cells za TRUPCI u izvještajima - tamniji background sa tamnim tekstom */
-#izvjestaji-primka-table tbody .col-group-liscari,
-#izvjestaji-otprema-table tbody .col-group-liscari {
-    background: #fde047 !important;
-    color: #78350f !important;
-    font-weight: 600 !important;
-}
-
-/* Agregat kolone u izvještajima - col-liscari (LIŠĆARI ukupno) */
-#izvjestaji-primka-table .col-liscari,
-#izvjestaji-otprema-table .col-liscari {
-    background: #fbbf24 !important;
-    color: #78350f !important;
-    font-weight: 700 !important;
-}
-
-/* Header za LIŠĆARI agregat u izvještajima */
-#izvjestaji-primka-table thead .col-liscari,
-#izvjestaji-otprema-table thead .col-liscari {
-    background: #d97706 !important;
-    color: white !important;
-}
-
-/* Override inline styles u izvještajima */
-#izvjestaji-primka-table tbody td.col-group-liscari[style],
-#izvjestaji-otprema-table tbody td.col-group-liscari[style] {
-    color: #78350f !important;
-    background: #fde047 !important;
-}
-
-/* Fix za col-cetinari u izvještajima (zelene kolone) */
-#izvjestaji-primka-table .col-group-cetinari,
-#izvjestaji-otprema-table .col-group-cetinari {
-    background: linear-gradient(to bottom, #d1fae5 0%, #a7f3d0 100%) !important;
-    color: #065f46 !important;
-    font-weight: 600 !important;
-}
-
-#izvjestaji-primka-table thead .col-group-cetinari,
-#izvjestaji-otprema-table thead .col-group-cetinari {
-    background: #059669 !important;
-    color: white !important;
-    font-weight: 700 !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-#izvjestaji-primka-table tbody .col-group-cetinari,
-#izvjestaji-otprema-table tbody .col-group-cetinari {
-    background: #d1fae5 !important;
-    color: #065f46 !important;
-}
 
 /* TABLE CONTRAST FIX - Loaded successfully */
 /* Svijetle žute boje zamijenjene tamnijim + TRUPCI fix za sve tabele */
