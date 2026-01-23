@@ -30,7 +30,6 @@
 
     <!-- Fixes -->
     <script src="js/week-fix.js" defer></script>
-    <script src="js/izvjestaji-fix.js" defer></script>
 
     <!-- Offline-First -->
     <script src="idb-helper.js" defer></script>
@@ -1931,44 +1930,6 @@
             </div>
         </div>
 
-        <!-- ADMIN IZVJEŠTAJI CONTENT - Kartice sa linkovima -->
-        <div id="izvjestaji-admin-content" class="container hidden">
-            <div class="page-header">
-                <div class="page-header-left">
-                    <h1>📋 Izvještaji</h1>
-                    <p>Odaberite tip izvještaja</p>
-                </div>
-            </div>
-
-            <!-- Kartice sa opcijama izvještaja -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-top: 30px;">
-
-                <!-- Dinamika -->
-                <div class="card" onclick="switchTab('dinamika')" style="cursor: pointer; transition: transform 0.2s; hover: transform: translateY(-4px);">
-                    <div style="padding: 24px;">
-                        <h2 style="margin: 0 0 12px 0; font-size: 24px;">📊 Dinamika</h2>
-                        <p style="color: #6b7280; margin: 0;">Planirana mjesečna dinamika sječe (m³) za tekuću godinu</p>
-                    </div>
-                </div>
-
-                <!-- Uporedba godina -->
-                <div class="card" onclick="switchTab('uporedba-godina')" style="cursor: pointer; transition: transform 0.2s;">
-                    <div style="padding: 24px;">
-                        <h2 style="margin: 0 0 12px 0; font-size: 24px;">📊 Uporedba godina</h2>
-                        <p style="color: #6b7280; margin: 0;">Side-by-side prikaz sječe i otpreme po godinama</p>
-                    </div>
-                </div>
-
-                <!-- Mjesečni izvještaj po odjelima -->
-                <div class="card" onclick="switchTab('izvjestaji')" style="cursor: pointer; transition: transform 0.2s;">
-                    <div style="padding: 24px;">
-                        <h2 style="margin: 0 0 12px 0; font-size: 24px;">📅 Mjesečni izvještaj</h2>
-                        <p style="color: #6b7280; margin: 0;">Detaljan prikaz sječe i otpreme po odjelima</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- PRIMAC IZVJEŠTAJI CONTENT -->
         <div id="izvjestaji-primac-content" class="container hidden">
             <div class="page-header">
@@ -2147,75 +2108,6 @@
                             <thead id="otpremac-mjesecni-header"></thead>
                             <tbody id="otpremac-mjesecni-body"></tbody>
                             <tfoot id="otpremac-mjesecni-footer"></tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- IZVJEŠTAJI CONTENT -->
-        <div id="izvjestaji-content" class="container hidden">
-            <div class="page-header">
-                <div class="page-header-left">
-                    <h1>📋 Izvještaji</h1>
-                    <p>Detaljan prikaz sječe i otpreme po odjelima</p>
-                </div>
-            </div>
-
-            <!-- MJESEČNI IZVJEŠTAJ (bez podmenija) -->
-            <div id="mjesecni-izvjestaj" class="sub-content">
-                <div class="page-header" style="margin-top: 0;">
-                    <div class="page-header-left">
-                        <h2>📅 Mjesečni izvještaj</h2>
-                    </div>
-                    <div class="page-header-right">
-                        <select id="izvjestaji-year-select" class="year-select" onchange="loadIzvjestaji()">
-                            <option value="2026" selected>2026</option></select>
-                        <select id="izvjestaji-month-select" class="month-select" onchange="loadIzvjestaji()">
-                            <option value="0">Januar</option>
-                            <option value="1">Februar</option>
-                            <option value="2">Mart</option>
-                            <option value="3">April</option>
-                            <option value="4">Maj</option>
-                            <option value="5">Juni</option>
-                            <option value="6">Juli</option>
-                            <option value="7">August</option>
-                            <option value="8">Septembar</option>
-                            <option value="9">Oktobar</option>
-                            <option value="10">Novembar</option>
-                            <option value="11">Decembar</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- SJEČA (PRIMKA) PO ODJELIMA -->
-                <div class="section">
-                    <h2>🌲 Sječa po odjelima - <span id="izvjestaji-primka-title"></span></h2>
-                    <p style="color: #6b7280; margin-bottom: 20px;">Spisak odjela sa sortimentnim prikazom</p>
-                    <div class="controls-bar">
-                        <input type="text" class="search-input" id="izvjestaji-primka-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterIzvjestajiPrimkaTable()">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('izvjestaji-primka')">📥 Export CSV</button>
-                    </div>
-                    <div style="overflow-x: auto;">
-                        <table id="izvjestaji-primka-table">
-                            <thead id="izvjestaji-primka-header"></thead>
-                            <tbody id="izvjestaji-primka-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- OTPREMA PO ODJELIMA -->
-                <div class="section">
-                    <h2>🚛 Otprema po odjelima - <span id="izvjestaji-otprema-title"></span></h2>
-                    <p style="color: #6b7280; margin-bottom: 20px;">Spisak odjela sa sortimentnim prikazom</p>
-                    <div class="controls-bar">
-                        <input type="text" class="search-input" id="izvjestaji-otprema-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterIzvjestajiOtpremaTable()">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('izvjestaji-otprema')">📥 Export CSV</button>
-                    </div>
-                    <div style="overflow-x: auto;">
-                        <table id="izvjestaji-otprema-table">
-                            <thead id="izvjestaji-otprema-header"></thead>
-                            <tbody id="izvjestaji-otprema-body"></tbody>
                         </table>
                     </div>
                 </div>
