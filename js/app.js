@@ -6473,11 +6473,25 @@
             sortimentiNazivi.forEach(sortiment => {
                 const colClass = getColumnGroup(sortiment);
                 let extraClass = '';
-                if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
-                else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
-                else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+                let inlineStyle = '';
 
-                headerHtml += '<th class="sortiment-col right ' + colClass + extraClass + '">' + sortiment + '</th>';
+                if (sortiment === 'ČETINARI') {
+                    extraClass = ' col-cetinari';
+                    inlineStyle = 'background: #059669 !important; color: white !important; font-weight: 700 !important;';
+                } else if (sortiment === 'LIŠĆARI') {
+                    extraClass = ' col-liscari';
+                    inlineStyle = 'background: #d97706 !important; color: white !important; font-weight: 700 !important;';
+                } else if (sortiment === 'SVEUKUPNO') {
+                    extraClass = ' col-sveukupno';
+                } else if (colClass === 'col-group-liscari') {
+                    // Pojedinačni lišćari sortimenti (TRUPCI, OGR.DUGI, itd.)
+                    inlineStyle = 'background: #d97706 !important; color: white !important; font-weight: 700 !important;';
+                } else if (colClass === 'col-group-cetinari') {
+                    // Pojedinačni četinari sortimenti
+                    inlineStyle = 'background: #059669 !important; color: white !important; font-weight: 700 !important;';
+                }
+
+                headerHtml += '<th class="sortiment-col right ' + colClass + extraClass + '" style="' + inlineStyle + '">' + sortiment + '</th>';
             });
             headerHtml += '</tr>';
             headerElem.innerHTML = headerHtml;
@@ -6498,12 +6512,26 @@
 
                     const colClass = getColumnGroup(sortiment);
                     let extraClass = '';
-                    if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
-                    else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
-                    else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
+                    let inlineStyle = '';
+
+                    if (sortiment === 'ČETINARI') {
+                        extraClass = ' col-cetinari';
+                        inlineStyle = value > 0 ? 'background: #d1fae5 !important; color: #065f46 !important; font-weight: 600 !important;' : '';
+                    } else if (sortiment === 'LIŠĆARI') {
+                        extraClass = ' col-liscari';
+                        inlineStyle = value > 0 ? 'background: #fbbf24 !important; color: #78350f !important; font-weight: 700 !important;' : '';
+                    } else if (sortiment === 'SVEUKUPNO') {
+                        extraClass = ' col-sveukupno';
+                    } else if (colClass === 'col-group-liscari') {
+                        // Pojedinačni lišćari sortimenti (TRUPCI, OGR.DUGI, itd.)
+                        inlineStyle = value > 0 ? 'background: #fde047 !important; color: #78350f !important; font-weight: 600 !important;' : '';
+                    } else if (colClass === 'col-group-cetinari') {
+                        // Pojedinačni četinari sortimenti
+                        inlineStyle = value > 0 ? 'background: #d1fae5 !important; color: #065f46 !important; font-weight: 600 !important;' : '';
+                    }
 
                     const displayValue = value === 0 ? '' : value.toFixed(2);
-                    bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '">' + displayValue + '</td>';
+                    bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="' + inlineStyle + '">' + displayValue + '</td>';
                 });
 
                 bodyHtml += '</tr>';
