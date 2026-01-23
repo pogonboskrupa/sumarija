@@ -1952,6 +1952,9 @@
 
         // Separate render function for dashboard
         async function renderDashboard(data) {
+                // 🚀 KRITIČNO: Učitaj Chart.js PRE korištenja
+                await window.loadChartJs();
+
                 const year = new Date().getFullYear();
 
 
