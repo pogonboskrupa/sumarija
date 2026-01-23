@@ -200,9 +200,59 @@ td[style*="background: linear-gradient"][style*="254, 243"] {
 }
 
 /* ============================================ */
-/* 🔧 FIX ZA IZVJEŠTAJE (Mjesečni izvještaj po odjelima) */
-/* CSS PRAVILA OBRISANA - koristi se js/izvjestaji-fix.js sa inline stilovima */
+/* 🔧 NOVI IZVJEŠTAJI - Profesionalne tabele */
+/* Konzistentne boje sa pravilnim borderima */
 /* ============================================ */
+
+.izvjestaji-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 2px solid #e5e7eb;
+    font-size: 14px;
+}
+
+.izvjestaji-table thead th {
+    padding: 12px;
+    text-align: right;
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.izvjestaji-table thead th:first-child {
+    text-align: left;
+    position: sticky;
+    left: 0;
+    z-index: 20;
+    background: #374151 !important;
+    color: white !important;
+    border-right: 2px solid #1f2937;
+}
+
+.izvjestaji-table tbody td {
+    padding: 12px;
+    text-align: right;
+    font-weight: 600;
+    border: 1px solid #e5e7eb;
+}
+
+.izvjestaji-table tbody td:first-child {
+    text-align: left;
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: white !important;
+    color: #1f2937 !important;
+    font-weight: 700;
+    border-right: 2px solid #d1d5db;
+}
+
+.izvjestaji-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+.izvjestaji-table tbody tr:hover td:first-child {
+    background: #f3f4f6 !important;
+}
 
 /* TABLE CONTRAST FIX - Loaded successfully */
 /* Svijetle žute boje zamijenjene tamnijim + TRUPCI fix za sve tabele */

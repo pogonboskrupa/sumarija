@@ -1303,14 +1303,16 @@
                     <button class="tab" onclick="switchTab('operativa')">📊 Operativa & Analiza</button>
                     <button class="tab" onclick="switchTab('kupci')">📦 Kupci</button>
                     <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Mjesečni pregled</button>
+                    <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                 `;
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
-                // POSLOVOĐA vidi: STANJE ODJELA, ODJELI U REALIZACIJI, ZADNJIH 5 DANA, SUMA MJESECA
+                // POSLOVOĐA vidi: STANJE ODJELA, ODJELI U REALIZACIJI, ZADNJIH 5 DANA, SUMA MJESECA, IZVJEŠTAJI
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('poslovodja-stanje')">📊 Stanje Odjela</button>
                     <button class="tab" onclick="switchTab('poslovodja-realizacija')">🏗️ Odjeli u realizaciji</button>
                     <button class="tab" onclick="switchTab('poslovodja-zadnjih5')">📅 Zadnjih 5 Dana</button>
                     <button class="tab" onclick="switchTab('poslovodja-suma')">📈 Suma Mjeseca</button>
+                    <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                 `;
             } else {
                 // Admin korisnici - bez OPERATIVA tab-a (admin se loguje kao OPERATIVA tip ako želi vidjeti operativa podatke)
@@ -1321,6 +1323,7 @@
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz sječe</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz otpreme</button>
                     <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
+                    <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                     <button class="tab notification-badge" onclick="switchTab('pending-unosi')">
                         📋 Dodani unosi
                         <span class="badge-count" id="pending-count-badge"></span>
@@ -1658,6 +1661,10 @@
                 // Prikaži Stanje odjela za admina sa submenu (Pregled Stanja + Šuma Lager)
                 document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
                 switchStanjeOdjelaTab('pregled');
+            } else if (tab === 'izvjestaji') {
+                // IZVJEŠTAJI - Sedmični i Mjesečni prikaz po odjelima
+                document.getElementById('izvjestaji-content').classList.remove('hidden');
+                switchIzvjestajiSubTab('sedmicni'); // Default: Sedmični izvještaj
             } else if (tab === 'izvjestaji-primac') {
                 // Set default to current month/year
                 const currentDate = new Date();
