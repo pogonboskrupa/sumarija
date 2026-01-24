@@ -8930,7 +8930,8 @@
                 showInfo('💾 Spremanje...', 'Spremam mjesečnu dinamiku...');
 
                 // Koristi GET sa URL parametrima da izbjegneš CORS problem
-                const mjeseciJson = encodeURIComponent(JSON.stringify(mjeseci));
+                // URLSearchParams će automatski enkodirati, ne treba ručno
+                const mjeseciJson = JSON.stringify(mjeseci);
                 const url = buildApiUrl('save_dinamika', { godina: year, mjeseci: mjeseciJson });
 
 
