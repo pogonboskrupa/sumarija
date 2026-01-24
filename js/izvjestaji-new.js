@@ -2,12 +2,20 @@
 // 📋 NOVI IZVJEŠTAJI - Sedmični i Mjesečni
 // ============================================
 
+console.log('🔵 [IZVJEŠTAJI-NEW.JS] File loaded successfully!');
+
 // Switch between Sedmični and Mjesečni sub-tabs
 function switchIzvjestajiSubTab(subTab) {
     console.log('[IZVJEŠTAJI] Switching to:', subTab);
 
     const sedmicniElem = document.getElementById('izvjestaji-sedmicni');
     const mjesecniElem = document.getElementById('izvjestaji-mjesecni');
+
+    // ✅ SAFETY CHECK: Elementi moraju postojati
+    if (!sedmicniElem || !mjesecniElem) {
+        console.error('[IZVJEŠTAJI] ❌ Elements not found! sedmicni:', !!sedmicniElem, 'mjesecni:', !!mjesecniElem);
+        return;
+    }
 
     const subTabs = document.querySelectorAll('#izvjestaji-content .sub-tab');
     subTabs.forEach(tab => tab.classList.remove('active'));
@@ -42,8 +50,17 @@ async function loadIzvjestajiSedmicni() {
     console.log('[IZVJEŠTAJI SEDMICNI] Loading data...');
 
     try {
-        const year = document.getElementById('izvjestaji-sedmicni-year').value;
-        const month = document.getElementById('izvjestaji-sedmicni-month').value;
+        const yearElem = document.getElementById('izvjestaji-sedmicni-year');
+        const monthElem = document.getElementById('izvjestaji-sedmicni-month');
+
+        // ✅ SAFETY CHECK
+        if (!yearElem || !monthElem) {
+            console.error('[IZVJEŠTAJI SEDMICNI] ❌ Selectors not found!');
+            return;
+        }
+
+        const year = yearElem.value;
+        const month = monthElem.value;
 
         const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
 
@@ -84,8 +101,17 @@ async function loadIzvjestajiMjesecni() {
     console.log('[IZVJEŠTAJI MJESECNI] Loading data...');
 
     try {
-        const year = document.getElementById('izvjestaji-mjesecni-year').value;
-        const month = document.getElementById('izvjestaji-mjesecni-month').value;
+        const yearElem = document.getElementById('izvjestaji-mjesecni-year');
+        const monthElem = document.getElementById('izvjestaji-mjesecni-month');
+
+        // ✅ SAFETY CHECK
+        if (!yearElem || !monthElem) {
+            console.error('[IZVJEŠTAJI MJESECNI] ❌ Selectors not found!');
+            return;
+        }
+
+        const year = yearElem.value;
+        const month = monthElem.value;
 
         const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
 
