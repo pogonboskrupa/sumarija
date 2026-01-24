@@ -1647,6 +1647,7 @@
             } else if (tab === 'mjesecni-sortimenti') {
                 loadMjesecniSortimenti();
             } else if (tab === 'dinamika') {
+                document.getElementById('dinamika-content').classList.remove('hidden');
                 loadDinamika();
             } else if (tab === 'uporedba-godina') {
                 loadUporedbaGodina();
