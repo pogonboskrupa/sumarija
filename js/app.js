@@ -1691,8 +1691,8 @@
                 document.getElementById('kubikator-content').classList.remove('hidden');
             } else if (tab === 'ostalo') {
                 document.getElementById('ostalo-content').classList.remove('hidden');
-                // Load kubikator by default (najbitniji podmeni)
-                switchOstaloTab('kubikator');
+                // Load uporedba-godina by default (ostale opcije imaju svoje main tabove)
+                switchOstaloTab('uporedba-godina');
             }
         }
 
