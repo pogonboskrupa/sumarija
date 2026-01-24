@@ -1691,19 +1691,16 @@
                 document.getElementById('kubikator-content').classList.remove('hidden');
             } else if (tab === 'ostalo') {
                 document.getElementById('ostalo-content').classList.remove('hidden');
-                // Load uporedba-godina by default (ostale opcije imaju svoje main tabove)
-                switchOstaloTab('uporedba-godina');
+                // Load kubikator by default (najčešće korišten)
+                switchOstaloTab('kubikator');
             }
         }
 
         // Switch between Ostalo tabs
         function switchOstaloTab(view) {
-            // If dinamika or kubikator, redirect to main page
+            // If dinamika, redirect to main page (has its own form)
             if (view === 'dinamika') {
                 switchTab('dinamika');
-                return;
-            } else if (view === 'kubikator') {
-                switchTab('kubikator');
                 return;
             }
 
@@ -1724,6 +1721,8 @@
                 if (uporedbaContainer && !uporedbaContainer.innerHTML) {
                     loadUporedbaGodina();
                 }
+            } else if (view === 'kubikator') {
+                document.getElementById('ostalo-kubikator-view').classList.remove('hidden');
             }
         }
 

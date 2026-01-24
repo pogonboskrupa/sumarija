@@ -2307,8 +2307,8 @@
                 <!-- Tab submenu za Ostalo -->
                 <div class="tabs-submenu" style="margin-bottom: 24px;">
                     <button class="tab-sub" onclick="switchOstaloTab('dinamika')">📊 Dinamika</button>
-                    <button class="tab-sub active" onclick="switchOstaloTab('uporedba-godina')">📈 Uporedba godina</button>
-                    <button class="tab-sub" onclick="switchOstaloTab('kubikator')">📐 Kubikator</button>
+                    <button class="tab-sub" onclick="switchOstaloTab('uporedba-godina')">📈 Uporedba godina</button>
+                    <button class="tab-sub active" onclick="switchOstaloTab('kubikator')">📐 Kubikator</button>
                 </div>
 
                 <!-- Dinamika View - Obrisano: duplikat forme, koristi se zasebna stranica dinamika-content -->
@@ -2323,7 +2323,7 @@
                 </div>
 
                 <!-- Uporedba godina View -->
-                <div id="ostalo-uporedba-view" class="ostalo-view">
+                <div id="ostalo-uporedba-view" class="ostalo-view hidden">
                     <h3>📈 Uporedba godina - Tekuća vs Prošla</h3>
                     <p style="color: #6b7280;">Usporedba sječe i otpreme po godinama</p>
                     <div id="uporedba-godina-container">
@@ -2348,7 +2348,7 @@
                 </div>
 
                 <!-- Kubikator View -->
-                <div id="ostalo-kubikator-view" class="ostalo-view hidden">
+                <div id="ostalo-kubikator-view" class="ostalo-view">
                     <div class="chart-card" style="padding: 32px; text-align: center;">
                         <h3 style="margin-bottom: 16px;">📐 Kubikator</h3>
                         <p style="color: #6b7280; margin-bottom: 24px;">Kalkulator zapremine oblog drveta - Huber metoda</p>
