@@ -8874,8 +8874,13 @@
 
             try {
                 const url = buildApiUrl('get_dinamika', { year });
+                console.log('📥 Loading dinamika for year:', year);
                 const data = await fetchWithCache(url, 'cache_dinamika_' + year);
 
+                console.log('📊 Dinamika data received:', data);
+                if (data.debug) {
+                    console.log('🔍 Debug info:', data.debug);
+                }
 
                 if (data.error) {
                     throw new Error(data.error);
@@ -8883,18 +8888,24 @@
 
                 // Popuni input polja sa mjesečnim vrijednostima
                 const mjeseci = data.dinamika || {};
+                console.log('📝 Setting form values:', mjeseci);
+
+                let hasAnyData = false;
                 for (let i = 1; i <= 12; i++) {
                     const mjesecKey = String(i).padStart(2, '0');
                     const inputId = 'dinamika-' + mjesecKey;
                     const value = mjeseci[mjesecKey] || 0;
+                    if (value > 0) hasAnyData = true;
                     document.getElementById(inputId).value = value > 0 ? value : '';
                 }
+
+                console.log('✅ Form loaded. Has data:', hasAnyData);
 
                 // Izračunaj ukupno
                 calculateDinamikaTotal();
 
             } catch (error) {
-                console.error('Error loading dinamika:', error);
+                console.error('❌ Error loading dinamika:', error);
                 showError('Greška', 'Greška pri učitavanju dinamike: ' + error.message);
             }
         }
@@ -8943,12 +8954,22 @@
 
 
                 if (result.success) {
+                    console.log('💾 Save success:', result);
+                    if (result.debug) {
+                        console.log('🔍 Debug info:', result.debug);
+                    }
+
                     showSuccess('✅ Spremljeno!', 'Mjesečna dinamika uspješno spremljena.');
 
-                    // Clear cache and reload
+                    // Clear cache
                     localStorage.removeItem('cache_dinamika_' + year);
                     localStorage.removeItem('cache_dashboard_' + year);
-                    loadDinamika();
+
+                    // Wait a moment before reloading to ensure backend write is complete
+                    setTimeout(() => {
+                        console.log('🔄 Reloading dinamika after save...');
+                        loadDinamika();
+                    }, 500);
                 } else {
                     throw new Error(result.error || 'Greška pri spremanju');
                 }

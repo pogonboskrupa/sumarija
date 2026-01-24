@@ -589,7 +589,30 @@ function setCachedData(key, data, ttl = CACHE_TTL) {
 function invalidateAllCache() {
   try {
     const cache = CacheService.getScriptCache();
-    cache.removeAll();
+    // Get all possible cache keys for the current year and previous year
+    const currentYear = new Date().getFullYear();
+    const keys = [
+      `dashboard_${currentYear}`,
+      `dashboard_${currentYear - 1}`,
+      `odjeli_${currentYear}`,
+      `odjeli_${currentYear - 1}`,
+      `dinamika_${currentYear}`,
+      `dinamika_${currentYear - 1}`,
+      'stats',
+      'primka_manifest',
+      'otprema_manifest'
+    ];
+
+    // Remove each key individually
+    keys.forEach(key => {
+      try {
+        cache.remove(key);
+        Logger.log(`[CACHE] Removed cache key: ${key}`);
+      } catch (e) {
+        Logger.log(`[CACHE] Failed to remove key ${key}: ${e}`);
+      }
+    });
+
     Logger.log('[CACHE] Invalidated all cache entries');
     return true;
   } catch (error) {

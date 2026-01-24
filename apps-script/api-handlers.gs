@@ -2814,8 +2814,17 @@ function handleGetDinamika(year, username, password) {
 
     Logger.log('=== HANDLE GET DINAMIKA END ===');
     Logger.log('Found data: ' + (Object.keys(dinamika).length > 0));
+    Logger.log('Dinamika values: ' + JSON.stringify(dinamika));
 
-    return createJsonResponse({ dinamika: dinamika }, true);
+    return createJsonResponse({
+      dinamika: dinamika,
+      debug: {
+        year: year,
+        hasData: Object.keys(dinamika).length > 0,
+        timestamp: new Date().toISOString(),
+        sheetExists: !!dinamikaSheet
+      }
+    }, true);
 
   } catch (error) {
     Logger.log('ERROR in handleGetDinamika: ' + error.toString());
@@ -2908,7 +2917,23 @@ function handleSaveDinamika(username, password, godina, mjeseciParam) {
     }
 
     // 🚀 CACHE: Invalidate all cache after successful write
-    invalidateAllCache();
+    const cacheCleared = invalidateAllCache();
+    Logger.log(`Cache cleared: ${cacheCleared}`);
+
+    // Verify data was saved by reading it back
+    const verifyData = dinamikaSheet.getDataRange().getValues();
+    let savedSuccessfully = false;
+    for (let i = 1; i < verifyData.length; i++) {
+      if (parseInt(verifyData[i][0]) === godinaInt) {
+        savedSuccessfully = true;
+        Logger.log('VERIFICATION: Data found in sheet after save');
+        break;
+      }
+    }
+
+    if (!savedSuccessfully) {
+      Logger.log('WARNING: Data NOT found in sheet after save!');
+    }
 
     Logger.log('=== HANDLE SAVE DINAMIKA END ===');
     Logger.log('Successfully saved dinamika');
@@ -2916,7 +2941,13 @@ function handleSaveDinamika(username, password, godina, mjeseciParam) {
     return createJsonResponse({
       success: true,
       message: "Mjesečna dinamika uspješno spremljena",
-      ukupno: ukupno
+      ukupno: ukupno,
+      debug: {
+        godina: godinaInt,
+        savedSuccessfully: savedSuccessfully,
+        cacheCleared: cacheCleared,
+        timestamp: new Date().toISOString()
+      }
     }, true);
 
   } catch (error) {
