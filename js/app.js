@@ -1707,12 +1707,14 @@
             // Show selected view
             if (view === 'dinamika') {
                 document.getElementById('ostalo-dinamika-view').classList.remove('hidden');
-                if (!document.getElementById('dinamika-container').innerHTML) {
+                const dinamikaContainer = document.getElementById('dinamika-container');
+                if (dinamikaContainer && !dinamikaContainer.innerHTML) {
                     loadDinamika();
                 }
             } else if (view === 'uporedba-godina') {
                 document.getElementById('ostalo-uporedba-view').classList.remove('hidden');
-                if (!document.getElementById('uporedba-godina-container').innerHTML) {
+                const uporedbaContainer = document.getElementById('uporedba-godina-container');
+                if (uporedbaContainer && !uporedbaContainer.innerHTML) {
                     loadUporedbaGodina();
                 }
             } else if (view === 'kubikator') {
