@@ -1,5 +1,5 @@
         // VERSION INFO - Monthly report by departments
-        const APP_VERSION = '2026-01-24-v19-BUGFIX-NULLCHECKS';
+        const APP_VERSION = '2026-01-24-v20-DINAMIKA-FIX';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -822,7 +822,7 @@
                         { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year, timeout: 180000 },
                         { name: 'Operativa (Stats)', url: buildApiUrl('stats', { year }), cacheKey: 'cache_stats_' + year, timeout: 180000 },
                         { name: 'Stanje Odjela', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_odjeli_' + year, timeout: 180000 },
-                        { name: 'Stanje Odjela Admin', url: buildApiUrl('stanje-odjela'), cacheKey: 'cache_stanje_odjela_admin', timeout: 180000 },
+                        // Stanje Odjela Admin - Skipovano iz preload-a jer je server spor, učitava se on-demand
                         { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
                         { name: 'Pending Unosi', url: buildApiUrl('pending-unosi'), cacheKey: 'cache_pending_unosi', timeout: 120000 },
                         { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni-sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year, timeout: 120000 },
@@ -1697,6 +1697,15 @@
 
         // Switch between Ostalo tabs
         function switchOstaloTab(view) {
+            // If dinamika or kubikator, redirect to main page
+            if (view === 'dinamika') {
+                switchTab('dinamika');
+                return;
+            } else if (view === 'kubikator') {
+                switchTab('kubikator');
+                return;
+            }
+
             // Update submenu buttons
             const tabs = document.querySelectorAll('.tabs-submenu .tab-sub');
             tabs.forEach(t => t.classList.remove('active'));
@@ -1708,20 +1717,12 @@
             document.getElementById('ostalo-kubikator-view').classList.add('hidden');
 
             // Show selected view
-            if (view === 'dinamika') {
-                document.getElementById('ostalo-dinamika-view').classList.remove('hidden');
-                const dinamikaContainer = document.getElementById('dinamika-container');
-                if (dinamikaContainer && !dinamikaContainer.innerHTML) {
-                    loadDinamika();
-                }
-            } else if (view === 'uporedba-godina') {
+            if (view === 'uporedba-godina') {
                 document.getElementById('ostalo-uporedba-view').classList.remove('hidden');
                 const uporedbaContainer = document.getElementById('uporedba-godina-container');
                 if (uporedbaContainer && !uporedbaContainer.innerHTML) {
                     loadUporedbaGodina();
                 }
-            } else if (view === 'kubikator') {
-                document.getElementById('ostalo-kubikator-view').classList.remove('hidden');
             }
         }
 
