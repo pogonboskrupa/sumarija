@@ -1545,7 +1545,6 @@
             document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
             document.getElementById('poslovodja-zadnjih5-content').classList.add('hidden');
             document.getElementById('poslovodja-suma-content').classList.add('hidden');
-            document.getElementById('izvjestaji-admin-content').classList.add('hidden');
             document.getElementById('izvjestaji-primac-content').classList.add('hidden');
             document.getElementById('izvjestaji-otpremac-content').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
@@ -1597,7 +1596,6 @@
             document.getElementById('pending-unosi-content').classList.add('hidden');
             document.getElementById('mjesecni-sortimenti-content').classList.add('hidden');
             document.getElementById('izvjestaji-content').classList.add('hidden');
-            document.getElementById('izvjestaji-admin-content').classList.add('hidden');
             document.getElementById('izvjestaji-primac-content').classList.add('hidden');
             document.getElementById('izvjestaji-otpremac-content').classList.add('hidden');
             document.getElementById('operativa-content').classList.add('hidden');
