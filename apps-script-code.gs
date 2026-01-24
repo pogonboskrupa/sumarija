@@ -4419,7 +4419,10 @@ function handleSaveDinamika(username, password, godina, mjeseciParam) {
     let mjeseciObj = mjeseciParam;
     if (typeof mjeseciParam === 'string') {
       Logger.log('Parsing mjeseci from string...');
-      mjeseciObj = JSON.parse(mjeseciParam);
+      // Decode URL-encoded string before parsing JSON
+      const decodedParam = decodeURIComponent(mjeseciParam);
+      Logger.log('Decoded param: ' + decodedParam);
+      mjeseciObj = JSON.parse(decodedParam);
     }
 
     // Pripremi red podataka - 12 mjesečnih vrijednosti
