@@ -1,9 +1,12 @@
         // VERSION INFO - Monthly report by departments
-        const APP_VERSION = '2026-01-12-v18-MONTHLY-BY-ODJELI';
+        const APP_VERSION = '2026-01-24-v19-BUGFIX-NULLCHECKS';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
         console.clear();
+        console.log('%c🚀 ŠUMARIJA APP', 'font-size: 20px; font-weight: bold; color: #10b981;');
+        console.log('%c📦 Version: ' + APP_VERSION, 'font-size: 14px; font-weight: bold; color: #3b82f6;');
+        console.log('%c⏰ Loaded at: ' + new Date().toLocaleString('bs-BA'), 'font-size: 12px; color: #6b7280;');
 
         // ========== SERVICE WORKER REGISTRATION ==========
         if ('serviceWorker' in navigator) {
@@ -4327,6 +4330,8 @@
 
             // Body redovi
             let bodyHtml = '';
+            const totals = {}; // Ukupno po sortimentima
+
             godisnji.forEach((kupac, index) => {
                 const rowBg = index % 2 === 0 ? '#f0fdf4' : 'white';
                 bodyHtml += `<tr style="background: ${rowBg};" data-kupac="${(kupac.kupac || '').toLowerCase()}">`;
@@ -4334,6 +4339,9 @@
 
                 sortimentiNazivi.forEach(sortiment => {
                     const kolicina = kupac.sortimenti[sortiment] || 0;
+                    // Dodaj u ukupno
+                    totals[sortiment] = (totals[sortiment] || 0) + kolicina;
+
                     const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
                     const color = kolicina > 0 ? '#047857' : '#9ca3af';
                     const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #d1fae5; font-weight: 700;' : '';
@@ -4342,6 +4350,18 @@
 
                 bodyHtml += '</tr>';
             });
+
+            // Red za UKUPNO
+            bodyHtml += '<tr style="background: #047857; border-top: 3px solid #065f46;">';
+            bodyHtml += '<td style="font-weight: 700; color: white; position: sticky; left: 0; background: #047857; z-index: 5; padding: 12px 8px;">UKUPNO</td>';
+            sortimentiNazivi.forEach(sortiment => {
+                const total = totals[sortiment] || 0;
+                const display = total > 0 ? total.toFixed(2) : '-';
+                const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #065f46;' : '';
+                bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; color: white; font-weight: 700; padding: 12px 8px;${bgStyle}">${display}</td>`;
+            });
+            bodyHtml += '</tr>';
+
             bodyElem.innerHTML = bodyHtml;
         }
 
@@ -4374,6 +4394,8 @@
 
             // Body redovi
             let bodyHtml = '';
+            const totals = {}; // Ukupno po sortimentima
+
             filteredData.forEach((red, index) => {
                 const rowBg = index % 2 === 0 ? '#e0f2fe' : 'white';
                 bodyHtml += `<tr style="background: ${rowBg};" data-kupac="${(red.kupac || '').toLowerCase()}">`;
@@ -4381,6 +4403,9 @@
 
                 sortimentiNazivi.forEach(sortiment => {
                     const kolicina = red.sortimenti[sortiment] || 0;
+                    // Dodaj u ukupno
+                    totals[sortiment] = (totals[sortiment] || 0) + kolicina;
+
                     const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
                     const color = kolicina > 0 ? '#0369a1' : '#9ca3af';
                     const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #bae6fd; font-weight: 700;' : '';
@@ -4389,6 +4414,18 @@
 
                 bodyHtml += '</tr>';
             });
+
+            // Red za UKUPNO
+            bodyHtml += '<tr style="background: #0369a1; border-top: 3px solid #075985;">';
+            bodyHtml += '<td style="font-weight: 700; color: white; position: sticky; left: 0; background: #0369a1; z-index: 5; padding: 12px 8px;">UKUPNO</td>';
+            sortimentiNazivi.forEach(sortiment => {
+                const total = totals[sortiment] || 0;
+                const display = total > 0 ? total.toFixed(2) : '-';
+                const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #075985;' : '';
+                bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; color: white; font-weight: 700; padding: 12px 8px;${bgStyle}">${display}</td>`;
+            });
+            bodyHtml += '</tr>';
+
             bodyElem.innerHTML = bodyHtml;
         }
 
