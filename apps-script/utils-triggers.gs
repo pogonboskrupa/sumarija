@@ -81,20 +81,14 @@ function createJsonResponse(data, success) {
   const output = ContentService.createTextOutput(JSON.stringify(data));
   output.setMimeType(ContentService.MimeType.JSON);
 
-  // ✅ CORS Support - Try setHeader (V8 runtime), fallback if not available (Rhino)
-  try {
-    if (typeof output.setHeader === 'function') {
-      output.setHeader('Access-Control-Allow-Origin', '*');
-      output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-      Logger.log('[CORS] Headers set successfully using setHeader()');
-    } else {
-      Logger.log('[CORS] WARNING: setHeader not available (Rhino runtime?)');
-    }
-  } catch (e) {
-    Logger.log('[CORS] WARNING: setHeader failed: ' + e.toString());
-    // Continue without headers - CORS won't work but at least no error
-  }
+  // ✅ CORS Support - KRITIČNO za GitHub Pages pristup
+  // MORA da ima ove headere inače će browser blokirati zahtjeve
+  output.setHeader('Access-Control-Allow-Origin', '*');
+  output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  output.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  output.setHeader('Access-Control-Max-Age', '86400');
+
+  Logger.log('[CORS] Headers set for path');
 
   return output;
 }

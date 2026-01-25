@@ -126,20 +126,13 @@ function doOptions(e) {
   const output = ContentService.createTextOutput('');
   output.setMimeType(ContentService.MimeType.JSON);
 
-  // Try setHeader (V8 runtime), fallback if not available (Rhino)
-  try {
-    if (typeof output.setHeader === 'function') {
-      output.setHeader('Access-Control-Allow-Origin', '*');
-      output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-      output.setHeader('Access-Control-Max-Age', '86400'); // 24 hours cache
-      Logger.log('[OPTIONS] CORS headers set successfully');
-    } else {
-      Logger.log('[OPTIONS] WARNING: setHeader not available');
-    }
-  } catch (e) {
-    Logger.log('[OPTIONS] WARNING: setHeader failed: ' + e.toString());
-  }
+  // MORA da ima ove headere za preflight
+  output.setHeader('Access-Control-Allow-Origin', '*');
+  output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  output.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  output.setHeader('Access-Control-Max-Age', '86400'); // 24 hours cache
+
+  Logger.log('[OPTIONS] CORS headers set successfully');
 
   return output;
 }
