@@ -103,6 +103,8 @@ function doGet(e) {
       Logger.log('save_dinamika endpoint called');
       Logger.log('Parameters: ' + JSON.stringify(e.parameter));
       return handleSaveDinamika(e.parameter.username, e.parameter.password, e.parameter.godina, e.parameter.mjeseci);
+    } else if (path === 'get_stanje_zaliha') {
+      return handleGetStanjeZaliha(e.parameter.username, e.parameter.password, e.parameter.radiliste);
     }
 
     Logger.log('Unknown path: ' + path);

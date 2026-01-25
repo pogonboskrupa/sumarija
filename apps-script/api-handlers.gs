@@ -2958,6 +2958,88 @@ function handleSaveDinamika(username, password, godina, mjeseciParam) {
   }
 }
 
+/**
+ * Get Stanje Zaliha endpoint - vraća indeksirane podatke iz B7:U13 opsega sa OTPREMA listova
+ */
+function handleGetStanjeZaliha(username, password, radilisteFilter) {
+  try {
+    Logger.log('=== HANDLE GET STANJE ZALIHA START ===');
+    Logger.log('Username: ' + username);
+    Logger.log('Radiliste filter: ' + radilisteFilter);
+
+    // Autentikacija
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    // Samo admin i poslovođa mogu pristupiti
+    if (loginResult.type !== 'admin' && loginResult.type !== 'poslovodja' && loginResult.type !== 'poslovođa') {
+      return createJsonResponse({ error: "Unauthorized - samo admin i poslovođa" }, false);
+    }
+
+    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const stanjeZalihaSheet = ss.getSheetByName('INDEX_STANJE_ZALIHA');
+
+    if (!stanjeZalihaSheet) {
+      Logger.log('INDEX_STANJE_ZALIHA sheet ne postoji');
+      return createJsonResponse({
+        data: [],
+        radilista: [],
+        message: 'Sheet ne postoji. Pokrenite sinhronizaciju.'
+      }, true);
+    }
+
+    const allData = stanjeZalihaSheet.getDataRange().getValues();
+    const headers = allData[0];
+
+    Logger.log('Headers: ' + JSON.stringify(headers));
+    Logger.log('Total rows: ' + (allData.length - 1));
+
+    // Prikupi unique radilišta
+    const radilistaSet = new Set();
+    const filteredData = [];
+
+    for (let i = 1; i < allData.length; i++) {
+      const row = allData[i];
+      const odjel = row[0];
+      const radiliste = row[1];
+      const opis = row[2];
+      const dataValues = row.slice(3); // Kolone C1-C20
+
+      radilistaSet.add(radiliste || 'Nepoznato');
+
+      // Primijeni filter po radilištu ako je proslijeđen
+      if (!radilisteFilter || radilisteFilter === '' || radilisteFilter === 'SVA' || radiliste === radilisteFilter) {
+        filteredData.push({
+          odjel: odjel,
+          radiliste: radiliste || 'Nepoznato',
+          opis: opis,
+          values: dataValues
+        });
+      }
+    }
+
+    const radilistaList = Array.from(radilistaSet).sort();
+
+    Logger.log('Unique radilista: ' + radilistaList.length);
+    Logger.log('Filtered rows: ' + filteredData.length);
+
+    return createJsonResponse({
+      data: filteredData,
+      radilista: radilistaList,
+      headers: headers.slice(3), // C1-C20 headers
+      totalRows: filteredData.length
+    }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleGetStanjeZaliha: ' + error.toString());
+    return createJsonResponse({
+      error: "Greška pri učitavanju stanja zaliha: " + error.toString()
+    }, false);
+  }
+}
+
 // ========================================
 // 4. DELTA SYNC HANDLERS
 // ========================================

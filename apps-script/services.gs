@@ -341,6 +341,22 @@ function syncIndexSheet() {
       throw new Error('INDEX_PRIMKA ili INDEX_OTPREMA sheet nije pronađen!');
     }
 
+    // Otvori ili kreiraj INDEX_STANJE_ZALIHA sheet
+    let indexStanjeZalihaSheet = indexSS.getSheetByName('INDEX_STANJE_ZALIHA');
+    if (!indexStanjeZalihaSheet) {
+      Logger.log('Kreiram novi sheet INDEX_STANJE_ZALIHA...');
+      indexStanjeZalihaSheet = indexSS.insertSheet('INDEX_STANJE_ZALIHA');
+      // Header: ODJEL, RADILIŠTE, RED_LABEL (B kolona spojeno sa C kolonom), kolone B-U iz originalnog opsega
+      const headers = ['ODJEL', 'RADILIŠTE', 'OPIS', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16', 'C17', 'C18', 'C19', 'C20'];
+      indexStanjeZalihaSheet.appendRow(headers);
+
+      // Formatiraj header
+      const headerRange = indexStanjeZalihaSheet.getRange(1, 1, 1, headers.length);
+      headerRange.setBackground('#10b981');
+      headerRange.setFontColor('white');
+      headerRange.setFontWeight('bold');
+    }
+
     Logger.log('INDEX sheets otvoreni uspješno');
 
     // 2. Obriši sve podatke (osim header-a u redu 1)
@@ -351,6 +367,9 @@ function syncIndexSheet() {
     if (indexOtpremaSheet.getLastRow() > 1) {
       indexOtpremaSheet.deleteRows(2, indexOtpremaSheet.getLastRow() - 1);
     }
+    if (indexStanjeZalihaSheet.getLastRow() > 1) {
+      indexStanjeZalihaSheet.deleteRows(2, indexStanjeZalihaSheet.getLastRow() - 1);
+    }
 
     // 3. Otvori folder ODJELI
     Logger.log('Otvaranje foldera ODJELI: ' + ODJELI_FOLDER_ID);
@@ -359,6 +378,7 @@ function syncIndexSheet() {
 
     let primkaRows = [];
     let otpremaRows = [];
+    let stanjeZalihaRows = [];
     let processedCount = 0;
     let errorCount = 0;
 
@@ -505,6 +525,63 @@ function syncIndexSheet() {
           Logger.log(`  OTPREMA: sheet ne postoji`);
         }
 
+        // 📊 STANJE ZALIHA: Čitaj W2 sa PRIMKA (radilište) i B7:U13 sa OTPREMA
+        let radiliste = '';
+        if (primkaSheet) {
+          try {
+            const w2Value = primkaSheet.getRange('W2').getValue();
+            radiliste = w2Value ? String(w2Value).trim() : '';
+            Logger.log(`  RADILIŠTE (W2): "${radiliste}"`);
+          } catch (e) {
+            Logger.log(`  WARNING: Greška pri čitanju W2 - ${e.toString()}`);
+          }
+        }
+
+        if (otpremaSheet) {
+          try {
+            // Provjeri da li postoji opseg B7:U13
+            const lastRow = otpremaSheet.getLastRow();
+            const lastCol = otpremaSheet.getLastColumn();
+
+            if (lastRow >= 13 && lastCol >= 21) { // U = kolona 21
+              // Čitaj B7:U13 (7 redova x 20 kolona)
+              const stanjeData = otpremaSheet.getRange('B7:U13').getValues();
+              Logger.log(`  STANJE ZALIHA: učitano ${stanjeData.length} redova iz B7:U13`);
+
+              // Za svaki red iz opsega B7:U13
+              for (let i = 0; i < stanjeData.length; i++) {
+                const row = stanjeData[i];
+
+                // Red 7 (indeks 6, odnosno i=6) ima opis u B13 i C13 koje treba spojiti
+                let opis = '';
+                if (i === 6) {
+                  // ZALIHA red - spoji B13 i C13
+                  opis = 'ZALIHA';
+                  // Uzmi samo podatke od D kolone nadalje (D-U = indeksi 2-20 u ovom nizu)
+                  const dataColumns = row.slice(2, 20); // Preskočimo B i C, uzmi D-U
+                  const newRow = [odjelNaziv, radiliste, opis, ...dataColumns];
+                  stanjeZalihaRows.push(newRow);
+                } else {
+                  // Za ostale redove, B kolona je opis, C-U su podaci
+                  opis = row[0] ? String(row[0]).trim() : `Red ${i + 7}`;
+                  // Uzmi C-U kolone (indeksi 1-19)
+                  const dataColumns = row.slice(1, 20);
+                  const newRow = [odjelNaziv, radiliste, opis, ...dataColumns];
+                  stanjeZalihaRows.push(newRow);
+                }
+
+                if (processedCount === 1 && i < 3) {
+                  Logger.log(`    ✓ Stanje zaliha red ${i + 7}: "${odjelNaziv}" | "${radiliste}" | "${opis}"`);
+                }
+              }
+            } else {
+              Logger.log(`  STANJE ZALIHA: preskočeno (sheet nema dovoljno redova/kolona)`);
+            }
+          } catch (e) {
+            Logger.log(`  WARNING: Greška pri čitanju B7:U13 - ${e.toString()}`);
+          }
+        }
+
       } catch (error) {
         errorCount++;
         Logger.log(`ERROR processing ${odjelNaziv}: ${error.toString()}`);
@@ -514,6 +591,7 @@ function syncIndexSheet() {
     Logger.log(`Pročitano spreadsheet-ova: ${processedCount}`);
     Logger.log(`PRIMKA redova: ${primkaRows.length}`);
     Logger.log(`OTPREMA redova: ${otpremaRows.length}`);
+    Logger.log(`STANJE ZALIHA redova: ${stanjeZalihaRows.length}`);
 
     // 5. Sortiraj po datumu (kolona B = index 1)
     Logger.log('Sortiranje podataka po datumu...');
@@ -573,6 +651,24 @@ function syncIndexSheet() {
       Logger.log(`✓ INDEX_OTPREMA: upisano ${otpremaRows.length} redova`);
     }
 
+    // 📊 Upiši STANJE ZALIHA podatke
+    if (stanjeZalihaRows.length > 0) {
+      const indexStanjeZalihaHeaderCols = indexStanjeZalihaSheet.getLastColumn();
+      // Normalizuj broj kolona
+      const normalizedStanjeZaliha = stanjeZalihaRows.map(row => {
+        if (row.length > indexStanjeZalihaHeaderCols) {
+          return row.slice(0, indexStanjeZalihaHeaderCols);
+        } else if (row.length < indexStanjeZalihaHeaderCols) {
+          const padding = new Array(indexStanjeZalihaHeaderCols - row.length).fill('');
+          return row.concat(padding);
+        }
+        return row;
+      });
+
+      indexStanjeZalihaSheet.getRange(2, 1, normalizedStanjeZaliha.length, indexStanjeZalihaHeaderCols).setValues(normalizedStanjeZaliha);
+      Logger.log(`✓ INDEX_STANJE_ZALIHA: upisano ${normalizedStanjeZaliha.length} redova`);
+    }
+
     // 🚀 CACHE: Invalidate all cache after successful sync
     invalidateAllCache();
 
@@ -585,6 +681,7 @@ function syncIndexSheet() {
     Logger.log(`Greške: ${errorCount}`);
     Logger.log(`PRIMKA redova: ${primkaRows.length}`);
     Logger.log(`OTPREMA redova: ${otpremaRows.length}`);
+    Logger.log(`STANJE ZALIHA redova: ${stanjeZalihaRows.length}`);
 
     return {
       success: true,
@@ -592,7 +689,8 @@ function syncIndexSheet() {
       processedSpreadsheets: processedCount,
       errors: errorCount,
       primkaRows: primkaRows.length,
-      otpremaRows: otpremaRows.length
+      otpremaRows: otpremaRows.length,
+      stanjeZalihaRows: stanjeZalihaRows.length
     };
 
   } catch (error) {

@@ -1309,9 +1309,9 @@
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                 `;
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
-                // POSLOVOĐA vidi: STANJE ODJELA, ODJELI U REALIZACIJI, ZADNJIH 5 DANA, SUMA MJESECA, IZVJEŠTAJI
+                // POSLOVOĐA vidi: STANJE ZALIHA, ODJELI U REALIZACIJI, ZADNJIH 5 DANA, SUMA MJESECA, IZVJEŠTAJI
                 tabsMenu.innerHTML = `
-                    <button class="tab active" onclick="switchTab('poslovodja-stanje')">📊 Stanje Odjela</button>
+                    <button class="tab active" onclick="switchTab('stanje-zaliha')">📦 Stanje Zaliha</button>
                     <button class="tab" onclick="switchTab('poslovodja-realizacija')">🏗️ Odjeli u realizaciji</button>
                     <button class="tab" onclick="switchTab('poslovodja-zadnjih5')">📅 Zadnjih 5 Dana</button>
                     <button class="tab" onclick="switchTab('poslovodja-suma')">📈 Suma Mjeseca</button>
@@ -1321,7 +1321,7 @@
                 // Admin korisnici - bez OPERATIVA tab-a (admin se loguje kao OPERATIVA tip ako želi vidjeti operativa podatke)
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
-                    <button class="tab" onclick="switchTab('stanje-odjela-admin')">📦 Stanje odjela</button>
+                    <button class="tab" onclick="switchTab('stanje-zaliha')">📦 Stanje Zaliha</button>
                     <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Sječa/otprema po mjesecima</button>
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz sječe</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz otpreme</button>
@@ -1607,6 +1607,7 @@
             document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
             document.getElementById('poslovodja-zadnjih5-content').classList.add('hidden');
             document.getElementById('poslovodja-suma-content').classList.add('hidden');
+            document.getElementById('stanje-zaliha-content').classList.add('hidden');
             document.getElementById('dinamika-content').classList.add('hidden');
             document.getElementById('uporedba-godina-content').classList.add('hidden');
             document.getElementById('kubikator-content').classList.add('hidden');
@@ -1663,6 +1664,9 @@
                 // Prikaži Stanje odjela za admina sa submenu (Pregled Stanja + Šuma Lager)
                 document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
                 switchStanjeOdjelaTab('pregled');
+            } else if (tab === 'stanje-zaliha') {
+                // Prikaži Stanje Zaliha (novi podmeni)
+                loadStanjeZaliha();
             } else if (tab === 'izvjestaji') {
                 // IZVJEŠTAJI - Sedmični i Mjesečni prikaz po odjelima
                 document.getElementById('izvjestaji-content').classList.remove('hidden');
@@ -9926,5 +9930,171 @@
             }
 
             window.print();
+        }
+
+        // ========================================
+        // 📦 STANJE ZALIHA FUNCTIONS
+        // ========================================
+
+        let stanjeZalihaData = null; // Global cache za stanje zaliha podatke
+
+        // Load Stanje Zaliha data
+        async function loadStanjeZaliha() {
+            try {
+                console.log('📦 Loading Stanje Zaliha...');
+
+                // Prikaži loader, sakrij tabelu i empty state
+                document.getElementById('stanje-zaliha-loader').classList.remove('hidden');
+                document.getElementById('stanje-zaliha-table').classList.add('hidden');
+                document.getElementById('stanje-zaliha-empty').classList.add('hidden');
+
+                // Fetch data
+                const url = buildApiUrl('get_stanje_zaliha', { radiliste: '' });
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                console.log('✅ Stanje Zaliha data loaded:', data);
+
+                // Sačuvaj podatke u global cache
+                stanjeZalihaData = data;
+
+                // Popuni dropdown sa radilištima
+                const radilisteFilter = document.getElementById('stanje-zaliha-radiliste-filter');
+                radilisteFilter.innerHTML = '<option value="SVA">SVA RADILIŠTA</option>';
+
+                if (data.radilista && data.radilista.length > 0) {
+                    data.radilista.forEach(radiliste => {
+                        const option = document.createElement('option');
+                        option.value = radiliste;
+                        option.textContent = radiliste;
+                        radilisteFilter.appendChild(option);
+                    });
+                }
+
+                // Render tabelu
+                renderStanjeZalihaTable(data);
+
+                // Sakrij loader, prikaži tabelu ili empty state
+                document.getElementById('stanje-zaliha-loader').classList.add('hidden');
+
+                if (data.data && data.data.length > 0) {
+                    document.getElementById('stanje-zaliha-table').classList.remove('hidden');
+                } else {
+                    document.getElementById('stanje-zaliha-empty').classList.remove('hidden');
+                }
+
+                document.getElementById('stanje-zaliha-content').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('❌ Error loading Stanje Zaliha:', error);
+                showError('Greška', 'Greška pri učitavanju stanja zaliha: ' + error.message);
+
+                // Sakrij loader, prikaži empty state
+                document.getElementById('stanje-zaliha-loader').classList.add('hidden');
+                document.getElementById('stanje-zaliha-empty').classList.remove('hidden');
+            }
+        }
+
+        // Filter Stanje Zaliha by radilište
+        async function filterStanjeZaliha() {
+            try {
+                const selectedRadiliste = document.getElementById('stanje-zaliha-radiliste-filter').value;
+
+                console.log('🔍 Filtering by radilište:', selectedRadiliste);
+
+                // Prikaži loader
+                document.getElementById('stanje-zaliha-loader').classList.remove('hidden');
+                document.getElementById('stanje-zaliha-table').classList.add('hidden');
+
+                // Fetch filtered data
+                const url = buildApiUrl('get_stanje_zaliha', {
+                    radiliste: selectedRadiliste === 'SVA' ? '' : selectedRadiliste
+                });
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Render tabelu
+                renderStanjeZalihaTable(data);
+
+                // Sakrij loader, prikaži tabelu
+                document.getElementById('stanje-zaliha-loader').classList.add('hidden');
+
+                if (data.data && data.data.length > 0) {
+                    document.getElementById('stanje-zaliha-table').classList.remove('hidden');
+                    document.getElementById('stanje-zaliha-empty').classList.add('hidden');
+                } else {
+                    document.getElementById('stanje-zaliha-table').classList.add('hidden');
+                    document.getElementById('stanje-zaliha-empty').classList.remove('hidden');
+                }
+
+            } catch (error) {
+                console.error('❌ Error filtering Stanje Zaliha:', error);
+                showError('Greška', 'Greška pri filtriranju podataka: ' + error.message);
+                document.getElementById('stanje-zaliha-loader').classList.add('hidden');
+            }
+        }
+
+        // Render Stanje Zaliha table
+        function renderStanjeZalihaTable(data) {
+            const headerElem = document.getElementById('stanje-zaliha-header');
+            const bodyElem = document.getElementById('stanje-zaliha-body');
+
+            if (!data.data || data.data.length === 0) {
+                headerElem.innerHTML = `
+                    <th style="position: sticky; left: 0; background: #10b981; z-index: 3; min-width: 180px; color: white;">ODJEL</th>
+                    <th style="background: #10b981; color: white; min-width: 150px;">RADILIŠTE</th>
+                    <th style="background: #10b981; color: white; min-width: 150px;">OPIS</th>
+                `;
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka</td></tr>';
+                return;
+            }
+
+            // Build header sa dinamičkim kolonama
+            let headerHtml = `
+                <th style="position: sticky; left: 0; background: #10b981; z-index: 3; min-width: 180px; color: white; border-right: 2px solid #059669;">ODJEL</th>
+                <th style="background: #10b981; color: white; min-width: 150px; border-right: 2px solid #059669;">RADILIŠTE</th>
+                <th style="background: #10b981; color: white; min-width: 150px; border-right: 3px solid #047857;">OPIS</th>
+            `;
+
+            // Dodaj dinamičke kolone (pretpostavljam da ima 19 kolona: C1-C19)
+            const numColumns = data.data[0].values.length;
+            for (let i = 0; i < numColumns; i++) {
+                headerHtml += `<th style="background: #10b981; color: white; min-width: 80px; text-align: right;">C${i + 1}</th>`;
+            }
+
+            headerElem.innerHTML = headerHtml;
+
+            // Build body
+            let bodyHtml = '';
+            data.data.forEach((row, index) => {
+                const rowBg = index % 2 === 0 ? '#f0fdf4' : 'white';
+                const isZalihaRow = (row.opis || '').toUpperCase() === 'ZALIHA';
+                const rowStyle = isZalihaRow ? 'font-weight: 700; background: #d1fae5;' : `background: ${rowBg};`;
+
+                bodyHtml += `<tr style="${rowStyle}">`;
+                bodyHtml += `<td style="position: sticky; left: 0; z-index: 2; background: ${isZalihaRow ? '#d1fae5' : rowBg}; font-weight: 600; border-right: 2px solid #d1d5db;">${row.odjel || ''}</td>`;
+                bodyHtml += `<td style="border-right: 2px solid #d1d5db;">${row.radiliste || ''}</td>`;
+                bodyHtml += `<td style="font-weight: ${isZalihaRow ? '700' : '600'}; border-right: 3px solid #10b981;">${row.opis || ''}</td>`;
+
+                // Dodaj values kolone
+                row.values.forEach(value => {
+                    const displayValue = typeof value === 'number' ? value.toFixed(2) : (value || '');
+                    bodyHtml += `<td style="text-align: right;">${displayValue}</td>`;
+                });
+
+                bodyHtml += '</tr>';
+            });
+
+            bodyElem.innerHTML = bodyHtml;
+
+            console.log('✅ Table rendered with', data.data.length, 'rows');
         }
 

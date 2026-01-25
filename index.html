@@ -1560,6 +1560,61 @@
             </div>
         </div>
 
+        <!-- STANJE ZALIHA CONTENT (ADMIN & POSLOVOĐA) -->
+        <div id="stanje-zaliha-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>📦 Stanje Zaliha</h1>
+                    <p>Pregled stanja zaliha po radilištima (OTPREMA B7:U13)</p>
+                </div>
+                <div class="page-header-right">
+                    <button class="btn btn-primary" onclick="loadStanjeZaliha()">🔄 Osvježi</button>
+                </div>
+            </div>
+
+            <!-- Filter po radilištu -->
+            <div class="section" style="background: #f0fdf4; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <label style="font-weight: 600; color: #065f46;">🗂️ Filtriraj po radilištu:</label>
+                    <select id="stanje-zaliha-radiliste-filter" onchange="filterStanjeZaliha()" style="padding: 8px 12px; border: 2px solid #10b981; border-radius: 6px; font-size: 14px; min-width: 250px;">
+                        <option value="SVA">SVA RADILIŠTA</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Tabela -->
+            <div class="section">
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="monthly-table" id="stanje-zaliha-table" style="border-collapse: collapse; width: 100%;">
+                        <thead>
+                            <tr id="stanje-zaliha-header">
+                                <th style="position: sticky; left: 0; background: #10b981; z-index: 3; min-width: 180px; color: white;">ODJEL</th>
+                                <th style="background: #10b981; color: white; min-width: 150px;">RADILIŠTE</th>
+                                <th style="background: #10b981; color: white; min-width: 150px;">OPIS</th>
+                                <!-- Dinamičke kolone će biti dodane putem JS -->
+                            </tr>
+                        </thead>
+                        <tbody id="stanje-zaliha-body">
+                            <!-- Redovi će biti dodani putem JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Loader -->
+            <div id="stanje-zaliha-loader" class="section hidden" style="text-align: center; padding: 40px;">
+                <div class="spinner"></div>
+                <p style="margin-top: 15px; color: #6b7280;">Učitavam podatke...</p>
+            </div>
+
+            <!-- Empty state -->
+            <div id="stanje-zaliha-empty" class="section hidden" style="text-align: center; padding: 60px 20px; background: #f9fafb; border-radius: 8px;">
+                <div style="font-size: 64px; margin-bottom: 20px;">📭</div>
+                <h3 style="color: #4b5563; margin-bottom: 10px;">Nema podataka</h3>
+                <p style="color: #6b7280; margin: 0;">Pokrenite sinhronizaciju da biste učitali podatke.</p>
+            </div>
+        </div>
+
         <!-- POSLOVOĐA CONTENT - ODJELI U REALIZACIJI -->
         <div id="poslovodja-realizacija-content" class="container hidden">
             <div class="page-header">
