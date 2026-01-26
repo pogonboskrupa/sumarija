@@ -69,6 +69,11 @@ echo "🔧 Step 4: Ažuriranje frontend-a sa novim URL-om..."
 sed -i "s|const API_BASE_URL = 'https://script\.google\.com/macros/s/[A-Za-z0-9_-]*/exec';|const API_BASE_URL = '$WEB_APP_URL';|" js/api-optimized.js
 
 echo "✅ js/api-optimized.js ažuriran sa novim URL-om!"
+
+# Zamijeni stari URL sa novim u app.js
+sed -i "s|const API_URL = 'https://script\.google\.com/macros/s/[A-Za-z0-9_-]*/exec';|const API_URL = '$WEB_APP_URL';|" js/app.js
+
+echo "✅ js/app.js ažuriran sa novim URL-om!"
 echo ""
 echo "=================================="
 echo "🎉 SVE GOTOVO!"
