@@ -6200,7 +6200,7 @@
 
             // Build header with optimized styling
             let headerHtml = '<tr>';
-            headerHtml += '<th style="min-width: 80px; max-width: 90px; position: sticky; left: 0; background: #1e40af !important; color: white; z-index: 20; font-size: 12px; font-weight: 700; padding: 12px 8px; text-align: center; border-right: 3px solid #1e3a8a;">MJESEC</th>';
+            headerHtml += '<th style="min-width: 70px; max-width: 80px; position: sticky; left: 0; background: #1e40af !important; color: white; z-index: 20; font-size: 11px; font-weight: 700; padding: 10px 6px; text-align: center; border-right: 2px solid #1e3a8a;">MJESEC</th>';
 
             for (let i = 0; i < sortimenti.length; i++) {
                 const colClass = getColumnGroup(sortimenti[i]);
@@ -6222,7 +6222,7 @@
                     borderColor = '#b91c1c';
                 }
 
-                headerHtml += '<th class="sortiment-col ' + colClass + extraClass + '" style="background: ' + bgColor + ' !important; color: white !important; border: 1px solid ' + borderColor + '; min-width: 85px; max-width: 110px; padding: 12px 8px; font-size: 12px; font-weight: 700; text-align: center; white-space: normal !important; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.3; height: auto; overflow: visible; vertical-align: middle;">' + sortimenti[i] + '</th>';
+                headerHtml += '<th class="sortiment-col ' + colClass + extraClass + '" style="background: ' + bgColor + ' !important; color: white !important; border: 1px solid ' + borderColor + '; min-width: 70px; max-width: 90px; padding: 10px 6px; font-size: 11px; font-weight: 700; text-align: center; white-space: normal !important; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.2; height: auto; overflow: visible; vertical-align: middle; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">' + sortimenti[i] + '</th>';
             }
             headerHtml += '</tr>';
             headerElem.innerHTML = headerHtml;
@@ -6236,30 +6236,32 @@
                 const rowBg = m % 2 === 0 ? '#f9fafb' : 'white';
                 const rowHoverBg = m % 2 === 0 ? '#f3f4f6' : '#f9fafb';
                 bodyHtml += '<tr style="background: ' + rowBg + ';" onmouseover="this.style.background=\'' + rowHoverBg + '\'" onmouseout="this.style.background=\'' + rowBg + '\'">';
-                bodyHtml += '<td style="font-weight: 700; font-size: 13px; min-width: 80px; max-width: 90px; position: sticky; left: 0; background: ' + rowBg + '; z-index: 9; border-right: 3px solid #1e40af; text-align: center; padding: 10px 8px;">' + mjeseci[m] + '</td>';
+                bodyHtml += '<td style="font-weight: 700; font-size: 13px; min-width: 70px; max-width: 80px; position: sticky; left: 0; background: ' + rowBg + '; z-index: 9; border-right: 2px solid #3b82f6; text-align: center; padding: 10px 6px; color: #1f2937;">' + mjeseci[m] + '</td>';
 
                 for (let s = 0; s < sortimenti.length; s++) {
                     const sortiment = sortimenti[s];
                     const value = data.mjeseci[m][sortiment] || 0;
-                    const displayVal = value.toFixed(2); // Prikaži 0.00 umjesto "-"
+                    const displayVal = value.toFixed(2);
                     const colClass = getColumnGroup(sortiment);
                     let extraClass = '';
-                    let fontWeight = value > 0 ? 'font-weight: 600;' : 'font-weight: 400; color: #9ca3af;';
+                    let fontWeight = value > 0 ? 'font-weight: 600; color: #000000;' : 'font-weight: 400; color: #9ca3af;';
                     let cellBg = 'transparent';
 
                     if (sortiment === 'ČETINARI') {
                         extraClass = ' col-cetinari';
                         cellBg = value > 0 ? '#d1fae5' : 'transparent';
+                        if (value > 0) fontWeight = 'font-weight: 700; color: #065f46;';
                     } else if (sortiment === 'LIŠĆARI') {
                         extraClass = ' col-liscari';
-                        cellBg = value > 0 ? '#fed7aa' : 'transparent';
+                        cellBg = value > 0 ? '#fef3c7' : 'transparent';
+                        if (value > 0) fontWeight = 'font-weight: 700; color: #78350f;';
                     } else if (sortiment === 'SVEUKUPNO') {
                         extraClass = ' col-sveukupno';
-                        fontWeight = value > 0 ? 'font-weight: 700;' : 'font-weight: 400; color: #9ca3af;';
-                        cellBg = value > 0 ? '#fecaca' : 'transparent';
+                        fontWeight = value > 0 ? 'font-weight: 800; color: #991b1b;' : 'font-weight: 400; color: #9ca3af;';
+                        cellBg = value > 0 ? '#fee2e2' : 'transparent';
                     }
 
-                    bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="' + fontWeight + ' padding: 8px 10px; font-size: 12px; min-width: 85px; max-width: 110px; text-align: right; border: 1px solid #e5e7eb; background: ' + cellBg + ';">' + displayVal + '</td>';
+                    bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="' + fontWeight + ' padding: 8px 6px; font-size: 12px; min-width: 70px; max-width: 90px; text-align: right; border: 1px solid #e5e7eb; background: ' + cellBg + '; font-family: \'Roboto Mono\', ui-monospace, monospace; text-shadow: 0 0 1px rgba(255,255,255,0.8);">' + displayVal + '</td>';
 
                     // Add to totals
                     if (!totals[sortiment]) totals[sortiment] = 0;
@@ -6271,26 +6273,30 @@
 
             // UKUPNO row with improved styling
             bodyHtml += '<tr style="background: linear-gradient(to bottom, #e5e7eb, #d1d5db); font-weight: 700; border-top: 3px solid #374151; border-bottom: 2px solid #374151;">';
-            bodyHtml += '<td style="min-width: 80px; max-width: 90px; position: sticky; left: 0; background: #e5e7eb; z-index: 9; border-right: 3px solid #1e40af; text-align: center; font-size: 13px; padding: 12px 8px; color: #1f2937;">📊 UKUPNO</td>';
+            bodyHtml += '<td style="min-width: 70px; max-width: 80px; position: sticky; left: 0; background: #e5e7eb; z-index: 9; border-right: 2px solid #3b82f6; text-align: center; font-size: 12px; padding: 10px 6px; color: #1f2937;">📊 UKUPNO</td>';
             for (let s = 0; s < sortimenti.length; s++) {
                 const sortiment = sortimenti[s];
                 const total = totals[sortiment] || 0;
                 const colClass = getColumnGroup(sortiment);
                 let extraClass = '';
                 let cellBg = '#e5e7eb';
+                let textColor = '#000000';
 
                 if (sortiment === 'ČETINARI') {
                     extraClass = ' col-cetinari';
-                    cellBg = '#d1fae5';
+                    cellBg = '#a7f3d0';
+                    textColor = '#065f46';
                 } else if (sortiment === 'LIŠĆARI') {
                     extraClass = ' col-liscari';
-                    cellBg = '#fed7aa';
+                    cellBg = '#fde68a';
+                    textColor = '#78350f';
                 } else if (sortiment === 'SVEUKUPNO') {
                     extraClass = ' col-sveukupno';
-                    cellBg = '#fecaca';
+                    cellBg = '#fca5a5';
+                    textColor = '#7f1d1d';
                 }
 
-                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 800; font-size: 13px; padding: 12px 10px; background: ' + cellBg + '; min-width: 85px; max-width: 110px; text-align: right; border: 1px solid #9ca3af;">' + total.toFixed(2) + '</td>';
+                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 800; font-size: 12px; padding: 10px 6px; background: ' + cellBg + '; min-width: 70px; max-width: 90px; text-align: right; border: 1px solid #9ca3af; color: ' + textColor + '; font-family: \'Roboto Mono\', ui-monospace, monospace;">' + total.toFixed(2) + '</td>';
             }
             bodyHtml += '</tr>';
 
@@ -6300,7 +6306,7 @@
             const grandTotal = totals['SVEUKUPNO'] || 0;
 
             bodyHtml += '<tr style="background: #f3f4f6; font-style: italic; color: #374151; border-bottom: 3px solid #374151;">';
-            bodyHtml += '<td style="min-width: 80px; max-width: 90px; position: sticky; left: 0; background: #f3f4f6; z-index: 9; border-right: 3px solid #1e40af; text-align: center; font-size: 12px; padding: 10px 8px; font-weight: 600;">% UČEŠĆE</td>';
+            bodyHtml += '<td style="min-width: 70px; max-width: 80px; position: sticky; left: 0; background: #f3f4f6; z-index: 9; border-right: 2px solid #3b82f6; text-align: center; font-size: 11px; padding: 8px 6px; font-weight: 600; color: #374151;">% UČEŠĆE</td>';
 
             for (let s = 0; s < sortimenti.length; s++) {
                 const sortiment = sortimenti[s];
@@ -6342,7 +6348,7 @@
                     }
                 }
 
-                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 700; font-size: 12px; padding: 10px; background: ' + cellBg + '; min-width: 85px; max-width: 110px; text-align: right; border: 1px solid #d1d5db; font-style: italic;">' + percentage + '%</td>';
+                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 700; font-size: 11px; padding: 8px 6px; background: ' + cellBg + '; min-width: 70px; max-width: 90px; text-align: right; border: 1px solid #d1d5db; font-style: italic; color: #374151; font-family: \'Roboto Mono\', ui-monospace, monospace;">' + percentage + '%</td>';
             }
             bodyHtml += '</tr>';
 
