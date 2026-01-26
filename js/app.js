@@ -3292,8 +3292,8 @@
                             ${(p.mjeseci && Array.isArray(p.mjeseci) ? p.mjeseci : new Array(12).fill(0)).map((v, mIdx) => {
                                 const val = (v != null && !isNaN(v)) ? v : 0;
                                 const displayVal = val > 0 ? val.toFixed(2) : '-';
-                                const fontWeight = val > 0 ? 'font-weight: 500;' : 'color: #9ca3af;';
-                                return `<td class="right" style="${fontWeight} border: 1px solid #d1fae5; padding: 8px; font-size: 10px; font-family: 'Courier New', monospace;">${displayVal}</td>`;
+                                const cellStyle = val > 0 ? 'font-weight: 600; color: #000000; text-shadow: 0 0 1px rgba(255,255,255,0.8);' : 'color: #9ca3af;';
+                                return `<td class="right" style="${cellStyle} border: 1px solid #d1fae5; padding: 8px; font-size: 11px; font-family: 'Roboto Mono', ui-monospace, monospace;">${displayVal}</td>`;
                             }).join('')}
                             <td class="right" style="font-weight: 700; background: linear-gradient(to right, #d1fae5, #a7f3d0); border: 2px solid #059669; padding: 10px; font-size: 11px; color: #065f46;">
                                 ${(p.ukupno != null && !isNaN(p.ukupno)) ? p.ukupno.toFixed(2) : '0.00'} m³
@@ -3311,11 +3311,11 @@
                         ${monthTotals.map(total => {
                             const val = (total != null && !isNaN(total)) ? total : 0;
                             return `
-                            <td class="right" style="border: 1px solid #6ee7b7; padding: 10px; font-size: 11px;">
+                            <td class="right" style="border: 1px solid #6ee7b7; padding: 10px; font-size: 12px; font-weight: 700; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace; text-shadow: 0 0 1px rgba(255,255,255,0.8);">
                                 ${val > 0 ? val.toFixed(2) : '-'}
                             </td>`;
                         }).join('')}
-                        <td class="right" style="background: #a7f3d0; border: 2px solid #34d399; padding: 12px; font-size: 13px; font-weight: 900;">
+                        <td class="right" style="background: #a7f3d0; border: 2px solid #34d399; padding: 12px; font-size: 13px; font-weight: 900; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace;">
                             ${(grandTotal != null && !isNaN(grandTotal)) ? grandTotal.toFixed(2) : '0.00'} m³
                         </td>
                     </tr>
@@ -3461,8 +3461,8 @@
                             ${(o.mjeseci && Array.isArray(o.mjeseci) ? o.mjeseci : new Array(12).fill(0)).map((v, mIdx) => {
                                 const val = (v != null && !isNaN(v)) ? v : 0;
                                 const displayVal = val > 0 ? val.toFixed(2) : '-';
-                                const fontWeight = val > 0 ? 'font-weight: 500;' : 'color: #9ca3af;';
-                                return `<td class="right" style="${fontWeight} border: 1px solid #dbeafe; padding: 8px; font-size: 10px; font-family: 'Courier New', monospace;">${displayVal}</td>`;
+                                const cellStyle = val > 0 ? 'font-weight: 600; color: #000000; text-shadow: 0 0 1px rgba(255,255,255,0.8);' : 'color: #9ca3af;';
+                                return `<td class="right" style="${cellStyle} border: 1px solid #dbeafe; padding: 8px; font-size: 11px; font-family: 'Roboto Mono', ui-monospace, monospace;">${displayVal}</td>`;
                             }).join('')}
                             <td class="right" style="font-weight: 700; background: linear-gradient(to right, #dbeafe, #bfdbfe); border: 2px solid #2563eb; padding: 10px; font-size: 11px; color: #1e40af;">
                                 ${(o.ukupno != null && !isNaN(o.ukupno)) ? o.ukupno.toFixed(2) : '0.00'} m³
@@ -3480,11 +3480,11 @@
                         ${monthTotals.map(total => {
                             const val = (total != null && !isNaN(total)) ? total : 0;
                             return `
-                            <td class="right" style="border: 1px solid #93c5fd; padding: 10px; font-size: 11px;">
+                            <td class="right" style="border: 1px solid #93c5fd; padding: 10px; font-size: 12px; font-weight: 700; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace; text-shadow: 0 0 1px rgba(255,255,255,0.8);">
                                 ${val > 0 ? val.toFixed(2) : '-'}
                             </td>`;
                         }).join('')}
-                        <td class="right" style="background: #bfdbfe; border: 2px solid #60a5fa; padding: 12px; font-size: 13px; font-weight: 900;">
+                        <td class="right" style="background: #bfdbfe; border: 2px solid #60a5fa; padding: 12px; font-size: 13px; font-weight: 900; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace;">
                             ${(grandTotal != null && !isNaN(grandTotal)) ? grandTotal.toFixed(2) : '0.00'} m³
                         </td>
                     </tr>
