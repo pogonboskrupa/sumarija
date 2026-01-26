@@ -4367,7 +4367,7 @@
                     const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
                     const color = kolicina > 0 ? '#000000' : '#9ca3af';
                     const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #d1fae5; font-weight: 700;' : '';
-                    bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; color: ${color};${bgStyle}">${display}</td>`;
+                    bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}">${display}</td>`;
                 });
 
                 bodyHtml += '</tr>';
@@ -4380,7 +4380,7 @@
             sortimentiNazivi.forEach(sortiment => {
                 const suma = ukupnoSume[sortiment] || 0;
                 const display = suma > 0 ? suma.toFixed(2) : '-';
-                bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; color: white; font-weight: 700;">${display}</td>`;
+                bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 700; color: white; text-shadow: 0 1px 1px rgba(0,0,0,0.3);">${display}</td>`;
             });
             bodyHtml += '</tr>';
 
@@ -4438,7 +4438,7 @@
                     const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
                     const color = kolicina > 0 ? '#000000' : '#9ca3af';
                     const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #bae6fd; font-weight: 700;' : '';
-                    bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; color: ${color};${bgStyle}">${display}</td>`;
+                    bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}">${display}</td>`;
                 });
 
                 bodyHtml += '</tr>';
@@ -4451,7 +4451,7 @@
             sortimentiNazivi.forEach(sortiment => {
                 const suma = ukupnoSume[sortiment] || 0;
                 const display = suma > 0 ? suma.toFixed(2) : '-';
-                bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; color: white; font-weight: 700;">${display}</td>`;
+                bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 700; color: white; text-shadow: 0 1px 1px rgba(0,0,0,0.3);">${display}</td>`;
             });
             bodyHtml += '</tr>';
 
