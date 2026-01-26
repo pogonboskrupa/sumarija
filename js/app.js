@@ -49,7 +49,7 @@
             }
         })();
 
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwOJI6bN_z45EuR_UMS_RuV4GMfGdUJ2t7Fyv7S8-vAJEQ0CNjlNOW_SNXcBlQ9xTS6/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzuAtZGH9UIoN8qCduv8QlgcaKFLZrTExAXnRczGVnXYdmG91BrLhE937_TuceYtJtU/exec';
 
         // ========== PERFORMANCE METRICS ==========
         const perfMetrics = {
@@ -819,7 +819,8 @@
                         { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year, timeout: 180000 },
                         { name: 'Operativa (Stats)', url: buildApiUrl('stats', { year }), cacheKey: 'cache_stats_' + year, timeout: 180000 },
                         { name: 'Stanje Odjela', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_odjeli_' + year, timeout: 180000 },
-                        { name: 'Stanje Odjela Admin', url: buildApiUrl('stanje-odjela'), cacheKey: 'cache_stanje_odjela_admin', timeout: 180000 },
+                        // SKIP: Stanje Odjela Admin se učitava lazy (kad korisnik klikne na tab) jer može trajati dugo
+                        // { name: 'Stanje Odjela Admin', url: buildApiUrl('stanje-odjela'), cacheKey: 'cache_stanje_odjela_admin', timeout: 180000 },
                         { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
                         { name: 'Pending Unosi', url: buildApiUrl('pending-unosi'), cacheKey: 'cache_pending_unosi', timeout: 120000 },
                         { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni-sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year, timeout: 120000 },
