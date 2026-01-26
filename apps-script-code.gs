@@ -159,34 +159,11 @@ function doGet(e) {
 }
 
 // ========================================
-// OPTIONS Handler - CORS Preflight Support
+// NAPOMENA O CORS-u
 // ========================================
-// Handles OPTIONS preflight requests from browsers
-// Required for CORS to work properly with cross-origin fetch
-function doOptions(e) {
-  Logger.log('=== DO OPTIONS CALLED (CORS Preflight) ===');
-
-  // Return CORS headers for preflight requests
-  const output = ContentService.createTextOutput('');
-  output.setMimeType(ContentService.MimeType.JSON);
-
-  // Try setHeader (V8 runtime), fallback if not available (Rhino)
-  try {
-    if (typeof output.setHeader === 'function') {
-      output.setHeader('Access-Control-Allow-Origin', '*');
-      output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-      output.setHeader('Access-Control-Max-Age', '86400'); // 24 hours cache
-      Logger.log('[OPTIONS] CORS headers set successfully');
-    } else {
-      Logger.log('[OPTIONS] WARNING: setHeader not available');
-    }
-  } catch (e) {
-    Logger.log('[OPTIONS] WARNING: setHeader failed: ' + e.toString());
-  }
-
-  return output;
-}
+// Google Apps Script NE podržava doOptions() funkciju - samo doGet() i doPost()
+// CORS headeri se automatski dodaju kada je deployment postavljen na "Anyone"
+// setHeader() metoda NE POSTOJI na ContentService.TextOutput objektu
 
 // Helper function to verify user credentials
 function verifyUser(username, password) {
@@ -525,25 +502,11 @@ function parseDate(datum) {
 }
 
 // Pomoćna funkcija za JSON response
+// NAPOMENA: Google Apps Script automatski dodaje CORS headere za "Anyone" deploymente
+// Ne koristimo setHeader() jer ta metoda NE POSTOJI u ContentService.TextOutput
 function createJsonResponse(data, success) {
   const output = ContentService.createTextOutput(JSON.stringify(data));
   output.setMimeType(ContentService.MimeType.JSON);
-
-  // ✅ CORS Support - Try setHeader (V8 runtime), fallback if not available (Rhino)
-  try {
-    if (typeof output.setHeader === 'function') {
-      output.setHeader('Access-Control-Allow-Origin', '*');
-      output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-      Logger.log('[CORS] Headers set successfully using setHeader()');
-    } else {
-      Logger.log('[CORS] WARNING: setHeader not available (Rhino runtime?)');
-    }
-  } catch (e) {
-    Logger.log('[CORS] WARNING: setHeader failed: ' + e.toString());
-    // Continue without headers - CORS won't work but at least no error
-  }
-
   return output;
 }
 
