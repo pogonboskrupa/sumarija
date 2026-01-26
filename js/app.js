@@ -4365,7 +4365,7 @@
                     const kolicina = kupac.sortimenti[sortiment] || 0;
                     ukupnoSume[sortiment] += kolicina; // Dodaj u sumu
                     const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
-                    const color = kolicina > 0 ? '#047857' : '#9ca3af';
+                    const color = kolicina > 0 ? '#000000' : '#9ca3af';
                     const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #d1fae5; font-weight: 700;' : '';
                     bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; color: ${color};${bgStyle}">${display}</td>`;
                 });
@@ -4436,7 +4436,7 @@
                     const kolicina = red.sortimenti[sortiment] || 0;
                     ukupnoSume[sortiment] += kolicina; // Dodaj u sumu
                     const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
-                    const color = kolicina > 0 ? '#0369a1' : '#9ca3af';
+                    const color = kolicina > 0 ? '#000000' : '#9ca3af';
                     const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #bae6fd; font-weight: 700;' : '';
                     bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; color: ${color};${bgStyle}">${display}</td>`;
                 });
