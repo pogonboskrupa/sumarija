@@ -1826,6 +1826,25 @@
             }
         }
 
+        // Switch between kupci submenus
+        function switchKupciSubmenu(view) {
+            // Update submenu buttons
+            const submenuTabs = document.querySelectorAll('#kupci-content .submenu-tab');
+            submenuTabs.forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Hide all submenu content
+            document.getElementById('kupci-godisnji-view').classList.add('hidden');
+            document.getElementById('kupci-mjesecni-view').classList.add('hidden');
+
+            // Show selected view
+            if (view === 'godisnji') {
+                document.getElementById('kupci-godisnji-view').classList.remove('hidden');
+            } else if (view === 'mjesecni') {
+                document.getElementById('kupci-mjesecni-view').classList.remove('hidden');
+            }
+        }
+
         // Load dashboard data
         async function loadDashboard() {
             try {
