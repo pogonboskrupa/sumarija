@@ -4324,6 +4324,10 @@
             headerHtml += '</tr>';
             headerElem.innerHTML = headerHtml;
 
+            // Izračunaj UKUPNO sume za svaki sortiment
+            const ukupnoSume = {};
+            sortimentiNazivi.forEach(s => ukupnoSume[s] = 0);
+
             // Body redovi
             let bodyHtml = '';
             godisnji.forEach((kupac, index) => {
@@ -4333,6 +4337,7 @@
 
                 sortimentiNazivi.forEach(sortiment => {
                     const kolicina = kupac.sortimenti[sortiment] || 0;
+                    ukupnoSume[sortiment] += kolicina; // Dodaj u sumu
                     const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
                     const color = kolicina > 0 ? '#047857' : '#9ca3af';
                     const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #d1fae5; font-weight: 700;' : '';
@@ -4341,6 +4346,17 @@
 
                 bodyHtml += '</tr>';
             });
+
+            // UKUPNO red na kraju
+            bodyHtml += '<tr style="background: linear-gradient(135deg, #047857 0%, #065f46 100%); font-weight: 700;">';
+            bodyHtml += '<td style="color: white; font-weight: 700; position: sticky; left: 0; background: #047857; z-index: 5;">UKUPNO</td>';
+            sortimentiNazivi.forEach(sortiment => {
+                const suma = ukupnoSume[sortiment] || 0;
+                const display = suma > 0 ? suma.toFixed(2) : '-';
+                bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; color: white; font-weight: 700;">${display}</td>`;
+            });
+            bodyHtml += '</tr>';
+
             bodyElem.innerHTML = bodyHtml;
         }
 
@@ -4371,6 +4387,10 @@
             headerHtml += '</tr>';
             headerElem.innerHTML = headerHtml;
 
+            // Izračunaj UKUPNO sume za svaki sortiment
+            const ukupnoSume = {};
+            sortimentiNazivi.forEach(s => ukupnoSume[s] = 0);
+
             // Body redovi
             let bodyHtml = '';
             filteredData.forEach((red, index) => {
@@ -4380,6 +4400,7 @@
 
                 sortimentiNazivi.forEach(sortiment => {
                     const kolicina = red.sortimenti[sortiment] || 0;
+                    ukupnoSume[sortiment] += kolicina; // Dodaj u sumu
                     const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
                     const color = kolicina > 0 ? '#0369a1' : '#9ca3af';
                     const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #bae6fd; font-weight: 700;' : '';
@@ -4388,6 +4409,17 @@
 
                 bodyHtml += '</tr>';
             });
+
+            // UKUPNO red na kraju
+            bodyHtml += '<tr style="background: linear-gradient(135deg, #0369a1 0%, #075985 100%); font-weight: 700;">';
+            bodyHtml += '<td style="color: white; font-weight: 700; position: sticky; left: 0; background: #0369a1; z-index: 5;">UKUPNO</td>';
+            sortimentiNazivi.forEach(sortiment => {
+                const suma = ukupnoSume[sortiment] || 0;
+                const display = suma > 0 ? suma.toFixed(2) : '-';
+                bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; color: white; font-weight: 700;">${display}</td>`;
+            });
+            bodyHtml += '</tr>';
+
             bodyElem.innerHTML = bodyHtml;
         }
 
@@ -4397,8 +4429,11 @@
             const rows = document.querySelectorAll('#kupci-godisnji-body tr');
 
             rows.forEach(row => {
-                const kupac = row.getAttribute('data-kupac') || '';
-                if (kupac.includes(searchInput)) {
+                const kupac = row.getAttribute('data-kupac');
+                // UKUPNO red nema data-kupac atribut - uvijek ga prikaži
+                if (kupac === null) {
+                    row.style.display = '';
+                } else if (kupac.includes(searchInput)) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
@@ -4411,8 +4446,11 @@
             const rows = document.querySelectorAll('#kupci-mjesecni-body tr');
 
             rows.forEach(row => {
-                const kupac = row.getAttribute('data-kupac') || '';
-                if (kupac.includes(searchInput)) {
+                const kupac = row.getAttribute('data-kupac');
+                // UKUPNO red nema data-kupac atribut - uvijek ga prikaži
+                if (kupac === null) {
+                    row.style.display = '';
+                } else if (kupac.includes(searchInput)) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
