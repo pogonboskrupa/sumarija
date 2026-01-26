@@ -4334,8 +4334,13 @@
                 return;
             }
 
-            // Header sa svim sortimentima
-            let headerHtml = '<tr style="background: #047857;"><th style="color: white; font-weight: 700; position: sticky; left: 0; background: #047857; z-index: 10;">Kupac</th>';
+            // Sortiraj od najvećeg ka najmanjem po ukupno (SVEUKUPNO)
+            const sortedData = [...godisnji].sort((a, b) => (b.ukupno || 0) - (a.ukupno || 0));
+
+            // Header sa svim sortimentima (dodaj R.br. kolonu)
+            let headerHtml = '<tr style="background: #047857;">';
+            headerHtml += '<th style="color: white; font-weight: 700; text-align: center; width: 50px;">R.br.</th>';
+            headerHtml += '<th style="color: white; font-weight: 700; position: sticky; left: 0; background: #047857; z-index: 10;">Kupac</th>';
             sortimentiNazivi.forEach(sortiment => {
                 const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #065f46;' : '';
                 headerHtml += `<th style="color: white; font-weight: 700; text-align: right;${bgStyle}">${sortiment}</th>`;
@@ -4347,11 +4352,13 @@
             const ukupnoSume = {};
             sortimentiNazivi.forEach(s => ukupnoSume[s] = 0);
 
-            // Body redovi
+            // Body redovi (sa rednim brojem)
             let bodyHtml = '';
-            godisnji.forEach((kupac, index) => {
+            sortedData.forEach((kupac, index) => {
                 const rowBg = index % 2 === 0 ? '#f0fdf4' : 'white';
+                const redniBroj = index + 1;
                 bodyHtml += `<tr style="background: ${rowBg};" data-kupac="${(kupac.kupac || '').toLowerCase()}">`;
+                bodyHtml += `<td style="text-align: center; font-weight: 600; color: #6b7280;">${redniBroj}.</td>`;
                 bodyHtml += `<td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 5;">${kupac.kupac || '-'}</td>`;
 
                 sortimentiNazivi.forEach(sortiment => {
@@ -4368,6 +4375,7 @@
 
             // UKUPNO red na kraju
             bodyHtml += '<tr style="background: linear-gradient(135deg, #047857 0%, #065f46 100%); font-weight: 700;">';
+            bodyHtml += '<td style="color: white; font-weight: 700; text-align: center;"></td>';
             bodyHtml += '<td style="color: white; font-weight: 700; position: sticky; left: 0; background: #047857; z-index: 5;">UKUPNO</td>';
             sortimentiNazivi.forEach(sortiment => {
                 const suma = ukupnoSume[sortiment] || 0;
@@ -4397,8 +4405,13 @@
                 return;
             }
 
-            // Header sa svim sortimentima
-            let headerHtml = '<tr style="background: #0369a1;"><th style="color: white; font-weight: 700; position: sticky; left: 0; background: #0369a1; z-index: 10;">Kupac</th>';
+            // Sortiraj od najvećeg ka najmanjem po ukupno (SVEUKUPNO)
+            const sortedData = [...filteredData].sort((a, b) => (b.ukupno || 0) - (a.ukupno || 0));
+
+            // Header sa svim sortimentima (dodaj R.br. kolonu)
+            let headerHtml = '<tr style="background: #0369a1;">';
+            headerHtml += '<th style="color: white; font-weight: 700; text-align: center; width: 50px;">R.br.</th>';
+            headerHtml += '<th style="color: white; font-weight: 700; position: sticky; left: 0; background: #0369a1; z-index: 10;">Kupac</th>';
             sortimentiNazivi.forEach(sortiment => {
                 const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #075985;' : '';
                 headerHtml += `<th style="color: white; font-weight: 700; text-align: right;${bgStyle}">${sortiment}</th>`;
@@ -4410,11 +4423,13 @@
             const ukupnoSume = {};
             sortimentiNazivi.forEach(s => ukupnoSume[s] = 0);
 
-            // Body redovi
+            // Body redovi (sa rednim brojem)
             let bodyHtml = '';
-            filteredData.forEach((red, index) => {
+            sortedData.forEach((red, index) => {
                 const rowBg = index % 2 === 0 ? '#e0f2fe' : 'white';
+                const redniBroj = index + 1;
                 bodyHtml += `<tr style="background: ${rowBg};" data-kupac="${(red.kupac || '').toLowerCase()}">`;
+                bodyHtml += `<td style="text-align: center; font-weight: 600; color: #6b7280;">${redniBroj}.</td>`;
                 bodyHtml += `<td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 5;">${red.kupac || '-'}</td>`;
 
                 sortimentiNazivi.forEach(sortiment => {
@@ -4431,6 +4446,7 @@
 
             // UKUPNO red na kraju
             bodyHtml += '<tr style="background: linear-gradient(135deg, #0369a1 0%, #075985 100%); font-weight: 700;">';
+            bodyHtml += '<td style="color: white; font-weight: 700; text-align: center;"></td>';
             bodyHtml += '<td style="color: white; font-weight: 700; position: sticky; left: 0; background: #0369a1; z-index: 5;">UKUPNO</td>';
             sortimentiNazivi.forEach(sortiment => {
                 const suma = ukupnoSume[sortiment] || 0;
