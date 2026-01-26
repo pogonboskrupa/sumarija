@@ -49,7 +49,7 @@
             }
         })();
 
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwOJI6bN_z45EuR_UMS_RuV4GMfGdUJ2t7Fyv7S8-vAJEQ0CNjlNOW_SNXcBlQ9xTS6/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzuAtZGH9UIoN8qCduv8QlgcaKFLZrTExAXnRczGVnXYdmG91BrLhE937_TuceYtJtU/exec';
 
         // ========== PERFORMANCE METRICS ==========
         const perfMetrics = {
