@@ -10,12 +10,12 @@ Izvršena su **kritična poboljšanja** API integracije i korisničkog iskustva 
 
 ### Prije:
 ```javascript
-const API_URL = 'https://script.google.com/macros/s/AKfycbyzTN1Yw1YakzDV_grWM_HPqDqeYNNUh-uTlhiEIug/dev';
+const API_URL = 'https://script.google.com/macros/s/AKfycby1ex5OXfAJy651uBTdyGXW3TBzeJ2rB43xtQOXjBwlrfXsQF1UuRBuXaghDRzGhbeC/exec';
 ```
 
 ### Poslije:
 ```javascript
-const API_URL = 'https://script.google.com/macros/s/AKfycbwpm7ggzTEalGJopOIwEKv7qg908p0P1yaJSV45qqU1Rz7FGrgOvilTaZZWpukSbdB7Hw/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycby1ex5OXfAJy651uBTdyGXW3TBzeJ2rB43xtQOXjBwlrfXsQF1UuRBuXaghDRzGhbeC/exec';
 ```
 
 **Impact:** ✅ API pozivi sada koriste ispravan deployment URL koji završava sa `/exec` umjesto `/dev`

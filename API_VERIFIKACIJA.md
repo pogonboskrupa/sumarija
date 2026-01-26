@@ -13,7 +13,7 @@
 **Lokacija:** `index.html:190`
 
 ```javascript
-const API_URL = 'https://script.google.com/macros/s/AKfycbyzTN1Yw1YakzDV_grWM_HPqDqeYNNUh-uTlhiEIug/dev';
+const API_URL = 'https://script.google.com/macros/s/AKfycby1ex5OXfAJy651uBTdyGXW3TBzeJ2rB43xtQOXjBwlrfXsQF1UuRBuXaghDRzGhbeC/exec';
 ```
 
 #### ⚠️ PROBLEM #1: API URL Neusklađenost
@@ -21,7 +21,7 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbyzTN1Yw1YakzDV_grWM_HP
 | Fajl | API URL | Status |
 |------|---------|--------|
 | **index.html** | `...AKfycbyzTN1...Eiug/dev` | ❌ Završava sa `/dev` (nevažeće) |
-| **STATUS.md** | `...AKfycbwpm7g...B7Hw/exec` | ✅ Trebao bi biti ovaj URL |
+| **STATUS.md** | `...AKfycby1ex...DRzGhbeC/exec` | ✅ Trebao bi biti ovaj URL |
 | **apps-script-code.gs** | Spreadsheet ID: `1rpl0RiqsE6lrU9uDMTjf127By7b951rP3a5Chis9qwg` | ✅ Konfigurisan |
 
 **Zaključak:**
@@ -125,7 +125,7 @@ async function fetchWithRetry(url, retries = 3, delay = 2000) {
 #### Test #1: Trenutni URL iz index.html
 
 ```bash
-curl "https://script.google.com/macros/s/AKfycbyzTN1Yw1YakzDV_grWM_HPqDqeYNNUh-uTlhiEIug/dev"
+curl "https://script.google.com/macros/s/AKfycby1ex5OXfAJy651uBTdyGXW3TBzeJ2rB43xtQOXjBwlrfXsQF1UuRBuXaghDRzGhbeC/exec"
 ```
 
 **Rezultat:** `HTTP/1.1 403 Forbidden`
@@ -133,7 +133,7 @@ curl "https://script.google.com/macros/s/AKfycbyzTN1Yw1YakzDV_grWM_HPqDqeYNNUh-u
 #### Test #2: URL iz STATUS.md
 
 ```bash
-curl "https://script.google.com/macros/s/AKfycbwpm7ggzTEalGJopOIwEKv7qg908p0P1yaJSV45qqU1Rz7FGrgOvilTaZZWpukSbdB7Hw/exec"
+curl "https://script.google.com/macros/s/AKfycby1ex5OXfAJy651uBTdyGXW3TBzeJ2rB43xtQOXjBwlrfXsQF1UuRBuXaghDRzGhbeC/exec"
 ```
 
 **Rezultat:** `HTTP/1.1 403 Forbidden`
@@ -156,10 +156,10 @@ curl "https://script.google.com/macros/s/AKfycbwpm7ggzTEalGJopOIwEKv7qg908p0P1ya
 **Problem:**
 ```javascript
 // POGREŠNO (trenutno):
-const API_URL = 'https://script.google.com/macros/s/AKfycbyzTN1Yw1YakzDV_grWM_HPqDqeYNNUh-uTlhiEIug/dev';
+const API_URL = 'https://script.google.com/macros/s/AKfycby1ex5OXfAJy651uBTdyGXW3TBzeJ2rB43xtQOXjBwlrfXsQF1UuRBuXaghDRzGhbeC/exec';
 
 // TREBALO BI BITI (prema STATUS.md):
-const API_URL = 'https://script.google.com/macros/s/AKfycbwpm7ggzTEalGJopOIwEKv7qg908p0P1yaJSV45qqU1Rz7FGrgOvilTaZZWpukSbdB7Hw/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycby1ex5OXfAJy651uBTdyGXW3TBzeJ2rB43xtQOXjBwlrfXsQF1UuRBuXaghDRzGhbeC/exec';
 ```
 
 **Impact:** Login i stats pozivi neće raditi u produkciji!
@@ -213,7 +213,7 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbwpm7ggzTEalGJopOIwEKv7
 
 ```bash
 # U index.html:190, zamijeniti sa:
-const API_URL = 'https://script.google.com/macros/s/AKfycbwpm7ggzTEalGJopOIwEKv7qg908p0P1yaJSV45qqU1Rz7FGrgOvilTaZZWpukSbdB7Hw/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycby1ex5OXfAJy651uBTdyGXW3TBzeJ2rB43xtQOXjBwlrfXsQF1UuRBuXaghDRzGhbeC/exec';
 ```
 
 ### Akcija #2: Dodati Retry Logiku (OPCIONO)

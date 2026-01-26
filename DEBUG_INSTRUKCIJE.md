@@ -90,7 +90,7 @@ console.log(API_URL);
 
 **Očekivano:**
 ```
-https://script.google.com/macros/s/AKfycbwpm7ggzTEalGJopOIwEKv7qg908p0P1yaJSV45qqU1Rz7FGrgOvilTaZZWpukSbdB7Hw/exec
+https://script.google.com/macros/s/AKfycby1ex5OXfAJy651uBTdyGXW3TBzeJ2rB43xtQOXjBwlrfXsQF1UuRBuXaghDRzGhbeC/exec
 ```
 
 Ako je drugačije - imaš staru verziju!
@@ -99,7 +99,7 @@ Ako je drugačije - imaš staru verziju!
 
 Otvori ovaj URL u browser-u:
 ```
-https://script.google.com/macros/s/AKfycbwpm7ggzTEalGJopOIwEKv7qg908p0P1yaJSV45qqU1Rz7FGrgOvilTaZZWpukSbdB7Hw/exec
+https://script.google.com/macros/s/AKfycby1ex5OXfAJy651uBTdyGXW3TBzeJ2rB43xtQOXjBwlrfXsQF1UuRBuXaghDRzGhbeC/exec
 ```
 
 **Očekivano:**
@@ -111,7 +111,7 @@ Ovo je DOBRO! Znači da API radi, samo nema path parametar.
 
 **Sada testiraj sa path parametrom:**
 ```
-https://script.google.com/macros/s/AKfycbwpm7ggzTEalGJopOIwEKv7qg908p0P1yaJSV45qqU1Rz7FGrgOvilTaZZWpukSbdB7Hw/exec?path=login&username=test&password=test
+https://script.google.com/macros/s/AKfycby1ex5OXfAJy651uBTdyGXW3TBzeJ2rB43xtQOXjBwlrfXsQF1UuRBuXaghDRzGhbeC/exec?path=login&username=test&password=test
 ```
 
 **Očekivano:**

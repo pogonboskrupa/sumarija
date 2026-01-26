@@ -47,7 +47,7 @@ Ovo je **kompletno rješenje za CORS problem** koji blokira komunikaciju između
 5. **ZALIJEPI** u Cloudflare editor
 6. Provjeri da li je `APPS_SCRIPT_URL` na liniji 6 tvoj trenutni Apps Script URL:
    ```javascript
-   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyE5IPY-W9bN0Ks3knMkydzzed0C1ggv020sbJDeodJiLIudRWf_P3XvTM63FEm1ojt/exec';
+   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby1ex5OXfAJy651uBTdyGXW3TBzeJ2rB43xtQOXjBwlrfXsQF1UuRBuXaghDRzGhbeC/exec';
    ```
    **AKO JE RAZLIČIT**, promijeni ga sa svojim URL-om!
 
@@ -92,7 +92,7 @@ Ovo je **kompletno rješenje za CORS problem** koji blokira komunikaciju između
 1. Otvori `index.html` fajl
 2. Pronađi liniju **4249** (ili search za `API_URL`):
    ```javascript
-   const API_URL = 'https://script.google.com/macros/s/AKfycbyE5IPY-W9bN0Ks3knMkydzzed0C1ggv020sbJDeodJiLIudRWf_P3XvTM63FEm1ojt/exec';
+   const API_URL = 'https://script.google.com/macros/s/AKfycby1ex5OXfAJy651uBTdyGXW3TBzeJ2rB43xtQOXjBwlrfXsQF1UuRBuXaghDRzGhbeC/exec';
    ```
 3. **ZAMIJENI** sa Worker URL-om (bez ?test=true):
    ```javascript

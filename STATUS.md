@@ -62,7 +62,7 @@
 
 **API URL (trenutni):**
 ```
-https://script.google.com/macros/s/AKfycbwpm7ggzTEalGJopOIwEKv7qg908p0P1yaJSV45qqU1Rz7FGrgOvilTaZZWpukSbdB7Hw/exec
+https://script.google.com/macros/s/AKfycby1ex5OXfAJy651uBTdyGXW3TBzeJ2rB43xtQOXjBwlrfXsQF1UuRBuXaghDRzGhbeC/exec
 ```
 
 **Greške koje si dobio:**
