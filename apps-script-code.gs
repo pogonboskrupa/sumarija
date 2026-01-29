@@ -18,11 +18,11 @@ const INDEKS_COL = {
   SORTIMENTI_START: 5  // F (prvi sortiment)
 };
 
-// Nazivi sortimenta u novom INDEKS sheetu (F-W kolone)
+// Nazivi sortimenta u novom INDEKS sheetu (F-Y kolone, 20 sortimenta)
 const INDEKS_SORTIMENTI = [
-  'F/L Č', 'I KL Č', 'II KL Č', 'III KL Č', 'RUDNO', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ČETINARI',
-  'F/L L', 'I KL L', 'II KL L', 'III KL L', 'TRUPCI L', 'OGR. DUGI', 'OGR. CIJEPANI', 'LIŠĆARI',
-  'SVEUKUPNO'
+  'F/L Č', 'I KL Č', 'II KL Č', 'III KL Č', 'RD', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'Σ ČETINARI',
+  'F/L L', 'I KL L', 'II KL L', 'III KL L', 'TRUPCI L', 'OGR. DUGI', 'OGR. CIJEPANI', 'GULE', 'LIŠĆARI',
+  'UKUPNO Č+L'
 ];
 
 // Admin credentials
@@ -318,7 +318,7 @@ function processPrimkaData(data, stats, year) {
     const row = data[i];
     const odjel = row[0]; // kolona A - Odjel
     const datum = row[1]; // kolona B - Datum
-    const kubik = parseFloat(row[20]) || 0; // kolona U (indeks 20) - SVEUKUPNO
+    const kubik = parseFloat(row[22]) || 0; // kolona W (indeks 22) - UKUPNO Č+L
 
     if (!datum || !odjel) {
       skippedNoDatum++;
@@ -392,7 +392,7 @@ function processOtpremaData(data, stats, year) {
     const row = data[i];
     const odjel = row[0]; // kolona A - Odjel
     const datum = row[1]; // kolona B - Datum
-    const kubik = parseFloat(row[20]) || 0; // kolona U (indeks 20) - SVEUKUPNO
+    const kubik = parseFloat(row[22]) || 0; // kolona W (indeks 22) - UKUPNO Č+L
 
     if (!datum || !odjel) {
       skippedNoDatum++;
@@ -705,7 +705,7 @@ function syncIndexSheet() {
 
               // Dodaj red: [ODJEL, DATUM(B), PRIMAČ(C), ...sortimenti(D-U 18 kolona)]
               // Eksplicitno uzmi samo 18 kolona sortimenti (D-U = indeksi 3-20)
-              const sortimenti = row.slice(3, 21); // D-U (18 kolona)
+              const sortimenti = row.slice(3, 23); // D-W (20 kolona)
               const newRow = [odjelNaziv, datum, primac, ...sortimenti];
               primkaRows.push(newRow);
               addedRows++;
@@ -772,7 +772,7 @@ function syncIndexSheet() {
 
               // Kreiraj novi red za INDEX: [odjel, datum(B), otpremač(C), ...sortimenti(D-U 18 kolona), kupac(A)]
               // Eksplicitno uzmi samo 18 kolona sortimenti (D-U = indeksi 3-20)
-              const sortimenti = row.slice(3, 21); // D-U (18 kolona)
+              const sortimenti = row.slice(3, 23); // D-W (20 kolona)
               const newRow = [odjelNaziv, datum, otpremac, ...sortimenti, kupac];
               otpremaRows.push(newRow);
               addedRows++;
@@ -2402,23 +2402,23 @@ function handlePendingUnosi(year, username, password) {
         const odjel = row[0];       // A - ODJEL
         const datum = row[1];       // B - DATUM
         const primac = row[2];      // C - PRIMAČ
-        const status = row[21];     // V - STATUS
-        const timestamp = row[22];  // W - TIMESTAMP
+        const status = row[23];     // X - STATUS
+        const timestamp = row[24];  // Y - TIMESTAMP
 
         if (!datum || status !== "PENDING") continue;
 
         const datumObj = parseDate(datum);
         if (year && datumObj.getFullYear() !== parseInt(year)) continue;
 
-        // Pročitaj sortimente (kolone D-U, indeksi 3-20)
+        // Pročitaj sortimente (kolone D-W, indeksi 3-22)
         const sortimenti = {};
-        for (let j = 0; j < 18; j++) {
+        for (let j = 0; j < 20; j++) {
           const vrijednost = parseFloat(row[3 + j]) || 0;
           sortimenti[sortimentiNazivi[j]] = vrijednost;
         }
 
-        // Izračunaj ukupno kao ČETINARI + LIŠĆARI
-        const cetinari = parseFloat(sortimenti['ČETINARI']) || 0;
+        // Izračunaj ukupno kao Σ ČETINARI + LIŠĆARI
+        const cetinari = parseFloat(sortimenti['Σ ČETINARI']) || 0;
         const liscari = parseFloat(sortimenti['LIŠĆARI']) || 0;
         const ukupno = cetinari + liscari;
 
@@ -2446,25 +2446,25 @@ function handlePendingUnosi(year, username, password) {
         const odjel = row[0];       // A - ODJEL
         const datum = row[1];       // B - DATUM
         const otpremac = row[2];    // C - OTPREMAČ
-        const kupac = row[21];      // V - KUPAC
-        const brojOtpremnice = row[22]; // W - BROJ_OTPREMNICE
-        const status = row[23];     // X - STATUS
-        const timestamp = row[24];  // Y - TIMESTAMP
+        const kupac = row[23];      // X - KUPAC
+        const brojOtpremnice = row[24]; // Y - BROJ_OTPREMNICE
+        const status = row[25];     // Z - STATUS
+        const timestamp = row[26];  // AA - TIMESTAMP
 
         if (!datum || status !== "PENDING") continue;
 
         const datumObj = parseDate(datum);
         if (year && datumObj.getFullYear() !== parseInt(year)) continue;
 
-        // Pročitaj sortimente (kolone D-U, indeksi 3-20)
+        // Pročitaj sortimente (kolone D-W, indeksi 3-22)
         const sortimenti = {};
-        for (let j = 0; j < 18; j++) {
+        for (let j = 0; j < 20; j++) {
           const vrijednost = parseFloat(row[3 + j]) || 0;
           sortimenti[sortimentiNazivi[j]] = vrijednost;
         }
 
-        // Izračunaj ukupno kao ČETINARI + LIŠĆARI
-        const cetinari = parseFloat(sortimenti['ČETINARI']) || 0;
+        // Izračunaj ukupno kao Σ ČETINARI + LIŠĆARI
+        const cetinari = parseFloat(sortimenti['Σ ČETINARI']) || 0;
         const liscari = parseFloat(sortimenti['LIŠĆARI']) || 0;
         const ukupno = cetinari + liscari;
 
@@ -3108,7 +3108,7 @@ function diagnosticOctoberData() {
       const row = primkaData[i];
       const odjel = row[0];
       const datum = row[1];
-      const kubik = parseFloat(row[20]) || 0; // kolona U - SVEUKUPNO
+      const kubik = parseFloat(row[22]) || 0; // kolona W - UKUPNO Č+L
 
       if (!datum || !odjel) continue;
 
@@ -3137,8 +3137,8 @@ function diagnosticOctoberData() {
       const row = otpremaData[i];
       const odjel = row[0];
       const datum = row[1];
-      const kupac = row[21] || ""; // KUPAC column
-      const kubik = parseFloat(row[20]) || 0; // kolona U - SVEUKUPNO
+      const kupac = row[23] || ""; // KUPAC column
+      const kubik = parseFloat(row[22]) || 0; // kolona W - UKUPNO Č+L
 
       if (!datum || !odjel) continue;
 
@@ -3192,7 +3192,7 @@ function diagnosticRawDates() {
       const row = primkaData[i];
       const odjel = row[0];
       const rawDatum = row[1];
-      const kubik = parseFloat(row[20]) || 0;
+      const kubik = parseFloat(row[22]) || 0;
 
       const datumType = typeof rawDatum;
       const isDateObj = rawDatum instanceof Date;
@@ -3262,7 +3262,7 @@ function diagnosticFind2578() {
       const odjel = row[0];
       const datum = row[1];
       const primac = row[2];
-      const kubik = parseFloat(row[20]) || 0; // kolona U - SVEUKUPNO
+      const kubik = parseFloat(row[22]) || 0; // kolona W - UKUPNO Č+L
 
       if (!datum || !odjel) continue;
 
@@ -3299,7 +3299,7 @@ function diagnosticFind2578() {
         const odjel = row[0];
         const datum = row[1];
         const otpremac = row[2];
-        const kubik = parseFloat(row[20]) || 0;
+        const kubik = parseFloat(row[22]) || 0;
 
         if (!datum || !odjel) continue;
 
@@ -3313,7 +3313,7 @@ function diagnosticFind2578() {
           Logger.log('  Odjel: ' + odjel);
           Logger.log('  Datum: ' + formatDate(datumObj));
           Logger.log('  Otpremač: ' + otpremac);
-          Logger.log('  Kupac: ' + (row[21] || ''));
+          Logger.log('  Kupac: ' + (row[23] || ''));
           Logger.log('  Kubik: ' + kubik.toFixed(2));
           Logger.log('');
         }
@@ -3375,7 +3375,7 @@ function diagnosticCheckOriginalSheet() {
         const row = primkaData[i];
         const datum = row[1]; // kolona B
         const primac = row[2]; // kolona C
-        const kubik = parseFloat(row[20]) || 0; // kolona U
+        const kubik = parseFloat(row[22]) || 0; // kolona U
 
         if (!datum) continue;
 
@@ -3411,7 +3411,7 @@ function diagnosticCheckOriginalSheet() {
         const row = otpremaData[i];
         const datum = row[1]; // kolona B
         const otpremac = row[2]; // kolona C
-        const kubik = parseFloat(row[20]) || 0; // kolona U
+        const kubik = parseFloat(row[22]) || 0; // kolona U
 
         if (!datum) continue;
 
@@ -3777,7 +3777,7 @@ function handleStanjeOdjela(username, password) {
       // dataRow sadrži sve kolone iz OTPREMA sheeta (od A do kraja)
       // Sortimenti su u kolonama D-U (indeksi 3-20 u originalnom sheetu, što je 3-20 u dataRow jer dataRow počinje od A=0)
       // Izvuci samo sortimente (18 kolona: D-U)
-      const sortimentiData = dataRow.slice(3, 21); // Kolone D-U (indeksi 3-20, slice(3,21) jer je end ekskluzan)
+      const sortimentiData = dataRow.slice(3, 23); // Kolone D-W (indeksi 3-22, slice(3,23) jer je end ekskluzan)
 
       if (redTip === 'PROJEKAT') {
         odjel.redovi.projekat = sortimentiData;

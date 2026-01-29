@@ -50,7 +50,7 @@ function handleDashboard(year, username, password) {
     const row = primkaData[i];
     const odjel = row[0]; // A - ODJEL
     const datum = row[1]; // B - DATUM
-    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+    const kubik = parseFloat(row[22]) || 0; // W - UKUPNO Č+L
 
     if (!datum || !odjel) continue;
 
@@ -77,7 +77,7 @@ function handleDashboard(year, username, password) {
     const row = otpremaData[i];
     const odjel = row[0]; // A - ODJEL
     const datum = row[1]; // B - DATUM  
-    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+    const kubik = parseFloat(row[22]) || 0; // W - UKUPNO Č+L
 
     if (!datum || !odjel) continue;
 
@@ -168,19 +168,19 @@ function handleSortimenti(year, username, password) {
 
   const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
   
-  // Nazivi sortimenta (kolone D-U = indeksi 3-20)
+  // Nazivi sortimenta (kolone D-W = indeksi 3-22, 20 kolona)
   const sortimentiNazivi = [
-    "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č", 
-    "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI", 
-    "F/L L", "I L", "II L", "III L", "TRUPCI", 
-    "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+    "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+    "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+    "F/L L", "I L", "II L", "III L", "TRUPCI L",
+    "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
   ];
 
-  // Inicijalizuj mjesečne sume za PRIMKA (12 mjeseci x 18 sortimenta)
-  let primkaSortimenti = Array(12).fill(null).map(() => Array(18).fill(0));
-  
+  // Inicijalizuj mjesečne sume za PRIMKA (12 mjeseci x 20 sortimenta)
+  let primkaSortimenti = Array(12).fill(null).map(() => Array(20).fill(0));
+
   // Inicijalizuj mjesečne sume za OTPREMA
-  let otpremaSortimenti = Array(12).fill(null).map(() => Array(18).fill(0));
+  let otpremaSortimenti = Array(12).fill(null).map(() => Array(20).fill(0));
 
   // Procesiranje PRIMKA podataka
   for (let i = 1; i < primkaData.length; i++) {
@@ -195,7 +195,7 @@ function handleSortimenti(year, username, password) {
     const mjesec = datumObj.getMonth();
 
     // Kolone D-U (indeksi 3-20) = sortimenti
-    for (let j = 0; j < 18; j++) {
+    for (let j = 0; j < 20; j++) {
       const vrijednost = parseFloat(row[3 + j]) || 0;
       primkaSortimenti[mjesec][j] += vrijednost;
     }
@@ -214,18 +214,18 @@ function handleSortimenti(year, username, password) {
     const mjesec = datumObj.getMonth();
 
     // Kolone D-U (indeksi 3-20) = sortimenti
-    for (let j = 0; j < 18; j++) {
+    for (let j = 0; j < 20; j++) {
       const vrijednost = parseFloat(row[3 + j]) || 0;
       otpremaSortimenti[mjesec][j] += vrijednost;
     }
   }
 
   // Izračunaj ukupne sume i % udio
-  let primkaUkupno = Array(18).fill(0);
-  let otpremaUkupno = Array(18).fill(0);
+  let primkaUkupno = Array(20).fill(0);
+  let otpremaUkupno = Array(20).fill(0);
 
   for (let mjesec = 0; mjesec < 12; mjesec++) {
-    for (let j = 0; j < 18; j++) {
+    for (let j = 0; j < 20; j++) {
       primkaUkupno[j] += primkaSortimenti[mjesec][j];
       otpremaUkupno[j] += otpremaSortimenti[mjesec][j];
     }
@@ -239,7 +239,7 @@ function handleSortimenti(year, username, password) {
     const primkaRed = { mjesec: mjeseci[mjesec] };
     const otpremaRed = { mjesec: mjeseci[mjesec] };
 
-    for (let j = 0; j < 18; j++) {
+    for (let j = 0; j < 20; j++) {
       primkaRed[sortimentiNazivi[j]] = primkaSortimenti[mjesec][j];
       otpremaRed[sortimentiNazivi[j]] = otpremaSortimenti[mjesec][j];
     }
@@ -252,7 +252,7 @@ function handleSortimenti(year, username, password) {
   const primkaUkupnoRed = { mjesec: "UKUPNO" };
   const otpremaUkupnoRed = { mjesec: "UKUPNO" };
   
-  for (let j = 0; j < 18; j++) {
+  for (let j = 0; j < 20; j++) {
     primkaUkupnoRed[sortimentiNazivi[j]] = primkaUkupno[j];
     otpremaUkupnoRed[sortimentiNazivi[j]] = otpremaUkupno[j];
   }
@@ -264,10 +264,10 @@ function handleSortimenti(year, username, password) {
   const primkaUdioRed = { mjesec: "% UDIO" };
   const otpremaUdioRed = { mjesec: "% UDIO" };
 
-  const primkaSveukupno = primkaUkupno[17]; // SVEUKUPNO je zadnja kolona
-  const otpremaSveukupno = otpremaUkupno[17];
+  const primkaSveukupno = primkaUkupno[19]; // SVEUKUPNO je zadnja kolona
+  const otpremaSveukupno = otpremaUkupno[19];
 
-  for (let j = 0; j < 18; j++) {
+  for (let j = 0; j < 20; j++) {
     primkaUdioRed[sortimentiNazivi[j]] = primkaSveukupno > 0 ? (primkaUkupno[j] / primkaSveukupno) : 0;
     otpremaUdioRed[sortimentiNazivi[j]] = otpremaSveukupno > 0 ? (otpremaUkupno[j] / otpremaSveukupno) : 0;
   }
@@ -321,7 +321,7 @@ function handlePrimaci(year, username, password) {
     const row = primkaData[i];
     const datum = row[1]; // B - DATUM
     const primac = row[2]; // C - PRIMAČ
-    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+    const kubik = parseFloat(row[22]) || 0; // W - UKUPNO Č+L
 
     if (!datum || !primac) continue;
 
@@ -405,7 +405,7 @@ function handleOtpremaci(year, username, password) {
     const row = otpremaData[i];
     const datum = row[1]; // B - DATUM
     const otpremac = row[2]; // C - OTPREMAČ
-    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+    const kubik = parseFloat(row[22]) || 0; // W - UKUPNO Č+L
 
     if (!datum || !otpremac) continue;
 
@@ -483,10 +483,10 @@ function handleKupci(year, username, password) {
 
   // Nazivi sortimenta (kolone D-U = indeksi 3-20)
   const sortimentiNazivi = [
-    "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-    "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-    "F/L L", "I L", "II L", "III L", "TRUPCI",
-    "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+    "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+    "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+    "F/L L", "I L", "II L", "III L", "TRUPCI L",
+    "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
   ];
 
   // Map za godišnji prikaz: kupac -> { sortimenti: {}, ukupno: 0 }
@@ -502,7 +502,7 @@ function handleKupci(year, username, password) {
     const odjel = row[0]; // A - ODJEL
     const datum = row[1]; // B - DATUM
     const otpremac = row[2]; // C - OTPREMAČ
-    const kupac = row[21] || row[0]; // V - KUPAC (indeks 21), fallback na odjel ako nema kupca
+    const kupac = row[23] || row[0]; // X - KUPAC (indeks 23), fallback na odjel ako nema kupca
 
     if (!datum) continue;
 
@@ -556,8 +556,8 @@ function handleKupci(year, username, password) {
       kupciMjesecni[kupacNormalized][mjesec].sortimenti[sortimentiNazivi[s]] += vrijednost;
     }
 
-    // Ukupno (kolona U = SVEUKUPNO = indeks 20)
-    const ukupno = parseFloat(row[20]) || 0;
+    // Ukupno (kolona W = UKUPNO Č+L = indeks 22)
+    const ukupno = parseFloat(row[22]) || 0;
     kupciGodisnji[kupacNormalized].ukupno += ukupno;
     kupciMjesecni[kupacNormalized][mjesec].ukupno += ukupno;
   }
@@ -799,10 +799,10 @@ function handlePrimacDetail(year, username, password) {
 
   const primkaData = primkaSheet.getDataRange().getValues();
   const sortimentiNazivi = [
-    "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-    "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-    "F/L L", "I L", "II L", "III L", "TRUPCI",
-    "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+    "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+    "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+    "F/L L", "I L", "II L", "III L", "TRUPCI L",
+    "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
   ];
 
   const unosi = [];
@@ -813,7 +813,7 @@ function handlePrimacDetail(year, username, password) {
     const odjel = row[0];     // A - ODJEL
     const datum = row[1];     // B - DATUM
     const primac = row[2];    // C - PRIMAČ
-    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+    const kubik = parseFloat(row[22]) || 0; // W - UKUPNO Č+L
 
     if (!datum || !primac) continue;
 
@@ -825,7 +825,7 @@ function handlePrimacDetail(year, username, password) {
 
     // Pročitaj sve sortimente (kolone D-U, indeksi 3-20)
     const sortimenti = {};
-    for (let j = 0; j < 18; j++) {
+    for (let j = 0; j < 20; j++) {
       const vrijednost = parseFloat(row[3 + j]) || 0;
       sortimenti[sortimentiNazivi[j]] = vrijednost;
     }
@@ -892,10 +892,10 @@ function handleOtpremacDetail(year, username, password) {
 
   const otpremaData = otpremaSheet.getDataRange().getValues();
   const sortimentiNazivi = [
-    "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-    "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-    "F/L L", "I L", "II L", "III L", "TRUPCI",
-    "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+    "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+    "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+    "F/L L", "I L", "II L", "III L", "TRUPCI L",
+    "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
   ];
 
   const unosi = [];
@@ -906,8 +906,8 @@ function handleOtpremacDetail(year, username, password) {
     const odjel = row[0];       // A - ODJEL
     const datum = row[1];       // B - DATUM
     const otpremac = row[2];    // C - OTPREMAČ
-    const kupac = row[21];      // V - KUPAC
-    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+    const kupac = row[23];      // X - KUPAC
+    const kubik = parseFloat(row[22]) || 0; // W - UKUPNO Č+L
 
     if (!datum || !otpremac) continue;
 
@@ -919,7 +919,7 @@ function handleOtpremacDetail(year, username, password) {
 
     // Pročitaj sve sortimente (kolone D-U, indeksi 3-20)
     const sortimenti = {};
-    for (let j = 0; j < 18; j++) {
+    for (let j = 0; j < 20; j++) {
       const vrijednost = parseFloat(row[3 + j]) || 0;
       sortimenti[sortimentiNazivi[j]] = vrijednost;
     }
@@ -992,10 +992,10 @@ function handlePrimacOdjeli(year, username, password, limit) {
   Logger.log('Total primka rows: ' + (primkaData.length - 1));
 
   const sortimentiNazivi = [
-    "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-    "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-    "F/L L", "I L", "II L", "III L", "TRUPCI",
-    "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+    "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+    "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+    "F/L L", "I L", "II L", "III L", "TRUPCI L",
+    "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
   ];
 
   // Map: odjelNaziv -> { sortimenti: {}, ukupno: 0, zadnjiDatum: Date }
@@ -1008,7 +1008,7 @@ function handlePrimacOdjeli(year, username, password, limit) {
     const odjel = row[0];     // A - ODJEL
     const datum = row[1];     // B - DATUM
     const primac = row[2];    // C - PRIMAČ
-    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+    const kubik = parseFloat(row[22]) || 0; // W - UKUPNO Č+L
 
     if (!datum || !primac || !odjel) continue;
 
@@ -1041,7 +1041,7 @@ function handlePrimacOdjeli(year, username, password, limit) {
     }
 
     // Dodaj sortimente (kolone D-U, indeksi 3-20)
-    for (let j = 0; j < 18; j++) {
+    for (let j = 0; j < 20; j++) {
       const vrijednost = parseFloat(row[3 + j]) || 0;
       odjeliMap[odjel].sortimenti[sortimentiNazivi[j]] += vrijednost;
     }
@@ -1134,10 +1134,10 @@ function handleOtpremacOdjeli(year, username, password, limit) {
   Logger.log('Total otprema rows: ' + (otpremaData.length - 1));
 
   const sortimentiNazivi = [
-    "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-    "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-    "F/L L", "I L", "II L", "III L", "TRUPCI",
-    "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+    "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+    "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+    "F/L L", "I L", "II L", "III L", "TRUPCI L",
+    "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
   ];
 
   // Map: odjelNaziv -> { sortimenti: {}, ukupno: 0, zadnjiDatum: Date }
@@ -1150,7 +1150,7 @@ function handleOtpremacOdjeli(year, username, password, limit) {
     const odjel = row[0];       // A - ODJEL
     const datum = row[1];       // B - DATUM
     const otpremac = row[2];    // C - OTPREMAČ
-    const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+    const kubik = parseFloat(row[22]) || 0; // W - UKUPNO Č+L
 
     if (!datum || !otpremac || !odjel) continue;
 
@@ -1183,7 +1183,7 @@ function handleOtpremacOdjeli(year, username, password, limit) {
     }
 
     // Dodaj sortimente (kolone D-U, indeksi 3-20)
-    for (let j = 0; j < 18; j++) {
+    for (let j = 0; j < 20; j++) {
       const vrijednost = parseFloat(row[3 + j]) || 0;
       odjeliMap[odjel].sortimenti[sortimentiNazivi[j]] += vrijednost;
     }
@@ -1280,9 +1280,9 @@ function handleAddSjeca(params) {
     if (!pendingSheet) {
       pendingSheet = ss.insertSheet("PENDING_PRIMKA");
       // Dodaj header red
-      const headers = ["ODJEL", "DATUM", "PRIMAČ", "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-                       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI", "F/L L", "I L", "II L", "III L", "TRUPCI",
-                       "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO", "STATUS", "TIMESTAMP"];
+      const headers = ["ODJEL", "DATUM", "PRIMAČ", "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+                       "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI", "F/L L", "I L", "II L", "III L", "TRUPCI L",
+                       "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L", "STATUS", "TIMESTAMP"];
       pendingSheet.appendRow(headers);
 
       // Formatiraj header
@@ -1295,10 +1295,10 @@ function handleAddSjeca(params) {
     // Pripremi red podataka
     // A-U: kao INDEX_PRIMKA, V: STATUS, W: TIMESTAMP
     const sortimentiNazivi = [
-      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-      "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+      "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI L",
+      "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
     ];
 
     const newRow = [
@@ -1309,15 +1309,15 @@ function handleAddSjeca(params) {
 
     // Dodaj sortimente D-U (18 kolona)
     const sortimentiValues = [];
-    for (let i = 0; i < 17; i++) { // prvih 17 sortimenti (bez SVEUKUPNO)
+    for (let i = 0; i < 19; i++) { // prvih 17 sortimenti (bez SVEUKUPNO)
       const value = parseFloat(params[sortimentiNazivi[i]]) || 0;
       newRow.push(value);
       sortimentiValues.push(value);
     }
 
     // Izračunaj SVEUKUPNO kao ČETINARI + LIŠĆARI
-    const cetinari = sortimentiValues[8];  // ČETINARI je na indeksu 8
-    const liscari = sortimentiValues[16];  // LIŠĆARI je na indeksu 16
+    const cetinari = sortimentiValues[9];  // Σ ČETINARI je na indeksu 9
+    const liscari = sortimentiValues[18];  // LIŠĆARI je na indeksu 18
     const ukupno = cetinari + liscari;
 
     // Dodaj SVEUKUPNO kao zadnju kolonu (U)
@@ -1385,9 +1385,9 @@ function handleAddOtprema(params) {
     if (!pendingSheet) {
       pendingSheet = ss.insertSheet("PENDING_OTPREMA");
       // Dodaj header red
-      const headers = ["ODJEL", "DATUM", "OTPREMAČ", "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-                       "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI", "F/L L", "I L", "II L", "III L", "TRUPCI",
-                       "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO", "KUPAC", "BROJ_OTPREMNICE", "STATUS", "TIMESTAMP"];
+      const headers = ["ODJEL", "DATUM", "OTPREMAČ", "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+                       "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI", "F/L L", "I L", "II L", "III L", "TRUPCI L",
+                       "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L", "KUPAC", "BROJ_OTPREMNICE", "STATUS", "TIMESTAMP"];
       pendingSheet.appendRow(headers);
 
       // Formatiraj header
@@ -1400,10 +1400,10 @@ function handleAddOtprema(params) {
     // Pripremi red podataka
     // A-U: kao INDEX_OTPREMA, V: KUPAC, W: STATUS, X: TIMESTAMP
     const sortimentiNazivi = [
-      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-      "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+      "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI L",
+      "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
     ];
 
     const newRow = [
@@ -1414,15 +1414,15 @@ function handleAddOtprema(params) {
 
     // Dodaj sortimente D-U (18 kolona)
     const sortimentiValues = [];
-    for (let i = 0; i < 17; i++) { // prvih 17 sortimenti (bez SVEUKUPNO)
+    for (let i = 0; i < 19; i++) { // prvih 17 sortimenti (bez SVEUKUPNO)
       const value = parseFloat(params[sortimentiNazivi[i]]) || 0;
       newRow.push(value);
       sortimentiValues.push(value);
     }
 
     // Izračunaj SVEUKUPNO kao ČETINARI + LIŠĆARI
-    const cetinari = sortimentiValues[8];  // ČETINARI je na indeksu 8
-    const liscari = sortimentiValues[16];  // LIŠĆARI je na indeksu 16
+    const cetinari = sortimentiValues[9];  // Σ ČETINARI je na indeksu 9
+    const liscari = sortimentiValues[18];  // LIŠĆARI je na indeksu 18
     const ukupno = cetinari + liscari;
 
     // Dodaj SVEUKUPNO (U)
@@ -1486,10 +1486,10 @@ function handlePendingUnosi(year, username, password) {
     const pendingOtpremaSheet = ss.getSheetByName("PENDING_OTPREMA");
 
     const sortimentiNazivi = [
-      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-      "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+      "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI L",
+      "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
     ];
 
     const pendingUnosi = [];
@@ -1503,8 +1503,8 @@ function handlePendingUnosi(year, username, password) {
         const odjel = row[0];       // A - ODJEL
         const datum = row[1];       // B - DATUM
         const primac = row[2];      // C - PRIMAČ
-        const status = row[21];     // V - STATUS
-        const timestamp = row[22];  // W - TIMESTAMP
+        const status = row[23];     // X - STATUS
+        const timestamp = row[24];  // Y - TIMESTAMP
 
         if (!datum || status !== "PENDING") continue;
 
@@ -1513,13 +1513,13 @@ function handlePendingUnosi(year, username, password) {
 
         // Pročitaj sortimente (kolone D-U, indeksi 3-20)
         const sortimenti = {};
-        for (let j = 0; j < 18; j++) {
+        for (let j = 0; j < 20; j++) {
           const vrijednost = parseFloat(row[3 + j]) || 0;
           sortimenti[sortimentiNazivi[j]] = vrijednost;
         }
 
         // Izračunaj ukupno kao ČETINARI + LIŠĆARI
-        const cetinari = parseFloat(sortimenti['ČETINARI']) || 0;
+        const cetinari = parseFloat(sortimenti['Σ ČETINARI']) || 0;
         const liscari = parseFloat(sortimenti['LIŠĆARI']) || 0;
         const ukupno = cetinari + liscari;
 
@@ -1547,10 +1547,10 @@ function handlePendingUnosi(year, username, password) {
         const odjel = row[0];       // A - ODJEL
         const datum = row[1];       // B - DATUM
         const otpremac = row[2];    // C - OTPREMAČ
-        const kupac = row[21];      // V - KUPAC
-        const brojOtpremnice = row[22]; // W - BROJ_OTPREMNICE
-        const status = row[23];     // X - STATUS
-        const timestamp = row[24];  // Y - TIMESTAMP
+        const kupac = row[23];      // X - KUPAC
+        const brojOtpremnice = row[24]; // Y - BROJ_OTPREMNICE
+        const status = row[25];     // Z - STATUS
+        const timestamp = row[26];  // AA - TIMESTAMP
 
         if (!datum || status !== "PENDING") continue;
 
@@ -1559,13 +1559,13 @@ function handlePendingUnosi(year, username, password) {
 
         // Pročitaj sortimente (kolone D-U, indeksi 3-20)
         const sortimenti = {};
-        for (let j = 0; j < 18; j++) {
+        for (let j = 0; j < 20; j++) {
           const vrijednost = parseFloat(row[3 + j]) || 0;
           sortimenti[sortimentiNazivi[j]] = vrijednost;
         }
 
         // Izračunaj ukupno kao ČETINARI + LIŠĆARI
-        const cetinari = parseFloat(sortimenti['ČETINARI']) || 0;
+        const cetinari = parseFloat(sortimenti['Σ ČETINARI']) || 0;
         const liscari = parseFloat(sortimenti['LIŠĆARI']) || 0;
         const ukupno = cetinari + liscari;
 
@@ -1937,10 +1937,10 @@ function handleMjesecniSortimenti(year, username, password) {
 
     // Nazivi sortimenta (kolone D-U = indeksi 3-20)
     const sortimentiNazivi = [
-      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-      "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+      "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI L",
+      "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
     ];
 
     // Inicijalizuj mjesečne sume za SJEČA (12 mjeseci)
@@ -2047,10 +2047,10 @@ function handlePrimaciDaily(year, month, username, password) {
     const primkaData = primkaSheet.getDataRange().getValues();
 
     const sortimentiNazivi = [
-      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-      "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+      "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI L",
+      "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
     ];
 
     const dailyData = [];
@@ -2119,10 +2119,10 @@ function handleOtremaciDaily(year, month, username, password) {
     const otpremaData = otpremaSheet.getDataRange().getValues();
 
     const sortimentiNazivi = [
-      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-      "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+      "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI L",
+      "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
     ];
 
     const dailyData = [];
@@ -2133,7 +2133,7 @@ function handleOtremaciDaily(year, month, username, password) {
       const odjel = row[0];
       const datum = row[1];
       const otpremac = row[2];
-      const kupac = row[21] || ""; // KUPAC column
+      const kupac = row[23] || ""; // KUPAC column
 
       if (!datum || !otpremac) continue;
 
@@ -2421,10 +2421,10 @@ function handlePrimaciByRadiliste(year, username, password) {
 
     const primkaData = primkaSheet.getDataRange().getValues();
     const sortimentiNazivi = [
-      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-      "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+      "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI L",
+      "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
     ];
 
     // Korak 3: Grupisanje po radilištu
@@ -2455,12 +2455,12 @@ function handlePrimaciByRadiliste(year, username, password) {
       }
 
       // Dodaj kubike po mjesecu
-      const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+      const kubik = parseFloat(row[22]) || 0; // W - UKUPNO Č+L
       radilistaMap[radiliste].mjeseci[mjesec] += kubik;
       radilistaMap[radiliste].ukupno += kubik;
 
       // Dodaj sortimente (D-U, indeksi 3-20)
-      for (let j = 0; j < 18; j++) {
+      for (let j = 0; j < 20; j++) {
         const vrijednost = parseFloat(row[3 + j]) || 0;
         radilistaMap[radiliste].sortimentiUkupno[sortimentiNazivi[j]] += vrijednost;
       }
@@ -2535,10 +2535,10 @@ function handlePrimaciByIzvodjac(year, username, password) {
 
     const primkaData = primkaSheet.getDataRange().getValues();
     const sortimentiNazivi = [
-      "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-      "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-      "F/L L", "I L", "II L", "III L", "TRUPCI",
-      "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+      "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI L",
+      "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
     ];
 
     // Korak 3: Grupisanje po izvođaču
@@ -2569,12 +2569,12 @@ function handlePrimaciByIzvodjac(year, username, password) {
       }
 
       // Dodaj kubike po mjesecu
-      const kubik = parseFloat(row[20]) || 0; // U - SVEUKUPNO
+      const kubik = parseFloat(row[22]) || 0; // W - UKUPNO Č+L
       izvodjaciMap[izvodjac].mjeseci[mjesec] += kubik;
       izvodjaciMap[izvodjac].ukupno += kubik;
 
       // Dodaj sortimente (D-U, indeksi 3-20)
-      for (let j = 0; j < 18; j++) {
+      for (let j = 0; j < 20; j++) {
         const vrijednost = parseFloat(row[3 + j]) || 0;
         izvodjaciMap[izvodjac].sortimentiUkupno[sortimentiNazivi[j]] += vrijednost;
       }
@@ -2628,7 +2628,7 @@ function handlePrimke(username, password) {
         const odjel = row[0];       // A - ODJEL
         const datum = row[1];       // B - DATUM
         const primac = row[2];      // C - PRIMAČ
-        const status = row[21];     // V - STATUS (može biti PENDING ili APPROVED)
+        const status = row[23];     // X - STATUS (može biti PENDING ili APPROVED)
 
         // Skip empty rows
         if (!datum || !odjel) continue;
@@ -2645,10 +2645,10 @@ function handlePrimke(username, password) {
         // Sortimenti su u kolonama D-U (indeksi 3-20)
         // Za pojedinačnu primku trebamo svaki sortiment kao poseban zapis
         const sortimentiNazivi = [
-          "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-          "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-          "F/L L", "I L", "II L", "III L", "TRUPCI",
-          "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+          "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+          "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+          "F/L L", "I L", "II L", "III L", "TRUPCI L",
+          "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
         ];
 
         // Dodaj svaki sortiment kao poseban zapis (ako ima količinu)
@@ -2707,7 +2707,7 @@ function handleOtpreme(username, password) {
         const odjel = row[0];       // A - ODJEL
         const datum = row[1];       // B - DATUM
         const otpremac = row[2];    // C - OTPREMAČ
-        const kupac = row[21];      // V - KUPAC
+        const kupac = row[23];      // X - KUPAC
         const status = row[23];     // X - STATUS (može biti PENDING ili APPROVED)
 
         // Skip empty rows
@@ -2724,10 +2724,10 @@ function handleOtpreme(username, password) {
 
         // Sortimenti su u kolonama D-U (indeksi 3-20)
         const sortimentiNazivi = [
-          "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-          "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-          "F/L L", "I L", "II L", "III L", "TRUPCI",
-          "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+          "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+          "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+          "F/L L", "I L", "II L", "III L", "TRUPCI L",
+          "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
         ];
 
         // Dodaj svaki sortiment kao poseban zapis (ako ima količinu)

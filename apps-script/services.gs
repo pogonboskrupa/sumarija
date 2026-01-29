@@ -100,7 +100,7 @@ function processPrimkaData(data, stats, year) {
     const row = data[i];
     const odjel = row[0]; // kolona A - Odjel
     const datum = row[1]; // kolona B - Datum
-    const kubik = parseFloat(row[20]) || 0; // kolona U (indeks 20) - SVEUKUPNO
+    const kubik = parseFloat(row[22]) || 0; // kolona W (indeks 22) - UKUPNO Č+L
 
     if (!datum || !odjel) {
       skippedNoDatum++;
@@ -173,7 +173,7 @@ function processOtpremaData(data, stats, year) {
     const row = data[i];
     const odjel = row[0]; // kolona A - Odjel
     const datum = row[1]; // kolona B - Datum
-    const kubik = parseFloat(row[20]) || 0; // kolona U (indeks 20) - SVEUKUPNO
+    const kubik = parseFloat(row[22]) || 0; // kolona W (indeks 22) - UKUPNO Č+L
 
     if (!datum || !odjel) {
       skippedNoDatum++;
@@ -398,7 +398,7 @@ function syncIndexSheet() {
 
               // Dodaj red: [ODJEL, DATUM(B), PRIMAČ(C), ...sortimenti(D-U 18 kolona)]
               // Eksplicitno uzmi samo 18 kolona sortimenti (D-U = indeksi 3-20)
-              const sortimenti = row.slice(3, 21); // D-U (18 kolona)
+              const sortimenti = row.slice(3, 23); // D-W (20 kolona)
               const newRow = [odjelNaziv, datum, primac, ...sortimenti];
               primkaRows.push(newRow);
               addedRows++;
@@ -465,7 +465,7 @@ function syncIndexSheet() {
 
               // Kreiraj novi red za INDEX: [odjel, datum(B), otpremač(C), ...sortimenti(D-U 18 kolona), kupac(A)]
               // Eksplicitno uzmi samo 18 kolona sortimenti (D-U = indeksi 3-20)
-              const sortimenti = row.slice(3, 21); // D-U (18 kolona)
+              const sortimenti = row.slice(3, 23); // D-W (20 kolona)
               const newRow = [odjelNaziv, datum, otpremac, ...sortimenti, kupac];
               otpremaRows.push(newRow);
               addedRows++;
@@ -584,13 +584,13 @@ function syncStanjeOdjela() {
     Logger.log('=== SYNC STANJE ODJELA START ===');
     Logger.log('Vrijeme sinkronizacije: ' + new Date().toString());
 
-    // Fiksno sortimentno zaglavlje (D-U kolone)
+    // Fiksno sortimentno zaglavlje (D-W kolone, 20 sortimenta)
     const sortimentiNazivi = [
       'F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'TRUPCI Č',
-      'CEL.DUGA', 'CEL.CIJEPANA', 'ČETINARI',
+      'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'Σ ČETINARI',
       'F/L L', 'I L', 'II L', 'III L', 'TRUPCI L',
-      'OGR. DUGI', 'OGR. CIJEPANI', 'LIŠĆARI',
-      'SVEUKUPNO'
+      'OGR. DUGI', 'OGR. CIJEPANI', 'GULE', 'LIŠĆARI',
+      'UKUPNO Č+L'
     ];
 
     // Otvori folder ODJELI

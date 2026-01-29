@@ -794,8 +794,8 @@
                             <input type="number" step="0.01" id="sjeca-III-C" value="0" min="0" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
-                            <label class="worker-form-label">RUDNO</label>
-                            <input type="number" step="0.01" id="sjeca-RUDNO" value="0" min="0" class="worker-form-input">
+                            <label class="worker-form-label">RD</label>
+                            <input type="number" step="0.01" id="sjeca-RD" value="0" min="0" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">TRUPCI Č <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
@@ -810,7 +810,11 @@
                             <input type="number" step="0.01" id="sjeca-CEL-CIJEPANA" value="0" min="0" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
-                            <label class="worker-form-label">ČETINARI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
+                            <label class="worker-form-label">ŠKART</label>
+                            <input type="number" step="0.01" id="sjeca-SKART" value="0" min="0" class="worker-form-input">
+                        </div>
+                        <div class="worker-form-group">
+                            <label class="worker-form-label">Σ ČETINARI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
                             <input type="number" step="0.01" id="sjeca-CETINARI" value="0" min="0" readonly class="worker-form-input" style="background: #dbeafe; font-weight: 700; color: #1e40af;">
                         </div>
                     </div>
@@ -837,8 +841,8 @@
                             <input type="number" step="0.01" id="sjeca-III-L" value="0" min="0" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
-                            <label class="worker-form-label">TRUPCI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
-                            <input type="number" step="0.01" id="sjeca-TRUPCI" value="0" min="0" readonly class="worker-form-input" style="background: #f3f4f6; font-weight: 600;">
+                            <label class="worker-form-label">TRUPCI L <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
+                            <input type="number" step="0.01" id="sjeca-TRUPCI-L" value="0" min="0" readonly class="worker-form-input" style="background: #f3f4f6; font-weight: 600;">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">OGR.DUGI</label>
@@ -849,6 +853,10 @@
                             <input type="number" step="0.01" id="sjeca-OGR-CIJEPANI" value="0" min="0" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
+                            <label class="worker-form-label">GULE</label>
+                            <input type="number" step="0.01" id="sjeca-GULE" value="0" min="0" class="worker-form-input">
+                        </div>
+                        <div class="worker-form-group">
                             <label class="worker-form-label">LIŠĆARI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
                             <input type="number" step="0.01" id="sjeca-LISCARI" value="0" min="0" readonly class="worker-form-input" style="background: #fef3c7; font-weight: 700; color: #92400e;">
                         </div>
@@ -856,8 +864,8 @@
 
                     <!-- Total Box -->
                     <div class="worker-form-total-box">
-                        <div class="worker-form-total-label">📊 SVEUKUPNO</div>
-                        <input type="number" step="0.01" id="sjeca-SVEUKUPNO" value="0" readonly class="worker-form-total-value" style="border: none; background: transparent;">
+                        <div class="worker-form-total-label">📊 UKUPNO Č+L</div>
+                        <input type="number" step="0.01" id="sjeca-UKUPNO Č+L" value="0" readonly class="worker-form-total-value" style="border: none; background: transparent;">
                     </div>
 
                     <!-- Actions -->
@@ -929,8 +937,8 @@
                             <input type="number" step="0.01" id="otprema-III-C" value="0" min="0" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
-                            <label class="worker-form-label">RUDNO</label>
-                            <input type="number" step="0.01" id="otprema-RUDNO" value="0" min="0" class="worker-form-input">
+                            <label class="worker-form-label">RD</label>
+                            <input type="number" step="0.01" id="otprema-RD" value="0" min="0" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">TRUPCI Č <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
@@ -945,7 +953,11 @@
                             <input type="number" step="0.01" id="otprema-CEL-CIJEPANA" value="0" min="0" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
-                            <label class="worker-form-label">ČETINARI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
+                            <label class="worker-form-label">ŠKART</label>
+                            <input type="number" step="0.01" id="otprema-SKART" value="0" min="0" class="worker-form-input">
+                        </div>
+                        <div class="worker-form-group">
+                            <label class="worker-form-label">Σ ČETINARI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
                             <input type="number" step="0.01" id="otprema-CETINARI" value="0" min="0" readonly class="worker-form-input" style="background: #dbeafe; font-weight: 700; color: #1e40af;">
                         </div>
                     </div>
@@ -972,8 +984,8 @@
                             <input type="number" step="0.01" id="otprema-III-L" value="0" min="0" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
-                            <label class="worker-form-label">TRUPCI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
-                            <input type="number" step="0.01" id="otprema-TRUPCI" value="0" min="0" readonly class="worker-form-input" style="background: #f3f4f6; font-weight: 600;">
+                            <label class="worker-form-label">TRUPCI L <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
+                            <input type="number" step="0.01" id="otprema-TRUPCI-L" value="0" min="0" readonly class="worker-form-input" style="background: #f3f4f6; font-weight: 600;">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">OGR.DUGI</label>
@@ -984,6 +996,10 @@
                             <input type="number" step="0.01" id="otprema-OGR-CIJEPANI" value="0" min="0" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
+                            <label class="worker-form-label">GULE</label>
+                            <input type="number" step="0.01" id="otprema-GULE" value="0" min="0" class="worker-form-input">
+                        </div>
+                        <div class="worker-form-group">
                             <label class="worker-form-label">LIŠĆARI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
                             <input type="number" step="0.01" id="otprema-LISCARI" value="0" min="0" readonly class="worker-form-input" style="background: #fef3c7; font-weight: 700; color: #92400e;">
                         </div>
@@ -991,8 +1007,8 @@
 
                     <!-- Total Box -->
                     <div class="worker-form-total-box">
-                        <div class="worker-form-total-label">📊 SVEUKUPNO</div>
-                        <input type="number" step="0.01" id="otprema-SVEUKUPNO" value="0" readonly class="worker-form-total-value" style="border: none; background: transparent;">
+                        <div class="worker-form-total-label">📊 UKUPNO Č+L</div>
+                        <input type="number" step="0.01" id="otprema-UKUPNO Č+L" value="0" readonly class="worker-form-total-value" style="border: none; background: transparent;">
                     </div>
 
                     <!-- Actions -->
@@ -1092,8 +1108,8 @@
 
                     <!-- Total Box -->
                     <div class="worker-form-total-box">
-                        <div class="worker-form-total-label">📊 SVEUKUPNO</div>
-                        <input type="number" step="0.01" id="edit-sjeca-SVEUKUPNO" value="0" readonly class="worker-form-total-value" style="border: none; background: transparent;">
+                        <div class="worker-form-total-label">📊 UKUPNO Č+L</div>
+                        <input type="number" step="0.01" id="edit-sjeca-UKUPNO Č+L" value="0" readonly class="worker-form-total-value" style="border: none; background: transparent;">
                     </div>
 
                     <!-- Actions -->
@@ -1155,8 +1171,8 @@
 
                     <!-- Total Box -->
                     <div class="worker-form-total-box">
-                        <div class="worker-form-total-label">📊 SVEUKUPNO</div>
-                        <input type="number" step="0.01" id="edit-otprema-SVEUKUPNO" value="0" readonly class="worker-form-total-value" style="border: none; background: transparent;">
+                        <div class="worker-form-total-label">📊 UKUPNO Č+L</div>
+                        <input type="number" step="0.01" id="edit-otprema-UKUPNO Č+L" value="0" readonly class="worker-form-total-value" style="border: none; background: transparent;">
                     </div>
 
                     <!-- Actions -->
@@ -1556,7 +1572,8 @@
                                     <th class="right" style="min-width: 80px;">TRUPCI Č</th>
                                     <th class="right" style="min-width: 90px;">CEL.DUGA</th>
                                     <th class="right" style="min-width: 100px;">CEL.CIJEPANA</th>
-                                    <th class="right" style="min-width: 80px;">ČETINARI</th>
+                                    <th class="right" style="min-width: 70px;">ŠKART</th>
+                                    <th class="right" style="min-width: 80px;">Σ ČETINARI</th>
                                     <th class="right" style="min-width: 70px;">F/L L</th>
                                     <th class="right" style="min-width: 70px;">I L</th>
                                     <th class="right" style="min-width: 70px;">II L</th>
@@ -1564,8 +1581,9 @@
                                     <th class="right" style="min-width: 80px;">TRUPCI L</th>
                                     <th class="right" style="min-width: 90px;">OGR. DUGI</th>
                                     <th class="right" style="min-width: 100px;">OGR. CIJEPANI</th>
+                                    <th class="right" style="min-width: 70px;">GULE</th>
                                     <th class="right" style="min-width: 80px;">LIŠĆARI</th>
-                                    <th class="right" style="min-width: 100px; font-weight: 700;">SVEUKUPNO</th>
+                                    <th class="right" style="min-width: 100px; font-weight: 700;">UKUPNO Č+L</th>
                                 </tr>
                             </thead>
                             <tbody id="suma-lager-table"></tbody>

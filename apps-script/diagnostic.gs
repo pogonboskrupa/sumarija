@@ -28,7 +28,7 @@ function diagnosticOctoberData() {
       const row = primkaData[i];
       const odjel = row[0];
       const datum = row[1];
-      const kubik = parseFloat(row[20]) || 0; // kolona U - SVEUKUPNO
+      const kubik = parseFloat(row[22]) || 0; // kolona W - UKUPNO Č+L
 
       if (!datum || !odjel) continue;
 
@@ -57,8 +57,8 @@ function diagnosticOctoberData() {
       const row = otpremaData[i];
       const odjel = row[0];
       const datum = row[1];
-      const kupac = row[21] || ""; // KUPAC column
-      const kubik = parseFloat(row[20]) || 0; // kolona U - SVEUKUPNO
+      const kupac = row[23] || ""; // KUPAC column
+      const kubik = parseFloat(row[22]) || 0; // kolona W - UKUPNO Č+L
 
       if (!datum || !odjel) continue;
 
@@ -112,7 +112,7 @@ function diagnosticRawDates() {
       const row = primkaData[i];
       const odjel = row[0];
       const rawDatum = row[1];
-      const kubik = parseFloat(row[20]) || 0;
+      const kubik = parseFloat(row[22]) || 0;
 
       const datumType = typeof rawDatum;
       const isDateObj = rawDatum instanceof Date;
@@ -182,7 +182,7 @@ function diagnosticFind2578() {
       const odjel = row[0];
       const datum = row[1];
       const primac = row[2];
-      const kubik = parseFloat(row[20]) || 0; // kolona U - SVEUKUPNO
+      const kubik = parseFloat(row[22]) || 0; // kolona W - UKUPNO Č+L
 
       if (!datum || !odjel) continue;
 
@@ -219,7 +219,7 @@ function diagnosticFind2578() {
         const odjel = row[0];
         const datum = row[1];
         const otpremac = row[2];
-        const kubik = parseFloat(row[20]) || 0;
+        const kubik = parseFloat(row[22]) || 0;
 
         if (!datum || !odjel) continue;
 
@@ -233,7 +233,7 @@ function diagnosticFind2578() {
           Logger.log('  Odjel: ' + odjel);
           Logger.log('  Datum: ' + formatDate(datumObj));
           Logger.log('  Otpremač: ' + otpremac);
-          Logger.log('  Kupac: ' + (row[21] || ''));
+          Logger.log('  Kupac: ' + (row[23] || ''));
           Logger.log('  Kubik: ' + kubik.toFixed(2));
           Logger.log('');
         }
@@ -295,7 +295,7 @@ function diagnosticCheckOriginalSheet() {
         const row = primkaData[i];
         const datum = row[1]; // kolona B
         const primac = row[2]; // kolona C
-        const kubik = parseFloat(row[20]) || 0; // kolona U
+        const kubik = parseFloat(row[22]) || 0; // kolona U
 
         if (!datum) continue;
 
@@ -331,7 +331,7 @@ function diagnosticCheckOriginalSheet() {
         const row = otpremaData[i];
         const datum = row[1]; // kolona B
         const otpremac = row[2]; // kolona C
-        const kubik = parseFloat(row[20]) || 0; // kolona U
+        const kubik = parseFloat(row[22]) || 0; // kolona U
 
         if (!datum) continue;
 

@@ -158,12 +158,12 @@
         // ========== END PERFORMANCE & MANIFEST ==========
 
         // ========== SORTIMENTI ORDER - BUSINESS LOGIC ==========
-        // Fixed order for sortimenti as per business requirements
+        // Fixed order for sortimenti as per business requirements (20 sortimenta)
         const SORTIMENTI_ORDER = [
-            "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-            "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-            "F/L L", "I L", "II L", "III L", "TRUPCI",
-            "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+            "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+            "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+            "F/L L", "I L", "II L", "III L", "TRUPCI L",
+            "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
         ];
 
         // ========== PERFORMANCE CONFIGURATION ==========

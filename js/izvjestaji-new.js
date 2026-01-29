@@ -208,18 +208,18 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
     }
 
     function isCetinari(s) {
-        return s.includes(' Č') || s.includes('CEL.') || s.includes('RUDNO') || s === 'ČETINARI';
+        return s.includes(' Č') || s.includes('CEL.') || s.includes('RD') || s === 'Σ ČETINARI';
     }
 
     // Build header
     let headerHtml = '<tr><th style="background: #374151; color: white;">Sedmica</th><th style="background: #374151; color: white;">Odjel</th>';
     sortimentiNazivi.forEach(sortiment => {
         let bgColor;
-        if (sortiment === 'SVEUKUPNO') {
+        if (sortiment === 'UKUPNO Č+L') {
             bgColor = '#dc2626';
         } else if (sortiment === 'LIŠĆARI') {
             bgColor = '#d97706';
-        } else if (sortiment === 'ČETINARI') {
+        } else if (sortiment === 'Σ ČETINARI') {
             bgColor = '#047857';
         } else if (isLiscari(sortiment)) {
             bgColor = '#ea580c';
@@ -277,13 +277,13 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
                 let textColor = '#1f2937';
 
                 if (value > 0) {
-                    if (sortiment === 'SVEUKUPNO') {
+                    if (sortiment === 'UKUPNO Č+L') {
                         bgColor = '#fecaca';
                         textColor = '#7f1d1d';
                     } else if (sortiment === 'LIŠĆARI') {
                         bgColor = '#fed7aa';
                         textColor = '#78350f';
-                    } else if (sortiment === 'ČETINARI') {
+                    } else if (sortiment === 'Σ ČETINARI') {
                         bgColor = '#a7f3d0';
                         textColor = '#065f46';
                     } else if (isLiscari(sortiment)) {
@@ -423,8 +423,8 @@ function renderIzvjestajiTable(data, sortimentiNazivi, tablePrefix) {
 
     // ✅ SORT BY SVEUKUPNO COLUMN (DESC - largest first)
     data.sort((a, b) => {
-        const aSveukupno = parseFloat(a.sortimenti['SVEUKUPNO']) || 0;
-        const bSveukupno = parseFloat(b.sortimenti['SVEUKUPNO']) || 0;
+        const aSveukupno = parseFloat(a.sortimenti['UKUPNO Č+L']) || 0;
+        const bSveukupno = parseFloat(b.sortimenti['UKUPNO Č+L']) || 0;
         return bSveukupno - aSveukupno; // DESC
     });
 
@@ -434,7 +434,7 @@ function renderIzvjestajiTable(data, sortimentiNazivi, tablePrefix) {
     }
 
     function isCetinari(s) {
-        return s.includes(' Č') || s.includes('CEL.') || s.includes('RUDNO') || s === 'ČETINARI';
+        return s.includes(' Č') || s.includes('CEL.') || s.includes('RD') || s === 'Σ ČETINARI';
     }
 
     // Build header
@@ -443,11 +443,11 @@ function renderIzvjestajiTable(data, sortimentiNazivi, tablePrefix) {
         let bgColor;
         let textColor = 'white';
 
-        if (sortiment === 'SVEUKUPNO') {
+        if (sortiment === 'UKUPNO Č+L') {
             bgColor = '#dc2626'; // Red
         } else if (sortiment === 'LIŠĆARI') {
             bgColor = '#d97706'; // Dark orange
-        } else if (sortiment === 'ČETINARI') {
+        } else if (sortiment === 'Σ ČETINARI') {
             bgColor = '#047857'; // Dark green
         } else if (isLiscari(sortiment)) {
             bgColor = '#ea580c'; // Orange
@@ -476,13 +476,13 @@ function renderIzvjestajiTable(data, sortimentiNazivi, tablePrefix) {
             let textColor = '#1f2937';
 
             if (value > 0) {
-                if (sortiment === 'SVEUKUPNO') {
+                if (sortiment === 'UKUPNO Č+L') {
                     bgColor = '#fecaca'; // Light red
                     textColor = '#7f1d1d'; // Dark red text
                 } else if (sortiment === 'LIŠĆARI') {
                     bgColor = '#fed7aa'; // Light orange
                     textColor = '#78350f'; // Dark orange text
-                } else if (sortiment === 'ČETINARI') {
+                } else if (sortiment === 'Σ ČETINARI') {
                     bgColor = '#a7f3d0'; // Light green
                     textColor = '#065f46'; // Dark green text
                 } else if (isLiscari(sortiment)) {
