@@ -352,9 +352,28 @@ function syncIndexSheet() {
 
         // Pročitaj PRIMKA sheet
         const primkaSheet = ss.getSheetByName('PRIMKA');
+
+        // Čitaj RADILIŠTE (W2) i IZVOĐAČ (W3) iz PRIMKA sheet-a
+        let radiliste = '';
+        let izvodjac = '';
+        if (primkaSheet) {
+          try {
+            const w2Value = primkaSheet.getRange('W2').getValue();
+            if (w2Value && String(w2Value).trim() !== '') {
+              radiliste = String(w2Value).trim();
+            }
+            const w3Value = primkaSheet.getRange('W3').getValue();
+            if (w3Value && String(w3Value).trim() !== '') {
+              izvodjac = String(w3Value).trim();
+            }
+          } catch (e) {
+            Logger.log(`  Greška pri čitanju W2/W3: ${e.toString()}`);
+          }
+        }
+
         if (primkaSheet) {
           const lastRow = primkaSheet.getLastRow();
-          Logger.log(`  PRIMKA: ${lastRow} redova (total)`);
+          Logger.log(`  PRIMKA: ${lastRow} redova (total), radiliste="${radiliste}", izvodjac="${izvodjac}"`);
 
           if (lastRow > 1) {
             const data = primkaSheet.getDataRange().getValues();
@@ -463,15 +482,15 @@ function syncIndexSheet() {
                 continue;
               }
 
-              // Kreiraj novi red za INDEX: [odjel, datum(B), otpremač(C), ...sortimenti(D-U 18 kolona), kupac(A)]
-              // Eksplicitno uzmi samo 18 kolona sortimenti (D-U = indeksi 3-20)
+              // Kreiraj novi red za INDEX: [odjel, datum(B), otpremač(C), ...sortimenti(D-W 20 kolona), kupac(A), radiliste, izvodjac]
+              // Eksplicitno uzmi 20 kolona sortimenti (D-W = indeksi 3-22)
               const sortimenti = row.slice(3, 23); // D-W (20 kolona)
-              const newRow = [odjelNaziv, datum, otpremac, ...sortimenti, kupac];
+              const newRow = [odjelNaziv, datum, otpremac, ...sortimenti, kupac, radiliste, izvodjac];
               otpremaRows.push(newRow);
               addedRows++;
 
               if (processedCount === 1 && addedRows <= 3) {
-                Logger.log(`      ✓ Dodano red ${addedRows}: "${odjelNaziv}" | "${datum}" | "${otpremac}" | kupac="${kupac}"`);
+                Logger.log(`      ✓ Dodano red ${addedRows}: "${odjelNaziv}" | "${datum}" | "${otpremac}" | kupac="${kupac}" | radiliste="${radiliste}" | izvodjac="${izvodjac}"`);
               }
             }
             Logger.log(`  OTPREMA: dodano ${addedRows} redova`);

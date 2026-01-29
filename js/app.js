@@ -3736,17 +3736,23 @@
                     return;
                 }
 
-                // ✅ NOVO: Header bez kolone Datum
+                // ✅ NOVO: Header sa kolonama ODJEL, OTPREMAČ, KUPAC, RADILIŠTE, IZVOĐAČ + sortimenti
                 const headerHTML = `
                     <tr>
                         <th style="position: sticky; top: 0; left: 0; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); z-index: 30; border-right: 3px solid #164e63; min-width: 70px; box-shadow: 2px 0 5px rgba(0,0,0,0.1); font-size: 10px; padding: 8px 6px; font-weight: 800; color: white; text-transform: uppercase; letter-spacing: 0.5px;">
                             🏢 Odjel
                         </th>
-                        <th style="position: sticky; top: 0; min-width: 105px; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; font-weight: 800; border: 1px solid #164e63; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th style="position: sticky; top: 0; min-width: 100px; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; font-weight: 800; border: 1px solid #164e63; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
                             🚛 Otpremač
                         </th>
-                        <th style="position: sticky; top: 0; min-width: 105px; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; font-weight: 800; border: 1px solid #164e63; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th style="position: sticky; top: 0; min-width: 100px; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; font-weight: 800; border: 1px solid #164e63; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
                             👤 Kupac
+                        </th>
+                        <th style="position: sticky; top: 0; min-width: 90px; background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: white; font-weight: 800; border: 1px solid #5b21b6; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
+                            📍 Radilište
+                        </th>
+                        <th style="position: sticky; top: 0; min-width: 90px; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; font-weight: 800; border: 1px solid #065f46; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
+                            👷 Izvođač
                         </th>
                         ${data.sortimentiNazivi.map(s => `
                             <th style="position: sticky; top: 0; min-width: 52px; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; font-weight: 700; border: 1px solid #164e63; font-size: 8.5px; padding: 8px 3px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; line-height: 1.1;">
@@ -3789,11 +3795,11 @@
                     const rows = groupedByDate[datum];
                     const dayName = getDayName(datum);
 
-                    // ✅ Zaglavlje datuma
+                    // ✅ Zaglavlje datuma (5 fiksnih kolona: odjel, otpremač, kupac, radilište, izvođač + sortimenti)
                     const numSortimenti = data.sortimentiNazivi.length;
                     bodyHTML += `
                         <tr style="background: linear-gradient(135deg, #0e7490 0%, #155e75 50%, #164e63 100%); box-shadow: 0 2px 8px rgba(22, 78, 99, 0.4);">
-                            <td colspan="${3 + numSortimenti}" style="font-weight: 800; font-size: 14px; padding: 10px 12px; text-align: center; border-top: 3px solid #083344; color: white; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+                            <td colspan="${5 + numSortimenti}" style="font-weight: 800; font-size: 14px; padding: 10px 12px; text-align: center; border-top: 3px solid #083344; color: white; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
                                 📅 ${datum} - ${dayName}
                             </td>
                         </tr>
@@ -3808,7 +3814,7 @@
                         });
                     });
 
-                    // ✅ Redovi za ovaj dan (bez kolone Datum)
+                    // ✅ Redovi za ovaj dan sa kolonama: Odjel, Otpremač, Kupac, Radilište, Izvođač + sortimenti
                     rows.forEach((row, idx) => {
                         const rowBg = idx % 2 === 0 ? '#ecfeff' : '#ffffff';
                         const hoverBg = '#cffafe';
@@ -3827,6 +3833,8 @@
                                 </td>
                                 <td style="font-weight: 600; font-size: 10px; border: 1px solid #a5f3fc; padding: 6px 5px; color: #0e7490;">${row.otpremac}</td>
                                 <td style="border: 1px solid #a5f3fc; color: #155e75; font-weight: 600; font-size: 10px; padding: 6px 5px;">${row.kupac || '-'}</td>
+                                <td style="border: 1px solid #ddd6fe; color: #6d28d9; font-weight: 600; font-size: 9px; padding: 6px 5px; background: ${idx % 2 === 0 ? '#f5f3ff' : '#faf5ff'};">${row.radiliste || '-'}</td>
+                                <td style="border: 1px solid #a7f3d0; color: #047857; font-weight: 600; font-size: 9px; padding: 6px 5px; background: ${idx % 2 === 0 ? '#ecfdf5' : '#f0fdf4'};">${row.izvodjac || '-'}</td>
                                 ${sortimentiCells}
                             </tr>
                         `;
@@ -3845,6 +3853,8 @@
                                 📊 UKUPNO ${datum}
                             </td>
                             <td style="background: transparent;"></td>
+                            <td style="background: #a5f3fc;"></td>
+                            <td style="background: #a5f3fc;"></td>
                             <td style="background: #a5f3fc;"></td>
                             ${dailyTotalsCells}
                         </tr>
@@ -3868,7 +3878,7 @@
 
                 bodyHTML += `
                     <tr style="background: linear-gradient(135deg, #0e7490, #0891b2); color: white; font-weight: 700; border-top: 4px solid #164e63;">
-                        <td colspan="3" style="padding: 12px; font-size: 13px; font-weight: 900; letter-spacing: 1.5px; text-shadow: 0 1px 3px rgba(0,0,0,0.4); text-align: center;">
+                        <td colspan="5" style="padding: 12px; font-size: 13px; font-weight: 900; letter-spacing: 1.5px; text-shadow: 0 1px 3px rgba(0,0,0,0.4); text-align: center;">
                             📈 UKUPNO ${getMonthName(month).toUpperCase()}
                         </td>
                         ${grandTotalsCells}

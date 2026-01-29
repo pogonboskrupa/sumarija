@@ -2128,12 +2128,15 @@ function handleOtremaciDaily(year, month, username, password) {
     const dailyData = [];
 
     // Process OTPREMA data
+    // INDEX_OTPREMA struktura: A=odjel, B=datum, C=otpremac, D-W=sortimenti(20), X=kupac, Y=radiliste, Z=izvodjac
     for (let i = 1; i < otpremaData.length; i++) {
       const row = otpremaData[i];
       const odjel = row[0];
       const datum = row[1];
       const otpremac = row[2];
-      const kupac = row[23] || ""; // KUPAC column
+      const kupac = row[23] || ""; // KUPAC column (X)
+      const radiliste = row[24] || ""; // RADILIŠTE column (Y)
+      const izvodjac = row[25] || ""; // IZVOĐAČ column (Z)
 
       if (!datum || !otpremac) continue;
 
@@ -2153,6 +2156,8 @@ function handleOtremaciDaily(year, month, username, password) {
         odjel: odjel || "",
         otpremac: otpremac,
         kupac: kupac,
+        radiliste: radiliste,
+        izvodjac: izvodjac,
         sortimenti: sortimenti
       });
     }
