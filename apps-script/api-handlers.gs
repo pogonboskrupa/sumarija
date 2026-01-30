@@ -2524,6 +2524,7 @@ function handlePrimke(username, password) {
         const odjel = row[PRIMKA_COL.ODJEL];      // C - ODJEL
         const radiliste = row[PRIMKA_COL.RADILISTE] || ''; // D - RADILIŠTE
         const izvodjac = row[PRIMKA_COL.IZVODJAC] || '';   // E - IZVOĐAČ
+        const poslovodja = row[PRIMKA_COL.POSLOVODJA] || ''; // F - POSLOVOĐA
 
         // Skip empty rows
         if (!datum || !odjel) continue;
@@ -2543,6 +2544,7 @@ function handlePrimke(username, password) {
               odjel: odjelStr,
               radiliste: radiliste,
               izvodjac: izvodjac,
+              poslovodja: poslovodja,
               sortiment: SORTIMENTI_NAZIVI[j],
               kolicina: kolicina,
               primac: primac
@@ -2593,6 +2595,7 @@ function handleOtpreme(username, password) {
         const odjel = row[OTPREMA_COL.ODJEL];      // D - ODJEL
         const radiliste = row[OTPREMA_COL.RADILISTE] || ''; // E - RADILIŠTE
         const izvodjac = row[OTPREMA_COL.IZVODJAC] || '';   // F - IZVOĐAČ
+        const poslovodja = row[OTPREMA_COL.POSLOVODJA] || ''; // G - POSLOVOĐA
 
         // Skip empty rows
         if (!datum || !odjel) continue;
@@ -2612,6 +2615,7 @@ function handleOtpreme(username, password) {
               odjel: odjelStr,
               radiliste: radiliste,
               izvodjac: izvodjac,
+              poslovodja: poslovodja,
               sortiment: SORTIMENTI_NAZIVI[j],
               kolicina: kolicina,
               otpremac: otpremac,
