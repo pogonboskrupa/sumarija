@@ -7,28 +7,28 @@ function diagnosticOctoberData() {
   try {
     Logger.log('=== OKTOBAR DIJAGNOSTIKA ===');
 
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const primkaSheet = ss.getSheetByName('INDEX_PRIMKA');
-    const otpremaSheet = ss.getSheetByName('INDEX_OTPREMA');
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const primkaSheet = ss.getSheetByName('INDEKS_PRIMKA');
+    const otpremaSheet = ss.getSheetByName('INDEKS_OTPREMA');
 
     if (!primkaSheet || !otpremaSheet) {
-      Logger.log('ERROR: INDEX sheets not found');
+      Logger.log('ERROR: INDEKS sheets not found');
       return;
     }
 
     const primkaData = primkaSheet.getDataRange().getValues();
     const otpremaData = otpremaSheet.getDataRange().getValues();
 
-    // Analiza PRIMKA (Sječa)
+    // Analiza PRIMKA (Sječa) - nova struktura: A=DATE, B=RADNIK, C=ODJEL, Y=UKUPNO
     Logger.log('\n=== PRIMKA (SJEČA) - OKTOBAR 2025 ===');
     let primkaSum = 0;
     let primkaCount = 0;
 
     for (let i = 1; i < primkaData.length; i++) {
       const row = primkaData[i];
-      const odjel = row[0];
-      const datum = row[1];
-      const kubik = parseFloat(row[22]) || 0; // kolona W - UKUPNO Č+L
+      const odjel = row[PRIMKA_COL.ODJEL];      // C - Odjel
+      const datum = row[PRIMKA_COL.DATE];       // A - Datum
+      const kubik = parseFloat(row[PRIMKA_COL.UKUPNO]) || 0; // Y - UKUPNO Č+L
 
       if (!datum || !odjel) continue;
 
@@ -48,17 +48,17 @@ function diagnosticOctoberData() {
 
     Logger.log('\nUKUPNO PRIMKA OKTOBAR: ' + primkaSum.toFixed(2) + ' m³ (' + primkaCount + ' unosa)');
 
-    // Analiza OTPREMA
+    // Analiza OTPREMA - nova struktura: A=DATE, B=OTPREMAČ, C=KUPAC, D=ODJEL, Z=UKUPNO
     Logger.log('\n=== OTPREMA - OKTOBAR 2025 ===');
     let otpremaSum = 0;
     let otpremaCount = 0;
 
     for (let i = 1; i < otpremaData.length; i++) {
       const row = otpremaData[i];
-      const odjel = row[0];
-      const datum = row[1];
-      const kupac = row[23] || ""; // KUPAC column
-      const kubik = parseFloat(row[22]) || 0; // kolona W - UKUPNO Č+L
+      const odjel = row[OTPREMA_COL.ODJEL];     // D - Odjel
+      const datum = row[OTPREMA_COL.DATE];      // A - Datum
+      const kupac = row[OTPREMA_COL.KUPAC] || ""; // C - Kupac
+      const kubik = parseFloat(row[OTPREMA_COL.UKUPNO]) || 0; // Z - UKUPNO Č+L
 
       if (!datum || !odjel) continue;
 
@@ -91,16 +91,16 @@ function diagnosticRawDates() {
   try {
     Logger.log('=== RAW DATUMI DIJAGNOSTIKA ===');
 
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const primkaSheet = ss.getSheetByName('INDEX_PRIMKA');
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const primkaSheet = ss.getSheetByName('INDEKS_PRIMKA');
 
     if (!primkaSheet) {
-      Logger.log('ERROR: INDEX_PRIMKA sheet not found');
+      Logger.log('ERROR: INDEKS_PRIMKA sheet not found');
       return;
     }
 
     const primkaData = primkaSheet.getDataRange().getValues();
-    Logger.log('Ukupno redova u INDEX_PRIMKA: ' + primkaData.length);
+    Logger.log('Ukupno redova u INDEKS_PRIMKA: ' + primkaData.length);
     Logger.log('\n=== PRVIH 30 REDOVA (primjeri datuma) ===\n');
 
     const mjeseciCounter = {};
@@ -110,9 +110,9 @@ function diagnosticRawDates() {
 
     for (let i = 1; i < Math.min(30, primkaData.length); i++) {
       const row = primkaData[i];
-      const odjel = row[0];
-      const rawDatum = row[1];
-      const kubik = parseFloat(row[22]) || 0;
+      const odjel = row[PRIMKA_COL.ODJEL];       // C - Odjel
+      const rawDatum = row[PRIMKA_COL.DATE];     // A - Datum
+      const kubik = parseFloat(row[PRIMKA_COL.UKUPNO]) || 0; // Y - UKUPNO
 
       const datumType = typeof rawDatum;
       const isDateObj = rawDatum instanceof Date;
@@ -163,26 +163,26 @@ function diagnosticFind2578() {
   try {
     Logger.log('=== TRAŽIM 25.78 UNOS U OKTOBRU ===');
 
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const primkaSheet = ss.getSheetByName('INDEX_PRIMKA');
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const primkaSheet = ss.getSheetByName('INDEKS_PRIMKA');
 
     if (!primkaSheet) {
-      Logger.log('ERROR: INDEX_PRIMKA sheet not found');
+      Logger.log('ERROR: INDEKS_PRIMKA sheet not found');
       return;
     }
 
     const primkaData = primkaSheet.getDataRange().getValues();
-    Logger.log('Ukupno redova u INDEX_PRIMKA: ' + primkaData.length);
+    Logger.log('Ukupno redova u INDEKS_PRIMKA: ' + primkaData.length);
     Logger.log('\n=== TRAŽIM UNOSE SA KUBIK = 25.78 U OKTOBRU ===\n');
 
     let foundCount = 0;
 
     for (let i = 1; i < primkaData.length; i++) {
       const row = primkaData[i];
-      const odjel = row[0];
-      const datum = row[1];
-      const primac = row[2];
-      const kubik = parseFloat(row[22]) || 0; // kolona W - UKUPNO Č+L
+      const odjel = row[PRIMKA_COL.ODJEL];       // C - Odjel
+      const datum = row[PRIMKA_COL.DATE];        // A - Datum
+      const primac = row[PRIMKA_COL.RADNIK];     // B - Primač
+      const kubik = parseFloat(row[PRIMKA_COL.UKUPNO]) || 0; // Y - UKUPNO Č+L
 
       if (!datum || !odjel) continue;
 
@@ -198,8 +198,8 @@ function diagnosticFind2578() {
         Logger.log('  Datum: ' + formatDate(datumObj));
         Logger.log('  Primač: ' + primac);
         Logger.log('  Kubik: ' + kubik.toFixed(2));
-        Logger.log('  Radilište: ' + (row[21] || ''));
-        Logger.log('  Izvođač: ' + (row[22] || ''));
+        Logger.log('  Radilište: ' + (row[PRIMKA_COL.RADILISTE] || ''));
+        Logger.log('  Izvođač: ' + (row[PRIMKA_COL.IZVODJAC] || ''));
         Logger.log('');
       }
     }
@@ -207,19 +207,19 @@ function diagnosticFind2578() {
     Logger.log('\n=== UKUPNO PRONAĐENO: ' + foundCount + ' unosa ===');
 
     // Također traži u OTPREMA
-    const otpremaSheet = ss.getSheetByName('INDEX_OTPREMA');
+    const otpremaSheet = ss.getSheetByName('INDEKS_OTPREMA');
     if (otpremaSheet) {
       const otpremaData = otpremaSheet.getDataRange().getValues();
-      Logger.log('\n=== PROVJERA U INDEX_OTPREMA ===\n');
+      Logger.log('\n=== PROVJERA U INDEKS_OTPREMA ===\n');
 
       let otpremaFoundCount = 0;
 
       for (let i = 1; i < otpremaData.length; i++) {
         const row = otpremaData[i];
-        const odjel = row[0];
-        const datum = row[1];
-        const otpremac = row[2];
-        const kubik = parseFloat(row[22]) || 0;
+        const odjel = row[OTPREMA_COL.ODJEL];      // D - Odjel
+        const datum = row[OTPREMA_COL.DATE];       // A - Datum
+        const otpremac = row[OTPREMA_COL.OTPREMAC]; // B - Otpremač
+        const kubik = parseFloat(row[OTPREMA_COL.UKUPNO]) || 0; // Z - UKUPNO
 
         if (!datum || !odjel) continue;
 
@@ -233,13 +233,13 @@ function diagnosticFind2578() {
           Logger.log('  Odjel: ' + odjel);
           Logger.log('  Datum: ' + formatDate(datumObj));
           Logger.log('  Otpremač: ' + otpremac);
-          Logger.log('  Kupac: ' + (row[23] || ''));
+          Logger.log('  Kupac: ' + (row[OTPREMA_COL.KUPAC] || ''));
           Logger.log('  Kubik: ' + kubik.toFixed(2));
           Logger.log('');
         }
       }
 
-      Logger.log('UKUPNO U OTPREMA: ' + otpremaFoundCount + ' unosa');
+      Logger.log('UKUPNO U INDEKS_OTPREMA: ' + otpremaFoundCount + ' unosa');
     }
 
     Logger.log('=== KRAJ DIJAGNOSTIKE ===');

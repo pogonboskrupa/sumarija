@@ -8,7 +8,7 @@
 
 function getDinamikaForYear(year) {
   try {
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
     let dinamikaSheet = ss.getSheetByName("DINAMIKA");
 
     // Ako sheet ne postoji ili nema podataka, vrati prazne vrijednosti
@@ -52,9 +52,9 @@ function handleStats(year, username, password) {
     return createJsonResponse({ error: 'Unauthorized' }, false);
   }
 
-  const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-  const primkaSheet = ss.getSheetByName('INDEX_PRIMKA');
-  const otpremaSheet = ss.getSheetByName('INDEX_OTPREMA');
+  const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+  const primkaSheet = ss.getSheetByName('INDEKS_PRIMKA');
+  const otpremaSheet = ss.getSheetByName('INDEKS_OTPREMA');
 
   if (!primkaSheet || !otpremaSheet) {
     return createJsonResponse({ error: 'Required sheets not found' }, false);
@@ -85,8 +85,8 @@ function handleStats(year, username, password) {
 }
 
 function processPrimkaData(data, stats, year) {
-  // INDEX_PRIMKA struktura:
-  // Kolona A: Odjel, B: Datum, ... U: SVEUKUPNO (indeks 20)
+  // INDEKS_PRIMKA nova struktura:
+  // A: DATE, B: RADNIK, C: ODJEL, D: RADILIŠTE, E: IZVOĐAČ, F-Y: SORTIMENTI, Y: UKUPNO Č+L
 
   Logger.log('=== PRIMKA DEBUG ===');
   Logger.log('Total rows in PRIMKA: ' + data.length);
@@ -98,9 +98,9 @@ function processPrimkaData(data, stats, year) {
 
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
-    const odjel = row[0]; // kolona A - Odjel
-    const datum = row[1]; // kolona B - Datum
-    const kubik = parseFloat(row[22]) || 0; // kolona W (indeks 22) - UKUPNO Č+L
+    const odjel = row[PRIMKA_COL.ODJEL];     // C - Odjel
+    const datum = row[PRIMKA_COL.DATE];      // A - Datum
+    const kubik = parseFloat(row[PRIMKA_COL.UKUPNO]) || 0; // Y - UKUPNO Č+L
 
     if (!datum || !odjel) {
       skippedNoDatum++;
@@ -158,8 +158,8 @@ function processPrimkaData(data, stats, year) {
 }
 
 function processOtpremaData(data, stats, year) {
-  // INDEX_OTPREMA struktura: ista kao INDEX_PRIMKA
-  // Kolona A: Odjel, B: Datum, ... U: SVEUKUPNO (indeks 20)
+  // INDEKS_OTPREMA nova struktura:
+  // A: DATE, B: OTPREMAČ, C: KUPAC, D: ODJEL, E: RADILIŠTE, F: IZVOĐAČ, G-Z: SORTIMENTI, Z: UKUPNO Č+L
 
   Logger.log('=== OTPREMA DEBUG ===');
   Logger.log('Total rows in OTPREMA: ' + data.length);
@@ -171,9 +171,9 @@ function processOtpremaData(data, stats, year) {
 
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
-    const odjel = row[0]; // kolona A - Odjel
-    const datum = row[1]; // kolona B - Datum
-    const kubik = parseFloat(row[22]) || 0; // kolona W (indeks 22) - UKUPNO Č+L
+    const odjel = row[OTPREMA_COL.ODJEL];    // D - Odjel
+    const datum = row[OTPREMA_COL.DATE];     // A - Datum
+    const kubik = parseFloat(row[OTPREMA_COL.UKUPNO]) || 0; // Z - UKUPNO Č+L
 
     if (!datum || !odjel) {
       skippedNoDatum++;
@@ -309,16 +309,16 @@ function syncIndexSheet() {
   const startTime = new Date();
 
   try {
-    // 1. Otvori INDEX spreadsheet
-    const indexSS = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const indexPrimkaSheet = indexSS.getSheetByName('INDEX_PRIMKA');
-    const indexOtpremaSheet = indexSS.getSheetByName('INDEX_OTPREMA');
+    // 1. Otvori BAZA_PODATAKA spreadsheet
+    const bazaPodataka = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const indexPrimkaSheet = bazaPodataka.getSheetByName('INDEKS_PRIMKA');
+    const indexOtpremaSheet = bazaPodataka.getSheetByName('INDEKS_OTPREMA');
 
     if (!indexPrimkaSheet || !indexOtpremaSheet) {
-      throw new Error('INDEX_PRIMKA ili INDEX_OTPREMA sheet nije pronađen!');
+      throw new Error('INDEKS_PRIMKA ili INDEKS_OTPREMA sheet nije pronađen u BAZA_PODATAKA!');
     }
 
-    Logger.log('INDEX sheets otvoreni uspješno');
+    Logger.log('BAZA_PODATAKA sheets otvoreni uspješno');
 
     // 2. Obriši sve podatke (osim header-a u redu 1)
     Logger.log('Brisanje starih podataka...');
@@ -379,8 +379,8 @@ function syncIndexSheet() {
             const data = primkaSheet.getDataRange().getValues();
             let addedRows = 0;
 
-            // PRIMKA struktura: PRAZNA(A) | DATUM(B) | PRIMAČ(C) | sortimenti(D-U)
-            // INDEX treba: odjel | datum | primač | sortimenti
+            // PRIMKA struktura iz odjela: PRAZNA(A) | DATUM(B) | PRIMAČ(C) | sortimenti(D-W)
+            // INDEKS_PRIMKA nova struktura: DATUM(A) | RADNIK(B) | ODJEL(C) | RADILIŠTE(D) | IZVOĐAČ(E) | sortimenti(F-Y)
             for (let i = 1; i < data.length; i++) {
               const row = data[i];
               const datum = row[1]; // kolona B - datum
@@ -415,15 +415,14 @@ function syncIndexSheet() {
                 continue;
               }
 
-              // Dodaj red: [ODJEL, DATUM(B), PRIMAČ(C), ...sortimenti(D-U 18 kolona)]
-              // Eksplicitno uzmi samo 18 kolona sortimenti (D-U = indeksi 3-20)
-              const sortimenti = row.slice(3, 23); // D-W (20 kolona)
-              const newRow = [odjelNaziv, datum, primac, ...sortimenti];
+              // Nova struktura: [DATUM, RADNIK/PRIMAČ, ODJEL, RADILIŠTE, IZVOĐAČ, ...sortimenti(20 kolona)]
+              const sortimenti = row.slice(3, 23); // D-W (20 kolona sortimenti)
+              const newRow = [datum, primac, odjelNaziv, radiliste, izvodjac, ...sortimenti];
               primkaRows.push(newRow);
               addedRows++;
 
               if (processedCount === 1 && addedRows <= 3) {
-                Logger.log(`      ✓ Dodano red ${addedRows}: "${odjelNaziv}" | "${datum}" | "${primac}"`);
+                Logger.log(`      ✓ Dodano red ${addedRows}: "${datum}" | "${primac}" | "${odjelNaziv}" | "${radiliste}" | "${izvodjac}"`);
               }
             }
             Logger.log(`  PRIMKA: dodano ${addedRows} redova`);
@@ -444,8 +443,8 @@ function syncIndexSheet() {
             const data = otpremaSheet.getDataRange().getValues();
             let addedRows = 0;
 
-            // OTPREMA struktura: kupci(A) | datum(B) | otpremač(C) | sortimenti(D-U)
-            // INDEX treba: odjel | datum | otpremač | sortimenti | kupac
+            // OTPREMA struktura iz odjela: kupac(A) | datum(B) | otpremač(C) | sortimenti(D-W)
+            // INDEKS_OTPREMA nova struktura: DATUM(A) | OTPREMAČ(B) | KUPAC(C) | ODJEL(D) | RADILIŠTE(E) | IZVOĐAČ(F) | sortimenti(G-Z)
             for (let i = 1; i < data.length; i++) {
               const row = data[i];
               const kupac = row[0]; // kolona A - kupac
@@ -482,15 +481,14 @@ function syncIndexSheet() {
                 continue;
               }
 
-              // Kreiraj novi red za INDEX: [odjel, datum(B), otpremač(C), ...sortimenti(D-W 20 kolona), kupac(A), radiliste, izvodjac]
-              // Eksplicitno uzmi 20 kolona sortimenti (D-W = indeksi 3-22)
-              const sortimenti = row.slice(3, 23); // D-W (20 kolona)
-              const newRow = [odjelNaziv, datum, otpremac, ...sortimenti, kupac, radiliste, izvodjac];
+              // Nova struktura: [DATUM, OTPREMAČ, KUPAC, ODJEL, RADILIŠTE, IZVOĐAČ, ...sortimenti(20 kolona)]
+              const sortimenti = row.slice(3, 23); // D-W (20 kolona sortimenti)
+              const newRow = [datum, otpremac, kupac, odjelNaziv, radiliste, izvodjac, ...sortimenti];
               otpremaRows.push(newRow);
               addedRows++;
 
               if (processedCount === 1 && addedRows <= 3) {
-                Logger.log(`      ✓ Dodano red ${addedRows}: "${odjelNaziv}" | "${datum}" | "${otpremac}" | kupac="${kupac}" | radiliste="${radiliste}" | izvodjac="${izvodjac}"`);
+                Logger.log(`      ✓ Dodano red ${addedRows}: "${datum}" | "${otpremac}" | kupac="${kupac}" | "${odjelNaziv}" | "${radiliste}" | "${izvodjac}"`);
               }
             }
             Logger.log(`  OTPREMA: dodano ${addedRows} redova`);
@@ -511,27 +509,27 @@ function syncIndexSheet() {
     Logger.log(`PRIMKA redova: ${primkaRows.length}`);
     Logger.log(`OTPREMA redova: ${otpremaRows.length}`);
 
-    // 5. Sortiraj po datumu (kolona B = index 1)
+    // 5. Sortiraj po datumu (kolona A = index 0)
     Logger.log('Sortiranje podataka po datumu...');
     primkaRows.sort((a, b) => {
-      const dateA = parseDate(a[1]);
-      const dateB = parseDate(b[1]);
+      const dateA = parseDate(a[0]);
+      const dateB = parseDate(b[0]);
       return dateA - dateB;
     });
 
     otpremaRows.sort((a, b) => {
-      const dateA = parseDate(a[1]);
-      const dateB = parseDate(b[1]);
+      const dateA = parseDate(a[0]);
+      const dateB = parseDate(b[0]);
       return dateA - dateB;
     });
 
-    // 6. Normalizuj broj kolona (svi redovi moraju imati isti broj kolona kao INDEX sheet)
+    // 6. Normalizuj broj kolona (svi redovi moraju imati isti broj kolona kao INDEKS sheet)
     Logger.log('Normalizacija broja kolona...');
     const indexPrimkaHeaderCols = indexPrimkaSheet.getLastColumn();
     const indexOtpremaHeaderCols = indexOtpremaSheet.getLastColumn();
 
-    Logger.log(`INDEX_PRIMKA header kolone: ${indexPrimkaHeaderCols}`);
-    Logger.log(`INDEX_OTPREMA header kolone: ${indexOtpremaHeaderCols}`);
+    Logger.log(`INDEKS_PRIMKA header kolone: ${indexPrimkaHeaderCols}`);
+    Logger.log(`INDEKS_OTPREMA header kolone: ${indexOtpremaHeaderCols}`);
 
     // Normalizuj PRIMKA redove
     primkaRows = primkaRows.map(row => {
@@ -557,16 +555,16 @@ function syncIndexSheet() {
       return row;
     });
 
-    // 7. Upiši podatke u INDEX sheet-ove
-    Logger.log('Upisivanje podataka u INDEX sheet-ove...');
+    // 7. Upiši podatke u INDEKS sheet-ove
+    Logger.log('Upisivanje podataka u INDEKS sheet-ove...');
     if (primkaRows.length > 0) {
       indexPrimkaSheet.getRange(2, 1, primkaRows.length, indexPrimkaHeaderCols).setValues(primkaRows);
-      Logger.log(`✓ INDEX_PRIMKA: upisano ${primkaRows.length} redova`);
+      Logger.log(`✓ INDEKS_PRIMKA: upisano ${primkaRows.length} redova`);
     }
 
     if (otpremaRows.length > 0) {
       indexOtpremaSheet.getRange(2, 1, otpremaRows.length, indexOtpremaHeaderCols).setValues(otpremaRows);
-      Logger.log(`✓ INDEX_OTPREMA: upisano ${otpremaRows.length} redova`);
+      Logger.log(`✓ INDEKS_OTPREMA: upisano ${otpremaRows.length} redova`);
     }
 
     // 🚀 CACHE: Invalidate all cache after successful sync
@@ -755,14 +753,14 @@ function syncStanjeOdjela() {
 
     Logger.log('Broj odjela nakon filtriranja: ' + filteredOdjeliData.length);
 
-    // Sada zapiši sve podatke na cache sheet
-    const indexSpreadsheet = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    let cacheSheet = indexSpreadsheet.getSheetByName('STANJE_ODJELA_CACHE');
+    // Sada zapiši sve podatke na cache sheet u BAZA_PODATAKA
+    const bazaPodataka = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    let cacheSheet = bazaPodataka.getSheetByName('STANJE_ODJELA_CACHE');
 
     // Kreiraj sheet ako ne postoji
     if (!cacheSheet) {
       Logger.log('Kreiram novi sheet: STANJE_ODJELA_CACHE');
-      cacheSheet = indexSpreadsheet.insertSheet('STANJE_ODJELA_CACHE');
+      cacheSheet = bazaPodataka.insertSheet('STANJE_ODJELA_CACHE');
     }
 
     // Očisti sheet
