@@ -237,38 +237,46 @@
 
         <!-- MJESEČNI SORTIMENTI CONTENT -->
         <div id="mjesecni-sortimenti-content" class="container hidden">
-            <!-- SJEČA PO MJESECIMA -->
-            <div class="section">
-                <div class="page-header">
-                    <div class="page-header-left">
-                        <h1>📊 Sječa po mjesecima i sortimentima</h1>
-                        <p>Prikaz mjesečnih podataka za tekuću godinu</p>
+            <!-- SJEČA PO MJESECIMA - Pro Card -->
+            <div class="mjesecni-card" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 32px; overflow: hidden;">
+                <!-- Card Header -->
+                <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="margin: 0; color: white; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">📊</span> Sječa po mjesecima i sortimentima
+                        </h2>
+                        <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Prikaz mjesečnih podataka za tekuću godinu</p>
                     </div>
-                    <div class="page-header-right">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('mjesecna-sjeca')">📥 Export CSV</button>
-                    </div>
+                    <button class="btn" onclick="exportTableToCSV('mjesecna-sjeca')" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <span>📥</span> Export
+                    </button>
                 </div>
-                <div class="kupci-table-wrapper mjesecni-table-wrapper">
-                    <table class="kupci-table" id="mjesecna-sjeca-table">
+                <!-- Table Container -->
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="pro-mjesecna-table" id="mjesecna-sjeca-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
                         <thead id="mjesecna-sjeca-header"></thead>
                         <tbody id="mjesecna-sjeca-body"></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- OTPREMA PO MJESECIMA -->
-            <div class="section">
-                <div class="page-header">
-                    <div class="page-header-left">
-                        <h1>🚛 Otprema po mjesecima i sortimentima</h1>
-                        <p>Prikaz mjesečnih podataka za tekuću godinu</p>
+            <!-- OTPREMA PO MJESECIMA - Pro Card -->
+            <div class="mjesecni-card" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 32px; overflow: hidden;">
+                <!-- Card Header -->
+                <div style="background: linear-gradient(135deg, #7c2d12 0%, #b45309 100%); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="margin: 0; color: white; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">🚛</span> Otprema po mjesecima i sortimentima
+                        </h2>
+                        <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Prikaz mjesečnih podataka za tekuću godinu</p>
                     </div>
-                    <div class="page-header-right">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('mjesecna-otprema')">📥 Export CSV</button>
-                    </div>
+                    <button class="btn" onclick="exportTableToCSV('mjesecna-otprema')" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <span>📥</span> Export
+                    </button>
                 </div>
-                <div class="kupci-table-wrapper mjesecni-table-wrapper">
-                    <table class="kupci-table" id="mjesecna-otprema-table">
+                <!-- Table Container -->
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="pro-mjesecna-table" id="mjesecna-otprema-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
                         <thead id="mjesecna-otprema-header"></thead>
                         <tbody id="mjesecna-otprema-body"></tbody>
                     </table>

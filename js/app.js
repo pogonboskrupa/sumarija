@@ -6221,7 +6221,7 @@
             }
         }
 
-        // Render monthly table (SJEČA or OTPREMA)
+        // Render monthly table (SJEČA or OTPREMA) - PRO LEVEL
         function renderMjesecnaTabela(data, tableId) {
 
             const headerElem = document.getElementById(tableId + '-header');
@@ -6245,76 +6245,80 @@
                 return;
             }
 
-            const sortimenti = data.sortimenti.filter(s => s && s.trim() !== ''); // Filter out empty sortiment names
+            const sortimenti = data.sortimenti.filter(s => s && s.trim() !== '');
             const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
 
+            // Determine četinari/lišćari boundary
+            const cetinariSortimenti = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'Σ ČETINARI', 'ČETINARI'];
 
-            // Build header with optimized styling
-            let headerHtml = '<tr>';
-            headerHtml += '<th style="min-width: 70px; max-width: 80px; position: sticky; left: 0; background: #1e40af !important; color: white; z-index: 20; font-size: 11px; font-weight: 700; padding: 10px 6px; text-align: center; border-right: 2px solid #1e3a8a;">MJESEC</th>';
+            // Build header - PRO STYLE with borders
+            let headerHtml = '<tr style="background: #1e3a5f;">';
+            headerHtml += '<th style="min-width: 80px; position: sticky; left: 0; background: #1e3a5f; color: white; z-index: 20; font-size: 12px; font-weight: 700; padding: 12px 8px; text-align: center; border: 1px solid #374151; border-right: 2px solid #60a5fa;">MJESEC</th>';
 
             for (let i = 0; i < sortimenti.length; i++) {
-                const colClass = getColumnGroup(sortimenti[i]);
-                let extraClass = '';
-                let bgColor = '#3b82f6'; // Default blue
-                let borderColor = '#2563eb';
+                const s = sortimenti[i];
+                let bgColor = '#1e3a5f';
+                let borderColor = '#374151';
 
-                if (sortimenti[i] === 'ČETINARI') {
-                    extraClass = ' col-cetinari';
-                    bgColor = '#059669'; // Green for četinari aggregate
+                // Color coding for special columns
+                if (s === 'Σ ČETINARI' || s === 'ČETINARI') {
+                    bgColor = '#065f46';
                     borderColor = '#047857';
-                } else if (sortimenti[i] === 'LIŠĆARI') {
-                    extraClass = ' col-liscari';
-                    bgColor = '#d97706'; // Orange for lišćari aggregate
+                } else if (s === 'LIŠĆARI') {
+                    bgColor = '#92400e';
                     borderColor = '#b45309';
-                } else if (sortimenti[i] === 'SVEUKUPNO') {
-                    extraClass = ' col-sveukupno';
-                    bgColor = '#dc2626'; // Red for total
+                } else if (s === 'SVEUKUPNO' || s === 'UKUPNO Č+L') {
+                    bgColor = '#7c2d12';
                     borderColor = '#b91c1c';
+                } else if (cetinariSortimenti.includes(s)) {
+                    bgColor = '#1e40af';
+                } else {
+                    bgColor = '#78350f';
                 }
 
-                headerHtml += '<th class="sortiment-col ' + colClass + extraClass + '" style="background: ' + bgColor + ' !important; color: white !important; border: 1px solid ' + borderColor + '; min-width: 70px; max-width: 90px; padding: 10px 6px; font-size: 11px; font-weight: 700; text-align: center; white-space: normal !important; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.2; height: auto; overflow: visible; vertical-align: middle; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">' + sortimenti[i] + '</th>';
+                headerHtml += `<th style="background: ${bgColor}; color: white; border: 1px solid ${borderColor}; min-width: 65px; padding: 12px 6px; font-size: 11px; font-weight: 600; text-align: center; white-space: nowrap;">${s}</th>`;
             }
             headerHtml += '</tr>';
             headerElem.innerHTML = headerHtml;
 
             // Build body - 12 months + UKUPNO + %UDIO
             let bodyHtml = '';
-            const totals = {}; // Total per sortiment
+            const totals = {};
 
-            // Month rows with improved styling
+            // Month rows - PRO STYLE with clear borders
             for (let m = 0; m < 12; m++) {
-                const rowBg = m % 2 === 0 ? '#f9fafb' : 'white';
-                const rowHoverBg = m % 2 === 0 ? '#f3f4f6' : '#f9fafb';
-                bodyHtml += '<tr style="background: ' + rowBg + ';" onmouseover="this.style.background=\'' + rowHoverBg + '\'" onmouseout="this.style.background=\'' + rowBg + '\'">';
-                bodyHtml += '<td style="font-weight: 700; font-size: 13px; min-width: 70px; max-width: 80px; position: sticky; left: 0; background: ' + rowBg + '; z-index: 9; border-right: 2px solid #3b82f6; text-align: center; padding: 10px 6px; color: #1f2937;">' + mjeseci[m] + '</td>';
+                const rowBg = m % 2 === 0 ? 'white' : '#f8fafc';
+                bodyHtml += `<tr style="background: ${rowBg};">`;
+                bodyHtml += `<td style="font-weight: 700; font-size: 13px; min-width: 80px; position: sticky; left: 0; background: ${rowBg}; z-index: 9; border: 1px solid #d1d5db; border-right: 2px solid #60a5fa; text-align: center; padding: 10px 8px; color: #1e3a5f;">${mjeseci[m]}</td>`;
 
                 for (let s = 0; s < sortimenti.length; s++) {
                     const sortiment = sortimenti[s];
                     const value = data.mjeseci[m][sortiment] || 0;
                     const displayVal = value.toFixed(2);
-                    const colClass = getColumnGroup(sortiment);
-                    let extraClass = '';
-                    let fontWeight = value > 0 ? 'font-weight: 600; color: #000000;' : 'font-weight: 400; color: #9ca3af;';
-                    let cellBg = 'transparent';
+                    let cellStyle = 'padding: 10px 6px; font-size: 12px; min-width: 65px; text-align: right; border: 1px solid #d1d5db; font-family: ui-monospace, monospace;';
 
-                    if (sortiment === 'ČETINARI') {
-                        extraClass = ' col-cetinari';
-                        cellBg = value > 0 ? '#d1fae5' : 'transparent';
-                        if (value > 0) fontWeight = 'font-weight: 700; color: #065f46;';
-                    } else if (sortiment === 'LIŠĆARI') {
-                        extraClass = ' col-liscari';
-                        cellBg = value > 0 ? '#fef3c7' : 'transparent';
-                        if (value > 0) fontWeight = 'font-weight: 700; color: #78350f;';
-                    } else if (sortiment === 'SVEUKUPNO') {
-                        extraClass = ' col-sveukupno';
-                        fontWeight = value > 0 ? 'font-weight: 800; color: #991b1b;' : 'font-weight: 400; color: #9ca3af;';
-                        cellBg = value > 0 ? '#fee2e2' : 'transparent';
+                    // Base color based on value
+                    if (value === 0) {
+                        cellStyle += ' color: #9ca3af; font-weight: 400;';
+                    } else {
+                        cellStyle += ' color: #1f2937; font-weight: 500;';
                     }
 
-                    bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="' + fontWeight + ' padding: 8px 6px; font-size: 12px; min-width: 70px; max-width: 90px; text-align: right; border: 1px solid #e5e7eb; background: ' + cellBg + '; font-family: \'Roboto Mono\', ui-monospace, monospace; text-shadow: 0 0 1px rgba(255,255,255,0.8);">' + displayVal + '</td>';
+                    // Special column styling
+                    if (sortiment === 'Σ ČETINARI' || sortiment === 'ČETINARI') {
+                        cellStyle += value > 0 ? ' background: #d1fae5; color: #065f46; font-weight: 700;' : ' background: #ecfdf5;';
+                    } else if (sortiment === 'LIŠĆARI') {
+                        cellStyle += value > 0 ? ' background: #fef3c7; color: #92400e; font-weight: 700;' : ' background: #fffbeb;';
+                    } else if (sortiment === 'SVEUKUPNO' || sortiment === 'UKUPNO Č+L') {
+                        cellStyle += value > 0 ? ' background: #fee2e2; color: #991b1b; font-weight: 800;' : ' background: #fef2f2;';
+                    } else if (cetinariSortimenti.includes(sortiment)) {
+                        cellStyle += value > 0 ? ' background: #eff6ff;' : '';
+                    } else {
+                        cellStyle += value > 0 ? ' background: #fffbeb;' : '';
+                    }
 
-                    // Add to totals
+                    bodyHtml += `<td style="${cellStyle}">${displayVal}</td>`;
+
                     if (!totals[sortiment]) totals[sortiment] = 0;
                     totals[sortiment] += value;
                 }
@@ -6322,84 +6326,62 @@
                 bodyHtml += '</tr>';
             }
 
-            // UKUPNO row with improved styling
-            bodyHtml += '<tr style="background: linear-gradient(to bottom, #e5e7eb, #d1d5db); font-weight: 700; border-top: 3px solid #374151; border-bottom: 2px solid #374151;">';
-            bodyHtml += '<td style="min-width: 70px; max-width: 80px; position: sticky; left: 0; background: #e5e7eb; z-index: 9; border-right: 2px solid #3b82f6; text-align: center; font-size: 12px; padding: 10px 6px; color: #1f2937;">📊 UKUPNO</td>';
+            // UKUPNO row - PRO STYLE
+            bodyHtml += '<tr style="background: #1e3a5f;">';
+            bodyHtml += '<td style="min-width: 80px; position: sticky; left: 0; background: #1e3a5f; color: white; z-index: 9; border: 1px solid #374151; border-right: 2px solid #60a5fa; text-align: center; font-size: 12px; font-weight: 700; padding: 12px 8px;">📊 UKUPNO</td>';
             for (let s = 0; s < sortimenti.length; s++) {
                 const sortiment = sortimenti[s];
                 const total = totals[sortiment] || 0;
-                const colClass = getColumnGroup(sortiment);
-                let extraClass = '';
                 let cellBg = '#e5e7eb';
-                let textColor = '#000000';
+                let textColor = '#1f2937';
 
-                if (sortiment === 'ČETINARI') {
-                    extraClass = ' col-cetinari';
+                if (sortiment === 'Σ ČETINARI' || sortiment === 'ČETINARI') {
                     cellBg = '#a7f3d0';
                     textColor = '#065f46';
                 } else if (sortiment === 'LIŠĆARI') {
-                    extraClass = ' col-liscari';
                     cellBg = '#fde68a';
                     textColor = '#78350f';
-                } else if (sortiment === 'SVEUKUPNO') {
-                    extraClass = ' col-sveukupno';
+                } else if (sortiment === 'SVEUKUPNO' || sortiment === 'UKUPNO Č+L') {
                     cellBg = '#fca5a5';
                     textColor = '#7f1d1d';
                 }
 
-                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 800; font-size: 12px; padding: 10px 6px; background: ' + cellBg + '; min-width: 70px; max-width: 90px; text-align: right; border: 1px solid #9ca3af; color: ' + textColor + '; font-family: \'Roboto Mono\', ui-monospace, monospace;">' + total.toFixed(2) + '</td>';
+                bodyHtml += `<td style="font-weight: 800; font-size: 13px; padding: 12px 6px; background: ${cellBg}; min-width: 65px; text-align: right; border: 1px solid #9ca3af; color: ${textColor}; font-family: ui-monospace, monospace;">${total.toFixed(2)}</td>`;
             }
             bodyHtml += '</tr>';
 
-            // ✅ NEW: Procentualno učešće (group-based percentages)
-            const cetinariTotal = totals['ČETINARI'] || 0;
-            const liscariTotal = totals['LIŠĆARI'] || 0;
-            const grandTotal = totals['SVEUKUPNO'] || 0;
+            // % UČEŠĆE row - PRO STYLE
+            const cetinariTotalPct = totals['Σ ČETINARI'] || totals['ČETINARI'] || 0;
+            const liscariTotalPct = totals['LIŠĆARI'] || 0;
+            const grandTotalPct = totals['SVEUKUPNO'] || totals['UKUPNO Č+L'] || 0;
 
-            bodyHtml += '<tr style="background: #f3f4f6; font-style: italic; color: #374151; border-bottom: 3px solid #374151;">';
-            bodyHtml += '<td style="min-width: 70px; max-width: 80px; position: sticky; left: 0; background: #f3f4f6; z-index: 9; border-right: 2px solid #3b82f6; text-align: center; font-size: 11px; padding: 8px 6px; font-weight: 600; color: #374151;">% UČEŠĆE</td>';
+            bodyHtml += '<tr style="background: #f1f5f9;">';
+            bodyHtml += '<td style="min-width: 80px; position: sticky; left: 0; background: #f1f5f9; z-index: 9; border: 1px solid #d1d5db; border-right: 2px solid #60a5fa; text-align: center; font-size: 12px; font-weight: 700; padding: 10px 8px; color: #475569; font-style: italic;">% UČEŠĆE</td>';
 
             for (let s = 0; s < sortimenti.length; s++) {
                 const sortiment = sortimenti[s];
                 const total = totals[sortiment] || 0;
-                const colClass = getColumnGroup(sortiment);
-                let extraClass = '';
-                let cellBg = '#f3f4f6';
+                let cellBg = '#f1f5f9';
                 let percentage = '0.0';
 
-                // ✅ Determine percentage based on group
-                if (sortiment === 'ČETINARI') {
-                    // ČETINARI as % of SVEUKUPNO
-                    percentage = grandTotal > 0 ? ((total / grandTotal) * 100).toFixed(1) : '0.0';
-                    extraClass = ' col-cetinari';
+                if (sortiment === 'Σ ČETINARI' || sortiment === 'ČETINARI') {
+                    percentage = grandTotalPct > 0 ? ((total / grandTotalPct) * 100).toFixed(1) : '0.0';
                     cellBg = '#ecfdf5';
                 } else if (sortiment === 'LIŠĆARI') {
-                    // LIŠĆARI as % of SVEUKUPNO
-                    percentage = grandTotal > 0 ? ((total / grandTotal) * 100).toFixed(1) : '0.0';
-                    extraClass = ' col-liscari';
-                    cellBg = '#fff7ed';
-                } else if (sortiment === 'SVEUKUPNO') {
-                    // SVEUKUPNO is always 100%
+                    percentage = grandTotalPct > 0 ? ((total / grandTotalPct) * 100).toFixed(1) : '0.0';
+                    cellBg = '#fffbeb';
+                } else if (sortiment === 'SVEUKUPNO' || sortiment === 'UKUPNO Č+L') {
                     percentage = '100.0';
-                    extraClass = ' col-sveukupno';
                     cellBg = '#fef2f2';
+                } else if (cetinariSortimenti.includes(sortiment)) {
+                    percentage = cetinariTotalPct > 0 ? ((total / cetinariTotalPct) * 100).toFixed(1) : '0.0';
+                    cellBg = '#f0f9ff';
                 } else {
-                    // Individual sortimenti - determine if četinari or lišćari group
-                    const cetinariSortimenti = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'CEL.DUGA', 'CEL.CIJEPANA', 'TRUPCI Č'];
-                    const liscariSortimenti = ['F/L L', 'I L', 'II L', 'III L', 'OGR.DUGI', 'OGR.CIJEPANI', 'TRUPCI', 'TRUPCI L'];
-
-                    if (cetinariSortimenti.includes(sortiment)) {
-                        // Četinari sortiment: % of ČETINARI total
-                        percentage = cetinariTotal > 0 ? ((total / cetinariTotal) * 100).toFixed(1) : '0.0';
-                        cellBg = '#ecfdf5';
-                    } else if (liscariSortimenti.includes(sortiment)) {
-                        // Lišćari sortiment: % of LIŠĆARI total
-                        percentage = liscariTotal > 0 ? ((total / liscariTotal) * 100).toFixed(1) : '0.0';
-                        cellBg = '#fff7ed';
-                    }
+                    percentage = liscariTotalPct > 0 ? ((total / liscariTotalPct) * 100).toFixed(1) : '0.0';
+                    cellBg = '#fffbeb';
                 }
 
-                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 700; font-size: 11px; padding: 8px 6px; background: ' + cellBg + '; min-width: 70px; max-width: 90px; text-align: right; border: 1px solid #d1d5db; font-style: italic; color: #374151; font-family: \'Roboto Mono\', ui-monospace, monospace;">' + percentage + '%</td>';
+                bodyHtml += `<td style="font-weight: 600; font-size: 12px; padding: 10px 6px; background: ${cellBg}; min-width: 65px; text-align: right; border: 1px solid #d1d5db; color: #64748b; font-style: italic; font-family: ui-monospace, monospace;">${percentage}%</td>`;
             }
             bodyHtml += '</tr>';
 
@@ -7068,33 +7050,34 @@
                             <span style="transition: transform 0.2s;">▶</span> Detaljni prikaz po sortimentima
                         </summary>
                         <div style="overflow-x: auto; padding: 16px;">
-                            <table class="stanje-zaliha-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                            <table class="stanje-zaliha-table" style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #d1d5db;">
                                 <thead>
-                                    <tr style="background: #f3f4f6;">
-                                        <th style="padding: 8px 12px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; white-space: nowrap;">VRSTA</th>
+                                    <tr style="background: #1e3a5f;">
+                                        <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: white; border: 1px solid #374151; white-space: nowrap;">VRSTA</th>
                                         ${sortimentiShort.map((s, i) => {
                                             const isTotal = i === 9 || i === 18 || i === 19;
-                                            const bgColor = i < 10 ? '#eff6ff' : '#fffbeb';
-                                            return `<th style="padding: 8px 6px; text-align: right; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; white-space: nowrap; background: ${isTotal ? '#faf5ff' : bgColor};">${s}</th>`;
+                                            const bgColor = isTotal ? '#2d5a87' : '#1e3a5f';
+                                            return `<th style="padding: 10px 6px; text-align: center; font-weight: 600; color: white; border: 1px solid #374151; white-space: nowrap; background: ${bgColor};">${s}</th>`;
                                         }).join('')}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     ${['projekat', 'sjeca', 'otprema', 'zaliha'].map(vrsta => {
                                         const labels = { projekat: '📋 PROJEKAT', sjeca: '🪓 SJEČA', otprema: '🚛 OTPREMA', zaliha: '📦 ZALIHA' };
-                                        const colors = { projekat: '#3b82f6', sjeca: '#10b981', otprema: '#f59e0b', zaliha: '#8b5cf6' };
+                                        const rowColors = { projekat: '#eff6ff', sjeca: '#ecfdf5', otprema: '#fffbeb', zaliha: '#faf5ff' };
+                                        const textColors = { projekat: '#1e40af', sjeca: '#065f46', otprema: '#b45309', zaliha: '#7c3aed' };
                                         const sortimenti = odjel[vrsta] || {};
 
                                         return `
-                                        <tr style="border-bottom: 1px solid #e5e7eb;">
-                                            <td style="padding: 8px 12px; font-weight: 600; color: ${colors[vrsta]}; white-space: nowrap;">${labels[vrsta]}</td>
+                                        <tr style="background: ${rowColors[vrsta]};">
+                                            <td style="padding: 10px 12px; font-weight: 700; color: ${textColors[vrsta]}; white-space: nowrap; border: 1px solid #d1d5db;">${labels[vrsta]}</td>
                                             ${stanjeZalihaSortimenti.map((s, i) => {
                                                 const value = sortimenti[s] || 0;
                                                 const isTotal = i === 9 || i === 18 || i === 19;
-                                                const bgColor = i < 10 ? '#eff6ff' : '#fffbeb';
                                                 const displayValue = value === 0 ? '-' : value.toFixed(2);
-                                                const textColor = vrsta === 'zaliha' && value < 0 ? '#dc2626' : '#374151';
-                                                return `<td style="padding: 8px 6px; text-align: right; color: ${textColor}; background: ${isTotal ? '#faf5ff' : bgColor}; font-weight: ${isTotal ? '700' : '400'};">${displayValue}</td>`;
+                                                const cellColor = vrsta === 'zaliha' && value < 0 ? '#dc2626' : '#374151';
+                                                const cellBg = isTotal ? (vrsta === 'zaliha' ? '#e9d5ff' : '#f3e8ff') : '';
+                                                return `<td style="padding: 10px 6px; text-align: right; color: ${cellColor}; border: 1px solid #d1d5db; font-weight: ${isTotal ? '700' : '400'}; ${cellBg ? 'background:' + cellBg + ';' : ''}">${displayValue}</td>`;
                                             }).join('')}
                                         </tr>`;
                                     }).join('')}
