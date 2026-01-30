@@ -1319,7 +1319,6 @@
                 // Admin korisnici - bez OPERATIVA tab-a (admin se loguje kao OPERATIVA tip ako želi vidjeti operativa podatke)
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
-                    <button class="tab" onclick="switchTab('stanje-odjela-admin')">📦 Stanje odjela</button>
                     <button class="tab" onclick="switchTab('stanje-zaliha')">📦 Stanje Zaliha</button>
                     <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Sječa/otprema po mjesecima</button>
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz sječe</button>
@@ -1658,10 +1657,6 @@
                 loadPoslovodjaZadnjih5();
             } else if (tab === 'poslovodja-suma') {
                 loadPoslovodjaSuma();
-            } else if (tab === 'stanje-odjela-admin') {
-                // Prikaži Stanje odjela za admina sa submenu (Pregled Stanja + Šuma Lager)
-                document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
-                switchStanjeOdjelaTab('pregled');
             } else if (tab === 'izvjestaji') {
                 // IZVJEŠTAJI - Sedmični i Mjesečni prikaz po odjelima
                 document.getElementById('izvjestaji-content').classList.remove('hidden');
