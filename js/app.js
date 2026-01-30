@@ -1320,6 +1320,7 @@
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
                     <button class="tab" onclick="switchTab('stanje-odjela-admin')">📦 Stanje odjela</button>
+                    <button class="tab" onclick="switchTab('stanje-zaliha')">📦 Stanje Zaliha</button>
                     <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Sječa/otprema po mjesecima</button>
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz sječe</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz otpreme</button>
@@ -1609,6 +1610,7 @@
             document.getElementById('uporedba-godina-content').classList.add('hidden');
             document.getElementById('kubikator-content').classList.add('hidden');
             document.getElementById('ostalo-content').classList.add('hidden');
+            document.getElementById('stanje-zaliha-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
@@ -1690,6 +1692,8 @@
                 document.getElementById('ostalo-content').classList.remove('hidden');
                 // Load kubikator by default (najbitniji podmeni)
                 switchOstaloTab('kubikator');
+            } else if (tab === 'stanje-zaliha') {
+                loadStanjeZaliha();
             }
         }
 
@@ -6919,6 +6923,252 @@
             });
 
             container.innerHTML = html;
+        }
+
+        // ============================================
+        // STANJE ZALIHA FUNCTIONS
+        // ============================================
+
+        let stanjeZalihaData = [];
+        let stanjeZalihaRadilista = [];
+        let stanjeZalihaSortimenti = [];
+
+        async function loadStanjeZaliha() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+
+            try {
+                const url = buildApiUrl('stanje-zaliha');
+                const data = await fetchWithCache(url, 'cache_stanje_zaliha', false, 180000);
+
+                if (data.error) throw new Error(data.error);
+
+                stanjeZalihaData = data.odjeli || [];
+                stanjeZalihaRadilista = data.radilista || [];
+                stanjeZalihaSortimenti = data.sortimentiHeader || [];
+
+                // Populate radilište dropdown
+                populateStanjeZalihaDropdown();
+
+                // Render cards
+                renderStanjeZalihaCards(stanjeZalihaData);
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('stanje-zaliha-content').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error loading stanje zaliha:', error);
+                showError('Greška', 'Greška pri učitavanju stanja zaliha: ' + error.message);
+                document.getElementById('loading-screen').classList.add('hidden');
+            }
+        }
+
+        function populateStanjeZalihaDropdown() {
+            const select = document.getElementById('stanje-zaliha-radiliste');
+            select.innerHTML = '<option value="">Sva radilišta</option>';
+
+            // Extract unique radilišta from data
+            const radilistaSet = new Set();
+            stanjeZalihaData.forEach(odjel => {
+                if (odjel.radiliste) {
+                    radilistaSet.add(odjel.radiliste);
+                }
+            });
+
+            const sortedRadilista = Array.from(radilistaSet).sort();
+            sortedRadilista.forEach(radiliste => {
+                const option = document.createElement('option');
+                option.value = radiliste;
+                option.textContent = radiliste;
+                select.appendChild(option);
+            });
+        }
+
+        function filterStanjeZaliha() {
+            const selectedRadiliste = document.getElementById('stanje-zaliha-radiliste').value;
+
+            if (selectedRadiliste === '') {
+                renderStanjeZalihaCards(stanjeZalihaData);
+            } else {
+                const filteredData = stanjeZalihaData.filter(odjel => odjel.radiliste === selectedRadiliste);
+                renderStanjeZalihaCards(filteredData);
+            }
+        }
+
+        function renderStanjeZalihaCards(data) {
+            const container = document.getElementById('stanje-zaliha-container');
+            const countEl = document.getElementById('stanje-zaliha-count');
+
+            if (data.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 60px; color: #6b7280; font-size: 16px;">Nema podataka za prikaz</div>';
+                countEl.textContent = '';
+                return;
+            }
+
+            countEl.textContent = `Prikazano: ${data.length} odjela`;
+
+            // Sortimenti names for display (shortened for table headers)
+            const sortimentiShort = [
+                "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+                "CEL.D", "CEL.C", "ŠKART", "Σ Č",
+                "F/L L", "I L", "II L", "III L", "TRUPCI L",
+                "OGR.D", "OGR.C", "GULE", "LIŠĆ", "UKUPNO"
+            ];
+
+            let html = '';
+
+            data.forEach((odjel, index) => {
+                // Determine status color based on zaliha
+                let statusClass = 'neutral';
+                let statusIcon = '📦';
+                const ukupnoZaliha = odjel.ukupnoZaliha || 0;
+
+                if (ukupnoZaliha > 100) {
+                    statusClass = 'warning';
+                    statusIcon = '⚠️';
+                } else if (ukupnoZaliha > 0) {
+                    statusClass = 'success';
+                    statusIcon = '✅';
+                } else if (ukupnoZaliha < 0) {
+                    statusClass = 'danger';
+                    statusIcon = '❌';
+                }
+
+                html += `
+                <div class="stanje-zaliha-card ${statusClass}" style="margin-bottom: 24px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden;">
+                    <!-- Card Header -->
+                    <div class="stanje-zaliha-card-header" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="margin: 0; font-size: 18px; font-weight: 700;">${odjel.odjel}</h3>
+                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.85;">📍 ${odjel.radiliste || 'N/A'}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 24px; font-weight: 700;">${ukupnoZaliha.toFixed(2)} m³</div>
+                            <div style="font-size: 12px; opacity: 0.85;">${statusIcon} Zaliha</div>
+                        </div>
+                    </div>
+
+                    <!-- Summary Stats -->
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #e5e7eb; border-bottom: 1px solid #e5e7eb;">
+                        <div style="background: white; padding: 12px 16px; text-align: center;">
+                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">📋 Projekat</div>
+                            <div style="font-size: 16px; font-weight: 700; color: #3b82f6;">${(odjel.ukupnoProjekat || 0).toFixed(2)}</div>
+                        </div>
+                        <div style="background: white; padding: 12px 16px; text-align: center;">
+                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">🪓 Sječa</div>
+                            <div style="font-size: 16px; font-weight: 700; color: #10b981;">${(odjel.ukupnoSjeca || 0).toFixed(2)}</div>
+                        </div>
+                        <div style="background: white; padding: 12px 16px; text-align: center;">
+                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">🚛 Otprema</div>
+                            <div style="font-size: 16px; font-weight: 700; color: #f59e0b;">${(odjel.ukupnoOtprema || 0).toFixed(2)}</div>
+                        </div>
+                        <div style="background: white; padding: 12px 16px; text-align: center;">
+                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">📦 Zaliha</div>
+                            <div style="font-size: 16px; font-weight: 700; color: ${ukupnoZaliha >= 0 ? '#059669' : '#dc2626'};">${ukupnoZaliha.toFixed(2)}</div>
+                        </div>
+                    </div>
+
+                    <!-- Expandable Detail Table -->
+                    <details style="border-top: 1px solid #e5e7eb;">
+                        <summary style="padding: 12px 20px; cursor: pointer; font-weight: 600; color: #374151; background: #f9fafb; display: flex; align-items: center; gap: 8px;">
+                            <span style="transition: transform 0.2s;">▶</span> Detaljni prikaz po sortimentima
+                        </summary>
+                        <div style="overflow-x: auto; padding: 16px;">
+                            <table class="stanje-zaliha-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                <thead>
+                                    <tr style="background: #f3f4f6;">
+                                        <th style="padding: 8px 12px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; white-space: nowrap;">VRSTA</th>
+                                        ${sortimentiShort.map((s, i) => {
+                                            const isTotal = i === 9 || i === 18 || i === 19;
+                                            const bgColor = i < 10 ? '#eff6ff' : '#fffbeb';
+                                            return `<th style="padding: 8px 6px; text-align: right; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; white-space: nowrap; background: ${isTotal ? '#faf5ff' : bgColor};">${s}</th>`;
+                                        }).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${['projekat', 'sjeca', 'otprema', 'zaliha'].map(vrsta => {
+                                        const labels = { projekat: '📋 PROJEKAT', sjeca: '🪓 SJEČA', otprema: '🚛 OTPREMA', zaliha: '📦 ZALIHA' };
+                                        const colors = { projekat: '#3b82f6', sjeca: '#10b981', otprema: '#f59e0b', zaliha: '#8b5cf6' };
+                                        const sortimenti = odjel[vrsta] || {};
+
+                                        return `
+                                        <tr style="border-bottom: 1px solid #e5e7eb;">
+                                            <td style="padding: 8px 12px; font-weight: 600; color: ${colors[vrsta]}; white-space: nowrap;">${labels[vrsta]}</td>
+                                            ${stanjeZalihaSortimenti.map((s, i) => {
+                                                const value = sortimenti[s] || 0;
+                                                const isTotal = i === 9 || i === 18 || i === 19;
+                                                const bgColor = i < 10 ? '#eff6ff' : '#fffbeb';
+                                                const displayValue = value === 0 ? '-' : value.toFixed(2);
+                                                const textColor = vrsta === 'zaliha' && value < 0 ? '#dc2626' : '#374151';
+                                                return `<td style="padding: 8px 6px; text-align: right; color: ${textColor}; background: ${isTotal ? '#faf5ff' : bgColor}; font-weight: ${isTotal ? '700' : '400'};">${displayValue}</td>`;
+                                            }).join('')}
+                                        </tr>`;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+
+            // Add style for details summary arrow rotation
+            const style = document.createElement('style');
+            style.textContent = `
+                .stanje-zaliha-card details[open] summary span:first-child {
+                    transform: rotate(90deg);
+                }
+                .stanje-zaliha-card.warning .stanje-zaliha-card-header {
+                    background: linear-gradient(135deg, #92400e 0%, #b45309 100%);
+                }
+                .stanje-zaliha-card.success .stanje-zaliha-card-header {
+                    background: linear-gradient(135deg, #065f46 0%, #059669 100%);
+                }
+                .stanje-zaliha-card.danger .stanje-zaliha-card-header {
+                    background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%);
+                }
+            `;
+            if (!document.getElementById('stanje-zaliha-style')) {
+                style.id = 'stanje-zaliha-style';
+                document.head.appendChild(style);
+            }
+        }
+
+        function exportStanjeZalihaToCSV() {
+            if (stanjeZalihaData.length === 0) {
+                showWarning('Nema podataka', 'Nema podataka za eksport.');
+                return;
+            }
+
+            // Build CSV
+            let csv = 'ODJEL,RADILIŠTE,VRSTA';
+            stanjeZalihaSortimenti.forEach(s => {
+                csv += ',' + s;
+            });
+            csv += '\n';
+
+            stanjeZalihaData.forEach(odjel => {
+                ['projekat', 'sjeca', 'otprema', 'zaliha'].forEach(vrsta => {
+                    const labels = { projekat: 'PROJEKAT', sjeca: 'SJEČA', otprema: 'OTPREMA', zaliha: 'ZALIHA' };
+                    csv += `"${odjel.odjel}","${odjel.radiliste || ''}",${labels[vrsta]}`;
+
+                    const sortimenti = odjel[vrsta] || {};
+                    stanjeZalihaSortimenti.forEach(s => {
+                        const value = sortimenti[s] || 0;
+                        csv += ',' + value.toFixed(2);
+                    });
+                    csv += '\n';
+                });
+            });
+
+            // Download
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'stanje_zaliha_' + new Date().toISOString().split('T')[0] + '.csv';
+            link.click();
+
+            showSuccess('Uspješno', 'CSV fajl je preuzet.');
         }
 
         // Load pending count (for badge only)

@@ -2331,6 +2331,38 @@
             </div>
         </div>
 
+        <!-- STANJE ZALIHA VIEW -->
+        <div id="stanje-zaliha-content" class="container hidden">
+            <div class="section">
+                <!-- Professional Header -->
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <h1>📦 Stanje Zaliha</h1>
+                        <p>Pregled zaliha po odjelima - Projekat, Sječa, Otprema, Zaliha</p>
+                    </div>
+                    <div class="page-header-right">
+                        <button class="btn btn-primary" onclick="exportStanjeZalihaToCSV()">📥 Export CSV</button>
+                    </div>
+                </div>
+
+                <!-- Filter Bar -->
+                <div class="controls-bar" style="margin-bottom: 24px;">
+                    <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                        <label style="font-weight: 600; color: #374151;">Radilište:</label>
+                        <select id="stanje-zaliha-radiliste" class="filter-select" onchange="filterStanjeZaliha()" style="min-width: 200px; padding: 10px 16px; border: 2px solid #d1d5db; border-radius: 8px; font-size: 14px;">
+                            <option value="">Sva radilišta</option>
+                        </select>
+                        <span id="stanje-zaliha-count" style="color: #6b7280; font-size: 14px;"></span>
+                    </div>
+                </div>
+
+                <!-- Stanje Zaliha Container -->
+                <div id="stanje-zaliha-container">
+                    <!-- Cards will be rendered here -->
+                </div>
+            </div>
+        </div>
+
         <!-- OSTALO VIEW -->
         <div id="ostalo-content" class="container hidden">
             <div class="section">

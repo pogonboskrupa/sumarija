@@ -3019,4 +3019,124 @@ function handleDeltaOtprema(username, password, fromRow, toRow) {
   }
 }
 
+// ========================================
+// STANJE ZALIHA API - Čita podatke sa STANJE_ZALIHA sheeta
+// ========================================
+function handleStanjeZaliha(username, password) {
+  try {
+    // Autentikacija
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    Logger.log('=== HANDLE STANJE ZALIHA START ===');
+
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const stanjeSheet = ss.getSheetByName("STANJE_ZALIHA");
+
+    if (!stanjeSheet) {
+      return createJsonResponse({ error: "STANJE_ZALIHA sheet not found in BAZA_PODATAKA" }, false);
+    }
+
+    const data = stanjeSheet.getDataRange().getValues();
+    const odjeli = [];
+    const radilistaSet = new Set();
+
+    // Nazivi sortimenta (header)
+    const sortimentiHeader = [
+      "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+      "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+      "F/L L", "I L", "II L", "III L", "TRUPCI L",
+      "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
+    ];
+
+    // Parsiraj podatke - struktura po blokovima od 8 redova
+    // Red 1: ODJEL | naziv
+    // Red 2: RADILIŠTE | naziv
+    // Red 3: Header (OPIS, sortimenti...)
+    // Red 4: PROJEKAT | vrijednosti
+    // Red 5: SJEČA | vrijednosti
+    // Red 6: OTPREMA | vrijednosti
+    // Red 7: ZALIHA | vrijednosti
+    // Red 8: prazan (separator)
+
+    let i = 0;
+    while (i < data.length) {
+      const row = data[i];
+
+      // Provjeri da li je ovo početak novog bloka (ODJEL u koloni A)
+      if (row[0] && String(row[0]).toUpperCase() === 'ODJEL') {
+        const odjelNaziv = row[1] || '';
+
+        // Sljedeći red je RADILIŠTE
+        const radilisteRow = data[i + 1] || [];
+        const radilisteNaziv = radilisteRow[1] || '';
+
+        if (radilisteNaziv) {
+          radilistaSet.add(radilisteNaziv);
+        }
+
+        // Preskači header red (i+2) i čitaj podatke
+        // PROJEKAT je na i+3, SJEČA na i+4, OTPREMA na i+5, ZALIHA na i+6
+        const projekatRow = data[i + 3] || [];
+        const sjecaRow = data[i + 4] || [];
+        const otpremaRow = data[i + 5] || [];
+        const zalihaRow = data[i + 6] || [];
+
+        // Parsiraj sortimente (počinju od kolone C = indeks 2)
+        const parseSortimenti = (row) => {
+          const sortimenti = {};
+          for (let j = 0; j < 20; j++) {
+            const value = parseFloat(row[j + 2]) || 0;
+            sortimenti[sortimentiHeader[j]] = value;
+          }
+          return sortimenti;
+        };
+
+        const odjelData = {
+          odjel: odjelNaziv,
+          radiliste: radilisteNaziv,
+          projekat: parseSortimenti(projekatRow),
+          sjeca: parseSortimenti(sjecaRow),
+          otprema: parseSortimenti(otpremaRow),
+          zaliha: parseSortimenti(zalihaRow),
+          // Ukupne vrijednosti za sortiranje
+          ukupnoProjekat: parseFloat(projekatRow[21]) || 0,
+          ukupnoSjeca: parseFloat(sjecaRow[21]) || 0,
+          ukupnoOtprema: parseFloat(otpremaRow[21]) || 0,
+          ukupnoZaliha: parseFloat(zalihaRow[21]) || 0
+        };
+
+        odjeli.push(odjelData);
+
+        // Pomakni se na sljedeći blok (8 redova)
+        i += 8;
+      } else {
+        i++;
+      }
+    }
+
+    // Sortiraj po zadnjoj otpremi (od najveće ka najmanjoj)
+    odjeli.sort((a, b) => b.ukupnoOtprema - a.ukupnoOtprema);
+
+    // Pretvori Set u Array za radilišta
+    const radilista = Array.from(radilistaSet).sort();
+
+    Logger.log('=== HANDLE STANJE ZALIHA END ===');
+    Logger.log('Broj odjela: ' + odjeli.length);
+    Logger.log('Broj radilišta: ' + radilista.length);
+
+    return createJsonResponse({
+      odjeli: odjeli,
+      radilista: radilista,
+      sortimentiHeader: sortimentiHeader
+    }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleStanjeZaliha: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
 // Helper funkcija za formatiranje datuma

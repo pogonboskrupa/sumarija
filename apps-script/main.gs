@@ -103,6 +103,9 @@ function doGet(e) {
       Logger.log('save_dinamika endpoint called');
       Logger.log('Parameters: ' + JSON.stringify(e.parameter));
       return handleSaveDinamika(e.parameter.username, e.parameter.password, e.parameter.godina, e.parameter.mjeseci);
+    } else if (path === 'stanje-zaliha') {
+      // 📦 STANJE ZALIHA - Čita podatke sa STANJE_ZALIHA sheeta
+      return handleStanjeZaliha(e.parameter.username, e.parameter.password);
     }
 
     Logger.log('Unknown path: ' + path);
