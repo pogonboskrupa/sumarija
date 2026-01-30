@@ -1241,68 +1241,65 @@ function handleAddSjeca(params) {
     Logger.log('Odjel: ' + params.odjel);
     Logger.log('Datum: ' + params.datum);
 
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    let pendingSheet = ss.getSheetByName("PENDING_PRIMKA");
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    let unosSheet = ss.getSheetByName("PRIMAČ_UNOS");
 
-    // Kreiraj PENDING_PRIMKA sheet ako ne postoji
-    if (!pendingSheet) {
-      pendingSheet = ss.insertSheet("PENDING_PRIMKA");
-      // Dodaj header red
-      const headers = ["ODJEL", "DATUM", "PRIMAČ", "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
-                       "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI", "F/L L", "I L", "II L", "III L", "TRUPCI L",
-                       "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L", "STATUS", "TIMESTAMP"];
-      pendingSheet.appendRow(headers);
+    // Kreiraj PRIMAČ_UNOS sheet ako ne postoji
+    if (!unosSheet) {
+      unosSheet = ss.insertSheet("PRIMAČ_UNOS");
+      // Dodaj header red - ista struktura kao INDEKS_PRIMKA + STATUS + TIMESTAMP
+      const headers = ["DATUM", "RADNIK", "ODJEL", "RADILIŠTE", "IZVOĐAČ",
+                       "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+                       "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+                       "F/L L", "I L", "II L", "III L", "TRUPCI L",
+                       "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L",
+                       "STATUS", "TIMESTAMP"];
+      unosSheet.appendRow(headers);
 
       // Formatiraj header
-      const headerRange = pendingSheet.getRange(1, 1, 1, headers.length);
+      const headerRange = unosSheet.getRange(1, 1, 1, headers.length);
       headerRange.setBackground("#047857");
       headerRange.setFontColor("white");
       headerRange.setFontWeight("bold");
     }
 
-    // Pripremi red podataka
-    // A-U: kao INDEX_PRIMKA, V: STATUS, W: TIMESTAMP
-    const sortimentiNazivi = [
-      "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
-      "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
-      "F/L L", "I L", "II L", "III L", "TRUPCI L",
-      "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
-    ];
-
+    // Pripremi red podataka - struktura kao INDEKS_PRIMKA
     const newRow = [
-      params.odjel,           // A - ODJEL
-      parseDate(params.datum), // B - DATUM
-      userFullName            // C - PRIMAČ
+      parseDate(params.datum),  // A - DATUM
+      userFullName,             // B - RADNIK/PRIMAČ
+      params.odjel,             // C - ODJEL
+      params.radiliste || '',   // D - RADILIŠTE
+      params.izvodjac || ''     // E - IZVOĐAČ
     ];
 
-    // Dodaj sortimente D-U (18 kolona)
+    // Dodaj sortimente F-Y (20 kolona)
     const sortimentiValues = [];
-    for (let i = 0; i < 19; i++) { // prvih 17 sortimenti (bez SVEUKUPNO)
-      const value = parseFloat(params[sortimentiNazivi[i]]) || 0;
+    for (let i = 0; i < 19; i++) { // prvih 19 sortimenti (bez UKUPNO)
+      const value = parseFloat(params[SORTIMENTI_NAZIVI[i]]) || 0;
       newRow.push(value);
       sortimentiValues.push(value);
     }
 
-    // Izračunaj SVEUKUPNO kao ČETINARI + LIŠĆARI
+    // Izračunaj UKUPNO Č+L kao ČETINARI + LIŠĆARI
     const cetinari = sortimentiValues[9];  // Σ ČETINARI je na indeksu 9
     const liscari = sortimentiValues[18];  // LIŠĆARI je na indeksu 18
     const ukupno = cetinari + liscari;
 
-    // Dodaj SVEUKUPNO kao zadnju kolonu (U)
+    // Dodaj UKUPNO Č+L (Y)
     newRow.push(ukupno);
 
-    // Dodaj STATUS (V) i TIMESTAMP (W)
+    // Dodaj STATUS i TIMESTAMP
     newRow.push("PENDING");
     newRow.push(new Date());
 
     // Dodaj red na kraj sheet-a
-    pendingSheet.appendRow(newRow);
+    unosSheet.appendRow(newRow);
 
     // 🚀 CACHE: Invalidate all cache after successful write
     invalidateAllCache();
 
     Logger.log('=== HANDLE ADD SJECA END ===');
-    Logger.log('Successfully added new sjeca entry to PENDING');
+    Logger.log('Successfully added new sjeca entry to PRIMAČ_UNOS');
 
     return createJsonResponse({
       success: true,
@@ -1323,7 +1320,7 @@ function handleAddSjeca(params) {
 // ========================================
 
 /**
- * Add Otprema endpoint - dodaje novi unos u INDEX_OTPREMA
+ * Add Otprema endpoint - dodaje novi unos u OTPREMAČ_UNOS
  */
 function handleAddOtprema(params) {
   try {
@@ -1346,74 +1343,67 @@ function handleAddOtprema(params) {
     Logger.log('Datum: ' + params.datum);
     Logger.log('Kupac: ' + params.kupac);
 
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    let pendingSheet = ss.getSheetByName("PENDING_OTPREMA");
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    let unosSheet = ss.getSheetByName("OTPREMAČ_UNOS");
 
-    // Kreiraj PENDING_OTPREMA sheet ako ne postoji
-    if (!pendingSheet) {
-      pendingSheet = ss.insertSheet("PENDING_OTPREMA");
-      // Dodaj header red
-      const headers = ["ODJEL", "DATUM", "OTPREMAČ", "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
-                       "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI", "F/L L", "I L", "II L", "III L", "TRUPCI L",
-                       "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L", "KUPAC", "BROJ_OTPREMNICE", "STATUS", "TIMESTAMP"];
-      pendingSheet.appendRow(headers);
+    // Kreiraj OTPREMAČ_UNOS sheet ako ne postoji
+    if (!unosSheet) {
+      unosSheet = ss.insertSheet("OTPREMAČ_UNOS");
+      // Dodaj header red - ista struktura kao INDEKS_OTPREMA + BROJ_OTPREMNICE + STATUS + TIMESTAMP
+      const headers = ["DATUM", "OTPREMAČ", "KUPAC", "ODJEL", "RADILIŠTE", "IZVOĐAČ",
+                       "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+                       "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+                       "F/L L", "I L", "II L", "III L", "TRUPCI L",
+                       "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L",
+                       "BROJ_OTPREMNICE", "STATUS", "TIMESTAMP"];
+      unosSheet.appendRow(headers);
 
       // Formatiraj header
-      const headerRange = pendingSheet.getRange(1, 1, 1, headers.length);
+      const headerRange = unosSheet.getRange(1, 1, 1, headers.length);
       headerRange.setBackground("#2563eb");
       headerRange.setFontColor("white");
       headerRange.setFontWeight("bold");
     }
 
-    // Pripremi red podataka
-    // A-U: kao INDEX_OTPREMA, V: KUPAC, W: STATUS, X: TIMESTAMP
-    const sortimentiNazivi = [
-      "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
-      "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
-      "F/L L", "I L", "II L", "III L", "TRUPCI L",
-      "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
-    ];
-
+    // Pripremi red podataka - struktura kao INDEKS_OTPREMA
     const newRow = [
-      params.odjel,           // A - ODJEL
-      parseDate(params.datum), // B - DATUM
-      userFullName            // C - OTPREMAČ
+      parseDate(params.datum),  // A - DATUM
+      userFullName,             // B - OTPREMAČ
+      params.kupac || '',       // C - KUPAC
+      params.odjel,             // D - ODJEL
+      params.radiliste || '',   // E - RADILIŠTE
+      params.izvodjac || ''     // F - IZVOĐAČ
     ];
 
-    // Dodaj sortimente D-U (18 kolona)
+    // Dodaj sortimente G-Z (20 kolona)
     const sortimentiValues = [];
-    for (let i = 0; i < 19; i++) { // prvih 17 sortimenti (bez SVEUKUPNO)
-      const value = parseFloat(params[sortimentiNazivi[i]]) || 0;
+    for (let i = 0; i < 19; i++) { // prvih 19 sortimenti (bez UKUPNO)
+      const value = parseFloat(params[SORTIMENTI_NAZIVI[i]]) || 0;
       newRow.push(value);
       sortimentiValues.push(value);
     }
 
-    // Izračunaj SVEUKUPNO kao ČETINARI + LIŠĆARI
+    // Izračunaj UKUPNO Č+L kao ČETINARI + LIŠĆARI
     const cetinari = sortimentiValues[9];  // Σ ČETINARI je na indeksu 9
     const liscari = sortimentiValues[18];  // LIŠĆARI je na indeksu 18
     const ukupno = cetinari + liscari;
 
-    // Dodaj SVEUKUPNO (U)
+    // Dodaj UKUPNO Č+L (Z)
     newRow.push(ukupno);
 
-    // Dodaj KUPAC (V)
-    newRow.push(params.kupac || '');
-
-    // Dodaj BROJ_OTPREMNICE (W)
+    // Dodaj BROJ_OTPREMNICE, STATUS i TIMESTAMP
     newRow.push(params.brojOtpremnice || '');
-
-    // Dodaj STATUS (X) i TIMESTAMP (Y)
     newRow.push("PENDING");
     newRow.push(new Date());
 
     // Dodaj red na kraj sheet-a
-    pendingSheet.appendRow(newRow);
+    unosSheet.appendRow(newRow);
 
     // 🚀 CACHE: Invalidate all cache after successful write
     invalidateAllCache();
 
     Logger.log('=== HANDLE ADD OTPREMA END ===');
-    Logger.log('Successfully added new otprema entry to PENDING');
+    Logger.log('Successfully added new otprema entry to OTPREMAČ_UNOS');
 
     return createJsonResponse({
       success: true,
@@ -1448,42 +1438,38 @@ function handlePendingUnosi(year, username, password) {
     Logger.log('User: ' + loginResult.fullName);
     Logger.log('Year: ' + year);
 
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    
-    const pendingPrimkaSheet = ss.getSheetByName("PENDING_PRIMKA");
-    const pendingOtpremaSheet = ss.getSheetByName("PENDING_OTPREMA");
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
 
-    const sortimentiNazivi = [
-      "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
-      "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
-      "F/L L", "I L", "II L", "III L", "TRUPCI L",
-      "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
-    ];
+    const primacUnosSheet = ss.getSheetByName("PRIMAČ_UNOS");
+    const otpremacUnosSheet = ss.getSheetByName("OTPREMAČ_UNOS");
 
     const pendingUnosi = [];
 
-    // Pročitaj PENDING_PRIMKA
-    if (pendingPrimkaSheet) {
-      const primkaData = pendingPrimkaSheet.getDataRange().getValues();
-      
+    // Pročitaj PRIMAČ_UNOS
+    // Struktura: A=Datum, B=Radnik, C=Odjel, D=Radilište, E=Izvođač, F-Y=Sortimenti, Z=STATUS, AA=TIMESTAMP
+    if (primacUnosSheet) {
+      const primkaData = primacUnosSheet.getDataRange().getValues();
+
       for (let i = 1; i < primkaData.length; i++) {
         const row = primkaData[i];
-        const odjel = row[0];       // A - ODJEL
-        const datum = row[1];       // B - DATUM
-        const primac = row[2];      // C - PRIMAČ
-        const status = row[23];     // X - STATUS
-        const timestamp = row[24];  // Y - TIMESTAMP
+        const datum = row[0];       // A - DATUM
+        const primac = row[1];      // B - RADNIK
+        const odjel = row[2];       // C - ODJEL
+        const radiliste = row[3];   // D - RADILIŠTE
+        const izvodjac = row[4];    // E - IZVOĐAČ
+        const status = row[25];     // Z - STATUS
+        const timestamp = row[26];  // AA - TIMESTAMP
 
         if (!datum || status !== "PENDING") continue;
 
         const datumObj = parseDate(datum);
         if (year && datumObj.getFullYear() !== parseInt(year)) continue;
 
-        // Pročitaj sortimente (kolone D-U, indeksi 3-20)
+        // Pročitaj sortimente (F-Y, indeksi 5-24)
         const sortimenti = {};
         for (let j = 0; j < 20; j++) {
-          const vrijednost = parseFloat(row[3 + j]) || 0;
-          sortimenti[sortimentiNazivi[j]] = vrijednost;
+          const vrijednost = parseFloat(row[5 + j]) || 0;
+          sortimenti[SORTIMENTI_NAZIVI[j]] = vrijednost;
         }
 
         // Izračunaj ukupno kao ČETINARI + LIŠĆARI
@@ -1492,10 +1478,12 @@ function handlePendingUnosi(year, username, password) {
         const ukupno = cetinari + liscari;
 
         pendingUnosi.push({
-          id: i,  // Row number za kasnije brisanje/odobravanje
+          id: i,
           tip: 'SJEČA',
           datum: formatDate(datumObj),
           odjel: odjel,
+          radiliste: radiliste || '',
+          izvodjac: izvodjac || '',
           radnik: primac,
           kupac: '',
           sortimenti: sortimenti,
@@ -1506,30 +1494,33 @@ function handlePendingUnosi(year, username, password) {
       }
     }
 
-    // Pročitaj PENDING_OTPREMA
-    if (pendingOtpremaSheet) {
-      const otpremaData = pendingOtpremaSheet.getDataRange().getValues();
-      
+    // Pročitaj OTPREMAČ_UNOS
+    // Struktura: A=Datum, B=Otpremač, C=Kupac, D=Odjel, E=Radilište, F=Izvođač, G-Z=Sortimenti, AA=BrojOtpr, AB=STATUS, AC=TIMESTAMP
+    if (otpremacUnosSheet) {
+      const otpremaData = otpremacUnosSheet.getDataRange().getValues();
+
       for (let i = 1; i < otpremaData.length; i++) {
         const row = otpremaData[i];
-        const odjel = row[0];       // A - ODJEL
-        const datum = row[1];       // B - DATUM
-        const otpremac = row[2];    // C - OTPREMAČ
-        const kupac = row[23];      // X - KUPAC
-        const brojOtpremnice = row[24]; // Y - BROJ_OTPREMNICE
-        const status = row[25];     // Z - STATUS
-        const timestamp = row[26];  // AA - TIMESTAMP
+        const datum = row[0];          // A - DATUM
+        const otpremac = row[1];       // B - OTPREMAČ
+        const kupac = row[2];          // C - KUPAC
+        const odjel = row[3];          // D - ODJEL
+        const radiliste = row[4];      // E - RADILIŠTE
+        const izvodjac = row[5];       // F - IZVOĐAČ
+        const brojOtpremnice = row[26]; // AA - BROJ_OTPREMNICE
+        const status = row[27];        // AB - STATUS
+        const timestamp = row[28];     // AC - TIMESTAMP
 
         if (!datum || status !== "PENDING") continue;
 
         const datumObj = parseDate(datum);
         if (year && datumObj.getFullYear() !== parseInt(year)) continue;
 
-        // Pročitaj sortimente (kolone D-U, indeksi 3-20)
+        // Pročitaj sortimente (G-Z, indeksi 6-25)
         const sortimenti = {};
         for (let j = 0; j < 20; j++) {
-          const vrijednost = parseFloat(row[3 + j]) || 0;
-          sortimenti[sortimentiNazivi[j]] = vrijednost;
+          const vrijednost = parseFloat(row[6 + j]) || 0;
+          sortimenti[SORTIMENTI_NAZIVI[j]] = vrijednost;
         }
 
         // Izračunaj ukupno kao ČETINARI + LIŠĆARI
@@ -1538,10 +1529,12 @@ function handlePendingUnosi(year, username, password) {
         const ukupno = cetinari + liscari;
 
         pendingUnosi.push({
-          id: i,  // Row number za kasnije brisanje/odobravanje
+          id: i,
           tip: 'OTPREMA',
           datum: formatDate(datumObj),
           odjel: odjel,
+          radiliste: radiliste || '',
+          izvodjac: izvodjac || '',
           radnik: otpremac,
           kupac: kupac || '',
           brojOtpremnice: brojOtpremnice || '',
@@ -1562,6 +1555,8 @@ function handlePendingUnosi(year, username, password) {
       tip: u.tip,
       datum: u.datum,
       odjel: u.odjel,
+      radiliste: u.radiliste,
+      izvodjac: u.izvodjac,
       radnik: u.radnik,
       kupac: u.kupac,
       brojOtpremnice: u.brojOtpremnice,
@@ -1574,7 +1569,7 @@ function handlePendingUnosi(year, username, password) {
     Logger.log(`Ukupno pending unosa: ${rezultat.length}`);
 
     return createJsonResponse({
-      sortimentiNazivi: sortimentiNazivi,
+      sortimentiNazivi: SORTIMENTI_NAZIVI,
       unosi: rezultat
     }, true);
 
@@ -1599,8 +1594,8 @@ function handleMyPending(username, password, tip) {
       return createJsonResponse({ error: 'Neispravno korisničko ime ili lozinka' }, false);
     }
 
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const sheetName = tip === 'sjeca' ? 'PENDING_PRIMKA' : 'PENDING_OTPREMA';
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const sheetName = tip === 'sjeca' ? 'PRIMAČ_UNOS' : 'OTPREMAČ_UNOS';
     const sheet = ss.getSheetByName(sheetName);
 
     if (!sheet) {
@@ -1613,9 +1608,9 @@ function handleMyPending(username, password, tip) {
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
 
-    // Find column indices
+    // Find column indices - nova struktura koristi RADNIK za primač i OTPREMAČ za otpremač
     const radnikCol = tip === 'sjeca' ?
-      headers.indexOf('PRIMAČ') :
+      headers.indexOf('RADNIK') :
       headers.indexOf('OTPREMAČ');
     const statusCol = headers.indexOf('STATUS');
     const timestampCol = headers.indexOf('TIMESTAMP');
@@ -1691,8 +1686,8 @@ function handleUpdatePending(params) {
       return createJsonResponse({ error: 'Neispravno korisničko ime ili lozinka' }, false);
     }
 
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const sheetName = tip === 'sjeca' ? 'PENDING_PRIMKA' : 'PENDING_OTPREMA';
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const sheetName = tip === 'sjeca' ? 'PRIMAČ_UNOS' : 'OTPREMAČ_UNOS';
     const sheet = ss.getSheetByName(sheetName);
 
     if (!sheet) {
@@ -1704,7 +1699,7 @@ function handleUpdatePending(params) {
     const row = data[rowIndex - 1];
 
     // Verify ownership (only the creator or admin can edit)
-    const radnikCol = tip === 'sjeca' ? headers.indexOf('PRIMAČ') : headers.indexOf('OTPREMAČ');
+    const radnikCol = tip === 'sjeca' ? headers.indexOf('RADNIK') : headers.indexOf('OTPREMAČ');
     const statusCol = headers.indexOf('STATUS');
 
     if (row[statusCol] !== 'PENDING') {
@@ -1794,8 +1789,8 @@ function handleDeletePending(params) {
       return createJsonResponse({ error: 'Neispravno korisničko ime ili lozinka' }, false);
     }
 
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const sheetName = tip === 'sjeca' ? 'PENDING_PRIMKA' : 'PENDING_OTPREMA';
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const sheetName = tip === 'sjeca' ? 'PRIMAČ_UNOS' : 'OTPREMAČ_UNOS';
     const sheet = ss.getSheetByName(sheetName);
 
     if (!sheet) {
@@ -1807,7 +1802,7 @@ function handleDeletePending(params) {
     const row = data[rowIndex - 1];
 
     // Verify ownership (only the creator or admin can delete)
-    const radnikCol = tip === 'sjeca' ? headers.indexOf('PRIMAČ') : headers.indexOf('OTPREMAČ');
+    const radnikCol = tip === 'sjeca' ? headers.indexOf('RADNIK') : headers.indexOf('OTPREMAČ');
     const statusCol = headers.indexOf('STATUS');
 
     if (row[statusCol] !== 'PENDING') {
@@ -1892,31 +1887,23 @@ function handleMjesecniSortimenti(year, username, password) {
     Logger.log('=== HANDLE MJESECNI SORTIMENTI START ===');
     Logger.log('Year: ' + year);
 
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const primkaSheet = ss.getSheetByName("INDEX_PRIMKA");
-    const otpremaSheet = ss.getSheetByName("INDEX_OTPREMA");
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const primkaSheet = ss.getSheetByName("INDEKS_PRIMKA");
+    const otpremaSheet = ss.getSheetByName("INDEKS_OTPREMA");
 
     if (!primkaSheet || !otpremaSheet) {
-      return createJsonResponse({ error: "INDEX sheets not found" }, false);
+      return createJsonResponse({ error: "INDEKS sheets not found in BAZA_PODATAKA" }, false);
     }
 
     const primkaData = primkaSheet.getDataRange().getValues();
     const otpremaData = otpremaSheet.getDataRange().getValues();
 
-    // Nazivi sortimenta (kolone D-U = indeksi 3-20)
-    const sortimentiNazivi = [
-      "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
-      "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
-      "F/L L", "I L", "II L", "III L", "TRUPCI L",
-      "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
-    ];
-
     // Inicijalizuj mjesečne sume za SJEČA (12 mjeseci)
     let sjecaMjeseci = [];
     for (let m = 0; m < 12; m++) {
       const mjesecObj = {};
-      for (let s = 0; s < sortimentiNazivi.length; s++) {
-        mjesecObj[sortimentiNazivi[s]] = 0;
+      for (let s = 0; s < SORTIMENTI_NAZIVI.length; s++) {
+        mjesecObj[SORTIMENTI_NAZIVI[s]] = 0;
       }
       sjecaMjeseci.push(mjesecObj);
     }
@@ -1925,8 +1912,8 @@ function handleMjesecniSortimenti(year, username, password) {
     let otpremaMjeseci = [];
     for (let m = 0; m < 12; m++) {
       const mjesecObj = {};
-      for (let s = 0; s < sortimentiNazivi.length; s++) {
-        mjesecObj[sortimentiNazivi[s]] = 0;
+      for (let s = 0; s < SORTIMENTI_NAZIVI.length; s++) {
+        mjesecObj[SORTIMENTI_NAZIVI[s]] = 0;
       }
       otpremaMjeseci.push(mjesecObj);
     }
@@ -1934,7 +1921,7 @@ function handleMjesecniSortimenti(year, username, password) {
     // Procesiranje SJEČA podataka
     for (let i = 1; i < primkaData.length; i++) {
       const row = primkaData[i];
-      const datum = row[1]; // B - DATUM
+      const datum = row[PRIMKA_COL.DATE]; // A - DATUM
 
       if (!datum) continue;
 
@@ -1943,17 +1930,17 @@ function handleMjesecniSortimenti(year, username, password) {
 
       const mjesec = datumObj.getMonth(); // 0-11
 
-      // Kolone D-U (indeksi 3-20) = sortimenti
-      for (let j = 0; j < sortimentiNazivi.length; j++) {
-        const vrijednost = parseFloat(row[3 + j]) || 0;
-        sjecaMjeseci[mjesec][sortimentiNazivi[j]] += vrijednost;
+      // Sortimenti (F-Y, indeksi 5-24)
+      for (let j = 0; j < SORTIMENTI_NAZIVI.length; j++) {
+        const vrijednost = parseFloat(row[PRIMKA_COL.SORT_START + j]) || 0;
+        sjecaMjeseci[mjesec][SORTIMENTI_NAZIVI[j]] += vrijednost;
       }
     }
 
     // Procesiranje OTPREMA podataka
     for (let i = 1; i < otpremaData.length; i++) {
       const row = otpremaData[i];
-      const datum = row[1]; // B - DATUM
+      const datum = row[OTPREMA_COL.DATE]; // A - DATUM
 
       if (!datum) continue;
 
@@ -1962,10 +1949,10 @@ function handleMjesecniSortimenti(year, username, password) {
 
       const mjesec = datumObj.getMonth(); // 0-11
 
-      // Kolone D-U (indeksi 3-20) = sortimenti
-      for (let j = 0; j < sortimentiNazivi.length; j++) {
-        const vrijednost = parseFloat(row[3 + j]) || 0;
-        otpremaMjeseci[mjesec][sortimentiNazivi[j]] += vrijednost;
+      // Sortimenti (G-Z, indeksi 6-25)
+      for (let j = 0; j < SORTIMENTI_NAZIVI.length; j++) {
+        const vrijednost = parseFloat(row[OTPREMA_COL.SORT_START + j]) || 0;
+        otpremaMjeseci[mjesec][SORTIMENTI_NAZIVI[j]] += vrijednost;
       }
     }
 
@@ -1974,11 +1961,11 @@ function handleMjesecniSortimenti(year, username, password) {
     // 🚀 CACHE: Store result before returning
     const result = {
       sjeca: {
-        sortimenti: sortimentiNazivi,
+        sortimenti: SORTIMENTI_NAZIVI,
         mjeseci: sjecaMjeseci
       },
       otprema: {
-        sortimenti: sortimentiNazivi,
+        sortimenti: SORTIMENTI_NAZIVI,
         mjeseci: otpremaMjeseci
       }
     };
@@ -2005,30 +1992,24 @@ function handlePrimaciDaily(year, month, username, password) {
       return createJsonResponse({ error: "Unauthorized" }, false);
     }
 
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const primkaSheet = ss.getSheetByName("INDEX_PRIMKA");
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const primkaSheet = ss.getSheetByName("INDEKS_PRIMKA");
 
     if (!primkaSheet) {
-      return createJsonResponse({ error: "INDEX_PRIMKA sheet not found" }, false);
+      return createJsonResponse({ error: "INDEKS_PRIMKA sheet not found in BAZA_PODATAKA" }, false);
     }
 
     const primkaData = primkaSheet.getDataRange().getValues();
-
-    const sortimentiNazivi = [
-      "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
-      "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
-      "F/L L", "I L", "II L", "III L", "TRUPCI L",
-      "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
-    ];
-
     const dailyData = [];
 
     // Process PRIMKA data
     for (let i = 1; i < primkaData.length; i++) {
       const row = primkaData[i];
-      const odjel = row[0];
-      const datum = row[1];
-      const primac = row[2];
+      const datum = row[PRIMKA_COL.DATE];       // A - DATUM
+      const primac = row[PRIMKA_COL.RADNIK];    // B - RADNIK/PRIMAČ
+      const odjel = row[PRIMKA_COL.ODJEL];      // C - ODJEL
+      const radiliste = row[PRIMKA_COL.RADILISTE] || ''; // D - RADILIŠTE
+      const izvodjac = row[PRIMKA_COL.IZVODJAC] || '';   // E - IZVOĐAČ
 
       if (!datum || !primac) continue;
 
@@ -2038,14 +2019,16 @@ function handlePrimaciDaily(year, month, username, password) {
 
       // Build sortimenti object
       const sortimenti = {};
-      for (let j = 0; j < sortimentiNazivi.length; j++) {
-        sortimenti[sortimentiNazivi[j]] = parseFloat(row[3 + j]) || 0;
+      for (let j = 0; j < SORTIMENTI_NAZIVI.length; j++) {
+        sortimenti[SORTIMENTI_NAZIVI[j]] = parseFloat(row[PRIMKA_COL.SORT_START + j]) || 0;
       }
 
       dailyData.push({
         datum: Utilities.formatDate(datumObj, Session.getScriptTimeZone(), "dd.MM.yyyy"),
         datumSort: datumObj.getTime(),
         odjel: odjel || "",
+        radiliste: radiliste,
+        izvodjac: izvodjac,
         primac: primac,
         sortimenti: sortimenti
       });
@@ -2055,7 +2038,7 @@ function handlePrimaciDaily(year, month, username, password) {
     dailyData.sort((a, b) => b.datumSort - a.datumSort);
 
     return createJsonResponse({
-      sortimentiNazivi: sortimentiNazivi,
+      sortimentiNazivi: SORTIMENTI_NAZIVI,
       data: dailyData
     }, true);
 
@@ -2077,34 +2060,26 @@ function handleOtremaciDaily(year, month, username, password) {
       return createJsonResponse({ error: "Unauthorized" }, false);
     }
 
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const otpremaSheet = ss.getSheetByName("INDEX_OTPREMA");
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const otpremaSheet = ss.getSheetByName("INDEKS_OTPREMA");
 
     if (!otpremaSheet) {
-      return createJsonResponse({ error: "INDEX_OTPREMA sheet not found" }, false);
+      return createJsonResponse({ error: "INDEKS_OTPREMA sheet not found in BAZA_PODATAKA" }, false);
     }
 
     const otpremaData = otpremaSheet.getDataRange().getValues();
-
-    const sortimentiNazivi = [
-      "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
-      "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
-      "F/L L", "I L", "II L", "III L", "TRUPCI L",
-      "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
-    ];
-
     const dailyData = [];
 
     // Process OTPREMA data
-    // INDEX_OTPREMA struktura: A=odjel, B=datum, C=otpremac, D-W=sortimenti(20), X=kupac, Y=radiliste, Z=izvodjac
+    // INDEKS_OTPREMA struktura: A=datum, B=otpremac, C=kupac, D=odjel, E=radiliste, F=izvodjac, G-Z=sortimenti(20)
     for (let i = 1; i < otpremaData.length; i++) {
       const row = otpremaData[i];
-      const odjel = row[0];
-      const datum = row[1];
-      const otpremac = row[2];
-      const kupac = row[23] || ""; // KUPAC column (X)
-      const radiliste = row[24] || ""; // RADILIŠTE column (Y)
-      const izvodjac = row[25] || ""; // IZVOĐAČ column (Z)
+      const datum = row[OTPREMA_COL.DATE];         // A - DATUM
+      const otpremac = row[OTPREMA_COL.OTPREMAC];  // B - OTPREMAČ
+      const kupac = row[OTPREMA_COL.KUPAC] || "";  // C - KUPAC
+      const odjel = row[OTPREMA_COL.ODJEL];        // D - ODJEL
+      const radiliste = row[OTPREMA_COL.RADILISTE] || ""; // E - RADILIŠTE
+      const izvodjac = row[OTPREMA_COL.IZVODJAC] || "";   // F - IZVOĐAČ
 
       if (!datum || !otpremac) continue;
 
@@ -2114,8 +2089,8 @@ function handleOtremaciDaily(year, month, username, password) {
 
       // Build sortimenti object
       const sortimenti = {};
-      for (let j = 0; j < sortimentiNazivi.length; j++) {
-        sortimenti[sortimentiNazivi[j]] = parseFloat(row[3 + j]) || 0;
+      for (let j = 0; j < SORTIMENTI_NAZIVI.length; j++) {
+        sortimenti[SORTIMENTI_NAZIVI[j]] = parseFloat(row[OTPREMA_COL.SORT_START + j]) || 0;
       }
 
       dailyData.push({
@@ -2134,7 +2109,7 @@ function handleOtremaciDaily(year, month, username, password) {
     dailyData.sort((a, b) => b.datumSort - a.datumSort);
 
     return createJsonResponse({
-      sortimentiNazivi: sortimentiNazivi,
+      sortimentiNazivi: SORTIMENTI_NAZIVI,
       data: dailyData
     }, true);
 
@@ -2168,15 +2143,15 @@ function handleStanjeOdjela(username, password) {
       'SVEUKUPNO'
     ];
 
-    // Otvori cache sheet
-    const indexSpreadsheet = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const cacheSheet = indexSpreadsheet.getSheetByName('STANJE_ODJELA_CACHE');
+    // Otvori cache sheet iz BAZA_PODATAKA
+    const bazaPodataka = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const cacheSheet = bazaPodataka.getSheetByName('STANJE_ODJELA_CACHE');
 
     if (!cacheSheet) {
       Logger.log('Cache sheet ne postoji, pozivam syncStanjeOdjela()');
       syncStanjeOdjela();
       // Ponovo otvori nakon sinkronizacije
-      const cacheSheetNew = indexSpreadsheet.getSheetByName('STANJE_ODJELA_CACHE');
+      const cacheSheetNew = bazaPodataka.getSheetByName('STANJE_ODJELA_CACHE');
       if (!cacheSheetNew) {
         throw new Error('Nije moguće kreirati cache sheet');
       }
@@ -2671,7 +2646,7 @@ function handleGetDinamika(year, username, password) {
     Logger.log('=== HANDLE GET DINAMIKA START ===');
     Logger.log('Year: ' + year);
 
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
     let dinamikaSheet = ss.getSheetByName("DINAMIKA");
 
     // Ako sheet ne postoji, kreiraj ga
@@ -2741,7 +2716,7 @@ function handleSaveDinamika(username, password, godina, mjeseciParam) {
       return createJsonResponse({ error: "Only admin can add dinamika" }, false);
     }
 
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
     let dinamikaSheet = ss.getSheetByName("DINAMIKA");
 
     // Ako sheet ne postoji, kreiraj ga
@@ -2828,19 +2803,18 @@ function handleManifest() {
   try {
     Logger.log('Manifest endpoint called');
 
-    // Otvori spreadsheet sa podacima
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    // Otvori BAZA_PODATAKA spreadsheet
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
 
     // Dohvati sheet-ove
-    const primacijaSheet = ss.getSheetByName('Primacija');
-    const otpremaSheet = ss.getSheetByName('Otprema');
-    const odjeliSheet = ss.getSheetByName('Odjeli');
+    const primkaSheet = ss.getSheetByName('INDEKS_PRIMKA');
+    const otpremaSheet = ss.getSheetByName('INDEKS_OTPREMA');
 
     // Broji redove (minus header red)
     // getLastRow() vraća broj zadnjeg reda sa podacima
-    const primaciCount = primacijaSheet ? (primacijaSheet.getLastRow() - 1) : 0;
-    const otpremaciCount = otpremaSheet ? (otpremaSheet.getLastRow() - 1) : 0;
-    const odjeliCount = odjeliSheet ? (odjeliSheet.getLastRow() - 1) : 0;
+    const primaciCount = primkaSheet ? Math.max(primkaSheet.getLastRow() - 1, 0) : 0;
+    const otpremaciCount = otpremaSheet ? Math.max(otpremaSheet.getLastRow() - 1, 0) : 0;
+    const odjeliCount = 0; // Odjeli sada direktno u podacima
 
     // Generiši verziju - kombinacija svih count-ova
     // Kad se doda nova sječa/otprema, count se mijenja → nova verzija
@@ -2880,16 +2854,16 @@ function handleManifestData(username, password) {
       return createJsonResponse({ error: "Unauthorized" }, false);
     }
 
-    // Otvori spreadsheet sa podacima
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
+    // Otvori BAZA_PODATAKA spreadsheet
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
 
     // Dohvati sheet-ove
-    const primacijaSheet = ss.getSheetByName('Primacija');
-    const otpremaSheet = ss.getSheetByName('Otprema');
+    const primkaSheet = ss.getSheetByName('INDEKS_PRIMKA');
+    const otpremaSheet = ss.getSheetByName('INDEKS_OTPREMA');
 
     // Broji redove (minus header red)
-    const primkaRowCount = primacijaSheet ? (primacijaSheet.getLastRow() - 1) : 0;
-    const otpremaRowCount = otpremaSheet ? (otpremaSheet.getLastRow() - 1) : 0;
+    const primkaRowCount = primkaSheet ? Math.max(primkaSheet.getLastRow() - 1, 0) : 0;
+    const otpremaRowCount = otpremaSheet ? Math.max(otpremaSheet.getLastRow() - 1, 0) : 0;
 
     Logger.log(`Manifest Data: Primka=${primkaRowCount}, Otprema=${otpremaRowCount}`);
 
@@ -2929,15 +2903,15 @@ function handleDeltaPrimka(username, password, fromRow, toRow) {
       return createJsonResponse({ error: 'Invalid row range' }, false);
     }
 
-    // Otvori spreadsheet
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const primacijaSheet = ss.getSheetByName('Primacija');
+    // Otvori BAZA_PODATAKA spreadsheet
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const primkaSheet = ss.getSheetByName('INDEKS_PRIMKA');
 
-    if (!primacijaSheet) {
-      return createJsonResponse({ error: 'Primacija sheet not found' }, false);
+    if (!primkaSheet) {
+      return createJsonResponse({ error: 'INDEKS_PRIMKA sheet not found' }, false);
     }
 
-    const lastRow = primacijaSheet.getLastRow();
+    const lastRow = primkaSheet.getLastRow();
 
     // Adjust toRow if it exceeds lastRow
     const actualToRow = Math.min(toRowInt, lastRow - 1); // -1 for header
@@ -2950,18 +2924,17 @@ function handleDeltaPrimka(username, password, fromRow, toRow) {
 
     // Fetch rows (fromRow+1 jer je red 1 header)
     const startRow = fromRowInt + 1; // +1 for header
-    const data = primacijaSheet.getRange(startRow, 1, numRows, primacijaSheet.getLastColumn()).getValues();
+    const data = primkaSheet.getRange(startRow, 1, numRows, primkaSheet.getLastColumn()).getValues();
 
-    // Convert to JSON objects sa rowIndex
+    // Convert to JSON objects sa rowIndex - nova struktura kolona
     const rows = data.map((row, index) => ({
       rowIndex: fromRowInt + index,
-      datum: row[0] ? formatDateHelper(row[0]) : '',
-      odjel: row[1] || '',
-      radiliste: row[2] || '',
-      izvodjac: row[3] || '',
-      primac: row[4] || '',
-      sortiment: row[5] || '',
-      kubici: parseFloat(row[6]) || 0
+      datum: row[PRIMKA_COL.DATE] ? formatDateHelper(row[PRIMKA_COL.DATE]) : '',
+      primac: row[PRIMKA_COL.RADNIK] || '',
+      odjel: row[PRIMKA_COL.ODJEL] || '',
+      radiliste: row[PRIMKA_COL.RADILISTE] || '',
+      izvodjac: row[PRIMKA_COL.IZVODJAC] || '',
+      kubici: parseFloat(row[PRIMKA_COL.UKUPNO]) || 0
     }));
 
     Logger.log(`Delta Primka: Returning ${rows.length} rows`);
@@ -2994,12 +2967,12 @@ function handleDeltaOtprema(username, password, fromRow, toRow) {
       return createJsonResponse({ error: 'Invalid row range' }, false);
     }
 
-    // Otvori spreadsheet
-    const ss = SpreadsheetApp.openById(INDEX_SPREADSHEET_ID);
-    const otpremaSheet = ss.getSheetByName('Otprema');
+    // Otvori BAZA_PODATAKA spreadsheet
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const otpremaSheet = ss.getSheetByName('INDEKS_OTPREMA');
 
     if (!otpremaSheet) {
-      return createJsonResponse({ error: 'Otprema sheet not found' }, false);
+      return createJsonResponse({ error: 'INDEKS_OTPREMA sheet not found' }, false);
     }
 
     const lastRow = otpremaSheet.getLastRow();
@@ -3017,16 +2990,16 @@ function handleDeltaOtprema(username, password, fromRow, toRow) {
     const startRow = fromRowInt + 1; // +1 for header
     const data = otpremaSheet.getRange(startRow, 1, numRows, otpremaSheet.getLastColumn()).getValues();
 
-    // Convert to JSON objects sa rowIndex
+    // Convert to JSON objects sa rowIndex - nova struktura kolona
     const rows = data.map((row, index) => ({
       rowIndex: fromRowInt + index,
-      datum: row[0] ? formatDateHelper(row[0]) : '',
-      odjel: row[1] || '',
-      radiliste: row[2] || '',
-      kupac: row[3] || '',
-      otpremac: row[4] || '',
-      sortiment: row[5] || '',
-      kubici: parseFloat(row[6]) || 0
+      datum: row[OTPREMA_COL.DATE] ? formatDateHelper(row[OTPREMA_COL.DATE]) : '',
+      otpremac: row[OTPREMA_COL.OTPREMAC] || '',
+      kupac: row[OTPREMA_COL.KUPAC] || '',
+      odjel: row[OTPREMA_COL.ODJEL] || '',
+      radiliste: row[OTPREMA_COL.RADILISTE] || '',
+      izvodjac: row[OTPREMA_COL.IZVODJAC] || '',
+      kubici: parseFloat(row[OTPREMA_COL.UKUPNO]) || 0
     }));
 
     Logger.log(`Delta Otprema: Returning ${rows.length} rows`);
