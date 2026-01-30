@@ -256,15 +256,18 @@ td[style*="background: linear-gradient"][style*="254, 243"] {
 
 /* ============================================ */
 /* 📊 GLOBAL TYPOGRAPHY FOR NUMERIC DATA */
-/* Improved readability across all tables */
+/* Inter font za SVE brojeve na SVIM panelima */
 /* ============================================ */
 
-/* Base numeric typography - applies to all tables */
+/* Base numeric typography - INTER for ALL tables */
 table td {
-    font-family: 'Roboto Mono', ui-monospace, 'SF Mono', 'Cascadia Code', 'Segoe UI Mono', 'Consolas', monospace;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    font-weight: 600 !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
 }
 
-/* Numeric cells - improved readability */
+/* Numeric cells - INTER BOLD for all right-aligned cells */
 table td[style*="text-align: right"],
 table td.number,
 table td.right,
@@ -277,42 +280,52 @@ table td.right,
 #primke-table-body td,
 #otpreme-table-body td,
 #kupci-godisnji-tbody td,
-#kupci-mjesecni-tbody td {
-    font-family: 'Roboto Mono', ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
-    font-weight: 500;
-    text-shadow: 0 0 1px rgba(255, 255, 255, 0.8);
+#kupci-mjesecni-tbody td,
+#primaci-body td,
+#otpremaci-body td,
+#primaci-daily-body td,
+#primaci-radilista-body td,
+#primaci-izvodjaci-body td,
+.monthly-table tbody td,
+.kupci-table tbody td {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    color: #0f172a !important;
+    font-feature-settings: 'tnum' 1 !important;
+    -webkit-font-smoothing: antialiased !important;
 }
 
-/* Data values with green color */
+/* Data values with green color - BOLD */
 table td.green,
 table td.number.green,
 td[style*="color: #059669"],
 td[style*="color: #047857"],
 td[style*="color: #10b981"] {
-    font-weight: 600;
-    text-shadow: 0 0 2px rgba(255, 255, 255, 0.9);
+    font-weight: 800 !important;
+    color: #047857 !important;
 }
 
-/* Data values with blue color */
+/* Data values with blue color - BOLD */
 table td.blue,
 table td.number.blue,
 td[style*="color: #2563eb"],
 td[style*="color: #3b82f6"],
 td[style*="color: #1d4ed8"] {
-    font-weight: 600;
-    text-shadow: 0 0 2px rgba(255, 255, 255, 0.9);
+    font-weight: 800 !important;
+    color: #1d4ed8 !important;
 }
 
-/* Data values with red color */
+/* Data values with red color - BOLD */
 table td.red,
 table td.number.red,
 td[style*="color: #dc2626"],
 td[style*="color: #ef4444"] {
-    font-weight: 600;
-    text-shadow: 0 0 2px rgba(255, 255, 255, 0.9);
+    font-weight: 800 !important;
+    color: #b91c1c !important;
 }
 
-/* UKUPNO/Total rows - stronger emphasis */
+/* UKUPNO/Total rows - MAXIMUM emphasis */
 table tbody tr:last-child td,
 table tfoot td,
 tr[style*="background: #047857"] td,
@@ -320,8 +333,9 @@ tr[style*="background: #065f46"] td,
 tr[style*="background: #059669"] td,
 .ukupno-row td,
 .total-row td {
-    font-weight: 700 !important;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    font-weight: 900 !important;
+    font-size: 15px !important;
 }
 
 /* White text on dark backgrounds */
@@ -329,44 +343,100 @@ td[style*="color: white"],
 td[style*="color: #ffffff"],
 th[style*="color: white"],
 th[style*="color: #ffffff"] {
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    font-weight: 700 !important;
 }
 
-/* Dashboard cards - numeric values */
+/* Dashboard cards - numeric values - INTER */
 .stat-value,
 .card-value,
 .metric-value {
-    font-family: 'Roboto Mono', ui-monospace, monospace;
-    font-weight: 700;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    font-weight: 800 !important;
+    -webkit-font-smoothing: antialiased !important;
 }
 
-/* Monthly report tables */
+/* Monthly report tables - INTER BOLD */
 #mjesecna-sjeca-table td,
 #mjesecna-otprema-table td {
-    font-family: 'Roboto Mono', ui-monospace, monospace;
-    font-weight: 500;
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
 }
 
-/* Primaci and Otpremaci detail tables */
+/* Primaci and Otpremaci detail tables - INTER */
 #primac-detail-content table td,
 #otpremac-detail-content table td,
 #primac-mjesecni-content table td,
 #otpremac-mjesecni-content table td,
 #primac-odjeli-content table td,
 #otpremac-odjeli-content table td {
-    font-family: 'Roboto Mono', ui-monospace, monospace;
-    font-weight: 500;
-    text-shadow: 0 0 1px rgba(255, 255, 255, 0.8);
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    color: #0f172a !important;
 }
 
-/* Sortimenti tables */
+/* Sortimenti tables - INTER */
 #sortimenti-content table td,
 #primke-content table td,
 #otpreme-content table td {
-    font-family: 'Roboto Mono', ui-monospace, monospace;
-    font-weight: 500;
-    text-shadow: 0 0 1px rgba(255, 255, 255, 0.8);
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    color: #0f172a !important;
+}
+
+/* Poslovođa panel tables - INTER */
+#poslovodja-stanje-content table td,
+#poslovodja-realizacija-content table td,
+#poslovodja-zadnjih5-content table td,
+#poslovodja-suma-content table td {
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    color: #0f172a !important;
+}
+
+/* Radnici panel tables - INTER */
+#radnici-content table td,
+#primac-personal-content table td,
+#otpremac-personal-content table td {
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    color: #0f172a !important;
+}
+
+/* Stanje Zaliha tables - INTER */
+.stanje-zaliha-card table td {
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+    color: #0f172a !important;
+}
+
+/* Kupci tables - INTER */
+#kupci-content table td {
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    color: #0f172a !important;
+}
+
+/* Mobile: all numeric cells BIGGER and BOLDER */
+@media (max-width: 768px) {
+    table td,
+    table td[style*="text-align: right"] {
+        font-size: 15px !important;
+        font-weight: 800 !important;
+    }
+
+    table tbody tr:last-child td,
+    .ukupno-row td {
+        font-size: 16px !important;
+        font-weight: 900 !important;
+    }
 }
 
 /* TABLE CONTRAST FIX - Loaded successfully */
