@@ -371,3 +371,209 @@ th[style*="color: #ffffff"] {
 
 /* TABLE CONTRAST FIX - Loaded successfully */
 /* Svijetle žute boje zamijenjene tamnijim + TRUPCI fix za sve tabele + Typography improvements */
+
+/* ============================================ */
+/* 📱 MJESEČNA SJEČA/OTPREMA - MOBILE READABILITY */
+/* Maksimalna čitljivost numeričkih vrijednosti */
+/* ============================================ */
+
+/* Pro mjesečna tabela - base styling */
+.pro-mjesecna-table {
+    font-family: 'Comfortaa', sans-serif !important;
+}
+
+.pro-mjesecna-table td {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    padding: 12px 8px !important;
+    color: #1e293b !important;
+    line-height: 1.4 !important;
+    letter-spacing: 0.02em !important;
+}
+
+.pro-mjesecna-table th {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    padding: 14px 8px !important;
+    line-height: 1.3 !important;
+}
+
+/* Sticky MJESEC column */
+.pro-mjesecna-table td:first-child,
+.pro-mjesecna-table th:first-child {
+    font-size: 14px !important;
+    font-weight: 800 !important;
+}
+
+/* Numeric cells - higher contrast */
+.pro-mjesecna-table tbody td {
+    text-shadow: none !important;
+}
+
+/* Values > 0 - bold and dark */
+.pro-mjesecna-table tbody td[style*="font-weight: 6"],
+.pro-mjesecna-table tbody td[style*="font-weight: 7"],
+.pro-mjesecna-table tbody td[style*="font-weight: 8"] {
+    color: #0f172a !important;
+}
+
+/* Zero values - visible but subtle */
+.pro-mjesecna-table tbody td[style*="font-weight: 4"] {
+    color: #64748b !important;
+    font-weight: 500 !important;
+}
+
+/* UKUPNO row - extra emphasis */
+.pro-mjesecna-table tbody tr:nth-last-child(2) td {
+    font-size: 15px !important;
+    font-weight: 800 !important;
+}
+
+/* % UČEŠĆE row */
+.pro-mjesecna-table tbody tr:last-child td {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+}
+
+/* Četinari columns - blue tones with dark text */
+.pro-mjesecna-table td[style*="background: #dbeafe"],
+.pro-mjesecna-table td[style*="background: #bfdbfe"],
+.pro-mjesecna-table td[style*="background: #93c5fd"] {
+    color: #1e3a8a !important;
+}
+
+/* Lišćari columns - yellow/orange tones with dark text */
+.pro-mjesecna-table td[style*="background: #fef3c7"],
+.pro-mjesecna-table td[style*="background: #fde68a"],
+.pro-mjesecna-table td[style*="background: #fcd34d"] {
+    color: #78350f !important;
+}
+
+/* SVEUKUPNO column - red tone with dark text */
+.pro-mjesecna-table td[style*="background: #fecaca"] {
+    color: #7f1d1d !important;
+}
+
+/* ============================================ */
+/* 📱 MOBILE RESPONSIVE - max-width: 768px */
+/* ============================================ */
+
+@media (max-width: 768px) {
+    .pro-mjesecna-table {
+        font-size: 13px !important;
+    }
+
+    .pro-mjesecna-table td {
+        font-size: 15px !important;
+        font-weight: 700 !important;
+        padding: 14px 10px !important;
+        line-height: 1.5 !important;
+        min-height: 48px !important;
+    }
+
+    .pro-mjesecna-table th {
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        padding: 12px 6px !important;
+        line-height: 1.4 !important;
+    }
+
+    /* Sticky MJESEC column - larger on mobile */
+    .pro-mjesecna-table td:first-child {
+        font-size: 14px !important;
+        font-weight: 800 !important;
+        min-width: 70px !important;
+        padding: 14px 8px !important;
+    }
+
+    .pro-mjesecna-table th:first-child {
+        font-size: 12px !important;
+        min-width: 70px !important;
+    }
+
+    /* UKUPNO row - bigger on mobile */
+    .pro-mjesecna-table tbody tr:nth-last-child(2) td {
+        font-size: 16px !important;
+        font-weight: 800 !important;
+        padding: 16px 10px !important;
+    }
+
+    /* % UČEŠĆE row */
+    .pro-mjesecna-table tbody tr:last-child td {
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        padding: 14px 10px !important;
+    }
+
+    /* Zero values still visible on mobile */
+    .pro-mjesecna-table tbody td[style*="font-weight: 4"] {
+        font-weight: 600 !important;
+        color: #475569 !important;
+    }
+
+    /* Card headers on mobile */
+    .mjesecni-card h2 {
+        font-size: 16px !important;
+    }
+
+    .mjesecni-card p {
+        font-size: 12px !important;
+    }
+}
+
+/* ============================================ */
+/* 📱 SMALL MOBILE - max-width: 480px */
+/* ============================================ */
+
+@media (max-width: 480px) {
+    .pro-mjesecna-table td {
+        font-size: 14px !important;
+        padding: 12px 6px !important;
+        min-width: 55px !important;
+    }
+
+    .pro-mjesecna-table th {
+        font-size: 10px !important;
+        padding: 10px 4px !important;
+        min-width: 55px !important;
+    }
+
+    .pro-mjesecna-table td:first-child {
+        font-size: 13px !important;
+        min-width: 60px !important;
+    }
+
+    .pro-mjesecna-table tbody tr:nth-last-child(2) td {
+        font-size: 15px !important;
+    }
+}
+
+/* ============================================ */
+/* 🎨 STANJE ZALIHA - TABLE READABILITY */
+/* ============================================ */
+
+.stanje-zaliha-table td {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    padding: 10px 8px !important;
+    color: #1e293b !important;
+}
+
+.stanje-zaliha-table th {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    padding: 12px 8px !important;
+}
+
+@media (max-width: 768px) {
+    .stanje-zaliha-table td {
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        padding: 12px 8px !important;
+    }
+
+    .stanje-zaliha-table th {
+        font-size: 10px !important;
+        padding: 10px 6px !important;
+    }
+}
