@@ -21,19 +21,20 @@ const CACHE_TTL = 180; // 3 minute cache (180 seconds)
 // 📊 BAZA PODATAKA - Struktura kolona
 // ========================================
 
-// INDEKS_PRIMKA kolone (A-Y, 25 kolona)
+// INDEKS_PRIMKA kolone (A-Z, 26 kolona)
 const PRIMKA_COL = {
   DATE: 0,        // A - Datum
-  RADNIK: 1,      // B - Radnik/Primač
+  RADNIK: 1,      // B - Primač
   ODJEL: 2,       // C - Odjel
   RADILISTE: 3,   // D - Radilište
   IZVODJAC: 4,    // E - Izvođač
-  SORT_START: 5,  // F - Početak sortimenta
-  SORT_END: 24,   // Y - Kraj sortimenta (UKUPNO Č+L)
-  UKUPNO: 24      // Y - UKUPNO Č+L
+  POSLOVODJA: 5,  // F - Poslovođa
+  SORT_START: 6,  // G - Početak sortimenta (F/L Č)
+  SORT_END: 25,   // Z - Kraj sortimenta (UKUPNO Č+L)
+  UKUPNO: 25      // Z - UKUPNO Č+L
 };
 
-// INDEKS_OTPREMA kolone (A-Z, 26 kolona)
+// INDEKS_OTPREMA kolone (A-AA, 27 kolona)
 const OTPREMA_COL = {
   DATE: 0,        // A - Datum
   OTPREMAC: 1,    // B - Otpremač
@@ -41,9 +42,10 @@ const OTPREMA_COL = {
   ODJEL: 3,       // D - Odjel
   RADILISTE: 4,   // E - Radilište
   IZVODJAC: 5,    // F - Izvođač
-  SORT_START: 6,  // G - Početak sortimenta
-  SORT_END: 25,   // Z - Kraj sortimenta (UKUPNO Č+L)
-  UKUPNO: 25      // Z - UKUPNO Č+L
+  POSLOVODJA: 6,  // G - Poslovođa
+  SORT_START: 7,  // H - Početak sortimenta (F/L Č)
+  SORT_END: 26,   // AA - Kraj sortimenta (UKUPNO Č+L)
+  UKUPNO: 26      // AA - UKUPNO Č+L
 };
 
 // Nazivi sortimenta (20 kolona) - koristi se za oba sheeta

@@ -1248,7 +1248,7 @@ function handleAddSjeca(params) {
     if (!unosSheet) {
       unosSheet = ss.insertSheet("PRIMAČ_UNOS");
       // Dodaj header red - ista struktura kao INDEKS_PRIMKA + STATUS + TIMESTAMP
-      const headers = ["DATUM", "RADNIK", "ODJEL", "RADILIŠTE", "IZVOĐAČ",
+      const headers = ["DATUM", "RADNIK", "ODJEL", "RADILIŠTE", "IZVOĐAČ", "POSLOVOĐA",
                        "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
                        "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
                        "F/L L", "I L", "II L", "III L", "TRUPCI L",
@@ -1269,10 +1269,11 @@ function handleAddSjeca(params) {
       userFullName,             // B - RADNIK/PRIMAČ
       params.odjel,             // C - ODJEL
       params.radiliste || '',   // D - RADILIŠTE
-      params.izvodjac || ''     // E - IZVOĐAČ
+      params.izvodjac || '',    // E - IZVOĐAČ
+      params.poslovodja || ''   // F - POSLOVOĐA
     ];
 
-    // Dodaj sortimente F-Y (20 kolona)
+    // Dodaj sortimente G-Z (20 kolona)
     const sortimentiValues = [];
     for (let i = 0; i < 19; i++) { // prvih 19 sortimenti (bez UKUPNO)
       const value = parseFloat(params[SORTIMENTI_NAZIVI[i]]) || 0;
@@ -1350,7 +1351,7 @@ function handleAddOtprema(params) {
     if (!unosSheet) {
       unosSheet = ss.insertSheet("OTPREMAČ_UNOS");
       // Dodaj header red - ista struktura kao INDEKS_OTPREMA + BROJ_OTPREMNICE + STATUS + TIMESTAMP
-      const headers = ["DATUM", "OTPREMAČ", "KUPAC", "ODJEL", "RADILIŠTE", "IZVOĐAČ",
+      const headers = ["DATUM", "OTPREMAČ", "KUPAC", "ODJEL", "RADILIŠTE", "IZVOĐAČ", "POSLOVOĐA",
                        "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
                        "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
                        "F/L L", "I L", "II L", "III L", "TRUPCI L",
@@ -1372,10 +1373,11 @@ function handleAddOtprema(params) {
       params.kupac || '',       // C - KUPAC
       params.odjel,             // D - ODJEL
       params.radiliste || '',   // E - RADILIŠTE
-      params.izvodjac || ''     // F - IZVOĐAČ
+      params.izvodjac || '',    // F - IZVOĐAČ
+      params.poslovodja || ''   // G - POSLOVOĐA
     ];
 
-    // Dodaj sortimente G-Z (20 kolona)
+    // Dodaj sortimente H-AA (20 kolona)
     const sortimentiValues = [];
     for (let i = 0; i < 19; i++) { // prvih 19 sortimenti (bez UKUPNO)
       const value = parseFloat(params[SORTIMENTI_NAZIVI[i]]) || 0;
