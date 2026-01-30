@@ -2759,28 +2759,49 @@
                     throw new Error('Greška pri učitavanju otprema: ' + otpremeData.error);
                 }
 
-                // Filter primke by radilišta i datum (zadnjih 5 dana)
+                // Filter primke by poslovodja/radilišta i datum (zadnjih 5 dana)
+                const userFullName = currentUser.fullName.toUpperCase().trim();
                 const filteredPrimke = (primkeData.primke || []).filter(primka => {
-                    const primkaRadiliste = (primka.radiliste || '').toUpperCase().trim();
-                    const hasRadiliste = radilista.some(r => primkaRadiliste.includes(r.toUpperCase()));
-
                     // Parse datum
                     const primkaDatum = new Date(primka.datum);
                     const withinLast5Days = primkaDatum >= fiveDaysAgo;
+                    if (!withinLast5Days) return false;
 
-                    return hasRadiliste && withinLast5Days;
+                    // Prvo pokušaj filtrirati po poslovodja polju
+                    const primkaPoslovodja = (primka.poslovodja || '').toUpperCase().trim();
+                    if (primkaPoslovodja && primkaPoslovodja === userFullName) {
+                        return true;
+                    }
+
+                    // Fallback: filter po radilištima ako postoje u mapiranju
+                    if (radilista.length > 0) {
+                        const primkaRadiliste = (primka.radiliste || '').toUpperCase().trim();
+                        return radilista.some(r => primkaRadiliste.includes(r.toUpperCase()));
+                    }
+
+                    return false;
                 });
 
-                // Filter otpreme by radilišta i datum (zadnjih 5 dana)
+                // Filter otpreme by poslovodja/radilišta i datum (zadnjih 5 dana)
                 const filteredOtpreme = (otpremeData.otpreme || []).filter(otprema => {
-                    const otpremaRadiliste = (otprema.radiliste || '').toUpperCase().trim();
-                    const hasRadiliste = radilista.some(r => otpremaRadiliste.includes(r.toUpperCase()));
-
                     // Parse datum
                     const otpremaDatum = new Date(otprema.datum);
                     const withinLast5Days = otpremaDatum >= fiveDaysAgo;
+                    if (!withinLast5Days) return false;
 
-                    return hasRadiliste && withinLast5Days;
+                    // Prvo pokušaj filtrirati po poslovodja polju
+                    const otpremaPoslovodja = (otprema.poslovodja || '').toUpperCase().trim();
+                    if (otpremaPoslovodja && otpremaPoslovodja === userFullName) {
+                        return true;
+                    }
+
+                    // Fallback: filter po radilištima ako postoje u mapiranju
+                    if (radilista.length > 0) {
+                        const otpremaRadiliste = (otprema.radiliste || '').toUpperCase().trim();
+                        return radilista.some(r => otpremaRadiliste.includes(r.toUpperCase()));
+                    }
+
+                    return false;
                 });
 
                 // Sortiraj po datumu (najnoviji prvi)
@@ -2917,27 +2938,48 @@
                     throw new Error('Greška pri učitavanju otprema: ' + otpremeData.error);
                 }
 
-                // Filter by radilišta i tekući mjesec
+                // Filter by poslovodja/radilišta i tekući mjesec
+                const userFullName = currentUser.fullName.toUpperCase().trim();
                 const filteredPrimke = (primkeData.primke || []).filter(primka => {
-                    const primkaRadiliste = (primka.radiliste || '').toUpperCase().trim();
-                    const hasRadiliste = radilista.some(r => primkaRadiliste.includes(r.toUpperCase()));
-
                     // Parse datum
                     const primkaDatum = new Date(primka.datum);
                     const sameMonth = primkaDatum.getMonth() === currentMonth && primkaDatum.getFullYear() === currentYear;
+                    if (!sameMonth) return false;
 
-                    return hasRadiliste && sameMonth;
+                    // Prvo pokušaj filtrirati po poslovodja polju
+                    const primkaPoslovodja = (primka.poslovodja || '').toUpperCase().trim();
+                    if (primkaPoslovodja && primkaPoslovodja === userFullName) {
+                        return true;
+                    }
+
+                    // Fallback: filter po radilištima ako postoje u mapiranju
+                    if (radilista.length > 0) {
+                        const primkaRadiliste = (primka.radiliste || '').toUpperCase().trim();
+                        return radilista.some(r => primkaRadiliste.includes(r.toUpperCase()));
+                    }
+
+                    return false;
                 });
 
                 const filteredOtpreme = (otpremeData.otpreme || []).filter(otprema => {
-                    const otpremaRadiliste = (otprema.radiliste || '').toUpperCase().trim();
-                    const hasRadiliste = radilista.some(r => otpremaRadiliste.includes(r.toUpperCase()));
-
                     // Parse datum
                     const otpremaDatum = new Date(otprema.datum);
                     const sameMonth = otpremaDatum.getMonth() === currentMonth && otpremaDatum.getFullYear() === currentYear;
+                    if (!sameMonth) return false;
 
-                    return hasRadiliste && sameMonth;
+                    // Prvo pokušaj filtrirati po poslovodja polju
+                    const otpremaPoslovodja = (otprema.poslovodja || '').toUpperCase().trim();
+                    if (otpremaPoslovodja && otpremaPoslovodja === userFullName) {
+                        return true;
+                    }
+
+                    // Fallback: filter po radilištima ako postoje u mapiranju
+                    if (radilista.length > 0) {
+                        const otpremaRadiliste = (otprema.radiliste || '').toUpperCase().trim();
+                        return radilista.some(r => otpremaRadiliste.includes(r.toUpperCase()));
+                    }
+
+                    return false;
                 });
 
 
