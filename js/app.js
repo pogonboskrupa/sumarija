@@ -6221,7 +6221,7 @@
             }
         }
 
-        // Render monthly table (SJEČA or OTPREMA) - PRO LEVEL
+        // Render monthly table (SJEČA or OTPREMA) - PRO LEVEL with Comfortaa font
         function renderMjesecnaTabela(data, tableId) {
 
             const headerElem = document.getElementById(tableId + '-header');
@@ -6234,49 +6234,63 @@
 
             if (!data || !data.sortimenti || data.sortimenti.length === 0) {
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280; font-family: Comfortaa, sans-serif;">Nema podataka</td></tr>';
                 return;
             }
 
             if (!data.mjeseci || !Array.isArray(data.mjeseci) || data.mjeseci.length !== 12) {
                 console.error('Invalid mjeseci data for table:', tableId, data.mjeseci);
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #dc2626;">Greška u formatu podataka</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #dc2626; font-family: Comfortaa, sans-serif;">Greška u formatu podataka</td></tr>';
                 return;
             }
 
             const sortimenti = data.sortimenti.filter(s => s && s.trim() !== '');
             const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
 
-            // Determine četinari/lišćari boundary
-            const cetinariSortimenti = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'Σ ČETINARI', 'ČETINARI'];
+            // Četinari sortimenti (plava grupa)
+            const cetinariSortimenti = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART'];
+            const cetinariTrupci = ['TRUPCI Č'];
+            const cetinariUkupno = ['Σ ČETINARI', 'ČETINARI'];
 
-            // Build header - PRO STYLE with borders
+            // Lišćari sortimenti (žuta/narandžasta grupa)
+            const liscariSortimenti = ['F/L L', 'I L', 'II L', 'III L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE'];
+            const liscariTrupci = ['TRUPCI L', 'TRUPCI'];
+            const liscariUkupno = ['LIŠĆARI'];
+
+            // Grand total
+            const grandTotal = ['SVEUKUPNO', 'UKUPNO Č+L'];
+
+            // Build header - PRO STYLE with Comfortaa
             let headerHtml = '<tr style="background: #1e3a5f;">';
-            headerHtml += '<th style="min-width: 80px; position: sticky; left: 0; background: #1e3a5f; color: white; z-index: 20; font-size: 12px; font-weight: 700; padding: 12px 8px; text-align: center; border: 1px solid #374151; border-right: 2px solid #60a5fa;">MJESEC</th>';
+            headerHtml += '<th style="font-family: Comfortaa, sans-serif; min-width: 80px; position: sticky; left: 0; background: #1e3a5f; color: white; z-index: 20; font-size: 13px; font-weight: 700; padding: 12px 8px; text-align: center; border: 1px solid #374151; border-right: 2px solid #60a5fa;">MJESEC</th>';
 
             for (let i = 0; i < sortimenti.length; i++) {
                 const s = sortimenti[i];
                 let bgColor = '#1e3a5f';
                 let borderColor = '#374151';
 
-                // Color coding for special columns
-                if (s === 'Σ ČETINARI' || s === 'ČETINARI') {
-                    bgColor = '#065f46';
-                    borderColor = '#047857';
-                } else if (s === 'LIŠĆARI') {
-                    bgColor = '#92400e';
-                    borderColor = '#b45309';
-                } else if (s === 'SVEUKUPNO' || s === 'UKUPNO Č+L') {
-                    bgColor = '#7c2d12';
-                    borderColor = '#b91c1c';
-                } else if (cetinariSortimenti.includes(s)) {
-                    bgColor = '#1e40af';
-                } else {
-                    bgColor = '#78350f';
+                // Header colors by group
+                if (cetinariSortimenti.includes(s)) {
+                    bgColor = '#1e40af'; // Plava
+                } else if (cetinariTrupci.includes(s)) {
+                    bgColor = '#1e3a8a'; // Tamnija plava za TRUPCI
+                } else if (cetinariUkupno.includes(s)) {
+                    bgColor = '#172554'; // Najtamnija plava za UKUPNO ČETINARI
+                    borderColor = '#1e3a8a';
+                } else if (liscariSortimenti.includes(s)) {
+                    bgColor = '#b45309'; // Narandžasta
+                } else if (liscariTrupci.includes(s)) {
+                    bgColor = '#92400e'; // Tamnija narandžasta za TRUPCI
+                } else if (liscariUkupno.includes(s)) {
+                    bgColor = '#78350f'; // Najtamnija za UKUPNO LIŠĆARI
+                    borderColor = '#92400e';
+                } else if (grandTotal.includes(s)) {
+                    bgColor = '#7f1d1d'; // Crvena za SVEUKUPNO
+                    borderColor = '#991b1b';
                 }
 
-                headerHtml += `<th style="background: ${bgColor}; color: white; border: 1px solid ${borderColor}; min-width: 65px; padding: 12px 6px; font-size: 11px; font-weight: 600; text-align: center; white-space: nowrap;">${s}</th>`;
+                headerHtml += `<th style="font-family: Comfortaa, sans-serif; background: ${bgColor}; color: white; border: 1px solid ${borderColor}; min-width: 65px; padding: 12px 6px; font-size: 12px; font-weight: 600; text-align: center; white-space: nowrap;">${s}</th>`;
             }
             headerHtml += '</tr>';
             headerElem.innerHTML = headerHtml;
@@ -6285,36 +6299,52 @@
             let bodyHtml = '';
             const totals = {};
 
-            // Month rows - PRO STYLE with clear borders
+            // Month rows - PRO STYLE with Comfortaa font and group colors
             for (let m = 0; m < 12; m++) {
                 const rowBg = m % 2 === 0 ? 'white' : '#f8fafc';
                 bodyHtml += `<tr style="background: ${rowBg};">`;
-                bodyHtml += `<td style="font-weight: 700; font-size: 13px; min-width: 80px; position: sticky; left: 0; background: ${rowBg}; z-index: 9; border: 1px solid #d1d5db; border-right: 2px solid #60a5fa; text-align: center; padding: 10px 8px; color: #1e3a5f;">${mjeseci[m]}</td>`;
+                bodyHtml += `<td style="font-family: Comfortaa, sans-serif; font-weight: 700; font-size: 14px; min-width: 80px; position: sticky; left: 0; background: ${rowBg}; z-index: 9; border: 1px solid #d1d5db; border-right: 2px solid #60a5fa; text-align: center; padding: 10px 8px; color: #1e3a5f;">${mjeseci[m]}</td>`;
 
                 for (let s = 0; s < sortimenti.length; s++) {
                     const sortiment = sortimenti[s];
                     const value = data.mjeseci[m][sortiment] || 0;
                     const displayVal = value.toFixed(2);
-                    let cellStyle = 'padding: 10px 6px; font-size: 12px; min-width: 65px; text-align: right; border: 1px solid #d1d5db; font-family: ui-monospace, monospace;';
 
-                    // Base color based on value
-                    if (value === 0) {
-                        cellStyle += ' color: #9ca3af; font-weight: 400;';
-                    } else {
-                        cellStyle += ' color: #1f2937; font-weight: 500;';
-                    }
+                    // Base style with Comfortaa font
+                    let cellStyle = 'font-family: Comfortaa, sans-serif; padding: 10px 6px; font-size: 13px; min-width: 65px; text-align: right; border: 1px solid #d1d5db;';
 
-                    // Special column styling
-                    if (sortiment === 'Σ ČETINARI' || sortiment === 'ČETINARI') {
-                        cellStyle += value > 0 ? ' background: #d1fae5; color: #065f46; font-weight: 700;' : ' background: #ecfdf5;';
-                    } else if (sortiment === 'LIŠĆARI') {
-                        cellStyle += value > 0 ? ' background: #fef3c7; color: #92400e; font-weight: 700;' : ' background: #fffbeb;';
-                    } else if (sortiment === 'SVEUKUPNO' || sortiment === 'UKUPNO Č+L') {
-                        cellStyle += value > 0 ? ' background: #fee2e2; color: #991b1b; font-weight: 800;' : ' background: #fef2f2;';
-                    } else if (cetinariSortimenti.includes(sortiment)) {
-                        cellStyle += value > 0 ? ' background: #eff6ff;' : '';
+                    // Color grouping
+                    if (cetinariSortimenti.includes(sortiment)) {
+                        // Četinari - svijetlo plava
+                        cellStyle += ' background: #dbeafe;';
+                        cellStyle += value > 0 ? ' color: #1e40af; font-weight: 600;' : ' color: #93c5fd; font-weight: 400;';
+                    } else if (cetinariTrupci.includes(sortiment)) {
+                        // Četinari TRUPCI - tamnija plava
+                        cellStyle += ' background: #bfdbfe;';
+                        cellStyle += value > 0 ? ' color: #1e3a8a; font-weight: 700;' : ' color: #60a5fa; font-weight: 400;';
+                    } else if (cetinariUkupno.includes(sortiment)) {
+                        // Četinari UKUPNO - najtamnija plava
+                        cellStyle += ' background: #93c5fd;';
+                        cellStyle += value > 0 ? ' color: #172554; font-weight: 800;' : ' color: #3b82f6; font-weight: 400;';
+                    } else if (liscariSortimenti.includes(sortiment)) {
+                        // Lišćari - svijetlo žuta/narandžasta
+                        cellStyle += ' background: #fef3c7;';
+                        cellStyle += value > 0 ? ' color: #92400e; font-weight: 600;' : ' color: #fcd34d; font-weight: 400;';
+                    } else if (liscariTrupci.includes(sortiment)) {
+                        // Lišćari TRUPCI - tamnija narandžasta
+                        cellStyle += ' background: #fde68a;';
+                        cellStyle += value > 0 ? ' color: #78350f; font-weight: 700;' : ' color: #f59e0b; font-weight: 400;';
+                    } else if (liscariUkupno.includes(sortiment)) {
+                        // Lišćari UKUPNO - najtamnija narandžasta
+                        cellStyle += ' background: #fcd34d;';
+                        cellStyle += value > 0 ? ' color: #78350f; font-weight: 800;' : ' color: #b45309; font-weight: 400;';
+                    } else if (grandTotal.includes(sortiment)) {
+                        // SVEUKUPNO - crvena
+                        cellStyle += ' background: #fecaca;';
+                        cellStyle += value > 0 ? ' color: #7f1d1d; font-weight: 800;' : ' color: #f87171; font-weight: 400;';
                     } else {
-                        cellStyle += value > 0 ? ' background: #fffbeb;' : '';
+                        // Default
+                        cellStyle += value > 0 ? ' color: #1f2937; font-weight: 500;' : ' color: #9ca3af; font-weight: 400;';
                     }
 
                     bodyHtml += `<td style="${cellStyle}">${displayVal}</td>`;
@@ -6326,37 +6356,50 @@
                 bodyHtml += '</tr>';
             }
 
-            // UKUPNO row - PRO STYLE
+            // UKUPNO row - PRO STYLE with Comfortaa
             bodyHtml += '<tr style="background: #1e3a5f;">';
-            bodyHtml += '<td style="min-width: 80px; position: sticky; left: 0; background: #1e3a5f; color: white; z-index: 9; border: 1px solid #374151; border-right: 2px solid #60a5fa; text-align: center; font-size: 12px; font-weight: 700; padding: 12px 8px;">📊 UKUPNO</td>';
+            bodyHtml += '<td style="font-family: Comfortaa, sans-serif; min-width: 80px; position: sticky; left: 0; background: #1e3a5f; color: white; z-index: 9; border: 1px solid #374151; border-right: 2px solid #60a5fa; text-align: center; font-size: 13px; font-weight: 700; padding: 12px 8px;">📊 UKUPNO</td>';
             for (let s = 0; s < sortimenti.length; s++) {
                 const sortiment = sortimenti[s];
                 const total = totals[sortiment] || 0;
                 let cellBg = '#e5e7eb';
                 let textColor = '#1f2937';
 
-                if (sortiment === 'Σ ČETINARI' || sortiment === 'ČETINARI') {
-                    cellBg = '#a7f3d0';
-                    textColor = '#065f46';
-                } else if (sortiment === 'LIŠĆARI') {
-                    cellBg = '#fde68a';
+                // Color grouping for totals
+                if (cetinariSortimenti.includes(sortiment)) {
+                    cellBg = '#93c5fd';
+                    textColor = '#1e3a8a';
+                } else if (cetinariTrupci.includes(sortiment)) {
+                    cellBg = '#60a5fa';
+                    textColor = '#172554';
+                } else if (cetinariUkupno.includes(sortiment)) {
+                    cellBg = '#3b82f6';
+                    textColor = '#ffffff';
+                } else if (liscariSortimenti.includes(sortiment)) {
+                    cellBg = '#fcd34d';
                     textColor = '#78350f';
-                } else if (sortiment === 'SVEUKUPNO' || sortiment === 'UKUPNO Č+L') {
-                    cellBg = '#fca5a5';
-                    textColor = '#7f1d1d';
+                } else if (liscariTrupci.includes(sortiment)) {
+                    cellBg = '#f59e0b';
+                    textColor = '#78350f';
+                } else if (liscariUkupno.includes(sortiment)) {
+                    cellBg = '#d97706';
+                    textColor = '#ffffff';
+                } else if (grandTotal.includes(sortiment)) {
+                    cellBg = '#ef4444';
+                    textColor = '#ffffff';
                 }
 
-                bodyHtml += `<td style="font-weight: 800; font-size: 13px; padding: 12px 6px; background: ${cellBg}; min-width: 65px; text-align: right; border: 1px solid #9ca3af; color: ${textColor}; font-family: ui-monospace, monospace;">${total.toFixed(2)}</td>`;
+                bodyHtml += `<td style="font-family: Comfortaa, sans-serif; font-weight: 800; font-size: 14px; padding: 12px 6px; background: ${cellBg}; min-width: 65px; text-align: right; border: 1px solid #9ca3af; color: ${textColor};">${total.toFixed(2)}</td>`;
             }
             bodyHtml += '</tr>';
 
-            // % UČEŠĆE row - PRO STYLE
+            // % UČEŠĆE row - PRO STYLE with Comfortaa
             const cetinariTotalPct = totals['Σ ČETINARI'] || totals['ČETINARI'] || 0;
             const liscariTotalPct = totals['LIŠĆARI'] || 0;
             const grandTotalPct = totals['SVEUKUPNO'] || totals['UKUPNO Č+L'] || 0;
 
             bodyHtml += '<tr style="background: #f1f5f9;">';
-            bodyHtml += '<td style="min-width: 80px; position: sticky; left: 0; background: #f1f5f9; z-index: 9; border: 1px solid #d1d5db; border-right: 2px solid #60a5fa; text-align: center; font-size: 12px; font-weight: 700; padding: 10px 8px; color: #475569; font-style: italic;">% UČEŠĆE</td>';
+            bodyHtml += '<td style="font-family: Comfortaa, sans-serif; min-width: 80px; position: sticky; left: 0; background: #f1f5f9; z-index: 9; border: 1px solid #d1d5db; border-right: 2px solid #60a5fa; text-align: center; font-size: 13px; font-weight: 700; padding: 10px 8px; color: #475569; font-style: italic;">% UČEŠĆE</td>';
 
             for (let s = 0; s < sortimenti.length; s++) {
                 const sortiment = sortimenti[s];
@@ -6364,24 +6407,25 @@
                 let cellBg = '#f1f5f9';
                 let percentage = '0.0';
 
-                if (sortiment === 'Σ ČETINARI' || sortiment === 'ČETINARI') {
-                    percentage = grandTotalPct > 0 ? ((total / grandTotalPct) * 100).toFixed(1) : '0.0';
-                    cellBg = '#ecfdf5';
-                } else if (sortiment === 'LIŠĆARI') {
-                    percentage = grandTotalPct > 0 ? ((total / grandTotalPct) * 100).toFixed(1) : '0.0';
-                    cellBg = '#fffbeb';
-                } else if (sortiment === 'SVEUKUPNO' || sortiment === 'UKUPNO Č+L') {
-                    percentage = '100.0';
-                    cellBg = '#fef2f2';
-                } else if (cetinariSortimenti.includes(sortiment)) {
+                // Calculate percentage based on group
+                if (cetinariSortimenti.includes(sortiment) || cetinariTrupci.includes(sortiment)) {
                     percentage = cetinariTotalPct > 0 ? ((total / cetinariTotalPct) * 100).toFixed(1) : '0.0';
-                    cellBg = '#f0f9ff';
-                } else {
+                    cellBg = '#dbeafe';
+                } else if (cetinariUkupno.includes(sortiment)) {
+                    percentage = grandTotalPct > 0 ? ((total / grandTotalPct) * 100).toFixed(1) : '0.0';
+                    cellBg = '#93c5fd';
+                } else if (liscariSortimenti.includes(sortiment) || liscariTrupci.includes(sortiment)) {
                     percentage = liscariTotalPct > 0 ? ((total / liscariTotalPct) * 100).toFixed(1) : '0.0';
-                    cellBg = '#fffbeb';
+                    cellBg = '#fef3c7';
+                } else if (liscariUkupno.includes(sortiment)) {
+                    percentage = grandTotalPct > 0 ? ((total / grandTotalPct) * 100).toFixed(1) : '0.0';
+                    cellBg = '#fcd34d';
+                } else if (grandTotal.includes(sortiment)) {
+                    percentage = '100.0';
+                    cellBg = '#fecaca';
                 }
 
-                bodyHtml += `<td style="font-weight: 600; font-size: 12px; padding: 10px 6px; background: ${cellBg}; min-width: 65px; text-align: right; border: 1px solid #d1d5db; color: #64748b; font-style: italic; font-family: ui-monospace, monospace;">${percentage}%</td>`;
+                bodyHtml += `<td style="font-family: Comfortaa, sans-serif; font-weight: 600; font-size: 13px; padding: 10px 6px; background: ${cellBg}; min-width: 65px; text-align: right; border: 1px solid #d1d5db; color: #64748b; font-style: italic;">${percentage}%</td>`;
             }
             bodyHtml += '</tr>';
 
