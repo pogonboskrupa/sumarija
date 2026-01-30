@@ -254,5 +254,120 @@ td[style*="background: linear-gradient"][style*="254, 243"] {
     background: #f3f4f6 !important;
 }
 
+/* ============================================ */
+/* 📊 GLOBAL TYPOGRAPHY FOR NUMERIC DATA */
+/* Improved readability across all tables */
+/* ============================================ */
+
+/* Base numeric typography - applies to all tables */
+table td {
+    font-family: 'Roboto Mono', ui-monospace, 'SF Mono', 'Cascadia Code', 'Segoe UI Mono', 'Consolas', monospace;
+}
+
+/* Numeric cells - improved readability */
+table td[style*="text-align: right"],
+table td.number,
+table td.right,
+.izvjestaji-table tbody td,
+.izvjestaj-table tbody td,
+.worker-table tbody td,
+#odjeli-table-body td,
+#stanje-table-body td,
+#realizacija-table-body td,
+#primke-table-body td,
+#otpreme-table-body td,
+#kupci-godisnji-tbody td,
+#kupci-mjesecni-tbody td {
+    font-family: 'Roboto Mono', ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+    font-weight: 500;
+    text-shadow: 0 0 1px rgba(255, 255, 255, 0.8);
+}
+
+/* Data values with green color */
+table td.green,
+table td.number.green,
+td[style*="color: #059669"],
+td[style*="color: #047857"],
+td[style*="color: #10b981"] {
+    font-weight: 600;
+    text-shadow: 0 0 2px rgba(255, 255, 255, 0.9);
+}
+
+/* Data values with blue color */
+table td.blue,
+table td.number.blue,
+td[style*="color: #2563eb"],
+td[style*="color: #3b82f6"],
+td[style*="color: #1d4ed8"] {
+    font-weight: 600;
+    text-shadow: 0 0 2px rgba(255, 255, 255, 0.9);
+}
+
+/* Data values with red color */
+table td.red,
+table td.number.red,
+td[style*="color: #dc2626"],
+td[style*="color: #ef4444"] {
+    font-weight: 600;
+    text-shadow: 0 0 2px rgba(255, 255, 255, 0.9);
+}
+
+/* UKUPNO/Total rows - stronger emphasis */
+table tbody tr:last-child td,
+table tfoot td,
+tr[style*="background: #047857"] td,
+tr[style*="background: #065f46"] td,
+tr[style*="background: #059669"] td,
+.ukupno-row td,
+.total-row td {
+    font-weight: 700 !important;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+}
+
+/* White text on dark backgrounds */
+td[style*="color: white"],
+td[style*="color: #ffffff"],
+th[style*="color: white"],
+th[style*="color: #ffffff"] {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* Dashboard cards - numeric values */
+.stat-value,
+.card-value,
+.metric-value {
+    font-family: 'Roboto Mono', ui-monospace, monospace;
+    font-weight: 700;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+/* Monthly report tables */
+#mjesecna-sjeca-table td,
+#mjesecna-otprema-table td {
+    font-family: 'Roboto Mono', ui-monospace, monospace;
+    font-weight: 500;
+}
+
+/* Primaci and Otpremaci detail tables */
+#primac-detail-content table td,
+#otpremac-detail-content table td,
+#primac-mjesecni-content table td,
+#otpremac-mjesecni-content table td,
+#primac-odjeli-content table td,
+#otpremac-odjeli-content table td {
+    font-family: 'Roboto Mono', ui-monospace, monospace;
+    font-weight: 500;
+    text-shadow: 0 0 1px rgba(255, 255, 255, 0.8);
+}
+
+/* Sortimenti tables */
+#sortimenti-content table td,
+#primke-content table td,
+#otpreme-content table td {
+    font-family: 'Roboto Mono', ui-monospace, monospace;
+    font-weight: 500;
+    text-shadow: 0 0 1px rgba(255, 255, 255, 0.8);
+}
+
 /* TABLE CONTRAST FIX - Loaded successfully */
-/* Svijetle žute boje zamijenjene tamnijim + TRUPCI fix za sve tabele */
+/* Svijetle žute boje zamijenjene tamnijim + TRUPCI fix za sve tabele + Typography improvements */

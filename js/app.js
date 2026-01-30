@@ -158,12 +158,12 @@
         // ========== END PERFORMANCE & MANIFEST ==========
 
         // ========== SORTIMENTI ORDER - BUSINESS LOGIC ==========
-        // Fixed order for sortimenti as per business requirements
+        // Fixed order for sortimenti as per business requirements (20 sortimenta)
         const SORTIMENTI_ORDER = [
-            "F/L Č", "I Č", "II Č", "III Č", "RUDNO", "TRUPCI Č",
-            "CEL.DUGA", "CEL.CIJEPANA", "ČETINARI",
-            "F/L L", "I L", "II L", "III L", "TRUPCI",
-            "OGR.DUGI", "OGR.CIJEPANI", "LIŠĆARI", "SVEUKUPNO"
+            "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+            "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+            "F/L L", "I L", "II L", "III L", "TRUPCI L",
+            "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
         ];
 
         // ========== PERFORMANCE CONFIGURATION ==========
@@ -1826,6 +1826,25 @@
             }
         }
 
+        // Switch between kupci submenus
+        function switchKupciSubmenu(view) {
+            // Update submenu buttons
+            const submenuTabs = document.querySelectorAll('#kupci-content .submenu-tab');
+            submenuTabs.forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Hide all submenu content
+            document.getElementById('kupci-godisnji-view').classList.add('hidden');
+            document.getElementById('kupci-mjesecni-view').classList.add('hidden');
+
+            // Show selected view
+            if (view === 'godisnji') {
+                document.getElementById('kupci-godisnji-view').classList.remove('hidden');
+            } else if (view === 'mjesecni') {
+                document.getElementById('kupci-mjesecni-view').classList.remove('hidden');
+            }
+        }
+
         // Load dashboard data
         async function loadDashboard() {
             try {
@@ -3273,8 +3292,8 @@
                             ${(p.mjeseci && Array.isArray(p.mjeseci) ? p.mjeseci : new Array(12).fill(0)).map((v, mIdx) => {
                                 const val = (v != null && !isNaN(v)) ? v : 0;
                                 const displayVal = val > 0 ? val.toFixed(2) : '-';
-                                const fontWeight = val > 0 ? 'font-weight: 500;' : 'color: #9ca3af;';
-                                return `<td class="right" style="${fontWeight} border: 1px solid #d1fae5; padding: 8px; font-size: 10px; font-family: 'Courier New', monospace;">${displayVal}</td>`;
+                                const cellStyle = val > 0 ? 'font-weight: 600; color: #000000; text-shadow: 0 0 1px rgba(255,255,255,0.8);' : 'color: #9ca3af;';
+                                return `<td class="right" style="${cellStyle} border: 1px solid #d1fae5; padding: 8px; font-size: 11px; font-family: 'Roboto Mono', ui-monospace, monospace;">${displayVal}</td>`;
                             }).join('')}
                             <td class="right" style="font-weight: 700; background: linear-gradient(to right, #d1fae5, #a7f3d0); border: 2px solid #059669; padding: 10px; font-size: 11px; color: #065f46;">
                                 ${(p.ukupno != null && !isNaN(p.ukupno)) ? p.ukupno.toFixed(2) : '0.00'} m³
@@ -3292,11 +3311,11 @@
                         ${monthTotals.map(total => {
                             const val = (total != null && !isNaN(total)) ? total : 0;
                             return `
-                            <td class="right" style="border: 1px solid #6ee7b7; padding: 10px; font-size: 11px;">
+                            <td class="right" style="border: 1px solid #6ee7b7; padding: 10px; font-size: 12px; font-weight: 700; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace; text-shadow: 0 0 1px rgba(255,255,255,0.8);">
                                 ${val > 0 ? val.toFixed(2) : '-'}
                             </td>`;
                         }).join('')}
-                        <td class="right" style="background: #a7f3d0; border: 2px solid #34d399; padding: 12px; font-size: 13px; font-weight: 900;">
+                        <td class="right" style="background: #a7f3d0; border: 2px solid #34d399; padding: 12px; font-size: 13px; font-weight: 900; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace;">
                             ${(grandTotal != null && !isNaN(grandTotal)) ? grandTotal.toFixed(2) : '0.00'} m³
                         </td>
                     </tr>
@@ -3442,8 +3461,8 @@
                             ${(o.mjeseci && Array.isArray(o.mjeseci) ? o.mjeseci : new Array(12).fill(0)).map((v, mIdx) => {
                                 const val = (v != null && !isNaN(v)) ? v : 0;
                                 const displayVal = val > 0 ? val.toFixed(2) : '-';
-                                const fontWeight = val > 0 ? 'font-weight: 500;' : 'color: #9ca3af;';
-                                return `<td class="right" style="${fontWeight} border: 1px solid #dbeafe; padding: 8px; font-size: 10px; font-family: 'Courier New', monospace;">${displayVal}</td>`;
+                                const cellStyle = val > 0 ? 'font-weight: 600; color: #000000; text-shadow: 0 0 1px rgba(255,255,255,0.8);' : 'color: #9ca3af;';
+                                return `<td class="right" style="${cellStyle} border: 1px solid #dbeafe; padding: 8px; font-size: 11px; font-family: 'Roboto Mono', ui-monospace, monospace;">${displayVal}</td>`;
                             }).join('')}
                             <td class="right" style="font-weight: 700; background: linear-gradient(to right, #dbeafe, #bfdbfe); border: 2px solid #2563eb; padding: 10px; font-size: 11px; color: #1e40af;">
                                 ${(o.ukupno != null && !isNaN(o.ukupno)) ? o.ukupno.toFixed(2) : '0.00'} m³
@@ -3461,11 +3480,11 @@
                         ${monthTotals.map(total => {
                             const val = (total != null && !isNaN(total)) ? total : 0;
                             return `
-                            <td class="right" style="border: 1px solid #93c5fd; padding: 10px; font-size: 11px;">
+                            <td class="right" style="border: 1px solid #93c5fd; padding: 10px; font-size: 12px; font-weight: 700; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace; text-shadow: 0 0 1px rgba(255,255,255,0.8);">
                                 ${val > 0 ? val.toFixed(2) : '-'}
                             </td>`;
                         }).join('')}
-                        <td class="right" style="background: #bfdbfe; border: 2px solid #60a5fa; padding: 12px; font-size: 13px; font-weight: 900;">
+                        <td class="right" style="background: #bfdbfe; border: 2px solid #60a5fa; padding: 12px; font-size: 13px; font-weight: 900; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace;">
                             ${(grandTotal != null && !isNaN(grandTotal)) ? grandTotal.toFixed(2) : '0.00'} m³
                         </td>
                     </tr>
@@ -3717,17 +3736,23 @@
                     return;
                 }
 
-                // ✅ NOVO: Header bez kolone Datum
+                // ✅ NOVO: Header sa kolonama ODJEL, OTPREMAČ, KUPAC, RADILIŠTE, IZVOĐAČ + sortimenti
                 const headerHTML = `
                     <tr>
                         <th style="position: sticky; top: 0; left: 0; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); z-index: 30; border-right: 3px solid #164e63; min-width: 70px; box-shadow: 2px 0 5px rgba(0,0,0,0.1); font-size: 10px; padding: 8px 6px; font-weight: 800; color: white; text-transform: uppercase; letter-spacing: 0.5px;">
                             🏢 Odjel
                         </th>
-                        <th style="position: sticky; top: 0; min-width: 105px; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; font-weight: 800; border: 1px solid #164e63; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th style="position: sticky; top: 0; min-width: 100px; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; font-weight: 800; border: 1px solid #164e63; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
                             🚛 Otpremač
                         </th>
-                        <th style="position: sticky; top: 0; min-width: 105px; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; font-weight: 800; border: 1px solid #164e63; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th style="position: sticky; top: 0; min-width: 100px; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; font-weight: 800; border: 1px solid #164e63; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
                             👤 Kupac
+                        </th>
+                        <th style="position: sticky; top: 0; min-width: 90px; background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: white; font-weight: 800; border: 1px solid #5b21b6; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
+                            📍 Radilište
+                        </th>
+                        <th style="position: sticky; top: 0; min-width: 90px; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; font-weight: 800; border: 1px solid #065f46; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
+                            👷 Izvođač
                         </th>
                         ${data.sortimentiNazivi.map(s => `
                             <th style="position: sticky; top: 0; min-width: 52px; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; font-weight: 700; border: 1px solid #164e63; font-size: 8.5px; padding: 8px 3px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; line-height: 1.1;">
@@ -3770,11 +3795,11 @@
                     const rows = groupedByDate[datum];
                     const dayName = getDayName(datum);
 
-                    // ✅ Zaglavlje datuma
+                    // ✅ Zaglavlje datuma (5 fiksnih kolona: odjel, otpremač, kupac, radilište, izvođač + sortimenti)
                     const numSortimenti = data.sortimentiNazivi.length;
                     bodyHTML += `
                         <tr style="background: linear-gradient(135deg, #0e7490 0%, #155e75 50%, #164e63 100%); box-shadow: 0 2px 8px rgba(22, 78, 99, 0.4);">
-                            <td colspan="${3 + numSortimenti}" style="font-weight: 800; font-size: 14px; padding: 10px 12px; text-align: center; border-top: 3px solid #083344; color: white; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+                            <td colspan="${5 + numSortimenti}" style="font-weight: 800; font-size: 14px; padding: 10px 12px; text-align: center; border-top: 3px solid #083344; color: white; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
                                 📅 ${datum} - ${dayName}
                             </td>
                         </tr>
@@ -3789,7 +3814,7 @@
                         });
                     });
 
-                    // ✅ Redovi za ovaj dan (bez kolone Datum)
+                    // ✅ Redovi za ovaj dan sa kolonama: Odjel, Otpremač, Kupac, Radilište, Izvođač + sortimenti
                     rows.forEach((row, idx) => {
                         const rowBg = idx % 2 === 0 ? '#ecfeff' : '#ffffff';
                         const hoverBg = '#cffafe';
@@ -3808,6 +3833,8 @@
                                 </td>
                                 <td style="font-weight: 600; font-size: 10px; border: 1px solid #a5f3fc; padding: 6px 5px; color: #0e7490;">${row.otpremac}</td>
                                 <td style="border: 1px solid #a5f3fc; color: #155e75; font-weight: 600; font-size: 10px; padding: 6px 5px;">${row.kupac || '-'}</td>
+                                <td style="border: 1px solid #ddd6fe; color: #6d28d9; font-weight: 600; font-size: 9px; padding: 6px 5px; background: ${idx % 2 === 0 ? '#f5f3ff' : '#faf5ff'};">${row.radiliste || '-'}</td>
+                                <td style="border: 1px solid #a7f3d0; color: #047857; font-weight: 600; font-size: 9px; padding: 6px 5px; background: ${idx % 2 === 0 ? '#ecfdf5' : '#f0fdf4'};">${row.izvodjac || '-'}</td>
                                 ${sortimentiCells}
                             </tr>
                         `;
@@ -3826,6 +3853,8 @@
                                 📊 UKUPNO ${datum}
                             </td>
                             <td style="background: transparent;"></td>
+                            <td style="background: #a5f3fc;"></td>
+                            <td style="background: #a5f3fc;"></td>
                             <td style="background: #a5f3fc;"></td>
                             ${dailyTotalsCells}
                         </tr>
@@ -3849,7 +3878,7 @@
 
                 bodyHTML += `
                     <tr style="background: linear-gradient(135deg, #0e7490, #0891b2); color: white; font-weight: 700; border-top: 4px solid #164e63;">
-                        <td colspan="3" style="padding: 12px; font-size: 13px; font-weight: 900; letter-spacing: 1.5px; text-shadow: 0 1px 3px rgba(0,0,0,0.4); text-align: center;">
+                        <td colspan="5" style="padding: 12px; font-size: 13px; font-weight: 900; letter-spacing: 1.5px; text-shadow: 0 1px 3px rgba(0,0,0,0.4); text-align: center;">
                             📈 UKUPNO ${getMonthName(month).toUpperCase()}
                         </td>
                         ${grandTotalsCells}
@@ -4315,8 +4344,13 @@
                 return;
             }
 
-            // Header sa svim sortimentima
-            let headerHtml = '<tr style="background: #047857;"><th style="color: white; font-weight: 700; position: sticky; left: 0; background: #047857; z-index: 10;">Kupac</th>';
+            // Sortiraj od najvećeg ka najmanjem po ukupno (SVEUKUPNO)
+            const sortedData = [...godisnji].sort((a, b) => (b.ukupno || 0) - (a.ukupno || 0));
+
+            // Header sa svim sortimentima (dodaj R.br. kolonu)
+            let headerHtml = '<tr style="background: #047857;">';
+            headerHtml += '<th style="color: white; font-weight: 700; text-align: center; width: 30px; padding: 4px 2px;">R.br.</th>';
+            headerHtml += '<th style="color: white; font-weight: 700; position: sticky; left: 0; background: #047857; z-index: 10;">Kupac</th>';
             sortimentiNazivi.forEach(sortiment => {
                 const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #065f46;' : '';
                 headerHtml += `<th style="color: white; font-weight: 700; text-align: right;${bgStyle}">${sortiment}</th>`;
@@ -4324,23 +4358,42 @@
             headerHtml += '</tr>';
             headerElem.innerHTML = headerHtml;
 
-            // Body redovi
+            // Izračunaj UKUPNO sume za svaki sortiment
+            const ukupnoSume = {};
+            sortimentiNazivi.forEach(s => ukupnoSume[s] = 0);
+
+            // Body redovi (sa rednim brojem)
             let bodyHtml = '';
-            godisnji.forEach((kupac, index) => {
+            sortedData.forEach((kupac, index) => {
                 const rowBg = index % 2 === 0 ? '#f0fdf4' : 'white';
+                const redniBroj = index + 1;
                 bodyHtml += `<tr style="background: ${rowBg};" data-kupac="${(kupac.kupac || '').toLowerCase()}">`;
+                bodyHtml += `<td style="text-align: center; font-weight: 600; color: #000000; padding: 4px 2px;">${redniBroj}.</td>`;
                 bodyHtml += `<td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 5;">${kupac.kupac || '-'}</td>`;
 
                 sortimentiNazivi.forEach(sortiment => {
                     const kolicina = kupac.sortimenti[sortiment] || 0;
+                    ukupnoSume[sortiment] += kolicina; // Dodaj u sumu
                     const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
-                    const color = kolicina > 0 ? '#047857' : '#9ca3af';
+                    const color = kolicina > 0 ? '#000000' : '#9ca3af';
                     const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #d1fae5; font-weight: 700;' : '';
-                    bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; color: ${color};${bgStyle}">${display}</td>`;
+                    bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}">${display}</td>`;
                 });
 
                 bodyHtml += '</tr>';
             });
+
+            // UKUPNO red na kraju
+            bodyHtml += '<tr style="background: linear-gradient(135deg, #047857 0%, #065f46 100%); font-weight: 700;">';
+            bodyHtml += '<td style="color: white; font-weight: 700; text-align: center;"></td>';
+            bodyHtml += '<td style="color: white; font-weight: 700; position: sticky; left: 0; background: #047857; z-index: 5;">UKUPNO</td>';
+            sortimentiNazivi.forEach(sortiment => {
+                const suma = ukupnoSume[sortiment] || 0;
+                const display = suma > 0 ? suma.toFixed(2) : '-';
+                bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 700; color: white; text-shadow: 0 1px 1px rgba(0,0,0,0.3);">${display}</td>`;
+            });
+            bodyHtml += '</tr>';
+
             bodyElem.innerHTML = bodyHtml;
         }
 
@@ -4362,8 +4415,13 @@
                 return;
             }
 
-            // Header sa svim sortimentima
-            let headerHtml = '<tr style="background: #0369a1;"><th style="color: white; font-weight: 700; position: sticky; left: 0; background: #0369a1; z-index: 10;">Kupac</th>';
+            // Sortiraj od najvećeg ka najmanjem po ukupno (SVEUKUPNO)
+            const sortedData = [...filteredData].sort((a, b) => (b.ukupno || 0) - (a.ukupno || 0));
+
+            // Header sa svim sortimentima (dodaj R.br. kolonu)
+            let headerHtml = '<tr style="background: #0369a1;">';
+            headerHtml += '<th style="color: white; font-weight: 700; text-align: center; width: 30px; padding: 4px 2px;">R.br.</th>';
+            headerHtml += '<th style="color: white; font-weight: 700; position: sticky; left: 0; background: #0369a1; z-index: 10;">Kupac</th>';
             sortimentiNazivi.forEach(sortiment => {
                 const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #075985;' : '';
                 headerHtml += `<th style="color: white; font-weight: 700; text-align: right;${bgStyle}">${sortiment}</th>`;
@@ -4371,23 +4429,42 @@
             headerHtml += '</tr>';
             headerElem.innerHTML = headerHtml;
 
-            // Body redovi
+            // Izračunaj UKUPNO sume za svaki sortiment
+            const ukupnoSume = {};
+            sortimentiNazivi.forEach(s => ukupnoSume[s] = 0);
+
+            // Body redovi (sa rednim brojem)
             let bodyHtml = '';
-            filteredData.forEach((red, index) => {
+            sortedData.forEach((red, index) => {
                 const rowBg = index % 2 === 0 ? '#e0f2fe' : 'white';
+                const redniBroj = index + 1;
                 bodyHtml += `<tr style="background: ${rowBg};" data-kupac="${(red.kupac || '').toLowerCase()}">`;
+                bodyHtml += `<td style="text-align: center; font-weight: 600; color: #000000; padding: 4px 2px;">${redniBroj}.</td>`;
                 bodyHtml += `<td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 5;">${red.kupac || '-'}</td>`;
 
                 sortimentiNazivi.forEach(sortiment => {
                     const kolicina = red.sortimenti[sortiment] || 0;
+                    ukupnoSume[sortiment] += kolicina; // Dodaj u sumu
                     const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
-                    const color = kolicina > 0 ? '#0369a1' : '#9ca3af';
+                    const color = kolicina > 0 ? '#000000' : '#9ca3af';
                     const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #bae6fd; font-weight: 700;' : '';
-                    bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; color: ${color};${bgStyle}">${display}</td>`;
+                    bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}">${display}</td>`;
                 });
 
                 bodyHtml += '</tr>';
             });
+
+            // UKUPNO red na kraju
+            bodyHtml += '<tr style="background: linear-gradient(135deg, #0369a1 0%, #075985 100%); font-weight: 700;">';
+            bodyHtml += '<td style="color: white; font-weight: 700; text-align: center;"></td>';
+            bodyHtml += '<td style="color: white; font-weight: 700; position: sticky; left: 0; background: #0369a1; z-index: 5;">UKUPNO</td>';
+            sortimentiNazivi.forEach(sortiment => {
+                const suma = ukupnoSume[sortiment] || 0;
+                const display = suma > 0 ? suma.toFixed(2) : '-';
+                bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 700; color: white; text-shadow: 0 1px 1px rgba(0,0,0,0.3);">${display}</td>`;
+            });
+            bodyHtml += '</tr>';
+
             bodyElem.innerHTML = bodyHtml;
         }
 
@@ -4397,8 +4474,11 @@
             const rows = document.querySelectorAll('#kupci-godisnji-body tr');
 
             rows.forEach(row => {
-                const kupac = row.getAttribute('data-kupac') || '';
-                if (kupac.includes(searchInput)) {
+                const kupac = row.getAttribute('data-kupac');
+                // UKUPNO red nema data-kupac atribut - uvijek ga prikaži
+                if (kupac === null) {
+                    row.style.display = '';
+                } else if (kupac.includes(searchInput)) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
@@ -4411,8 +4491,11 @@
             const rows = document.querySelectorAll('#kupci-mjesecni-body tr');
 
             rows.forEach(row => {
-                const kupac = row.getAttribute('data-kupac') || '';
-                if (kupac.includes(searchInput)) {
+                const kupac = row.getAttribute('data-kupac');
+                // UKUPNO red nema data-kupac atribut - uvijek ga prikaži
+                if (kupac === null) {
+                    row.style.display = '';
+                } else if (kupac.includes(searchInput)) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
@@ -6127,7 +6210,7 @@
 
             // Build header with optimized styling
             let headerHtml = '<tr>';
-            headerHtml += '<th style="min-width: 80px; max-width: 90px; position: sticky; left: 0; background: #1e40af !important; color: white; z-index: 20; font-size: 12px; font-weight: 700; padding: 12px 8px; text-align: center; border-right: 3px solid #1e3a8a;">MJESEC</th>';
+            headerHtml += '<th style="min-width: 70px; max-width: 80px; position: sticky; left: 0; background: #1e40af !important; color: white; z-index: 20; font-size: 11px; font-weight: 700; padding: 10px 6px; text-align: center; border-right: 2px solid #1e3a8a;">MJESEC</th>';
 
             for (let i = 0; i < sortimenti.length; i++) {
                 const colClass = getColumnGroup(sortimenti[i]);
@@ -6149,7 +6232,7 @@
                     borderColor = '#b91c1c';
                 }
 
-                headerHtml += '<th class="sortiment-col ' + colClass + extraClass + '" style="background: ' + bgColor + ' !important; color: white !important; border: 1px solid ' + borderColor + '; min-width: 85px; max-width: 110px; padding: 12px 8px; font-size: 12px; font-weight: 700; text-align: center; white-space: normal !important; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.3; height: auto; overflow: visible; vertical-align: middle;">' + sortimenti[i] + '</th>';
+                headerHtml += '<th class="sortiment-col ' + colClass + extraClass + '" style="background: ' + bgColor + ' !important; color: white !important; border: 1px solid ' + borderColor + '; min-width: 70px; max-width: 90px; padding: 10px 6px; font-size: 11px; font-weight: 700; text-align: center; white-space: normal !important; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.2; height: auto; overflow: visible; vertical-align: middle; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">' + sortimenti[i] + '</th>';
             }
             headerHtml += '</tr>';
             headerElem.innerHTML = headerHtml;
@@ -6163,30 +6246,32 @@
                 const rowBg = m % 2 === 0 ? '#f9fafb' : 'white';
                 const rowHoverBg = m % 2 === 0 ? '#f3f4f6' : '#f9fafb';
                 bodyHtml += '<tr style="background: ' + rowBg + ';" onmouseover="this.style.background=\'' + rowHoverBg + '\'" onmouseout="this.style.background=\'' + rowBg + '\'">';
-                bodyHtml += '<td style="font-weight: 700; font-size: 13px; min-width: 80px; max-width: 90px; position: sticky; left: 0; background: ' + rowBg + '; z-index: 9; border-right: 3px solid #1e40af; text-align: center; padding: 10px 8px;">' + mjeseci[m] + '</td>';
+                bodyHtml += '<td style="font-weight: 700; font-size: 13px; min-width: 70px; max-width: 80px; position: sticky; left: 0; background: ' + rowBg + '; z-index: 9; border-right: 2px solid #3b82f6; text-align: center; padding: 10px 6px; color: #1f2937;">' + mjeseci[m] + '</td>';
 
                 for (let s = 0; s < sortimenti.length; s++) {
                     const sortiment = sortimenti[s];
                     const value = data.mjeseci[m][sortiment] || 0;
-                    const displayVal = value.toFixed(2); // Prikaži 0.00 umjesto "-"
+                    const displayVal = value.toFixed(2);
                     const colClass = getColumnGroup(sortiment);
                     let extraClass = '';
-                    let fontWeight = value > 0 ? 'font-weight: 600;' : 'font-weight: 400; color: #9ca3af;';
+                    let fontWeight = value > 0 ? 'font-weight: 600; color: #000000;' : 'font-weight: 400; color: #9ca3af;';
                     let cellBg = 'transparent';
 
                     if (sortiment === 'ČETINARI') {
                         extraClass = ' col-cetinari';
                         cellBg = value > 0 ? '#d1fae5' : 'transparent';
+                        if (value > 0) fontWeight = 'font-weight: 700; color: #065f46;';
                     } else if (sortiment === 'LIŠĆARI') {
                         extraClass = ' col-liscari';
-                        cellBg = value > 0 ? '#fed7aa' : 'transparent';
+                        cellBg = value > 0 ? '#fef3c7' : 'transparent';
+                        if (value > 0) fontWeight = 'font-weight: 700; color: #78350f;';
                     } else if (sortiment === 'SVEUKUPNO') {
                         extraClass = ' col-sveukupno';
-                        fontWeight = value > 0 ? 'font-weight: 700;' : 'font-weight: 400; color: #9ca3af;';
-                        cellBg = value > 0 ? '#fecaca' : 'transparent';
+                        fontWeight = value > 0 ? 'font-weight: 800; color: #991b1b;' : 'font-weight: 400; color: #9ca3af;';
+                        cellBg = value > 0 ? '#fee2e2' : 'transparent';
                     }
 
-                    bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="' + fontWeight + ' padding: 8px 10px; font-size: 12px; min-width: 85px; max-width: 110px; text-align: right; border: 1px solid #e5e7eb; background: ' + cellBg + ';">' + displayVal + '</td>';
+                    bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="' + fontWeight + ' padding: 8px 6px; font-size: 12px; min-width: 70px; max-width: 90px; text-align: right; border: 1px solid #e5e7eb; background: ' + cellBg + '; font-family: \'Roboto Mono\', ui-monospace, monospace; text-shadow: 0 0 1px rgba(255,255,255,0.8);">' + displayVal + '</td>';
 
                     // Add to totals
                     if (!totals[sortiment]) totals[sortiment] = 0;
@@ -6198,26 +6283,30 @@
 
             // UKUPNO row with improved styling
             bodyHtml += '<tr style="background: linear-gradient(to bottom, #e5e7eb, #d1d5db); font-weight: 700; border-top: 3px solid #374151; border-bottom: 2px solid #374151;">';
-            bodyHtml += '<td style="min-width: 80px; max-width: 90px; position: sticky; left: 0; background: #e5e7eb; z-index: 9; border-right: 3px solid #1e40af; text-align: center; font-size: 13px; padding: 12px 8px; color: #1f2937;">📊 UKUPNO</td>';
+            bodyHtml += '<td style="min-width: 70px; max-width: 80px; position: sticky; left: 0; background: #e5e7eb; z-index: 9; border-right: 2px solid #3b82f6; text-align: center; font-size: 12px; padding: 10px 6px; color: #1f2937;">📊 UKUPNO</td>';
             for (let s = 0; s < sortimenti.length; s++) {
                 const sortiment = sortimenti[s];
                 const total = totals[sortiment] || 0;
                 const colClass = getColumnGroup(sortiment);
                 let extraClass = '';
                 let cellBg = '#e5e7eb';
+                let textColor = '#000000';
 
                 if (sortiment === 'ČETINARI') {
                     extraClass = ' col-cetinari';
-                    cellBg = '#d1fae5';
+                    cellBg = '#a7f3d0';
+                    textColor = '#065f46';
                 } else if (sortiment === 'LIŠĆARI') {
                     extraClass = ' col-liscari';
-                    cellBg = '#fed7aa';
+                    cellBg = '#fde68a';
+                    textColor = '#78350f';
                 } else if (sortiment === 'SVEUKUPNO') {
                     extraClass = ' col-sveukupno';
-                    cellBg = '#fecaca';
+                    cellBg = '#fca5a5';
+                    textColor = '#7f1d1d';
                 }
 
-                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 800; font-size: 13px; padding: 12px 10px; background: ' + cellBg + '; min-width: 85px; max-width: 110px; text-align: right; border: 1px solid #9ca3af;">' + total.toFixed(2) + '</td>';
+                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 800; font-size: 12px; padding: 10px 6px; background: ' + cellBg + '; min-width: 70px; max-width: 90px; text-align: right; border: 1px solid #9ca3af; color: ' + textColor + '; font-family: \'Roboto Mono\', ui-monospace, monospace;">' + total.toFixed(2) + '</td>';
             }
             bodyHtml += '</tr>';
 
@@ -6227,7 +6316,7 @@
             const grandTotal = totals['SVEUKUPNO'] || 0;
 
             bodyHtml += '<tr style="background: #f3f4f6; font-style: italic; color: #374151; border-bottom: 3px solid #374151;">';
-            bodyHtml += '<td style="min-width: 80px; max-width: 90px; position: sticky; left: 0; background: #f3f4f6; z-index: 9; border-right: 3px solid #1e40af; text-align: center; font-size: 12px; padding: 10px 8px; font-weight: 600;">% UČEŠĆE</td>';
+            bodyHtml += '<td style="min-width: 70px; max-width: 80px; position: sticky; left: 0; background: #f3f4f6; z-index: 9; border-right: 2px solid #3b82f6; text-align: center; font-size: 11px; padding: 8px 6px; font-weight: 600; color: #374151;">% UČEŠĆE</td>';
 
             for (let s = 0; s < sortimenti.length; s++) {
                 const sortiment = sortimenti[s];
@@ -6269,7 +6358,7 @@
                     }
                 }
 
-                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 700; font-size: 12px; padding: 10px; background: ' + cellBg + '; min-width: 85px; max-width: 110px; text-align: right; border: 1px solid #d1d5db; font-style: italic;">' + percentage + '%</td>';
+                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 700; font-size: 11px; padding: 8px 6px; background: ' + cellBg + '; min-width: 70px; max-width: 90px; text-align: right; border: 1px solid #d1d5db; font-style: italic; color: #374151; font-family: \'Roboto Mono\', ui-monospace, monospace;">' + percentage + '%</td>';
             }
             bodyHtml += '</tr>';
 
