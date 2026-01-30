@@ -3094,18 +3094,24 @@ function handleStanjeZaliha(username, password) {
           return sortimenti;
         };
 
+        // Parsiraj sortimente
+        const projekatData = parseSortimenti(projekatRow);
+        const sjecaData = parseSortimenti(sjecaRow);
+        const otpremaData = parseSortimenti(otpremaRow);
+        const zalihaData = parseSortimenti(zalihaRow);
+
         const odjelData = {
           odjel: odjelNaziv,
           radiliste: radilisteNaziv,
-          projekat: parseSortimenti(projekatRow),
-          sjeca: parseSortimenti(sjecaRow),
-          otprema: parseSortimenti(otpremaRow),
-          zaliha: parseSortimenti(zalihaRow),
-          // Ukupne vrijednosti za sortiranje
-          ukupnoProjekat: parseFloat(projekatRow[21]) || 0,
-          ukupnoSjeca: parseFloat(sjecaRow[21]) || 0,
-          ukupnoOtprema: parseFloat(otpremaRow[21]) || 0,
-          ukupnoZaliha: parseFloat(zalihaRow[21]) || 0
+          projekat: projekatData,
+          sjeca: sjecaData,
+          otprema: otpremaData,
+          zaliha: zalihaData,
+          // Ukupne vrijednosti - čitaj iz parsiranih sortimenta (UKUPNO Č+L je zadnji sortiment)
+          ukupnoProjekat: projekatData["UKUPNO Č+L"] || 0,
+          ukupnoSjeca: sjecaData["UKUPNO Č+L"] || 0,
+          ukupnoOtprema: otpremaData["UKUPNO Č+L"] || 0,
+          ukupnoZaliha: zalihaData["UKUPNO Č+L"] || 0
         };
 
         odjeli.push(odjelData);
