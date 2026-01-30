@@ -3084,11 +3084,11 @@ function handleStanjeZaliha(username, password) {
         const otpremaRow = data[i + 5] || [];
         const zalihaRow = data[i + 6] || [];
 
-        // Parsiraj sortimente (počinju od kolone C = indeks 2)
+        // Parsiraj sortimente (počinju od kolone B = indeks 1)
         const parseSortimenti = (row) => {
           const sortimenti = {};
           for (let j = 0; j < 20; j++) {
-            const value = parseFloat(row[j + 2]) || 0;
+            const value = parseFloat(row[j + 1]) || 0;
             sortimenti[sortimentiHeader[j]] = value;
           }
           return sortimenti;
