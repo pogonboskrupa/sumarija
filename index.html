@@ -2426,7 +2426,8 @@
                         <h1>📦 Stanje Zaliha</h1>
                         <p>Pregled zaliha po odjelima - Projekat, Sječa, Otprema, Zaliha</p>
                     </div>
-                    <div class="page-header-right">
+                    <div class="page-header-right" style="display: flex; gap: 12px;">
+                        <button class="btn btn-secondary" onclick="refreshStanjeZaliha()" title="Osvježi podatke sa servera">🔄 Osvježi</button>
                         <button class="btn btn-primary" onclick="exportStanjeZalihaToCSV()">📥 Export CSV</button>
                     </div>
                 </div>

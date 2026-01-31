@@ -7389,6 +7389,30 @@
             }
         }
 
+        // Osvježi podatke za Stanje Zaliha (briše cache i ponovo učitava)
+        async function refreshStanjeZaliha() {
+            // Briši cache
+            localStorage.removeItem('cache_stanje_zaliha');
+
+            // Resetiraj podatke
+            stanjeZalihaData = [];
+            stanjeZalihaRadilista = [];
+            stanjeZalihaSortimenti = [];
+
+            // Prikaži loading
+            document.getElementById('stanje-zaliha-container').innerHTML = `
+                <div style="text-align: center; padding: 60px; color: #6b7280;">
+                    <div style="font-size: 32px; margin-bottom: 16px;">🔄</div>
+                    <p>Osvježavam podatke...</p>
+                </div>
+            `;
+
+            // Ponovo učitaj
+            await loadStanjeZaliha();
+
+            showSuccess('Osvježeno', 'Podaci su uspješno osvježeni sa servera.');
+        }
+
         function exportStanjeZalihaToCSV() {
             if (stanjeZalihaData.length === 0) {
                 showWarning('Nema podataka', 'Nema podataka za eksport.');
