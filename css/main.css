@@ -235,11 +235,11 @@
         .kupci-table th, .kupci-table td { padding: 12px 10px; border-bottom: 1px solid #e5e7eb; }
         .kupci-table th:first-child, .kupci-table td:first-child {
             position: sticky; left: 0; background: white; z-index: 2;
-            min-width: 140px; max-width: 200px; white-space: normal;
-            border-right: 2px solid #d1d5db; padding-right: 12px; font-weight: 600;
+            min-width: 70px; max-width: 100px; white-space: normal;
+            border-right: 2px solid #d1d5db; padding-right: 8px; font-weight: 600;
         }
         .kupci-table th:nth-child(2), .kupci-table td:nth-child(2) {
-            position: sticky; left: 140px; background: white; z-index: 2;
+            position: sticky; left: 70px; background: white; z-index: 2;
             min-width: 90px; border-right: 2px solid #d1d5db; font-weight: 500;
         }
         body.dark-mode .kupci-table th:first-child, body.dark-mode .kupci-table td:first-child,

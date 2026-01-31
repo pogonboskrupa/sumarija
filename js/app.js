@@ -1319,11 +1319,11 @@
                 // Admin korisnici - bez OPERATIVA tab-a (admin se loguje kao OPERATIVA tip ako želi vidjeti operativa podatke)
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
+                    <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
                     <button class="tab" onclick="switchTab('stanje-zaliha')">📦 Stanje Zaliha</button>
                     <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Sječa/otprema po mjesecima</button>
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz sječe</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz otpreme</button>
-                    <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                     <button class="tab notification-badge" onclick="switchTab('pending-unosi')">
                         📋 Dodani unosi
