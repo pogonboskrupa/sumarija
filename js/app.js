@@ -2106,6 +2106,221 @@
                 // Show content (in case it was hidden during initial load)
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('dashboard-content').classList.remove('hidden');
+
+                // Set current month in daily chart selector and load chart
+                const currentMonth = new Date().getMonth();
+                const monthSelect = document.getElementById('dashboard-daily-month-select');
+                if (monthSelect) {
+                    monthSelect.value = currentMonth;
+                    loadDashboardDailyChart();
+                }
+        }
+
+        // ========================================
+        // DASHBOARD DAILY CHART - Dnevni pregled sječe i otpreme
+        // ========================================
+        let dashboardDailyChart = null;
+
+        async function loadDashboardDailyChart() {
+            const monthSelect = document.getElementById('dashboard-daily-month-select');
+            const selectedMonth = parseInt(monthSelect.value);
+            const year = new Date().getFullYear();
+            const canvas = document.getElementById('dashboardDailyChart');
+
+            if (!canvas) return;
+
+            try {
+                // Show loading state on canvas
+                const ctx = canvas.getContext('2d');
+                if (dashboardDailyChart) {
+                    dashboardDailyChart.destroy();
+                }
+
+                // Ensure Chart.js is loaded
+                await window.loadChartJs();
+
+                // Fetch daily data for both sječa and otprema in parallel
+                const [sjecaResponse, otpremaResponse] = await Promise.all([
+                    fetch(buildApiUrl('primaci-daily', { year, month: selectedMonth })),
+                    fetch(buildApiUrl('otpremaci-daily', { year, month: selectedMonth }))
+                ]);
+
+                const sjecaData = await sjecaResponse.json();
+                const otpremaData = await otpremaResponse.json();
+
+                // Aggregate data by date
+                const dailySjeca = {};
+                const dailyOtprema = {};
+
+                // Process sječa data
+                if (sjecaData.data && Array.isArray(sjecaData.data)) {
+                    sjecaData.data.forEach(entry => {
+                        const day = entry.datum.split('.')[0]; // Get day from "dd.MM.yyyy"
+                        const total = Object.values(entry.sortimenti || {}).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+                        dailySjeca[day] = (dailySjeca[day] || 0) + total;
+                    });
+                }
+
+                // Process otprema data
+                if (otpremaData.data && Array.isArray(otpremaData.data)) {
+                    otpremaData.data.forEach(entry => {
+                        const day = entry.datum.split('.')[0]; // Get day from "dd.MM.yyyy"
+                        const total = Object.values(entry.sortimenti || {}).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+                        dailyOtprema[day] = (dailyOtprema[day] || 0) + total;
+                    });
+                }
+
+                // Get number of days in selected month
+                const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
+
+                // Create labels and data arrays
+                const labels = [];
+                const sjecaValues = [];
+                const otpremaValues = [];
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dayStr = d.toString().padStart(2, '0');
+                    labels.push(d);
+                    sjecaValues.push(dailySjeca[dayStr] || dailySjeca[d.toString()] || 0);
+                    otpremaValues.push(dailyOtprema[dayStr] || dailyOtprema[d.toString()] || 0);
+                }
+
+                // Month names for title
+                const monthNames = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni',
+                                   'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+
+                // Create smooth line chart
+                dashboardDailyChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Sječa (m³)',
+                            data: sjecaValues,
+                            borderColor: '#059669',
+                            backgroundColor: 'rgba(5, 150, 105, 0.15)',
+                            borderWidth: 3,
+                            tension: 0.4, // Smooth curve
+                            fill: true,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#059669',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointHoverRadius: 6
+                        }, {
+                            label: 'Otprema (m³)',
+                            data: otpremaValues,
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.15)',
+                            borderWidth: 3,
+                            tension: 0.4, // Smooth curve
+                            fill: true,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#2563eb',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    font: {
+                                        family: "'Inter', sans-serif",
+                                        size: 13,
+                                        weight: '600'
+                                    },
+                                    padding: 20,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle'
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleFont: {
+                                    family: "'Inter', sans-serif",
+                                    size: 14,
+                                    weight: '700'
+                                },
+                                bodyFont: {
+                                    family: "'Inter', sans-serif",
+                                    size: 13,
+                                    weight: '600'
+                                },
+                                padding: 12,
+                                cornerRadius: 8,
+                                callbacks: {
+                                    title: function(tooltipItems) {
+                                        return tooltipItems[0].label + '. ' + monthNames[selectedMonth];
+                                    },
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + ' m³';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Dan u mjesecu',
+                                    font: {
+                                        family: "'Inter', sans-serif",
+                                        size: 12,
+                                        weight: '600'
+                                    }
+                                },
+                                ticks: {
+                                    font: {
+                                        family: "'Inter', sans-serif",
+                                        size: 11,
+                                        weight: '600'
+                                    }
+                                },
+                                grid: {
+                                    display: false
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'm³',
+                                    font: {
+                                        family: "'Inter', sans-serif",
+                                        size: 12,
+                                        weight: '600'
+                                    }
+                                },
+                                ticks: {
+                                    font: {
+                                        family: "'Inter', sans-serif",
+                                        size: 11,
+                                        weight: '700'
+                                    },
+                                    callback: function(value) {
+                                        return value.toFixed(0);
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            }
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error loading daily chart:', error);
+            }
         }
 
         // ========================================
