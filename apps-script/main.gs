@@ -106,6 +106,12 @@ function doGet(e) {
     } else if (path === 'stanje-zaliha') {
       // 📦 STANJE ZALIHA - Čita podatke sa STANJE_ZALIHA sheeta
       return handleStanjeZaliha(e.parameter.username, e.parameter.password);
+    } else if (path === 'upload-image') {
+      // 📷 UPLOAD IMAGE - Upload slike na Google Drive (privremeno do 10h idućeg dana)
+      return handleUploadImage(e.parameter.username, e.parameter.password, e.parameter.type, e.parameter.imageData);
+    } else if (path === 'get-images') {
+      // 📷 GET IMAGES - Dohvati aktivne slike (za admina)
+      return handleGetImages(e.parameter.username, e.parameter.password);
     }
 
     Logger.log('Unknown path: ' + path);

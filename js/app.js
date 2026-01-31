@@ -7629,6 +7629,15 @@
             messageDiv.classList.add('hidden');
 
             try {
+                // Upload image first if exists
+                let imageUrl = null;
+                if (sjecaImageData) {
+                    submitBtn.textContent = 'Učitavam sliku...';
+                    imageUrl = await uploadImage(sjecaImageData, 'sjeca');
+                }
+
+                submitBtn.textContent = 'Dodavanje...';
+
                 // Collect form data
                 const formData = new URLSearchParams();
                 formData.append('path', 'add-sjeca');
@@ -7653,6 +7662,11 @@
                 formData.append('OGR.DUGI', document.getElementById('sjeca-OGR-DUGI').value);
                 formData.append('OGR.CIJEPANI', document.getElementById('sjeca-OGR-CIJEPANI').value);
                 formData.append('LIŠĆARI', document.getElementById('sjeca-LISCARI').value);
+
+                // Add image URL if uploaded
+                if (imageUrl) {
+                    formData.append('imageUrl', imageUrl);
+                }
 
                 // Send request (don't cache this)
                 const url = `${API_URL}?${formData.toString()}`;
@@ -7706,6 +7720,15 @@
             messageDiv.classList.add('hidden');
 
             try {
+                // Upload image first if exists
+                let imageUrl = null;
+                if (otpremaImageData) {
+                    submitBtn.textContent = 'Učitavam sliku...';
+                    imageUrl = await uploadImage(otpremaImageData, 'otprema');
+                }
+
+                submitBtn.textContent = 'Dodavanje...';
+
                 // Collect form data
                 const formData = new URLSearchParams();
                 formData.append('path', 'add-otprema');
@@ -7732,6 +7755,11 @@
                 formData.append('OGR.DUGI', document.getElementById('otprema-OGR-DUGI').value);
                 formData.append('OGR.CIJEPANI', document.getElementById('otprema-OGR-CIJEPANI').value);
                 formData.append('LIŠĆARI', document.getElementById('otprema-LISCARI').value);
+
+                // Add image URL if uploaded
+                if (imageUrl) {
+                    formData.append('imageUrl', imageUrl);
+                }
 
                 // Send request (don't cache this)
                 const url = `${API_URL}?${formData.toString()}`;
@@ -7787,6 +7815,9 @@
 
             // Recalculate totals
             calculateSjeca();
+
+            // Reset image
+            removeSjecaImage();
         }
 
         // Reset Otprema Form
@@ -7802,6 +7833,130 @@
 
             // Recalculate totals
             calculateOtprema();
+
+            // Reset image
+            removeOtpremaImage();
+        }
+
+        // ==================== IMAGE UPLOAD FUNCTIONS ====================
+
+        // Global variables for image data
+        let sjecaImageData = null;
+        let otpremaImageData = null;
+
+        // Preview Sjeca Image
+        function previewSjecaImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                    alert('Slika je prevelika! Maksimalna veličina je 5MB.');
+                    event.target.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    sjecaImageData = e.target.result;
+                    document.getElementById('sjeca-image-preview-img').src = sjecaImageData;
+                    document.getElementById('sjeca-image-preview').style.display = 'block';
+                    document.getElementById('sjeca-image-name').textContent = file.name;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Preview Otprema Image
+        function previewOtpremaImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                    alert('Slika je prevelika! Maksimalna veličina je 5MB.');
+                    event.target.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    otpremaImageData = e.target.result;
+                    document.getElementById('otprema-image-preview-img').src = otpremaImageData;
+                    document.getElementById('otprema-image-preview').style.display = 'block';
+                    document.getElementById('otprema-image-name').textContent = file.name;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Remove Sjeca Image
+        function removeSjecaImage() {
+            sjecaImageData = null;
+            const input = document.getElementById('sjeca-image-input');
+            if (input) input.value = '';
+            const preview = document.getElementById('sjeca-image-preview');
+            if (preview) preview.style.display = 'none';
+            const img = document.getElementById('sjeca-image-preview-img');
+            if (img) img.src = '';
+            const name = document.getElementById('sjeca-image-name');
+            if (name) name.textContent = '';
+        }
+
+        // Remove Otprema Image
+        function removeOtpremaImage() {
+            otpremaImageData = null;
+            const input = document.getElementById('otprema-image-input');
+            if (input) input.value = '';
+            const preview = document.getElementById('otprema-image-preview');
+            if (preview) preview.style.display = 'none';
+            const img = document.getElementById('otprema-image-preview-img');
+            if (img) img.src = '';
+            const name = document.getElementById('otprema-image-name');
+            if (name) name.textContent = '';
+        }
+
+        // Capture Sjeca Photo (using camera)
+        function captureSjecaPhoto() {
+            const input = document.getElementById('sjeca-image-input');
+            // Set capture attribute for mobile camera
+            input.setAttribute('capture', 'environment');
+            input.click();
+            // Remove capture attribute after to allow gallery selection too
+            setTimeout(() => input.removeAttribute('capture'), 100);
+        }
+
+        // Capture Otprema Photo (using camera)
+        function captureOtpremaPhoto() {
+            const input = document.getElementById('otprema-image-input');
+            // Set capture attribute for mobile camera
+            input.setAttribute('capture', 'environment');
+            input.click();
+            // Remove capture attribute after to allow gallery selection too
+            setTimeout(() => input.removeAttribute('capture'), 100);
+        }
+
+        // Upload Image to Server (returns image URL or null)
+        async function uploadImage(imageData, type) {
+            if (!imageData) return null;
+
+            try {
+                const formData = new URLSearchParams();
+                formData.append('path', 'upload-image');
+                formData.append('username', currentUser.username);
+                formData.append('password', currentPassword);
+                formData.append('type', type); // 'sjeca' or 'otprema'
+                formData.append('imageData', imageData);
+
+                const response = await fetch(`${API_URL}?${formData.toString()}`);
+                const result = await response.json();
+
+                if (result.success && result.imageUrl) {
+                    return result.imageUrl;
+                } else {
+                    console.error('Image upload failed:', result.error);
+                    return null;
+                }
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                return null;
+            }
         }
 
         // ==================== MY PENDING ENTRIES FUNCTIONS ====================

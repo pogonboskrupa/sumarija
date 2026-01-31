@@ -3145,4 +3145,252 @@ function handleStanjeZaliha(username, password) {
   }
 }
 
+// ========================================
+// IMAGE UPLOAD FUNCTIONS
+// Slike se uploadaju na Google Drive i automatski brišu u 10:00h idućeg dana
+// ========================================
+
+// ID foldera za privremene slike (kreirati folder na Drive-u i staviti ID ovdje)
+const IMAGES_FOLDER_ID = '1_TEMP_IMAGES_FOLDER_ID'; // TODO: Zamijeniti sa stvarnim ID-om
+
+/**
+ * Upload slike na Google Drive
+ * @param {string} username - Korisničko ime
+ * @param {string} password - Lozinka
+ * @param {string} type - Tip unosa ('sjeca' ili 'otprema')
+ * @param {string} imageData - Base64 encoded slika
+ * @returns {Object} - { success: true, imageUrl: '...' } ili { success: false, error: '...' }
+ */
+function handleUploadImage(username, password, type, imageData) {
+  Logger.log('=== HANDLE UPLOAD IMAGE ===');
+  Logger.log('Type: ' + type);
+
+  try {
+    // Verify user
+    const user = verifyUser(username, password);
+    if (!user) {
+      return createJsonResponse({ error: 'Neautorizovan pristup' }, false);
+    }
+
+    if (!imageData) {
+      return createJsonResponse({ error: 'Nema podataka o slici' }, false);
+    }
+
+    // Parse base64 data
+    const matches = imageData.match(/^data:(.+);base64,(.+)$/);
+    if (!matches) {
+      return createJsonResponse({ error: 'Neispravan format slike' }, false);
+    }
+
+    const mimeType = matches[1];
+    const base64Data = matches[2];
+    const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), mimeType);
+
+    // Generate filename
+    const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd_HH-mm-ss');
+    const extension = mimeType.split('/')[1] || 'jpg';
+    const filename = `${type}_${user.fullName}_${timestamp}.${extension}`;
+    blob.setName(filename);
+
+    // Get or create images folder
+    let folder;
+    try {
+      folder = DriveApp.getFolderById(IMAGES_FOLDER_ID);
+    } catch (e) {
+      // Folder doesn't exist, create it in root
+      folder = DriveApp.createFolder('Sumarija_Temp_Images');
+      Logger.log('Created new folder: ' + folder.getId());
+      // Note: Update IMAGES_FOLDER_ID with the new folder ID
+    }
+
+    // Create file
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+    // Store metadata in spreadsheet for tracking (for auto-deletion)
+    storeImageMetadata(file.getId(), filename, type, user.fullName);
+
+    // Get direct view URL
+    const imageUrl = 'https://drive.google.com/uc?export=view&id=' + file.getId();
+
+    Logger.log('Image uploaded: ' + imageUrl);
+
+    return createJsonResponse({
+      success: true,
+      imageUrl: imageUrl,
+      fileId: file.getId(),
+      filename: filename
+    }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleUploadImage: ' + error.toString());
+    return createJsonResponse({ error: 'Greška pri uploadu slike: ' + error.toString() }, false);
+  }
+}
+
+/**
+ * Store image metadata for tracking (for auto-deletion)
+ */
+function storeImageMetadata(fileId, filename, type, userName) {
+  try {
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    let sheet = ss.getSheetByName('TEMP_IMAGES');
+
+    // Create sheet if doesn't exist
+    if (!sheet) {
+      sheet = ss.insertSheet('TEMP_IMAGES');
+      sheet.appendRow(['FILE_ID', 'FILENAME', 'TYPE', 'USER', 'UPLOAD_TIME', 'DELETE_AFTER']);
+      sheet.getRange('1:1').setFontWeight('bold');
+    }
+
+    // Calculate deletion time (next day at 10:00 AM)
+    const now = new Date();
+    const deleteAfter = new Date(now);
+    deleteAfter.setDate(deleteAfter.getDate() + 1);
+    deleteAfter.setHours(10, 0, 0, 0);
+
+    // Add row
+    sheet.appendRow([
+      fileId,
+      filename,
+      type,
+      userName,
+      now,
+      deleteAfter
+    ]);
+
+    Logger.log('Image metadata stored: ' + fileId);
+
+  } catch (error) {
+    Logger.log('ERROR storing image metadata: ' + error.toString());
+  }
+}
+
+/**
+ * Get active images (for admin view)
+ */
+function handleGetImages(username, password) {
+  Logger.log('=== HANDLE GET IMAGES ===');
+
+  try {
+    // Verify user (admin only)
+    const user = verifyUser(username, password);
+    if (!user || user.type !== 'administrator') {
+      return createJsonResponse({ error: 'Samo administrator može vidjeti slike' }, false);
+    }
+
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const sheet = ss.getSheetByName('TEMP_IMAGES');
+
+    if (!sheet) {
+      return createJsonResponse({ images: [] }, true);
+    }
+
+    const data = sheet.getDataRange().getValues();
+    const images = [];
+    const now = new Date();
+
+    // Skip header row
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const deleteAfter = new Date(row[5]);
+
+      // Only include if not expired
+      if (deleteAfter > now) {
+        images.push({
+          fileId: row[0],
+          filename: row[1],
+          type: row[2],
+          user: row[3],
+          uploadTime: row[4],
+          deleteAfter: row[5],
+          imageUrl: 'https://drive.google.com/uc?export=view&id=' + row[0]
+        });
+      }
+    }
+
+    return createJsonResponse({ images: images }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleGetImages: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+/**
+ * Auto-delete expired images
+ * This function should be triggered daily at 10:00 AM
+ */
+function cleanupExpiredImages() {
+  Logger.log('=== CLEANUP EXPIRED IMAGES ===');
+
+  try {
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const sheet = ss.getSheetByName('TEMP_IMAGES');
+
+    if (!sheet) {
+      Logger.log('No TEMP_IMAGES sheet found');
+      return;
+    }
+
+    const data = sheet.getDataRange().getValues();
+    const now = new Date();
+    const rowsToDelete = [];
+
+    // Check each row (skip header)
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const fileId = row[0];
+      const deleteAfter = new Date(row[5]);
+
+      if (deleteAfter <= now) {
+        // Delete file from Drive
+        try {
+          const file = DriveApp.getFileById(fileId);
+          file.setTrashed(true);
+          Logger.log('Deleted file: ' + fileId);
+        } catch (e) {
+          Logger.log('File already deleted or not found: ' + fileId);
+        }
+
+        // Mark row for deletion
+        rowsToDelete.push(i + 1); // +1 because sheet rows are 1-indexed
+      }
+    }
+
+    // Delete rows from bottom to top (to avoid index shifting)
+    rowsToDelete.sort((a, b) => b - a);
+    for (const rowNum of rowsToDelete) {
+      sheet.deleteRow(rowNum);
+    }
+
+    Logger.log('Cleanup completed. Deleted ' + rowsToDelete.length + ' images.');
+
+  } catch (error) {
+    Logger.log('ERROR in cleanupExpiredImages: ' + error.toString());
+  }
+}
+
+/**
+ * Setup daily trigger for image cleanup (run once to setup)
+ */
+function setupImageCleanupTrigger() {
+  // Delete existing triggers for this function
+  const triggers = ScriptApp.getProjectTriggers();
+  for (const trigger of triggers) {
+    if (trigger.getHandlerFunction() === 'cleanupExpiredImages') {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  }
+
+  // Create new daily trigger at 10:00 AM
+  ScriptApp.newTrigger('cleanupExpiredImages')
+    .timeBased()
+    .atHour(10)
+    .everyDays(1)
+    .create();
+
+  Logger.log('Image cleanup trigger created (daily at 10:00 AM)');
+}
+
 // Helper funkcija za formatiranje datuma
