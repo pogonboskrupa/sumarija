@@ -6803,7 +6803,10 @@
             return weeks;
         }
 
-        // Get week number within month (sedmica počinje u ponedjeljak)
+        // Get week number within month (kalendarske sedmice - ponedjeljak do nedjelje)
+        // Sedmica 1: od 1. u mjesecu do prve nedjelje
+        // Naredne sedmice: od ponedjeljka do nedjelje
+        // Zadnja sedmica: od ponedjeljka do zadnjeg dana mjeseca
         function getWeekWithinMonth(date, year, month) {
             // Clone date to avoid mutation
             const d = new Date(date.getTime());
@@ -6811,50 +6814,65 @@
             // Get first day of month
             const firstDay = new Date(year, month, 1);
             const lastDay = new Date(year, month + 1, 0);
-
-            // Find first Monday of the month (or first day if it's not Monday)
-            let weekStart = new Date(firstDay);
             const firstDayOfWeek = firstDay.getDay(); // 0=Sunday, 1=Monday, ...
 
-            // If first day is not Monday, find next Monday (or use first day if it's after Monday)
-            if (firstDayOfWeek === 0) { // Sunday
-                weekStart.setDate(firstDay.getDate() + 1); // Move to Monday
-            } else if (firstDayOfWeek > 1) { // Tuesday-Saturday
-                weekStart.setDate(firstDay.getDate() + (8 - firstDayOfWeek)); // Move to next Monday
-            }
-            // If firstDayOfWeek === 1 (Monday), weekStart is already correct
-
-            // Calculate week number
-            let weekNumber = 1;
+            // Generate all calendar weeks for the month
+            const weeks = [];
             let currentWeekStart = new Date(firstDay);
+            let weekNumber = 1;
 
-            while (currentWeekStart <= d) {
-                let currentWeekEnd = new Date(currentWeekStart);
-                currentWeekEnd.setDate(currentWeekEnd.getDate() + 6); // Sunday
+            while (currentWeekStart <= lastDay && currentWeekStart.getMonth() === month) {
+                let currentWeekEnd;
+
+                if (weekNumber === 1) {
+                    // First week: from 1st day to first Sunday
+                    if (firstDayOfWeek === 0) {
+                        // If month starts on Sunday, week 1 is just that day
+                        currentWeekEnd = new Date(currentWeekStart);
+                    } else {
+                        // Calculate days until Sunday (0)
+                        const daysUntilSunday = (7 - firstDayOfWeek) % 7;
+                        currentWeekEnd = new Date(currentWeekStart);
+                        currentWeekEnd.setDate(currentWeekEnd.getDate() + daysUntilSunday);
+                    }
+                } else {
+                    // Subsequent weeks: from Monday to Sunday
+                    currentWeekEnd = new Date(currentWeekStart);
+                    currentWeekEnd.setDate(currentWeekEnd.getDate() + 6); // +6 days = Sunday
+                }
 
                 // Ensure week doesn't go beyond month
                 if (currentWeekEnd > lastDay) {
                     currentWeekEnd = new Date(lastDay);
                 }
 
-                // Check if date falls in this week
-                if (d >= currentWeekStart && d <= currentWeekEnd) {
-                    return {
-                        weekNumber: weekNumber,
-                        weekStart: formatDateDDMMYYYY(currentWeekStart),
-                        weekEnd: formatDateDDMMYYYY(currentWeekEnd)
-                    };
-                }
+                weeks.push({
+                    weekNumber: weekNumber,
+                    start: new Date(currentWeekStart),
+                    end: new Date(currentWeekEnd)
+                });
 
-                // Move to next week (always Monday)
-                currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+                // Move to next Monday
+                currentWeekStart = new Date(currentWeekEnd);
+                currentWeekStart.setDate(currentWeekStart.getDate() + 1);
 
-                // If next week is in next month, stop
+                // If we've gone beyond the month, stop
                 if (currentWeekStart.getMonth() !== month) {
                     break;
                 }
 
                 weekNumber++;
+            }
+
+            // Find which week the given date belongs to
+            for (const week of weeks) {
+                if (d >= week.start && d <= week.end) {
+                    return {
+                        weekNumber: week.weekNumber,
+                        weekStart: formatDateDDMMYYYY(week.start),
+                        weekEnd: formatDateDDMMYYYY(week.end)
+                    };
+                }
             }
 
             // Fallback: return week 1
