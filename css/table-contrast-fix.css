@@ -328,14 +328,27 @@ td[style*="color: #ef4444"] {
 /* UKUPNO/Total rows - MAXIMUM emphasis */
 table tbody tr:last-child td,
 table tfoot td,
-tr[style*="background: #047857"] td,
-tr[style*="background: #065f46"] td,
-tr[style*="background: #059669"] td,
 .ukupno-row td,
 .total-row td {
     font-family: 'Inter', -apple-system, sans-serif !important;
     font-weight: 900 !important;
     font-size: 15px !important;
+}
+
+/* CRITICAL: Dark background rows MUST have white text */
+/* Override the color: #0f172a from above */
+tr[style*="background: #047857"] td,
+tr[style*="background: #065f46"] td,
+tr[style*="background: #059669"] td,
+tr[style*="background: #0369a1"] td,
+tr[style*="background: #0891b2"] td,
+tr[style*="background: #0e7490"] td,
+tr[style*="background: linear-gradient"][style*="#047857"] td,
+tr[style*="background: linear-gradient"][style*="#065f46"] td,
+tr[style*="background: linear-gradient"][style*="#0369a1"] td {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+    font-weight: 700 !important;
 }
 
 /* White text on dark backgrounds */
@@ -441,6 +454,175 @@ th[style*="color: #ffffff"] {
 
 /* TABLE CONTRAST FIX - Loaded successfully */
 /* Svijetle žute boje zamijenjene tamnijim + TRUPCI fix za sve tabele + Typography improvements */
+
+/* ============================================ */
+/* 🎯 WHITE TEXT ON DARK BACKGROUNDS */
+/* Fix za tamne pozadine - bijeli tekst */
+/* ============================================ */
+
+/* Expert table header - force white text */
+.expert-table thead th,
+.expert-table thead th * {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Expert table footer - force white text (UKUPNO/REKAPITULACIJA rows) */
+.expert-table tfoot td,
+.expert-table tfoot td *,
+#otpremaci-po-kupcima-footer td,
+#otpremaci-po-kupcima-footer td * {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+    font-weight: 700 !important;
+}
+
+/* Kupci table UKUPNO row (last row in tbody) */
+.kupci-table tbody tr:last-child[style*="background: #047857"] td,
+.kupci-table tbody tr:last-child[style*="background: linear-gradient"] td,
+#kupci-godisnji-body tr:last-child td,
+#kupci-mjesecni-body tr:last-child td {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* All dark teal/green backgrounds - white text */
+*[style*="background: #0891b2"] td,
+*[style*="background: #0e7490"] td,
+*[style*="background: #047857"] td,
+*[style*="background: #065f46"] td,
+*[style*="background: #064e3b"] td,
+*[style*="background: #059669"] td,
+*[style*="background: linear-gradient"][style*="#047857"] td,
+*[style*="background: linear-gradient"][style*="#065f46"] td,
+*[style*="background: linear-gradient"][style*="#0891b2"] td,
+tr[style*="background: #047857"] td,
+tr[style*="background: #065f46"] td,
+tr[style*="background: #0891b2"] td,
+tr[style*="background: #0e7490"] td,
+tr[style*="background: linear-gradient"][style*="#047857"] td,
+tr[style*="background: linear-gradient"][style*="#065f46"] td {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Kupci table - totals row (dark green background) */
+.kupci-table .totals-row td,
+.kupci-table tfoot td,
+.kupci-table tbody tr:last-child[style*="background: #047857"] td,
+.kupci-table tbody tr:last-child[style*="background: linear-gradient"] td {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Monthly table dark rows */
+.monthly-table tfoot td,
+.monthly-table .ukupno-row td,
+.monthly-table tbody tr[style*="background: #047857"] td,
+.monthly-table tbody tr[style*="background: #065f46"] td {
+    color: white !important;
+}
+
+/* Dark blue backgrounds (#1e40af, #1d4ed8, #2563eb) - white text */
+*[style*="background: #1e40af"] td,
+*[style*="background: #1d4ed8"] td,
+*[style*="background: #2563eb"] td,
+tr[style*="background: #1e40af"] td,
+tr[style*="background: #1d4ed8"] td {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Red/Maroon backgrounds - white text */
+*[style*="background: #dc2626"] td,
+*[style*="background: #b91c1c"] td,
+*[style*="background: #991b1b"] td,
+tr[style*="background: #dc2626"] td,
+tr[style*="background: #b91c1c"] td {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Professional monthly table UKUPNO rows */
+.professional-monthly-table tfoot td,
+.professional-monthly-table tbody tr.ukupno-row td {
+    color: white !important;
+}
+
+/* Stanje zaliha dark backgrounds */
+.stanje-zaliha-card table tfoot td,
+.stanje-zaliha-card table tr[style*="background: #047857"] td,
+.stanje-zaliha-card table tr[style*="background: #065f46"] td {
+    color: white !important;
+}
+
+/* Generic: any element with dark background should have white text */
+th[style*="background: #047857"],
+th[style*="background: #065f46"],
+th[style*="background: #0891b2"],
+th[style*="background: #0e7490"],
+th[style*="background: #1e40af"],
+th[style*="background: #1d4ed8"],
+td[style*="background: #047857"],
+td[style*="background: #065f46"],
+td[style*="background: #0891b2"],
+td[style*="background: #0e7490"],
+td[style*="background: #1e40af"],
+td[style*="background: #1d4ed8"] {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Rows with inline dark background gradient - white text */
+tr[style*="linear-gradient"][style*="#047857"] td,
+tr[style*="linear-gradient"][style*="#065f46"] td,
+tr[style*="linear-gradient"][style*="#0891b2"] td,
+tr[style*="linear-gradient"][style*="#0e7490"] td,
+tr[style*="linear-gradient"][style*="#0369a1"] td {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 700 !important;
+}
+
+/* Force override for ANY td with dark color inline style */
+tr[style*="background: #047857"] td,
+tr[style*="background: #065f46"] td,
+tr[style*="background: #0369a1"] td,
+tr[style*="background: #0891b2"] td {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Header row with dark background - white text */
+tr[style*="background: #047857"] th,
+tr[style*="background: #065f46"] th,
+tr[style*="background: #0369a1"] th,
+tr[style*="background: #0891b2"] th {
+    color: white !important;
+}
+
+/* Kupci godisnji/mjesecni tables - ensure white text on dark rows */
+#kupci-godisnji-body tr[style*="background: #047857"] td,
+#kupci-godisnji-body tr[style*="background: linear-gradient"] td,
+#kupci-mjesecni-body tr[style*="background: #047857"] td,
+#kupci-mjesecni-body tr[style*="background: linear-gradient"] td,
+#kupci-godisnji-body tr:last-child td,
+#kupci-mjesecni-body tr:last-child td {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Worker table totals-row dark mode */
+body.dark-mode .worker-table .totals-row td {
+    color: white !important;
+}
+
+/* Override ALL table tds that have color: white inline style to ensure it stays white */
+td[style*="color: white"],
+th[style*="color: white"] {
+    color: white !important;
+}
 
 /* ============================================ */
 /* 📱 MJESEČNA SJEČA/OTPREMA - MOBILE READABILITY */
