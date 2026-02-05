@@ -1307,7 +1307,7 @@
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
                 // POSLOVOĐA vidi: STANJE ODJELA, ODJELI U REALIZACIJI, ZADNJIH 5 DANA, SUMA MJESECA, IZVJEŠTAJI
                 tabsMenu.innerHTML = `
-                    <button class="tab active" onclick="switchTab('poslovodja-stanje')">📊 Stanje Odjela</button>
+                    <button class="tab active" onclick="switchTab('poslovodja-stanje')">📊 Stanje zaliha</button>
                     <button class="tab" onclick="switchTab('poslovodja-realizacija')">🏗️ Odjeli u realizaciji</button>
                     <button class="tab" onclick="switchTab('poslovodja-zadnjih5')">📅 Zadnjih 5 Dana</button>
                     <button class="tab" onclick="switchTab('poslovodja-suma')">📈 Suma Mjeseca</button>
