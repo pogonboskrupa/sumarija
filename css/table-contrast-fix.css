@@ -1082,6 +1082,22 @@ th[style*="color: white"] {
     color: #ffffff !important;
 }
 
+.izvjestaj-week-table tfoot tr {
+    background: #059669 !important;
+}
+
+.izvjestaj-week-table tfoot td {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    padding: 14px 10px;
+    text-align: right;
+}
+
+.izvjestaj-week-table tfoot td:first-child {
+    background: #047857 !important;
+    text-align: left;
+}
+
 /* Sortiment column groups - subtle coloring */
 .izvjestaj-week-table .col-cetinari {
     background: rgba(16, 185, 129, 0.08) !important;
