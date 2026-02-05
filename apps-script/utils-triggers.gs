@@ -127,3 +127,47 @@ function setupStanjeOdjelaDailyTrigger() {
   // Odmah izvrši prvi put
   syncStanjeOdjela();
 }
+
+/**
+ * Briši slike starije od 5 dana iz IMAGES_FOLDER_ID
+ */
+function deleteOldImages() {
+  try {
+    const folder = DriveApp.getFolderById(IMAGES_FOLDER_ID);
+    const files = folder.getFiles();
+    const fiveDaysAgo = new Date();
+    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+
+    let deletedCount = 0;
+    while (files.hasNext()) {
+      const file = files.next();
+      if (file.getDateCreated() < fiveDaysAgo) {
+        file.setTrashed(true);
+        deletedCount++;
+      }
+    }
+    Logger.log('Obrisano ' + deletedCount + ' slika starijih od 5 dana');
+  } catch (error) {
+    Logger.log('ERROR deleteOldImages: ' + error.toString());
+  }
+}
+
+/**
+ * Setup dnevnog triggera za brisanje starih slika
+ */
+function setupDeleteOldImagesTrigger() {
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(trigger => {
+    if (trigger.getHandlerFunction() === 'deleteOldImages') {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  });
+
+  ScriptApp.newTrigger('deleteOldImages')
+    .timeBased()
+    .atHour(3)
+    .everyDays(1)
+    .create();
+
+  Logger.log('Kreiran trigger za deleteOldImages (izvršavanje u 3:00 AM)');
+}

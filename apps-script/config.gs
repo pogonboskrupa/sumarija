@@ -9,6 +9,7 @@ const KORISNICI_SPREADSHEET_ID = '1rpl0RiqsE6lrU9uDMTjf127By7b951rP3a5Chis9qwg';
 const INDEX_SPREADSHEET_ID = '1nPkSx2fCbtHGcwdq8rDo9A3dsSt9QpcF7f0JBCg1K1I';     // SUMARIJA_INDEX (zastarjelo)
 const BAZA_PODATAKA_ID = '1DIpllQlrMJwE9wpF1Gtwbnbh6ghYM5f1PimSK2gwVQQ';         // BAZA PODATAKA - glavni izvor
 const ODJELI_FOLDER_ID = '1NQ0s_F4j9iRDaZafexzP5Bwyv0NXfMMK';                      // Folder sa svim odjelima
+const IMAGES_FOLDER_ID = '1vtWCkjMoms4EO38zStZD9IADz859LmeI';                      // Folder za temp slike (auto-brisanje 5 dana)
 
 // Admin credentials
 const ADMIN_USERNAME = 'admin';
