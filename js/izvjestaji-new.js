@@ -372,76 +372,83 @@ function aggregateByOdjelIzvjestaji(data, sortimentiNazivi) {
     return result;
 }
 
-// Render izvjestaji table with SORTING BY SVEUKUPNO (DESC)
+// ============================================
+// 📅 MJESEČNI IZVJEŠTAJ - Nova čista verzija
+// Uniformne boje, pregledna tabela
+// ============================================
 function renderIzvjestajiTable(data, sortimentiNazivi, tablePrefix) {
-    console.log(`[RENDER ${tablePrefix}] Rendering table...`);
+    console.log(`[RENDER ${tablePrefix}] Rendering mjesečni table...`);
 
     const headerElem = document.getElementById(`izvjestaji-${tablePrefix}-header`);
     const bodyElem = document.getElementById(`izvjestaji-${tablePrefix}-body`);
 
     if (!data || data.length === 0) {
         headerElem.innerHTML = '';
-        bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za odabrani period</td></tr>';
+        bodyElem.innerHTML = `
+            <tr>
+                <td colspan="100" style="text-align: center; padding: 60px; color: #6b7280;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">📭</div>
+                    <div style="font-size: 16px;">Nema podataka za odabrani period</div>
+                </td>
+            </tr>`;
         return;
     }
 
-    // ✅ SORT BY SVEUKUPNO COLUMN (DESC - largest first)
+    // Sort po UKUPNO koloni (DESC - najveći prvi)
     data.sort((a, b) => {
-        const aSveukupno = parseFloat(a.sortimenti['UKUPNO Č+L']) || 0;
-        const bSveukupno = parseFloat(b.sortimenti['UKUPNO Č+L']) || 0;
-        return bSveukupno - aSveukupno; // DESC
+        const aTotal = parseFloat(a.sortimenti['UKUPNO Č+L']) || parseFloat(a.sortimenti['SVEUKUPNO']) || 0;
+        const bTotal = parseFloat(b.sortimenti['UKUPNO Č+L']) || parseFloat(b.sortimenti['SVEUKUPNO']) || 0;
+        return bTotal - aTotal;
     });
 
-    // Build header - uniformna tamno siva boja (CSS klasa radi ostalo)
-    let headerHtml = '<tr><th>Odjel</th>';
-    sortimentiNazivi.forEach(sortiment => {
-        let extraClass = '';
-        if (sortiment === 'UKUPNO Č+L' || sortiment === 'SVEUKUPNO') extraClass = 'col-sveukupno';
-        else if (sortiment === 'LIŠĆARI') extraClass = 'col-liscari';
-        else if (sortiment === 'Σ ČETINARI' || sortiment === 'ČETINARI') extraClass = 'col-cetinari';
+    // ========== HEADER ==========
+    // Uniformna tamno siva boja - sve kolone iste
+    let headerHtml = '<tr>';
+    headerHtml += '<th style="text-align: left;">Odjel</th>';
 
-        headerHtml += `<th class="${extraClass}">${sortiment}</th>`;
+    sortimentiNazivi.forEach(sortiment => {
+        headerHtml += `<th>${sortiment}</th>`;
     });
     headerHtml += '</tr>';
     headerElem.innerHTML = headerHtml;
 
-    // Build body
+    // ========== BODY ==========
+    // Čisti bijeli/sivi redovi bez šarenja
     let bodyHtml = '';
     const totals = {};
     sortimentiNazivi.forEach(s => totals[s] = 0);
 
-    data.forEach(row => {
+    data.forEach((row, index) => {
+        // Naizmjenični bijeli/sivi redovi - CSS :nth-child radi ovo automatski
         bodyHtml += '<tr>';
         bodyHtml += `<td>${row.odjel}</td>`;
 
         sortimentiNazivi.forEach(sortiment => {
             const value = parseFloat(row.sortimenti[sortiment]) || 0;
             totals[sortiment] += value;
+
+            // Prikaži vrijednost ili crticu ako je 0
             const displayValue = value > 0 ? value.toFixed(2) : '-';
-
-            let extraClass = '';
-            if (sortiment === 'UKUPNO Č+L' || sortiment === 'SVEUKUPNO') extraClass = 'col-sveukupno';
-            else if (sortiment === 'LIŠĆARI') extraClass = 'col-liscari';
-            else if (sortiment === 'Σ ČETINARI' || sortiment === 'ČETINARI') extraClass = 'col-cetinari';
-
-            bodyHtml += `<td class="${extraClass}">${displayValue}</td>`;
+            bodyHtml += `<td>${displayValue}</td>`;
         });
 
         bodyHtml += '</tr>';
     });
 
-    // UKUPNO row
+    // ========== UKUPNO ROW ==========
+    // Zelena pozadina za isticanje
     bodyHtml += '<tr class="totals-row">';
-    bodyHtml += '<td>📊 UKUPNO</td>';
+    bodyHtml += '<td>📊 UKUPNO MJESEC</td>';
+
     sortimentiNazivi.forEach(sortiment => {
-        const val = totals[sortiment];
-        const display = val > 0 ? val.toFixed(2) : '-';
+        const totalValue = totals[sortiment];
+        const display = totalValue > 0 ? totalValue.toFixed(2) : '-';
         bodyHtml += `<td>${display}</td>`;
     });
     bodyHtml += '</tr>';
 
     bodyElem.innerHTML = bodyHtml;
-    console.log(`[RENDER ${tablePrefix}] ✓ Table rendered (${data.length} rows)`);
+    console.log(`[RENDER ${tablePrefix}] ✓ Mjesečni table renderiran (${data.length} odjela)`);
 }
 
 // Filter table by odjel name
