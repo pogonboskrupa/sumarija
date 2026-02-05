@@ -836,9 +836,7 @@
                         { name: 'Otpremaci - Daily', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_daily_' + year + '_' + currentMonth, timeout: 180000 },
                         { name: 'Otpremaci - Po radilištu', url: buildApiUrl('primaci-by-radiliste', { year }), cacheKey: 'cache_otpremaci_radiliste_' + year, timeout: 180000 },
 
-                        // OSTALO meni - SVA 2 PODMENIJA (Kubikator nema API)
-                        { name: 'OSTALO - Dinamika', url: buildApiUrl('get_dinamika', { year }), cacheKey: 'cache_dinamika_' + year, timeout: 120000 },
-                        { name: 'OSTALO - Uporedba godina', url: buildApiUrl('get_dinamika', { year }), cacheKey: 'cache_uporedba_' + year, timeout: 120000 }
+                        // OSTALO meni - Kubikator nema API, ne treba preload
                     ];
 
                 } else if (userType === 'poslovođa' || userType === 'poslovodja') {
@@ -1692,32 +1690,10 @@
             }
         }
 
-        // Switch between Ostalo tabs
+        // Switch between Ostalo tabs - samo Kubikator
         function switchOstaloTab(view) {
-            // Update submenu buttons
-            const tabs = document.querySelectorAll('.tabs-submenu .tab-sub');
-            tabs.forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
-
-            // Hide all ostalo views
-            document.getElementById('ostalo-dinamika-view').classList.add('hidden');
-            document.getElementById('ostalo-uporedba-view').classList.add('hidden');
-            document.getElementById('ostalo-kubikator-view').classList.add('hidden');
-
-            // Show selected view
-            if (view === 'dinamika') {
-                document.getElementById('ostalo-dinamika-view').classList.remove('hidden');
-                if (!document.getElementById('dinamika-container').innerHTML) {
-                    loadDinamika();
-                }
-            } else if (view === 'uporedba-godina') {
-                document.getElementById('ostalo-uporedba-view').classList.remove('hidden');
-                if (!document.getElementById('uporedba-godina-container').innerHTML) {
-                    loadUporedbaGodina();
-                }
-            } else if (view === 'kubikator') {
-                document.getElementById('ostalo-kubikator-view').classList.remove('hidden');
-            }
+            // Kubikator je jedini view
+            document.getElementById('ostalo-kubikator-view').classList.remove('hidden');
         }
 
         // Switch between Stanje Odjela tabs (Pregled Stanja / Šuma Lager)

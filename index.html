@@ -2456,51 +2456,8 @@
                 <h2>⚙️ Ostalo</h2>
                 <p style="color: #6b7280; margin-bottom: 32px;">Dodatne funkcionalnosti i pregledi</p>
 
-                <!-- Tab submenu za Ostalo -->
-                <div class="tabs-submenu" style="margin-bottom: 24px;">
-                    <button class="tab-sub active" onclick="switchOstaloTab('dinamika')">📊 Dinamika</button>
-                    <button class="tab-sub" onclick="switchOstaloTab('uporedba-godina')">📈 Uporedba godina</button>
-                    <button class="tab-sub" onclick="switchOstaloTab('kubikator')">📐 Kubikator</button>
-                </div>
-
-                <!-- Dinamika View - Obrisano: duplikat forme, koristi se zasebna stranica dinamika-content -->
-                <div id="ostalo-dinamika-view" class="ostalo-view">
-                    <div class="chart-card" style="padding: 32px; text-align: center;">
-                        <h3 style="margin-bottom: 16px;">📊 Dinamika</h3>
-                        <p style="color: #6b7280; margin-bottom: 24px;">Za unos planiranih mjesečnih količina koristite glavnu stranicu Dinamika</p>
-                        <button class="btn btn-primary" onclick="switchTab('dinamika')" style="padding: 12px 24px; font-size: 16px;">
-                            ➡️ Idi na Dinamiku
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Uporedba godina View -->
-                <div id="ostalo-uporedba-view" class="ostalo-view hidden">
-                    <h3>📈 Uporedba godina - Tekuća vs Prošla</h3>
-                    <p style="color: #6b7280;">Usporedba sječe i otpreme po godinama</p>
-                    <div id="uporedba-godina-container">
-                        <div class="chart-card">
-                            <h4>Odaberi godine za usporedbu:</h4>
-                            <div style="display: flex; gap: 16px; margin-bottom: 24px;">
-                                <select id="uporedba-year1" onchange="loadUporedbaGodina()" style="padding: 8px 16px; border: 2px solid #d1d5db; border-radius: 6px; font-size: 14px;">
-                                    <option value="2026" selected>2026</option>
-                                    <option value="2025">2025</option>
-                                    <option value="2024">2024</option>
-                                </select>
-                                <span style="display: flex; align-items: center; font-weight: bold;">vs</span>
-                                <select id="uporedba-year2" onchange="loadUporedbaGodina()" style="padding: 8px 16px; border: 2px solid #d1d5db; border-radius: 6px; font-size: 14px;">
-                                    <option value="2026">2026</option>
-                                    <option value="2025" selected>2025</option>
-                                    <option value="2024">2024</option>
-                                </select>
-                            </div>
-                            <canvas id="uporedba-chart" style="max-height: 400px;"></canvas>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Kubikator View -->
-                <div id="ostalo-kubikator-view" class="ostalo-view hidden">
+                <div id="ostalo-kubikator-view" class="ostalo-view">
                     <div class="chart-card" style="padding: 32px; text-align: center;">
                         <h3 style="margin-bottom: 16px;">📐 Kubikator</h3>
                         <p style="color: #6b7280; margin-bottom: 24px;">Kalkulator zapremine oblog drveta - Huber metoda</p>
