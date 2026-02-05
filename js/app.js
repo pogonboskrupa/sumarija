@@ -49,7 +49,7 @@
             }
         })();
 
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzuAtZGH9UIoN8qCduv8QlgcaKFLZrTExAXnRczGVnXYdmG91BrLhE937_TuceYtJtU/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbz__4umdSqKd0o81TnDgdtHufd0FcaT-1E2oLq9pcHqfWPjVgIA9WZDz6-O4ta_fiUR/exec';
 
         // ========== PERFORMANCE METRICS ==========
         const perfMetrics = {
@@ -1319,11 +1319,11 @@
                 // Admin korisnici - bez OPERATIVA tab-a (admin se loguje kao OPERATIVA tip ako želi vidjeti operativa podatke)
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
-                    <button class="tab" onclick="switchTab('stanje-odjela-admin')">📦 Stanje odjela</button>
+                    <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
+                    <button class="tab" onclick="switchTab('stanje-zaliha')">📦 Stanje Zaliha</button>
                     <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Sječa/otprema po mjesecima</button>
                     <button class="tab" onclick="switchTab('primaci')">👷 Prikaz sječe</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 Prikaz otpreme</button>
-                    <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                     <button class="tab notification-badge" onclick="switchTab('pending-unosi')">
                         📋 Dodani unosi
@@ -1609,6 +1609,7 @@
             document.getElementById('uporedba-godina-content').classList.add('hidden');
             document.getElementById('kubikator-content').classList.add('hidden');
             document.getElementById('ostalo-content').classList.add('hidden');
+            document.getElementById('stanje-zaliha-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
@@ -1656,10 +1657,6 @@
                 loadPoslovodjaZadnjih5();
             } else if (tab === 'poslovodja-suma') {
                 loadPoslovodjaSuma();
-            } else if (tab === 'stanje-odjela-admin') {
-                // Prikaži Stanje odjela za admina sa submenu (Pregled Stanja + Šuma Lager)
-                document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
-                switchStanjeOdjelaTab('pregled');
             } else if (tab === 'izvjestaji') {
                 // IZVJEŠTAJI - Sedmični i Mjesečni prikaz po odjelima
                 document.getElementById('izvjestaji-content').classList.remove('hidden');
@@ -1690,6 +1687,8 @@
                 document.getElementById('ostalo-content').classList.remove('hidden');
                 // Load kubikator by default (najbitniji podmeni)
                 switchOstaloTab('kubikator');
+            } else if (tab === 'stanje-zaliha') {
+                loadStanjeZaliha();
             }
         }
 
@@ -2107,6 +2106,221 @@
                 // Show content (in case it was hidden during initial load)
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('dashboard-content').classList.remove('hidden');
+
+                // Set current month in daily chart selector and load chart
+                const currentMonth = new Date().getMonth();
+                const monthSelect = document.getElementById('dashboard-daily-month-select');
+                if (monthSelect) {
+                    monthSelect.value = currentMonth;
+                    loadDashboardDailyChart();
+                }
+        }
+
+        // ========================================
+        // DASHBOARD DAILY CHART - Dnevni pregled sječe i otpreme
+        // ========================================
+        let dashboardDailyChart = null;
+
+        async function loadDashboardDailyChart() {
+            const monthSelect = document.getElementById('dashboard-daily-month-select');
+            const selectedMonth = parseInt(monthSelect.value);
+            const year = new Date().getFullYear();
+            const canvas = document.getElementById('dashboardDailyChart');
+
+            if (!canvas) return;
+
+            try {
+                // Show loading state on canvas
+                const ctx = canvas.getContext('2d');
+                if (dashboardDailyChart) {
+                    dashboardDailyChart.destroy();
+                }
+
+                // Ensure Chart.js is loaded
+                await window.loadChartJs();
+
+                // Fetch daily data for both sječa and otprema in parallel
+                const [sjecaResponse, otpremaResponse] = await Promise.all([
+                    fetch(buildApiUrl('primaci-daily', { year, month: selectedMonth })),
+                    fetch(buildApiUrl('otpremaci-daily', { year, month: selectedMonth }))
+                ]);
+
+                const sjecaData = await sjecaResponse.json();
+                const otpremaData = await otpremaResponse.json();
+
+                // Aggregate data by date
+                const dailySjeca = {};
+                const dailyOtprema = {};
+
+                // Process sječa data
+                if (sjecaData.data && Array.isArray(sjecaData.data)) {
+                    sjecaData.data.forEach(entry => {
+                        const day = entry.datum.split('.')[0]; // Get day from "dd.MM.yyyy"
+                        const total = Object.values(entry.sortimenti || {}).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+                        dailySjeca[day] = (dailySjeca[day] || 0) + total;
+                    });
+                }
+
+                // Process otprema data
+                if (otpremaData.data && Array.isArray(otpremaData.data)) {
+                    otpremaData.data.forEach(entry => {
+                        const day = entry.datum.split('.')[0]; // Get day from "dd.MM.yyyy"
+                        const total = Object.values(entry.sortimenti || {}).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+                        dailyOtprema[day] = (dailyOtprema[day] || 0) + total;
+                    });
+                }
+
+                // Get number of days in selected month
+                const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
+
+                // Create labels and data arrays
+                const labels = [];
+                const sjecaValues = [];
+                const otpremaValues = [];
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dayStr = d.toString().padStart(2, '0');
+                    labels.push(d);
+                    sjecaValues.push(dailySjeca[dayStr] || dailySjeca[d.toString()] || 0);
+                    otpremaValues.push(dailyOtprema[dayStr] || dailyOtprema[d.toString()] || 0);
+                }
+
+                // Month names for title
+                const monthNames = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni',
+                                   'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+
+                // Create smooth line chart
+                dashboardDailyChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Sječa (m³)',
+                            data: sjecaValues,
+                            borderColor: '#059669',
+                            backgroundColor: 'rgba(5, 150, 105, 0.15)',
+                            borderWidth: 3,
+                            tension: 0.4, // Smooth curve
+                            fill: true,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#059669',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointHoverRadius: 6
+                        }, {
+                            label: 'Otprema (m³)',
+                            data: otpremaValues,
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.15)',
+                            borderWidth: 3,
+                            tension: 0.4, // Smooth curve
+                            fill: true,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#2563eb',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    font: {
+                                        family: "'Inter', sans-serif",
+                                        size: 13,
+                                        weight: '600'
+                                    },
+                                    padding: 20,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle'
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleFont: {
+                                    family: "'Inter', sans-serif",
+                                    size: 14,
+                                    weight: '700'
+                                },
+                                bodyFont: {
+                                    family: "'Inter', sans-serif",
+                                    size: 13,
+                                    weight: '600'
+                                },
+                                padding: 12,
+                                cornerRadius: 8,
+                                callbacks: {
+                                    title: function(tooltipItems) {
+                                        return tooltipItems[0].label + '. ' + monthNames[selectedMonth];
+                                    },
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + ' m³';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Dan u mjesecu',
+                                    font: {
+                                        family: "'Inter', sans-serif",
+                                        size: 12,
+                                        weight: '600'
+                                    }
+                                },
+                                ticks: {
+                                    font: {
+                                        family: "'Inter', sans-serif",
+                                        size: 11,
+                                        weight: '600'
+                                    }
+                                },
+                                grid: {
+                                    display: false
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'm³',
+                                    font: {
+                                        family: "'Inter', sans-serif",
+                                        size: 12,
+                                        weight: '600'
+                                    }
+                                },
+                                ticks: {
+                                    font: {
+                                        family: "'Inter', sans-serif",
+                                        size: 11,
+                                        weight: '700'
+                                    },
+                                    callback: function(value) {
+                                        return value.toFixed(0);
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            }
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error loading daily chart:', error);
+            }
         }
 
         // ========================================
@@ -2759,28 +2973,49 @@
                     throw new Error('Greška pri učitavanju otprema: ' + otpremeData.error);
                 }
 
-                // Filter primke by radilišta i datum (zadnjih 5 dana)
+                // Filter primke by poslovodja/radilišta i datum (zadnjih 5 dana)
+                const userFullName = currentUser.fullName.toUpperCase().trim();
                 const filteredPrimke = (primkeData.primke || []).filter(primka => {
-                    const primkaRadiliste = (primka.radiliste || '').toUpperCase().trim();
-                    const hasRadiliste = radilista.some(r => primkaRadiliste.includes(r.toUpperCase()));
-
                     // Parse datum
                     const primkaDatum = new Date(primka.datum);
                     const withinLast5Days = primkaDatum >= fiveDaysAgo;
+                    if (!withinLast5Days) return false;
 
-                    return hasRadiliste && withinLast5Days;
+                    // Prvo pokušaj filtrirati po poslovodja polju
+                    const primkaPoslovodja = (primka.poslovodja || '').toUpperCase().trim();
+                    if (primkaPoslovodja && primkaPoslovodja === userFullName) {
+                        return true;
+                    }
+
+                    // Fallback: filter po radilištima ako postoje u mapiranju
+                    if (radilista.length > 0) {
+                        const primkaRadiliste = (primka.radiliste || '').toUpperCase().trim();
+                        return radilista.some(r => primkaRadiliste.includes(r.toUpperCase()));
+                    }
+
+                    return false;
                 });
 
-                // Filter otpreme by radilišta i datum (zadnjih 5 dana)
+                // Filter otpreme by poslovodja/radilišta i datum (zadnjih 5 dana)
                 const filteredOtpreme = (otpremeData.otpreme || []).filter(otprema => {
-                    const otpremaRadiliste = (otprema.radiliste || '').toUpperCase().trim();
-                    const hasRadiliste = radilista.some(r => otpremaRadiliste.includes(r.toUpperCase()));
-
                     // Parse datum
                     const otpremaDatum = new Date(otprema.datum);
                     const withinLast5Days = otpremaDatum >= fiveDaysAgo;
+                    if (!withinLast5Days) return false;
 
-                    return hasRadiliste && withinLast5Days;
+                    // Prvo pokušaj filtrirati po poslovodja polju
+                    const otpremaPoslovodja = (otprema.poslovodja || '').toUpperCase().trim();
+                    if (otpremaPoslovodja && otpremaPoslovodja === userFullName) {
+                        return true;
+                    }
+
+                    // Fallback: filter po radilištima ako postoje u mapiranju
+                    if (radilista.length > 0) {
+                        const otpremaRadiliste = (otprema.radiliste || '').toUpperCase().trim();
+                        return radilista.some(r => otpremaRadiliste.includes(r.toUpperCase()));
+                    }
+
+                    return false;
                 });
 
                 // Sortiraj po datumu (najnoviji prvi)
@@ -2917,27 +3152,48 @@
                     throw new Error('Greška pri učitavanju otprema: ' + otpremeData.error);
                 }
 
-                // Filter by radilišta i tekući mjesec
+                // Filter by poslovodja/radilišta i tekući mjesec
+                const userFullName = currentUser.fullName.toUpperCase().trim();
                 const filteredPrimke = (primkeData.primke || []).filter(primka => {
-                    const primkaRadiliste = (primka.radiliste || '').toUpperCase().trim();
-                    const hasRadiliste = radilista.some(r => primkaRadiliste.includes(r.toUpperCase()));
-
                     // Parse datum
                     const primkaDatum = new Date(primka.datum);
                     const sameMonth = primkaDatum.getMonth() === currentMonth && primkaDatum.getFullYear() === currentYear;
+                    if (!sameMonth) return false;
 
-                    return hasRadiliste && sameMonth;
+                    // Prvo pokušaj filtrirati po poslovodja polju
+                    const primkaPoslovodja = (primka.poslovodja || '').toUpperCase().trim();
+                    if (primkaPoslovodja && primkaPoslovodja === userFullName) {
+                        return true;
+                    }
+
+                    // Fallback: filter po radilištima ako postoje u mapiranju
+                    if (radilista.length > 0) {
+                        const primkaRadiliste = (primka.radiliste || '').toUpperCase().trim();
+                        return radilista.some(r => primkaRadiliste.includes(r.toUpperCase()));
+                    }
+
+                    return false;
                 });
 
                 const filteredOtpreme = (otpremeData.otpreme || []).filter(otprema => {
-                    const otpremaRadiliste = (otprema.radiliste || '').toUpperCase().trim();
-                    const hasRadiliste = radilista.some(r => otpremaRadiliste.includes(r.toUpperCase()));
-
                     // Parse datum
                     const otpremaDatum = new Date(otprema.datum);
                     const sameMonth = otpremaDatum.getMonth() === currentMonth && otpremaDatum.getFullYear() === currentYear;
+                    if (!sameMonth) return false;
 
-                    return hasRadiliste && sameMonth;
+                    // Prvo pokušaj filtrirati po poslovodja polju
+                    const otpremaPoslovodja = (otprema.poslovodja || '').toUpperCase().trim();
+                    if (otpremaPoslovodja && otpremaPoslovodja === userFullName) {
+                        return true;
+                    }
+
+                    // Fallback: filter po radilištima ako postoje u mapiranju
+                    if (radilista.length > 0) {
+                        const otpremaRadiliste = (otprema.radiliste || '').toUpperCase().trim();
+                        return radilista.some(r => otpremaRadiliste.includes(r.toUpperCase()));
+                    }
+
+                    return false;
                 });
 
 
@@ -6180,7 +6436,7 @@
             }
         }
 
-        // Render monthly table (SJEČA or OTPREMA)
+        // Render monthly table (SJEČA or OTPREMA) - PRO LEVEL with Comfortaa font
         function renderMjesecnaTabela(data, tableId) {
 
             const headerElem = document.getElementById(tableId + '-header');
@@ -6193,87 +6449,121 @@
 
             if (!data || !data.sortimenti || data.sortimenti.length === 0) {
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280; font-family: Comfortaa, sans-serif;">Nema podataka</td></tr>';
                 return;
             }
 
             if (!data.mjeseci || !Array.isArray(data.mjeseci) || data.mjeseci.length !== 12) {
                 console.error('Invalid mjeseci data for table:', tableId, data.mjeseci);
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #dc2626;">Greška u formatu podataka</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #dc2626; font-family: Comfortaa, sans-serif;">Greška u formatu podataka</td></tr>';
                 return;
             }
 
-            const sortimenti = data.sortimenti.filter(s => s && s.trim() !== ''); // Filter out empty sortiment names
+            const sortimenti = data.sortimenti.filter(s => s && s.trim() !== '');
             const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
 
+            // Četinari sortimenti (plava grupa)
+            const cetinariSortimenti = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART'];
+            const cetinariTrupci = ['TRUPCI Č'];
+            const cetinariUkupno = ['Σ ČETINARI', 'ČETINARI'];
 
-            // Build header with optimized styling
-            let headerHtml = '<tr>';
-            headerHtml += '<th style="min-width: 70px; max-width: 80px; position: sticky; left: 0; background: #1e40af !important; color: white; z-index: 20; font-size: 11px; font-weight: 700; padding: 10px 6px; text-align: center; border-right: 2px solid #1e3a8a;">MJESEC</th>';
+            // Lišćari sortimenti (žuta/narandžasta grupa)
+            const liscariSortimenti = ['F/L L', 'I L', 'II L', 'III L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE'];
+            const liscariTrupci = ['TRUPCI L', 'TRUPCI'];
+            const liscariUkupno = ['LIŠĆARI'];
+
+            // Grand total
+            const grandTotal = ['SVEUKUPNO', 'UKUPNO Č+L'];
+
+            // Build header - PRO STYLE with Comfortaa
+            let headerHtml = '<tr style="background: #1e3a5f;">';
+            headerHtml += '<th style="font-family: Comfortaa, sans-serif; min-width: 80px; position: sticky; left: 0; background: #1e3a5f; color: white; z-index: 20; font-size: 13px; font-weight: 700; padding: 12px 8px; text-align: center; border: 1px solid #374151; border-right: 2px solid #60a5fa;">MJESEC</th>';
 
             for (let i = 0; i < sortimenti.length; i++) {
-                const colClass = getColumnGroup(sortimenti[i]);
-                let extraClass = '';
-                let bgColor = '#3b82f6'; // Default blue
-                let borderColor = '#2563eb';
+                const s = sortimenti[i];
+                let bgColor = '#1e3a5f';
+                let borderColor = '#374151';
 
-                if (sortimenti[i] === 'ČETINARI') {
-                    extraClass = ' col-cetinari';
-                    bgColor = '#059669'; // Green for četinari aggregate
-                    borderColor = '#047857';
-                } else if (sortimenti[i] === 'LIŠĆARI') {
-                    extraClass = ' col-liscari';
-                    bgColor = '#d97706'; // Orange for lišćari aggregate
-                    borderColor = '#b45309';
-                } else if (sortimenti[i] === 'SVEUKUPNO') {
-                    extraClass = ' col-sveukupno';
-                    bgColor = '#dc2626'; // Red for total
-                    borderColor = '#b91c1c';
+                // Header colors by group
+                if (cetinariSortimenti.includes(s)) {
+                    bgColor = '#1e40af'; // Plava
+                } else if (cetinariTrupci.includes(s)) {
+                    bgColor = '#1e3a8a'; // Tamnija plava za TRUPCI
+                } else if (cetinariUkupno.includes(s)) {
+                    bgColor = '#172554'; // Najtamnija plava za UKUPNO ČETINARI
+                    borderColor = '#1e3a8a';
+                } else if (liscariSortimenti.includes(s)) {
+                    bgColor = '#b45309'; // Narandžasta
+                } else if (liscariTrupci.includes(s)) {
+                    bgColor = '#92400e'; // Tamnija narandžasta za TRUPCI
+                } else if (liscariUkupno.includes(s)) {
+                    bgColor = '#78350f'; // Najtamnija za UKUPNO LIŠĆARI
+                    borderColor = '#92400e';
+                } else if (grandTotal.includes(s)) {
+                    bgColor = '#7f1d1d'; // Crvena za SVEUKUPNO
+                    borderColor = '#991b1b';
                 }
 
-                headerHtml += '<th class="sortiment-col ' + colClass + extraClass + '" style="background: ' + bgColor + ' !important; color: white !important; border: 1px solid ' + borderColor + '; min-width: 70px; max-width: 90px; padding: 10px 6px; font-size: 11px; font-weight: 700; text-align: center; white-space: normal !important; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.2; height: auto; overflow: visible; vertical-align: middle; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">' + sortimenti[i] + '</th>';
+                headerHtml += `<th style="font-family: Comfortaa, sans-serif; background: ${bgColor}; color: white; border: 1px solid ${borderColor}; min-width: 65px; padding: 12px 6px; font-size: 12px; font-weight: 600; text-align: center; white-space: nowrap;">${s}</th>`;
             }
             headerHtml += '</tr>';
             headerElem.innerHTML = headerHtml;
 
             // Build body - 12 months + UKUPNO + %UDIO
             let bodyHtml = '';
-            const totals = {}; // Total per sortiment
+            const totals = {};
 
-            // Month rows with improved styling
+            // Month rows - PRO STYLE with Comfortaa font and group colors
             for (let m = 0; m < 12; m++) {
-                const rowBg = m % 2 === 0 ? '#f9fafb' : 'white';
-                const rowHoverBg = m % 2 === 0 ? '#f3f4f6' : '#f9fafb';
-                bodyHtml += '<tr style="background: ' + rowBg + ';" onmouseover="this.style.background=\'' + rowHoverBg + '\'" onmouseout="this.style.background=\'' + rowBg + '\'">';
-                bodyHtml += '<td style="font-weight: 700; font-size: 13px; min-width: 70px; max-width: 80px; position: sticky; left: 0; background: ' + rowBg + '; z-index: 9; border-right: 2px solid #3b82f6; text-align: center; padding: 10px 6px; color: #1f2937;">' + mjeseci[m] + '</td>';
+                const rowBg = m % 2 === 0 ? 'white' : '#f8fafc';
+                bodyHtml += `<tr style="background: ${rowBg};">`;
+                bodyHtml += `<td style="font-family: Comfortaa, sans-serif; font-weight: 700; font-size: 14px; min-width: 80px; position: sticky; left: 0; background: ${rowBg}; z-index: 9; border: 1px solid #d1d5db; border-right: 2px solid #60a5fa; text-align: center; padding: 10px 8px; color: #1e3a5f;">${mjeseci[m]}</td>`;
 
                 for (let s = 0; s < sortimenti.length; s++) {
                     const sortiment = sortimenti[s];
                     const value = data.mjeseci[m][sortiment] || 0;
                     const displayVal = value.toFixed(2);
-                    const colClass = getColumnGroup(sortiment);
-                    let extraClass = '';
-                    let fontWeight = value > 0 ? 'font-weight: 600; color: #000000;' : 'font-weight: 400; color: #9ca3af;';
-                    let cellBg = 'transparent';
 
-                    if (sortiment === 'ČETINARI') {
-                        extraClass = ' col-cetinari';
-                        cellBg = value > 0 ? '#d1fae5' : 'transparent';
-                        if (value > 0) fontWeight = 'font-weight: 700; color: #065f46;';
-                    } else if (sortiment === 'LIŠĆARI') {
-                        extraClass = ' col-liscari';
-                        cellBg = value > 0 ? '#fef3c7' : 'transparent';
-                        if (value > 0) fontWeight = 'font-weight: 700; color: #78350f;';
-                    } else if (sortiment === 'SVEUKUPNO') {
-                        extraClass = ' col-sveukupno';
-                        fontWeight = value > 0 ? 'font-weight: 800; color: #991b1b;' : 'font-weight: 400; color: #9ca3af;';
-                        cellBg = value > 0 ? '#fee2e2' : 'transparent';
+                    // Base style with Comfortaa font
+                    let cellStyle = 'font-family: Comfortaa, sans-serif; padding: 10px 6px; font-size: 13px; min-width: 65px; text-align: right; border: 1px solid #d1d5db;';
+
+                    // Color grouping
+                    if (cetinariSortimenti.includes(sortiment)) {
+                        // Četinari - svijetlo plava
+                        cellStyle += ' background: #dbeafe;';
+                        cellStyle += value > 0 ? ' color: #1e40af; font-weight: 600;' : ' color: #93c5fd; font-weight: 400;';
+                    } else if (cetinariTrupci.includes(sortiment)) {
+                        // Četinari TRUPCI - tamnija plava
+                        cellStyle += ' background: #bfdbfe;';
+                        cellStyle += value > 0 ? ' color: #1e3a8a; font-weight: 700;' : ' color: #60a5fa; font-weight: 400;';
+                    } else if (cetinariUkupno.includes(sortiment)) {
+                        // Četinari UKUPNO - najtamnija plava
+                        cellStyle += ' background: #93c5fd;';
+                        cellStyle += value > 0 ? ' color: #172554; font-weight: 800;' : ' color: #3b82f6; font-weight: 400;';
+                    } else if (liscariSortimenti.includes(sortiment)) {
+                        // Lišćari - svijetlo žuta/narandžasta
+                        cellStyle += ' background: #fef3c7;';
+                        cellStyle += value > 0 ? ' color: #92400e; font-weight: 600;' : ' color: #fcd34d; font-weight: 400;';
+                    } else if (liscariTrupci.includes(sortiment)) {
+                        // Lišćari TRUPCI - tamnija narandžasta
+                        cellStyle += ' background: #fde68a;';
+                        cellStyle += value > 0 ? ' color: #78350f; font-weight: 700;' : ' color: #f59e0b; font-weight: 400;';
+                    } else if (liscariUkupno.includes(sortiment)) {
+                        // Lišćari UKUPNO - najtamnija narandžasta
+                        cellStyle += ' background: #fcd34d;';
+                        cellStyle += value > 0 ? ' color: #78350f; font-weight: 800;' : ' color: #b45309; font-weight: 400;';
+                    } else if (grandTotal.includes(sortiment)) {
+                        // SVEUKUPNO - crvena
+                        cellStyle += ' background: #fecaca;';
+                        cellStyle += value > 0 ? ' color: #7f1d1d; font-weight: 800;' : ' color: #f87171; font-weight: 400;';
+                    } else {
+                        // Default
+                        cellStyle += value > 0 ? ' color: #1f2937; font-weight: 500;' : ' color: #9ca3af; font-weight: 400;';
                     }
 
-                    bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="' + fontWeight + ' padding: 8px 6px; font-size: 12px; min-width: 70px; max-width: 90px; text-align: right; border: 1px solid #e5e7eb; background: ' + cellBg + '; font-family: \'Roboto Mono\', ui-monospace, monospace; text-shadow: 0 0 1px rgba(255,255,255,0.8);">' + displayVal + '</td>';
+                    bodyHtml += `<td style="${cellStyle}">${displayVal}</td>`;
 
-                    // Add to totals
                     if (!totals[sortiment]) totals[sortiment] = 0;
                     totals[sortiment] += value;
                 }
@@ -6281,84 +6571,76 @@
                 bodyHtml += '</tr>';
             }
 
-            // UKUPNO row with improved styling
-            bodyHtml += '<tr style="background: linear-gradient(to bottom, #e5e7eb, #d1d5db); font-weight: 700; border-top: 3px solid #374151; border-bottom: 2px solid #374151;">';
-            bodyHtml += '<td style="min-width: 70px; max-width: 80px; position: sticky; left: 0; background: #e5e7eb; z-index: 9; border-right: 2px solid #3b82f6; text-align: center; font-size: 12px; padding: 10px 6px; color: #1f2937;">📊 UKUPNO</td>';
+            // UKUPNO row - PRO STYLE with Comfortaa
+            bodyHtml += '<tr style="background: #1e3a5f;">';
+            bodyHtml += '<td style="font-family: Comfortaa, sans-serif; min-width: 80px; position: sticky; left: 0; background: #1e3a5f; color: white; z-index: 9; border: 1px solid #374151; border-right: 2px solid #60a5fa; text-align: center; font-size: 13px; font-weight: 700; padding: 12px 8px;">📊 UKUPNO</td>';
             for (let s = 0; s < sortimenti.length; s++) {
                 const sortiment = sortimenti[s];
                 const total = totals[sortiment] || 0;
-                const colClass = getColumnGroup(sortiment);
-                let extraClass = '';
                 let cellBg = '#e5e7eb';
-                let textColor = '#000000';
+                let textColor = '#1f2937';
 
-                if (sortiment === 'ČETINARI') {
-                    extraClass = ' col-cetinari';
-                    cellBg = '#a7f3d0';
-                    textColor = '#065f46';
-                } else if (sortiment === 'LIŠĆARI') {
-                    extraClass = ' col-liscari';
-                    cellBg = '#fde68a';
+                // Color grouping for totals
+                if (cetinariSortimenti.includes(sortiment)) {
+                    cellBg = '#93c5fd';
+                    textColor = '#1e3a8a';
+                } else if (cetinariTrupci.includes(sortiment)) {
+                    cellBg = '#60a5fa';
+                    textColor = '#172554';
+                } else if (cetinariUkupno.includes(sortiment)) {
+                    cellBg = '#3b82f6';
+                    textColor = '#ffffff';
+                } else if (liscariSortimenti.includes(sortiment)) {
+                    cellBg = '#fcd34d';
                     textColor = '#78350f';
-                } else if (sortiment === 'SVEUKUPNO') {
-                    extraClass = ' col-sveukupno';
-                    cellBg = '#fca5a5';
-                    textColor = '#7f1d1d';
+                } else if (liscariTrupci.includes(sortiment)) {
+                    cellBg = '#f59e0b';
+                    textColor = '#78350f';
+                } else if (liscariUkupno.includes(sortiment)) {
+                    cellBg = '#d97706';
+                    textColor = '#ffffff';
+                } else if (grandTotal.includes(sortiment)) {
+                    cellBg = '#ef4444';
+                    textColor = '#ffffff';
                 }
 
-                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 800; font-size: 12px; padding: 10px 6px; background: ' + cellBg + '; min-width: 70px; max-width: 90px; text-align: right; border: 1px solid #9ca3af; color: ' + textColor + '; font-family: \'Roboto Mono\', ui-monospace, monospace;">' + total.toFixed(2) + '</td>';
+                bodyHtml += `<td style="font-family: Comfortaa, sans-serif; font-weight: 800; font-size: 14px; padding: 12px 6px; background: ${cellBg}; min-width: 65px; text-align: right; border: 1px solid #9ca3af; color: ${textColor};">${total.toFixed(2)}</td>`;
             }
             bodyHtml += '</tr>';
 
-            // ✅ NEW: Procentualno učešće (group-based percentages)
-            const cetinariTotal = totals['ČETINARI'] || 0;
-            const liscariTotal = totals['LIŠĆARI'] || 0;
-            const grandTotal = totals['SVEUKUPNO'] || 0;
+            // % UČEŠĆE row - PRO STYLE with Comfortaa
+            const cetinariTotalPct = totals['Σ ČETINARI'] || totals['ČETINARI'] || 0;
+            const liscariTotalPct = totals['LIŠĆARI'] || 0;
+            const grandTotalPct = totals['SVEUKUPNO'] || totals['UKUPNO Č+L'] || 0;
 
-            bodyHtml += '<tr style="background: #f3f4f6; font-style: italic; color: #374151; border-bottom: 3px solid #374151;">';
-            bodyHtml += '<td style="min-width: 70px; max-width: 80px; position: sticky; left: 0; background: #f3f4f6; z-index: 9; border-right: 2px solid #3b82f6; text-align: center; font-size: 11px; padding: 8px 6px; font-weight: 600; color: #374151;">% UČEŠĆE</td>';
+            bodyHtml += '<tr style="background: #f1f5f9;">';
+            bodyHtml += '<td style="font-family: Comfortaa, sans-serif; min-width: 80px; position: sticky; left: 0; background: #f1f5f9; z-index: 9; border: 1px solid #d1d5db; border-right: 2px solid #60a5fa; text-align: center; font-size: 13px; font-weight: 700; padding: 10px 8px; color: #475569; font-style: italic;">% UČEŠĆE</td>';
 
             for (let s = 0; s < sortimenti.length; s++) {
                 const sortiment = sortimenti[s];
                 const total = totals[sortiment] || 0;
-                const colClass = getColumnGroup(sortiment);
-                let extraClass = '';
-                let cellBg = '#f3f4f6';
+                let cellBg = '#f1f5f9';
                 let percentage = '0.0';
 
-                // ✅ Determine percentage based on group
-                if (sortiment === 'ČETINARI') {
-                    // ČETINARI as % of SVEUKUPNO
-                    percentage = grandTotal > 0 ? ((total / grandTotal) * 100).toFixed(1) : '0.0';
-                    extraClass = ' col-cetinari';
-                    cellBg = '#ecfdf5';
-                } else if (sortiment === 'LIŠĆARI') {
-                    // LIŠĆARI as % of SVEUKUPNO
-                    percentage = grandTotal > 0 ? ((total / grandTotal) * 100).toFixed(1) : '0.0';
-                    extraClass = ' col-liscari';
-                    cellBg = '#fff7ed';
-                } else if (sortiment === 'SVEUKUPNO') {
-                    // SVEUKUPNO is always 100%
+                // Calculate percentage based on group
+                if (cetinariSortimenti.includes(sortiment) || cetinariTrupci.includes(sortiment)) {
+                    percentage = cetinariTotalPct > 0 ? ((total / cetinariTotalPct) * 100).toFixed(1) : '0.0';
+                    cellBg = '#dbeafe';
+                } else if (cetinariUkupno.includes(sortiment)) {
+                    percentage = grandTotalPct > 0 ? ((total / grandTotalPct) * 100).toFixed(1) : '0.0';
+                    cellBg = '#93c5fd';
+                } else if (liscariSortimenti.includes(sortiment) || liscariTrupci.includes(sortiment)) {
+                    percentage = liscariTotalPct > 0 ? ((total / liscariTotalPct) * 100).toFixed(1) : '0.0';
+                    cellBg = '#fef3c7';
+                } else if (liscariUkupno.includes(sortiment)) {
+                    percentage = grandTotalPct > 0 ? ((total / grandTotalPct) * 100).toFixed(1) : '0.0';
+                    cellBg = '#fcd34d';
+                } else if (grandTotal.includes(sortiment)) {
                     percentage = '100.0';
-                    extraClass = ' col-sveukupno';
-                    cellBg = '#fef2f2';
-                } else {
-                    // Individual sortimenti - determine if četinari or lišćari group
-                    const cetinariSortimenti = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'CEL.DUGA', 'CEL.CIJEPANA', 'TRUPCI Č'];
-                    const liscariSortimenti = ['F/L L', 'I L', 'II L', 'III L', 'OGR.DUGI', 'OGR.CIJEPANI', 'TRUPCI', 'TRUPCI L'];
-
-                    if (cetinariSortimenti.includes(sortiment)) {
-                        // Četinari sortiment: % of ČETINARI total
-                        percentage = cetinariTotal > 0 ? ((total / cetinariTotal) * 100).toFixed(1) : '0.0';
-                        cellBg = '#ecfdf5';
-                    } else if (liscariSortimenti.includes(sortiment)) {
-                        // Lišćari sortiment: % of LIŠĆARI total
-                        percentage = liscariTotal > 0 ? ((total / liscariTotal) * 100).toFixed(1) : '0.0';
-                        cellBg = '#fff7ed';
-                    }
+                    cellBg = '#fecaca';
                 }
 
-                bodyHtml += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 700; font-size: 11px; padding: 8px 6px; background: ' + cellBg + '; min-width: 70px; max-width: 90px; text-align: right; border: 1px solid #d1d5db; font-style: italic; color: #374151; font-family: \'Roboto Mono\', ui-monospace, monospace;">' + percentage + '%</td>';
+                bodyHtml += `<td style="font-family: Comfortaa, sans-serif; font-weight: 600; font-size: 13px; padding: 10px 6px; background: ${cellBg}; min-width: 65px; text-align: right; border: 1px solid #d1d5db; color: #64748b; font-style: italic;">${percentage}%</td>`;
             }
             bodyHtml += '</tr>';
 
@@ -6521,7 +6803,10 @@
             return weeks;
         }
 
-        // Get week number within month (sedmica počinje u ponedjeljak)
+        // Get week number within month (kalendarske sedmice - ponedjeljak do nedjelje)
+        // Sedmica 1: od 1. u mjesecu do prve nedjelje
+        // Naredne sedmice: od ponedjeljka do nedjelje
+        // Zadnja sedmica: od ponedjeljka do zadnjeg dana mjeseca
         function getWeekWithinMonth(date, year, month) {
             // Clone date to avoid mutation
             const d = new Date(date.getTime());
@@ -6529,50 +6814,65 @@
             // Get first day of month
             const firstDay = new Date(year, month, 1);
             const lastDay = new Date(year, month + 1, 0);
-
-            // Find first Monday of the month (or first day if it's not Monday)
-            let weekStart = new Date(firstDay);
             const firstDayOfWeek = firstDay.getDay(); // 0=Sunday, 1=Monday, ...
 
-            // If first day is not Monday, find next Monday (or use first day if it's after Monday)
-            if (firstDayOfWeek === 0) { // Sunday
-                weekStart.setDate(firstDay.getDate() + 1); // Move to Monday
-            } else if (firstDayOfWeek > 1) { // Tuesday-Saturday
-                weekStart.setDate(firstDay.getDate() + (8 - firstDayOfWeek)); // Move to next Monday
-            }
-            // If firstDayOfWeek === 1 (Monday), weekStart is already correct
-
-            // Calculate week number
-            let weekNumber = 1;
+            // Generate all calendar weeks for the month
+            const weeks = [];
             let currentWeekStart = new Date(firstDay);
+            let weekNumber = 1;
 
-            while (currentWeekStart <= d) {
-                let currentWeekEnd = new Date(currentWeekStart);
-                currentWeekEnd.setDate(currentWeekEnd.getDate() + 6); // Sunday
+            while (currentWeekStart <= lastDay && currentWeekStart.getMonth() === month) {
+                let currentWeekEnd;
+
+                if (weekNumber === 1) {
+                    // First week: from 1st day to first Sunday
+                    if (firstDayOfWeek === 0) {
+                        // If month starts on Sunday, week 1 is just that day
+                        currentWeekEnd = new Date(currentWeekStart);
+                    } else {
+                        // Calculate days until Sunday (0)
+                        const daysUntilSunday = (7 - firstDayOfWeek) % 7;
+                        currentWeekEnd = new Date(currentWeekStart);
+                        currentWeekEnd.setDate(currentWeekEnd.getDate() + daysUntilSunday);
+                    }
+                } else {
+                    // Subsequent weeks: from Monday to Sunday
+                    currentWeekEnd = new Date(currentWeekStart);
+                    currentWeekEnd.setDate(currentWeekEnd.getDate() + 6); // +6 days = Sunday
+                }
 
                 // Ensure week doesn't go beyond month
                 if (currentWeekEnd > lastDay) {
                     currentWeekEnd = new Date(lastDay);
                 }
 
-                // Check if date falls in this week
-                if (d >= currentWeekStart && d <= currentWeekEnd) {
-                    return {
-                        weekNumber: weekNumber,
-                        weekStart: formatDateDDMMYYYY(currentWeekStart),
-                        weekEnd: formatDateDDMMYYYY(currentWeekEnd)
-                    };
-                }
+                weeks.push({
+                    weekNumber: weekNumber,
+                    start: new Date(currentWeekStart),
+                    end: new Date(currentWeekEnd)
+                });
 
-                // Move to next week (always Monday)
-                currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+                // Move to next Monday
+                currentWeekStart = new Date(currentWeekEnd);
+                currentWeekStart.setDate(currentWeekStart.getDate() + 1);
 
-                // If next week is in next month, stop
+                // If we've gone beyond the month, stop
                 if (currentWeekStart.getMonth() !== month) {
                     break;
                 }
 
                 weekNumber++;
+            }
+
+            // Find which week the given date belongs to
+            for (const week of weeks) {
+                if (d >= week.start && d <= week.end) {
+                    return {
+                        weekNumber: week.weekNumber,
+                        weekStart: formatDateDDMMYYYY(week.start),
+                        weekEnd: formatDateDDMMYYYY(week.end)
+                    };
+                }
             }
 
             // Fallback: return week 1
@@ -6879,6 +7179,277 @@
             container.innerHTML = html;
         }
 
+        // ============================================
+        // STANJE ZALIHA FUNCTIONS
+        // ============================================
+
+        let stanjeZalihaData = [];
+        let stanjeZalihaRadilista = [];
+        let stanjeZalihaSortimenti = [];
+
+        async function loadStanjeZaliha() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+
+            try {
+                const url = buildApiUrl('stanje-zaliha');
+                const data = await fetchWithCache(url, 'cache_stanje_zaliha', false, 180000);
+
+                if (data.error) throw new Error(data.error);
+
+                stanjeZalihaData = data.odjeli || [];
+                stanjeZalihaRadilista = data.radilista || [];
+                stanjeZalihaSortimenti = data.sortimentiHeader || [];
+
+                // Populate radilište dropdown
+                populateStanjeZalihaDropdown();
+
+                // Render cards
+                renderStanjeZalihaCards(stanjeZalihaData);
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('stanje-zaliha-content').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error loading stanje zaliha:', error);
+                showError('Greška', 'Greška pri učitavanju stanja zaliha: ' + error.message);
+                document.getElementById('loading-screen').classList.add('hidden');
+            }
+        }
+
+        function populateStanjeZalihaDropdown() {
+            const select = document.getElementById('stanje-zaliha-radiliste');
+            select.innerHTML = '<option value="">Sva radilišta</option>';
+
+            // Extract unique radilišta from data
+            const radilistaSet = new Set();
+            stanjeZalihaData.forEach(odjel => {
+                if (odjel.radiliste) {
+                    radilistaSet.add(odjel.radiliste);
+                }
+            });
+
+            const sortedRadilista = Array.from(radilistaSet).sort();
+            sortedRadilista.forEach(radiliste => {
+                const option = document.createElement('option');
+                option.value = radiliste;
+                option.textContent = radiliste;
+                select.appendChild(option);
+            });
+        }
+
+        function filterStanjeZaliha() {
+            const selectedRadiliste = document.getElementById('stanje-zaliha-radiliste').value;
+
+            if (selectedRadiliste === '') {
+                renderStanjeZalihaCards(stanjeZalihaData);
+            } else {
+                const filteredData = stanjeZalihaData.filter(odjel => odjel.radiliste === selectedRadiliste);
+                renderStanjeZalihaCards(filteredData);
+            }
+        }
+
+        function renderStanjeZalihaCards(data) {
+            const container = document.getElementById('stanje-zaliha-container');
+            const countEl = document.getElementById('stanje-zaliha-count');
+
+            if (data.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 60px; color: #6b7280; font-size: 16px;">Nema podataka za prikaz</div>';
+                countEl.textContent = '';
+                return;
+            }
+
+            countEl.textContent = `Prikazano: ${data.length} odjela`;
+
+            // Sortimenti names for display (shortened for table headers)
+            const sortimentiShort = [
+                "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+                "CEL.D", "CEL.C", "ŠKART", "Σ Č",
+                "F/L L", "I L", "II L", "III L", "TRUPCI L",
+                "OGR.D", "OGR.C", "GULE", "LIŠĆ", "UKUPNO"
+            ];
+
+            let html = '';
+
+            data.forEach((odjel, index) => {
+                // Determine status color based on zaliha
+                let statusClass = 'neutral';
+                let statusIcon = '📦';
+                const ukupnoZaliha = odjel.ukupnoZaliha || 0;
+
+                if (ukupnoZaliha > 100) {
+                    statusClass = 'warning';
+                    statusIcon = '⚠️';
+                } else if (ukupnoZaliha > 0) {
+                    statusClass = 'success';
+                    statusIcon = '✅';
+                } else if (ukupnoZaliha < 0) {
+                    statusClass = 'danger';
+                    statusIcon = '❌';
+                }
+
+                html += `
+                <div class="stanje-zaliha-card ${statusClass}" style="margin-bottom: 24px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden;">
+                    <!-- Card Header -->
+                    <div class="stanje-zaliha-card-header" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="margin: 0; font-size: 18px; font-weight: 700;">${odjel.odjel}</h3>
+                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.85;">📍 ${odjel.radiliste || 'N/A'}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 24px; font-weight: 700;">${ukupnoZaliha.toFixed(2)} m³</div>
+                            <div style="font-size: 12px; opacity: 0.85;">${statusIcon} Zaliha</div>
+                        </div>
+                    </div>
+
+                    <!-- Summary Stats -->
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #e5e7eb; border-bottom: 1px solid #e5e7eb;">
+                        <div style="background: white; padding: 12px 16px; text-align: center;">
+                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">📋 Projekat</div>
+                            <div style="font-size: 16px; font-weight: 700; color: #3b82f6;">${(odjel.ukupnoProjekat || 0).toFixed(2)}</div>
+                        </div>
+                        <div style="background: white; padding: 12px 16px; text-align: center;">
+                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">🪓 Sječa</div>
+                            <div style="font-size: 16px; font-weight: 700; color: #10b981;">${(odjel.ukupnoSjeca || 0).toFixed(2)}</div>
+                        </div>
+                        <div style="background: white; padding: 12px 16px; text-align: center;">
+                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">🚛 Otprema</div>
+                            <div style="font-size: 16px; font-weight: 700; color: #f59e0b;">${(odjel.ukupnoOtprema || 0).toFixed(2)}</div>
+                        </div>
+                        <div style="background: white; padding: 12px 16px; text-align: center;">
+                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">📦 Zaliha</div>
+                            <div style="font-size: 16px; font-weight: 700; color: ${ukupnoZaliha >= 0 ? '#059669' : '#dc2626'};">${ukupnoZaliha.toFixed(2)}</div>
+                        </div>
+                    </div>
+
+                    <!-- Expandable Detail Table -->
+                    <details style="border-top: 1px solid #e5e7eb;">
+                        <summary style="padding: 12px 20px; cursor: pointer; font-weight: 600; color: #374151; background: #f9fafb; display: flex; align-items: center; gap: 8px;">
+                            <span style="transition: transform 0.2s;">▶</span> Detaljni prikaz po sortimentima
+                        </summary>
+                        <div style="overflow-x: auto; padding: 16px;">
+                            <table class="stanje-zaliha-table" style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #d1d5db;">
+                                <thead>
+                                    <tr style="background: #1e3a5f;">
+                                        <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: white; border: 1px solid #374151; white-space: nowrap;">VRSTA</th>
+                                        ${sortimentiShort.map((s, i) => {
+                                            const isTotal = i === 9 || i === 18 || i === 19;
+                                            const bgColor = isTotal ? '#2d5a87' : '#1e3a5f';
+                                            return `<th style="padding: 10px 6px; text-align: center; font-weight: 600; color: white; border: 1px solid #374151; white-space: nowrap; background: ${bgColor};">${s}</th>`;
+                                        }).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${['projekat', 'sjeca', 'otprema', 'zaliha'].map(vrsta => {
+                                        const labels = { projekat: '📋 PROJEKAT', sjeca: '🪓 SJEČA', otprema: '🚛 OTPREMA', zaliha: '📦 ZALIHA' };
+                                        const rowColors = { projekat: '#eff6ff', sjeca: '#ecfdf5', otprema: '#fffbeb', zaliha: '#faf5ff' };
+                                        const textColors = { projekat: '#1e40af', sjeca: '#065f46', otprema: '#b45309', zaliha: '#7c3aed' };
+                                        const sortimenti = odjel[vrsta] || {};
+
+                                        return `
+                                        <tr style="background: ${rowColors[vrsta]};">
+                                            <td style="padding: 10px 12px; font-weight: 700; color: ${textColors[vrsta]}; white-space: nowrap; border: 1px solid #d1d5db;">${labels[vrsta]}</td>
+                                            ${stanjeZalihaSortimenti.map((s, i) => {
+                                                const value = sortimenti[s] || 0;
+                                                const isTotal = i === 9 || i === 18 || i === 19;
+                                                const displayValue = value === 0 ? '-' : value.toFixed(2);
+                                                const cellColor = vrsta === 'zaliha' && value < 0 ? '#dc2626' : '#374151';
+                                                const cellBg = isTotal ? (vrsta === 'zaliha' ? '#e9d5ff' : '#f3e8ff') : '';
+                                                return `<td style="padding: 10px 6px; text-align: right; color: ${cellColor}; border: 1px solid #d1d5db; font-weight: ${isTotal ? '700' : '400'}; ${cellBg ? 'background:' + cellBg + ';' : ''}">${displayValue}</td>`;
+                                            }).join('')}
+                                        </tr>`;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+
+            // Add style for details summary arrow rotation
+            const style = document.createElement('style');
+            style.textContent = `
+                .stanje-zaliha-card details[open] summary span:first-child {
+                    transform: rotate(90deg);
+                }
+                .stanje-zaliha-card.warning .stanje-zaliha-card-header {
+                    background: linear-gradient(135deg, #92400e 0%, #b45309 100%);
+                }
+                .stanje-zaliha-card.success .stanje-zaliha-card-header {
+                    background: linear-gradient(135deg, #065f46 0%, #059669 100%);
+                }
+                .stanje-zaliha-card.danger .stanje-zaliha-card-header {
+                    background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%);
+                }
+            `;
+            if (!document.getElementById('stanje-zaliha-style')) {
+                style.id = 'stanje-zaliha-style';
+                document.head.appendChild(style);
+            }
+        }
+
+        // Osvježi podatke za Stanje Zaliha (briše cache i ponovo učitava)
+        async function refreshStanjeZaliha() {
+            // Briši cache
+            localStorage.removeItem('cache_stanje_zaliha');
+
+            // Resetiraj podatke
+            stanjeZalihaData = [];
+            stanjeZalihaRadilista = [];
+            stanjeZalihaSortimenti = [];
+
+            // Prikaži loading
+            document.getElementById('stanje-zaliha-container').innerHTML = `
+                <div style="text-align: center; padding: 60px; color: #6b7280;">
+                    <div style="font-size: 32px; margin-bottom: 16px;">🔄</div>
+                    <p>Osvježavam podatke...</p>
+                </div>
+            `;
+
+            // Ponovo učitaj
+            await loadStanjeZaliha();
+
+            showSuccess('Osvježeno', 'Podaci su uspješno osvježeni sa servera.');
+        }
+
+        function exportStanjeZalihaToCSV() {
+            if (stanjeZalihaData.length === 0) {
+                showWarning('Nema podataka', 'Nema podataka za eksport.');
+                return;
+            }
+
+            // Build CSV
+            let csv = 'ODJEL,RADILIŠTE,VRSTA';
+            stanjeZalihaSortimenti.forEach(s => {
+                csv += ',' + s;
+            });
+            csv += '\n';
+
+            stanjeZalihaData.forEach(odjel => {
+                ['projekat', 'sjeca', 'otprema', 'zaliha'].forEach(vrsta => {
+                    const labels = { projekat: 'PROJEKAT', sjeca: 'SJEČA', otprema: 'OTPREMA', zaliha: 'ZALIHA' };
+                    csv += `"${odjel.odjel}","${odjel.radiliste || ''}",${labels[vrsta]}`;
+
+                    const sortimenti = odjel[vrsta] || {};
+                    stanjeZalihaSortimenti.forEach(s => {
+                        const value = sortimenti[s] || 0;
+                        csv += ',' + value.toFixed(2);
+                    });
+                    csv += '\n';
+                });
+            });
+
+            // Download
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'stanje_zaliha_' + new Date().toISOString().split('T')[0] + '.csv';
+            link.click();
+
+            showSuccess('Uspješno', 'CSV fajl je preuzet.');
+        }
+
         // Load pending count (for badge only)
         async function loadPendingCount() {
             try {
@@ -6961,12 +7532,12 @@
             var iC = parseFloat(document.getElementById('sjeca-I-C').value) || 0;
             var iiC = parseFloat(document.getElementById('sjeca-II-C').value) || 0;
             var iiiC = parseFloat(document.getElementById('sjeca-III-C').value) || 0;
-            var rudno = parseFloat(document.getElementById('sjeca-RUDNO').value) || 0;
+            var rd = parseFloat(document.getElementById('sjeca-RD').value) || 0;
             var celDuga = parseFloat(document.getElementById('sjeca-CEL-DUGA').value) || 0;
             var celCijepana = parseFloat(document.getElementById('sjeca-CEL-CIJEPANA').value) || 0;
 
-            // Calculate TRUPCI Č = F/L Č + I Č + II Č + III Č + RUDNO
-            var trupciC = flC + iC + iiC + iiiC + rudno;
+            // Calculate TRUPCI Č = F/L Č + I Č + II Č + III Č + RD
+            var trupciC = flC + iC + iiC + iiiC + rd;
             document.getElementById('sjeca-TRUPCI-C').value = trupciC.toFixed(2);
 
             // Calculate ČETINARI = CEL.DUGA + CEL.CIJEPANA + TRUPCI Č
@@ -6983,15 +7554,15 @@
 
             // Calculate TRUPCI L = F/L L + I L + II L + III L
             var trupciL = flL + iL + iiL + iiiL;
-            document.getElementById('sjeca-TRUPCI').value = trupciL.toFixed(2);
+            document.getElementById('sjeca-TRUPCI-L').value = trupciL.toFixed(2);
 
             // Calculate LIŠĆARI = OGR.DUGI + OGR.CIJEPANI + TRUPCI L
             var liscari = ogrDugi + ogrCijepani + trupciL;
             document.getElementById('sjeca-LISCARI').value = liscari.toFixed(2);
 
-            // Calculate SVEUKUPNO = ČETINARI + LIŠĆARI
-            var sveukupno = cetinari + liscari;
-            document.getElementById('sjeca-SVEUKUPNO').value = sveukupno.toFixed(2);
+            // Calculate UKUPNO Č+L = ČETINARI + LIŠĆARI
+            var ukupno = cetinari + liscari;
+            document.getElementById('sjeca-UKUPNO Č+L').value = ukupno.toFixed(2);
         }
 
         // Calculate Otprema totals automatically
@@ -7001,12 +7572,12 @@
             var iC = parseFloat(document.getElementById('otprema-I-C').value) || 0;
             var iiC = parseFloat(document.getElementById('otprema-II-C').value) || 0;
             var iiiC = parseFloat(document.getElementById('otprema-III-C').value) || 0;
-            var rudno = parseFloat(document.getElementById('otprema-RUDNO').value) || 0;
+            var rd = parseFloat(document.getElementById('otprema-RD').value) || 0;
             var celDuga = parseFloat(document.getElementById('otprema-CEL-DUGA').value) || 0;
             var celCijepana = parseFloat(document.getElementById('otprema-CEL-CIJEPANA').value) || 0;
 
-            // Calculate TRUPCI Č = F/L Č + I Č + II Č + III Č + RUDNO
-            var trupciC = flC + iC + iiC + iiiC + rudno;
+            // Calculate TRUPCI Č = F/L Č + I Č + II Č + III Č + RD
+            var trupciC = flC + iC + iiC + iiiC + rd;
             document.getElementById('otprema-TRUPCI-C').value = trupciC.toFixed(2);
 
             // Calculate ČETINARI = CEL.DUGA + CEL.CIJEPANA + TRUPCI Č
@@ -7023,15 +7594,15 @@
 
             // Calculate TRUPCI L = F/L L + I L + II L + III L
             var trupciL = flL + iL + iiL + iiiL;
-            document.getElementById('otprema-TRUPCI').value = trupciL.toFixed(2);
+            document.getElementById('otprema-TRUPCI-L').value = trupciL.toFixed(2);
 
             // Calculate LIŠĆARI = OGR.DUGI + OGR.CIJEPANI + TRUPCI L
             var liscari = ogrDugi + ogrCijepani + trupciL;
             document.getElementById('otprema-LISCARI').value = liscari.toFixed(2);
 
-            // Calculate SVEUKUPNO = ČETINARI + LIŠĆARI
-            var sveukupno = cetinari + liscari;
-            document.getElementById('otprema-SVEUKUPNO').value = sveukupno.toFixed(2);
+            // Calculate UKUPNO Č+L = ČETINARI + LIŠĆARI
+            var ukupno = cetinari + liscari;
+            document.getElementById('otprema-UKUPNO Č+L').value = ukupno.toFixed(2);
         }
 
         // Show Add Sjeca Form
@@ -7044,7 +7615,7 @@
             document.getElementById('sjeca-datum').value = today;
 
             // Add event listeners to all sortimenti inputs for automatic calculation
-            const sjecaInputIds = ['sjeca-FL-C', 'sjeca-I-C', 'sjeca-II-C', 'sjeca-III-C', 'sjeca-RUDNO',
+            const sjecaInputIds = ['sjeca-FL-C', 'sjeca-I-C', 'sjeca-II-C', 'sjeca-III-C', 'sjeca-RD',
                                    'sjeca-CEL-DUGA', 'sjeca-CEL-CIJEPANA',
                                    'sjeca-FL-L', 'sjeca-I-L', 'sjeca-II-L', 'sjeca-III-L',
                                    'sjeca-OGR-DUGI', 'sjeca-OGR-CIJEPANI'];
@@ -7071,7 +7642,7 @@
             document.getElementById('otprema-datum').value = today;
 
             // Add event listeners to all sortimenti inputs for automatic calculation
-            const otpremaInputIds = ['otprema-FL-C', 'otprema-I-C', 'otprema-II-C', 'otprema-III-C', 'otprema-RUDNO',
+            const otpremaInputIds = ['otprema-FL-C', 'otprema-I-C', 'otprema-II-C', 'otprema-III-C', 'otprema-RD',
                                      'otprema-CEL-DUGA', 'otprema-CEL-CIJEPANA',
                                      'otprema-FL-L', 'otprema-I-L', 'otprema-II-L', 'otprema-III-L',
                                      'otprema-OGR-DUGI', 'otprema-OGR-CIJEPANI'];
@@ -7100,6 +7671,15 @@
             messageDiv.classList.add('hidden');
 
             try {
+                // Upload image first if exists
+                let imageUrl = null;
+                if (sjecaImageData) {
+                    submitBtn.textContent = 'Učitavam sliku...';
+                    imageUrl = await uploadImage(sjecaImageData, 'sjeca');
+                }
+
+                submitBtn.textContent = 'Dodavanje...';
+
                 // Collect form data
                 const formData = new URLSearchParams();
                 formData.append('path', 'add-sjeca');
@@ -7111,7 +7691,7 @@
                 formData.append('I Č', document.getElementById('sjeca-I-C').value);
                 formData.append('II Č', document.getElementById('sjeca-II-C').value);
                 formData.append('III Č', document.getElementById('sjeca-III-C').value);
-                formData.append('RUDNO', document.getElementById('sjeca-RUDNO').value);
+                formData.append('RD', document.getElementById('sjeca-RD').value);
                 formData.append('TRUPCI Č', document.getElementById('sjeca-TRUPCI-C').value);
                 formData.append('CEL.DUGA', document.getElementById('sjeca-CEL-DUGA').value);
                 formData.append('CEL.CIJEPANA', document.getElementById('sjeca-CEL-CIJEPANA').value);
@@ -7124,6 +7704,11 @@
                 formData.append('OGR.DUGI', document.getElementById('sjeca-OGR-DUGI').value);
                 formData.append('OGR.CIJEPANI', document.getElementById('sjeca-OGR-CIJEPANI').value);
                 formData.append('LIŠĆARI', document.getElementById('sjeca-LISCARI').value);
+
+                // Add image URL if uploaded
+                if (imageUrl) {
+                    formData.append('imageUrl', imageUrl);
+                }
 
                 // Send request (don't cache this)
                 const url = `${API_URL}?${formData.toString()}`;
@@ -7177,6 +7762,15 @@
             messageDiv.classList.add('hidden');
 
             try {
+                // Upload image first if exists
+                let imageUrl = null;
+                if (otpremaImageData) {
+                    submitBtn.textContent = 'Učitavam sliku...';
+                    imageUrl = await uploadImage(otpremaImageData, 'otprema');
+                }
+
+                submitBtn.textContent = 'Dodavanje...';
+
                 // Collect form data
                 const formData = new URLSearchParams();
                 formData.append('path', 'add-otprema');
@@ -7190,7 +7784,7 @@
                 formData.append('I Č', document.getElementById('otprema-I-C').value);
                 formData.append('II Č', document.getElementById('otprema-II-C').value);
                 formData.append('III Č', document.getElementById('otprema-III-C').value);
-                formData.append('RUDNO', document.getElementById('otprema-RUDNO').value);
+                formData.append('RD', document.getElementById('otprema-RD').value);
                 formData.append('TRUPCI Č', document.getElementById('otprema-TRUPCI-C').value);
                 formData.append('CEL.DUGA', document.getElementById('otprema-CEL-DUGA').value);
                 formData.append('CEL.CIJEPANA', document.getElementById('otprema-CEL-CIJEPANA').value);
@@ -7203,6 +7797,11 @@
                 formData.append('OGR.DUGI', document.getElementById('otprema-OGR-DUGI').value);
                 formData.append('OGR.CIJEPANI', document.getElementById('otprema-OGR-CIJEPANI').value);
                 formData.append('LIŠĆARI', document.getElementById('otprema-LISCARI').value);
+
+                // Add image URL if uploaded
+                if (imageUrl) {
+                    formData.append('imageUrl', imageUrl);
+                }
 
                 // Send request (don't cache this)
                 const url = `${API_URL}?${formData.toString()}`;
@@ -7258,6 +7857,9 @@
 
             // Recalculate totals
             calculateSjeca();
+
+            // Reset image
+            removeSjecaImage();
         }
 
         // Reset Otprema Form
@@ -7273,6 +7875,130 @@
 
             // Recalculate totals
             calculateOtprema();
+
+            // Reset image
+            removeOtpremaImage();
+        }
+
+        // ==================== IMAGE UPLOAD FUNCTIONS ====================
+
+        // Global variables for image data
+        let sjecaImageData = null;
+        let otpremaImageData = null;
+
+        // Preview Sjeca Image
+        function previewSjecaImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                    alert('Slika je prevelika! Maksimalna veličina je 5MB.');
+                    event.target.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    sjecaImageData = e.target.result;
+                    document.getElementById('sjeca-image-preview-img').src = sjecaImageData;
+                    document.getElementById('sjeca-image-preview').style.display = 'block';
+                    document.getElementById('sjeca-image-name').textContent = file.name;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Preview Otprema Image
+        function previewOtpremaImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                    alert('Slika je prevelika! Maksimalna veličina je 5MB.');
+                    event.target.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    otpremaImageData = e.target.result;
+                    document.getElementById('otprema-image-preview-img').src = otpremaImageData;
+                    document.getElementById('otprema-image-preview').style.display = 'block';
+                    document.getElementById('otprema-image-name').textContent = file.name;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Remove Sjeca Image
+        function removeSjecaImage() {
+            sjecaImageData = null;
+            const input = document.getElementById('sjeca-image-input');
+            if (input) input.value = '';
+            const preview = document.getElementById('sjeca-image-preview');
+            if (preview) preview.style.display = 'none';
+            const img = document.getElementById('sjeca-image-preview-img');
+            if (img) img.src = '';
+            const name = document.getElementById('sjeca-image-name');
+            if (name) name.textContent = '';
+        }
+
+        // Remove Otprema Image
+        function removeOtpremaImage() {
+            otpremaImageData = null;
+            const input = document.getElementById('otprema-image-input');
+            if (input) input.value = '';
+            const preview = document.getElementById('otprema-image-preview');
+            if (preview) preview.style.display = 'none';
+            const img = document.getElementById('otprema-image-preview-img');
+            if (img) img.src = '';
+            const name = document.getElementById('otprema-image-name');
+            if (name) name.textContent = '';
+        }
+
+        // Capture Sjeca Photo (using camera)
+        function captureSjecaPhoto() {
+            const input = document.getElementById('sjeca-image-input');
+            // Set capture attribute for mobile camera
+            input.setAttribute('capture', 'environment');
+            input.click();
+            // Remove capture attribute after to allow gallery selection too
+            setTimeout(() => input.removeAttribute('capture'), 100);
+        }
+
+        // Capture Otprema Photo (using camera)
+        function captureOtpremaPhoto() {
+            const input = document.getElementById('otprema-image-input');
+            // Set capture attribute for mobile camera
+            input.setAttribute('capture', 'environment');
+            input.click();
+            // Remove capture attribute after to allow gallery selection too
+            setTimeout(() => input.removeAttribute('capture'), 100);
+        }
+
+        // Upload Image to Server (returns image URL or null)
+        async function uploadImage(imageData, type) {
+            if (!imageData) return null;
+
+            try {
+                const formData = new URLSearchParams();
+                formData.append('path', 'upload-image');
+                formData.append('username', currentUser.username);
+                formData.append('password', currentPassword);
+                formData.append('type', type); // 'sjeca' or 'otprema'
+                formData.append('imageData', imageData);
+
+                const response = await fetch(`${API_URL}?${formData.toString()}`);
+                const result = await response.json();
+
+                if (result.success && result.imageUrl) {
+                    return result.imageUrl;
+                } else {
+                    console.error('Image upload failed:', result.error);
+                    return null;
+                }
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                return null;
+            }
         }
 
         // ==================== MY PENDING ENTRIES FUNCTIONS ====================

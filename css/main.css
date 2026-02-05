@@ -235,11 +235,11 @@
         .kupci-table th, .kupci-table td { padding: 12px 10px; border-bottom: 1px solid #e5e7eb; }
         .kupci-table th:first-child, .kupci-table td:first-child {
             position: sticky; left: 0; background: white; z-index: 2;
-            min-width: 140px; max-width: 200px; white-space: normal;
-            border-right: 2px solid #d1d5db; padding-right: 12px; font-weight: 600;
+            min-width: 70px; max-width: 100px; white-space: normal;
+            border-right: 2px solid #d1d5db; padding-right: 8px; font-weight: 600;
         }
         .kupci-table th:nth-child(2), .kupci-table td:nth-child(2) {
-            position: sticky; left: 140px; background: white; z-index: 2;
+            position: sticky; left: 70px; background: white; z-index: 2;
             min-width: 90px; border-right: 2px solid #d1d5db; font-weight: 500;
         }
         body.dark-mode .kupci-table th:first-child, body.dark-mode .kupci-table td:first-child,
@@ -1998,7 +1998,7 @@
             font-weight: 700;
         }
 
-        /* Zelena boja sa žutim outline - za naziv firme */
+        /* Zelena boja sa žutim outline - za naziv firme (legacy) */
         .text-outline-firma {
             color: #059669 !important;
             text-shadow: -1px -1px 0 #fbbf24, 1px -1px 0 #fbbf24,
@@ -2006,6 +2006,53 @@
                          -2px 0 0 #fbbf24, 2px 0 0 #fbbf24,
                          0 -2px 0 #fbbf24, 0 2px 0 #fbbf24;
             font-weight: 700;
+        }
+
+        /* ============================================ */
+        /* 🏢 COMPANY NAME HEADER - Modern Clean Design */
+        /* ============================================ */
+        .company-name-header {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 18px;
+            font-weight: 800;
+            color: #047857;
+            margin-bottom: 6px;
+            letter-spacing: 0.3px;
+            line-height: 1.3;
+            background: linear-gradient(135deg, #047857 0%, #059669 50%, #10b981 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Fallback for browsers that don't support gradient text */
+        @supports not (-webkit-background-clip: text) {
+            .company-name-header {
+                color: #047857;
+                background: none;
+            }
+        }
+
+        /* Dark mode support */
+        body.dark-mode .company-name-header {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #6ee7b7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .company-name-header {
+                font-size: 15px;
+                font-weight: 700;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .company-name-header {
+                font-size: 13px;
+            }
         }
 
         /* Primjena na specifične elemente */
