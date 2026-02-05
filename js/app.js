@@ -4960,9 +4960,12 @@
         let primacYearlyChart = null;
         let otpremacYearlyChart = null;
 
-        function createWorkerMonthlyChart(canvasId, unosi, colorPrimary, colorSecondary) {
+        async function createWorkerMonthlyChart(canvasId, unosi, colorPrimary, colorSecondary) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
+
+            // 🚀 KRITIČNO: Učitaj Chart.js PRE korištenja
+            await window.loadChartJs();
 
             // Destroy existing chart if exists
             if (canvasId === 'primac-chart' && primacChart) {
@@ -5083,9 +5086,12 @@
         }
 
         // Create daily chart (shows total quantity per day for selected month)
-        function createWorkerDailyChart(canvasId, unosi, month, year, colorPrimary, colorSecondary) {
+        async function createWorkerDailyChart(canvasId, unosi, month, year, colorPrimary, colorSecondary) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
+
+            // 🚀 KRITIČNO: Učitaj Chart.js PRE korištenja
+            await window.loadChartJs();
 
             // Destroy existing chart if exists
             if (canvasId === 'primac-daily-chart' && primacDailyChart) {
@@ -5240,9 +5246,12 @@
         }
 
         // Create yearly chart (shows total quantity per month)
-        function createWorkerYearlyChart(canvasId, unosi, colorPrimary, colorSecondary) {
+        async function createWorkerYearlyChart(canvasId, unosi, colorPrimary, colorSecondary) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
+
+            // 🚀 KRITIČNO: Učitaj Chart.js PRE korištenja
+            await window.loadChartJs();
 
             // Destroy existing chart if exists
             if (canvasId === 'primac-yearly-chart' && primacYearlyChart) {
@@ -5480,7 +5489,7 @@
                 document.getElementById('primac-godisnji-year-badge').textContent = year;
 
                 // Create yearly chart
-                createWorkerYearlyChart('primac-yearly-chart', data.unosi, '#047857', '#10b981');
+                await createWorkerYearlyChart('primac-yearly-chart', data.unosi, '#047857', '#10b981');
 
             } catch (error) {
                 showError('Greška', 'Greška pri učitavanju godišnjeg prikaza: ' + error.message);
@@ -5563,7 +5572,7 @@
                 document.getElementById('primac-personal-body').innerHTML = bodyWithTotals;
 
                 // Create monthly chart
-                createWorkerMonthlyChart('primac-chart', data.unosi, '#047857', '#10b981');
+                await createWorkerMonthlyChart('primac-chart', data.unosi, '#047857', '#10b981');
 
                 // Create daily chart - read month from selector, default to current month
                 const monthSelector = document.getElementById('primac-daily-month-select');
@@ -5575,7 +5584,7 @@
                 }
 
                 const selectedMonth = monthSelector ? monthSelector.value : currentMonth;
-                createWorkerDailyChart('primac-daily-chart', data.unosi, selectedMonth, year, '#047857', '#10b981');
+                await createWorkerDailyChart('primac-daily-chart', data.unosi, selectedMonth, year, '#047857', '#10b981');
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('primac-personal-content').classList.remove('hidden');
@@ -5667,7 +5676,7 @@
                 document.getElementById('otpremac-personal-body').innerHTML = bodyWithTotals;
 
                 // Create monthly chart
-                createWorkerMonthlyChart('otpremac-chart', data.unosi, '#1e40af', '#3b82f6');
+                await createWorkerMonthlyChart('otpremac-chart', data.unosi, '#1e40af', '#3b82f6');
 
                 // Create daily chart - read month from selector, default to current month
                 const monthSelector = document.getElementById('otpremac-daily-month-select');
@@ -5679,7 +5688,7 @@
                 }
 
                 const selectedMonth = monthSelector ? monthSelector.value : currentMonth;
-                createWorkerDailyChart('otpremac-daily-chart', data.unosi, selectedMonth, year, '#1e40af', '#3b82f6');
+                await createWorkerDailyChart('otpremac-daily-chart', data.unosi, selectedMonth, year, '#1e40af', '#3b82f6');
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('otpremac-personal-content').classList.remove('hidden');
