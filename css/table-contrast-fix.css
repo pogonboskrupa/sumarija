@@ -973,3 +973,179 @@ th[style*="color: white"] {
         font-size: 14px !important;
     }
 }
+
+/* ============================================ */
+/* 📊 IZVJEŠTAJI - Sedmični i Mjesečni */
+/* Uniformne, profesionalne tabele */
+/* ============================================ */
+
+.izvjestaj-week-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+    font-size: 14px;
+    border: 2px solid #374151;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Header - tamno siva, uniformna */
+.izvjestaj-week-table thead th {
+    background: #1f2937 !important;
+    color: #ffffff !important;
+    padding: 12px 10px;
+    text-align: right;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid #374151;
+    white-space: nowrap;
+}
+
+.izvjestaj-week-table thead th:first-child {
+    text-align: left;
+    position: sticky;
+    left: 0;
+    z-index: 20;
+    background: #111827 !important;
+    min-width: 180px;
+    border-right: 2px solid #4b5563;
+}
+
+/* Body rows */
+.izvjestaj-week-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.izvjestaj-week-table tbody tr:nth-child(odd) {
+    background: #ffffff;
+}
+
+.izvjestaj-week-table tbody tr:nth-child(even) {
+    background: #f9fafb;
+}
+
+.izvjestaj-week-table tbody tr:hover {
+    background: #e0f2fe !important;
+}
+
+.izvjestaj-week-table tbody td {
+    padding: 10px;
+    text-align: right;
+    font-weight: 600;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-feature-settings: 'tnum' 1;
+    border: 1px solid #e5e7eb;
+    color: #1f2937;
+}
+
+.izvjestaj-week-table tbody td:first-child {
+    text-align: left;
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: inherit;
+    font-weight: 700;
+    color: #111827;
+    border-right: 2px solid #d1d5db;
+}
+
+.izvjestaj-week-table tbody tr:nth-child(odd) td:first-child {
+    background: #ffffff;
+}
+
+.izvjestaj-week-table tbody tr:nth-child(even) td:first-child {
+    background: #f9fafb;
+}
+
+.izvjestaj-week-table tbody tr:hover td:first-child {
+    background: #e0f2fe !important;
+}
+
+/* UKUPNO row - istaknuti */
+.izvjestaj-week-table tbody tr.totals-row {
+    background: #059669 !important;
+    border-top: 3px solid #047857;
+}
+
+.izvjestaj-week-table tbody tr.totals-row td {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    font-size: 14px;
+    padding: 14px 10px;
+    border-color: #047857;
+}
+
+.izvjestaj-week-table tbody tr.totals-row td:first-child {
+    background: #047857 !important;
+    color: #ffffff !important;
+}
+
+/* Sortiment column groups - subtle coloring */
+.izvjestaj-week-table .col-cetinari {
+    background: rgba(16, 185, 129, 0.08) !important;
+}
+
+.izvjestaj-week-table .col-liscari {
+    background: rgba(245, 158, 11, 0.08) !important;
+}
+
+.izvjestaj-week-table .col-sveukupno {
+    background: rgba(59, 130, 246, 0.12) !important;
+    font-weight: 800 !important;
+}
+
+.izvjestaj-week-table thead th.col-cetinari {
+    background: #065f46 !important;
+}
+
+.izvjestaj-week-table thead th.col-liscari {
+    background: #92400e !important;
+}
+
+.izvjestaj-week-table thead th.col-sveukupno {
+    background: #1e40af !important;
+}
+
+/* Week section header */
+.izvjestaj-week-header {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 2px solid #86efac;
+    border-radius: 8px 8px 0 0;
+    padding: 16px 20px;
+    margin-bottom: 0;
+}
+
+.izvjestaj-week-header h3 {
+    margin: 0;
+    color: #166534;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.izvjestaj-week-header .week-dates {
+    color: #15803d;
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+/* Week container */
+.izvjestaj-week-container {
+    margin-bottom: 32px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Empty week message */
+.izvjestaj-empty-week {
+    background: #f9fafb;
+    padding: 24px;
+    text-align: center;
+    color: #6b7280;
+    font-style: italic;
+    border: 2px solid #e5e7eb;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+}

@@ -202,33 +202,15 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
         return;
     }
 
-    // Helper functions za boje
-    function isLiscari(s) {
-        return s.includes(' L') || s.includes('OGR.') || s === 'TRUPCI L' || s === 'LIŠĆARI';
-    }
-
-    function isCetinari(s) {
-        return s.includes(' Č') || s.includes('CEL.') || s.includes('RD') || s === 'Σ ČETINARI';
-    }
-
-    // Build header
-    let headerHtml = '<tr><th style="background: #374151; color: white;">Sedmica</th><th style="background: #374151; color: white;">Odjel</th>';
+    // Build header - uniformna tamno siva boja
+    let headerHtml = '<tr><th>Sedmica</th><th>Odjel</th>';
     sortimentiNazivi.forEach(sortiment => {
-        let bgColor;
-        if (sortiment === 'UKUPNO Č+L') {
-            bgColor = '#dc2626';
-        } else if (sortiment === 'LIŠĆARI') {
-            bgColor = '#d97706';
-        } else if (sortiment === 'Σ ČETINARI') {
-            bgColor = '#047857';
-        } else if (isLiscari(sortiment)) {
-            bgColor = '#ea580c';
-        } else if (isCetinari(sortiment)) {
-            bgColor = '#059669';
-        } else {
-            bgColor = '#6b7280';
-        }
-        headerHtml += `<th style="background: ${bgColor}; color: white;">${sortiment}</th>`;
+        let extraClass = '';
+        if (sortiment === 'UKUPNO Č+L' || sortiment === 'SVEUKUPNO') extraClass = 'col-sveukupno';
+        else if (sortiment === 'LIŠĆARI') extraClass = 'col-liscari';
+        else if (sortiment === 'Σ ČETINARI' || sortiment === 'ČETINARI') extraClass = 'col-cetinari';
+
+        headerHtml += `<th class="${extraClass}">${sortiment}</th>`;
     });
     headerHtml += '</tr>';
     headerElem.innerHTML = headerHtml;
@@ -236,7 +218,7 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
     // Build body - grupirano po sedmicama
     let bodyHtml = '';
 
-    weeks.forEach((week, weekIndex) => {
+    weeks.forEach((week) => {
         const weekData = dataByWeek[week.weekNum] || {};
         const odjeli = Object.keys(weekData).sort();
 
@@ -252,50 +234,32 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
             });
         });
 
-        // Header za sedmicu (tamni red)
-        bodyHtml += `<tr style="background: #1f2937;">`;
-        bodyHtml += `<td style="color: white; font-weight: bold;" rowspan="${odjeli.length + 1}">${week.label}</td>`;
-        bodyHtml += `<td style="color: #fbbf24; font-weight: bold;">UKUPNO SEDMICA</td>`;
+        // Header za sedmicu - UKUPNO SEDMICA row (zelena pozadina)
+        bodyHtml += `<tr class="totals-row">`;
+        bodyHtml += `<td rowspan="${odjeli.length + 1}">${week.label}</td>`;
+        bodyHtml += `<td><strong>UKUPNO SEDMICA</strong></td>`;
         sortimentiNazivi.forEach(s => {
             const val = weekTotals[s];
             const display = val > 0 ? val.toFixed(2) : '-';
-            bodyHtml += `<td style="color: #fbbf24; font-weight: bold; text-align: right;">${display}</td>`;
+            bodyHtml += `<td>${display}</td>`;
         });
         bodyHtml += '</tr>';
 
         // Redovi za svaki odjel
-        odjeli.forEach((odjel, odjelIndex) => {
-            const rowBg = odjelIndex % 2 === 0 ? '#f9fafb' : 'white';
-            bodyHtml += `<tr style="background: ${rowBg};">`;
+        odjeli.forEach((odjel) => {
+            bodyHtml += `<tr>`;
             bodyHtml += `<td style="padding-left: 20px;">${odjel}</td>`;
 
             sortimentiNazivi.forEach(sortiment => {
                 const value = weekData[odjel][sortiment] || 0;
-                const displayValue = value > 0 ? value.toFixed(2) : '';
+                const displayValue = value > 0 ? value.toFixed(2) : '-';
 
-                let bgColor = 'transparent';
-                let textColor = '#1f2937';
+                let extraClass = '';
+                if (sortiment === 'UKUPNO Č+L' || sortiment === 'SVEUKUPNO') extraClass = 'col-sveukupno';
+                else if (sortiment === 'LIŠĆARI') extraClass = 'col-liscari';
+                else if (sortiment === 'Σ ČETINARI' || sortiment === 'ČETINARI') extraClass = 'col-cetinari';
 
-                if (value > 0) {
-                    if (sortiment === 'UKUPNO Č+L') {
-                        bgColor = '#fecaca';
-                        textColor = '#7f1d1d';
-                    } else if (sortiment === 'LIŠĆARI') {
-                        bgColor = '#fed7aa';
-                        textColor = '#78350f';
-                    } else if (sortiment === 'Σ ČETINARI') {
-                        bgColor = '#a7f3d0';
-                        textColor = '#065f46';
-                    } else if (isLiscari(sortiment)) {
-                        bgColor = '#ffedd5';
-                        textColor = '#78350f';
-                    } else if (isCetinari(sortiment)) {
-                        bgColor = '#d1fae5';
-                        textColor = '#065f46';
-                    }
-                }
-
-                bodyHtml += `<td style="background: ${bgColor}; color: ${textColor}; text-align: right;">${displayValue}</td>`;
+                bodyHtml += `<td class="${extraClass}">${displayValue}</td>`;
             });
 
             bodyHtml += '</tr>';
@@ -315,12 +279,12 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
         });
     });
 
-    bodyHtml += `<tr style="background: linear-gradient(135deg, #047857 0%, #065f46 100%);">`;
-    bodyHtml += `<td colspan="2" style="color: white; font-weight: bold;">UKUPNO MJESEC</td>`;
+    bodyHtml += `<tr class="totals-row">`;
+    bodyHtml += `<td colspan="2">📊 UKUPNO MJESEC</td>`;
     sortimentiNazivi.forEach(s => {
         const val = grandTotals[s];
         const display = val > 0 ? val.toFixed(2) : '-';
-        bodyHtml += `<td style="color: white; font-weight: bold; text-align: right;">${display}</td>`;
+        bodyHtml += `<td>${display}</td>`;
     });
     bodyHtml += '</tr>';
 
@@ -428,77 +392,53 @@ function renderIzvjestajiTable(data, sortimentiNazivi, tablePrefix) {
         return bSveukupno - aSveukupno; // DESC
     });
 
-    // Helper functions
-    function isLiscari(s) {
-        return s.includes(' L') || s.includes('OGR.') || s.includes('TRUPCI') || s === 'LIŠĆARI';
-    }
-
-    function isCetinari(s) {
-        return s.includes(' Č') || s.includes('CEL.') || s.includes('RD') || s === 'Σ ČETINARI';
-    }
-
-    // Build header
+    // Build header - uniformna tamno siva boja (CSS klasa radi ostalo)
     let headerHtml = '<tr><th>Odjel</th>';
     sortimentiNazivi.forEach(sortiment => {
-        let bgColor;
-        let textColor = 'white';
+        let extraClass = '';
+        if (sortiment === 'UKUPNO Č+L' || sortiment === 'SVEUKUPNO') extraClass = 'col-sveukupno';
+        else if (sortiment === 'LIŠĆARI') extraClass = 'col-liscari';
+        else if (sortiment === 'Σ ČETINARI' || sortiment === 'ČETINARI') extraClass = 'col-cetinari';
 
-        if (sortiment === 'UKUPNO Č+L') {
-            bgColor = '#dc2626'; // Red
-        } else if (sortiment === 'LIŠĆARI') {
-            bgColor = '#d97706'; // Dark orange
-        } else if (sortiment === 'Σ ČETINARI') {
-            bgColor = '#047857'; // Dark green
-        } else if (isLiscari(sortiment)) {
-            bgColor = '#ea580c'; // Orange
-        } else if (isCetinari(sortiment)) {
-            bgColor = '#059669'; // Green
-        } else {
-            bgColor = '#6b7280'; // Gray
-        }
-
-        headerHtml += `<th style="background: ${bgColor}; color: ${textColor};">${sortiment}</th>`;
+        headerHtml += `<th class="${extraClass}">${sortiment}</th>`;
     });
     headerHtml += '</tr>';
     headerElem.innerHTML = headerHtml;
 
     // Build body
     let bodyHtml = '';
+    const totals = {};
+    sortimentiNazivi.forEach(s => totals[s] = 0);
+
     data.forEach(row => {
         bodyHtml += '<tr>';
         bodyHtml += `<td>${row.odjel}</td>`;
 
         sortimentiNazivi.forEach(sortiment => {
             const value = parseFloat(row.sortimenti[sortiment]) || 0;
-            const displayValue = value > 0 ? value.toFixed(2) : '';
+            totals[sortiment] += value;
+            const displayValue = value > 0 ? value.toFixed(2) : '-';
 
-            let bgColor = 'transparent';
-            let textColor = '#1f2937';
+            let extraClass = '';
+            if (sortiment === 'UKUPNO Č+L' || sortiment === 'SVEUKUPNO') extraClass = 'col-sveukupno';
+            else if (sortiment === 'LIŠĆARI') extraClass = 'col-liscari';
+            else if (sortiment === 'Σ ČETINARI' || sortiment === 'ČETINARI') extraClass = 'col-cetinari';
 
-            if (value > 0) {
-                if (sortiment === 'UKUPNO Č+L') {
-                    bgColor = '#fecaca'; // Light red
-                    textColor = '#7f1d1d'; // Dark red text
-                } else if (sortiment === 'LIŠĆARI') {
-                    bgColor = '#fed7aa'; // Light orange
-                    textColor = '#78350f'; // Dark orange text
-                } else if (sortiment === 'Σ ČETINARI') {
-                    bgColor = '#a7f3d0'; // Light green
-                    textColor = '#065f46'; // Dark green text
-                } else if (isLiscari(sortiment)) {
-                    bgColor = '#ffedd5'; // Very light orange
-                    textColor = '#78350f'; // Dark orange text
-                } else if (isCetinari(sortiment)) {
-                    bgColor = '#d1fae5'; // Very light green
-                    textColor = '#065f46'; // Dark green text
-                }
-            }
-
-            bodyHtml += `<td style="background: ${bgColor}; color: ${textColor};">${displayValue}</td>`;
+            bodyHtml += `<td class="${extraClass}">${displayValue}</td>`;
         });
 
         bodyHtml += '</tr>';
     });
+
+    // UKUPNO row
+    bodyHtml += '<tr class="totals-row">';
+    bodyHtml += '<td>📊 UKUPNO</td>';
+    sortimentiNazivi.forEach(sortiment => {
+        const val = totals[sortiment];
+        const display = val > 0 ? val.toFixed(2) : '-';
+        bodyHtml += `<td>${display}</td>`;
+    });
+    bodyHtml += '</tr>';
 
     bodyElem.innerHTML = bodyHtml;
     console.log(`[RENDER ${tablePrefix}] ✓ Table rendered (${data.length} rows)`);

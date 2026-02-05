@@ -6902,24 +6902,27 @@
                 }
                 odjeliArray.sort((a, b) => a.odjel.localeCompare(b.odjel));
 
-                html += '<div class="section" style="margin-bottom: 40px;">';
-                html += '<h3 style="margin-bottom: 16px; color: #047857;">📅 Sedmica ' + week.weekNumber + ': ' + week.weekStart + ' - ' + week.weekEnd + '</h3>';
+                // Week container with header
+                html += '<div class="izvjestaj-week-container">';
+                html += '<div class="izvjestaj-week-header">';
+                html += '<h3>📅 Sedmica ' + week.weekNumber + '</h3>';
+                html += '<div class="week-dates">' + week.weekStart + ' - ' + week.weekEnd + '</div>';
+                html += '</div>';
 
                 if (odjeliArray.length === 0) {
-                    html += '<p style="color: #6b7280; padding: 20px;">Nema podataka za ovu sedmicu</p>';
+                    html += '<div class="izvjestaj-empty-week">Nema podataka za ovu sedmicu</div>';
                 } else {
-                    html += '<div style="overflow-x: auto;"><table class="table">';
+                    html += '<div style="overflow-x: auto;"><table class="izvjestaj-week-table">';
 
                     // Header
-                    html += '<thead><tr><th style="position: sticky; left: 0; background: #f9fafb; z-index: 20; min-width: 200px;">Odjel</th>';
+                    html += '<thead><tr><th>Odjel</th>';
                     sortimentiNazivi.forEach(sortiment => {
-                        const colClass = getColumnGroup(sortiment);
                         let extraClass = '';
                         if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
                         else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
                         else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
 
-                        html += '<th class="sortiment-col right ' + colClass + extraClass + '">' + sortiment + '</th>';
+                        html += '<th class="' + extraClass + '">' + sortiment + '</th>';
                     });
                     html += '</tr></thead>';
 
@@ -6928,34 +6931,31 @@
                     const totals = {};
                     sortimentiNazivi.forEach(s => totals[s] = 0);
 
-                    odjeliArray.forEach((row, index) => {
-                        const rowStyle = index % 2 === 0 ? 'background: #f9fafb;' : '';
-                        html += '<tr style="' + rowStyle + '">';
-                        html += '<td style="font-weight: 600; position: sticky; left: 0; background: ' + (index % 2 === 0 ? '#f9fafb' : 'white') + '; z-index: 9;">' + row.odjel + '</td>';
+                    odjeliArray.forEach((row) => {
+                        html += '<tr>';
+                        html += '<td>' + row.odjel + '</td>';
 
                         sortimentiNazivi.forEach(sortiment => {
                             const value = row.sortimenti[sortiment] || 0;
                             totals[sortiment] += value;
 
-                            const colClass = getColumnGroup(sortiment);
                             let extraClass = '';
                             if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
                             else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
                             else if (sortiment === 'SVEUKUPNO') extraClass = ' col-sveukupno';
 
-                            const displayValue = value === 0 ? '' : value.toFixed(2);
-                            html += '<td class="sortiment-col right ' + colClass + extraClass + '">' + displayValue + '</td>';
+                            const displayValue = value === 0 ? '-' : value.toFixed(2);
+                            html += '<td class="' + extraClass + '">' + displayValue + '</td>';
                         });
 
                         html += '</tr>';
                     });
 
                     // UKUPNO row
-                    html += '<tr style="background: #f9fafb; border-top: 3px solid #1f2937; font-weight: 700;">';
-                    html += '<td style="position: sticky; left: 0; background: #f9fafb; z-index: 9; font-size: 15px; padding: 14px;">📊 UKUPNO</td>';
+                    html += '<tr class="totals-row">';
+                    html += '<td>📊 UKUPNO</td>';
 
                     sortimentiNazivi.forEach(sortiment => {
-                        const colClass = getColumnGroup(sortiment);
                         let extraClass = '';
                         if (sortiment === 'ČETINARI') extraClass = ' col-cetinari';
                         else if (sortiment === 'LIŠĆARI') extraClass = ' col-liscari';
@@ -6967,14 +6967,14 @@
                             totalValue = (totals['ČETINARI'] || 0) + (totals['LIŠĆARI'] || 0);
                         }
 
-                        html += '<td class="sortiment-col right ' + colClass + extraClass + '" style="font-weight: 700;">' + totalValue.toFixed(2) + '</td>';
+                        html += '<td class="' + extraClass + '">' + totalValue.toFixed(2) + '</td>';
                     });
 
                     html += '</tr>';
                     html += '</tbody></table></div>';
                 }
 
-                html += '</div>';
+                html += '</div>'; // close izvjestaj-week-container
             });
 
             container.innerHTML = html;
