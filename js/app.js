@@ -6278,18 +6278,10 @@
                     html += '<td>' + (unos.brojOtpremnice || '-') + '</td>';
                     // Slika kolona - thumbnail preview
                     if (unos.imageUrl) {
-                        // Extract fileId from Drive URL and create thumbnail URL
-                        const fileIdMatch = unos.imageUrl.match(/id=([^&]+)/);
-                        const fileId = fileIdMatch ? fileIdMatch[1] : null;
-                        if (fileId) {
-                            const thumbUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w80';
-                            html += '<td style="text-align: center; padding: 4px;">';
-                            html += '<a href="' + unos.imageUrl + '" target="_blank" title="Klikni za veću sliku">';
-                            html += '<img src="' + thumbUrl + '" alt="Slika" style="max-width: 60px; max-height: 45px; border-radius: 4px; cursor: pointer; border: 1px solid #e5e7eb;" onerror="this.outerHTML=\'📷\'">';
-                            html += '</a></td>';
-                        } else {
-                            html += '<td style="text-align: center;"><a href="' + unos.imageUrl + '" target="_blank" title="Pogledaj sliku">📷</a></td>';
-                        }
+                        html += '<td style="text-align: center; padding: 4px;">';
+                        html += '<a href="' + unos.imageUrl + '" target="_blank" title="Klikni za veću sliku">';
+                        html += '<img src="' + unos.imageUrl + '" alt="Slika" style="max-width: 60px; max-height: 45px; border-radius: 4px; cursor: pointer; border: 1px solid #e5e7eb; object-fit: cover;" onerror="this.style.display=\'none\'; this.parentNode.innerHTML=\'📷\'">';
+                        html += '</a></td>';
                     } else {
                         html += '<td style="text-align: center; color: #9ca3af;">-</td>';
                     }
@@ -7715,14 +7707,16 @@
                 formData.append('TRUPCI Č', getNum('sjeca-TRUPCI-C'));
                 formData.append('CEL.DUGA', getNum('sjeca-CEL-DUGA'));
                 formData.append('CEL.CIJEPANA', getNum('sjeca-CEL-CIJEPANA'));
-                formData.append('ČETINARI', getNum('sjeca-CETINARI'));
+                formData.append('ŠKART', getNum('sjeca-SKART'));
+                formData.append('Σ ČETINARI', getNum('sjeca-CETINARI'));
                 formData.append('F/L L', getNum('sjeca-FL-L'));
                 formData.append('I L', getNum('sjeca-I-L'));
                 formData.append('II L', getNum('sjeca-II-L'));
                 formData.append('III L', getNum('sjeca-III-L'));
-                formData.append('TRUPCI', getNum('sjeca-TRUPCI'));
+                formData.append('TRUPCI L', getNum('sjeca-TRUPCI'));
                 formData.append('OGR.DUGI', getNum('sjeca-OGR-DUGI'));
                 formData.append('OGR.CIJEPANI', getNum('sjeca-OGR-CIJEPANI'));
+                formData.append('GULE', getNum('sjeca-GULE'));
                 formData.append('LIŠĆARI', getNum('sjeca-LISCARI'));
 
                 // Add image URL if uploaded
@@ -7808,14 +7802,16 @@
                 formData.append('TRUPCI Č', document.getElementById('otprema-TRUPCI-C').value);
                 formData.append('CEL.DUGA', document.getElementById('otprema-CEL-DUGA').value);
                 formData.append('CEL.CIJEPANA', document.getElementById('otprema-CEL-CIJEPANA').value);
-                formData.append('ČETINARI', document.getElementById('otprema-CETINARI').value);
+                formData.append('ŠKART', document.getElementById('otprema-SKART').value);
+                formData.append('Σ ČETINARI', document.getElementById('otprema-CETINARI').value);
                 formData.append('F/L L', document.getElementById('otprema-FL-L').value);
                 formData.append('I L', document.getElementById('otprema-I-L').value);
                 formData.append('II L', document.getElementById('otprema-II-L').value);
                 formData.append('III L', document.getElementById('otprema-III-L').value);
-                formData.append('TRUPCI', document.getElementById('otprema-TRUPCI').value);
+                formData.append('TRUPCI L', document.getElementById('otprema-TRUPCI').value);
                 formData.append('OGR.DUGI', document.getElementById('otprema-OGR-DUGI').value);
                 formData.append('OGR.CIJEPANI', document.getElementById('otprema-OGR-CIJEPANI').value);
+                formData.append('GULE', document.getElementById('otprema-GULE').value);
                 formData.append('LIŠĆARI', document.getElementById('otprema-LISCARI').value);
 
                 // Add image URL if uploaded
