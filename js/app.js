@@ -7488,82 +7488,102 @@
 
         // Calculate Sjeca totals automatically
         function calculateSjeca() {
+            // Safe getter helper
+            const getNum = (id) => {
+                const el = document.getElementById(id);
+                return el ? (parseFloat(el.value) || 0) : 0;
+            };
+            const setVal = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val.toFixed(2);
+            };
+
             // Get all četinar values
-            var flC = parseFloat(document.getElementById('sjeca-FL-C').value) || 0;
-            var iC = parseFloat(document.getElementById('sjeca-I-C').value) || 0;
-            var iiC = parseFloat(document.getElementById('sjeca-II-C').value) || 0;
-            var iiiC = parseFloat(document.getElementById('sjeca-III-C').value) || 0;
-            var rd = parseFloat(document.getElementById('sjeca-RD').value) || 0;
-            var celDuga = parseFloat(document.getElementById('sjeca-CEL-DUGA').value) || 0;
-            var celCijepana = parseFloat(document.getElementById('sjeca-CEL-CIJEPANA').value) || 0;
+            var flC = getNum('sjeca-FL-C');
+            var iC = getNum('sjeca-I-C');
+            var iiC = getNum('sjeca-II-C');
+            var iiiC = getNum('sjeca-III-C');
+            var rd = getNum('sjeca-RD');
+            var celDuga = getNum('sjeca-CEL-DUGA');
+            var celCijepana = getNum('sjeca-CEL-CIJEPANA');
 
             // Calculate TRUPCI Č = F/L Č + I Č + II Č + III Č + RD
             var trupciC = flC + iC + iiC + iiiC + rd;
-            document.getElementById('sjeca-TRUPCI-C').value = trupciC.toFixed(2);
+            setVal('sjeca-TRUPCI-C', trupciC);
 
             // Calculate ČETINARI = CEL.DUGA + CEL.CIJEPANA + TRUPCI Č
             var cetinari = celDuga + celCijepana + trupciC;
-            document.getElementById('sjeca-CETINARI').value = cetinari.toFixed(2);
+            setVal('sjeca-CETINARI', cetinari);
 
             // Get all lišćar values
-            var flL = parseFloat(document.getElementById('sjeca-FL-L').value) || 0;
-            var iL = parseFloat(document.getElementById('sjeca-I-L').value) || 0;
-            var iiL = parseFloat(document.getElementById('sjeca-II-L').value) || 0;
-            var iiiL = parseFloat(document.getElementById('sjeca-III-L').value) || 0;
-            var ogrDugi = parseFloat(document.getElementById('sjeca-OGR-DUGI').value) || 0;
-            var ogrCijepani = parseFloat(document.getElementById('sjeca-OGR-CIJEPANI').value) || 0;
+            var flL = getNum('sjeca-FL-L');
+            var iL = getNum('sjeca-I-L');
+            var iiL = getNum('sjeca-II-L');
+            var iiiL = getNum('sjeca-III-L');
+            var ogrDugi = getNum('sjeca-OGR-DUGI');
+            var ogrCijepani = getNum('sjeca-OGR-CIJEPANI');
 
             // Calculate TRUPCI L = F/L L + I L + II L + III L
             var trupciL = flL + iL + iiL + iiiL;
-            document.getElementById('sjeca-TRUPCI-L').value = trupciL.toFixed(2);
+            setVal('sjeca-TRUPCI-L', trupciL);
 
             // Calculate LIŠĆARI = OGR.DUGI + OGR.CIJEPANI + TRUPCI L
             var liscari = ogrDugi + ogrCijepani + trupciL;
-            document.getElementById('sjeca-LISCARI').value = liscari.toFixed(2);
+            setVal('sjeca-LISCARI', liscari);
 
             // Calculate UKUPNO Č+L = ČETINARI + LIŠĆARI
             var ukupno = cetinari + liscari;
-            document.getElementById('sjeca-UKUPNO Č+L').value = ukupno.toFixed(2);
+            setVal('sjeca-UKUPNO Č+L', ukupno);
         }
 
         // Calculate Otprema totals automatically
         function calculateOtprema() {
+            // Safe getter helper
+            const getNum = (id) => {
+                const el = document.getElementById(id);
+                return el ? (parseFloat(el.value) || 0) : 0;
+            };
+            const setVal = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val.toFixed(2);
+            };
+
             // Get all četinar values
-            var flC = parseFloat(document.getElementById('otprema-FL-C').value) || 0;
-            var iC = parseFloat(document.getElementById('otprema-I-C').value) || 0;
-            var iiC = parseFloat(document.getElementById('otprema-II-C').value) || 0;
-            var iiiC = parseFloat(document.getElementById('otprema-III-C').value) || 0;
-            var rd = parseFloat(document.getElementById('otprema-RD').value) || 0;
-            var celDuga = parseFloat(document.getElementById('otprema-CEL-DUGA').value) || 0;
-            var celCijepana = parseFloat(document.getElementById('otprema-CEL-CIJEPANA').value) || 0;
+            var flC = getNum('otprema-FL-C');
+            var iC = getNum('otprema-I-C');
+            var iiC = getNum('otprema-II-C');
+            var iiiC = getNum('otprema-III-C');
+            var rd = getNum('otprema-RD');
+            var celDuga = getNum('otprema-CEL-DUGA');
+            var celCijepana = getNum('otprema-CEL-CIJEPANA');
 
             // Calculate TRUPCI Č = F/L Č + I Č + II Č + III Č + RD
             var trupciC = flC + iC + iiC + iiiC + rd;
-            document.getElementById('otprema-TRUPCI-C').value = trupciC.toFixed(2);
+            setVal('otprema-TRUPCI-C', trupciC);
 
             // Calculate ČETINARI = CEL.DUGA + CEL.CIJEPANA + TRUPCI Č
             var cetinari = celDuga + celCijepana + trupciC;
-            document.getElementById('otprema-CETINARI').value = cetinari.toFixed(2);
+            setVal('otprema-CETINARI', cetinari);
 
             // Get all lišćar values
-            var flL = parseFloat(document.getElementById('otprema-FL-L').value) || 0;
-            var iL = parseFloat(document.getElementById('otprema-I-L').value) || 0;
-            var iiL = parseFloat(document.getElementById('otprema-II-L').value) || 0;
-            var iiiL = parseFloat(document.getElementById('otprema-III-L').value) || 0;
-            var ogrDugi = parseFloat(document.getElementById('otprema-OGR-DUGI').value) || 0;
-            var ogrCijepani = parseFloat(document.getElementById('otprema-OGR-CIJEPANI').value) || 0;
+            var flL = getNum('otprema-FL-L');
+            var iL = getNum('otprema-I-L');
+            var iiL = getNum('otprema-II-L');
+            var iiiL = getNum('otprema-III-L');
+            var ogrDugi = getNum('otprema-OGR-DUGI');
+            var ogrCijepani = getNum('otprema-OGR-CIJEPANI');
 
             // Calculate TRUPCI L = F/L L + I L + II L + III L
             var trupciL = flL + iL + iiL + iiiL;
-            document.getElementById('otprema-TRUPCI-L').value = trupciL.toFixed(2);
+            setVal('otprema-TRUPCI-L', trupciL);
 
             // Calculate LIŠĆARI = OGR.DUGI + OGR.CIJEPANI + TRUPCI L
             var liscari = ogrDugi + ogrCijepani + trupciL;
-            document.getElementById('otprema-LISCARI').value = liscari.toFixed(2);
+            setVal('otprema-LISCARI', liscari);
 
             // Calculate UKUPNO Č+L = ČETINARI + LIŠĆARI
             var ukupno = cetinari + liscari;
-            document.getElementById('otprema-UKUPNO Č+L').value = ukupno.toFixed(2);
+            setVal('otprema-UKUPNO Č+L', ukupno);
         }
 
         // Show Add Sjeca Form
@@ -7627,6 +7647,27 @@
             const submitBtn = document.getElementById('submit-sjeca-btn');
             const messageDiv = document.getElementById('sjeca-message');
 
+            // Safe getter: returns element value or default (empty string for text, '0' for numbers)
+            const getVal = (id, defaultVal = '') => {
+                const el = document.getElementById(id);
+                return el ? el.value : defaultVal;
+            };
+            // Safe numeric getter: returns number or 0
+            const getNum = (id) => {
+                const el = document.getElementById(id);
+                return el ? (Number(el.value) || 0) : 0;
+            };
+
+            // Validation: only ODJEL is required
+            const odjel = getVal('sjeca-odjel');
+            if (!odjel || odjel.trim() === '') {
+                messageDiv.innerHTML = '❌ Odaberi odjel';
+                messageDiv.style.background = '#fee2e2';
+                messageDiv.style.color = '#991b1b';
+                messageDiv.classList.remove('hidden');
+                return;
+            }
+
             submitBtn.disabled = true;
             submitBtn.textContent = 'Dodavanje...';
             messageDiv.classList.add('hidden');
@@ -7641,30 +7682,30 @@
 
                 submitBtn.textContent = 'Dodavanje...';
 
-                // Collect form data
+                // Collect form data with safe getters (quantities default to 0)
                 const formData = new URLSearchParams();
                 formData.append('path', 'add-sjeca');
                 formData.append('username', currentUser.username);
                 formData.append('password', currentPassword);
-                formData.append('datum', document.getElementById('sjeca-datum').value);
-                formData.append('odjel', document.getElementById('sjeca-odjel').value);
-                formData.append('F/L Č', document.getElementById('sjeca-FL-C').value);
-                formData.append('I Č', document.getElementById('sjeca-I-C').value);
-                formData.append('II Č', document.getElementById('sjeca-II-C').value);
-                formData.append('III Č', document.getElementById('sjeca-III-C').value);
-                formData.append('RD', document.getElementById('sjeca-RD').value);
-                formData.append('TRUPCI Č', document.getElementById('sjeca-TRUPCI-C').value);
-                formData.append('CEL.DUGA', document.getElementById('sjeca-CEL-DUGA').value);
-                formData.append('CEL.CIJEPANA', document.getElementById('sjeca-CEL-CIJEPANA').value);
-                formData.append('ČETINARI', document.getElementById('sjeca-CETINARI').value);
-                formData.append('F/L L', document.getElementById('sjeca-FL-L').value);
-                formData.append('I L', document.getElementById('sjeca-I-L').value);
-                formData.append('II L', document.getElementById('sjeca-II-L').value);
-                formData.append('III L', document.getElementById('sjeca-III-L').value);
-                formData.append('TRUPCI', document.getElementById('sjeca-TRUPCI').value);
-                formData.append('OGR.DUGI', document.getElementById('sjeca-OGR-DUGI').value);
-                formData.append('OGR.CIJEPANI', document.getElementById('sjeca-OGR-CIJEPANI').value);
-                formData.append('LIŠĆARI', document.getElementById('sjeca-LISCARI').value);
+                formData.append('datum', getVal('sjeca-datum'));
+                formData.append('odjel', odjel);
+                formData.append('F/L Č', getNum('sjeca-FL-C'));
+                formData.append('I Č', getNum('sjeca-I-C'));
+                formData.append('II Č', getNum('sjeca-II-C'));
+                formData.append('III Č', getNum('sjeca-III-C'));
+                formData.append('RD', getNum('sjeca-RD'));
+                formData.append('TRUPCI Č', getNum('sjeca-TRUPCI-C'));
+                formData.append('CEL.DUGA', getNum('sjeca-CEL-DUGA'));
+                formData.append('CEL.CIJEPANA', getNum('sjeca-CEL-CIJEPANA'));
+                formData.append('ČETINARI', getNum('sjeca-CETINARI'));
+                formData.append('F/L L', getNum('sjeca-FL-L'));
+                formData.append('I L', getNum('sjeca-I-L'));
+                formData.append('II L', getNum('sjeca-II-L'));
+                formData.append('III L', getNum('sjeca-III-L'));
+                formData.append('TRUPCI', getNum('sjeca-TRUPCI'));
+                formData.append('OGR.DUGI', getNum('sjeca-OGR-DUGI'));
+                formData.append('OGR.CIJEPANI', getNum('sjeca-OGR-CIJEPANI'));
+                formData.append('LIŠĆARI', getNum('sjeca-LISCARI'));
 
                 // Add image URL if uploaded
                 if (imageUrl) {
