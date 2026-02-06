@@ -3203,10 +3203,8 @@ function handleStanjeZaliha(username, password, poslovodja) {
 // ========================================
 // IMAGE UPLOAD FUNCTIONS
 // Slike se uploadaju na Google Drive i automatski brišu u 10:00h idućeg dana
+// IMAGES_FOLDER_ID je definisan u config.gs
 // ========================================
-
-// ID foldera za privremene slike (kreirati folder na Drive-u i staviti ID ovdje)
-const IMAGES_FOLDER_ID = '1_TEMP_IMAGES_FOLDER_ID'; // TODO: Zamijeniti sa stvarnim ID-om
 
 /**
  * Upload slike na Google Drive
