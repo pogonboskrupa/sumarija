@@ -8193,8 +8193,8 @@
 
             // Build sortimenti fields dynamically
             var sortimentiHtml = '';
-            var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ČETINARI',
-                                 'F/L L', 'I L', 'II L', 'III L', 'TRUPCI', 'OGR.DUGI', 'OGR.CIJEPANI', 'LIŠĆARI'];
+            var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'ČETINARI',
+                                 'F/L L', 'I L', 'II L', 'III L', 'TRUPCI', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI'];
 
             sortimentiKeys.forEach(function(key) {
                 var fieldId = 'edit-sjeca-' + key.replace(/\//g, '').replace(/ /g, '-');
@@ -8213,9 +8213,9 @@
 
             // Add event listeners for auto-calculation
             var inputIds = ['edit-sjeca-FL-Č', 'edit-sjeca-I-Č', 'edit-sjeca-II-Č', 'edit-sjeca-III-Č', 'edit-sjeca-RUDNO',
-                           'edit-sjeca-CEL.DUGA', 'edit-sjeca-CEL.CIJEPANA',
+                           'edit-sjeca-CEL.DUGA', 'edit-sjeca-CEL.CIJEPANA', 'edit-sjeca-ŠKART',
                            'edit-sjeca-FL-L', 'edit-sjeca-I-L', 'edit-sjeca-II-L', 'edit-sjeca-III-L',
-                           'edit-sjeca-OGR.DUGI', 'edit-sjeca-OGR.CIJEPANI'];
+                           'edit-sjeca-OGR.DUGI', 'edit-sjeca-OGR.CIJEPANI', 'edit-sjeca-GULE'];
 
             inputIds.forEach(function(inputId) {
                 var element = document.getElementById(inputId);
@@ -8237,11 +8237,13 @@
             var rudno = parseFloat(document.getElementById('edit-sjeca-RUDNO').value) || 0;
             var celDuga = parseFloat(document.getElementById('edit-sjeca-CEL.DUGA').value) || 0;
             var celCijepana = parseFloat(document.getElementById('edit-sjeca-CEL.CIJEPANA').value) || 0;
+            var skart = parseFloat(document.getElementById('edit-sjeca-ŠKART').value) || 0;
 
             var trupciC = flC + iC + iiC + iiiC + rudno;
             document.getElementById('edit-sjeca-TRUPCI-Č').value = trupciC.toFixed(2);
 
-            var cetinari = celDuga + celCijepana + trupciC;
+            // Σ ČETINARI = TRUPCI Č + CEL.DUGA + CEL.CIJEPANA + ŠKART
+            var cetinari = trupciC + celDuga + celCijepana + skart;
             document.getElementById('edit-sjeca-ČETINARI').value = cetinari.toFixed(2);
 
             var flL = parseFloat(document.getElementById('edit-sjeca-FL-L').value) || 0;
@@ -8250,11 +8252,13 @@
             var iiiL = parseFloat(document.getElementById('edit-sjeca-III-L').value) || 0;
             var ogrDugi = parseFloat(document.getElementById('edit-sjeca-OGR.DUGI').value) || 0;
             var ogrCijepani = parseFloat(document.getElementById('edit-sjeca-OGR.CIJEPANI').value) || 0;
+            var gule = parseFloat(document.getElementById('edit-sjeca-GULE').value) || 0;
 
             var trupciL = flL + iL + iiL + iiiL;
             document.getElementById('edit-sjeca-TRUPCI').value = trupciL.toFixed(2);
 
-            var liscari = ogrDugi + ogrCijepani + trupciL;
+            // LIŠĆARI = TRUPCI L + OGR.DUGI + OGR.CIJEPANI + GULE
+            var liscari = trupciL + ogrDugi + ogrCijepani + gule;
             document.getElementById('edit-sjeca-LIŠĆARI').value = liscari.toFixed(2);
 
             var sveukupno = cetinari + liscari;
@@ -8339,8 +8343,8 @@
             document.getElementById('edit-otprema-broj-otpremnice').value = unos.brojOtpremnice || '';
 
             var sortimentiHtml = '';
-            var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ČETINARI',
-                                 'F/L L', 'I L', 'II L', 'III L', 'TRUPCI', 'OGR.DUGI', 'OGR.CIJEPANI', 'LIŠĆARI'];
+            var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'ČETINARI',
+                                 'F/L L', 'I L', 'II L', 'III L', 'TRUPCI', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI'];
 
             sortimentiKeys.forEach(function(key) {
                 var fieldId = 'edit-otprema-' + key.replace(/\//g, '').replace(/ /g, '-');
@@ -8358,9 +8362,9 @@
             document.getElementById('edit-otprema-sortimenti').innerHTML = sortimentiHtml;
 
             var inputIds = ['edit-otprema-FL-Č', 'edit-otprema-I-Č', 'edit-otprema-II-Č', 'edit-otprema-III-Č', 'edit-otprema-RUDNO',
-                           'edit-otprema-CEL.DUGA', 'edit-otprema-CEL.CIJEPANA',
+                           'edit-otprema-CEL.DUGA', 'edit-otprema-CEL.CIJEPANA', 'edit-otprema-ŠKART',
                            'edit-otprema-FL-L', 'edit-otprema-I-L', 'edit-otprema-II-L', 'edit-otprema-III-L',
-                           'edit-otprema-OGR.DUGI', 'edit-otprema-OGR.CIJEPANI'];
+                           'edit-otprema-OGR.DUGI', 'edit-otprema-OGR.CIJEPANI', 'edit-otprema-GULE'];
 
             inputIds.forEach(function(inputId) {
                 var element = document.getElementById(inputId);
@@ -8380,11 +8384,13 @@
             var rudno = parseFloat(document.getElementById('edit-otprema-RUDNO').value) || 0;
             var celDuga = parseFloat(document.getElementById('edit-otprema-CEL.DUGA').value) || 0;
             var celCijepana = parseFloat(document.getElementById('edit-otprema-CEL.CIJEPANA').value) || 0;
+            var skart = parseFloat(document.getElementById('edit-otprema-ŠKART').value) || 0;
 
             var trupciC = flC + iC + iiC + iiiC + rudno;
             document.getElementById('edit-otprema-TRUPCI-Č').value = trupciC.toFixed(2);
 
-            var cetinari = celDuga + celCijepana + trupciC;
+            // Σ ČETINARI = TRUPCI Č + CEL.DUGA + CEL.CIJEPANA + ŠKART
+            var cetinari = trupciC + celDuga + celCijepana + skart;
             document.getElementById('edit-otprema-ČETINARI').value = cetinari.toFixed(2);
 
             var flL = parseFloat(document.getElementById('edit-otprema-FL-L').value) || 0;
@@ -8393,11 +8399,13 @@
             var iiiL = parseFloat(document.getElementById('edit-otprema-III-L').value) || 0;
             var ogrDugi = parseFloat(document.getElementById('edit-otprema-OGR.DUGI').value) || 0;
             var ogrCijepani = parseFloat(document.getElementById('edit-otprema-OGR.CIJEPANI').value) || 0;
+            var gule = parseFloat(document.getElementById('edit-otprema-GULE').value) || 0;
 
             var trupciL = flL + iL + iiL + iiiL;
             document.getElementById('edit-otprema-TRUPCI').value = trupciL.toFixed(2);
 
-            var liscari = ogrDugi + ogrCijepani + trupciL;
+            // LIŠĆARI = TRUPCI L + OGR.DUGI + OGR.CIJEPANI + GULE
+            var liscari = trupciL + ogrDugi + ogrCijepani + gule;
             document.getElementById('edit-otprema-LIŠĆARI').value = liscari.toFixed(2);
 
             var sveukupno = cetinari + liscari;
