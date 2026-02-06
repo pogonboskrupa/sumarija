@@ -6,38 +6,58 @@
 // 1. DATA PROCESSING FUNKCIJE
 // ========================================
 
+/**
+ * Dohvati dinamiku (plan) za godinu iz DINAMIKA sheeta
+ * Čita iz K3:K14 (Jan=K3 ... Dec=K14) - vertikalni raspon
+ * Prikazuje samo mjesece <= trenutni mjesec (budući mjeseci = 0)
+ * @param {number} year - Godina za koju se traži dinamika
+ * @returns {Array} - Niz od 12 vrijednosti za svaki mjesec
+ */
 function getDinamikaForYear(year) {
   try {
     const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
     let dinamikaSheet = ss.getSheetByName("DINAMIKA");
 
-    // Ako sheet ne postoji ili nema podataka, vrati prazne vrijednosti
+    // Ako sheet ne postoji, vrati nule
     if (!dinamikaSheet) {
       Logger.log('DINAMIKA sheet does not exist, returning zeros');
       return Array(12).fill(0);
     }
 
-    const data = dinamikaSheet.getDataRange().getValues();
+    // Dohvati trenutni mjesec (1-12) u Europe/Sarajevo timezone
+    const now = new Date();
+    const sarajevoTime = Utilities.formatDate(now, "Europe/Sarajevo", "M");
+    const currentMonth = parseInt(sarajevoTime);
+    const currentYear = parseInt(Utilities.formatDate(now, "Europe/Sarajevo", "yyyy"));
 
-    // Pronađi red za traženu godinu
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      const rowYear = parseInt(row[0]) || 0;
+    Logger.log('getDinamikaForYear: year=' + year + ', currentMonth=' + currentMonth + ', currentYear=' + currentYear);
 
-      if (rowYear === parseInt(year)) {
-        // Vrati mjesečne vrijednosti (kolone 1-12)
-        const mjesecneVrijednosti = [];
-        for (let j = 1; j <= 12; j++) {
-          mjesecneVrijednosti.push(parseFloat(row[j]) || 0);
-        }
-        Logger.log('Found dinamika for year ' + year);
-        return mjesecneVrijednosti;
+    // Čitaj K3:K14 (kolona K = 11, redovi 3-14) - plan za sve mjesece
+    const planRange = dinamikaSheet.getRange("K3:K14");
+    const planValues = planRange.getValues();
+
+    // Primijeni pravilo: prikaži samo mjesece <= currentMonth (za trenutnu godinu)
+    // Za prošle godine prikaži sve, za buduće godine prikaži ništa
+    const mjesecneVrijednosti = [];
+    for (let i = 0; i < 12; i++) {
+      const mjesec = i + 1; // 1-12
+      const planValue = parseFloat(planValues[i][0]) || 0;
+
+      let dinamikaShown = 0;
+      if (parseInt(year) < currentYear) {
+        // Prošla godina - prikaži sve mjesece
+        dinamikaShown = planValue;
+      } else if (parseInt(year) === currentYear) {
+        // Trenutna godina - prikaži samo do trenutnog mjeseca
+        dinamikaShown = (mjesec <= currentMonth) ? planValue : 0;
       }
+      // Buduća godina - sve ostaje 0
+
+      mjesecneVrijednosti.push(dinamikaShown);
     }
 
-    // Ako nema podataka za godinu, vrati nule
-    Logger.log('No dinamika found for year ' + year + ', returning zeros');
-    return Array(12).fill(0);
+    Logger.log('getDinamikaForYear: Returning dinamika for year ' + year + ': ' + JSON.stringify(mjesecneVrijednosti));
+    return mjesecneVrijednosti;
 
   } catch (error) {
     Logger.log('ERROR in getDinamikaForYear: ' + error.toString());

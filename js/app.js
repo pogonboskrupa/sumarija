@@ -418,7 +418,7 @@
 
         // Cache configuration - different TTLs for different endpoints
         const CACHE_CONFIG = {
-            'dashboard': 5 * 60 * 1000,        // 5 minutes
+            'dashboard': 10 * 60 * 1000,       // 10 minutes (invalidira se i po mjesecu)
             'primaci': 10 * 60 * 1000,         // 10 minutes
             'otpremaci': 10 * 60 * 1000,       // 10 minutes
             'kupci': 10 * 60 * 1000,           // 10 minutes
@@ -1823,8 +1823,11 @@
         // Load dashboard data
         async function loadDashboard() {
             try {
-                const year = new Date().getFullYear();
-                const cacheKey = 'cache_dashboard_' + year;
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = now.getMonth() + 1; // 1-12
+                // Cache key uključuje mjesec - automatski se invalidira kad se promijeni mjesec
+                const cacheKey = 'cache_dashboard_' + year + '_m' + month;
                 const url = buildApiUrl('dashboard', { year });
 
                 // 🚀 TURBO MODE: INSTANT SHOW CACHED DATA (zero delay!)
