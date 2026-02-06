@@ -154,7 +154,7 @@ function doOptions(e) {
 // ========================================
 // POST Handler
 // ========================================
-// Handles POST requests (trenutno samo save_dinamika)
+// Handles POST requests (save_dinamika, upload-image)
 function doPost(e) {
   try {
     const path = e.parameter.path;
@@ -162,10 +162,19 @@ function doPost(e) {
 
     if (path === 'save_dinamika') {
       return handleSaveDinamika(postData);
+    } else if (path === 'upload-image') {
+      // Upload image via POST (base64 data is too large for GET URL)
+      return handleUploadImage(
+        postData.username,
+        postData.password,
+        postData.type,
+        postData.imageData
+      );
     }
 
     return createJsonResponse({ error: 'Unknown POST path' }, false);
   } catch (error) {
+    Logger.log('doPost error: ' + error.toString());
     return createJsonResponse({ error: error.toString() }, false);
   }
 }

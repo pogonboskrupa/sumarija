@@ -7977,21 +7977,28 @@
         }
 
         // Upload Image to Server (returns image URL or null)
+        // Uses POST because base64 image data is too large for GET URL query string
         async function uploadImage(imageData, type) {
             if (!imageData) return null;
 
             try {
-                const formData = new URLSearchParams();
-                formData.append('path', 'upload-image');
-                formData.append('username', currentUser.username);
-                formData.append('password', currentPassword);
-                formData.append('type', type); // 'sjeca' or 'otprema'
-                formData.append('imageData', imageData);
-
-                const response = await fetch(`${API_URL}?${formData.toString()}`);
+                // POST request with JSON body (base64 data too large for GET URL)
+                const response = await fetch(`${API_URL}?path=upload-image`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: currentUser.username,
+                        password: currentPassword,
+                        type: type,
+                        imageData: imageData
+                    })
+                });
                 const result = await response.json();
 
                 if (result.success && result.imageUrl) {
+                    console.log('Image uploaded successfully:', result.imageUrl);
                     return result.imageUrl;
                 } else {
                     console.error('Image upload failed:', result.error);
