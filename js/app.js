@@ -7516,13 +7516,14 @@
             var rd = getNum('sjeca-RD');
             var celDuga = getNum('sjeca-CEL-DUGA');
             var celCijepana = getNum('sjeca-CEL-CIJEPANA');
+            var skart = getNum('sjeca-SKART');
 
             // Calculate TRUPCI Č = F/L Č + I Č + II Č + III Č + RD
             var trupciC = flC + iC + iiC + iiiC + rd;
             setVal('sjeca-TRUPCI-C', trupciC);
 
-            // Calculate ČETINARI = CEL.DUGA + CEL.CIJEPANA + TRUPCI Č
-            var cetinari = celDuga + celCijepana + trupciC;
+            // Calculate Σ ČETINARI = TRUPCI Č + CEL.DUGA + CEL.CIJEPANA + ŠKART
+            var cetinari = trupciC + celDuga + celCijepana + skart;
             setVal('sjeca-CETINARI', cetinari);
 
             // Get all lišćar values
@@ -7532,16 +7533,17 @@
             var iiiL = getNum('sjeca-III-L');
             var ogrDugi = getNum('sjeca-OGR-DUGI');
             var ogrCijepani = getNum('sjeca-OGR-CIJEPANI');
+            var gule = getNum('sjeca-GULE');
 
             // Calculate TRUPCI L = F/L L + I L + II L + III L
             var trupciL = flL + iL + iiL + iiiL;
             setVal('sjeca-TRUPCI-L', trupciL);
 
-            // Calculate LIŠĆARI = OGR.DUGI + OGR.CIJEPANI + TRUPCI L
-            var liscari = ogrDugi + ogrCijepani + trupciL;
+            // Calculate LIŠĆARI = TRUPCI L + OGR.DUGI + OGR.CIJEPANI + GULE
+            var liscari = trupciL + ogrDugi + ogrCijepani + gule;
             setVal('sjeca-LISCARI', liscari);
 
-            // Calculate UKUPNO Č+L = ČETINARI + LIŠĆARI
+            // Calculate UKUPNO Č+L = Σ ČETINARI + LIŠĆARI
             var ukupno = cetinari + liscari;
             setVal('sjeca-UKUPNO Č+L', ukupno);
         }
@@ -7566,13 +7568,14 @@
             var rd = getNum('otprema-RD');
             var celDuga = getNum('otprema-CEL-DUGA');
             var celCijepana = getNum('otprema-CEL-CIJEPANA');
+            var skart = getNum('otprema-SKART');
 
             // Calculate TRUPCI Č = F/L Č + I Č + II Č + III Č + RD
             var trupciC = flC + iC + iiC + iiiC + rd;
             setVal('otprema-TRUPCI-C', trupciC);
 
-            // Calculate ČETINARI = CEL.DUGA + CEL.CIJEPANA + TRUPCI Č
-            var cetinari = celDuga + celCijepana + trupciC;
+            // Calculate Σ ČETINARI = TRUPCI Č + CEL.DUGA + CEL.CIJEPANA + ŠKART
+            var cetinari = trupciC + celDuga + celCijepana + skart;
             setVal('otprema-CETINARI', cetinari);
 
             // Get all lišćar values
@@ -7582,16 +7585,17 @@
             var iiiL = getNum('otprema-III-L');
             var ogrDugi = getNum('otprema-OGR-DUGI');
             var ogrCijepani = getNum('otprema-OGR-CIJEPANI');
+            var gule = getNum('otprema-GULE');
 
             // Calculate TRUPCI L = F/L L + I L + II L + III L
             var trupciL = flL + iL + iiL + iiiL;
             setVal('otprema-TRUPCI-L', trupciL);
 
-            // Calculate LIŠĆARI = OGR.DUGI + OGR.CIJEPANI + TRUPCI L
-            var liscari = ogrDugi + ogrCijepani + trupciL;
+            // Calculate LIŠĆARI = TRUPCI L + OGR.DUGI + OGR.CIJEPANI + GULE
+            var liscari = trupciL + ogrDugi + ogrCijepani + gule;
             setVal('otprema-LISCARI', liscari);
 
-            // Calculate UKUPNO Č+L = ČETINARI + LIŠĆARI
+            // Calculate UKUPNO Č+L = Σ ČETINARI + LIŠĆARI
             var ukupno = cetinari + liscari;
             setVal('otprema-UKUPNO Č+L', ukupno);
         }
@@ -7687,7 +7691,12 @@
                 let imageUrl = null;
                 if (sjecaImageData) {
                     submitBtn.textContent = 'Učitavam sliku...';
+                    console.log('Uploading image, data length:', sjecaImageData.length);
                     imageUrl = await uploadImage(sjecaImageData, 'sjeca');
+                    console.log('Upload result:', imageUrl ? 'SUCCESS: ' + imageUrl : 'FAILED');
+                    if (!imageUrl) {
+                        console.warn('Image upload failed, continuing without image');
+                    }
                 }
 
                 submitBtn.textContent = 'Dodavanje...';
@@ -7713,7 +7722,7 @@
                 formData.append('I L', getNum('sjeca-I-L'));
                 formData.append('II L', getNum('sjeca-II-L'));
                 formData.append('III L', getNum('sjeca-III-L'));
-                formData.append('TRUPCI L', getNum('sjeca-TRUPCI'));
+                formData.append('TRUPCI L', getNum('sjeca-TRUPCI-L'));
                 formData.append('OGR.DUGI', getNum('sjeca-OGR-DUGI'));
                 formData.append('OGR.CIJEPANI', getNum('sjeca-OGR-CIJEPANI'));
                 formData.append('GULE', getNum('sjeca-GULE'));
@@ -7808,7 +7817,7 @@
                 formData.append('I L', document.getElementById('otprema-I-L').value);
                 formData.append('II L', document.getElementById('otprema-II-L').value);
                 formData.append('III L', document.getElementById('otprema-III-L').value);
-                formData.append('TRUPCI L', document.getElementById('otprema-TRUPCI').value);
+                formData.append('TRUPCI L', document.getElementById('otprema-TRUPCI-L').value);
                 formData.append('OGR.DUGI', document.getElementById('otprema-OGR-DUGI').value);
                 formData.append('OGR.CIJEPANI', document.getElementById('otprema-OGR-CIJEPANI').value);
                 formData.append('GULE', document.getElementById('otprema-GULE').value);
@@ -7996,6 +8005,7 @@
             if (!imageData) return null;
 
             try {
+                console.log('uploadImage: Starting POST request to', API_URL);
                 // POST request with JSON body (base64 data too large for GET URL)
                 const response = await fetch(`${API_URL}?path=upload-image`, {
                     method: 'POST',
@@ -8009,17 +8019,21 @@
                         imageData: imageData
                     })
                 });
+                console.log('uploadImage: Response status:', response.status);
                 const result = await response.json();
+                console.log('uploadImage: Response data:', JSON.stringify(result).substring(0, 200));
 
                 if (result.success && result.imageUrl) {
                     console.log('Image uploaded successfully:', result.imageUrl);
                     return result.imageUrl;
                 } else {
-                    console.error('Image upload failed:', result.error);
+                    console.error('Image upload failed:', result.error || 'Unknown error');
+                    alert('Greška pri uploadu slike: ' + (result.error || 'Nepoznata greška'));
                     return null;
                 }
             } catch (error) {
                 console.error('Error uploading image:', error);
+                alert('Greška pri uploadu slike: ' + error.message);
                 return null;
             }
         }
