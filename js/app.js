@@ -6252,6 +6252,7 @@
                 html += '<th style="min-width: 150px;">Radnik</th>';
                 html += '<th style="min-width: 120px;">Kupac</th>';
                 html += '<th style="min-width: 120px;">Br. otpremnice</th>';
+                html += '<th style="min-width: 60px;">Slika</th>';
 
                 // Sortimenti headers with grouping
                 for (let i = 0; i < sortimentiNazivi.length; i++) {
@@ -6275,6 +6276,12 @@
                     html += '<td>' + unos.radnik + '</td>';
                     html += '<td>' + (unos.kupac || '-') + '</td>';
                     html += '<td>' + (unos.brojOtpremnice || '-') + '</td>';
+                    // Slika kolona
+                    if (unos.imageUrl) {
+                        html += '<td style="text-align: center;"><a href="' + unos.imageUrl + '" target="_blank" title="Pogledaj sliku">📷</a></td>';
+                    } else {
+                        html += '<td style="text-align: center; color: #9ca3af;">-</td>';
+                    }
 
                     // Sortimenti values with grouping
                     for (let j = 0; j < sortimentiNazivi.length; j++) {

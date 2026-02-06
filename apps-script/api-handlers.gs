@@ -1240,6 +1240,7 @@ function handleAddSjeca(params) {
     Logger.log('User: ' + userFullName);
     Logger.log('Odjel: ' + params.odjel);
     Logger.log('Datum: ' + params.datum);
+    Logger.log('ImageUrl: ' + (params.imageUrl || 'NONE'));
 
     const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
     let unosSheet = ss.getSheetByName("PRIMAČ_UNOS");
@@ -1247,13 +1248,13 @@ function handleAddSjeca(params) {
     // Kreiraj PRIMAČ_UNOS sheet ako ne postoji
     if (!unosSheet) {
       unosSheet = ss.insertSheet("PRIMAČ_UNOS");
-      // Dodaj header red - ista struktura kao INDEKS_PRIMKA + STATUS + TIMESTAMP
+      // Dodaj header red - ista struktura kao INDEKS_PRIMKA + STATUS + TIMESTAMP + IMAGE_URL
       const headers = ["DATUM", "RADNIK", "ODJEL", "RADILIŠTE", "IZVOĐAČ", "POSLOVOĐA",
                        "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
                        "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
                        "F/L L", "I L", "II L", "III L", "TRUPCI L",
                        "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L",
-                       "STATUS", "TIMESTAMP"];
+                       "STATUS", "TIMESTAMP", "IMAGE_URL"];
       unosSheet.appendRow(headers);
 
       // Formatiraj header
@@ -1289,9 +1290,10 @@ function handleAddSjeca(params) {
     // Dodaj UKUPNO Č+L (Y)
     newRow.push(ukupno);
 
-    // Dodaj STATUS i TIMESTAMP
+    // Dodaj STATUS, TIMESTAMP i IMAGE_URL
     newRow.push("PENDING");
     newRow.push(new Date());
+    newRow.push(params.imageUrl || '');  // IMAGE_URL
 
     // Dodaj red na kraj sheet-a
     unosSheet.appendRow(newRow);
@@ -1448,7 +1450,7 @@ function handlePendingUnosi(year, username, password) {
     const pendingUnosi = [];
 
     // Pročitaj PRIMAČ_UNOS
-    // Struktura: A=Datum, B=Radnik, C=Odjel, D=Radilište, E=Izvođač, F-Y=Sortimenti, Z=STATUS, AA=TIMESTAMP
+    // Struktura: A=Datum, B=Radnik, C=Odjel, D=Radilište, E=Izvođač, F-Y=Sortimenti, Z=STATUS, AA=TIMESTAMP, AB=IMAGE_URL
     if (primacUnosSheet) {
       const primkaData = primacUnosSheet.getDataRange().getValues();
 
@@ -1461,6 +1463,7 @@ function handlePendingUnosi(year, username, password) {
         const izvodjac = row[4];    // E - IZVOĐAČ
         const status = row[25];     // Z - STATUS
         const timestamp = row[26];  // AA - TIMESTAMP
+        const imageUrl = row[27] || '';  // AB - IMAGE_URL
 
         if (!datum || status !== "PENDING") continue;
 
@@ -1491,7 +1494,8 @@ function handlePendingUnosi(year, username, password) {
           sortimenti: sortimenti,
           ukupno: ukupno,
           timestamp: formatDate(new Date(timestamp)),
-          timestampObj: new Date(timestamp)
+          timestampObj: new Date(timestamp),
+          imageUrl: imageUrl
         });
       }
     }
