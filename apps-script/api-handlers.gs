@@ -3020,9 +3020,45 @@ function handleDeltaOtprema(username, password, fromRow, toRow) {
 }
 
 // ========================================
-// STANJE ZALIHA API - Čita podatke sa STANJE_ZALIHA sheeta
+// HELPER: Dohvati odjele koje je poslovođa radila iz INDEKS_PRIMKA
+// Kolona C = Odjel, Kolona F = Poslovođa
 // ========================================
-function handleStanjeZaliha(username, password) {
+function getPoslovodjaOdjeliFromPrimka(ss, poslovodjaName) {
+  try {
+    const primkaSheet = ss.getSheetByName("INDEKS_PRIMKA");
+    if (!primkaSheet) {
+      Logger.log('INDEKS_PRIMKA sheet not found');
+      return null;
+    }
+
+    const data = primkaSheet.getDataRange().getValues();
+    const odjeliSet = new Set();
+
+    // Preskoči header red (prvi red)
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const odjel = String(row[2] || '').toUpperCase().trim();  // Kolona C (indeks 2)
+      const poslovodja = String(row[5] || '').toUpperCase().trim();  // Kolona F (indeks 5)
+
+      if (odjel && poslovodja === poslovodjaName) {
+        odjeliSet.add(odjel);
+      }
+    }
+
+    const odjeliArray = Array.from(odjeliSet);
+    Logger.log(`getPoslovodjaOdjeliFromPrimka: Pronađeno ${odjeliArray.length} odjela za ${poslovodjaName}`);
+    return odjeliArray.length > 0 ? odjeliArray : null;
+  } catch (error) {
+    Logger.log('ERROR in getPoslovodjaOdjeliFromPrimka: ' + error.toString());
+    return null;
+  }
+}
+
+// ========================================
+// STANJE ZALIHA API - Čita podatke sa STANJE_ZALIHA sheeta
+// Opciono filtrira po poslovođi (čita odjele iz INDEKS_PRIMKA kolona C i F)
+// ========================================
+function handleStanjeZaliha(username, password, poslovodja) {
   try {
     // Autentikacija
     const loginResult = JSON.parse(handleLogin(username, password).getContent());
@@ -3031,12 +3067,20 @@ function handleStanjeZaliha(username, password) {
     }
 
     Logger.log('=== HANDLE STANJE ZALIHA START ===');
+    Logger.log('Poslovodja filter: ' + (poslovodja || 'NONE'));
 
     const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
     const stanjeSheet = ss.getSheetByName("STANJE_ZALIHA");
 
     if (!stanjeSheet) {
       return createJsonResponse({ error: "STANJE_ZALIHA sheet not found in BAZA_PODATAKA" }, false);
+    }
+
+    // Ako je proslijeđena poslovođa, dohvati odjele koje je radila iz INDEKS_PRIMKA
+    let poslovodjaOdjeli = null;
+    if (poslovodja && poslovodja.trim() !== '') {
+      poslovodjaOdjeli = getPoslovodjaOdjeliFromPrimka(ss, poslovodja.trim().toUpperCase());
+      Logger.log('Poslovodja odjeli: ' + (poslovodjaOdjeli ? poslovodjaOdjeli.join(', ') : 'NONE'));
     }
 
     const data = stanjeSheet.getDataRange().getValues();
@@ -3099,6 +3143,17 @@ function handleStanjeZaliha(username, password) {
         const sjecaData = parseSortimenti(sjecaRow);
         const otpremaData = parseSortimenti(otpremaRow);
         const zalihaData = parseSortimenti(zalihaRow);
+
+        // Ako je filter aktivan, provjeri da li je odjel u listi poslovođinih odjela
+        if (poslovodjaOdjeli !== null) {
+          const odjelUpper = odjelNaziv.toUpperCase().trim();
+          const matchFound = poslovodjaOdjeli.some(po => odjelUpper.includes(po) || po.includes(odjelUpper));
+          if (!matchFound) {
+            // Preskoči ovaj odjel - nije u listi poslovođe
+            i += 8;
+            continue;
+          }
+        }
 
         const odjelData = {
           odjel: odjelNaziv,
