@@ -1450,7 +1450,7 @@ function handlePendingUnosi(year, username, password) {
     const pendingUnosi = [];
 
     // Pročitaj PRIMAČ_UNOS
-    // Struktura: A=Datum, B=Radnik, C=Odjel, D=Radilište, E=Izvođač, F-Y=Sortimenti, Z=STATUS, AA=TIMESTAMP, AB=IMAGE_URL
+    // Struktura: A-F=Basic(0-5), G-Z=Sortimenti(6-25), AA=STATUS(26), AB=TIMESTAMP(27), AC=IMAGE_URL(28)
     if (primacUnosSheet) {
       const primkaData = primacUnosSheet.getDataRange().getValues();
 
@@ -1461,19 +1461,19 @@ function handlePendingUnosi(year, username, password) {
         const odjel = row[2];       // C - ODJEL
         const radiliste = row[3];   // D - RADILIŠTE
         const izvodjac = row[4];    // E - IZVOĐAČ
-        const status = row[25];     // Z - STATUS
-        const timestamp = row[26];  // AA - TIMESTAMP
-        const imageUrl = row[27] || '';  // AB - IMAGE_URL
+        const status = row[26];     // AA - STATUS (index 26)
+        const timestamp = row[27];  // AB - TIMESTAMP (index 27)
+        const imageUrl = row[28] || '';  // AC - IMAGE_URL (index 28)
 
         if (!datum || status !== "PENDING") continue;
 
         const datumObj = parseDate(datum);
         if (year && datumObj.getFullYear() !== parseInt(year)) continue;
 
-        // Pročitaj sortimente (F-Y, indeksi 5-24)
+        // Pročitaj sortimente (G-Z, indeksi 6-25)
         const sortimenti = {};
         for (let j = 0; j < 20; j++) {
-          const vrijednost = parseFloat(row[5 + j]) || 0;
+          const vrijednost = parseFloat(row[6 + j]) || 0;
           sortimenti[SORTIMENTI_NAZIVI[j]] = vrijednost;
         }
 
@@ -3267,16 +3267,22 @@ function handleUploadImage(username, password, type, imageData) {
     // Store metadata in spreadsheet for tracking (for auto-deletion)
     storeImageMetadata(file.getId(), filename, type, user.fullName);
 
-    // Get direct view URL
-    const imageUrl = 'https://drive.google.com/uc?export=view&id=' + file.getId();
+    // Get URLs
+    const fileId = file.getId();
+    const imageUrl = 'https://drive.google.com/uc?export=view&id=' + fileId;
+    const webViewLink = 'https://drive.google.com/file/d/' + fileId + '/view';
+    const thumbnailUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w200';
 
     Logger.log('Image uploaded: ' + imageUrl);
 
     return createJsonResponse({
       success: true,
       imageUrl: imageUrl,
-      fileId: file.getId(),
-      filename: filename
+      fileId: fileId,
+      webViewLink: webViewLink,
+      thumbnailUrl: thumbnailUrl,
+      filename: filename,
+      createdAt: new Date().toISOString()
     }, true);
 
   } catch (error) {

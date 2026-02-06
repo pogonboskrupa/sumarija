@@ -6276,9 +6276,20 @@
                     html += '<td>' + unos.radnik + '</td>';
                     html += '<td>' + (unos.kupac || '-') + '</td>';
                     html += '<td>' + (unos.brojOtpremnice || '-') + '</td>';
-                    // Slika kolona
+                    // Slika kolona - thumbnail preview
                     if (unos.imageUrl) {
-                        html += '<td style="text-align: center;"><a href="' + unos.imageUrl + '" target="_blank" title="Pogledaj sliku">📷</a></td>';
+                        // Extract fileId from Drive URL and create thumbnail URL
+                        const fileIdMatch = unos.imageUrl.match(/id=([^&]+)/);
+                        const fileId = fileIdMatch ? fileIdMatch[1] : null;
+                        if (fileId) {
+                            const thumbUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w80';
+                            html += '<td style="text-align: center; padding: 4px;">';
+                            html += '<a href="' + unos.imageUrl + '" target="_blank" title="Klikni za veću sliku">';
+                            html += '<img src="' + thumbUrl + '" alt="Slika" style="max-width: 60px; max-height: 45px; border-radius: 4px; cursor: pointer; border: 1px solid #e5e7eb;" onerror="this.outerHTML=\'📷\'">';
+                            html += '</a></td>';
+                        } else {
+                            html += '<td style="text-align: center;"><a href="' + unos.imageUrl + '" target="_blank" title="Pogledaj sliku">📷</a></td>';
+                        }
                     } else {
                         html += '<td style="text-align: center; color: #9ca3af;">-</td>';
                     }
