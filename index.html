@@ -418,18 +418,18 @@
 
         <!-- OTPREMACI CONTENT (Prikaz po otpremačima) -->
         <div id="otpremaci-content" class="container hidden">
-            <h2>🚛 Prikaz otpreme</h2>
+            <h2>🚛 OTPREMA</h2>
 
             <!-- Submenu -->
             <div class="submenu">
-                <button class="submenu-tab active" onclick="switchOtremaciSubmenu('monthly')">📊 Mjesečni prikaz</button>
-                <button class="submenu-tab" onclick="switchOtremaciSubmenu('daily')">📅 Po danima</button>
+                <button class="submenu-tab" onclick="switchOtremaciSubmenu('monthly')">📊 Mjesečni prikaz</button>
+                <button class="submenu-tab active" onclick="switchOtremaciSubmenu('daily')">📅 Po danima</button>
                 <button class="submenu-tab" onclick="switchOtremaciSubmenu('radilista')">🏗️ Radilišta</button>
                 <button class="submenu-tab" onclick="switchOtremaciSubmenu('po-kupcima')" id="otpremaci-po-kupcima-tab">🏢 Otprema u <span id="current-month-name">tekućem mjesecu</span></button>
             </div>
 
             <!-- Mjesečni prikaz -->
-            <div id="otpremaci-monthly-view" class="submenu-content">
+            <div id="otpremaci-monthly-view" class="submenu-content hidden">
                 <div class="section">
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="otpremaci-search" placeholder="🔍 Pretraži po imenu otpremača..." onkeyup="filterOtremaciTable()">
@@ -445,7 +445,7 @@
             </div>
 
             <!-- Dnevni prikaz - tekući mjesec -->
-            <div id="otpremaci-daily-view" class="submenu-content hidden">
+            <div id="otpremaci-daily-view" class="submenu-content">
                 <div class="section">
                     <div class="month-selector">
                         <label for="otpremaci-month-select">📅 Izaberi mjesec:</label>
