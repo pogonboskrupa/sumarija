@@ -596,7 +596,8 @@ function handleKupci(year, username, password) {
 
 /**
  * Odjeli endpoint - vraća prikaz po odjelima sa detaljnim podacima
- * iz individualnih spreadsheet-ova (PRIMKA i OTPREMA listova)
+ * PRIMARNO čita podatke iz STANJE_ZALIHA sheeta (sjeca, otprema, projekat, zaliha)
+ * SEKUNDARNO čita metadata iz individualnih spreadsheet-ova (izvođač, datumZadnjeSjece)
  */
 function handleOdjeli(year, username, password) {
   // Autentikacija
@@ -609,7 +610,66 @@ function handleOdjeli(year, username, password) {
   Logger.log('Year: ' + year);
 
   try {
-    // Otvori folder ODJELI
+    // 1. PRIMARNI IZVOR: Učitaj podatke iz STANJE_ZALIHA sheeta
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const stanjeSheet = ss.getSheetByName("STANJE_ZALIHA");
+
+    // Kreiraj mapu sa podacima iz STANJE_ZALIHA
+    const stanjeZalihaMap = {};
+
+    if (stanjeSheet) {
+      const data = stanjeSheet.getDataRange().getValues();
+      Logger.log('STANJE_ZALIHA sheet found, parsing data...');
+
+      // Parsiraj blokove od 8 redova
+      let i = 0;
+      while (i < data.length) {
+        const row = data[i];
+
+        // Provjeri da li je ovo početak novog bloka (ODJEL u koloni A)
+        if (row[0] && String(row[0]).toUpperCase() === 'ODJEL') {
+          const odjelNaziv = String(row[1] || '').trim();
+
+          // Čitaj radilište (red i+1, kolona B)
+          const radilisteRow = data[i + 1] || [];
+          const radiliste = String(radilisteRow[1] || '').trim();
+
+          // Čitaj projekat, sječa, otprema, zaliha (redovi i+3 do i+6)
+          // Kolona W (index 22) je UKUPNO Č+L
+          const projekatRow = data[i + 3] || [];
+          const sjecaRow = data[i + 4] || [];
+          const otpremaRow = data[i + 5] || [];
+          const zalihaRow = data[i + 6] || [];
+
+          // UKUPNO Č+L je u koloni W (indeks 22)
+          const projekat = parseFloat(projekatRow[22]) || 0;
+          const sjeca = parseFloat(sjecaRow[22]) || 0;
+          const otprema = parseFloat(otpremaRow[22]) || 0;
+          const zaliha = parseFloat(zalihaRow[22]) || 0;
+
+          if (odjelNaziv) {
+            stanjeZalihaMap[odjelNaziv] = {
+              projekat: projekat,
+              sjeca: sjeca,
+              otprema: otprema,
+              zaliha: zaliha,
+              radiliste: radiliste
+            };
+            Logger.log(`STANJE_ZALIHA: ${odjelNaziv} - sjeca: ${sjeca}, otprema: ${otprema}`);
+          }
+
+          i += 8; // Pomakni se na sljedeći blok
+        } else {
+          i++;
+        }
+      }
+
+      Logger.log(`STANJE_ZALIHA: Učitano ${Object.keys(stanjeZalihaMap).length} odjela`);
+    } else {
+      Logger.log('STANJE_ZALIHA sheet ne postoji, koristim individualne spreadsheet-ove');
+    }
+
+    // 2. SEKUNDARNI IZVOR: Otvori folder ODJELI za metadata (izvođač, datumZadnjeSjece)
     const folder = DriveApp.getFolderById(ODJELI_FOLDER_ID);
     const files = folder.getFilesByType(MimeType.GOOGLE_SHEETS);
 
@@ -623,53 +683,52 @@ function handleOdjeli(year, username, password) {
       processedCount++;
 
       try {
-        const ss = SpreadsheetApp.open(file);
+        const odjelSS = SpreadsheetApp.open(file);
         Logger.log(`[${processedCount}] Processing odjel: ${odjelNaziv}`);
+
+        // Dohvati podatke iz STANJE_ZALIHA mape ako postoje
+        const stanjeData = stanjeZalihaMap[odjelNaziv] || {};
 
         // Inicijalizuj objekt za ovaj odjel
         const odjelData = {
           odjel: odjelNaziv,
-          sjeca: 0,           // U12 iz PRIMKA
-          otprema: 0,         // U12 iz OTPREMA
-          sumaPanj: 0,        // sjeca - otprema
-          radiliste: '',      // W2 iz PRIMKA
-          izvođač: '',        // W3 iz PRIMKA
-          datumZadnjeSjece: '', // Zadnji datum unosa u PRIMKA
-          projekat: 0,        // U11 iz PRIMKA - projektovana masa
-          realizacija: 0,     // (U12/U11) * 100 iz PRIMKA
+          sjeca: stanjeData.sjeca || 0,           // IZ STANJE_ZALIHA
+          otprema: stanjeData.otprema || 0,       // IZ STANJE_ZALIHA
+          sumaPanj: (stanjeData.sjeca || 0) - (stanjeData.otprema || 0),  // Kalkulirano
+          radiliste: stanjeData.radiliste || '',  // IZ STANJE_ZALIHA
+          izvođač: '',        // Čitaj iz individualnog spreadsheet-a
+          datumZadnjeSjece: '', // Čitaj iz individualnog spreadsheet-a
+          projekat: stanjeData.projekat || 0,     // IZ STANJE_ZALIHA
+          realizacija: 0,     // Kalkulirano
           zadnjiDatumObj: null  // Za sortiranje
         };
 
-        // Čitaj PRIMKA sheet
-        const primkaSheet = ss.getSheetByName('PRIMKA');
+        // Izračunaj realizaciju % ako imamo projekat
+        if (odjelData.projekat > 0) {
+          odjelData.realizacija = (odjelData.sjeca / odjelData.projekat) * 100;
+        }
+
+        // Čitaj metadata iz PRIMKA sheet-a
+        const primkaSheet = odjelSS.getSheetByName('PRIMKA');
         if (primkaSheet) {
-          // Čitaj W2 (radilište) i W3 (izvođač radova)
-          // W = kolona 23 (0-indexed: 22)
-          odjelData.radiliste = primkaSheet.getRange('W2').getValue() || '';
+          // Čitaj izvođač radova iz W3
           odjelData.izvođač = primkaSheet.getRange('W3').getValue() || '';
 
-          // Čitaj U11 (projekat) i U12 (sječa)
-          // U = kolona 21 (0-indexed: 20)
-          const projekat = parseFloat(primkaSheet.getRange('U11').getValue()) || 0;
-          odjelData.projekat = projekat; // Dodaj projekat u objekat
-          odjelData.sjeca = parseFloat(primkaSheet.getRange('U12').getValue()) || 0;
-
-          // Izračunaj realizaciju %
-          if (projekat > 0) {
-            odjelData.realizacija = (odjelData.sjeca / projekat) * 100;
+          // Ako nema radilište iz STANJE_ZALIHA, čitaj iz W2
+          if (!odjelData.radiliste) {
+            odjelData.radiliste = primkaSheet.getRange('W2').getValue() || '';
           }
 
           // Pronađi zadnji datum unosa u PRIMKA (kolona B)
           const lastRow = primkaSheet.getLastRow();
-          Logger.log(`  PRIMKA last row: ${lastRow}`);
 
           if (lastRow > 1) {
             const allData = primkaSheet.getRange(2, 2, lastRow - 1, 1).getValues(); // Kolona B (datum)
 
             // Filtriraj validne datume i pronađi najnoviji
             let zadnjiDatum = null;
-            for (let i = 0; i < allData.length; i++) {
-              const datum = allData[i][0];
+            for (let j = 0; j < allData.length; j++) {
+              const datum = allData[j][0];
               if (datum && datum !== '' && datum !== 0) {
                 const datumObj = parseDate(datum);
 
@@ -685,29 +744,13 @@ function handleOdjeli(year, username, password) {
             if (zadnjiDatum) {
               odjelData.datumZadnjeSjece = formatDate(zadnjiDatum);
               odjelData.zadnjiDatumObj = zadnjiDatum;
-              Logger.log(`  PRIMKA zadnji datum: ${odjelData.datumZadnjeSjece}`);
             }
           }
-        } else {
-          Logger.log(`  PRIMKA sheet ne postoji`);
-        }
-
-        // Čitaj OTPREMA sheet
-        const otpremaSheet = ss.getSheetByName('OTPREMA');
-        if (otpremaSheet) {
-          // Čitaj U12 (otprema)
-          odjelData.otprema = parseFloat(otpremaSheet.getRange('U12').getValue()) || 0;
-
-          // Izračunaj šuma panj + međustovarište
-          odjelData.sumaPanj = odjelData.sjeca - odjelData.otprema;
-
-          Logger.log(`  OTPREMA otprema: ${odjelData.otprema}, šuma panj: ${odjelData.sumaPanj}`);
-        } else {
-          Logger.log(`  OTPREMA sheet ne postoji`);
         }
 
         // Dodaj u rezultat
         odjeliPrikaz.push(odjelData);
+        Logger.log(`  Odjel: ${odjelNaziv} - sjeca: ${odjelData.sjeca}, otprema: ${odjelData.otprema}`);
 
       } catch (error) {
         Logger.log(`ERROR processing ${odjelNaziv}: ${error.toString()}`);
@@ -734,7 +777,7 @@ function handleOdjeli(year, username, password) {
       radiliste: o.radiliste,
       izvođač: o.izvođač,
       datumZadnjeSjece: o.datumZadnjeSjece,
-      projekat: o.projekat,  // Dodaj projekat iz U11 ćelije PRIMKA sheet-a
+      projekat: o.projekat,
       realizacija: o.realizacija
     }));
 
