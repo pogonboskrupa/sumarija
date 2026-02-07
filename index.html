@@ -1534,34 +1534,39 @@
             </div>
         </div>
 
-        <!-- POSLOVOĐA CONTENT - STANJE ODJELA -->
+        <!-- POSLOVOĐA CONTENT - STANJE ZALIHA (Card-based view) -->
         <div id="poslovodja-stanje-content" class="container hidden">
-            <div class="page-header">
-                <div class="page-header-left">
-                    <h1>📊 Stanje zaliha</h1>
-                    <p>Pregled stanja zaliha sa vaših radilišta</p>
-                </div>
-                <div class="page-header-right">
-                    <button class="btn btn-primary" onclick="loadPoslovodjaStanje()">🔄 Osvježi</button>
-                </div>
-            </div>
-            <div id="poslovodja-radilista-info" class="section" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                    <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list"></span></p>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <label for="poslovodja-radiliste-select" style="color: #1e40af; font-weight: 600; white-space: nowrap;">Filtriraj po radilištu:</label>
-                        <select id="poslovodja-radiliste-select" onchange="filterPoslovodjaStanje()" style="padding: 8px 12px; border: 2px solid #3b82f6; border-radius: 6px; font-size: 14px; background: white; color: #1e40af; font-weight: 600; cursor: pointer; min-width: 200px;">
-                            <option value="">Sva radilišta</option>
-                        </select>
+            <div class="section">
+                <!-- Professional Header -->
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <h1>📦 Stanje Zaliha</h1>
+                        <p>Pregled zaliha po odjelima - Projekat, Sječa, Otprema, Zaliha</p>
+                    </div>
+                    <div class="page-header-right" style="display: flex; gap: 12px;">
+                        <button class="btn btn-primary" onclick="loadPoslovodjaStanje()">🔄 Osvježi</button>
                     </div>
                 </div>
-            </div>
-            <div class="section">
-                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="monthly-table" id="poslovodja-stanje-table">
-                        <thead id="poslovodja-stanje-header"></thead>
-                        <tbody id="poslovodja-stanje-body"></tbody>
-                    </table>
+
+                <!-- Info Bar -->
+                <div id="poslovodja-radilista-info" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <p style="margin: 0; color: #1e40af; font-weight: 600;">👤 Poslovođa: <span id="poslovodja-radilista-list"></span></p>
+                </div>
+
+                <!-- Filter Bar -->
+                <div class="controls-bar" style="margin-bottom: 24px;">
+                    <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                        <label style="font-weight: 600; color: #374151;">Radilište:</label>
+                        <select id="poslovodja-radiliste-select" class="filter-select" onchange="filterPoslovodjaStanje()" style="min-width: 200px; padding: 10px 16px; border: 2px solid #d1d5db; border-radius: 8px; font-size: 14px;">
+                            <option value="">Sva radilišta</option>
+                        </select>
+                        <span id="poslovodja-stanje-count" style="color: #6b7280; font-size: 14px;"></span>
+                    </div>
+                </div>
+
+                <!-- Stanje Zaliha Container (Cards) -->
+                <div id="poslovodja-stanje-container">
+                    <!-- Cards will be rendered here -->
                 </div>
             </div>
         </div>
