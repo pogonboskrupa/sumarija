@@ -596,8 +596,10 @@ function handleKupci(year, username, password) {
 
 /**
  * Odjeli endpoint - vraća prikaz po odjelima sa detaljnim podacima
- * PRIMARNO čita podatke iz STANJE_ZALIHA sheeta (sjeca, otprema, projekat, zaliha)
- * SEKUNDARNO čita metadata iz individualnih spreadsheet-ova (izvođač, datumZadnjeSjece)
+ * Čita podatke iz INDEKS_PRIMKA i INDEKS_OTPREMA listova iz BAZA_PODATAKA
+ * - Sječa: agregira UKUPNO Č+L iz INDEKS_PRIMKA po odjelu
+ * - Otprema: agregira UKUPNO Č+L iz INDEKS_OTPREMA po odjelu
+ * - Radilište, Izvođač, Zadnji datum: čita iz INDEKS_PRIMKA
  */
 function handleOdjeli(year, username, password) {
   // Autentikacija
@@ -610,155 +612,120 @@ function handleOdjeli(year, username, password) {
   Logger.log('Year: ' + year);
 
   try {
-    // 1. PRIMARNI IZVOR: Učitaj podatke iz STANJE_ZALIHA sheeta
+    // PRIMARNI IZVOR: Učitaj podatke iz INDEKS_PRIMKA i INDEKS_OTPREMA
     const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
-    const stanjeSheet = ss.getSheetByName("STANJE_ZALIHA");
+    const primkaSheet = ss.getSheetByName("INDEKS_PRIMKA");
+    const otpremaSheet = ss.getSheetByName("INDEKS_OTPREMA");
 
-    // Kreiraj mapu sa podacima iz STANJE_ZALIHA
-    const stanjeZalihaMap = {};
-
-    if (stanjeSheet) {
-      const data = stanjeSheet.getDataRange().getValues();
-      Logger.log('STANJE_ZALIHA sheet found, parsing data...');
-
-      // Parsiraj blokove od 8 redova
-      let i = 0;
-      while (i < data.length) {
-        const row = data[i];
-
-        // Provjeri da li je ovo početak novog bloka (ODJEL u koloni A)
-        if (row[0] && String(row[0]).toUpperCase() === 'ODJEL') {
-          const odjelNaziv = String(row[1] || '').trim();
-
-          // Čitaj radilište (red i+1, kolona B)
-          const radilisteRow = data[i + 1] || [];
-          const radiliste = String(radilisteRow[1] || '').trim();
-
-          // Čitaj projekat, sječa, otprema, zaliha (redovi i+3 do i+6)
-          // Kolona W (index 22) je UKUPNO Č+L
-          const projekatRow = data[i + 3] || [];
-          const sjecaRow = data[i + 4] || [];
-          const otpremaRow = data[i + 5] || [];
-          const zalihaRow = data[i + 6] || [];
-
-          // UKUPNO Č+L je u koloni W (indeks 22)
-          const projekat = parseFloat(projekatRow[22]) || 0;
-          const sjeca = parseFloat(sjecaRow[22]) || 0;
-          const otprema = parseFloat(otpremaRow[22]) || 0;
-          const zaliha = parseFloat(zalihaRow[22]) || 0;
-
-          if (odjelNaziv) {
-            stanjeZalihaMap[odjelNaziv] = {
-              projekat: projekat,
-              sjeca: sjeca,
-              otprema: otprema,
-              zaliha: zaliha,
-              radiliste: radiliste
-            };
-            Logger.log(`STANJE_ZALIHA: ${odjelNaziv} - sjeca: ${sjeca}, otprema: ${otprema}`);
-          }
-
-          i += 8; // Pomakni se na sljedeći blok
-        } else {
-          i++;
-        }
-      }
-
-      Logger.log(`STANJE_ZALIHA: Učitano ${Object.keys(stanjeZalihaMap).length} odjela`);
-    } else {
-      Logger.log('STANJE_ZALIHA sheet ne postoji, koristim individualne spreadsheet-ove');
+    if (!primkaSheet || !otpremaSheet) {
+      return createJsonResponse({ error: "INDEKS sheets not found in BAZA_PODATAKA" }, false);
     }
 
-    // 2. SEKUNDARNI IZVOR: Otvori folder ODJELI za metadata (izvođač, datumZadnjeSjece)
-    const folder = DriveApp.getFolderById(ODJELI_FOLDER_ID);
-    const files = folder.getFilesByType(MimeType.GOOGLE_SHEETS);
+    const primkaData = primkaSheet.getDataRange().getValues();
+    const otpremaData = otpremaSheet.getDataRange().getValues();
 
-    const odjeliPrikaz = [];
-    let processedCount = 0;
+    Logger.log(`INDEKS_PRIMKA: ${primkaData.length} redova`);
+    Logger.log(`INDEKS_OTPREMA: ${otpremaData.length} redova`);
 
-    // Iteriraj kroz sve spreadsheet-ove u folderu
-    while (files.hasNext()) {
-      const file = files.next();
-      const odjelNaziv = file.getName(); // Naziv fajla = Odjel
-      processedCount++;
+    // Mapa za agregaciju po odjelima
+    const odjeliMap = {};
 
-      try {
-        const odjelSS = SpreadsheetApp.open(file);
-        Logger.log(`[${processedCount}] Processing odjel: ${odjelNaziv}`);
+    // Procesiranje PRIMKA podataka (sječa)
+    for (let i = 1; i < primkaData.length; i++) {
+      const row = primkaData[i];
+      const datum = row[PRIMKA_COL.DATE];      // A - DATUM
+      const odjel = row[PRIMKA_COL.ODJEL];     // C - ODJEL
+      const radiliste = row[PRIMKA_COL.RADILISTE]; // D - RADILIŠTE
+      const izvodjac = row[PRIMKA_COL.IZVODJAC];   // E - IZVOĐAČ
+      const kubik = parseFloat(row[PRIMKA_COL.UKUPNO]) || 0; // Z - UKUPNO Č+L
 
-        // Dohvati podatke iz STANJE_ZALIHA mape ako postoje
-        const stanjeData = stanjeZalihaMap[odjelNaziv] || {};
+      if (!datum || !odjel) continue;
 
-        // Inicijalizuj objekt za ovaj odjel
-        const odjelData = {
-          odjel: odjelNaziv,
-          sjeca: stanjeData.sjeca || 0,           // IZ STANJE_ZALIHA
-          otprema: stanjeData.otprema || 0,       // IZ STANJE_ZALIHA
-          sumaPanj: (stanjeData.sjeca || 0) - (stanjeData.otprema || 0),  // Kalkulirano
-          radiliste: stanjeData.radiliste || '',  // IZ STANJE_ZALIHA
-          izvođač: '',        // Čitaj iz individualnog spreadsheet-a
-          datumZadnjeSjece: '', // Čitaj iz individualnog spreadsheet-a
-          projekat: stanjeData.projekat || 0,     // IZ STANJE_ZALIHA
-          realizacija: 0,     // Kalkulirano
-          zadnjiDatumObj: null  // Za sortiranje
+      const datumObj = parseDate(datum);
+      if (isNaN(datumObj.getTime()) || datumObj.getFullYear() !== parseInt(year)) continue;
+
+      const odjelNaziv = String(odjel).trim();
+      if (!odjelNaziv) continue;
+
+      // Inicijalizuj odjel ako ne postoji
+      if (!odjeliMap[odjelNaziv]) {
+        odjeliMap[odjelNaziv] = {
+          sjeca: 0,
+          otprema: 0,
+          radiliste: '',
+          izvođač: '',
+          zadnjiDatumObj: null
         };
+      }
 
-        // Izračunaj realizaciju % ako imamo projekat
-        if (odjelData.projekat > 0) {
-          odjelData.realizacija = (odjelData.sjeca / odjelData.projekat) * 100;
-        }
+      // Dodaj kubike
+      odjeliMap[odjelNaziv].sjeca += kubik;
 
-        // Čitaj metadata iz PRIMKA sheet-a
-        const primkaSheet = odjelSS.getSheetByName('PRIMKA');
-        if (primkaSheet) {
-          // Čitaj izvođač radova iz W3
-          odjelData.izvođač = primkaSheet.getRange('W3').getValue() || '';
+      // Ažuriraj radilište i izvođač (zadnji unos)
+      if (radiliste) odjeliMap[odjelNaziv].radiliste = String(radiliste).trim();
+      if (izvodjac) odjeliMap[odjelNaziv].izvođač = String(izvodjac).trim();
 
-          // Ako nema radilište iz STANJE_ZALIHA, čitaj iz W2
-          if (!odjelData.radiliste) {
-            odjelData.radiliste = primkaSheet.getRange('W2').getValue() || '';
-          }
-
-          // Pronađi zadnji datum unosa u PRIMKA (kolona B)
-          const lastRow = primkaSheet.getLastRow();
-
-          if (lastRow > 1) {
-            const allData = primkaSheet.getRange(2, 2, lastRow - 1, 1).getValues(); // Kolona B (datum)
-
-            // Filtriraj validne datume i pronađi najnoviji
-            let zadnjiDatum = null;
-            for (let j = 0; j < allData.length; j++) {
-              const datum = allData[j][0];
-              if (datum && datum !== '' && datum !== 0) {
-                const datumObj = parseDate(datum);
-
-                // Provjeri da li je validan datum i da li pripada tražnoj godini
-                if (!isNaN(datumObj.getTime()) && datumObj.getFullYear() === parseInt(year)) {
-                  if (!zadnjiDatum || datumObj > zadnjiDatum) {
-                    zadnjiDatum = datumObj;
-                  }
-                }
-              }
-            }
-
-            if (zadnjiDatum) {
-              odjelData.datumZadnjeSjece = formatDate(zadnjiDatum);
-              odjelData.zadnjiDatumObj = zadnjiDatum;
-            }
-          }
-        }
-
-        // Dodaj u rezultat
-        odjeliPrikaz.push(odjelData);
-        Logger.log(`  Odjel: ${odjelNaziv} - sjeca: ${odjelData.sjeca}, otprema: ${odjelData.otprema}`);
-
-      } catch (error) {
-        Logger.log(`ERROR processing ${odjelNaziv}: ${error.toString()}`);
-        // Nastavi sa sledećim odjelom
+      // Ažuriraj zadnji datum sječe
+      if (!odjeliMap[odjelNaziv].zadnjiDatumObj || datumObj > odjeliMap[odjelNaziv].zadnjiDatumObj) {
+        odjeliMap[odjelNaziv].zadnjiDatumObj = datumObj;
       }
     }
 
-    Logger.log(`Procesovano odjela: ${processedCount}`);
+    // Procesiranje OTPREMA podataka
+    for (let i = 1; i < otpremaData.length; i++) {
+      const row = otpremaData[i];
+      const datum = row[OTPREMA_COL.DATE];     // A - DATUM
+      const odjel = row[OTPREMA_COL.ODJEL];    // D - ODJEL
+      const kubik = parseFloat(row[OTPREMA_COL.UKUPNO]) || 0; // AA - UKUPNO Č+L
+
+      if (!datum || !odjel) continue;
+
+      const datumObj = parseDate(datum);
+      if (isNaN(datumObj.getTime()) || datumObj.getFullYear() !== parseInt(year)) continue;
+
+      const odjelNaziv = String(odjel).trim();
+      if (!odjelNaziv) continue;
+
+      // Inicijalizuj odjel ako ne postoji (može se desiti da ima otprema a nema sječe)
+      if (!odjeliMap[odjelNaziv]) {
+        odjeliMap[odjelNaziv] = {
+          sjeca: 0,
+          otprema: 0,
+          radiliste: '',
+          izvođač: '',
+          zadnjiDatumObj: null
+        };
+      }
+
+      // Dodaj kubike
+      odjeliMap[odjelNaziv].otprema += kubik;
+    }
+
+    Logger.log(`Pronađeno ${Object.keys(odjeliMap).length} odjela`);
+
+    // Kreiraj prikaz po odjelima
+    const odjeliPrikaz = [];
+    for (const odjelNaziv in odjeliMap) {
+      const odjel = odjeliMap[odjelNaziv];
+      const sjeca = odjel.sjeca;
+      const otprema = odjel.otprema;
+      const sumaPanj = sjeca - otprema;
+
+      odjeliPrikaz.push({
+        odjel: odjelNaziv,
+        sjeca: sjeca,
+        otprema: otprema,
+        sumaPanj: sumaPanj,
+        radiliste: odjel.radiliste,
+        izvođač: odjel.izvođač,
+        datumZadnjeSjece: odjel.zadnjiDatumObj ? formatDate(odjel.zadnjiDatumObj) : '',
+        projekat: 0,  // Projekat nije dostupan u INDEKS listovima
+        realizacija: 0,
+        zadnjiDatumObj: odjel.zadnjiDatumObj
+      });
+
+      Logger.log(`Odjel: ${odjelNaziv} - sjeca: ${sjeca}, otprema: ${otprema}, stanje: ${sumaPanj}`);
+    }
 
     // Sortiraj po zadnjoj sječi (najnovija prva)
     odjeliPrikaz.sort((a, b) => {
