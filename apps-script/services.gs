@@ -825,3 +825,289 @@ function syncStanjeOdjela() {
     throw error;
   }
 }
+
+// ========================================
+// 4. INCREMENTAL INDEX SYNC - INDEKS_DODAJ_NOVE
+// Dodaje samo nove unose umjesto full rebuild
+// ========================================
+
+// Konfiguracija za indeksiranje
+const IDX_CFG = {
+  TARGET_SS_ID: BAZA_PODATAKA_ID,        // BAZA PODATAKA spreadsheet
+  FOLDER_ID: ODJELI_FOLDER_ID,           // Folder sa odjelima
+  INDEX_PRIMKA: 'INDEKS_PRIMKA',
+  INDEX_OTPREMA: 'INDEKS_OTPREMA'
+};
+
+// Property keys za čuvanje stanja
+const IDX_PROP = {
+  DODAJ_LAST_UPDATED_MAP: 'INDEKS_DODAJ_LAST_UPDATED_MAP'
+};
+
+/**
+ * INDEKS_DODAJ_NOVE - Dodaje samo nove/izmijenjene fajlove u indeks
+ * Koristi lastUpdated timestamp za praćenje promjena
+ */
+function INDEKS_DODAJ_NOVE() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) {
+    Logger.log('DODAJ: zaključano (drugi run radi). Pokušaj ponovo.');
+    return { success: false, message: 'Lock active - retry later' };
+  }
+
+  try {
+    Logger.log('=== INDEKS_DODAJ_NOVE START ===');
+    const props = PropertiesService.getScriptProperties();
+    const map = JSON.parse(props.getProperty(IDX_PROP.DODAJ_LAST_UPDATED_MAP) || '{}');
+
+    const tss = SpreadsheetApp.openById(IDX_CFG.TARGET_SS_ID);
+    const shP = IDX_getOrCreateSheet_(tss, IDX_CFG.INDEX_PRIMKA);
+    const shO = IDX_getOrCreateSheet_(tss, IDX_CFG.INDEX_OTPREMA);
+
+    // Provjeri/dodaj header ako je prazan sheet
+    if (shP.getLastRow() < 1) IDX_writeHeaderPrimka_(shP);
+    if (shO.getLastRow() < 1) IDX_writeHeaderOtprema_(shO);
+
+    const folder = DriveApp.getFolderById(IDX_CFG.FOLDER_ID);
+    const files = folder.getFilesByType(MimeType.GOOGLE_SHEETS);
+
+    const primkaIncoming = [];
+    const otpremaIncoming = [];
+    let filesProcessed = 0;
+    let filesSkipped = 0;
+
+    while (files.hasNext()) {
+      const f = files.next();
+      const id = f.getId();
+      const updated = f.getLastUpdated().getTime();
+      const last = Number(map[id] || 0);
+
+      // Preskoči ako nije ažurirano od zadnjeg indeksiranja
+      if (updated <= last) {
+        filesSkipped++;
+        continue;
+      }
+
+      map[id] = updated;
+      filesProcessed++;
+
+      try {
+        const res = IDX_readOneFileBoth_(id);
+        primkaIncoming.push(...res.primka);
+        otpremaIncoming.push(...res.otprema);
+        Logger.log(`Processed: ${f.getName()} - PRIMKA: ${res.primka.length}, OTPREMA: ${res.otprema.length}`);
+      } catch (e) {
+        Logger.log(`DODAJ SKIP ${id}: ${e && e.message ? e.message : e}`);
+      }
+    }
+
+    // Dodaj samo jedinstvene redove (izbjegni duplikate)
+    const primkaAdded = IDX_appendUnique_(shP, primkaIncoming, IDX_primkaKey_);
+    const otpremaAdded = IDX_appendUnique_(shO, otpremaIncoming, IDX_otpremaKey_);
+
+    // Sortiraj po datumu
+    IDX_sortIndexByDate_(shP);
+    IDX_sortIndexByDate_(shO);
+
+    // Formatiraj datum kolonu
+    IDX_formatDateCol_(shP, 1);
+    IDX_formatDateCol_(shO, 1);
+
+    // Sačuvaj mapu
+    props.setProperty(IDX_PROP.DODAJ_LAST_UPDATED_MAP, JSON.stringify(map));
+
+    Logger.log(`=== INDEKS_DODAJ_NOVE END ===`);
+    Logger.log(`Files processed: ${filesProcessed}, skipped: ${filesSkipped}`);
+    Logger.log(`PRIMKA added: ${primkaAdded}, OTPREMA added: ${otpremaAdded}`);
+
+    return {
+      success: true,
+      filesProcessed: filesProcessed,
+      filesSkipped: filesSkipped,
+      primkaAdded: primkaAdded,
+      otpremaAdded: otpremaAdded
+    };
+
+  } catch (error) {
+    Logger.log('=== INDEKS_DODAJ_NOVE ERROR ===');
+    Logger.log(error.toString());
+    return { success: false, error: error.toString() };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Helper: Get or create sheet
+function IDX_getOrCreateSheet_(ss, name) {
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+    Logger.log(`Created sheet: ${name}`);
+  }
+  return sheet;
+}
+
+// Helper: Write PRIMKA header
+function IDX_writeHeaderPrimka_(sheet) {
+  const header = [
+    'DATUM', 'RADNIK', 'ODJEL', 'RADILIŠTE', 'IZVOĐAČ', 'POSLOVOĐA',
+    'F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'TRUPCI Č',
+    'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'Σ ČETINARI',
+    'F/L L', 'I L', 'II L', 'III L', 'TRUPCI L',
+    'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI', 'UKUPNO Č+L'
+  ];
+  sheet.getRange(1, 1, 1, header.length).setValues([header]);
+  sheet.getRange(1, 1, 1, header.length).setFontWeight('bold');
+}
+
+// Helper: Write OTPREMA header
+function IDX_writeHeaderOtprema_(sheet) {
+  const header = [
+    'DATUM', 'OTPREMAČ', 'KUPAC', 'ODJEL', 'RADILIŠTE', 'IZVOĐAČ', 'POSLOVOĐA',
+    'F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'TRUPCI Č',
+    'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'Σ ČETINARI',
+    'F/L L', 'I L', 'II L', 'III L', 'TRUPCI L',
+    'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI', 'UKUPNO Č+L'
+  ];
+  sheet.getRange(1, 1, 1, header.length).setValues([header]);
+  sheet.getRange(1, 1, 1, header.length).setFontWeight('bold');
+}
+
+// Helper: Read one file (both PRIMKA and OTPREMA)
+function IDX_readOneFileBoth_(fileId) {
+  const ss = SpreadsheetApp.openById(fileId);
+  const odjelNaziv = ss.getName();
+
+  const result = { primka: [], otprema: [] };
+
+  // Čitaj RADILIŠTE (W2), IZVOĐAČ (W3), POSLOVOĐA (W4) iz PRIMKA sheet-a
+  let radiliste = '';
+  let izvodjac = '';
+  let poslovodja = '';
+
+  const primkaSheet = ss.getSheetByName('PRIMKA');
+  if (primkaSheet) {
+    try {
+      radiliste = String(primkaSheet.getRange('W2').getValue() || '').trim();
+      izvodjac = String(primkaSheet.getRange('W3').getValue() || '').trim();
+      poslovodja = String(primkaSheet.getRange('W4').getValue() || '').trim();
+    } catch (e) {
+      Logger.log(`Error reading W2/W3/W4 for ${odjelNaziv}: ${e}`);
+    }
+
+    // Čitaj PRIMKA podatke
+    const lastRow = primkaSheet.getLastRow();
+    if (lastRow > 1) {
+      const data = primkaSheet.getDataRange().getValues();
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        const datum = row[1]; // B
+        const primac = row[2]; // C
+
+        // Preskoči prazne i header redove
+        if (!datum || datum === '' || datum === 0) continue;
+        if (!primac || primac === '' || primac === 0) continue;
+
+        const datumStr = String(datum).toUpperCase();
+        const primacStr = String(primac).toUpperCase();
+        if (datumStr.includes('DATUM') || datumStr.includes('OPIS') ||
+            primacStr.includes('PRIMAČ') || primacStr.includes('PRIMAC')) continue;
+
+        // [DATUM, RADNIK, ODJEL, RADILIŠTE, IZVOĐAČ, POSLOVOĐA, ...sortimenti(20)]
+        const sortimenti = row.slice(3, 23);
+        result.primka.push([datum, primac, odjelNaziv, radiliste, izvodjac, poslovodja, ...sortimenti]);
+      }
+    }
+  }
+
+  // Čitaj OTPREMA podatke
+  const otpremaSheet = ss.getSheetByName('OTPREMA');
+  if (otpremaSheet) {
+    const lastRow = otpremaSheet.getLastRow();
+    if (lastRow > 1) {
+      const data = otpremaSheet.getDataRange().getValues();
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        const kupac = row[0]; // A
+        const datum = row[1]; // B
+        const otpremac = row[2]; // C
+
+        // Preskoči prazne i header redove
+        if (!datum || datum === '' || datum === 0) continue;
+        if (!otpremac || otpremac === '' || otpremac === 0) continue;
+
+        const datumStr = String(datum).toUpperCase();
+        const otpremacStr = String(otpremac).toUpperCase();
+        if (datumStr.includes('DATUM') || datumStr.includes('OPIS') ||
+            otpremacStr.includes('OTPREMAČ') || otpremacStr.includes('OTPREMAC')) continue;
+
+        // [DATUM, OTPREMAČ, KUPAC, ODJEL, RADILIŠTE, IZVOĐAČ, POSLOVOĐA, ...sortimenti(20)]
+        const sortimenti = row.slice(3, 23);
+        result.otprema.push([datum, otpremac, kupac, odjelNaziv, radiliste, izvodjac, poslovodja, ...sortimenti]);
+      }
+    }
+  }
+
+  return result;
+}
+
+// Helper: Unique key for PRIMKA row (datum + radnik + odjel)
+function IDX_primkaKey_(row) {
+  const datum = row[0] instanceof Date ? row[0].getTime() : String(row[0]);
+  return `${datum}|${row[1]}|${row[2]}`;
+}
+
+// Helper: Unique key for OTPREMA row (datum + otpremač + kupac + odjel)
+function IDX_otpremaKey_(row) {
+  const datum = row[0] instanceof Date ? row[0].getTime() : String(row[0]);
+  return `${datum}|${row[1]}|${row[2]}|${row[3]}`;
+}
+
+// Helper: Append only unique rows (skip duplicates based on key function)
+function IDX_appendUnique_(sheet, incomingRows, keyFn) {
+  if (incomingRows.length === 0) return 0;
+
+  // Dohvati postojeće ključeve
+  const lastRow = sheet.getLastRow();
+  const existingKeys = new Set();
+
+  if (lastRow > 1) {
+    const existingData = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+    existingData.forEach(row => existingKeys.add(keyFn(row)));
+  }
+
+  // Filtriraj samo nove redove
+  const newRows = incomingRows.filter(row => !existingKeys.has(keyFn(row)));
+
+  if (newRows.length === 0) return 0;
+
+  // Normalizuj broj kolona
+  const targetCols = sheet.getLastColumn();
+  const normalizedRows = newRows.map(row => {
+    if (row.length > targetCols) return row.slice(0, targetCols);
+    if (row.length < targetCols) return row.concat(new Array(targetCols - row.length).fill(''));
+    return row;
+  });
+
+  // Dodaj nove redove
+  sheet.getRange(lastRow + 1, 1, normalizedRows.length, targetCols).setValues(normalizedRows);
+
+  return normalizedRows.length;
+}
+
+// Helper: Sort index by date (column 1)
+function IDX_sortIndexByDate_(sheet) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return;
+
+  const range = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn());
+  range.sort({ column: 1, ascending: true });
+}
+
+// Helper: Format date column
+function IDX_formatDateCol_(sheet, col) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return;
+
+  sheet.getRange(2, col, lastRow - 1, 1).setNumberFormat('dd.mm.yyyy');
+}

@@ -2326,13 +2326,17 @@ function handleSyncIndex(username, password) {
   try {
     Logger.log('=== HANDLE SYNC INDEX START (manual trigger by ' + username + ') ===');
 
-    // Pozovi syncIndexSheet() funkciju
-    syncIndexSheet();
+    // Pozovi INDEKS_DODAJ_NOVE() funkciju - inkrementalno dodavanje
+    const result = INDEKS_DODAJ_NOVE();
 
     Logger.log('=== HANDLE SYNC INDEX END ===');
     return createJsonResponse({
       message: 'Indeksiranje uspješno pokrenuto i završeno',
-      success: true
+      success: true,
+      filesProcessed: result.filesProcessed || 0,
+      filesSkipped: result.filesSkipped || 0,
+      primkaAdded: result.primkaAdded || 0,
+      otpremaAdded: result.otpremaAdded || 0
     }, true);
 
   } catch (error) {

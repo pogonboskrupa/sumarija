@@ -755,7 +755,9 @@
                     }));
                     console.log('📢 [SYNC INDEX] Emitted "app-data-synced" event');
 
-                    showSuccess('✅ Indeksiranje završeno', 'INDEX sheet-ovi uspješno osvježeni! Svi paneli su obavješteni.');
+                    // Prikaži rezultat sa detaljima
+                    const detailMsg = `Obrađeno: ${data.filesProcessed || 0} fajlova, Preskočeno: ${data.filesSkipped || 0}\nPRIMKA: +${data.primkaAdded || 0}, OTPREMA: +${data.otpremaAdded || 0}`;
+                    showSuccess('✅ Indeksiranje završeno', detailMsg);
 
                     // Osvježi sve prikaze nakon indeksiranja
                     console.log('[SYNC INDEX] Refreshing all views...');
