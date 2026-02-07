@@ -3109,62 +3109,130 @@ function handleStanjeZaliha(username, password, poslovodja) {
       "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
     ];
 
-    // Parsiraj podatke - struktura po blokovima od 8 redova
-    // Red 1: ODJEL | naziv
-    // Red 2: RADILIŠTE | naziv
-    // Red 3: Header (OPIS, sortimenti...)
-    // Red 4: PROJEKAT | vrijednosti
-    // Red 5: SJEČA | vrijednosti
-    // Red 6: OTPREMA | vrijednosti
-    // Red 7: ZALIHA | vrijednosti
-    // Red 8: prazan (separator)
+    // ========================================
+    // MARKER-BASED PARSING (po labelama, ne po offset-ima)
+    // ========================================
+    // Struktura bloka (6 redova):
+    // R1: A="ODJEL",     B=<naziv>,      C="OPIS",     D:W = zaglavlje sortimenta
+    // R2: A="RADILIŠTE", B=<naziv>,      C="PROJEKAT", D:W = projekat values
+    // R3: A="IZVOĐAČ",   B=<naziv>,      C="SJEČA",    D:W = sječa values
+    // R4: A="POSLOVOĐA", B=<naziv>,      C="OTPREMA",  D:W = otprema values
+    // R5: A="",          B="",           C="ZALIHA",   D:W = zaliha values
+    // R6: prazan separator
+    // ========================================
+
+    // Parsiraj sortimente (kolone D:W = indeksi 3-22, 20 vrijednosti)
+    const parseSortimenti = (row) => {
+      const sortimenti = {};
+      for (let j = 0; j < 20; j++) {
+        const value = parseFloat(row[j + 3]) || 0;
+        sortimenti[sortimentiHeader[j]] = value;
+      }
+      return sortimenti;
+    };
+
+    // Dijagnostika za prvi blok
+    let blockCount = 0;
+    let firstBlockDiag = null;
 
     let i = 0;
     while (i < data.length) {
       const row = data[i];
+      const colA = String(row[0] || '').toUpperCase().trim();
 
-      // Provjeri da li je ovo početak novog bloka (ODJEL u koloni A)
-      if (row[0] && String(row[0]).toUpperCase() === 'ODJEL') {
-        const odjelNaziv = row[1] || '';
+      // Početak bloka: kolona A == "ODJEL"
+      if (colA === 'ODJEL') {
+        blockCount++;
+        const blockStartRow = i;
+        const odjelNaziv = String(row[1] || '').trim();
 
-        // Sljedeći red je RADILIŠTE
-        const radilisteRow = data[i + 1] || [];
-        const radilisteNaziv = radilisteRow[1] || '';
+        // Traži redove unutar bloka po markerima u koloni C
+        // Blok traje max 6 redova ili do sljedećeg ODJEL/praznog separatora
+        let radilisteNaziv = '';
+        let izvodjacNaziv = '';
+        let poslovodjaNaziv = '';
+        let projekatRow = null;
+        let sjecaRow = null;
+        let otpremaRow = null;
+        let zalihaRow = null;
+
+        // Skeniraj do 6 redova unaprijed za markere
+        for (let offset = 0; offset < 6 && (i + offset) < data.length; offset++) {
+          const blockRow = data[i + offset];
+          const blockColA = String(blockRow[0] || '').toUpperCase().trim();
+          const blockColC = String(blockRow[2] || '').toUpperCase().trim();
+
+          // Ako naletimo na novi ODJEL (osim prvog), prekini
+          if (offset > 0 && blockColA === 'ODJEL') break;
+
+          // Čitaj metadata iz kolone A/B
+          if (blockColA === 'RADILIŠTE' || blockColA === 'RADILISTE') {
+            radilisteNaziv = String(blockRow[1] || '').trim();
+          }
+          if (blockColA === 'IZVOĐAČ' || blockColA === 'IZVODJAC') {
+            izvodjacNaziv = String(blockRow[1] || '').trim();
+          }
+          if (blockColA === 'POSLOVOĐA' || blockColA === 'POSLOVODJA') {
+            poslovodjaNaziv = String(blockRow[1] || '').trim();
+          }
+
+          // Čitaj podatke po markerima u koloni C
+          if (blockColC === 'PROJEKAT') {
+            projekatRow = { row: blockRow, idx: i + offset };
+          }
+          if (blockColC === 'SJEČA' || blockColC === 'SJECA') {
+            sjecaRow = { row: blockRow, idx: i + offset };
+          }
+          if (blockColC === 'OTPREMA') {
+            otpremaRow = { row: blockRow, idx: i + offset };
+          }
+          if (blockColC === 'ZALIHA') {
+            zalihaRow = { row: blockRow, idx: i + offset };
+          }
+        }
+
+        // Dijagnostika za prvi blok
+        if (blockCount === 1) {
+          const getFirst3 = (rowData) => {
+            if (!rowData) return 'NOT_FOUND';
+            const vals = [];
+            for (let k = 3; k < 6 && k < rowData.row.length; k++) {
+              vals.push(rowData.row[k]);
+            }
+            return `row=${rowData.idx}, first3=[${vals.join(', ')}]`;
+          };
+          firstBlockDiag = {
+            odjel: odjelNaziv,
+            PROJEKAT: getFirst3(projekatRow),
+            SJECA: getFirst3(sjecaRow),
+            OTPREMA: getFirst3(otpremaRow),
+            ZALIHA: getFirst3(zalihaRow)
+          };
+          Logger.log('=== DIJAGNOSTIKA PRVI BLOK ===');
+          Logger.log('Odjel: ' + odjelNaziv);
+          Logger.log('PROJEKAT: ' + firstBlockDiag.PROJEKAT);
+          Logger.log('SJEČA: ' + firstBlockDiag.SJECA);
+          Logger.log('OTPREMA: ' + firstBlockDiag.OTPREMA);
+          Logger.log('ZALIHA: ' + firstBlockDiag.ZALIHA);
+        }
 
         if (radilisteNaziv) {
           radilistaSet.add(radilisteNaziv);
         }
 
-        // Preskači header red (i+2) i čitaj podatke
-        // PROJEKAT je na i+3, SJEČA na i+4, OTPREMA na i+5, ZALIHA na i+6
-        const projekatRow = data[i + 3] || [];
-        const sjecaRow = data[i + 4] || [];
-        const otpremaRow = data[i + 5] || [];
-        const zalihaRow = data[i + 6] || [];
-
-        // Parsiraj sortimente (počinju od kolone D = indeks 3)
-        const parseSortimenti = (row) => {
-          const sortimenti = {};
-          for (let j = 0; j < 20; j++) {
-            const value = parseFloat(row[j + 3]) || 0;
-            sortimenti[sortimentiHeader[j]] = value;
-          }
-          return sortimenti;
-        };
-
-        // Parsiraj sortimente
-        const projekatData = parseSortimenti(projekatRow);
-        const sjecaData = parseSortimenti(sjecaRow);
-        const otpremaData = parseSortimenti(otpremaRow);
-        const zalihaData = parseSortimenti(zalihaRow);
+        // Parsiraj sortimente ako su nađeni redovi
+        const projekatData = projekatRow ? parseSortimenti(projekatRow.row) : parseSortimenti([]);
+        const sjecaData = sjecaRow ? parseSortimenti(sjecaRow.row) : parseSortimenti([]);
+        const otpremaData = otpremaRow ? parseSortimenti(otpremaRow.row) : parseSortimenti([]);
+        const zalihaData = zalihaRow ? parseSortimenti(zalihaRow.row) : parseSortimenti([]);
 
         // Ako je filter aktivan, provjeri da li je odjel u listi poslovođinih odjela
         if (poslovodjaOdjeli !== null) {
           const odjelUpper = odjelNaziv.toUpperCase().trim();
           const matchFound = poslovodjaOdjeli.some(po => odjelUpper.includes(po) || po.includes(odjelUpper));
           if (!matchFound) {
-            // Preskoči ovaj odjel - nije u listi poslovođe
-            i += 8;
+            // Preskoči - traži sljedeći ODJEL
+            i++;
             continue;
           }
         }
@@ -3172,11 +3240,12 @@ function handleStanjeZaliha(username, password, poslovodja) {
         const odjelData = {
           odjel: odjelNaziv,
           radiliste: radilisteNaziv,
+          izvodjac: izvodjacNaziv,
+          poslovodja: poslovodjaNaziv,
           projekat: projekatData,
           sjeca: sjecaData,
           otprema: otpremaData,
           zaliha: zalihaData,
-          // Ukupne vrijednosti - čitaj iz parsiranih sortimenta (UKUPNO Č+L je zadnji sortiment)
           ukupnoProjekat: projekatData["UKUPNO Č+L"] || 0,
           ukupnoSjeca: sjecaData["UKUPNO Č+L"] || 0,
           ukupnoOtprema: otpremaData["UKUPNO Č+L"] || 0,
@@ -3184,12 +3253,9 @@ function handleStanjeZaliha(username, password, poslovodja) {
         };
 
         odjeli.push(odjelData);
-
-        // Pomakni se na sljedeći blok (8 redova)
-        i += 8;
-      } else {
-        i++;
       }
+
+      i++;
     }
 
     // Sortiraj po zadnjoj otpremi (od najveće ka najmanjoj)
@@ -3199,13 +3265,18 @@ function handleStanjeZaliha(username, password, poslovodja) {
     const radilista = Array.from(radilistaSet).sort();
 
     Logger.log('=== HANDLE STANJE ZALIHA END ===');
-    Logger.log('Broj odjela: ' + odjeli.length);
+    Logger.log('Broj blokova (ODJEL): ' + blockCount);
+    Logger.log('Broj odjela nakon filtriranja: ' + odjeli.length);
     Logger.log('Broj radilišta: ' + radilista.length);
 
     return createJsonResponse({
       odjeli: odjeli,
       radilista: radilista,
-      sortimentiHeader: sortimentiHeader
+      sortimentiHeader: sortimentiHeader,
+      _diag: {
+        blockCount: blockCount,
+        firstBlockDiag: firstBlockDiag
+      }
     }, true);
 
   } catch (error) {
