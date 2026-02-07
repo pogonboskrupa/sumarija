@@ -233,29 +233,61 @@
         .kupci-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -24px; padding: 0 24px; }
         .kupci-table { font-size: 15px; white-space: nowrap; width: 100%; border-collapse: separate; border-spacing: 0; }
         .kupci-table th, .kupci-table td { padding: 12px 10px; border-bottom: 1px solid #e5e7eb; }
-        .kupci-table th:first-child, .kupci-table td:first-child {
-            position: sticky; left: 0; background: white; z-index: 2;
-            min-width: 70px; max-width: 100px; white-space: normal;
-            border-right: 2px solid #d1d5db; padding-right: 8px; font-weight: 600;
+
+        /* Sticky columns for Kupci tables - R.br. (col 1) and Kupac (col 2) */
+        #kupci-godisnji-table th:first-child,
+        #kupci-godisnji-table td:first-child,
+        #kupci-mjesecni-table th:first-child,
+        #kupci-mjesecni-table td:first-child {
+            position: sticky !important;
+            left: 0 !important;
+            z-index: 11 !important;
+            min-width: 50px;
         }
-        .kupci-table th:nth-child(2), .kupci-table td:nth-child(2) {
-            position: sticky; left: 70px; background: white; z-index: 2;
-            min-width: 90px; border-right: 2px solid #d1d5db; font-weight: 500;
+        #kupci-godisnji-table th:nth-child(2),
+        #kupci-godisnji-table td:nth-child(2),
+        #kupci-mjesecni-table th:nth-child(2),
+        #kupci-mjesecni-table td:nth-child(2) {
+            position: sticky !important;
+            left: 50px !important;
+            z-index: 10 !important;
+            min-width: 150px;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.1);
         }
-        body.dark-mode .kupci-table th:first-child, body.dark-mode .kupci-table td:first-child,
-        body.dark-mode .kupci-table th:nth-child(2), body.dark-mode .kupci-table td:nth-child(2) { background: #374151; }
+
+        /* Dark mode support for sticky columns */
+        body.dark-mode #kupci-godisnji-table th:first-child,
+        body.dark-mode #kupci-godisnji-table td:first-child,
+        body.dark-mode #kupci-godisnji-table th:nth-child(2),
+        body.dark-mode #kupci-godisnji-table td:nth-child(2),
+        body.dark-mode #kupci-mjesecni-table th:first-child,
+        body.dark-mode #kupci-mjesecni-table td:first-child,
+        body.dark-mode #kupci-mjesecni-table th:nth-child(2),
+        body.dark-mode #kupci-mjesecni-table td:nth-child(2) {
+            background: #374151 !important;
+        }
+
         .kupci-table thead th {
             background: linear-gradient(to bottom, #f9fafb 0%, #f3f4f6 100%);
             position: sticky !important; top: 0; z-index: 15 !important; font-weight: 700;
             border-top: 2px solid #10b981; border-bottom: 2px solid #10b981;
             padding: 12px 6px; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;
         }
-        /* Enhanced sticky for kupci godisnji and mjesecni tables */
+        /* Enhanced sticky for kupci godisnji and mjesecni tables - header row */
         #kupci-godisnji-table thead th,
         #kupci-mjesecni-table thead th {
             position: sticky !important;
             top: 0;
             z-index: 15 !important;
+        }
+        /* First two header columns need higher z-index to stay above other headers */
+        #kupci-godisnji-table thead th:first-child,
+        #kupci-mjesecni-table thead th:first-child {
+            z-index: 20 !important;
+        }
+        #kupci-godisnji-table thead th:nth-child(2),
+        #kupci-mjesecni-table thead th:nth-child(2) {
+            z-index: 19 !important;
         }
         #kupci-godisnji-table td:first-child,
         #kupci-mjesecni-table td:first-child {
