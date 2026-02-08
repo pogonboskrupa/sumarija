@@ -2146,107 +2146,89 @@
                     checkDate.setDate(checkDate.getDate() - 1);
                 }
 
-                // Formatiraj datume za poređenje (YYYY-MM-DD)
+                // Formatiraj datume za poređenje (DD.MM.YYYY format koji koristi API)
                 const radniDaniStr = radniDani.map(d => {
-                    const y = d.getFullYear();
-                    const m = String(d.getMonth() + 1).padStart(2, '0');
                     const day = String(d.getDate()).padStart(2, '0');
-                    return `${y}-${m}-${day}`;
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const y = d.getFullYear();
+                    return `${day}.${m}.${y}`;
                 });
 
-                // Sortimenti koje prikazujemo
-                const sortimentiPrikaz = ['TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ČETINARI', 'TRUPCI L', 'OGR.DUGI', 'OGR.CIJEPANI', 'LIŠĆARI', 'UKUPNO'];
+                // Sortimenti koje prikazujemo (mapiranje na nazive iz API-ja)
+                const sortimentiPrikaz = [
+                    { display: 'TRUPCI Č', keys: ['TRUPCI Č'] },
+                    { display: 'CEL.DUGA', keys: ['CEL.DUGA'] },
+                    { display: 'CEL.CIJEPANA', keys: ['CEL.CIJEPANA'] },
+                    { display: 'Σ ČETINARI', keys: ['Σ ČETINARI', 'ČETINARI'] },
+                    { display: 'TRUPCI L', keys: ['TRUPCI L'] },
+                    { display: 'OGR.DUGI', keys: ['OGR.DUGI'] },
+                    { display: 'OGR.CIJEPANI', keys: ['OGR.CIJEPANI'] },
+                    { display: 'Σ LIŠĆARI', keys: ['Σ LIŠĆARI', 'LIŠĆARI'] },
+                    { display: 'UKUPNO', keys: ['UKUPNO Č+L', 'UKUPNO'] }
+                ];
 
-                // Funkcija za parsiranje datuma iz različitih formata
-                const parseRecordDate = (datum) => {
+                // Funkcija za normalizaciju datuma u DD.MM.YYYY
+                const normalizeDate = (datum) => {
                     if (!datum) return null;
-                    let d;
                     if (typeof datum === 'string') {
-                        // Pokušaj različite formate
-                        if (datum.includes('/')) {
-                            // DD/MM/YYYY format
-                            const parts = datum.split('/');
-                            if (parts.length === 3) {
-                                d = new Date(parts[2], parts[1] - 1, parts[0]);
-                            }
-                        } else if (datum.includes('-')) {
-                            d = new Date(datum);
-                        } else if (datum.includes('.')) {
-                            // DD.MM.YYYY format
-                            const parts = datum.split('.');
-                            if (parts.length === 3) {
-                                d = new Date(parts[2], parts[1] - 1, parts[0]);
-                            }
-                        }
-                    } else if (datum instanceof Date) {
-                        d = datum;
-                    }
-                    if (d && !isNaN(d.getTime())) {
-                        const y = d.getFullYear();
-                        const m = String(d.getMonth() + 1).padStart(2, '0');
-                        const day = String(d.getDate()).padStart(2, '0');
-                        return `${y}-${m}-${day}`;
+                        // API vraća format DD.MM.YYYY
+                        return datum.trim();
                     }
                     return null;
                 };
 
                 // Agregiraj SJEČA podatke za zadnjih 5 radnih dana
+                // API vraća svaki sortiment kao zaseban zapis: { datum, sortiment, kolicina }
                 const sjecaSortimenti = {};
-                sortimentiPrikaz.forEach(s => sjecaSortimenti[s] = 0);
+                sortimentiPrikaz.forEach(s => sjecaSortimenti[s.display] = 0);
 
                 if (primkeData.primke && Array.isArray(primkeData.primke)) {
                     primkeData.primke.forEach(primka => {
-                        const datumStr = parseRecordDate(primka.datum);
+                        const datumStr = normalizeDate(primka.datum);
                         if (datumStr && radniDaniStr.includes(datumStr)) {
-                            // Agregiraj po sortimentima
-                            if (primka.sortimenti && typeof primka.sortimenti === 'object') {
-                                Object.keys(primka.sortimenti).forEach(sort => {
-                                    const val = parseFloat(primka.sortimenti[sort]) || 0;
-                                    if (sortimentiPrikaz.includes(sort)) {
-                                        sjecaSortimenti[sort] += val;
-                                    }
-                                });
-                            }
-                            // Dodaj ukupno ako nije u sortimentima
-                            if (primka.ukupno) {
-                                sjecaSortimenti['UKUPNO'] += parseFloat(primka.ukupno) || 0;
-                            }
+                            // Svaki zapis ima sortiment i kolicina
+                            const sortiment = primka.sortiment;
+                            const kolicina = parseFloat(primka.kolicina) || 0;
+
+                            // Pronađi odgovarajući prikaz sortiment
+                            sortimentiPrikaz.forEach(sp => {
+                                if (sp.keys.includes(sortiment)) {
+                                    sjecaSortimenti[sp.display] += kolicina;
+                                }
+                            });
                         }
                     });
                 }
 
                 // Agregiraj OTPREMA podatke za zadnjih 5 radnih dana
                 const otpremaSortimenti = {};
-                sortimentiPrikaz.forEach(s => otpremaSortimenti[s] = 0);
+                sortimentiPrikaz.forEach(s => otpremaSortimenti[s.display] = 0);
 
                 if (otpremeData.otpreme && Array.isArray(otpremeData.otpreme)) {
                     otpremeData.otpreme.forEach(otprema => {
-                        const datumStr = parseRecordDate(otprema.datum);
+                        const datumStr = normalizeDate(otprema.datum);
                         if (datumStr && radniDaniStr.includes(datumStr)) {
-                            // Agregiraj po sortimentima
-                            if (otprema.sortimenti && typeof otprema.sortimenti === 'object') {
-                                Object.keys(otprema.sortimenti).forEach(sort => {
-                                    const val = parseFloat(otprema.sortimenti[sort]) || 0;
-                                    if (sortimentiPrikaz.includes(sort)) {
-                                        otpremaSortimenti[sort] += val;
-                                    }
-                                });
-                            }
-                            // Dodaj ukupno ako nije u sortimentima
-                            if (otprema.ukupno) {
-                                otpremaSortimenti['UKUPNO'] += parseFloat(otprema.ukupno) || 0;
-                            }
+                            // Svaki zapis ima sortiment i kolicina
+                            const sortiment = otprema.sortiment;
+                            const kolicina = parseFloat(otprema.kolicina) || 0;
+
+                            // Pronađi odgovarajući prikaz sortiment
+                            sortimentiPrikaz.forEach(sp => {
+                                if (sp.keys.includes(sortiment)) {
+                                    otpremaSortimenti[sp.display] += kolicina;
+                                }
+                            });
                         }
                     });
                 }
 
                 // Renderuj header
                 let headerHtml = '<tr style="background: linear-gradient(135deg, #047857 0%, #065f46 100%);">';
-                headerHtml += '<th style="color: white; font-weight: 700; text-align: left; padding: 12px;">Vrsta</th>';
+                headerHtml += '<th style="color: white; font-weight: 700; text-align: left; padding: 12px 16px; min-width: 200px;">Vrsta</th>';
                 sortimentiPrikaz.forEach(sort => {
-                    const isUkupno = sort === 'UKUPNO';
+                    const isUkupno = sort.display === 'UKUPNO';
                     const bgStyle = isUkupno ? 'background: #064e3b;' : '';
-                    headerHtml += `<th style="color: white; font-weight: 700; text-align: right; padding: 12px; ${bgStyle}">${sort}</th>`;
+                    headerHtml += `<th style="color: white; font-weight: 700; text-align: right; padding: 12px 16px; min-width: 100px; ${bgStyle}">${sort.display}</th>`;
                 });
                 headerHtml += '</tr>';
                 headerElem.innerHTML = headerHtml;
@@ -2256,29 +2238,29 @@
 
                 // Red za Sječu
                 bodyHtml += '<tr style="background: #f0fdf4;">';
-                bodyHtml += '<td style="font-weight: 600; color: #047857; padding: 12px;">🌲 Sječa (5 dana)</td>';
+                bodyHtml += '<td style="font-weight: 600; color: #047857; padding: 12px 16px; white-space: nowrap;">🌲 Sječa (zadnjih 5 radnih dana)</td>';
                 sortimentiPrikaz.forEach(sort => {
-                    const val = sjecaSortimenti[sort] || 0;
+                    const val = sjecaSortimenti[sort.display] || 0;
                     const display = val > 0 ? val.toFixed(2) : '-';
-                    const isUkupno = sort === 'UKUPNO';
+                    const isUkupno = sort.display === 'UKUPNO';
                     const style = isUkupno
                         ? 'background: #d1fae5; font-weight: 700; color: #047857;'
                         : 'color: ' + (val > 0 ? '#059669' : '#9ca3af') + ';';
-                    bodyHtml += `<td style="text-align: right; padding: 12px; font-family: 'Inter', monospace; ${style}">${display}</td>`;
+                    bodyHtml += `<td style="text-align: right; padding: 12px 16px; font-family: 'Roboto Mono', monospace; ${style}">${display}</td>`;
                 });
                 bodyHtml += '</tr>';
 
                 // Red za Otpremu
                 bodyHtml += '<tr style="background: #e0f2fe;">';
-                bodyHtml += '<td style="font-weight: 600; color: #0369a1; padding: 12px;">🚚 Otprema (5 dana)</td>';
+                bodyHtml += '<td style="font-weight: 600; color: #0369a1; padding: 12px 16px; white-space: nowrap;">🚚 Otprema (zadnjih 5 radnih dana)</td>';
                 sortimentiPrikaz.forEach(sort => {
-                    const val = otpremaSortimenti[sort] || 0;
+                    const val = otpremaSortimenti[sort.display] || 0;
                     const display = val > 0 ? val.toFixed(2) : '-';
-                    const isUkupno = sort === 'UKUPNO';
+                    const isUkupno = sort.display === 'UKUPNO';
                     const style = isUkupno
                         ? 'background: #bae6fd; font-weight: 700; color: #0369a1;'
                         : 'color: ' + (val > 0 ? '#2563eb' : '#9ca3af') + ';';
-                    bodyHtml += `<td style="text-align: right; padding: 12px; font-family: 'Inter', monospace; ${style}">${display}</td>`;
+                    bodyHtml += `<td style="text-align: right; padding: 12px 16px; font-family: 'Roboto Mono', monospace; ${style}">${display}</td>`;
                 });
                 bodyHtml += '</tr>';
 
