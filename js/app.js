@@ -2058,40 +2058,46 @@
                     console.error('Odjeli API error:', odjeliData.error);
                     document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri učitavanju podataka o odjelima</td></tr>';
                 } else if (odjeliData.odjeli && odjeliData.odjeli.length > 0) {
-                    // Build radilište to color class mapping
-                    const radilisteSet = [...new Set(odjeliData.odjeli.map(o => o.radiliste || '').filter(r => r))];
-                    const radilisteColorMap = {};
-                    radilisteSet.forEach((r, idx) => {
-                        radilisteColorMap[r] = 'radiliste-' + ((idx % 10) + 1);
-                    });
+                    try {
+                        // Build radilište to color class mapping
+                        const radilisteSet = [...new Set(odjeliData.odjeli.map(o => (o && o.radiliste) || '').filter(r => r))];
+                        const radilisteColorMap = {};
+                        radilisteSet.forEach((r, idx) => {
+                            radilisteColorMap[r] = 'radiliste-' + ((idx % 10) + 1);
+                        });
 
-                    // Helper function for realizacija heatmap class
-                    const getRealizacijaClass = (val) => {
-                        if (val == null || val <= 0) return '';
-                        if (val >= 100) return 'real-over-100';
-                        if (val >= 75) return 'real-75-100';
-                        if (val >= 50) return 'real-50-75';
-                        if (val >= 25) return 'real-25-50';
-                        return 'real-0-25';
-                    };
+                        // Helper function for realizacija heatmap class
+                        const getRealizacijaClass = (val) => {
+                            if (val == null || val <= 0) return '';
+                            if (val >= 100) return 'real-over-100';
+                            if (val >= 75) return 'real-75-100';
+                            if (val >= 50) return 'real-50-75';
+                            if (val >= 25) return 'real-25-50';
+                            return 'real-0-25';
+                        };
 
-                    const odjeliHTML = odjeliData.odjeli.map(o => {
-                        const radilisteClass = radilisteColorMap[o.radiliste] || '';
-                        const realizacijaClass = getRealizacijaClass(o.realizacija);
-                        return `
-                            <tr>
-                                <td class="${radilisteClass}" style="font-weight: 500;">${o.odjel || '-'}</td>
-                                <td class="right green">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
-                                <td class="right blue">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
-                                <td class="right">${(o.sumaPanj != null && !isNaN(o.sumaPanj)) ? o.sumaPanj.toFixed(2) : '0.00'}</td>
-                                <td class="${radilisteClass}">${o.radiliste || '-'}</td>
-                                <td>${o.izvođač || '-'}</td>
-                                <td>${o.datumZadnjeSjece || '-'}</td>
-                                <td class="right ${realizacijaClass}">${(o.realizacija != null && o.realizacija > 0) ? o.realizacija.toFixed(1) + '%' : '-'}</td>
-                            </tr>
-                        `;
-                    }).join('');
-                    document.getElementById('odjeli-table-body').innerHTML = odjeliHTML;
+                        const odjeliHTML = odjeliData.odjeli.map(o => {
+                            if (!o) return '';
+                            const radilisteClass = radilisteColorMap[o.radiliste] || '';
+                            const realizacijaClass = getRealizacijaClass(o.realizacija);
+                            return `
+                                <tr>
+                                    <td class="${radilisteClass}" style="font-weight: 500;">${o.odjel || '-'}</td>
+                                    <td class="right green">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
+                                    <td class="right blue">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
+                                    <td class="right">${(o.sumaPanj != null && !isNaN(o.sumaPanj)) ? o.sumaPanj.toFixed(2) : '0.00'}</td>
+                                    <td class="${radilisteClass}">${o.radiliste || '-'}</td>
+                                    <td>${o.izvođač || '-'}</td>
+                                    <td>${o.datumZadnjeSjece || '-'}</td>
+                                    <td class="right ${realizacijaClass}">${(o.realizacija != null && o.realizacija > 0) ? o.realizacija.toFixed(1) + '%' : '-'}</td>
+                                </tr>
+                            `;
+                        }).join('');
+                        document.getElementById('odjeli-table-body').innerHTML = odjeliHTML;
+                    } catch (e) {
+                        console.error('Error rendering odjeli table:', e);
+                        document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri prikazu tabele</td></tr>';
+                    }
                 } else {
                     document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #6b7280;">Nema podataka o odjelima</td></tr>';
                 }
