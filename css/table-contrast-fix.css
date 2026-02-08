@@ -1256,3 +1256,31 @@ body.dark-mode .real-25-50 { background-color: #7c2d12 !important; color: #fed7a
 body.dark-mode .real-50-75 { background-color: #713f12 !important; color: #fef08a !important; }
 body.dark-mode .real-75-100 { background-color: #14532d !important; color: #bbf7d0 !important; }
 body.dark-mode .real-over-100 { background-color: #064e3b !important; color: #86efac !important; }
+
+/* ============================================ */
+/* 🔄 KUPCI TABELE - SORTABLE HEADERS */
+/* Stilovi za sortiranje po kolonama */
+/* ============================================ */
+
+/* Sortable header - hover efekat */
+.sortable-header {
+    cursor: pointer !important;
+    user-select: none !important;
+    transition: background-color 0.15s ease !important;
+}
+
+.sortable-header:hover {
+    filter: brightness(1.15) !important;
+}
+
+/* Aktivna sort kolona - istaknutija */
+.sortable-header.sort-active {
+    text-decoration: underline !important;
+    text-underline-offset: 3px !important;
+}
+
+/* Sort strelice - inline u tekstu, vidljive */
+.sortable-header .sort-arrow {
+    margin-left: 4px;
+    font-size: 12px;
+}

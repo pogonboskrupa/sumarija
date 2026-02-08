@@ -4732,8 +4732,118 @@
             }
         }
 
+        // ============================================
+        // 🔄 KUPCI TABELE - SORTIRANJE PO KOLONAMA
+        // ============================================
+
+        // Globalno stanje za kupci podatke i sortiranje
+        let kupciGodisnjiData = [];
+        let kupciMjesecniData = [];
+        let kupciSortimentiNazivi = [];
+
+        // Sort stanje za oba taba (shared)
+        const kupciSortState = {
+            godisnji: { key: 'SVEUKUPNO', direction: 'desc' },
+            mjesecni: { key: 'SVEUKUPNO', direction: 'desc' }
+        };
+
+        // Mapiranje naziva sortimenta na ključeve u podacima
+        function getSortimentKey(sortimentName) {
+            // SVEUKUPNO je u 'ukupno' polju
+            if (sortimentName === 'SVEUKUPNO') return 'ukupno';
+            return sortimentName;
+        }
+
+        // Dohvati vrijednost za sortiranje
+        function getKupacSortValue(kupac, key) {
+            if (key === 'kupac') {
+                return (kupac.kupac || '').toLowerCase();
+            }
+            if (key === 'ukupno' || key === 'SVEUKUPNO') {
+                return kupac.ukupno || 0;
+            }
+            // Sortiment vrijednost
+            const val = kupac.sortimenti ? kupac.sortimenti[key] : 0;
+            if (val === null || val === undefined || val === '-' || val === '') return 0;
+            return parseFloat(val) || 0;
+        }
+
+        // Shared sort funkcija
+        function sortKupciData(data, key, direction) {
+            const isTextSort = (key === 'kupac');
+            return [...data].sort((a, b) => {
+                const valA = getKupacSortValue(a, key);
+                const valB = getKupacSortValue(b, key);
+
+                let comparison;
+                if (isTextSort) {
+                    comparison = valA.localeCompare(valB, 'hr');
+                } else {
+                    comparison = valA - valB;
+                }
+
+                return direction === 'asc' ? comparison : -comparison;
+            });
+        }
+
+        // Handler za klik na header kolonu
+        function handleKupciHeaderClick(tabType, sortKey) {
+            const state = kupciSortState[tabType];
+
+            if (state.key === sortKey) {
+                // Ista kolona - promijeni smjer
+                state.direction = state.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                // Nova kolona - reset na desc (za brojeve) ili asc (za tekst)
+                state.key = sortKey;
+                state.direction = sortKey === 'kupac' ? 'asc' : 'desc';
+            }
+
+            // Re-renderuj tabelu
+            if (tabType === 'godisnji') {
+                renderKupciGodisnjiTableBody();
+            } else {
+                renderKupciMjesecniTableBody();
+            }
+        }
+
+        // Renderuj header sa sort indikatorima
+        function renderKupciSortableHeader(tabType, sortimentiNazivi, headerBgColor, headerBgColorAlt) {
+            const state = kupciSortState[tabType];
+            const stickyCol1Style = 'position: sticky; left: 0; z-index: 11; min-width: 50px;';
+            const stickyCol2Style = 'position: sticky; left: 50px; z-index: 10; min-width: 150px; box-shadow: 2px 0 4px rgba(0,0,0,0.1);';
+
+            let headerHtml = `<tr style="background: ${headerBgColor};">`;
+
+            // R.br. kolona (nije sortabilna)
+            headerHtml += `<th style="color: white; font-weight: 700; text-align: center; padding: 8px 4px; background: ${headerBgColor}; ${stickyCol1Style}">R.br.</th>`;
+
+            // Kupac kolona (sortabilna po tekstu)
+            const kupacActive = state.key === 'kupac';
+            const kupacArrow = kupacActive ? (state.direction === 'asc' ? ' ↑' : ' ↓') : '';
+            const kupacClass = kupacActive ? 'sort-active' : '';
+            headerHtml += `<th class="sortable-header ${kupacClass}" onclick="handleKupciHeaderClick('${tabType}', 'kupac')" style="color: white; font-weight: 700; background: ${headerBgColor}; ${stickyCol2Style} cursor: pointer;">Kupac${kupacArrow}</th>`;
+
+            // Sortiment kolone
+            sortimentiNazivi.forEach(sortiment => {
+                const sortKey = sortiment;
+                const isActive = state.key === sortKey;
+                const arrow = isActive ? (state.direction === 'asc' ? ' ↑' : ' ↓') : '';
+                const activeClass = isActive ? 'sort-active' : '';
+                const bgStyle = sortiment === 'SVEUKUPNO' ? ` background: ${headerBgColorAlt};` : '';
+                headerHtml += `<th class="sortable-header ${activeClass}" onclick="handleKupciHeaderClick('${tabType}', '${sortKey}')" style="color: white; font-weight: 700; text-align: right; cursor: pointer;${bgStyle}">${sortiment}${arrow}</th>`;
+            });
+
+            headerHtml += '</tr>';
+            return headerHtml;
+        }
+
         // Renderuj godišnju tabelu po kupcima i sortimentima
         function renderKupciGodisnjiTable(godisnji, sortimentiNazivi) {
+            // Sačuvaj podatke globalno za sortiranje
+            kupciGodisnjiData = godisnji || [];
+            kupciSortimentiNazivi = sortimentiNazivi || [];
+
             const headerElem = document.getElementById('kupci-godisnji-header');
             const bodyElem = document.getElementById('kupci-godisnji-body');
 
@@ -4743,23 +4853,29 @@
                 return;
             }
 
-            // Sortiraj od najvećeg ka najmanjem po ukupno (SVEUKUPNO)
-            const sortedData = [...godisnji].sort((a, b) => (b.ukupno || 0) - (a.ukupno || 0));
+            // Renderuj header sa sort funkcionalnosti
+            headerElem.innerHTML = renderKupciSortableHeader('godisnji', sortimentiNazivi, '#047857', '#065f46');
+
+            // Renderuj body
+            renderKupciGodisnjiTableBody();
+        }
+
+        // Renderuj samo body dio godišnje tabele (za sortiranje)
+        function renderKupciGodisnjiTableBody() {
+            const bodyElem = document.getElementById('kupci-godisnji-body');
+            const state = kupciSortState.godisnji;
+            const sortimentiNazivi = kupciSortimentiNazivi;
+
+            // Sortiraj podatke
+            const sortedData = sortKupciData(kupciGodisnjiData, state.key, state.direction);
 
             // Sticky column styles
             const stickyCol1Style = 'position: sticky; left: 0; z-index: 11; min-width: 50px;';
             const stickyCol2Style = 'position: sticky; left: 50px; z-index: 10; min-width: 150px; box-shadow: 2px 0 4px rgba(0,0,0,0.1);';
 
-            // Header sa svim sortimentima (dodaj R.br. kolonu)
-            let headerHtml = '<tr style="background: #047857;">';
-            headerHtml += `<th style="color: white; font-weight: 700; text-align: center; padding: 8px 4px; background: #047857; ${stickyCol1Style}">R.br.</th>`;
-            headerHtml += `<th style="color: white; font-weight: 700; background: #047857; ${stickyCol2Style}">Kupac</th>`;
-            sortimentiNazivi.forEach(sortiment => {
-                const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #065f46;' : '';
-                headerHtml += `<th style="color: white; font-weight: 700; text-align: right;${bgStyle}">${sortiment}</th>`;
-            });
-            headerHtml += '</tr>';
-            headerElem.innerHTML = headerHtml;
+            // Ažuriraj header sa aktivnim sort indikatorom
+            const headerElem = document.getElementById('kupci-godisnji-header');
+            headerElem.innerHTML = renderKupciSortableHeader('godisnji', sortimentiNazivi, '#047857', '#065f46');
 
             // Izračunaj UKUPNO sume za svaki sortiment
             const ukupnoSume = {};
@@ -4810,7 +4926,11 @@
             const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
             const currentMjesec = mjeseci[currentDate.getMonth()];
 
-            const filteredData = mjesecni.filter(red => red.mjesec === currentMjesec);
+            const filteredData = (mjesecni || []).filter(red => red.mjesec === currentMjesec);
+
+            // Sačuvaj filtrirane podatke globalno za sortiranje
+            kupciMjesecniData = filteredData;
+            kupciSortimentiNazivi = sortimentiNazivi || [];
 
             if (!filteredData || filteredData.length === 0) {
                 headerElem.innerHTML = '';
@@ -4818,23 +4938,29 @@
                 return;
             }
 
-            // Sortiraj od najvećeg ka najmanjem po ukupno (SVEUKUPNO)
-            const sortedData = [...filteredData].sort((a, b) => (b.ukupno || 0) - (a.ukupno || 0));
+            // Renderuj header sa sort funkcionalnosti
+            headerElem.innerHTML = renderKupciSortableHeader('mjesecni', sortimentiNazivi, '#0369a1', '#075985');
+
+            // Renderuj body
+            renderKupciMjesecniTableBody();
+        }
+
+        // Renderuj samo body dio mjesečne tabele (za sortiranje)
+        function renderKupciMjesecniTableBody() {
+            const bodyElem = document.getElementById('kupci-mjesecni-body');
+            const state = kupciSortState.mjesecni;
+            const sortimentiNazivi = kupciSortimentiNazivi;
+
+            // Sortiraj podatke
+            const sortedData = sortKupciData(kupciMjesecniData, state.key, state.direction);
 
             // Sticky column styles
             const stickyCol1Style = 'position: sticky; left: 0; z-index: 11; min-width: 50px;';
             const stickyCol2Style = 'position: sticky; left: 50px; z-index: 10; min-width: 150px; box-shadow: 2px 0 4px rgba(0,0,0,0.1);';
 
-            // Header sa svim sortimentima (dodaj R.br. kolonu)
-            let headerHtml = '<tr style="background: #0369a1;">';
-            headerHtml += `<th style="color: white; font-weight: 700; text-align: center; padding: 8px 4px; background: #0369a1; ${stickyCol1Style}">R.br.</th>`;
-            headerHtml += `<th style="color: white; font-weight: 700; background: #0369a1; ${stickyCol2Style}">Kupac</th>`;
-            sortimentiNazivi.forEach(sortiment => {
-                const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #075985;' : '';
-                headerHtml += `<th style="color: white; font-weight: 700; text-align: right;${bgStyle}">${sortiment}</th>`;
-            });
-            headerHtml += '</tr>';
-            headerElem.innerHTML = headerHtml;
+            // Ažuriraj header sa aktivnim sort indikatorom
+            const headerElem = document.getElementById('kupci-mjesecni-header');
+            headerElem.innerHTML = renderKupciSortableHeader('mjesecni', sortimentiNazivi, '#0369a1', '#075985');
 
             // Izračunaj UKUPNO sume za svaki sortiment
             const ukupnoSume = {};
