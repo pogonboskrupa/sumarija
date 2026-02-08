@@ -1684,12 +1684,12 @@
             </div>
         </div>
 
-        <!-- POSLOVOĐA CONTENT - AKTIVNOST ZADNJIH 5 DANA -->
+        <!-- POSLOVOĐA CONTENT - ODJELI U REALIZACIJI -->
         <div id="poslovodja-realizacija-content" class="container hidden">
             <div class="page-header">
                 <div class="page-header-left">
-                    <h1>📅 Aktivnost zadnjih 5 dana</h1>
-                    <p>Sječa i otprema po odjelima za vaše radilište</p>
+                    <h1>🏗️ Odjeli u realizaciji</h1>
+                    <p>Aktivnost zadnjih 5 dana + sječa/otprema po sortimentima</p>
                 </div>
                 <div class="page-header-right">
                     <button class="btn btn-primary" onclick="loadPoslovodjaRealizacija()">🔄 Osvježi</button>
@@ -1698,11 +1698,36 @@
             <div id="poslovodja-radilista-info-2" class="section" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                 <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Radilište: <span id="poslovodja-radilista-list-2"></span></p>
             </div>
+
+            <!-- Aktivnost zadnjih 5 dana -->
             <div class="section">
+                <h2 style="color: #1e40af; margin-bottom: 15px;">📅 Aktivnost zadnjih 5 dana</h2>
                 <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                     <table class="monthly-table" id="poslovodja-realizacija-table">
                         <thead id="poslovodja-realizacija-header"></thead>
                         <tbody id="poslovodja-realizacija-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SJEČA po sortimentima -->
+            <div class="section" style="margin-top: 30px;">
+                <h2 style="color: #059669; margin-bottom: 15px;">🌲 SJEČA - Po sortimentima (all-time)</h2>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="monthly-table" id="poslovodja-sjeca-sortimenti-table">
+                        <thead id="poslovodja-sjeca-sortimenti-header"></thead>
+                        <tbody id="poslovodja-sjeca-sortimenti-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- OTPREMA po sortimentima -->
+            <div class="section" style="margin-top: 30px;">
+                <h2 style="color: #dc2626; margin-bottom: 15px;">🚛 OTPREMA - Po sortimentima (all-time)</h2>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="monthly-table" id="poslovodja-otprema-sortimenti-table">
+                        <thead id="poslovodja-otprema-sortimenti-header"></thead>
+                        <tbody id="poslovodja-otprema-sortimenti-body"></tbody>
                     </table>
                 </div>
             </div>

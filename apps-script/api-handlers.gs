@@ -3090,6 +3090,7 @@ function handleDeltaOtprema(username, password, fromRow, toRow) {
 
 // ========================================
 // POSLOVODJA AKTIVNOST - Zadnjih 5 dana sječa/otprema po odjelima
+// + Sortimenti po odjelima (all-time)
 // Filtrira po RADILIŠTE, grupira po ODJEL i DATUM
 // ========================================
 function handlePoslovodjaAktivnost(username, password, radiliste) {
@@ -3129,6 +3130,10 @@ function handlePoslovodjaAktivnost(username, password, radiliste) {
     // Mapa za agregaciju: { "ODJEL|DATE" -> { odjel, datum, sjeca, otprema } }
     const aktivnostMap = {};
 
+    // Mape za sortimenti po odjelima (ALL-TIME)
+    const sjecaSortimentiMap = {};   // { odjel -> { sortimenti: {...} } }
+    const otpremaSortimentiMap = {}; // { odjel -> { sortimenti: {...} } }
+
     // Helper za formatiranje datuma DD.MM.YYYY
     const formatDateStr = (d) => {
       const dd = String(d.getDate()).padStart(2, '0');
@@ -3137,7 +3142,14 @@ function handlePoslovodjaAktivnost(username, password, radiliste) {
       return `${dd}.${mm}.${yyyy}`;
     };
 
-    // Procesiranje PRIMKA (sječa)
+    // Helper za inicijalizaciju sortimenti objekta
+    const initSortimenti = () => {
+      const obj = {};
+      SORTIMENTI_NAZIVI.forEach(s => obj[s] = 0);
+      return obj;
+    };
+
+    // Procesiranje PRIMKA (sječa) - zadnjih 5 dana + ALL-TIME sortimenti
     for (let i = 1; i < primkaData.length; i++) {
       const row = primkaData[i];
       const datum = row[PRIMKA_COL.DATE];
@@ -3145,33 +3157,49 @@ function handlePoslovodjaAktivnost(username, password, radiliste) {
       const rowRadiliste = String(row[PRIMKA_COL.RADILISTE] || '').trim().toUpperCase();
       const kubik = parseFloat(row[PRIMKA_COL.UKUPNO]) || 0;
 
-      if (!datum || !odjel) continue;
+      if (!odjel) continue;
 
       // Filter po radilištu
       if (radilisteFilter && rowRadiliste !== radilisteFilter) continue;
 
+      const odjelKey = odjel.toUpperCase();
+
+      // ALL-TIME sortimenti agregacija
+      if (!sjecaSortimentiMap[odjelKey]) {
+        sjecaSortimentiMap[odjelKey] = {
+          odjel: odjel,
+          sortimenti: initSortimenti()
+        };
+      }
+      // Dodaj sortimente
+      for (let s = 0; s < SORTIMENTI_NAZIVI.length; s++) {
+        const val = parseFloat(row[PRIMKA_COL.SORT_START + s]) || 0;
+        sjecaSortimentiMap[odjelKey].sortimenti[SORTIMENTI_NAZIVI[s]] += val;
+      }
+
+      // Zadnjih 5 dana aktivnost
+      if (!datum) continue;
       const datumObj = parseDate(datum);
       if (isNaN(datumObj.getTime())) continue;
 
-      // Filter po datumu (zadnjih 5 dana)
-      if (datumObj < fiveDaysAgo || datumObj > today) continue;
+      if (datumObj >= fiveDaysAgo && datumObj <= today) {
+        const dateKey = formatDateStr(datumObj);
+        const key = `${odjelKey}|${dateKey}`;
 
-      const dateKey = formatDateStr(datumObj);
-      const key = `${odjel.toUpperCase()}|${dateKey}`;
-
-      if (!aktivnostMap[key]) {
-        aktivnostMap[key] = {
-          odjel: odjel,
-          datum: dateKey,
-          datumObj: datumObj,
-          sjeca: 0,
-          otprema: 0
-        };
+        if (!aktivnostMap[key]) {
+          aktivnostMap[key] = {
+            odjel: odjel,
+            datum: dateKey,
+            datumObj: datumObj,
+            sjeca: 0,
+            otprema: 0
+          };
+        }
+        aktivnostMap[key].sjeca += kubik;
       }
-      aktivnostMap[key].sjeca += kubik;
     }
 
-    // Procesiranje OTPREMA
+    // Procesiranje OTPREMA - zadnjih 5 dana + ALL-TIME sortimenti
     for (let i = 1; i < otpremaData.length; i++) {
       const row = otpremaData[i];
       const datum = row[OTPREMA_COL.DATE];
@@ -3179,54 +3207,75 @@ function handlePoslovodjaAktivnost(username, password, radiliste) {
       const rowRadiliste = String(row[OTPREMA_COL.RADILISTE] || '').trim().toUpperCase();
       const kubik = parseFloat(row[OTPREMA_COL.UKUPNO]) || 0;
 
-      if (!datum || !odjel) continue;
+      if (!odjel) continue;
 
       // Filter po radilištu
       if (radilisteFilter && rowRadiliste !== radilisteFilter) continue;
 
+      const odjelKey = odjel.toUpperCase();
+
+      // ALL-TIME sortimenti agregacija
+      if (!otpremaSortimentiMap[odjelKey]) {
+        otpremaSortimentiMap[odjelKey] = {
+          odjel: odjel,
+          sortimenti: initSortimenti()
+        };
+      }
+      // Dodaj sortimente
+      for (let s = 0; s < SORTIMENTI_NAZIVI.length; s++) {
+        const val = parseFloat(row[OTPREMA_COL.SORT_START + s]) || 0;
+        otpremaSortimentiMap[odjelKey].sortimenti[SORTIMENTI_NAZIVI[s]] += val;
+      }
+
+      // Zadnjih 5 dana aktivnost
+      if (!datum) continue;
       const datumObj = parseDate(datum);
       if (isNaN(datumObj.getTime())) continue;
 
-      // Filter po datumu (zadnjih 5 dana)
-      if (datumObj < fiveDaysAgo || datumObj > today) continue;
+      if (datumObj >= fiveDaysAgo && datumObj <= today) {
+        const dateKey = formatDateStr(datumObj);
+        const key = `${odjelKey}|${dateKey}`;
 
-      const dateKey = formatDateStr(datumObj);
-      const key = `${odjel.toUpperCase()}|${dateKey}`;
-
-      if (!aktivnostMap[key]) {
-        aktivnostMap[key] = {
-          odjel: odjel,
-          datum: dateKey,
-          datumObj: datumObj,
-          sjeca: 0,
-          otprema: 0
-        };
+        if (!aktivnostMap[key]) {
+          aktivnostMap[key] = {
+            odjel: odjel,
+            datum: dateKey,
+            datumObj: datumObj,
+            sjeca: 0,
+            otprema: 0
+          };
+        }
+        aktivnostMap[key].otprema += kubik;
       }
-      aktivnostMap[key].otprema += kubik;
     }
 
     // Konvertuj mapu u listu i sortiraj po datumu (najnoviji prvo), zatim po odjelu
     const aktivnosti = Object.values(aktivnostMap).sort((a, b) => {
-      // Prvo po datumu (desc)
       const dateDiff = b.datumObj - a.datumObj;
       if (dateDiff !== 0) return dateDiff;
-      // Zatim po odjelu (asc)
       return a.odjel.localeCompare(b.odjel);
     });
 
     // Ukloni datumObj iz rezultata
-    const result = aktivnosti.map(a => ({
+    const aktivnostiResult = aktivnosti.map(a => ({
       odjel: a.odjel,
       datum: a.datum,
       sjeca: a.sjeca,
       otprema: a.otprema
     }));
 
+    // Konvertuj sortimenti mape u liste
+    const sjecaSortimenti = Object.values(sjecaSortimentiMap).sort((a, b) => a.odjel.localeCompare(b.odjel));
+    const otpremaSortimenti = Object.values(otpremaSortimentiMap).sort((a, b) => a.odjel.localeCompare(b.odjel));
+
     Logger.log(`=== HANDLE POSLOVODJA AKTIVNOST END ===`);
-    Logger.log(`Ukupno zapisa: ${result.length}`);
+    Logger.log(`Aktivnosti (5 dana): ${aktivnostiResult.length}, Sječa odjeli: ${sjecaSortimenti.length}, Otprema odjeli: ${otpremaSortimenti.length}`);
 
     return createJsonResponse({
-      aktivnosti: result,
+      aktivnosti: aktivnostiResult,
+      sjecaSortimenti: sjecaSortimenti,
+      otpremaSortimenti: otpremaSortimenti,
+      sortimentiNazivi: SORTIMENTI_NAZIVI,
       radiliste: radiliste || 'ALL',
       dateRange: {
         from: formatDateStr(fiveDaysAgo),

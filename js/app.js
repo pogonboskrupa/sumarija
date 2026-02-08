@@ -845,7 +845,7 @@
                     const currentMonth = new Date().getMonth(); // 0-11
                     allViews = [
                         { name: 'Stanje Odjela', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_poslovodja_odjeli_' + year, timeout: 180000 },
-                        { name: 'Aktivnost 5 dana', url: buildApiUrl('poslovodja-aktivnost', { radiliste: '' }), cacheKey: 'cache_poslovodja_aktivnost_all', timeout: 60000 },
+                        { name: 'Odjeli u realizaciji', url: buildApiUrl('poslovodja-aktivnost', { radiliste: '' }), cacheKey: 'cache_poslovodja_aktivnost_all', timeout: 60000 },
                         { name: 'Zadnjih 5 dana - Primke', url: buildApiUrl('primke'), cacheKey: 'cache_poslovodja_primke', timeout: 120000 },
                         { name: 'Zadnjih 5 dana - Otpreme', url: buildApiUrl('otpreme'), cacheKey: 'cache_poslovodja_otpreme', timeout: 120000 },
                         { name: 'Suma mjeseca', url: buildApiUrl('primke'), cacheKey: 'cache_poslovodja_suma_primke', timeout: 120000 }
@@ -1310,7 +1310,7 @@
                 // POSLOVOĐA vidi: STANJE ODJELA, ODJELI U REALIZACIJI, ZADNJIH 5 DANA, SUMA MJESECA, IZVJEŠTAJI
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('poslovodja-stanje')">📊 Stanje zaliha</button>
-                    <button class="tab" onclick="switchTab('poslovodja-realizacija')">📅 Aktivnost 5 dana</button>
+                    <button class="tab" onclick="switchTab('poslovodja-realizacija')">🏗️ Odjeli u realizaciji</button>
                     <button class="tab" onclick="switchTab('poslovodja-zadnjih5')">📅 Zadnjih 5 Dana</button>
                     <button class="tab" onclick="switchTab('poslovodja-suma')">📈 Suma Mjeseca</button>
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
@@ -2892,7 +2892,8 @@
             }
         }
 
-        // Load AKTIVNOST ZADNJIH 5 DANA za poslovođu (filtrirano po radilištu)
+        // Load ODJELI U REALIZACIJI za poslovođu (filtrirano po radilištu)
+        // Uključuje: aktivnost zadnjih 5 dana + sortimenti po odjelima (all-time)
         async function loadPoslovodjaRealizacija() {
             document.getElementById('loading-screen').classList.remove('hidden');
             document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
@@ -2914,15 +2915,19 @@
                     throw new Error(data.error);
                 }
 
-                // Render aktivnost table
+                // Render aktivnost table (zadnjih 5 dana)
                 renderPoslovodjaAktivnostTable(data.aktivnosti || [], data.dateRange);
+
+                // Render sortimenti tabele (all-time)
+                renderPoslovodjaSortimentiTable('poslovodja-sjeca-sortimenti', data.sjecaSortimenti || [], data.sortimentiNazivi || []);
+                renderPoslovodjaSortimentiTable('poslovodja-otprema-sortimenti', data.otpremaSortimenti || [], data.sortimentiNazivi || []);
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('poslovodja-realizacija-content').classList.remove('hidden');
 
             } catch (error) {
-                console.error('Error loading poslovođa aktivnost:', error);
-                showError('Greška', 'Greška pri učitavanju aktivnosti: ' + error.message);
+                console.error('Error loading poslovođa odjeli u realizaciji:', error);
+                showError('Greška', 'Greška pri učitavanju odjela u realizaciji: ' + error.message);
                 document.getElementById('loading-screen').classList.add('hidden');
             }
         }
@@ -3013,6 +3018,60 @@
                     <td style="text-align: right; font-family: 'Courier New', monospace; padding: 12px; font-size: 14px;">${grandTotal.otprema.toFixed(2)}</td>
                 </tr>
             `;
+
+            bodyElem.innerHTML = bodyHtml;
+        }
+
+        // Render Sortimenti table for poslovođa (SJEČA ili OTPREMA)
+        function renderPoslovodjaSortimentiTable(tablePrefix, odjeli, sortimentiNazivi) {
+            const headerElem = document.getElementById(tablePrefix + '-header');
+            const bodyElem = document.getElementById(tablePrefix + '-body');
+
+            if (!odjeli || odjeli.length === 0) {
+                headerElem.innerHTML = '';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka</td></tr>';
+                return;
+            }
+
+            // Build header - ODJEL + svi sortimenti
+            let headerHtml = '<tr><th style="min-width: 120px; position: sticky; left: 0; background: #1e3a5f; z-index: 10;">Odjel</th>';
+            sortimentiNazivi.forEach(s => {
+                const shortName = s.replace('UKUPNO Č+L', 'UKUPNO').replace('Σ ČETINARI', 'Σ ČET.');
+                headerHtml += `<th style="min-width: 60px; font-size: 10px; text-align: right; white-space: nowrap;">${shortName}</th>`;
+            });
+            headerHtml += '</tr>';
+            headerElem.innerHTML = headerHtml;
+
+            // Build body
+            let bodyHtml = '';
+            const totals = {};
+            sortimentiNazivi.forEach(s => totals[s] = 0);
+
+            odjeli.forEach((odjel, index) => {
+                const rowBg = index % 2 === 0 ? '#f9fafb' : 'white';
+                bodyHtml += `<tr style="background: ${rowBg};">`;
+                bodyHtml += `<td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 5; border-right: 2px solid #d1d5db;">${odjel.odjel}</td>`;
+
+                sortimentiNazivi.forEach(s => {
+                    const val = odjel.sortimenti[s] || 0;
+                    totals[s] += val;
+                    const displayVal = val > 0 ? val.toFixed(2) : '-';
+                    const color = val > 0 ? '#1f2937' : '#d1d5db';
+                    bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; font-size: 11px; color: ${color};">${displayVal}</td>`;
+                });
+
+                bodyHtml += '</tr>';
+            });
+
+            // Total row
+            bodyHtml += '<tr style="background: linear-gradient(135deg, #1e3a5f, #2d5a87); color: white; font-weight: 700;">';
+            bodyHtml += '<td style="position: sticky; left: 0; background: #1e3a5f; z-index: 5; padding: 10px;">UKUPNO</td>';
+            sortimentiNazivi.forEach(s => {
+                const val = totals[s];
+                const displayVal = val > 0 ? val.toFixed(2) : '-';
+                bodyHtml += `<td style="text-align: right; font-family: 'Courier New', monospace; font-size: 11px; padding: 10px;">${displayVal}</td>`;
+            });
+            bodyHtml += '</tr>';
 
             bodyElem.innerHTML = bodyHtml;
         }
