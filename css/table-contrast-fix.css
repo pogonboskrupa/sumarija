@@ -1165,3 +1165,94 @@ th[style*="color: white"] {
     border-top: none;
     border-radius: 0 0 8px 8px;
 }
+
+/* ============================================ */
+/* 🎨 PREGLED PO ODJELIMA - RADILIŠTE COLORING */
+/* Centralna paleta boja za radilišta */
+/* ============================================ */
+
+/* Radilište color palette - 10 distinct colors */
+.radiliste-1 { background-color: #dbeafe !important; } /* Light blue */
+.radiliste-2 { background-color: #dcfce7 !important; } /* Light green */
+.radiliste-3 { background-color: #fef3c7 !important; } /* Light amber */
+.radiliste-4 { background-color: #fce7f3 !important; } /* Light pink */
+.radiliste-5 { background-color: #e0e7ff !important; } /* Light indigo */
+.radiliste-6 { background-color: #ccfbf1 !important; } /* Light teal */
+.radiliste-7 { background-color: #fed7aa !important; } /* Light orange */
+.radiliste-8 { background-color: #ddd6fe !important; } /* Light violet */
+.radiliste-9 { background-color: #fbcfe8 !important; } /* Light rose */
+.radiliste-10 { background-color: #d1fae5 !important; } /* Light emerald */
+
+/* Radilište column text remains dark for readability */
+#odjeli-table-body td.radiliste-1,
+#odjeli-table-body td.radiliste-2,
+#odjeli-table-body td.radiliste-3,
+#odjeli-table-body td.radiliste-4,
+#odjeli-table-body td.radiliste-5,
+#odjeli-table-body td.radiliste-6,
+#odjeli-table-body td.radiliste-7,
+#odjeli-table-body td.radiliste-8,
+#odjeli-table-body td.radiliste-9,
+#odjeli-table-body td.radiliste-10 {
+    color: #1f2937 !important;
+    font-weight: 600 !important;
+}
+
+/* ============================================ */
+/* 📊 REALIZACIJA HEATMAP - Percentage Classes */
+/* Background colors based on percentage ranges */
+/* ============================================ */
+
+/* 0-25% - Red (critical) */
+.real-0-25 {
+    background-color: #fecaca !important;
+    color: #991b1b !important;
+    font-weight: 700 !important;
+}
+
+/* 25-50% - Orange (warning) */
+.real-25-50 {
+    background-color: #fed7aa !important;
+    color: #9a3412 !important;
+    font-weight: 700 !important;
+}
+
+/* 50-75% - Yellow (moderate) */
+.real-50-75 {
+    background-color: #fef08a !important;
+    color: #854d0e !important;
+    font-weight: 700 !important;
+}
+
+/* 75-100% - Light green (good) */
+.real-75-100 {
+    background-color: #bbf7d0 !important;
+    color: #166534 !important;
+    font-weight: 700 !important;
+}
+
+/* 100%+ - Deep green (excellent) */
+.real-over-100 {
+    background-color: #86efac !important;
+    color: #14532d !important;
+    font-weight: 800 !important;
+}
+
+/* Dark mode support for radilište colors */
+body.dark-mode .radiliste-1 { background-color: #1e3a5f !important; color: #93c5fd !important; }
+body.dark-mode .radiliste-2 { background-color: #14532d !important; color: #86efac !important; }
+body.dark-mode .radiliste-3 { background-color: #78350f !important; color: #fde68a !important; }
+body.dark-mode .radiliste-4 { background-color: #831843 !important; color: #f9a8d4 !important; }
+body.dark-mode .radiliste-5 { background-color: #312e81 !important; color: #a5b4fc !important; }
+body.dark-mode .radiliste-6 { background-color: #134e4a !important; color: #5eead4 !important; }
+body.dark-mode .radiliste-7 { background-color: #7c2d12 !important; color: #fdba74 !important; }
+body.dark-mode .radiliste-8 { background-color: #4c1d95 !important; color: #c4b5fd !important; }
+body.dark-mode .radiliste-9 { background-color: #9f1239 !important; color: #fda4af !important; }
+body.dark-mode .radiliste-10 { background-color: #064e3b !important; color: #6ee7b7 !important; }
+
+/* Dark mode support for realizacija heatmap */
+body.dark-mode .real-0-25 { background-color: #7f1d1d !important; color: #fecaca !important; }
+body.dark-mode .real-25-50 { background-color: #7c2d12 !important; color: #fed7aa !important; }
+body.dark-mode .real-50-75 { background-color: #713f12 !important; color: #fef08a !important; }
+body.dark-mode .real-75-100 { background-color: #14532d !important; color: #bbf7d0 !important; }
+body.dark-mode .real-over-100 { background-color: #064e3b !important; color: #86efac !important; }
