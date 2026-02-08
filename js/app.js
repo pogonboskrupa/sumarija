@@ -1541,7 +1541,6 @@
             document.getElementById('operativa-content').classList.add('hidden');
             document.getElementById('poslovodja-stanje-content').classList.add('hidden');
             document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
-            document.getElementById('poslovodja-zadnjih5-content').classList.add('hidden');
             document.getElementById('poslovodja-suma-content').classList.add('hidden');
             document.getElementById('izvjestaji-primac-content').classList.add('hidden');
             document.getElementById('izvjestaji-otpremac-content').classList.add('hidden');
@@ -1600,7 +1599,6 @@
             document.getElementById('stanje-odjela-admin-content').classList.add('hidden');
             document.getElementById('poslovodja-stanje-content').classList.add('hidden');
             document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
-            document.getElementById('poslovodja-zadnjih5-content').classList.add('hidden');
             document.getElementById('poslovodja-suma-content').classList.add('hidden');
             document.getElementById('dinamika-content').classList.add('hidden');
             document.getElementById('uporedba-godina-content').classList.add('hidden');
@@ -1650,8 +1648,6 @@
                 loadPoslovodjaStanje();
             } else if (tab === 'poslovodja-realizacija') {
                 loadPoslovodjaRealizacija();
-            } else if (tab === 'poslovodja-zadnjih5') {
-                loadPoslovodjaZadnjih5();
             } else if (tab === 'poslovodja-suma') {
                 loadPoslovodjaSuma();
             } else if (tab === 'izvjestaji') {
