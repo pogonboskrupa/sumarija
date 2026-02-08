@@ -3089,6 +3089,159 @@ function handleDeltaOtprema(username, password, fromRow, toRow) {
 }
 
 // ========================================
+// POSLOVODJA AKTIVNOST - Zadnjih 5 dana sječa/otprema po odjelima
+// Filtrira po RADILIŠTE, grupira po ODJEL i DATUM
+// ========================================
+function handlePoslovodjaAktivnost(username, password, radiliste) {
+  try {
+    // Autentikacija
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    Logger.log('=== HANDLE POSLOVODJA AKTIVNOST START ===');
+    Logger.log('Radiliste filter: ' + (radiliste || 'NONE'));
+
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const primkaSheet = ss.getSheetByName("INDEKS_PRIMKA");
+    const otpremaSheet = ss.getSheetByName("INDEKS_OTPREMA");
+
+    if (!primkaSheet || !otpremaSheet) {
+      return createJsonResponse({ error: "INDEKS sheets not found in BAZA_PODATAKA" }, false);
+    }
+
+    const primkaData = primkaSheet.getDataRange().getValues();
+    const otpremaData = otpremaSheet.getDataRange().getValues();
+
+    // Izračunaj zadnjih 5 dana
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const fiveDaysAgo = new Date(today);
+    fiveDaysAgo.setDate(today.getDate() - 5);
+    fiveDaysAgo.setHours(0, 0, 0, 0);
+
+    Logger.log(`Date range: ${fiveDaysAgo.toISOString()} - ${today.toISOString()}`);
+
+    // Radilište filter (trim + upper za poređenje)
+    const radilisteFilter = radiliste ? String(radiliste).trim().toUpperCase() : null;
+
+    // Mapa za agregaciju: { "ODJEL|DATE" -> { odjel, datum, sjeca, otprema } }
+    const aktivnostMap = {};
+
+    // Helper za formatiranje datuma DD.MM.YYYY
+    const formatDateStr = (d) => {
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      return `${dd}.${mm}.${yyyy}`;
+    };
+
+    // Procesiranje PRIMKA (sječa)
+    for (let i = 1; i < primkaData.length; i++) {
+      const row = primkaData[i];
+      const datum = row[PRIMKA_COL.DATE];
+      const odjel = String(row[PRIMKA_COL.ODJEL] || '').trim();
+      const rowRadiliste = String(row[PRIMKA_COL.RADILISTE] || '').trim().toUpperCase();
+      const kubik = parseFloat(row[PRIMKA_COL.UKUPNO]) || 0;
+
+      if (!datum || !odjel) continue;
+
+      // Filter po radilištu
+      if (radilisteFilter && rowRadiliste !== radilisteFilter) continue;
+
+      const datumObj = parseDate(datum);
+      if (isNaN(datumObj.getTime())) continue;
+
+      // Filter po datumu (zadnjih 5 dana)
+      if (datumObj < fiveDaysAgo || datumObj > today) continue;
+
+      const dateKey = formatDateStr(datumObj);
+      const key = `${odjel.toUpperCase()}|${dateKey}`;
+
+      if (!aktivnostMap[key]) {
+        aktivnostMap[key] = {
+          odjel: odjel,
+          datum: dateKey,
+          datumObj: datumObj,
+          sjeca: 0,
+          otprema: 0
+        };
+      }
+      aktivnostMap[key].sjeca += kubik;
+    }
+
+    // Procesiranje OTPREMA
+    for (let i = 1; i < otpremaData.length; i++) {
+      const row = otpremaData[i];
+      const datum = row[OTPREMA_COL.DATE];
+      const odjel = String(row[OTPREMA_COL.ODJEL] || '').trim();
+      const rowRadiliste = String(row[OTPREMA_COL.RADILISTE] || '').trim().toUpperCase();
+      const kubik = parseFloat(row[OTPREMA_COL.UKUPNO]) || 0;
+
+      if (!datum || !odjel) continue;
+
+      // Filter po radilištu
+      if (radilisteFilter && rowRadiliste !== radilisteFilter) continue;
+
+      const datumObj = parseDate(datum);
+      if (isNaN(datumObj.getTime())) continue;
+
+      // Filter po datumu (zadnjih 5 dana)
+      if (datumObj < fiveDaysAgo || datumObj > today) continue;
+
+      const dateKey = formatDateStr(datumObj);
+      const key = `${odjel.toUpperCase()}|${dateKey}`;
+
+      if (!aktivnostMap[key]) {
+        aktivnostMap[key] = {
+          odjel: odjel,
+          datum: dateKey,
+          datumObj: datumObj,
+          sjeca: 0,
+          otprema: 0
+        };
+      }
+      aktivnostMap[key].otprema += kubik;
+    }
+
+    // Konvertuj mapu u listu i sortiraj po datumu (najnoviji prvo), zatim po odjelu
+    const aktivnosti = Object.values(aktivnostMap).sort((a, b) => {
+      // Prvo po datumu (desc)
+      const dateDiff = b.datumObj - a.datumObj;
+      if (dateDiff !== 0) return dateDiff;
+      // Zatim po odjelu (asc)
+      return a.odjel.localeCompare(b.odjel);
+    });
+
+    // Ukloni datumObj iz rezultata
+    const result = aktivnosti.map(a => ({
+      odjel: a.odjel,
+      datum: a.datum,
+      sjeca: a.sjeca,
+      otprema: a.otprema
+    }));
+
+    Logger.log(`=== HANDLE POSLOVODJA AKTIVNOST END ===`);
+    Logger.log(`Ukupno zapisa: ${result.length}`);
+
+    return createJsonResponse({
+      aktivnosti: result,
+      radiliste: radiliste || 'ALL',
+      dateRange: {
+        from: formatDateStr(fiveDaysAgo),
+        to: formatDateStr(today)
+      }
+    }, true);
+
+  } catch (error) {
+    Logger.log('=== HANDLE POSLOVODJA AKTIVNOST ERROR ===');
+    Logger.log('ERROR: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+// ========================================
 // HELPER: Dohvati odjele koje je poslovođa radila iz INDEKS_PRIMKA
 // Kolona C = Odjel, Kolona F = Poslovođa
 // ========================================

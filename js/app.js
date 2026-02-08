@@ -845,7 +845,7 @@
                     const currentMonth = new Date().getMonth(); // 0-11
                     allViews = [
                         { name: 'Stanje Odjela', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_poslovodja_odjeli_' + year, timeout: 180000 },
-                        { name: 'Odjeli u realizaciji', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_poslovodja_realizacija_' + year, timeout: 180000 },
+                        { name: 'Aktivnost 5 dana', url: buildApiUrl('poslovodja-aktivnost', { radiliste: '' }), cacheKey: 'cache_poslovodja_aktivnost_all', timeout: 60000 },
                         { name: 'Zadnjih 5 dana - Primke', url: buildApiUrl('primke'), cacheKey: 'cache_poslovodja_primke', timeout: 120000 },
                         { name: 'Zadnjih 5 dana - Otpreme', url: buildApiUrl('otpreme'), cacheKey: 'cache_poslovodja_otpreme', timeout: 120000 },
                         { name: 'Suma mjeseca', url: buildApiUrl('primke'), cacheKey: 'cache_poslovodja_suma_primke', timeout: 120000 }
@@ -1310,7 +1310,7 @@
                 // POSLOVOĐA vidi: STANJE ODJELA, ODJELI U REALIZACIJI, ZADNJIH 5 DANA, SUMA MJESECA, IZVJEŠTAJI
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('poslovodja-stanje')">📊 Stanje zaliha</button>
-                    <button class="tab" onclick="switchTab('poslovodja-realizacija')">🏗️ Odjeli u realizaciji</button>
+                    <button class="tab" onclick="switchTab('poslovodja-realizacija')">📅 Aktivnost 5 dana</button>
                     <button class="tab" onclick="switchTab('poslovodja-zadnjih5')">📅 Zadnjih 5 Dana</button>
                     <button class="tab" onclick="switchTab('poslovodja-suma')">📈 Suma Mjeseca</button>
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
@@ -2892,98 +2892,127 @@
             }
         }
 
-        // Load ODJELI U REALIZACIJI za poslovođu (filtrirano po poslovođi na backendu)
+        // Load AKTIVNOST ZADNJIH 5 DANA za poslovođu (filtrirano po radilištu)
         async function loadPoslovodjaRealizacija() {
             document.getElementById('loading-screen').classList.remove('hidden');
             document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
 
             try {
-                // Dohvati ime poslovođe za filtriranje
-                const poslovodjaName = currentUser ? currentUser.fullName : '';
+                // Dohvati radilište poslovođe
+                const radilista = getPoslovodjaRadilista();
+                const radiliste = radilista.length > 0 ? radilista[0] : '';
 
-                // Display poslovođu
-                document.getElementById('poslovodja-radilista-list-2').textContent = poslovodjaName || 'Svi odjeli';
+                // Display radilište
+                document.getElementById('poslovodja-radilista-list-2').textContent = radiliste || 'Sva radilišta';
 
-                // Load STANJE ZALIHA data sa filtriranjem po poslovođi (60s timeout)
-                const url = buildApiUrl('stanje-zaliha', { poslovodja: poslovodjaName });
-                const cacheKey = 'cache_stanje_zaliha_' + (poslovodjaName || 'all').replace(/\s+/g, '_');
+                // Load aktivnost data sa filtriranjem po radilištu (60s timeout)
+                const url = buildApiUrl('poslovodja-aktivnost', { radiliste: radiliste });
+                const cacheKey = 'cache_poslovodja_aktivnost_' + (radiliste || 'all').replace(/\s+/g, '_');
                 const data = await fetchWithCache(url, cacheKey, false, 60000);
 
-                if (data.error || !data.odjeli) {
-                    throw new Error(data.error || 'Nema podataka o odjelima');
+                if (data.error) {
+                    throw new Error(data.error);
                 }
 
-                // Filter samo odjele koji su u realizaciji (imaju sječu > 0)
-                const filteredOdjeli = data.odjeli.filter(odjel => {
-                    const ukupnoSjeca = odjel.ukupnoSjeca || 0;
-                    return ukupnoSjeca > 0;
-                });
-
-                // Render realizacija table
-                renderPoslovodjaRealizacijaTable(filteredOdjeli);
+                // Render aktivnost table
+                renderPoslovodjaAktivnostTable(data.aktivnosti || [], data.dateRange);
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('poslovodja-realizacija-content').classList.remove('hidden');
 
             } catch (error) {
-                console.error('Error loading poslovođa realizacija:', error);
-                showError('Greška', 'Greška pri učitavanju odjela u realizaciji: ' + error.message);
+                console.error('Error loading poslovođa aktivnost:', error);
+                showError('Greška', 'Greška pri učitavanju aktivnosti: ' + error.message);
                 document.getElementById('loading-screen').classList.add('hidden');
             }
         }
 
-        // Render Odjeli u Realizaciji table for poslovođa (koristi stanje-zaliha strukturu)
-        function renderPoslovodjaRealizacijaTable(odjeli) {
+        // Render Aktivnost zadnjih 5 dana table for poslovođa
+        function renderPoslovodjaAktivnostTable(aktivnosti, dateRange) {
             const headerElem = document.getElementById('poslovodja-realizacija-header');
             const bodyElem = document.getElementById('poslovodja-realizacija-body');
 
-            if (odjeli.length === 0) {
+            if (aktivnosti.length === 0) {
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Trenutno nema odjela u realizaciji</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema aktivnosti u zadnjih 5 dana</td></tr>';
                 return;
             }
 
             // Build header
             let headerHtml = `
                 <tr>
-                    <th>Odjel</th>
-                    <th>Radilište</th>
-                    <th>Projekat (m³)</th>
-                    <th>Sječa (m³)</th>
-                    <th>Otprema (m³)</th>
-                    <th>Zaliha (m³)</th>
-                    <th>Realizacija (%)</th>
+                    <th style="min-width: 100px;">Datum</th>
+                    <th style="min-width: 120px;">Odjel</th>
+                    <th class="right" style="min-width: 100px;">Sječa (m³)</th>
+                    <th class="right" style="min-width: 100px;">Otprema (m³)</th>
                 </tr>
             `;
             headerElem.innerHTML = headerHtml;
 
-            // Build body
+            // Build body - grupiraj po datumu
             let bodyHtml = '';
-            odjeli.forEach((odjel, index) => {
-                const rowBg = index % 2 === 0 ? '#f9fafb' : 'white';
-                const projekat = odjel.ukupnoProjekat || 0;
-                const sjeca = odjel.ukupnoSjeca || 0;
-                const otprema = odjel.ukupnoOtprema || 0;
-                const zaliha = odjel.ukupnoZaliha || 0;
-                const procenat = projekat > 0 ? ((sjeca / projekat) * 100).toFixed(1) : '0.0';
+            let currentDate = '';
+            let dateTotal = { sjeca: 0, otprema: 0 };
 
-                let percentClass = '';
-                if (procenat < 50) percentClass = 'style="color: #dc2626; font-weight: 700;"';
-                else if (procenat >= 100) percentClass = 'style="color: #059669; font-weight: 700;"';
-                else percentClass = 'style="color: #d97706; font-weight: 600;"';
+            aktivnosti.forEach((akt, index) => {
+                const rowBg = index % 2 === 0 ? '#f9fafb' : 'white';
+                const sjeca = akt.sjeca || 0;
+                const otprema = akt.otprema || 0;
+
+                // Ako je novi datum, dodaj separator/zaglavlje
+                if (akt.datum !== currentDate) {
+                    // Ako nije prvi datum, dodaj subtotal za prethodni
+                    if (currentDate !== '') {
+                        bodyHtml += `
+                            <tr style="background: #e0f2fe; font-weight: 700;">
+                                <td colspan="2" style="text-align: right; padding: 8px 12px; color: #0369a1;">Ukupno ${currentDate}:</td>
+                                <td style="text-align: right; font-family: 'Courier New', monospace; padding: 8px 12px; color: #059669;">${dateTotal.sjeca.toFixed(2)}</td>
+                                <td style="text-align: right; font-family: 'Courier New', monospace; padding: 8px 12px; color: #2563eb;">${dateTotal.otprema.toFixed(2)}</td>
+                            </tr>
+                        `;
+                    }
+                    currentDate = akt.datum;
+                    dateTotal = { sjeca: 0, otprema: 0 };
+                }
+
+                dateTotal.sjeca += sjeca;
+                dateTotal.otprema += otprema;
 
                 bodyHtml += `
                     <tr style="background: ${rowBg};">
-                        <td style="font-weight: 600;">${odjel.odjel || ''}</td>
-                        <td>${odjel.radiliste || '-'}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace;">${projekat.toFixed(2)}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 600;">${sjeca.toFixed(2)}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace;">${otprema.toFixed(2)}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace; color: #059669;">${zaliha.toFixed(2)}</td>
-                        <td ${percentClass} style="text-align: right; font-family: 'Courier New', monospace;">${procenat}%</td>
+                        <td style="font-weight: 500; color: #374151;">${akt.datum}</td>
+                        <td style="font-weight: 600; color: #1f2937;">${akt.odjel}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 600; color: ${sjeca > 0 ? '#059669' : '#9ca3af'};">${sjeca > 0 ? sjeca.toFixed(2) : '-'}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 600; color: ${otprema > 0 ? '#2563eb' : '#9ca3af'};">${otprema > 0 ? otprema.toFixed(2) : '-'}</td>
                     </tr>
                 `;
             });
+
+            // Dodaj subtotal za zadnji datum
+            if (currentDate !== '') {
+                bodyHtml += `
+                    <tr style="background: #e0f2fe; font-weight: 700;">
+                        <td colspan="2" style="text-align: right; padding: 8px 12px; color: #0369a1;">Ukupno ${currentDate}:</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; padding: 8px 12px; color: #059669;">${dateTotal.sjeca.toFixed(2)}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; padding: 8px 12px; color: #2563eb;">${dateTotal.otprema.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+
+            // Grand total
+            const grandTotal = aktivnosti.reduce((acc, a) => {
+                acc.sjeca += a.sjeca || 0;
+                acc.otprema += a.otprema || 0;
+                return acc;
+            }, { sjeca: 0, otprema: 0 });
+
+            bodyHtml += `
+                <tr style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; font-weight: 800;">
+                    <td colspan="2" style="text-align: right; padding: 12px; font-size: 14px;">📊 UKUPNO (zadnjih 5 dana):</td>
+                    <td style="text-align: right; font-family: 'Courier New', monospace; padding: 12px; font-size: 14px;">${grandTotal.sjeca.toFixed(2)}</td>
+                    <td style="text-align: right; font-family: 'Courier New', monospace; padding: 12px; font-size: 14px;">${grandTotal.otprema.toFixed(2)}</td>
+                </tr>
+            `;
 
             bodyElem.innerHTML = bodyHtml;
         }
