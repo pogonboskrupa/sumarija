@@ -846,8 +846,6 @@
                     allViews = [
                         { name: 'Stanje Odjela', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_poslovodja_odjeli_' + year, timeout: 180000 },
                         { name: 'Odjeli u realizaciji', url: buildApiUrl('poslovodja-aktivnost', { radiliste: '' }), cacheKey: 'cache_poslovodja_aktivnost_all', timeout: 60000 },
-                        { name: 'Zadnjih 5 dana - Primke', url: buildApiUrl('primke'), cacheKey: 'cache_poslovodja_primke', timeout: 120000 },
-                        { name: 'Zadnjih 5 dana - Otpreme', url: buildApiUrl('otpreme'), cacheKey: 'cache_poslovodja_otpreme', timeout: 120000 },
                         { name: 'Suma mjeseca', url: buildApiUrl('primke'), cacheKey: 'cache_poslovodja_suma_primke', timeout: 120000 }
                     ];
 
@@ -1307,11 +1305,10 @@
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                 `;
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
-                // POSLOVOĐA vidi: STANJE ODJELA, ODJELI U REALIZACIJI, ZADNJIH 5 DANA, SUMA MJESECA, IZVJEŠTAJI
+                // POSLOVOĐA vidi: STANJE ODJELA, ODJELI U REALIZACIJI, SUMA MJESECA, IZVJEŠTAJI
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('poslovodja-stanje')">📊 Stanje zaliha</button>
                     <button class="tab" onclick="switchTab('poslovodja-realizacija')">🏗️ Odjeli u realizaciji</button>
-                    <button class="tab" onclick="switchTab('poslovodja-zadnjih5')">📅 Zadnjih 5 Dana</button>
                     <button class="tab" onclick="switchTab('poslovodja-suma')">📈 Suma Mjeseca</button>
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                 `;
