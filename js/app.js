@@ -1262,15 +1262,6 @@
             document.getElementById('user-name').textContent = currentUser.fullName;
             document.getElementById('user-role').textContent = currentUser.role === 'admin' ? 'Administrator' : currentUser.type;
 
-            // Prikaži "Pokreni indeksiranje" meni item samo za admin korisnike
-            const syncIndexMenuItem = document.getElementById('sync-index-menu-item');
-            const userType = (currentUser.type || '').toLowerCase(); // Case-insensitive
-            if (userType === 'admin') {
-                syncIndexMenuItem.style.display = 'block';
-            } else {
-                syncIndexMenuItem.style.display = 'none';
-            }
-
             // Dinamički kreiraj tab-ove na osnovu tipa korisnika
             const tabsMenu = document.getElementById('tabs-menu');
 
