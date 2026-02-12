@@ -2019,11 +2019,67 @@
                     }
                 });
 
-                // Populate monthly table
+                // Populate monthly table with UKUPNO row and future month handling
+                const currentMonth = now.getMonth(); // 0-indexed (0 = Januar)
+                const mjesecNames = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+
+                // Helper to get month index from month name
+                const getMonthIndex = (monthName) => {
+                    if (!monthName) return -1;
+                    const normalizedName = monthName.trim().toLowerCase();
+                    return mjesecNames.findIndex(m => m.toLowerCase() === normalizedName);
+                };
+
+                // Calculate totals and YTD dinamika
+                let totalSjeca = 0;
+                let totalOtprema = 0;
+                let ytdDinamikaSjeca = 0;  // Sum of dinamika for months up to current
+                let ytdDinamikaOtprema = 0;
+                let ytdSjeca = 0;  // Sum of sjeca for months up to current
+                let ytdOtprema = 0;  // Sum of otprema for months up to current
+
+                data.mjesecnaStatistika.forEach(m => {
+                    const sjeca = m.sjeca || 0;
+                    const otprema = m.otprema || 0;
+                    const dinamika = m.dinamika || 0;
+                    const monthIdx = getMonthIndex(m.mjesec);
+
+                    totalSjeca += sjeca;
+                    totalOtprema += otprema;
+
+                    // Only include months up to and including current month in YTD calculations
+                    if (monthIdx >= 0 && monthIdx <= currentMonth) {
+                        ytdDinamikaSjeca += dinamika;
+                        ytdDinamikaOtprema += dinamika;
+                        ytdSjeca += sjeca;
+                        ytdOtprema += otprema;
+                    }
+                });
+
+                const totalZaliha = totalSjeca - totalOtprema;
+
+                // Render monthly rows
                 const monthlyHTML = data.mjesecnaStatistika.map(m => {
                     const sjeca = m.sjeca || 0;
                     const otprema = m.otprema || 0;
                     const dinamika = m.dinamika || 0;
+                    const monthIdx = getMonthIndex(m.mjesec);
+                    const isFutureMonth = monthIdx > currentMonth;
+
+                    // For future months, show "—" in DINAMIKA columns
+                    if (isFutureMonth) {
+                        return `
+                            <tr>
+                                <td>${m.mjesec || '-'}</td>
+                                <td class="number green" style="min-width: 120px; font-size: 15px; font-weight: 600;">${(m.sjeca != null && !isNaN(m.sjeca)) ? m.sjeca.toFixed(2) : '0.00'}</td>
+                                <td class="number blue" style="min-width: 120px; font-size: 15px; font-weight: 600;">${(m.otprema != null && !isNaN(m.otprema)) ? m.otprema.toFixed(2) : '0.00'}</td>
+                                <td class="number">${(m.stanje != null && !isNaN(m.stanje)) ? m.stanje.toFixed(2) : '0.00'}</td>
+                                <td class="number dinamika-dash" style="text-align: center;">—</td>
+                                <td class="number dinamika-dash" style="text-align: center;">—</td>
+                            </tr>
+                        `;
+                    }
+
                     const progressSjeca = dinamika > 0 ? ((sjeca / dinamika) * 100).toFixed(1) : '0.0';
                     const progressOtprema = dinamika > 0 ? ((otprema / dinamika) * 100).toFixed(1) : '0.0';
                     return `
@@ -2050,6 +2106,35 @@
                     `;
                 }).join('');
                 document.getElementById('dashboard-monthly-table').innerHTML = monthlyHTML;
+
+                // Calculate YTD progress percentages for UKUPNO row
+                const ukupnoProgressSjeca = ytdDinamikaSjeca > 0 ? ((ytdSjeca / ytdDinamikaSjeca) * 100).toFixed(1) : '0.0';
+                const ukupnoProgressOtprema = ytdDinamikaOtprema > 0 ? ((ytdOtprema / ytdDinamikaOtprema) * 100).toFixed(1) : '0.0';
+
+                // Render UKUPNO row in tfoot
+                const tfootHTML = `
+                    <tr class="ukupno-row">
+                        <td style="font-weight: 800; text-transform: uppercase;">UKUPNO</td>
+                        <td class="number" style="min-width: 120px; font-size: 15px;">${totalSjeca.toFixed(2)}</td>
+                        <td class="number" style="min-width: 120px; font-size: 15px;">${totalOtprema.toFixed(2)}</td>
+                        <td class="number" style="font-size: 15px;">${totalZaliha.toFixed(2)}</td>
+                        <td class="number">
+                            ${ytdDinamikaSjeca.toFixed(2)}
+                            <div class="table-progress-bar">
+                                <div class="table-progress-fill" style="width: ${Math.min(ukupnoProgressSjeca, 100)}%;"></div>
+                            </div>
+                            <small>${ukupnoProgressSjeca}%</small>
+                        </td>
+                        <td class="number">
+                            ${ytdDinamikaOtprema.toFixed(2)}
+                            <div class="table-progress-bar">
+                                <div class="table-progress-fill" style="width: ${Math.min(ukupnoProgressOtprema, 100)}%;"></div>
+                            </div>
+                            <small>${ukupnoProgressOtprema}%</small>
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('dashboard-monthly-tfoot').innerHTML = tfootHTML;
 
                 // Load "Zadnjih 5 dana" table
                 await loadZadnjih5DanaTable();

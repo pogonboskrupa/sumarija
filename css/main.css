@@ -1750,7 +1750,7 @@
 
         /* Professional Monthly Table */
         .professional-monthly-table {
-            width: auto;
+            width: 100%;
             border-collapse: separate;
             border-spacing: 0;
             font-size: 15px;
@@ -1805,6 +1805,39 @@
             font-size: 17px;
             color: #047857;
         }
+        /* UKUPNO row styling */
+        .professional-monthly-table tfoot tr.ukupno-row {
+            background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+        }
+        .professional-monthly-table tfoot tr.ukupno-row td {
+            color: white;
+            font-weight: 700;
+            font-size: 15px;
+            padding: 18px 14px;
+            border-top: 3px solid #10b981;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        .professional-monthly-table tfoot tr.ukupno-row td:first-child {
+            color: white;
+            font-size: 16px;
+        }
+        .professional-monthly-table tfoot tr.ukupno-row td.number {
+            color: white;
+        }
+        .professional-monthly-table tfoot tr.ukupno-row .table-progress-bar {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .professional-monthly-table tfoot tr.ukupno-row .table-progress-fill {
+            background: #10b981 !important;
+        }
+        .professional-monthly-table tfoot tr.ukupno-row small {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+        /* Dinamika dash for future months */
+        .professional-monthly-table .dinamika-dash {
+            color: #9ca3af;
+            font-weight: 400;
+        }
 
         /* Dark mode for OPERATIVA */
         body.dark-mode .kpi-card-small {
@@ -1832,6 +1865,43 @@
         }
         body.dark-mode .professional-monthly-table tbody tr:hover {
             background: #065f46;
+        }
+        body.dark-mode .professional-monthly-table tfoot tr.ukupno-row {
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+        }
+
+        /* Mobile responsive for dashboard monthly table */
+        @media (max-width: 768px) {
+            .dashboard-monthly-wrapper {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                margin: 0 -16px;
+                padding: 0 16px;
+            }
+            .professional-monthly-table {
+                min-width: 700px;
+                font-size: 13px;
+            }
+            .professional-monthly-table thead th {
+                padding: 12px 10px;
+                font-size: 11px;
+                position: sticky;
+                top: 0;
+                z-index: 10;
+            }
+            .professional-monthly-table tbody td,
+            .professional-monthly-table tfoot td {
+                padding: 12px 10px;
+                font-size: 13px;
+            }
+            .professional-monthly-table tbody td.number,
+            .professional-monthly-table tfoot td.number {
+                font-size: 14px;
+            }
+            .professional-monthly-table tfoot tr.ukupno-row td {
+                padding: 14px 10px;
+                font-size: 13px;
+            }
         }
 
         /* Performance Alerts */

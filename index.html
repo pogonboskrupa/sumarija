@@ -193,8 +193,8 @@
                     <input type="text" class="search-input" id="dashboard-search" placeholder="🔍 Pretraži po mjesecu..." onkeyup="filterDashboardTable()">
                     <button class="btn btn-primary" onclick="exportTableToCSV('dashboard')">📥 Export CSV</button>
                 </div>
-                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="professional-monthly-table" id="dashboard-table">
+                <div class="dashboard-monthly-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="professional-monthly-table" id="dashboard-table" style="width: 100%;">
                         <thead>
                             <tr>
                                 <th onclick="sortTable(0, 'dashboard-table')" style="text-align: left;">Mjesec ⇅</th>
@@ -206,6 +206,7 @@
                             </tr>
                         </thead>
                         <tbody id="dashboard-monthly-table"></tbody>
+                        <tfoot id="dashboard-monthly-tfoot"></tfoot>
                     </table>
                 </div>
             </div>
