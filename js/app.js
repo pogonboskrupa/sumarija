@@ -5264,7 +5264,8 @@
             sortedData.forEach((kupac, index) => {
                 const rowBg = index % 2 === 0 ? '#f0fdf4' : 'white';
                 const redniBroj = index + 1;
-                bodyHtml += `<tr style="background: ${rowBg};" data-kupac="${(kupac.kupac || '').toLowerCase()}">`;
+                const kupacName = (kupac.kupac || '').replace(/'/g, "\\'");
+                bodyHtml += `<tr style="background: ${rowBg}; cursor: pointer;" data-kupac="${(kupac.kupac || '').toLowerCase()}" onclick="showKupacDetails('${kupacName}')" title="Klikni za detalje">`;
                 bodyHtml += `<td style="text-align: center; font-weight: 600; color: #000000; padding: 8px 4px; background: ${rowBg}; ${stickyCol1Style}">${redniBroj}.</td>`;
                 bodyHtml += `<td style="font-weight: 600; background: ${rowBg}; ${stickyCol2Style}">${kupac.kupac || '-'}</td>`;
 
@@ -5349,7 +5350,8 @@
             sortedData.forEach((red, index) => {
                 const rowBg = index % 2 === 0 ? '#e0f2fe' : 'white';
                 const redniBroj = index + 1;
-                bodyHtml += `<tr style="background: ${rowBg};" data-kupac="${(red.kupac || '').toLowerCase()}">`;
+                const kupacName = (red.kupac || '').replace(/'/g, "\\'");
+                bodyHtml += `<tr style="background: ${rowBg}; cursor: pointer;" data-kupac="${(red.kupac || '').toLowerCase()}" onclick="showKupacDetails('${kupacName}')" title="Klikni za detalje">`;
                 bodyHtml += `<td style="text-align: center; font-weight: 600; color: #000000; padding: 8px 4px; background: ${rowBg}; ${stickyCol1Style}">${redniBroj}.</td>`;
                 bodyHtml += `<td style="font-weight: 600; background: ${rowBg}; ${stickyCol2Style}">${red.kupac || '-'}</td>`;
 
@@ -5412,6 +5414,203 @@
                     row.style.display = 'none';
                 }
             });
+        }
+
+        // ============================================
+        // 🏢 KUPAC DETAILS MODAL - PRIKAZ DETALJA KUPCA
+        // ============================================
+
+        // Zatvori modal za detalje kupca
+        function closeKupacDetailsModal() {
+            document.getElementById('kupac-details-modal').style.display = 'none';
+        }
+
+        // Prikaži detalje kupca - učitaj sve otpreme za tog kupca
+        async function showKupacDetails(kupacName) {
+            if (!kupacName) return;
+
+            const modal = document.getElementById('kupac-details-modal');
+            const titleElem = document.getElementById('kupac-modal-title');
+            const bodyElem = document.getElementById('kupac-modal-body');
+
+            // Prikaži modal sa loading stanjem
+            modal.style.display = 'flex';
+            titleElem.innerHTML = `🏢 Otpreme za: <strong>${kupacName}</strong>`;
+            bodyElem.innerHTML = `
+                <div style="text-align: center; padding: 60px; color: #6b7280;">
+                    <div style="font-size: 32px; margin-bottom: 15px;">⏳</div>
+                    <div style="font-size: 16px;">Učitavanje podataka za kupca...</div>
+                </div>
+            `;
+
+            try {
+                const year = new Date().getFullYear();
+                const allData = [];
+                const sortimentiSet = new Set();
+
+                // Učitaj podatke za sve mjesece (0-11)
+                for (let month = 0; month < 12; month++) {
+                    const url = buildApiUrl('otpremaci-daily', { year, month });
+                    const cacheKey = `cache_otpremaci_daily_${year}_${month}`;
+
+                    try {
+                        const data = await fetchWithCache(url, cacheKey);
+                        if (data && data.data && Array.isArray(data.data)) {
+                            // Filtriraj samo za ovog kupca
+                            const kupacData = data.data.filter(row =>
+                                row.kupac && row.kupac.toLowerCase() === kupacName.toLowerCase()
+                            );
+                            allData.push(...kupacData);
+
+                            // Skupi sve sortimente
+                            if (data.sortimentiNazivi) {
+                                data.sortimentiNazivi.forEach(s => sortimentiSet.add(s));
+                            }
+                        }
+                    } catch (e) {
+                        // Ignoriši greške za pojedinačne mjesece
+                        console.log(`Nema podataka za mjesec ${month}`);
+                    }
+                }
+
+                if (allData.length === 0) {
+                    bodyElem.innerHTML = `
+                        <div style="text-align: center; padding: 60px; color: #6b7280;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">📭</div>
+                            <div style="font-size: 18px;">Nema podataka o otpremama za kupca <strong>${kupacName}</strong> u ${year}. godini</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const sortimentiNazivi = Array.from(sortimentiSet);
+
+                // Sortiraj po datumu (od najnovijeg)
+                allData.sort((a, b) => {
+                    const parseDate = (dateStr) => {
+                        if (!dateStr) return new Date(0);
+                        const parts = dateStr.split('.');
+                        if (parts.length >= 2) {
+                            const day = parseInt(parts[0]) || 1;
+                            const month = parseInt(parts[1]) - 1 || 0;
+                            const yearPart = parts[2] ? parseInt(parts[2]) : year;
+                            return new Date(yearPart, month, day);
+                        }
+                        return new Date(0);
+                    };
+                    return parseDate(b.datum) - parseDate(a.datum);
+                });
+
+                // Izračunaj totale po sortimentima
+                const totals = {};
+                sortimentiNazivi.forEach(s => totals[s] = 0);
+                allData.forEach(row => {
+                    sortimentiNazivi.forEach(s => {
+                        totals[s] += (row.sortimenti && row.sortimenti[s]) || 0;
+                    });
+                });
+
+                // Generiši HTML tabelu
+                let html = `
+                    <div style="padding: 16px;">
+                        <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div style="color: #0891b2; font-weight: 600;">
+                                📊 Ukupno ${allData.length} otprema u ${year}. godini
+                            </div>
+                            <button onclick="exportKupacDetailsToCSV('${kupacName.replace(/'/g, "\\'")}')"
+                                style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                                📥 Export CSV
+                            </button>
+                        </div>
+                        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 13px;" id="kupac-details-table">
+                                <thead>
+                                    <tr style="background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);">
+                                        <th style="position: sticky; left: 0; z-index: 10; background: #0891b2; color: white; padding: 12px 8px; font-weight: 700; text-align: left; min-width: 90px; border-right: 2px solid #164e63;">📅 Datum</th>
+                                        <th style="color: white; padding: 12px 8px; font-weight: 700; text-align: left; min-width: 80px;">🏭 Odjel</th>
+                                        <th style="color: white; padding: 12px 8px; font-weight: 700; text-align: left; min-width: 120px;">🚛 Otpremač</th>
+                                        ${sortimentiNazivi.map(s => `
+                                            <th style="color: white; padding: 12px 6px; font-weight: 600; text-align: right; min-width: 60px; font-size: 11px;">${s}</th>
+                                        `).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                `;
+
+                allData.forEach((row, index) => {
+                    const rowBg = index % 2 === 0 ? '#ecfeff' : '#ffffff';
+                    html += `
+                        <tr style="background: ${rowBg};">
+                            <td style="position: sticky; left: 0; z-index: 5; background: ${rowBg}; padding: 10px 8px; font-weight: 600; color: #0e7490; border-right: 2px solid #a5f3fc;">${row.datum || '-'}</td>
+                            <td style="padding: 10px 8px; color: #164e63; font-weight: 500;">${row.odjel || '-'}</td>
+                            <td style="padding: 10px 8px; color: #0891b2; font-weight: 500;">${row.otpremac || '-'}</td>
+                            ${sortimentiNazivi.map(s => {
+                                const val = (row.sortimenti && row.sortimenti[s]) || 0;
+                                const display = val > 0 ? val.toFixed(2) : '-';
+                                const style = val > 0 ? 'color: #164e63; font-weight: 600;' : 'color: #d1d5db;';
+                                return `<td style="padding: 10px 6px; text-align: right; font-family: 'Roboto Mono', monospace; ${style}">${display}</td>`;
+                            }).join('')}
+                        </tr>
+                    `;
+                });
+
+                // UKUPNO red
+                html += `
+                    <tr style="background: linear-gradient(135deg, #0e7490 0%, #155e75 100%); color: white; font-weight: 700;">
+                        <td style="position: sticky; left: 0; z-index: 5; background: #0e7490; padding: 12px 8px; font-weight: 800; border-right: 2px solid #164e63;">📊 UKUPNO</td>
+                        <td colspan="2" style="padding: 12px 8px;"></td>
+                        ${sortimentiNazivi.map(s => {
+                            const val = totals[s] || 0;
+                            const display = val > 0 ? val.toFixed(2) : '-';
+                            return `<td style="padding: 12px 6px; text-align: right; font-family: 'Roboto Mono', monospace; font-weight: 800;">${display}</td>`;
+                        }).join('')}
+                    </tr>
+                `;
+
+                html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+
+                bodyElem.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading kupac details:', error);
+                bodyElem.innerHTML = `
+                    <div style="text-align: center; padding: 60px; color: #dc2626;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">❌</div>
+                        <div style="font-size: 18px;">Greška pri učitavanju: ${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Export kupac details tabele u CSV
+        function exportKupacDetailsToCSV(kupacName) {
+            const table = document.getElementById('kupac-details-table');
+            if (!table) return;
+
+            let csv = [];
+            const rows = table.querySelectorAll('tr');
+
+            rows.forEach(row => {
+                const cols = row.querySelectorAll('th, td');
+                const rowData = [];
+                cols.forEach(col => {
+                    let text = col.innerText.replace(/"/g, '""');
+                    rowData.push('"' + text + '"');
+                });
+                csv.push(rowData.join(','));
+            });
+
+            const csvContent = csv.join('\n');
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `otpreme_${kupacName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().getFullYear()}.csv`;
+            link.click();
         }
 
         // Load otpreme po kupcima u tekućem mjesecu
