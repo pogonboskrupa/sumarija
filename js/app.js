@@ -2030,9 +2030,7 @@
                     return mjesecNames.findIndex(m => m.toLowerCase() === normalizedName);
                 };
 
-                // Calculate totals and YTD dinamika
-                let totalSjeca = 0;
-                let totalOtprema = 0;
+                // Calculate YTD dinamika (totalSjeca and totalOtprema already calculated above)
                 let ytdDinamikaSjeca = 0;  // Sum of dinamika for months up to current
                 let ytdDinamikaOtprema = 0;
                 let ytdSjeca = 0;  // Sum of sjeca for months up to current
@@ -2043,9 +2041,6 @@
                     const otprema = m.otprema || 0;
                     const dinamika = m.dinamika || 0;
                     const monthIdx = getMonthIndex(m.mjesec);
-
-                    totalSjeca += sjeca;
-                    totalOtprema += otprema;
 
                     // Only include months up to and including current month in YTD calculations
                     if (monthIdx >= 0 && monthIdx <= currentMonth) {
