@@ -2020,7 +2020,7 @@
                 });
 
                 // Populate monthly table with UKUPNO row and future month handling
-                const currentMonth = now.getMonth(); // 0-indexed (0 = Januar)
+                const currentMonth = new Date().getMonth(); // 0-indexed (0 = Januar)
                 const mjesecNames = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
 
                 // Helper to get month index from month name
