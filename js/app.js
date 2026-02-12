@@ -2431,51 +2431,28 @@
                 // Ensure Chart.js is loaded
                 await window.loadChartJs();
 
-                // Fetch daily data for both sječa and otprema in parallel
-                const [sjecaResponse, otpremaResponse] = await Promise.all([
-                    fetch(buildApiUrl('primaci-daily', { year, month: selectedMonth })),
-                    fetch(buildApiUrl('otpremaci-daily', { year, month: selectedMonth }))
-                ]);
+                // Fetch pre-aggregated daily data from new endpoint
+                const response = await fetch(buildApiUrl('daily-chart', { year, month: selectedMonth }));
+                const chartData = await response.json();
 
-                const sjecaData = await sjecaResponse.json();
-                const otpremaData = await otpremaResponse.json();
-
-                // Aggregate data by date
-                const dailySjeca = {};
-                const dailyOtprema = {};
-
-                // Process sječa data
-                if (sjecaData.data && Array.isArray(sjecaData.data)) {
-                    sjecaData.data.forEach(entry => {
-                        const day = entry.datum.split('.')[0]; // Get day from "dd.MM.yyyy"
-                        const total = Object.values(entry.sortimenti || {}).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
-                        dailySjeca[day] = (dailySjeca[day] || 0) + total;
-                    });
+                if (chartData.error) {
+                    console.error('Daily chart API error:', chartData.error);
+                    return;
                 }
 
-                // Process otprema data
-                if (otpremaData.data && Array.isArray(otpremaData.data)) {
-                    otpremaData.data.forEach(entry => {
-                        const day = entry.datum.split('.')[0]; // Get day from "dd.MM.yyyy"
-                        const total = Object.values(entry.sortimenti || {}).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
-                        dailyOtprema[day] = (dailyOtprema[day] || 0) + total;
-                    });
-                }
-
-                // Get number of days in selected month
-                const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
+                // Extract data from response
+                const dailyData = chartData.data || [];
 
                 // Create labels and data arrays
                 const labels = [];
                 const sjecaValues = [];
                 const otpremaValues = [];
 
-                for (let d = 1; d <= daysInMonth; d++) {
-                    const dayStr = d.toString().padStart(2, '0');
-                    labels.push(d);
-                    sjecaValues.push(dailySjeca[dayStr] || dailySjeca[d.toString()] || 0);
-                    otpremaValues.push(dailyOtprema[dayStr] || dailyOtprema[d.toString()] || 0);
-                }
+                dailyData.forEach(entry => {
+                    labels.push(entry.day);
+                    sjecaValues.push(entry.sjeca || 0);
+                    otpremaValues.push(entry.otprema || 0);
+                });
 
                 // Month names for title
                 const monthNames = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni',
@@ -2551,7 +2528,10 @@
                                 cornerRadius: 8,
                                 callbacks: {
                                     title: function(tooltipItems) {
-                                        return tooltipItems[0].label + '. ' + monthNames[selectedMonth];
+                                        const day = tooltipItems[0].label;
+                                        const dayStr = day.toString().padStart(2, '0');
+                                        const monthStr = (selectedMonth + 1).toString().padStart(2, '0');
+                                        return dayStr + '.' + monthStr + '.' + year;
                                     },
                                     label: function(context) {
                                         return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + ' m³';

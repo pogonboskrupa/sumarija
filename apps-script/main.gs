@@ -69,6 +69,8 @@ function doGet(e) {
       return handlePrimaciDaily(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
     } else if (path === 'otpremaci-daily') {
       return handleOtremaciDaily(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
+    } else if (path === 'daily-chart') {
+      return handleDailyChart(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
     } else if (path === 'stanje-odjela') {
       return handleStanjeOdjela(e.parameter.username, e.parameter.password);
     } else if (path === 'sync-stanje-odjela') {

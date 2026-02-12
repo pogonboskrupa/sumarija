@@ -2188,6 +2188,94 @@ function handleOtremaciDaily(year, month, username, password) {
 }
 
 // ========================================
+// DAILY CHART API - Agregirana dnevna sječa i otprema za graf
+// ========================================
+function handleDailyChart(year, month, username, password) {
+  try {
+    // Authentication
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const primkaSheet = ss.getSheetByName("INDEKS_PRIMKA");
+    const otpremaSheet = ss.getSheetByName("INDEKS_OTPREMA");
+
+    if (!primkaSheet || !otpremaSheet) {
+      return createJsonResponse({ error: "Required sheets not found in BAZA_PODATAKA" }, false);
+    }
+
+    const yearInt = parseInt(year);
+    const monthInt = parseInt(month); // 0-indexed (January = 0)
+
+    // Get current date for limiting days (only for current month)
+    const now = new Date();
+    const isCurrentMonth = (now.getFullYear() === yearInt && now.getMonth() === monthInt);
+    const maxDay = isCurrentMonth ? now.getDate() : new Date(yearInt, monthInt + 1, 0).getDate();
+
+    // Initialize daily totals map (day 1..maxDay)
+    const dailyData = {};
+    for (let d = 1; d <= maxDay; d++) {
+      dailyData[d] = { day: d, sjeca: 0, otprema: 0 };
+    }
+
+    // Process SJEČA from INDEKS_PRIMKA - use UKUPNO Č+L column
+    const primkaData = primkaSheet.getDataRange().getValues();
+    for (let i = 1; i < primkaData.length; i++) {
+      const row = primkaData[i];
+      const datum = row[PRIMKA_COL.DATE];
+      if (!datum) continue;
+
+      const datumObj = parseDate(datum);
+      if (!datumObj || isNaN(datumObj.getTime())) continue;
+      if (datumObj.getFullYear() !== yearInt) continue;
+      if (datumObj.getMonth() !== monthInt) continue;
+
+      const day = datumObj.getDate();
+      if (day < 1 || day > maxDay) continue;
+
+      const ukupno = parseFloat(row[PRIMKA_COL.UKUPNO]) || 0;
+      dailyData[day].sjeca += ukupno;
+    }
+
+    // Process OTPREMA from INDEKS_OTPREMA - use UKUPNO Č+L column
+    const otpremaData = otpremaSheet.getDataRange().getValues();
+    for (let i = 1; i < otpremaData.length; i++) {
+      const row = otpremaData[i];
+      const datum = row[OTPREMA_COL.DATE];
+      if (!datum) continue;
+
+      const datumObj = parseDate(datum);
+      if (!datumObj || isNaN(datumObj.getTime())) continue;
+      if (datumObj.getFullYear() !== yearInt) continue;
+      if (datumObj.getMonth() !== monthInt) continue;
+
+      const day = datumObj.getDate();
+      if (day < 1 || day > maxDay) continue;
+
+      const ukupno = parseFloat(row[OTPREMA_COL.UKUPNO]) || 0;
+      dailyData[day].otprema += ukupno;
+    }
+
+    // Convert to sorted array
+    const result = Object.values(dailyData).sort((a, b) => a.day - b.day);
+
+    return createJsonResponse({
+      year: yearInt,
+      month: monthInt,
+      maxDay: maxDay,
+      data: result
+    }, true);
+
+  } catch (error) {
+    return createJsonResponse({
+      error: "Greška pri učitavanju dnevnih podataka za graf: " + error.toString()
+    }, false);
+  }
+}
+
+// ========================================
 // 3. SYNC/ADMIN HANDLERS
 // ========================================
 
