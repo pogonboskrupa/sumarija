@@ -2182,3 +2182,74 @@
             text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff,
                          -1px 1px 0 #fff, 1px 1px 0 #fff;
         }
+
+        /* ========================================
+           MOBILE/TOUCH OPTIMIZACIJE (Desktop prikaz)
+           ======================================== */
+
+        /* Smooth scrolling za touch uređaje */
+        html {
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Touch-friendly elementi */
+        @media (pointer: coarse) {
+            /* Veći touch targets za buttone */
+            button, .btn, .tab, [role="button"] {
+                min-height: 44px;
+                min-width: 44px;
+            }
+
+            /* Veći padding za linkove u navigaciji */
+            .nav-link, .menu-item {
+                padding: 12px 16px;
+            }
+
+            /* Bolji touch feedback */
+            button:active, .btn:active, .tab:active {
+                transform: scale(0.97);
+                transition: transform 0.1s ease;
+            }
+
+            /* Veći checkbox/radio */
+            input[type="checkbox"], input[type="radio"] {
+                min-width: 20px;
+                min-height: 20px;
+            }
+
+            /* Lakše selektovanje teksta u input poljima */
+            input, textarea, select {
+                font-size: 16px; /* Sprečava iOS auto-zoom */
+            }
+        }
+
+        /* Optimizacije za horizontalni scroll tabela */
+        .table-responsive, [style*="overflow-x"] {
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }
+
+        /* Sticky header za tabele na touch uređajima */
+        @media (hover: none) {
+            thead th {
+                position: sticky;
+                top: 0;
+                z-index: 10;
+            }
+        }
+
+        /* Disable text selection na interaktivnim elementima */
+        button, .btn, .tab, .nav-link {
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Poboljšan contrast za outdoor čitanje */
+        @media (prefers-contrast: more) {
+            body {
+                --text-primary: #000;
+                --bg-primary: #fff;
+            }
+        }
