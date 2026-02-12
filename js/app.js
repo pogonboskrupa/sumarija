@@ -2161,18 +2161,42 @@
                             return 'real-0-25';
                         };
 
+                        // Deterministic hash function for izvođač colors
+                        const hashString = (str) => {
+                            let hash = 0;
+                            for (let i = 0; i < str.length; i++) {
+                                const char = str.charCodeAt(i);
+                                hash = ((hash << 5) - hash) + char;
+                                hash = hash & hash;
+                            }
+                            return Math.abs(hash);
+                        };
+
+                        // Build izvođač to color mapping (deterministic via hash)
+                        const izvodjacSet = [...new Set(odjeliData.odjeli.map(o => (o && o.izvođač) || '').filter(i => i))];
+                        const izvodjacColorMap = {};
+                        izvodjacSet.forEach(izv => {
+                            const hash = hashString(izv);
+                            const hue = hash % 360;
+                            const saturation = 35 + (hash % 25); // 35-60%
+                            const lightness = 75 + (hash % 15); // 75-90%
+                            izvodjacColorMap[izv] = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                        });
+
                         const odjeliHTML = odjeliData.odjeli.map(o => {
                             if (!o) return '';
                             const radilisteClass = radilisteColorMap[o.radiliste] || '';
                             const realizacijaClass = getRealizacijaClass(o.realizacija);
+                            const izvodjacBg = izvodjacColorMap[o.izvođač] || '';
+                            const izvodjacStyle = izvodjacBg ? `background-color: ${izvodjacBg};` : '';
                             return `
                                 <tr>
                                     <td class="${radilisteClass}" style="font-weight: 500;">${o.odjel || '-'}</td>
-                                    <td class="right green">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
-                                    <td class="right blue">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
-                                    <td class="right">${(o.sumaPanj != null && !isNaN(o.sumaPanj)) ? o.sumaPanj.toFixed(2) : '0.00'}</td>
+                                    <td class="right ${radilisteClass}">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
+                                    <td class="right ${radilisteClass}">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
+                                    <td class="right ${radilisteClass}">${(o.sumaPanj != null && !isNaN(o.sumaPanj)) ? o.sumaPanj.toFixed(2) : '0.00'}</td>
                                     <td class="${radilisteClass}">${o.radiliste || '-'}</td>
-                                    <td>${o.izvođač || '-'}</td>
+                                    <td style="${izvodjacStyle}">${o.izvođač || '-'}</td>
                                     <td>${o.datumZadnjeSjece || '-'}</td>
                                     <td class="right ${realizacijaClass}">${(o.realizacija != null && o.realizacija > 0) ? o.realizacija.toFixed(1) + '%' : '-'}</td>
                                 </tr>
