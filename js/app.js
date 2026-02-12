@@ -2021,16 +2021,14 @@
 
                 // Populate monthly table
                 const monthlyHTML = data.mjesecnaStatistika.map(m => {
-                    const razlikaSjeca = m.razlikaSjeca || 0;
-                    const razlikaOtprema = m.razlikaOtprema || 0;
                     const sjeca = m.sjeca || 0;
                     const dinamika = m.dinamika || 0;
                     const progressPercent = dinamika > 0 ? ((sjeca / dinamika) * 100).toFixed(1) : '0.0';
                     return `
                         <tr>
                             <td>${m.mjesec || '-'}</td>
-                            <td class="number green">${(m.sjeca != null && !isNaN(m.sjeca)) ? m.sjeca.toFixed(2) : '0.00'}</td>
-                            <td class="number blue">${(m.otprema != null && !isNaN(m.otprema)) ? m.otprema.toFixed(2) : '0.00'}</td>
+                            <td class="number green" style="min-width: 120px; font-size: 15px; font-weight: 600;">${(m.sjeca != null && !isNaN(m.sjeca)) ? m.sjeca.toFixed(2) : '0.00'}</td>
+                            <td class="number blue" style="min-width: 120px; font-size: 15px; font-weight: 600;">${(m.otprema != null && !isNaN(m.otprema)) ? m.otprema.toFixed(2) : '0.00'}</td>
                             <td class="number">${(m.stanje != null && !isNaN(m.stanje)) ? m.stanje.toFixed(2) : '0.00'}</td>
                             <td class="number">
                                 ${(m.dinamika != null && !isNaN(m.dinamika)) ? m.dinamika.toFixed(2) : '0.00'}
@@ -2038,8 +2036,6 @@
                                     <div class="table-progress-fill" style="width: ${Math.min(progressPercent, 100)}%"></div>
                                 </div>
                             </td>
-                            <td class="number ${razlikaSjeca >= 0 ? 'green' : 'red'}">${(razlikaSjeca >= 0 ? '+' : '') + razlikaSjeca.toFixed(2)}</td>
-                            <td class="number ${razlikaOtprema >= 0 ? 'green' : 'red'}">${(razlikaOtprema >= 0 ? '+' : '') + razlikaOtprema.toFixed(2)}</td>
                         </tr>
                     `;
                 }).join('');
