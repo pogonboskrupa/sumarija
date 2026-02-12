@@ -2258,8 +2258,27 @@ function handleDailyChart(year, month, username, password) {
       dailyData[day].otprema += ukupno;
     }
 
-    // Convert to sorted array
-    const result = Object.values(dailyData).sort((a, b) => a.day - b.day);
+    // Convert to sorted array - filter only working days
+    // Mon-Fri (getDay 1-5): always include
+    // Saturday (getDay 6): include only if has data (sjeca > 0 OR otprema > 0)
+    // Sunday (getDay 0): never include
+    const result = Object.values(dailyData)
+      .filter(entry => {
+        const dateObj = new Date(yearInt, monthInt, entry.day);
+        const dayOfWeek = dateObj.getDay();
+
+        // Sunday - never include
+        if (dayOfWeek === 0) return false;
+
+        // Saturday - include only if working (has data)
+        if (dayOfWeek === 6) {
+          return (entry.sjeca > 0 || entry.otprema > 0);
+        }
+
+        // Mon-Fri - always include
+        return true;
+      })
+      .sort((a, b) => a.day - b.day);
 
     return createJsonResponse({
       year: yearInt,

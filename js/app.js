@@ -2479,13 +2479,13 @@
                         }, {
                             label: 'Otprema (m³)',
                             data: otpremaValues,
-                            borderColor: '#2563eb',
-                            backgroundColor: 'rgba(37, 99, 235, 0.15)',
+                            borderColor: '#dc2626',
+                            backgroundColor: 'rgba(220, 38, 38, 0.15)',
                             borderWidth: 3,
                             tension: 0.4, // Smooth curve
                             fill: true,
                             pointRadius: 4,
-                            pointBackgroundColor: '#2563eb',
+                            pointBackgroundColor: '#dc2626',
                             pointBorderColor: '#fff',
                             pointBorderWidth: 2,
                             pointHoverRadius: 6
