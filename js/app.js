@@ -2435,12 +2435,12 @@
                 });
                 console.log('[Zadnjih 5 radnih dana] Otprema sortimenti:', otpremaSortimenti, 'UKUPNO:', otpremaUkupno);
 
-                // Izračunaj RAZLIKU (Otprema - Sječa)
+                // Izračunaj RAZLIKU (Sječa - Otprema)
                 const razlikaSortimenti = {};
                 sortimentiPrikaz.forEach(sp => {
-                    razlikaSortimenti[sp.display] = (otpremaSortimenti[sp.display] || 0) - (sjecaSortimenti[sp.display] || 0);
+                    razlikaSortimenti[sp.display] = (sjecaSortimenti[sp.display] || 0) - (otpremaSortimenti[sp.display] || 0);
                 });
-                const razlikaUkupno = otpremaUkupno - sjecaUkupno;
+                const razlikaUkupno = sjecaUkupno - otpremaUkupno;
                 console.log('[Zadnjih 5 radnih dana] Razlika sortimenti:', razlikaSortimenti, 'UKUPNO:', razlikaUkupno);
 
                 // Renderuj header (kompaktni stil)
@@ -2484,9 +2484,9 @@
                 bodyHtml += `<td style="text-align: right; padding: 8px 10px; font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: 700; color: #dc2626; background: #fecaca;">${otpremaDisp}</td>`;
                 bodyHtml += '</tr>';
 
-                // Red za Razliku (Otprema - Sječa) - neutralna siva boja
+                // Red za Razliku (Sječa - Otprema) - neutralna siva boja
                 bodyHtml += '<tr style="background: #f3f4f6;">';
-                bodyHtml += '<td style="font-weight: 600; color: #4b5563; padding: 8px 10px; font-size: 13px;">📊 Razlika (OTP−SJE)</td>';
+                bodyHtml += '<td style="font-weight: 600; color: #4b5563; padding: 8px 10px; font-size: 13px;">📊 Razlika (SJE−OTP)</td>';
                 sortimentiPrikaz.forEach(sort => {
                     const val = razlikaSortimenti[sort.display] || 0;
                     let display = '-';
