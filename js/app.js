@@ -2069,6 +2069,21 @@
 
                     const progressSjeca = dinamika > 0 ? ((sjeca / dinamika) * 100).toFixed(1) : '0.0';
                     const progressOtprema = dinamika > 0 ? ((otprema / dinamika) * 100).toFixed(1) : '0.0';
+
+                    // Izračunaj koliko je ostalo do dinamike
+                    const ostaloSjeca = dinamika - sjeca;
+                    const ostaloOtprema = dinamika - otprema;
+
+                    // Format prikaza: npr. "-1345 m³" ako je ostalo, "+123 m³" ako je prekoračeno
+                    const formatOstalo = (ostalo) => {
+                        if (ostalo > 0) {
+                            return `<span style="color: #dc2626;">−${ostalo.toFixed(0)} m³</span>`;
+                        } else if (ostalo < 0) {
+                            return `<span style="color: #059669;">+${Math.abs(ostalo).toFixed(0)} m³</span>`;
+                        }
+                        return `<span style="color: #059669;">✓ 0 m³</span>`;
+                    };
+
                     return `
                         <tr>
                             <td>${m.mjesec || '-'}</td>
@@ -2080,14 +2095,14 @@
                                 <div class="table-progress-bar">
                                     <div class="table-progress-fill" style="width: ${Math.min(progressSjeca, 100)}%; background: #059669;"></div>
                                 </div>
-                                <small style="color: #6b7280;">${progressSjeca}%</small>
+                                <small style="color: #6b7280;">${formatOstalo(ostaloSjeca)} ; ${progressSjeca}%</small>
                             </td>
                             <td class="number">
                                 ${(m.dinamika != null && !isNaN(m.dinamika)) ? m.dinamika.toFixed(2) : '0.00'}
                                 <div class="table-progress-bar">
                                     <div class="table-progress-fill" style="width: ${Math.min(progressOtprema, 100)}%; background: #2563eb;"></div>
                                 </div>
-                                <small style="color: #6b7280;">${progressOtprema}%</small>
+                                <small style="color: #6b7280;">${formatOstalo(ostaloOtprema)} ; ${progressOtprema}%</small>
                             </td>
                         </tr>
                     `;
@@ -2097,6 +2112,20 @@
                 // Calculate YTD progress percentages for UKUPNO row
                 const ukupnoProgressSjeca = ytdDinamikaSjeca > 0 ? ((ytdSjeca / ytdDinamikaSjeca) * 100).toFixed(1) : '0.0';
                 const ukupnoProgressOtprema = ytdDinamikaOtprema > 0 ? ((ytdOtprema / ytdDinamikaOtprema) * 100).toFixed(1) : '0.0';
+
+                // Izračunaj koliko je ostalo do dinamike za UKUPNO
+                const ukupnoOstaloSjeca = ytdDinamikaSjeca - ytdSjeca;
+                const ukupnoOstaloOtprema = ytdDinamikaOtprema - ytdOtprema;
+
+                // Format prikaza za UKUPNO
+                const formatOstaloUkupno = (ostalo) => {
+                    if (ostalo > 0) {
+                        return `<span style="color: #dc2626;">−${ostalo.toFixed(0)} m³</span>`;
+                    } else if (ostalo < 0) {
+                        return `<span style="color: #059669;">+${Math.abs(ostalo).toFixed(0)} m³</span>`;
+                    }
+                    return `<span style="color: #059669;">✓ 0 m³</span>`;
+                };
 
                 // Render UKUPNO row in tfoot
                 const tfootHTML = `
@@ -2110,14 +2139,14 @@
                             <div class="table-progress-bar">
                                 <div class="table-progress-fill" style="width: ${Math.min(ukupnoProgressSjeca, 100)}%;"></div>
                             </div>
-                            <small>${ukupnoProgressSjeca}%</small>
+                            <small>${formatOstaloUkupno(ukupnoOstaloSjeca)} ; ${ukupnoProgressSjeca}%</small>
                         </td>
                         <td class="number">
                             ${ytdDinamikaOtprema.toFixed(2)}
                             <div class="table-progress-bar">
                                 <div class="table-progress-fill" style="width: ${Math.min(ukupnoProgressOtprema, 100)}%;"></div>
                             </div>
-                            <small>${ukupnoProgressOtprema}%</small>
+                            <small>${formatOstaloUkupno(ukupnoOstaloOtprema)} ; ${ukupnoProgressOtprema}%</small>
                         </td>
                     </tr>
                 `;
