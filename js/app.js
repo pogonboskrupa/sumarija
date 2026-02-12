@@ -2219,11 +2219,12 @@
         }
 
         // ========================================
-        // SJEČA I OTPREMA ZADNJIH 5 DANA - Dashboard tabela
+        // SJEČA I OTPREMA ZADNJIH 5 RADNIH DANA - Dashboard tabela
         // ========================================
         async function loadZadnjih5DanaTable() {
             const headerElem = document.getElementById('zadnjih5-dana-header');
             const bodyElem = document.getElementById('zadnjih5-dana-body');
+            const periodElem = document.getElementById('zadnjih5-period');
 
             try {
                 // Dohvati primke i otpreme podatke
@@ -2244,35 +2245,92 @@
                     return null;
                 };
 
-                // Izvuci sve jedinstvene datume iz primki i otprema
-                const sviDatumi = new Set();
+                // Funkcija za parsiranje DD.MM.YYYY u Date objekt
+                const parseDateStr = (dateStr) => {
+                    if (!dateStr) return null;
+                    const [day, month, year] = dateStr.split('.').map(Number);
+                    return new Date(year, month - 1, day);
+                };
+
+                // Funkcija za formatiranje Date u DD.MM.YYYY
+                const formatDate = (date) => {
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = date.getFullYear();
+                    return `${day}.${month}.${year}`;
+                };
+
+                // Izvuci sve datume sa subotnjim unosima iz podataka
+                const suboteSaUnosom = new Set();
 
                 if (primkeData.primke && Array.isArray(primkeData.primke)) {
                     primkeData.primke.forEach(p => {
                         const d = normalizeDateStr(p.datum);
-                        if (d) sviDatumi.add(d);
+                        if (d) {
+                            const date = parseDateStr(d);
+                            if (date && date.getDay() === 6) { // Subota
+                                suboteSaUnosom.add(d);
+                            }
+                        }
                     });
                 }
 
                 if (otpremeData.otpreme && Array.isArray(otpremeData.otpreme)) {
                     otpremeData.otpreme.forEach(o => {
                         const d = normalizeDateStr(o.datum);
-                        if (d) sviDatumi.add(d);
+                        if (d) {
+                            const date = parseDateStr(d);
+                            if (date && date.getDay() === 6) { // Subota
+                                suboteSaUnosom.add(d);
+                            }
+                        }
                     });
                 }
 
-                // Sortiraj datume od najnovijeg do najstarijeg
-                const sortiraniDatumi = Array.from(sviDatumi).sort((a, b) => {
-                    // Parse DD.MM.YYYY format
-                    const [dayA, monthA, yearA] = a.split('.').map(Number);
-                    const [dayB, monthB, yearB] = b.split('.').map(Number);
-                    const dateA = new Date(yearA, monthA - 1, dayA);
-                    const dateB = new Date(yearB, monthB - 1, dayB);
-                    return dateB - dateA; // Descending (najnoviji prvi)
+                // Izračunaj zadnjih 5 RADNIH dana (pon-pet) kalendarski od danas
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const radniDani = []; // Datumi radnih dana (pon-pet)
+                let currentDate = new Date(today);
+
+                while (radniDani.length < 5) {
+                    const dayOfWeek = currentDate.getDay(); // 0=ned, 1=pon, ..., 6=sub
+                    // Pon-Pet = 1-5
+                    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                        radniDani.push(new Date(currentDate));
+                    }
+                    currentDate.setDate(currentDate.getDate() - 1);
+                }
+
+                // radniDani je sada sortiran od najnovijeg do najstarijeg
+                // Najnoviji radni dan = radniDani[0], najstariji = radniDani[4]
+                const startDate = radniDani[radniDani.length - 1]; // najstariji
+                const endDate = radniDani[0]; // najnoviji
+
+                // Prikaži period u naslovu
+                const startFormatted = `${String(startDate.getDate()).padStart(2, '0')}.${String(startDate.getMonth() + 1).padStart(2, '0')}`;
+                const endFormatted = formatDate(endDate);
+                if (periodElem) {
+                    periodElem.textContent = `(Period: ${startFormatted}–${endFormatted})`;
+                }
+
+                // Kreiraj set datuma za filtriranje - uključi radne dane i subote sa unosom unutar perioda
+                const validDatumi = new Set();
+
+                // Dodaj sve radne dane
+                radniDani.forEach(d => validDatumi.add(formatDate(d)));
+
+                // Dodaj subote sa unosom koje padaju unutar perioda [startDate, endDate]
+                suboteSaUnosom.forEach(subotaStr => {
+                    const subotaDate = parseDateStr(subotaStr);
+                    if (subotaDate && subotaDate >= startDate && subotaDate <= endDate) {
+                        validDatumi.add(subotaStr);
+                    }
                 });
 
-                // Uzmi prvih 5 jedinstvenih datuma unosa
-                const zadnjih5DanaUnosa = sortiraniDatumi.slice(0, 5);
+                console.log('[Zadnjih 5 radnih dana] Period:', startFormatted, '-', endFormatted);
+                console.log('[Zadnjih 5 radnih dana] Validni datumi:', Array.from(validDatumi));
 
                 // Sortimenti koje prikazujemo (kompaktni nazivi)
                 const sortimentiPrikaz = [
@@ -2286,16 +2344,14 @@
                     { display: 'Σ LIŠ', keys: ['LIŠĆARI'] }  // API vraća "LIŠĆARI" ne "Σ LIŠĆARI"
                 ];
 
-                console.log('[Zadnjih 5 dana] Korišteni datumi:', zadnjih5DanaUnosa);
-
-                // Agregiraj SJEČA podatke za zadnjih 5 dana unosa
+                // Agregiraj SJEČA podatke za period
                 const sjecaSortimenti = {};
                 sortimentiPrikaz.forEach(s => sjecaSortimenti[s.display] = 0);
 
                 if (primkeData.primke && Array.isArray(primkeData.primke)) {
                     primkeData.primke.forEach(primka => {
                         const datumStr = normalizeDateStr(primka.datum);
-                        if (datumStr && zadnjih5DanaUnosa.includes(datumStr)) {
+                        if (datumStr && validDatumi.has(datumStr)) {
                             const sortiment = primka.sortiment;
                             const kolicina = parseFloat(primka.kolicina) || 0;
 
@@ -2317,16 +2373,16 @@
                         sjecaUkupno += sjecaSortimenti[sp.display] || 0;
                     }
                 });
-                console.log('[Zadnjih 5 dana] Sječa sortimenti:', sjecaSortimenti, 'UKUPNO:', sjecaUkupno);
+                console.log('[Zadnjih 5 radnih dana] Sječa sortimenti:', sjecaSortimenti, 'UKUPNO:', sjecaUkupno);
 
-                // Agregiraj OTPREMA podatke za zadnjih 5 dana unosa
+                // Agregiraj OTPREMA podatke za period
                 const otpremaSortimenti = {};
                 sortimentiPrikaz.forEach(s => otpremaSortimenti[s.display] = 0);
 
                 if (otpremeData.otpreme && Array.isArray(otpremeData.otpreme)) {
                     otpremeData.otpreme.forEach(otprema => {
                         const datumStr = normalizeDateStr(otprema.datum);
-                        if (datumStr && zadnjih5DanaUnosa.includes(datumStr)) {
+                        if (datumStr && validDatumi.has(datumStr)) {
                             const sortiment = otprema.sortiment;
                             const kolicina = parseFloat(otprema.kolicina) || 0;
 
@@ -2348,7 +2404,15 @@
                         otpremaUkupno += otpremaSortimenti[sp.display] || 0;
                     }
                 });
-                console.log('[Zadnjih 5 dana] Otprema sortimenti:', otpremaSortimenti, 'UKUPNO:', otpremaUkupno);
+                console.log('[Zadnjih 5 radnih dana] Otprema sortimenti:', otpremaSortimenti, 'UKUPNO:', otpremaUkupno);
+
+                // Izračunaj RAZLIKU (Otprema - Sječa)
+                const razlikaSortimenti = {};
+                sortimentiPrikaz.forEach(sp => {
+                    razlikaSortimenti[sp.display] = (otpremaSortimenti[sp.display] || 0) - (sjecaSortimenti[sp.display] || 0);
+                });
+                const razlikaUkupno = otpremaUkupno - sjecaUkupno;
+                console.log('[Zadnjih 5 radnih dana] Razlika sortimenti:', razlikaSortimenti, 'UKUPNO:', razlikaUkupno);
 
                 // Renderuj header (kompaktni stil)
                 let headerHtml = '<tr style="background: linear-gradient(135deg, #047857 0%, #065f46 100%);">';
@@ -2360,12 +2424,12 @@
                 headerHtml += '</tr>';
                 headerElem.innerHTML = headerHtml;
 
-                // Renderuj body - 2 reda (Sječa i Otprema)
+                // Renderuj body - 3 reda (Sječa, Otprema, Razlika)
                 let bodyHtml = '';
 
                 // Red za Sječu
                 bodyHtml += '<tr style="background: #f0fdf4;">';
-                bodyHtml += '<td style="font-weight: 600; color: #047857; padding: 8px 10px; font-size: 13px;">🌲 Sječa (5 dana)</td>';
+                bodyHtml += '<td style="font-weight: 600; color: #047857; padding: 8px 10px; font-size: 13px;">🌲 Sječa</td>';
                 sortimentiPrikaz.forEach(sort => {
                     const val = sjecaSortimenti[sort.display] || 0;
                     const display = val > 0 ? val.toFixed(2) : '-';
@@ -2378,23 +2442,42 @@
                 bodyHtml += '</tr>';
 
                 // Red za Otpremu
-                bodyHtml += '<tr style="background: #e0f2fe;">';
-                bodyHtml += '<td style="font-weight: 600; color: #0369a1; padding: 8px 10px; font-size: 13px;">🚚 Otprema (5 dana)</td>';
+                bodyHtml += '<tr style="background: #fef2f2;">';
+                bodyHtml += '<td style="font-weight: 600; color: #dc2626; padding: 8px 10px; font-size: 13px;">🚚 Otprema</td>';
                 sortimentiPrikaz.forEach(sort => {
                     const val = otpremaSortimenti[sort.display] || 0;
                     const display = val > 0 ? val.toFixed(2) : '-';
-                    const color = val > 0 ? '#2563eb' : '#9ca3af';
+                    const color = val > 0 ? '#dc2626' : '#9ca3af';
                     bodyHtml += `<td style="text-align: right; padding: 8px 6px; font-family: 'Roboto Mono', monospace; font-size: 12px; color: ${color};">${display}</td>`;
                 });
                 // UKUPNO kolona
                 const otpremaDisp = otpremaUkupno > 0 ? otpremaUkupno.toFixed(2) : '-';
-                bodyHtml += `<td style="text-align: right; padding: 8px 10px; font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: 700; color: #0369a1; background: #bae6fd;">${otpremaDisp}</td>`;
+                bodyHtml += `<td style="text-align: right; padding: 8px 10px; font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: 700; color: #dc2626; background: #fecaca;">${otpremaDisp}</td>`;
+                bodyHtml += '</tr>';
+
+                // Red za Razliku (Otprema - Sječa) - neutralna siva boja
+                bodyHtml += '<tr style="background: #f3f4f6;">';
+                bodyHtml += '<td style="font-weight: 600; color: #4b5563; padding: 8px 10px; font-size: 13px;">📊 Razlika (OTP−SJE)</td>';
+                sortimentiPrikaz.forEach(sort => {
+                    const val = razlikaSortimenti[sort.display] || 0;
+                    let display = '-';
+                    if (val !== 0) {
+                        display = (val > 0 ? '+' : '') + val.toFixed(2);
+                    }
+                    bodyHtml += `<td style="text-align: right; padding: 8px 6px; font-family: 'Roboto Mono', monospace; font-size: 12px; color: #4b5563;">${display}</td>`;
+                });
+                // UKUPNO kolona za razliku
+                let razlikaDisp = '-';
+                if (razlikaUkupno !== 0) {
+                    razlikaDisp = (razlikaUkupno > 0 ? '+' : '') + razlikaUkupno.toFixed(2);
+                }
+                bodyHtml += `<td style="text-align: right; padding: 8px 10px; font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: 700; color: #4b5563; background: #e5e7eb;">${razlikaDisp}</td>`;
                 bodyHtml += '</tr>';
 
                 bodyElem.innerHTML = bodyHtml;
 
             } catch (error) {
-                console.error('Error loading zadnjih 5 dana table:', error);
+                console.error('Error loading zadnjih 5 radnih dana table:', error);
                 headerElem.innerHTML = '';
                 bodyElem.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #dc2626;">Greška pri učitavanju podataka</td></tr>';
             }
