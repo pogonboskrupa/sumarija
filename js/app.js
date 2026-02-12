@@ -1264,6 +1264,7 @@
 
             // Dinamički kreiraj tab-ove na osnovu tipa korisnika
             const tabsMenu = document.getElementById('tabs-menu');
+            const userType = (currentUser.type || '').toLowerCase();
 
             if (userType === 'primac') {
                 // Primač vidi šest prikaza: pregled, godišnji prikaz, po odjelima, dodavanje, moje sječe, i kubikator
