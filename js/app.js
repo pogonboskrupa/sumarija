@@ -2022,8 +2022,10 @@
                 // Populate monthly table
                 const monthlyHTML = data.mjesecnaStatistika.map(m => {
                     const sjeca = m.sjeca || 0;
+                    const otprema = m.otprema || 0;
                     const dinamika = m.dinamika || 0;
-                    const progressPercent = dinamika > 0 ? ((sjeca / dinamika) * 100).toFixed(1) : '0.0';
+                    const progressSjeca = dinamika > 0 ? ((sjeca / dinamika) * 100).toFixed(1) : '0.0';
+                    const progressOtprema = dinamika > 0 ? ((otprema / dinamika) * 100).toFixed(1) : '0.0';
                     return `
                         <tr>
                             <td>${m.mjesec || '-'}</td>
@@ -2033,8 +2035,16 @@
                             <td class="number">
                                 ${(m.dinamika != null && !isNaN(m.dinamika)) ? m.dinamika.toFixed(2) : '0.00'}
                                 <div class="table-progress-bar">
-                                    <div class="table-progress-fill" style="width: ${Math.min(progressPercent, 100)}%"></div>
+                                    <div class="table-progress-fill" style="width: ${Math.min(progressSjeca, 100)}%; background: #059669;"></div>
                                 </div>
+                                <small style="color: #6b7280;">${progressSjeca}%</small>
+                            </td>
+                            <td class="number">
+                                ${(m.dinamika != null && !isNaN(m.dinamika)) ? m.dinamika.toFixed(2) : '0.00'}
+                                <div class="table-progress-bar">
+                                    <div class="table-progress-fill" style="width: ${Math.min(progressOtprema, 100)}%; background: #2563eb;"></div>
+                                </div>
+                                <small style="color: #6b7280;">${progressOtprema}%</small>
                             </td>
                         </tr>
                     `;
