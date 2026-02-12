@@ -8345,9 +8345,11 @@
                     messageDiv.style.color = '#047857';
                     messageDiv.classList.remove('hidden');
 
-                    // Reset form
+                    // Reset form immediately so user can enter new data
+                    resetSjecaForm();
+
+                    // Hide message after delay
                     setTimeout(() => {
-                        resetSjecaForm();
                         messageDiv.classList.add('hidden');
                     }, 3000);
 
@@ -8440,9 +8442,11 @@
                     messageDiv.style.color = '#1e40af';
                     messageDiv.classList.remove('hidden');
 
-                    // Reset form
+                    // Reset form immediately so user can enter new data
+                    resetOtpremaForm();
+
+                    // Hide message after delay
                     setTimeout(() => {
-                        resetOtpremaForm();
                         messageDiv.classList.add('hidden');
                     }, 3000);
 
