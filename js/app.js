@@ -2194,8 +2194,7 @@
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('dashboard-content').classList.remove('hidden');
 
-                // Set current month in daily chart selector and load chart
-                const currentMonth = new Date().getMonth();
+                // Set current month in daily chart selector and load chart (currentMonth already defined above)
                 const monthSelect = document.getElementById('dashboard-daily-month-select');
                 if (monthSelect) {
                     monthSelect.value = currentMonth;
