@@ -1311,7 +1311,7 @@
                     <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
                     <button class="tab" onclick="switchTab('stanje-zaliha')">📦 Stanje Zaliha</button>
                     <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Sječa/otprema po mjesecima</button>
-                    <button class="tab" onclick="switchTab('primaci')">👷 Prikaz sječe</button>
+                    <button class="tab" onclick="switchTab('primaci')">👷 SJEČA</button>
                     <button class="tab" onclick="switchTab('otpremaci')">🚛 OTPREMA</button>
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                     <button class="tab notification-badge" onclick="switchTab('pending-unosi')">

@@ -325,18 +325,18 @@
 
         <!-- PRIMACI CONTENT (Prikaz po primačima) -->
         <div id="primaci-content" class="container hidden">
-            <h2>👷 Prikaz sječe</h2>
+            <h2>👷 SJEČA</h2>
 
             <!-- Submenu -->
             <div class="submenu">
-                <button class="submenu-tab active" onclick="switchPrimaciSubmenu('monthly')">📊 Mjesečni prikaz</button>
-                <button class="submenu-tab" onclick="switchPrimaciSubmenu('daily')">📅 Po danima</button>
+                <button class="submenu-tab active" onclick="switchPrimaciSubmenu('daily')">📅 Sječa po danima</button>
+                <button class="submenu-tab" onclick="switchPrimaciSubmenu('monthly')">📊 Mjesečni prikaz</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('radilista')">🏗️ Radilišta</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('izvodjaci')">👷 Izvođači</button>
             </div>
 
             <!-- Mjesečni prikaz -->
-            <div id="primaci-monthly-view" class="submenu-content">
+            <div id="primaci-monthly-view" class="submenu-content hidden">
                 <div class="section">
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="primaci-search" placeholder="🔍 Pretraži po imenu primača..." onkeyup="filterPrimaciTable()">
@@ -352,7 +352,7 @@
             </div>
 
             <!-- Dnevni prikaz - tekući mjesec -->
-            <div id="primaci-daily-view" class="submenu-content hidden">
+            <div id="primaci-daily-view" class="submenu-content">
                 <div class="section">
                     <div class="month-selector">
                         <label for="primaci-month-select">📅 Izaberi mjesec:</label>
