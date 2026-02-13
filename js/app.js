@@ -2152,9 +2152,6 @@
                 `;
                 document.getElementById('dashboard-monthly-tfoot').innerHTML = tfootHTML;
 
-                // Load "Stanje Zaliha" tabela (na početku dashboarda)
-                await loadStanjeZalihaTabela();
-
                 // Load "Zadnjih 5 dana" table
                 await loadZadnjih5DanaTable();
 
@@ -2516,92 +2513,53 @@
         }
 
         // ========================================
-        // STANJE ZALIHA TABELA - Admin Dashboard (sva radilišta)
+        // STANJE ZALIHA TABELA - Agregirana tabela svih odjela (čita iz zadnjeg reda ZALIHA tabele)
         // ========================================
-        async function loadStanjeZalihaTabela() {
+        function renderStanjeZalihaTabela(odjeliData) {
             const headerElem = document.getElementById('stanje-zaliha-tabela-header');
             const bodyElem = document.getElementById('stanje-zaliha-tabela-body');
 
             if (!headerElem || !bodyElem) return;
 
             try {
-                // Dohvati primke i otpreme podatke
-                const primkeUrl = buildApiUrl('primke');
-                const otpremeUrl = buildApiUrl('otpreme');
-
-                const [primkeData, otpremeData] = await Promise.all([
-                    fetchWithCache(primkeUrl, 'cache_primke_zaliha_tabela'),
-                    fetchWithCache(otpremeUrl, 'cache_otpreme_zaliha_tabela')
-                ]);
-
-                // Sortimenti za prikaz
+                // Sortimenti za prikaz (mapiranje od API naziva - iz zadnjeg reda ZALIHA tabele)
                 const sortimentiPrikaz = [
-                    { display: 'TRUPCI Č', keys: ['TRUPCI Č'] },
-                    { display: 'CEL.DUGA', keys: ['CEL.DUGA'] },
-                    { display: 'CEL.CIJEPANA', keys: ['CEL.CIJEPANA'] },
-                    { display: 'ČETINARI', keys: ['Σ ČETINARI'] },
-                    { display: 'TRUPCI L', keys: ['TRUPCI L'] },
-                    { display: 'OGR.DUGI', keys: ['OGR.DUGI'] },
-                    { display: 'OGR.CIJEPANI', keys: ['OGR.CIJEPANI'] },
-                    { display: 'LIŠĆARI', keys: ['LIŠĆARI'] }
+                    { display: 'TRUPCI Č', apiKey: 'TRUPCI Č' },
+                    { display: 'CEL.DUGA', apiKey: 'CEL.DUGA' },
+                    { display: 'CEL.CIJEPANA', apiKey: 'CEL.CIJEPANA' },
+                    { display: 'ČETINARI', apiKey: 'Σ ČETINARI' },
+                    { display: 'TRUPCI L', apiKey: 'TRUPCI L' },
+                    { display: 'OGR.DUGI', apiKey: 'OGR.DUGI' },
+                    { display: 'OGR.CIJEPANI', apiKey: 'OGR.CIJEPANI' },
+                    { display: 'LIŠĆARI', apiKey: 'LIŠĆARI' }
                 ];
 
-                // Agregiraj SJEČA podatke (sve primke)
-                const sjecaSortimenti = {};
-                sortimentiPrikaz.forEach(s => sjecaSortimenti[s.display] = 0);
-
-                if (primkeData.primke && Array.isArray(primkeData.primke)) {
-                    primkeData.primke.forEach(primka => {
-                        const sortiment = primka.sortiment;
-                        const kolicina = parseFloat(primka.kolicina) || 0;
-
-                        sortimentiPrikaz.forEach(sp => {
-                            if (sp.keys.includes(sortiment)) {
-                                sjecaSortimenti[sp.display] += kolicina;
-                            }
-                        });
-                    });
-                }
-
-                // Agregiraj OTPREMA podatke (sve otpreme)
-                const otpremaSortimenti = {};
-                sortimentiPrikaz.forEach(s => otpremaSortimenti[s.display] = 0);
-
-                if (otpremeData.otpreme && Array.isArray(otpremeData.otpreme)) {
-                    otpremeData.otpreme.forEach(otprema => {
-                        const sortiment = otprema.sortiment;
-                        const kolicina = parseFloat(otprema.kolicina) || 0;
-
-                        sortimentiPrikaz.forEach(sp => {
-                            if (sp.keys.includes(sortiment)) {
-                                otpremaSortimenti[sp.display] += kolicina;
-                            }
-                        });
-                    });
-                }
-
-                // Izračunaj ZALIHA (Sječa - Otprema)
+                // Agregiraj zalihe iz svih odjela (čita iz odjel.zaliha - zadnji red ZALIHA tabele)
                 const zalihaSortimenti = {};
-                let zalihaUkupno = 0;
-                sortimentiPrikaz.forEach(sp => {
-                    const zaliha = (sjecaSortimenti[sp.display] || 0) - (otpremaSortimenti[sp.display] || 0);
-                    zalihaSortimenti[sp.display] = zaliha;
-                    // Za ukupno ne računaj Σ kolone da ne dupliramo
-                    if (!sp.display.startsWith('Σ') && sp.display !== 'ČETINARI' && sp.display !== 'LIŠĆARI') {
-                        zalihaUkupno += zaliha;
-                    }
-                });
+                sortimentiPrikaz.forEach(s => zalihaSortimenti[s.display] = 0);
 
-                // ČETINARI i LIŠĆARI su sume, pa ih dodajemo u ukupno
-                zalihaUkupno = zalihaSortimenti['ČETINARI'] + zalihaSortimenti['LIŠĆARI'];
+                if (odjeliData && Array.isArray(odjeliData)) {
+                    odjeliData.forEach(odjel => {
+                        const zalihaData = odjel.zaliha || {};
+                        sortimentiPrikaz.forEach(sp => {
+                            zalihaSortimenti[sp.display] += zalihaData[sp.apiKey] || 0;
+                        });
+                    });
+                }
 
-                console.log('[Stanje Zaliha Tabela] Zalihe:', zalihaSortimenti, 'UKUPNO:', zalihaUkupno);
+                // Izračunaj UKUPNO (ČETINARI + LIŠĆARI)
+                const zalihaUkupno = zalihaSortimenti['ČETINARI'] + zalihaSortimenti['LIŠĆARI'];
+
+                // Broj odjela za prikaz u naslovu
+                const brojOdjela = odjeliData ? odjeliData.length : 0;
+
+                console.log('[Stanje Zaliha Tabela] Agregirano iz', brojOdjela, 'odjela. Zalihe:', zalihaSortimenti, 'UKUPNO:', zalihaUkupno);
 
                 // Renderuj tabelu - zaglavlje sa naslovom
                 let headerHtml = `
                     <tr style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);">
                         <th colspan="10" style="color: white; font-weight: 700; text-align: center; padding: 12px 16px; font-size: 15px; letter-spacing: 0.5px;">
-                            📦 Zalihe na Pogonu gospodarenja Bos.Krupa
+                            📦 Ukupne zalihe - ${brojOdjela} odjela
                         </th>
                     </tr>
                     <tr style="background: #1e3a5f;">`;
@@ -2632,7 +2590,7 @@
                 bodyElem.innerHTML = bodyHtml;
 
             } catch (error) {
-                console.error('Error loading stanje zaliha tabela:', error);
+                console.error('Error rendering stanje zaliha tabela:', error);
                 headerElem.innerHTML = '';
                 bodyElem.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #dc2626;">Greška pri učitavanju podataka</td></tr>';
             }
@@ -8295,6 +8253,9 @@
                 // Populate radilište dropdown
                 populateStanjeZalihaDropdown();
 
+                // Render agregirana tabela zaliha (svi odjeli)
+                renderStanjeZalihaTabela(stanjeZalihaData);
+
                 // Render cards
                 renderStanjeZalihaCards(stanjeZalihaData);
 
@@ -8333,9 +8294,13 @@
             const selectedRadiliste = document.getElementById('stanje-zaliha-radiliste').value;
 
             if (selectedRadiliste === '') {
+                // Prikaži sve odjele
+                renderStanjeZalihaTabela(stanjeZalihaData);
                 renderStanjeZalihaCards(stanjeZalihaData);
             } else {
+                // Filtriraj po radilištu
                 const filteredData = stanjeZalihaData.filter(odjel => odjel.radiliste === selectedRadiliste);
+                renderStanjeZalihaTabela(filteredData);
                 renderStanjeZalihaCards(filteredData);
             }
         }
