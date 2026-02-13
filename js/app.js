@@ -9100,7 +9100,7 @@
                 const response = await fetch(`${API_URL}?path=upload-image`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'text/plain;charset=utf-8',
                     },
                     body: JSON.stringify({
                         username: currentUser.username,
