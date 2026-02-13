@@ -122,11 +122,15 @@ function calculateWeeksInMonth(year, month) {
         }
 
         // Ako smo na nedjelji ili kraju mjeseca
+        // Format label: dd.mm-dd.mm.yyyy (leading zero)
+        const ws = String(weekStart).padStart(2, '0');
+        const we = String(weekEnd).padStart(2, '0');
+        const mm = String(month + 1).padStart(2, '0');
         weeks.push({
             weekNum: weeks.length + 1,
             start: weekStart,
             end: weekEnd,
-            label: `${weekStart}. - ${weekEnd}.`
+            label: `${ws}.${mm}-${we}.${mm}.${year}`
         });
 
         weekStart = weekEnd + 1;

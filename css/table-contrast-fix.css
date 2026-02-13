@@ -1009,7 +1009,10 @@ th[style*="color: white"] {
     left: 0;
     z-index: 20;
     background: #111827 !important;
-    min-width: 180px;
+    width: 120px;
+    min-width: 120px;
+    max-width: 130px;
+    white-space: nowrap;
     border-right: 2px solid #4b5563;
 }
 
@@ -1042,12 +1045,17 @@ th[style*="color: white"] {
 
 .izvjestaj-week-table tbody td:first-child {
     text-align: left;
+    vertical-align: middle;
     position: sticky;
     left: 0;
     z-index: 10;
     background: inherit;
     font-weight: 700;
     color: #111827;
+    width: 120px;
+    min-width: 120px;
+    max-width: 130px;
+    white-space: nowrap;
     border-right: 2px solid #d1d5db;
 }
 
