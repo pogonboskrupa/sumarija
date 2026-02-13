@@ -122,15 +122,16 @@ function calculateWeeksInMonth(year, month) {
         }
 
         // Ako smo na nedjelji ili kraju mjeseca
-        // Format label: dd.mm-dd.mm.yyyy (leading zero)
+        const wNum = weeks.length + 1;
         const ws = String(weekStart).padStart(2, '0');
         const we = String(weekEnd).padStart(2, '0');
         const mm = String(month + 1).padStart(2, '0');
         weeks.push({
-            weekNum: weeks.length + 1,
+            weekNum: wNum,
             start: weekStart,
             end: weekEnd,
-            label: `${ws}.${mm}-${we}.${mm}.${year}`
+            label: `S${wNum}`,
+            dateRange: `${ws}.${mm} - ${we}.${mm}`
         });
 
         weekStart = weekEnd + 1;
@@ -207,7 +208,7 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
     }
 
     // Build header - uniformna tamno siva boja
-    let headerHtml = '<tr><th>Sedmica</th><th>Odjel</th>';
+    let headerHtml = '<tr><th class="col-sedmica">SEDMICA</th><th>Odjel</th>';
     sortimentiNazivi.forEach(sortiment => {
         let extraClass = '';
         if (sortiment === 'UKUPNO Č+L' || sortiment === 'SVEUKUPNO') extraClass = 'col-sveukupno';
@@ -221,6 +222,7 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
 
     // Build body - grupirano po sedmicama
     let bodyHtml = '';
+    let isFirstWeek = true;
 
     weeks.forEach((week) => {
         const weekData = dataByWeek[week.weekNum] || {};
@@ -238,10 +240,17 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
             });
         });
 
-        // Header za sedmicu - UKUPNO SEDMICA row (zelena pozadina)
-        bodyHtml += `<tr class="totals-row">`;
-        bodyHtml += `<td rowspan="${odjeli.length + 1}">${week.label}</td>`;
-        bodyHtml += `<td><strong>UKUPNO SEDMICA</strong></td>`;
+        // Separator klasa za vizualno razdvajanje sedmica
+        const separatorClass = isFirstWeek ? '' : ' week-separator';
+        isFirstWeek = false;
+
+        // SEDMICA ćelija sa rowspan - tamna pozadina, dvored prikaz
+        bodyHtml += `<tr class="week-totals-row${separatorClass}">`;
+        bodyHtml += `<td class="week-label-cell" rowspan="${odjeli.length + 1}">`;
+        bodyHtml += `<span class="week-num">${week.label}</span>`;
+        bodyHtml += `<span class="week-date">${week.dateRange}</span>`;
+        bodyHtml += `</td>`;
+        bodyHtml += `<td><strong>UKUPNO</strong></td>`;
         sortimentiNazivi.forEach(s => {
             const val = weekTotals[s];
             const display = val > 0 ? val.toFixed(2) : '-';
@@ -250,9 +259,9 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
         bodyHtml += '</tr>';
 
         // Redovi za svaki odjel
-        odjeli.forEach((odjel) => {
-            bodyHtml += `<tr>`;
-            bodyHtml += `<td style="padding-left: 20px;">${odjel}</td>`;
+        odjeli.forEach((odjel, idx) => {
+            bodyHtml += `<tr class="week-detail-row">`;
+            bodyHtml += `<td>${odjel}</td>`;
 
             sortimentiNazivi.forEach(sortiment => {
                 const value = weekData[odjel][sortiment] || 0;
@@ -283,8 +292,8 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
         });
     });
 
-    bodyHtml += `<tr class="totals-row">`;
-    bodyHtml += `<td colspan="2">📊 UKUPNO MJESEC</td>`;
+    bodyHtml += `<tr class="grand-totals-row">`;
+    bodyHtml += `<td colspan="2">UKUPNO MJESEC</td>`;
     sortimentiNazivi.forEach(s => {
         const val = grandTotals[s];
         const display = val > 0 ? val.toFixed(2) : '-';

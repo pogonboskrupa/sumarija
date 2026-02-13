@@ -1003,15 +1003,16 @@ th[style*="color: white"] {
     white-space: nowrap;
 }
 
-.izvjestaj-week-table thead th:first-child {
-    text-align: left;
+.izvjestaj-week-table thead th:first-child,
+.izvjestaj-week-table thead th.col-sedmica {
+    text-align: center;
     position: sticky;
     left: 0;
     z-index: 20;
     background: #111827 !important;
-    width: 120px;
-    min-width: 120px;
-    max-width: 130px;
+    width: 100px;
+    min-width: 100px;
+    max-width: 110px;
     white-space: nowrap;
     border-right: 2px solid #4b5563;
 }
@@ -1050,12 +1051,8 @@ th[style*="color: white"] {
     left: 0;
     z-index: 10;
     background: inherit;
-    font-weight: 700;
-    color: #111827;
-    width: 120px;
-    min-width: 120px;
-    max-width: 130px;
-    white-space: nowrap;
+    font-weight: 600;
+    color: #1f2937;
     border-right: 2px solid #d1d5db;
 }
 
@@ -1071,7 +1068,117 @@ th[style*="color: white"] {
     background: #e0f2fe !important;
 }
 
-/* UKUPNO row - istaknuti */
+/* ---- SEDMICA label ćelija (rowspan, tamna pozadina) ---- */
+.izvjestaj-week-table tbody td.week-label-cell {
+    background: #1e293b !important;
+    color: #ffffff !important;
+    text-align: center;
+    vertical-align: middle;
+    padding: 8px 6px;
+    border-right: 2px solid #334155;
+    width: 100px;
+    min-width: 100px;
+    max-width: 110px;
+    white-space: nowrap;
+    position: sticky;
+    left: 0;
+    z-index: 12;
+}
+
+.izvjestaj-week-table tbody td.week-label-cell .week-num {
+    display: block;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    line-height: 1.2;
+}
+
+.izvjestaj-week-table tbody td.week-label-cell .week-date {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    color: #94a3b8;
+    margin-top: 2px;
+    letter-spacing: 0.3px;
+}
+
+/* ---- Separator između sedmica ---- */
+.izvjestaj-week-table tbody tr.week-separator td {
+    border-top: 3px solid #374151;
+}
+
+/* ---- UKUPNO SEDMICA red ---- */
+.izvjestaj-week-table tbody tr.week-totals-row {
+    background: #059669 !important;
+}
+
+.izvjestaj-week-table tbody tr.week-totals-row td {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    font-size: 13px;
+    padding: 10px 10px;
+    border-color: #047857;
+}
+
+/* ---- Detail redovi (odjeli) ---- */
+.izvjestaj-week-table tbody tr.week-detail-row {
+    background: #ffffff;
+}
+
+.izvjestaj-week-table tbody tr.week-detail-row:nth-child(even) {
+    background: #f8fafc;
+}
+
+.izvjestaj-week-table tbody tr.week-detail-row:hover {
+    background: #e0f2fe !important;
+}
+
+.izvjestaj-week-table tbody tr.week-detail-row:hover td:first-child {
+    background: #e0f2fe !important;
+}
+
+.izvjestaj-week-table tbody tr.week-detail-row td {
+    font-weight: 500;
+    font-size: 13px;
+    padding: 7px 10px;
+    color: #374151;
+}
+
+.izvjestaj-week-table tbody tr.week-detail-row td:first-child {
+    background: #ffffff;
+    font-weight: 600;
+    color: #1f2937;
+    padding-left: 12px;
+    font-size: 12.5px;
+}
+
+.izvjestaj-week-table tbody tr.week-detail-row:nth-child(even) td:first-child {
+    background: #f8fafc;
+}
+
+/* ---- GRAND TOTAL (UKUPNO MJESEC) ---- */
+.izvjestaj-week-table tbody tr.grand-totals-row {
+    background: #1e293b !important;
+    border-top: 3px solid #0f172a;
+}
+
+.izvjestaj-week-table tbody tr.grand-totals-row td {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    font-size: 14px;
+    padding: 14px 10px;
+    border-color: #334155;
+}
+
+.izvjestaj-week-table tbody tr.grand-totals-row td:first-child {
+    background: #0f172a !important;
+    color: #ffffff !important;
+    text-align: left;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+}
+
+/* Legacy totals-row support */
 .izvjestaj-week-table tbody tr.totals-row {
     background: #059669 !important;
     border-top: 3px solid #047857;
