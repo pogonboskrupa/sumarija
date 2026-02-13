@@ -179,6 +179,16 @@
             <!-- Summary Cards -->
             <div class="summary-cards" id="summary-cards"></div>
 
+            <!-- STANJE ZALIHA - Agregirana tabela za sva radilišta -->
+            <div class="section" id="stanje-zaliha-tabela-section">
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="monthly-table" id="stanje-zaliha-tabela" style="width: 100%; border-collapse: collapse;">
+                        <thead id="stanje-zaliha-tabela-header"></thead>
+                        <tbody id="stanje-zaliha-tabela-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Sječa i Otprema zadnjih 5 radnih dana -->
             <div class="section">
                 <h2>📅 Sječa i otprema zadnjih 5 radnih dana <span id="zadnjih5-period" style="font-weight: 400; font-size: 14px; color: #6b7280;"></span></h2>
@@ -1560,6 +1570,16 @@
                     </div>
                     <div class="page-header-right" style="display: flex; gap: 12px;">
                         <button class="btn btn-primary" onclick="loadPoslovodjaStanje()">🔄 Osvježi</button>
+                    </div>
+                </div>
+
+                <!-- STANJE ZALIHA - Agregirana tabela za poslovođina radilišta -->
+                <div id="poslovodja-stanje-zaliha-tabela-section" style="margin-bottom: 24px;">
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="poslovodja-stanje-zaliha-tabela" style="width: 100%; border-collapse: collapse;">
+                            <thead id="poslovodja-stanje-zaliha-tabela-header"></thead>
+                            <tbody id="poslovodja-stanje-zaliha-tabela-body"></tbody>
+                        </table>
                     </div>
                 </div>
 

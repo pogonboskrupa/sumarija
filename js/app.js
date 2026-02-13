@@ -2152,6 +2152,9 @@
                 `;
                 document.getElementById('dashboard-monthly-tfoot').innerHTML = tfootHTML;
 
+                // Load "Stanje Zaliha" tabela (na početku dashboarda)
+                await loadStanjeZalihaTabela();
+
                 // Load "Zadnjih 5 dana" table
                 await loadZadnjih5DanaTable();
 
@@ -2513,6 +2516,213 @@
         }
 
         // ========================================
+        // STANJE ZALIHA TABELA - Admin Dashboard (sva radilišta)
+        // ========================================
+        async function loadStanjeZalihaTabela() {
+            const headerElem = document.getElementById('stanje-zaliha-tabela-header');
+            const bodyElem = document.getElementById('stanje-zaliha-tabela-body');
+
+            if (!headerElem || !bodyElem) return;
+
+            try {
+                // Dohvati primke i otpreme podatke
+                const primkeUrl = buildApiUrl('primke');
+                const otpremeUrl = buildApiUrl('otpreme');
+
+                const [primkeData, otpremeData] = await Promise.all([
+                    fetchWithCache(primkeUrl, 'cache_primke_zaliha_tabela'),
+                    fetchWithCache(otpremeUrl, 'cache_otpreme_zaliha_tabela')
+                ]);
+
+                // Sortimenti za prikaz
+                const sortimentiPrikaz = [
+                    { display: 'TRUPCI Č', keys: ['TRUPCI Č'] },
+                    { display: 'CEL.DUGA', keys: ['CEL.DUGA'] },
+                    { display: 'CEL.CIJEPANA', keys: ['CEL.CIJEPANA'] },
+                    { display: 'ČETINARI', keys: ['Σ ČETINARI'] },
+                    { display: 'TRUPCI L', keys: ['TRUPCI L'] },
+                    { display: 'OGR.DUGI', keys: ['OGR.DUGI'] },
+                    { display: 'OGR.CIJEPANI', keys: ['OGR.CIJEPANI'] },
+                    { display: 'LIŠĆARI', keys: ['LIŠĆARI'] }
+                ];
+
+                // Agregiraj SJEČA podatke (sve primke)
+                const sjecaSortimenti = {};
+                sortimentiPrikaz.forEach(s => sjecaSortimenti[s.display] = 0);
+
+                if (primkeData.primke && Array.isArray(primkeData.primke)) {
+                    primkeData.primke.forEach(primka => {
+                        const sortiment = primka.sortiment;
+                        const kolicina = parseFloat(primka.kolicina) || 0;
+
+                        sortimentiPrikaz.forEach(sp => {
+                            if (sp.keys.includes(sortiment)) {
+                                sjecaSortimenti[sp.display] += kolicina;
+                            }
+                        });
+                    });
+                }
+
+                // Agregiraj OTPREMA podatke (sve otpreme)
+                const otpremaSortimenti = {};
+                sortimentiPrikaz.forEach(s => otpremaSortimenti[s.display] = 0);
+
+                if (otpremeData.otpreme && Array.isArray(otpremeData.otpreme)) {
+                    otpremeData.otpreme.forEach(otprema => {
+                        const sortiment = otprema.sortiment;
+                        const kolicina = parseFloat(otprema.kolicina) || 0;
+
+                        sortimentiPrikaz.forEach(sp => {
+                            if (sp.keys.includes(sortiment)) {
+                                otpremaSortimenti[sp.display] += kolicina;
+                            }
+                        });
+                    });
+                }
+
+                // Izračunaj ZALIHA (Sječa - Otprema)
+                const zalihaSortimenti = {};
+                let zalihaUkupno = 0;
+                sortimentiPrikaz.forEach(sp => {
+                    const zaliha = (sjecaSortimenti[sp.display] || 0) - (otpremaSortimenti[sp.display] || 0);
+                    zalihaSortimenti[sp.display] = zaliha;
+                    // Za ukupno ne računaj Σ kolone da ne dupliramo
+                    if (!sp.display.startsWith('Σ') && sp.display !== 'ČETINARI' && sp.display !== 'LIŠĆARI') {
+                        zalihaUkupno += zaliha;
+                    }
+                });
+
+                // ČETINARI i LIŠĆARI su sume, pa ih dodajemo u ukupno
+                zalihaUkupno = zalihaSortimenti['ČETINARI'] + zalihaSortimenti['LIŠĆARI'];
+
+                console.log('[Stanje Zaliha Tabela] Zalihe:', zalihaSortimenti, 'UKUPNO:', zalihaUkupno);
+
+                // Renderuj tabelu - zaglavlje sa naslovom
+                let headerHtml = `
+                    <tr style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);">
+                        <th colspan="10" style="color: white; font-weight: 700; text-align: center; padding: 12px 16px; font-size: 15px; letter-spacing: 0.5px;">
+                            📦 Zalihe na Pogonu gospodarenja Bos.Krupa
+                        </th>
+                    </tr>
+                    <tr style="background: #1e3a5f;">`;
+                sortimentiPrikaz.forEach(sort => {
+                    const isSum = sort.display === 'ČETINARI' || sort.display === 'LIŠĆARI';
+                    const bgColor = isSum ? '#2d5a87' : '#1e3a5f';
+                    headerHtml += `<th style="color: white; font-weight: 600; text-align: center; padding: 10px 8px; font-size: 12px; background: ${bgColor}; border: 1px solid #374151;">${sort.display}</th>`;
+                });
+                headerHtml += `<th style="color: white; font-weight: 700; text-align: center; padding: 10px 12px; font-size: 13px; background: #064e3b; border: 1px solid #374151;">UKUPNO</th>`;
+                headerHtml += '</tr>';
+                headerElem.innerHTML = headerHtml;
+
+                // Renderuj body - jedan red sa zalihama
+                let bodyHtml = '<tr style="background: #f0fdf4;">';
+                sortimentiPrikaz.forEach(sort => {
+                    const val = zalihaSortimenti[sort.display] || 0;
+                    const display = val.toFixed(2);
+                    const color = val >= 0 ? '#059669' : '#dc2626';
+                    const isSum = sort.display === 'ČETINARI' || sort.display === 'LIŠĆARI';
+                    const bgColor = isSum ? '#d1fae5' : '';
+                    bodyHtml += `<td style="text-align: right; padding: 12px 8px; font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: ${isSum ? '700' : '600'}; color: ${color}; border: 1px solid #d1d5db; ${bgColor ? 'background:' + bgColor + ';' : ''}">${display}</td>`;
+                });
+                // UKUPNO kolona
+                const ukupnoColor = zalihaUkupno >= 0 ? '#047857' : '#dc2626';
+                bodyHtml += `<td style="text-align: right; padding: 12px 12px; font-family: 'Roboto Mono', monospace; font-size: 14px; font-weight: 700; color: ${ukupnoColor}; background: #d1fae5; border: 1px solid #d1d5db;">${zalihaUkupno.toFixed(2)}</td>`;
+                bodyHtml += '</tr>';
+
+                bodyElem.innerHTML = bodyHtml;
+
+            } catch (error) {
+                console.error('Error loading stanje zaliha tabela:', error);
+                headerElem.innerHTML = '';
+                bodyElem.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #dc2626;">Greška pri učitavanju podataka</td></tr>';
+            }
+        }
+
+        // ========================================
+        // STANJE ZALIHA TABELA - Poslovođa Panel (filtrirana radilišta)
+        // ========================================
+        function renderPoslovodjaStanjeZalihaTabela(odjeliData) {
+            const headerElem = document.getElementById('poslovodja-stanje-zaliha-tabela-header');
+            const bodyElem = document.getElementById('poslovodja-stanje-zaliha-tabela-body');
+
+            if (!headerElem || !bodyElem) return;
+
+            try {
+                // Sortimenti za prikaz (mapiranje od API naziva)
+                const sortimentiPrikaz = [
+                    { display: 'TRUPCI Č', apiKey: 'TRUPCI Č' },
+                    { display: 'CEL.DUGA', apiKey: 'CEL.DUGA' },
+                    { display: 'CEL.CIJEPANA', apiKey: 'CEL.CIJEPANA' },
+                    { display: 'ČETINARI', apiKey: 'Σ ČETINARI' },
+                    { display: 'TRUPCI L', apiKey: 'TRUPCI L' },
+                    { display: 'OGR.DUGI', apiKey: 'OGR.DUGI' },
+                    { display: 'OGR.CIJEPANI', apiKey: 'OGR.CIJEPANI' },
+                    { display: 'LIŠĆARI', apiKey: 'LIŠĆARI' }
+                ];
+
+                // Agregiraj zalihe iz svih odjela
+                const zalihaSortimenti = {};
+                sortimentiPrikaz.forEach(s => zalihaSortimenti[s.display] = 0);
+
+                if (odjeliData && Array.isArray(odjeliData)) {
+                    odjeliData.forEach(odjel => {
+                        const zalihaData = odjel.zaliha || {};
+                        sortimentiPrikaz.forEach(sp => {
+                            zalihaSortimenti[sp.display] += zalihaData[sp.apiKey] || 0;
+                        });
+                    });
+                }
+
+                // Izračunaj UKUPNO (ČETINARI + LIŠĆARI)
+                const zalihaUkupno = zalihaSortimenti['ČETINARI'] + zalihaSortimenti['LIŠĆARI'];
+
+                // Dohvati ime poslovođe za naslov
+                const poslovodjaName = currentUser ? currentUser.fullName : 'Poslovođa';
+
+                console.log('[Poslovođa Stanje Zaliha Tabela] Zalihe:', zalihaSortimenti, 'UKUPNO:', zalihaUkupno);
+
+                // Renderuj tabelu - zaglavlje sa naslovom
+                let headerHtml = `
+                    <tr style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);">
+                        <th colspan="10" style="color: white; font-weight: 700; text-align: center; padding: 12px 16px; font-size: 15px; letter-spacing: 0.5px;">
+                            📦 Zalihe - ${poslovodjaName}
+                        </th>
+                    </tr>
+                    <tr style="background: #1e3a5f;">`;
+                sortimentiPrikaz.forEach(sort => {
+                    const isSum = sort.display === 'ČETINARI' || sort.display === 'LIŠĆARI';
+                    const bgColor = isSum ? '#2d5a87' : '#1e3a5f';
+                    headerHtml += `<th style="color: white; font-weight: 600; text-align: center; padding: 10px 8px; font-size: 12px; background: ${bgColor}; border: 1px solid #374151;">${sort.display}</th>`;
+                });
+                headerHtml += `<th style="color: white; font-weight: 700; text-align: center; padding: 10px 12px; font-size: 13px; background: #064e3b; border: 1px solid #374151;">UKUPNO</th>`;
+                headerHtml += '</tr>';
+                headerElem.innerHTML = headerHtml;
+
+                // Renderuj body - jedan red sa zalihama
+                let bodyHtml = '<tr style="background: #f0fdf4;">';
+                sortimentiPrikaz.forEach(sort => {
+                    const val = zalihaSortimenti[sort.display] || 0;
+                    const display = val.toFixed(2);
+                    const color = val >= 0 ? '#059669' : '#dc2626';
+                    const isSum = sort.display === 'ČETINARI' || sort.display === 'LIŠĆARI';
+                    const bgColor = isSum ? '#d1fae5' : '';
+                    bodyHtml += `<td style="text-align: right; padding: 12px 8px; font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: ${isSum ? '700' : '600'}; color: ${color}; border: 1px solid #d1d5db; ${bgColor ? 'background:' + bgColor + ';' : ''}">${display}</td>`;
+                });
+                // UKUPNO kolona
+                const ukupnoColor = zalihaUkupno >= 0 ? '#047857' : '#dc2626';
+                bodyHtml += `<td style="text-align: right; padding: 12px 12px; font-family: 'Roboto Mono', monospace; font-size: 14px; font-weight: 700; color: ${ukupnoColor}; background: #d1fae5; border: 1px solid #d1d5db;">${zalihaUkupno.toFixed(2)}</td>`;
+                bodyHtml += '</tr>';
+
+                bodyElem.innerHTML = bodyHtml;
+
+            } catch (error) {
+                console.error('Error rendering poslovodja stanje zaliha tabela:', error);
+                headerElem.innerHTML = '';
+                bodyElem.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #dc2626;">Greška pri učitavanju podataka</td></tr>';
+            }
+        }
+
+        // ========================================
         // DASHBOARD DAILY CHART - Dnevni pregled sječe i otpreme
         // ========================================
         let dashboardDailyChart = null;
@@ -2747,6 +2957,9 @@
                 // Popuni dropdown sa radilištima iz podataka
                 populatePoslovodjaRadilisteDropdown(data.odjeli);
 
+                // Render agregirana tabela zaliha na vrhu
+                renderPoslovodjaStanjeZalihaTabela(data.odjeli);
+
                 // Render stanje zaliha cards (identično admin view-u)
                 renderPoslovodjaStanjeCards(data.odjeli);
 
@@ -2772,6 +2985,9 @@
 
                         // Popuni dropdown
                         populatePoslovodjaRadilisteDropdown(parsed.data.odjeli);
+
+                        // Render agregirana tabela zaliha na vrhu
+                        renderPoslovodjaStanjeZalihaTabela(parsed.data.odjeli);
 
                         renderPoslovodjaStanjeCards(parsed.data.odjeli);
 
@@ -2829,6 +3045,9 @@
                     return odjel.radiliste && odjel.radiliste.trim() === selectedRadiliste;
                 });
             }
+
+            // Ažuriraj agregiranu tabelu zaliha
+            renderPoslovodjaStanjeZalihaTabela(filteredOdjeli);
 
             renderPoslovodjaStanjeCards(filteredOdjeli);
         }
