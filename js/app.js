@@ -8631,7 +8631,7 @@
 
             // Calculate UKUPNO Č+L = Σ ČETINARI + LIŠĆARI
             var ukupno = cetinari + liscari;
-            setVal('sjeca-UKUPNO Č+L', ukupno);
+            setVal('sjeca-UKUPNO-CL', ukupno);
         }
 
         // Calculate Otprema totals automatically
@@ -8683,7 +8683,7 @@
 
             // Calculate UKUPNO Č+L = Σ ČETINARI + LIŠĆARI
             var ukupno = cetinari + liscari;
-            setVal('otprema-UKUPNO Č+L', ukupno);
+            setVal('otprema-UKUPNO-CL', ukupno);
         }
 
         // Show Add Sjeca Form
@@ -9352,7 +9352,7 @@
             document.getElementById('edit-sjeca-LIŠĆARI').value = liscari.toFixed(2);
 
             var sveukupno = cetinari + liscari;
-            document.getElementById('edit-sjeca-SVEUKUPNO').value = sveukupno.toFixed(2);
+            document.getElementById('edit-sjeca-UKUPNO-CL').value = sveukupno.toFixed(2);
         }
 
         // Submit Edit Sjeca Form
@@ -9499,7 +9499,7 @@
             document.getElementById('edit-otprema-LIŠĆARI').value = liscari.toFixed(2);
 
             var sveukupno = cetinari + liscari;
-            document.getElementById('edit-otprema-SVEUKUPNO').value = sveukupno.toFixed(2);
+            document.getElementById('edit-otprema-UKUPNO-CL').value = sveukupno.toFixed(2);
         }
 
         async function submitEditOtprema(event) {
