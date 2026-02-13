@@ -8697,9 +8697,9 @@
 
             // Add event listeners to all sortimenti inputs for automatic calculation
             const sjecaInputIds = ['sjeca-FL-C', 'sjeca-I-C', 'sjeca-II-C', 'sjeca-III-C', 'sjeca-RD',
-                                   'sjeca-CEL-DUGA', 'sjeca-CEL-CIJEPANA',
+                                   'sjeca-CEL-DUGA', 'sjeca-CEL-CIJEPANA', 'sjeca-SKART',
                                    'sjeca-FL-L', 'sjeca-I-L', 'sjeca-II-L', 'sjeca-III-L',
-                                   'sjeca-OGR-DUGI', 'sjeca-OGR-CIJEPANI'];
+                                   'sjeca-OGR-DUGI', 'sjeca-OGR-CIJEPANI', 'sjeca-GULE'];
 
             sjecaInputIds.forEach(function(inputId) {
                 const element = document.getElementById(inputId);
@@ -8724,9 +8724,9 @@
 
             // Add event listeners to all sortimenti inputs for automatic calculation
             const otpremaInputIds = ['otprema-FL-C', 'otprema-I-C', 'otprema-II-C', 'otprema-III-C', 'otprema-RD',
-                                     'otprema-CEL-DUGA', 'otprema-CEL-CIJEPANA',
+                                     'otprema-CEL-DUGA', 'otprema-CEL-CIJEPANA', 'otprema-SKART',
                                      'otprema-FL-L', 'otprema-I-L', 'otprema-II-L', 'otprema-III-L',
-                                     'otprema-OGR-DUGI', 'otprema-OGR-CIJEPANI'];
+                                     'otprema-OGR-DUGI', 'otprema-OGR-CIJEPANI', 'otprema-GULE'];
 
             otpremaInputIds.forEach(function(inputId) {
                 const element = document.getElementById(inputId);
