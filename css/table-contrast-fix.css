@@ -614,10 +614,6 @@ tr[style*="background: #0891b2"] th {
 }
 
 /* Worker table totals-row dark mode */
-body.dark-mode .worker-table .totals-row td {
-    color: white !important;
-}
-
 /* Override ALL table tds that have color: white inline style to ensure it stays white */
 td[style*="color: white"],
 th[style*="color: white"] {
@@ -1354,24 +1350,7 @@ th[style*="color: white"] {
 }
 
 /* Dark mode support for radilište colors */
-body.dark-mode .radiliste-1 { background-color: #1e3a5f !important; color: #93c5fd !important; }
-body.dark-mode .radiliste-2 { background-color: #14532d !important; color: #86efac !important; }
-body.dark-mode .radiliste-3 { background-color: #78350f !important; color: #fde68a !important; }
-body.dark-mode .radiliste-4 { background-color: #831843 !important; color: #f9a8d4 !important; }
-body.dark-mode .radiliste-5 { background-color: #312e81 !important; color: #a5b4fc !important; }
-body.dark-mode .radiliste-6 { background-color: #134e4a !important; color: #5eead4 !important; }
-body.dark-mode .radiliste-7 { background-color: #7c2d12 !important; color: #fdba74 !important; }
-body.dark-mode .radiliste-8 { background-color: #4c1d95 !important; color: #c4b5fd !important; }
-body.dark-mode .radiliste-9 { background-color: #9f1239 !important; color: #fda4af !important; }
-body.dark-mode .radiliste-10 { background-color: #064e3b !important; color: #6ee7b7 !important; }
-
 /* Dark mode support for realizacija heatmap */
-body.dark-mode .real-0-25 { background-color: #7f1d1d !important; color: #fecaca !important; }
-body.dark-mode .real-25-50 { background-color: #7c2d12 !important; color: #fed7aa !important; }
-body.dark-mode .real-50-75 { background-color: #713f12 !important; color: #fef08a !important; }
-body.dark-mode .real-75-100 { background-color: #14532d !important; color: #bbf7d0 !important; }
-body.dark-mode .real-over-100 { background-color: #064e3b !important; color: #86efac !important; }
-
 /* ============================================ */
 /* 🔄 KUPCI TABELE - SORTABLE HEADERS */
 /* Stilovi za sortiranje po kolonama */

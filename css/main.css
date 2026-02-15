@@ -214,17 +214,7 @@
         /* Column Grouping */
         .col-group-cetinari { background: linear-gradient(to bottom, #f0fdf4 0%, #dcfce7 100%); border-left: 2px solid #10b981; border-right: 2px solid #10b981; }
         .col-group-liscari { background: linear-gradient(to bottom, #fef3c7 0%, #fde68a 100%); border-left: 2px solid #f59e0b; border-right: 2px solid #f59e0b; }
-        body.dark-mode .col-group-cetinari { background: linear-gradient(to bottom, #064e3b 0%, #065f46 100%); }
-        body.dark-mode .col-group-liscari { background: linear-gradient(to bottom, #78350f 0%, #92400e 100%); }
-
         /* Dark mode */
-        body.dark-mode { background: #1f2937; color: #f3f4f6; }
-        body.dark-mode .container, body.dark-mode .section, body.dark-mode table,
-        body.dark-mode .summary-card, body.dark-mode .chart-container,
-        body.dark-mode .tabs-container { background: #374151; color: #f3f4f6; border-color: #4b5563; }
-        body.dark-mode table thead { background: #1f2937; }
-        body.dark-mode .search-input { background: #4b5563; color: #f3f4f6; border-color: #6b7280; }
-
         /* Progress bar in table */
         .table-progress-bar { background: #e5e7eb; height: 4px; border-radius: 2px; overflow: hidden; margin-top: 4px; }
         .table-progress-fill { background: #059669; height: 100%; border-radius: 2px; }
@@ -256,17 +246,6 @@
         }
 
         /* Dark mode support for sticky columns */
-        body.dark-mode #kupci-godisnji-table th:first-child,
-        body.dark-mode #kupci-godisnji-table td:first-child,
-        body.dark-mode #kupci-godisnji-table th:nth-child(2),
-        body.dark-mode #kupci-godisnji-table td:nth-child(2),
-        body.dark-mode #kupci-mjesecni-table th:first-child,
-        body.dark-mode #kupci-mjesecni-table td:first-child,
-        body.dark-mode #kupci-mjesecni-table th:nth-child(2),
-        body.dark-mode #kupci-mjesecni-table td:nth-child(2) {
-            background: #374151 !important;
-        }
-
         .kupci-table thead th {
             background: linear-gradient(to bottom, #f9fafb 0%, #f3f4f6 100%);
             position: sticky !important; top: 0; z-index: 15 !important; font-weight: 700;
@@ -299,13 +278,9 @@
         #kupci-mjesecni-table th:first-child {
             z-index: 20 !important;
         }
-        body.dark-mode .kupci-table thead th { background: linear-gradient(to bottom, #1f2937 0%, #111827 100%); }
         .kupci-table tbody tr:nth-child(even) { background: #f9fafb; }
-        body.dark-mode .kupci-table tbody tr:nth-child(even) { background: #2d3748; }
         .kupci-table tbody tr:hover { background: #f0fdf4; }
-        body.dark-mode .kupci-table tbody tr:hover { background: #064e3b; }
         .kupci-table tbody tr:nth-child(even):hover { background: #ecfdf5; }
-        body.dark-mode .kupci-table tbody tr:nth-child(even):hover { background: #065f46; }
         .kupci-table .sortiment-col {
             min-width: 85px;
             max-width: 110px;
@@ -326,12 +301,10 @@
             min-width: 95px; border-left: 3px solid #10b981; text-align: right;
             font-size: 12px; font-family: 'Courier New', monospace;
         }
-        body.dark-mode .kupci-table .ukupno-col { background: linear-gradient(to right, #064e3b 0%, #065f46 100%); }
         .kupci-table .totals-row {
             background: linear-gradient(to bottom, #dcfce7 0%, #bbf7d0 100%);
             font-weight: 700; font-size: 12px; border-top: 3px solid #10b981;
         }
-        body.dark-mode .kupci-table .totals-row { background: linear-gradient(to bottom, #065f46 0%, #047857 100%); }
         .kupci-table .totals-row td { border-bottom: 3px solid #10b981; padding: 12px 6px; }
 
         /* ============================================
@@ -620,8 +593,7 @@
             .loading-text { font-size: 16px; }
 
             /* Hide dark mode button text on mobile */
-            .btn[onclick="toggleDarkMode()"] { font-size: 20px; padding: 8px 12px; }
-        }
+            }
 
         /* Extra small devices (< 480px) */
         @media (max-width: 480px) {
@@ -770,8 +742,6 @@
             .badge { padding: 4px 8px; font-size: 10px; }
 
             /* Export button */
-            .export-btn { width: 100%; margin-bottom: 12px; }
-
             /* Search input */
             .search-container { margin-bottom: 12px; }
             .search-input { font-size: 14px; }
@@ -1840,36 +1810,6 @@
         }
 
         /* Dark mode for OPERATIVA */
-        body.dark-mode .kpi-card-small {
-            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
-            border-left-color: #10b981;
-        }
-        body.dark-mode .kpi-card-small.blue {
-            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-            border-left-color: #3b82f6;
-        }
-        body.dark-mode .kpi-card-small.yellow {
-            background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
-            border-left-color: #f59e0b;
-        }
-        body.dark-mode .kpi-value-small,
-        body.dark-mode .ranking-name,
-        body.dark-mode .ranking-value {
-            color: #f3f4f6;
-        }
-        body.dark-mode .professional-monthly-table thead th {
-            background: linear-gradient(to bottom, #064e3b 0%, #065f46 100%);
-        }
-        body.dark-mode .professional-monthly-table tbody tr:nth-child(even) {
-            background: #1f2937;
-        }
-        body.dark-mode .professional-monthly-table tbody tr:hover {
-            background: #065f46;
-        }
-        body.dark-mode .professional-monthly-table tfoot tr.ukupno-row {
-            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
-        }
-
         /* Mobile responsive for dashboard monthly table */
         @media (max-width: 768px) {
             .dashboard-monthly-wrapper {
@@ -2136,13 +2076,6 @@
         }
 
         /* Dark mode support */
-        body.dark-mode .company-name-header {
-            background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #6ee7b7 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
         /* Mobile adjustments */
         @media (max-width: 768px) {
             .company-name-header {

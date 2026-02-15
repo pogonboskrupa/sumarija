@@ -1,5 +1,5 @@
         // ========== UI MODULE ==========
-        // Navigation (switchTab, sub-menus), filters, CSV export, sorting, toggles
+        // Navigation (switchTab, sub-menus), filters, sorting, toggles
 
         // Switch between tabs
         function switchTab(tab) {
@@ -34,7 +34,6 @@
             document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
             document.getElementById('poslovodja-suma-content').classList.add('hidden');
             document.getElementById('dinamika-content').classList.add('hidden');
-            document.getElementById('uporedba-godina-content').classList.add('hidden');
             document.getElementById('kubikator-content').classList.add('hidden');
             document.getElementById('ostalo-content').classList.add('hidden');
             document.getElementById('stanje-zaliha-content').classList.add('hidden');
@@ -75,8 +74,6 @@
                 loadMjesecniSortimenti();
             } else if (tab === 'dinamika') {
                 loadDinamika();
-            } else if (tab === 'uporedba-godina') {
-                loadUporedbaGodina();
             } else if (tab === 'poslovodja-stanje') {
                 loadPoslovodjaStanje();
             } else if (tab === 'poslovodja-realizacija') {
@@ -251,14 +248,6 @@
         // UTILITY FUNCTIONS
         // ========================================
 
-        // Dark mode toggle
-        function toggleDarkMode() {
-            document.body.classList.toggle('dark-mode');
-            const isDark = document.body.classList.contains('dark-mode');
-            localStorage.setItem('dark-mode', isDark ? 'enabled' : 'disabled');
-        }
-
-        // Dark mode initialization moved to main DOMContentLoaded listener (line ~4785)
 
         // Desktop view toggle
         function toggleDesktopView() {
@@ -442,63 +431,6 @@
                     tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
                 }
             }
-        }
-
-        // Export table to CSV
-        function exportTableToCSV(tableType) {
-            let table, filename;
-
-            if (tableType === 'dashboard') {
-                table = document.getElementById('dashboard-table');
-                filename = 'dashboard_pregled.csv';
-            } else if (tableType === 'odjeli') {
-                table = document.getElementById('odjeli-table');
-                filename = 'odjeli_pregled.csv';
-            } else if (tableType === 'primaci') {
-                table = document.getElementById('primaci-table');
-                filename = 'primaci_pregled.csv';
-            } else if (tableType === 'otpremaci') {
-                table = document.getElementById('otpremaci-table');
-                filename = 'otpremaci_pregled.csv';
-            } else if (tableType === 'kupci-godisnji') {
-                table = document.getElementById('kupci-godisnji-table');
-                filename = 'kupci_godisnji_pregled.csv';
-            } else if (tableType === 'kupci-mjesecni') {
-                table = document.getElementById('kupci-mjesecni-table');
-                filename = 'kupci_mjesecni_pregled.csv';
-            } else if (tableType === 'primac-personal') {
-                table = document.getElementById('primac-personal-table');
-                filename = 'moja_sjeca_' + new Date().getFullYear() + '.csv';
-            } else if (tableType === 'otpremac-personal') {
-                table = document.getElementById('otpremac-personal-table');
-                filename = 'moja_otprema_' + new Date().getFullYear() + '.csv';
-            }
-
-            const rows = table.querySelectorAll('tr');
-            const csv = [];
-
-            for (let i = 0; i < rows.length; i++) {
-                const row = [], cols = rows[i].querySelectorAll('td, th');
-
-                for (let j = 0; j < cols.length; j++) {
-                    let data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, '').replace(/"/g, '""');
-                    row.push('"' + data + '"');
-                }
-
-                csv.push(row.join(','));
-            }
-
-            const csvString = csv.join('\n');
-            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-
-            link.setAttribute('href', url);
-            link.setAttribute('download', filename);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
         }
 
         // Sort table

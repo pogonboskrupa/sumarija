@@ -560,7 +560,6 @@
 
                         // Ostalo
                         'cache_dinamika_' + year,
-                        'cache_uporedba_' + year,
                         'cache_mjesecni_sortimenti_' + year
                     ];
 
@@ -966,11 +965,6 @@
             // Initialize year selectors first
             initializeYearSelectors();
 
-            // Load dark mode preference
-            const darkMode = localStorage.getItem('dark-mode');
-            if (darkMode === 'enabled') {
-                document.body.classList.add('dark-mode');
-            }
 
             // Load desktop view preference
             const desktopView = localStorage.getItem('desktop-view');
@@ -4737,10 +4731,6 @@
                             <div style="color: #0891b2; font-weight: 600;">
                                 📊 Ukupno ${allData.length} otprema u ${year}. godini
                             </div>
-                            <button onclick="exportKupacDetailsToCSV('${kupacName.replace(/'/g, "\\'")}')"
-                                style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                                📥 Export CSV
-                            </button>
                         </div>
                         <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                             <table style="width: 100%; border-collapse: collapse; font-size: 13px;" id="kupac-details-table">
@@ -4805,32 +4795,6 @@
                     </div>
                 `;
             }
-        }
-
-        // Export kupac details tabele u CSV
-        function exportKupacDetailsToCSV(kupacName) {
-            const table = document.getElementById('kupac-details-table');
-            if (!table) return;
-
-            let csv = [];
-            const rows = table.querySelectorAll('tr');
-
-            rows.forEach(row => {
-                const cols = row.querySelectorAll('th, td');
-                const rowData = [];
-                cols.forEach(col => {
-                    let text = col.innerText.replace(/"/g, '""');
-                    rowData.push('"' + text + '"');
-                });
-                csv.push(rowData.join(','));
-            });
-
-            const csvContent = csv.join('\n');
-            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `otpreme_${kupacName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().getFullYear()}.csv`;
-            link.click();
         }
 
         // Load otpreme po kupcima u tekućem mjesecu
@@ -6476,43 +6440,6 @@
             await loadStanjeZaliha();
 
             showSuccess('Osvježeno', 'Podaci su uspješno osvježeni sa servera.');
-        }
-
-        function exportStanjeZalihaToCSV() {
-            if (stanjeZalihaData.length === 0) {
-                showWarning('Nema podataka', 'Nema podataka za eksport.');
-                return;
-            }
-
-            // Build CSV
-            let csv = 'ODJEL,RADILIŠTE,VRSTA';
-            stanjeZalihaSortimenti.forEach(s => {
-                csv += ',' + s;
-            });
-            csv += '\n';
-
-            stanjeZalihaData.forEach(odjel => {
-                ['projekat', 'sjeca', 'otprema', 'zaliha'].forEach(vrsta => {
-                    const labels = { projekat: 'PROJEKAT', sjeca: 'SJEČA', otprema: 'OTPREMA', zaliha: 'ZALIHA' };
-                    csv += `"${odjel.odjel}","${odjel.radiliste || ''}",${labels[vrsta]}`;
-
-                    const sortimenti = odjel[vrsta] || {};
-                    stanjeZalihaSortimenti.forEach(s => {
-                        const value = sortimenti[s] || 0;
-                        csv += ',' + value.toFixed(2);
-                    });
-                    csv += '\n';
-                });
-            });
-
-            // Download
-            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'stanje_zaliha_' + new Date().toISOString().split('T')[0] + '.csv';
-            link.click();
-
-            showSuccess('Uspješno', 'CSV fajl je preuzet.');
         }
 
         // Load pending count (for badge only)
@@ -8588,33 +8515,6 @@
                     row.style.display = shouldShow ? '' : 'none';
                 });
             });
-        }
-
-        // Export Suma Lager Table to CSV
-        function exportSumaLagerToCSV() {
-            const table = document.getElementById('suma-lager-main-table');
-            let csv = [];
-            const rows = table.querySelectorAll('tr');
-
-            for (let row of rows) {
-                const cols = row.querySelectorAll('td, th');
-                const csvRow = [];
-                for (let col of cols) {
-                    csvRow.push(col.textContent.trim().replace(/,/g, ''));
-                }
-                csv.push(csvRow.join(','));
-            }
-
-            const csvContent = csv.join('\n');
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'suma-lager-zaliha.csv');
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
         }
 
         // Render Mjesečni Trend Kupaca
