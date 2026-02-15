@@ -62,59 +62,86 @@
             document.getElementById('user-name').textContent = currentUser.fullName;
             document.getElementById('user-role').textContent = currentUser.role === 'admin' ? 'Administrator' : currentUser.type;
 
+            // Update sidebar user info
+            const sidebarUserName = document.getElementById('sidebar-user-name');
+            const sidebarUserRole = document.getElementById('sidebar-user-role');
+            if (sidebarUserName) sidebarUserName.textContent = currentUser.fullName;
+            if (sidebarUserRole) sidebarUserRole.textContent = currentUser.role === 'admin' ? 'Administrator' : currentUser.type;
+
             // Dinamicki kreiraj tab-ove na osnovu tipa korisnika
-            const tabsMenu = document.getElementById('tabs-menu');
+            const tabsMenu = document.getElementById('tabs-menu'); // Sidebar nav
+            const tabsMenuMobile = document.getElementById('tabs-menu-mobile'); // Mobile horizontal tabs
             const userType = (currentUser.type || '').toLowerCase();
 
+            // Define tabs based on user type
+            let tabsConfig = [];
+
             if (userType === 'primac') {
-                tabsMenu.innerHTML = `
-                    <button class="tab active" onclick="switchTab('primac-personal')">👷 Pregled sječe u tekućoj godini</button>
-                    <button class="tab" onclick="switchTab('primac-godisnji')">📅 Godišnji prikaz</button>
-                    <button class="tab" onclick="switchTab('primac-odjeli')">🏭 Prikaz po odjelima</button>
-                    <button class="tab" onclick="switchTab('add-sjeca')">➕ Dodaj sječu</button>
-                    <button class="tab" onclick="switchTab('my-sjece')">📝 Moje sječe</button>
-                    <button class="tab" onclick="switchTab('izvjestaji-primac')">📋 Izvještaji</button>
-                    <button class="tab" onclick="switchTab('kubikator')">📐 Kubikator</button>
-                `;
+                tabsConfig = [
+                    { id: 'primac-personal', icon: '👷', label: 'Pregled sječe', active: true },
+                    { id: 'primac-godisnji', icon: '📅', label: 'Godišnji prikaz' },
+                    { id: 'primac-odjeli', icon: '🏭', label: 'Prikaz po odjelima' },
+                    { id: 'add-sjeca', icon: '➕', label: 'Dodaj sječu' },
+                    { id: 'my-sjece', icon: '📝', label: 'Moje sječe' },
+                    { id: 'izvjestaji-primac', icon: '📋', label: 'Izvještaji' },
+                    { id: 'kubikator', icon: '📐', label: 'Kubikator' }
+                ];
             } else if (userType === 'otpremac') {
-                tabsMenu.innerHTML = `
-                    <button class="tab active" onclick="switchTab('otpremac-personal')">🚛 Pregled otpreme u tekućoj godini</button>
-                    <button class="tab" onclick="switchTab('otpremac-odjeli')">🏭 Prikaz po odjelima</button>
-                    <button class="tab" onclick="switchTab('add-otprema')">➕ Dodaj otpremu</button>
-                    <button class="tab" onclick="switchTab('my-otpreme')">📝 Moje otpreme</button>
-                    <button class="tab" onclick="switchTab('izvjestaji-otpremac')">📋 Izvještaji</button>
-                    <button class="tab" onclick="switchTab('kubikator')">📐 Kubikator</button>
-                `;
+                tabsConfig = [
+                    { id: 'otpremac-personal', icon: '🚛', label: 'Pregled otpreme', active: true },
+                    { id: 'otpremac-odjeli', icon: '🏭', label: 'Prikaz po odjelima' },
+                    { id: 'add-otprema', icon: '➕', label: 'Dodaj otpremu' },
+                    { id: 'my-otpreme', icon: '📝', label: 'Moje otpreme' },
+                    { id: 'izvjestaji-otpremac', icon: '📋', label: 'Izvještaji' },
+                    { id: 'kubikator', icon: '📐', label: 'Kubikator' }
+                ];
             } else if (userType === 'operativa') {
-                tabsMenu.innerHTML = `
-                    <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
-                    <button class="tab" onclick="switchTab('operativa')">📊 Operativa & Analiza</button>
-                    <button class="tab" onclick="switchTab('kupci')">📦 Kupci</button>
-                    <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Mjesečni pregled</button>
-                    <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
-                `;
+                tabsConfig = [
+                    { id: 'dashboard', icon: '🌲', label: 'Šumarija Krupa', active: true },
+                    { id: 'operativa', icon: '📊', label: 'Operativa & Analiza' },
+                    { id: 'kupci', icon: '📦', label: 'Kupci' },
+                    { id: 'mjesecni-sortimenti', icon: '📅', label: 'Mjesečni pregled' },
+                    { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' }
+                ];
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
-                tabsMenu.innerHTML = `
-                    <button class="tab active" onclick="switchTab('poslovodja-stanje')">📊 Stanje zaliha</button>
-                    <button class="tab" onclick="switchTab('poslovodja-realizacija')">🏗️ Odjeli u realizaciji</button>
-                    <button class="tab" onclick="switchTab('poslovodja-suma')">📈 Suma Mjeseca</button>
-                    <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
-                `;
+                tabsConfig = [
+                    { id: 'poslovodja-stanje', icon: '📊', label: 'Stanje zaliha', active: true },
+                    { id: 'poslovodja-realizacija', icon: '🏗️', label: 'Odjeli u realizaciji' },
+                    { id: 'poslovodja-suma', icon: '📈', label: 'Suma Mjeseca' },
+                    { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' }
+                ];
             } else {
-                tabsMenu.innerHTML = `
-                    <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
-                    <button class="tab" onclick="switchTab('kupci')">🏢 Prikaz po kupcima</button>
-                    <button class="tab" onclick="switchTab('stanje-zaliha')">📦 Stanje Zaliha</button>
-                    <button class="tab" onclick="switchTab('mjesecni-sortimenti')">📅 Sječa/otprema po mjesecima</button>
-                    <button class="tab" onclick="switchTab('primaci')">👷 SJEČA</button>
-                    <button class="tab" onclick="switchTab('otpremaci')">🚛 OTPREMA</button>
-                    <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
-                    <button class="tab notification-badge" onclick="switchTab('pending-unosi')">
-                        📋 Dodani unosi
-                        <span class="badge-count" id="pending-count-badge"></span>
+                // Admin / default user
+                tabsConfig = [
+                    { id: 'dashboard', icon: '🌲', label: 'Šumarija Krupa', active: true },
+                    { id: 'kupci', icon: '🏢', label: 'Prikaz po kupcima' },
+                    { id: 'stanje-zaliha', icon: '📦', label: 'Stanje Zaliha' },
+                    { id: 'mjesecni-sortimenti', icon: '📅', label: 'Sječa/otprema' },
+                    { id: 'primaci', icon: '👷', label: 'SJEČA' },
+                    { id: 'otpremaci', icon: '🚛', label: 'OTPREMA' },
+                    { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
+                    { id: 'pending-unosi', icon: '📋', label: 'Dodani unosi', hasBadge: true },
+                    { id: 'ostalo', icon: '⚙️', label: 'Ostalo' }
+                ];
+            }
+
+            // Generate sidebar tabs (desktop)
+            tabsMenu.innerHTML = tabsConfig.map(tab => `
+                <button class="tab${tab.active ? ' active' : ''}${tab.hasBadge ? ' notification-badge' : ''}" onclick="switchTab('${tab.id}')">
+                    <span class="tab-icon">${tab.icon}</span>
+                    <span class="tab-label">${tab.label}</span>
+                    ${tab.hasBadge ? '<span class="badge-count" id="pending-count-badge"></span>' : ''}
+                </button>
+            `).join('');
+
+            // Generate mobile tabs (horizontal)
+            if (tabsMenuMobile) {
+                tabsMenuMobile.innerHTML = tabsConfig.map(tab => `
+                    <button class="tab${tab.active ? ' active' : ''}${tab.hasBadge ? ' notification-badge' : ''}" onclick="switchTab('${tab.id}')">
+                        ${tab.icon} ${tab.label}
+                        ${tab.hasBadge ? '<span class="badge-count" id="pending-count-badge-mobile"></span>' : ''}
                     </button>
-                    <button class="tab" onclick="switchTab('ostalo')">⚙️ Ostalo</button>
-                `;
+                `).join('');
             }
 
             // Initialize Delta Sync System

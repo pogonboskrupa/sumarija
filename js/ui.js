@@ -3,9 +3,11 @@
 
         // Switch between tabs
         function switchTab(tab) {
-            // Update tab buttons
+            // Update tab buttons - set active on all matching tabs (sidebar + mobile)
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
+
+            // Find and activate tabs that switch to this tab (works for both sidebar and mobile)
+            document.querySelectorAll(`.tab[onclick*="'${tab}'"]`).forEach(t => t.classList.add('active'));
 
             // Hide all content sections
             document.getElementById('dashboard-content').classList.add('hidden');

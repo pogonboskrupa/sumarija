@@ -179,13 +179,38 @@
         <!-- Cache indicator -->
         <div id="cache-indicator" class="cache-indicator hidden"></div>
 
-        <div class="tabs-container">
-            <div class="tabs" id="tabs-menu">
+        <!-- DESKTOP: Horizontal tabs (hidden on desktop, shown on mobile) -->
+        <div class="tabs-container mobile-only">
+            <div class="tabs" id="tabs-menu-mobile">
                 <!-- Tabs will be dynamically populated based on user type -->
             </div>
         </div>
 
-        <div id="loading-screen" class="loading">
+        <!-- Main App Layout with Sidebar -->
+        <div class="app-layout">
+            <!-- DESKTOP SIDEBAR -->
+            <aside class="sidebar desktop-only" id="sidebar">
+                <div class="sidebar-header">
+                    <div class="sidebar-logo">🌲</div>
+                    <span class="sidebar-title">Navigacija</span>
+                </div>
+                <nav class="sidebar-nav" id="tabs-menu">
+                    <!-- Tabs will be dynamically populated based on user type -->
+                </nav>
+                <div class="sidebar-footer">
+                    <div class="sidebar-user">
+                        <span class="sidebar-user-icon">👤</span>
+                        <div class="sidebar-user-info">
+                            <span class="sidebar-user-name" id="sidebar-user-name"></span>
+                            <span class="sidebar-user-role" id="sidebar-user-role"></span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- MAIN CONTENT AREA -->
+            <main class="main-content">
+                <div id="loading-screen" class="loading">
             <div class="loading-icon">⏳</div>
             <div class="loading-text">Učitavam podatke...</div>
         </div>
@@ -2396,8 +2421,9 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+            </main><!-- /main-content -->
+        </div><!-- /app-layout -->
+    </div><!-- /app-screen -->
 
     <!-- Confirm Modal -->
     <div class="modal-overlay" id="confirm-modal">

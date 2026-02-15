@@ -116,6 +116,195 @@
         .tab:hover { color: #374151; background: #f9fafb; }
         .tab.active { color: #047857; border-bottom-color: #047857; background: #f0fdf4; }
 
+        /* ============================================ */
+        /* 🎨 DESKTOP SIDEBAR NAVIGATION */
+        /* Vertikalni sidebar za desktop verziju */
+        /* ============================================ */
+
+        /* App Layout - Sidebar + Content */
+        .app-layout {
+            display: flex;
+            min-height: calc(100vh - 100px);
+        }
+
+        /* Desktop Sidebar */
+        .sidebar {
+            width: 260px;
+            min-width: 260px;
+            background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: calc(100vh - 100px);
+            overflow-y: auto;
+            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-logo {
+            font-size: 28px;
+        }
+
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #10b981;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 0;
+            overflow-y: auto;
+        }
+
+        /* Sidebar Tab Buttons */
+        .sidebar-nav .tab {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 14px 20px;
+            background: transparent;
+            border: none;
+            border-bottom: none;
+            border-left: 3px solid transparent;
+            color: #9ca3af;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .sidebar-nav .tab:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e5e7eb;
+            border-left-color: #6b7280;
+        }
+
+        .sidebar-nav .tab.active {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border-left-color: #10b981;
+            font-weight: 600;
+        }
+
+        .sidebar-nav .tab .tab-icon {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+
+        .sidebar-nav .tab .tab-label {
+            flex: 1;
+        }
+
+        /* Notification badge in sidebar */
+        .sidebar-nav .tab .badge-count {
+            background: #dc2626;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-left: auto;
+        }
+
+        /* Sidebar Footer - User Info */
+        .sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-user-icon {
+            font-size: 24px;
+            background: rgba(16, 185, 129, 0.2);
+            padding: 8px;
+            border-radius: 50%;
+        }
+
+        .sidebar-user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .sidebar-user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+
+        .sidebar-user-role {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            min-width: 0;
+            overflow-x: hidden;
+        }
+
+        /* Desktop/Mobile visibility helpers */
+        .desktop-only {
+            display: flex;
+        }
+
+        .mobile-only {
+            display: none;
+        }
+
+        /* Hide horizontal tabs on desktop */
+        @media (min-width: 1025px) {
+            .tabs-container.mobile-only {
+                display: none;
+            }
+        }
+
+        /* ============================================ */
+        /* 📱 MOBILE: Hide sidebar, show horizontal tabs */
+        /* ============================================ */
+        @media (max-width: 1024px) {
+            .sidebar.desktop-only {
+                display: none;
+            }
+
+            .mobile-only {
+                display: block;
+            }
+
+            .app-layout {
+                flex-direction: column;
+            }
+
+            .main-content {
+                width: 100%;
+            }
+        }
+
         /* Tabs submenu for Ostalo */
         .tabs-submenu { display: flex; gap: 8px; flex-wrap: wrap; }
         .tab-sub { background: white; border: 2px solid #e5e7eb; padding: 12px 20px; font-size: 14px; font-weight: 600; color: #6b7280; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
