@@ -88,13 +88,13 @@ body.login-active {
 /* Logo container */
 .login-box .logo-container {
     text-align: center;
-    margin-bottom: 32px;
+    margin-bottom: 20px;
 }
 
 .login-box .logo-container img {
-    width: 200px;
+    width: 100px;
     height: auto;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     transition: transform 0.3s ease;
 }
 
@@ -103,28 +103,46 @@ body.login-active {
 }
 
 .login-box .text-outline-firma {
-    font-size: 16px;
-    margin-bottom: 6px;
-    letter-spacing: 0.5px;
-    color: #374151;
-    font-weight: 700;
+    font-size: 11px;
+    margin-bottom: 2px;
+    letter-spacing: 1px;
+    color: #9ca3af;
+    font-weight: 600;
     text-transform: uppercase;
 }
 
+/* Override main.css !important green color + yellow text-shadow */
+.login-box .logo-container .text-outline-firma {
+    color: #9ca3af !important;
+    text-shadow: none !important;
+}
+
 .login-box .company-subtitle {
-    font-size: 14px;
-    font-weight: 600;
-    color: #6b7280;
-    margin-bottom: 12px;
+    font-size: 10px;
+    font-weight: 500;
+    color: #9ca3af;
+    margin-bottom: 0;
+    letter-spacing: 0.5px;
+}
+
+/* Vizuelni separator između brandinga i forme */
+.login-box .logo-container::after {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 2px;
+    margin: 16px auto 0;
 }
 
 /* Headings */
 .login-box h2 {
     text-align: center;
-    font-size: 36px;
-    font-weight: 800;
+    font-size: 26px;
+    font-weight: 700;
     color: #1f2937;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -133,9 +151,9 @@ body.login-active {
 
 .login-box > p {
     text-align: center;
-    color: #6b7280;
-    margin-bottom: 36px;
-    font-size: 15px;
+    color: #9ca3af;
+    margin-bottom: 24px;
+    font-size: 13px;
 }
 
 /* Form groups */
@@ -233,11 +251,11 @@ body.login-active {
     }
 
     .login-box .logo-container img {
-        width: 180px;
+        width: 90px;
     }
 
     .login-box h2 {
-        font-size: 32px;
+        font-size: 26px;
     }
 }
 
@@ -255,15 +273,15 @@ body.login-active {
     }
 
     .login-box .logo-container img {
-        width: 200px;
+        width: 100px;
     }
 
     .login-box h2 {
-        font-size: 34px;
+        font-size: 28px;
     }
 
     .login-box > p {
-        font-size: 15px;
+        font-size: 13px;
     }
 
     .form-group input {
@@ -274,6 +292,7 @@ body.login-active {
     .login-box .btn {
         padding: 16px;
         font-size: 16px;
+        margin-top: 4px;
     }
 }
 
@@ -296,25 +315,25 @@ body.login-active {
     }
 
     .login-box .logo-container img {
-        width: 140px;
+        width: 72px;
     }
 
     .login-box .text-outline-firma {
-        font-size: 13px;
+        font-size: 10px;
     }
 
     .login-box .company-subtitle {
-        font-size: 11px;
+        font-size: 9px;
     }
 
     .login-box h2 {
-        font-size: 24px;
-        margin-bottom: 8px;
+        font-size: 22px;
+        margin-bottom: 4px;
     }
 
     .login-box > p {
-        font-size: 13px;
-        margin-bottom: 24px;
+        font-size: 12px;
+        margin-bottom: 18px;
     }
 
     .form-group {
@@ -341,6 +360,12 @@ body.login-active {
     .login-container::after {
         display: none;
     }
+
+    .login-box .logo-container::after {
+        width: 36px;
+        height: 2px;
+        margin: 12px auto 0;
+    }
 }
 
 /* Extra small devices (< 480px) */
@@ -356,21 +381,35 @@ body.login-active {
     }
 
     .login-box .logo-container {
-        margin-bottom: 24px;
+        margin-bottom: 16px;
     }
 
     .login-box .logo-container img {
-        width: 120px;
-        margin-bottom: 14px;
+        width: 60px;
+        margin-bottom: 8px;
+    }
+
+    .login-box .logo-container::after {
+        width: 32px;
+        height: 2px;
+        margin: 10px auto 0;
+    }
+
+    .login-box .text-outline-firma {
+        font-size: 10px;
+    }
+
+    .login-box .company-subtitle {
+        font-size: 9px;
     }
 
     .login-box h2 {
-        font-size: 22px;
+        font-size: 20px;
     }
 
     .login-box > p {
-        font-size: 12px;
-        margin-bottom: 20px;
+        font-size: 11px;
+        margin-bottom: 14px;
     }
 
     .form-group {
@@ -386,30 +425,3 @@ body.login-active {
 /* ============================================ */
 /* DARK MODE SUPPORT (optional) */
 /* ============================================ */
-body.dark-mode .login-box {
-    background: #1f2937;
-    color: #f9fafb;
-}
-
-body.dark-mode .login-box h2 {
-    color: #f9fafb;
-}
-
-body.dark-mode .login-box .text-outline-firma,
-body.dark-mode .login-box .company-subtitle {
-    color: #d1d5db;
-}
-
-body.dark-mode .form-group label {
-    color: #e5e7eb;
-}
-
-body.dark-mode .form-group input {
-    background: #374151;
-    border-color: #4b5563;
-    color: #f9fafb;
-}
-
-body.dark-mode .form-group input::placeholder {
-    color: #9ca3af;
-}

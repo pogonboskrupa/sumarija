@@ -78,10 +78,23 @@
             });
         }
 
+        // Dynamic viewport: device-width za login, 1280 za app
+        function setLoginViewport() {
+            const meta = document.querySelector('meta[name="viewport"]');
+            if (meta) meta.setAttribute('content',
+                'width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=3.0');
+        }
+        function setAppViewport() {
+            const meta = document.querySelector('meta[name="viewport"]');
+            if (meta) meta.setAttribute('content',
+                'width=1280, user-scalable=yes, minimum-scale=0.2, maximum-scale=3.0');
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const loginScreen = document.getElementById('login-screen');
             if (loginScreen && !loginScreen.classList.contains('hidden')) {
                 document.body.classList.add('login-active');
+                setLoginViewport();
             }
         });
     </script>
@@ -154,7 +167,6 @@
                             <span>Meni</span>
                         </button>
                         <div class="user-menu-dropdown" id="user-menu-dropdown">
-                            <div class="user-menu-item" onclick="event.stopPropagation(); closeUserMenu(); toggleDarkMode();">🌙 Dark Mode</div>
                             <div class="user-menu-item" onclick="event.stopPropagation(); closeUserMenu(); preloadAllViews();">⚡ Učitaj sve prikaze</div>
                             <div class="user-menu-item" onclick="event.stopPropagation(); clearAllCache()">🗑️ Obriši keš</div>
                             <div class="user-menu-item danger" onclick="event.stopPropagation(); logout()">🚪 Odjavi se</div>
@@ -199,7 +211,6 @@
                 <h2>📊 Mjesečni pregled</h2>
                 <div class="controls-bar">
                     <input type="text" class="search-input" id="dashboard-search" placeholder="🔍 Pretraži po mjesecu..." onkeyup="filterDashboardTable()">
-                    <button class="btn btn-primary" onclick="exportTableToCSV('dashboard')">📥 Export CSV</button>
                 </div>
                 <div class="dashboard-monthly-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                     <table class="professional-monthly-table" id="dashboard-table" style="width: 100%;">
@@ -224,7 +235,6 @@
                 <h2>🏭 Pregled po odjelima</h2>
                 <div class="controls-bar">
                     <input type="text" class="search-input" id="odjeli-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterOdjeliTable()">
-                    <button class="btn btn-primary" onclick="exportTableToCSV('odjeli')">📥 Export CSV</button>
                 </div>
                 <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                     <table class="monthly-table" id="odjeli-table">
@@ -290,7 +300,6 @@
                         </h2>
                         <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Prikaz mjesečnih podataka za tekuću godinu</p>
                     </div>
-                    <button class="btn" onclick="exportTableToCSV('mjesecna-sjeca')" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
                         <span>📥</span> Export
                     </button>
                 </div>
@@ -313,7 +322,6 @@
                         </h2>
                         <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Prikaz mjesečnih podataka za tekuću godinu</p>
                     </div>
-                    <button class="btn" onclick="exportTableToCSV('mjesecna-otprema')" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
                         <span>📥</span> Export
                     </button>
                 </div>
@@ -344,7 +352,6 @@
                 <div class="section">
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="primaci-search" placeholder="🔍 Pretraži po imenu primača..." onkeyup="filterPrimaciTable()">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('primaci')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table class="monthly-table" id="primaci-table">
@@ -377,7 +384,6 @@
                     </div>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="primaci-daily-search" placeholder="🔍 Pretraži..." onkeyup="filterPrimaciDailyTable()">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('primaci-daily')">📥 Export CSV</button>
                     </div>
                     <div class="kupci-table-wrapper">
                         <table class="kupci-table" id="primaci-daily-table">
@@ -393,7 +399,6 @@
                 <div class="section">
                     <h3 style="color: #ea580c; text-align: center; margin-bottom: 20px;">🏗️ Prikaz sječe po radilištima</h3>
                     <div class="controls-bar">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('primaci-radilista')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table class="monthly-table" id="primaci-radilista-table">
@@ -416,7 +421,6 @@
                 <div class="section">
                     <h3 style="color: #ea580c; text-align: center; margin-bottom: 20px;">👷 Prikaz sječe po izvođačima radova</h3>
                     <div class="controls-bar">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('primaci-izvodjaci')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table class="monthly-table" id="primaci-izvodjaci-table">
@@ -452,7 +456,6 @@
                 <div class="section">
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="otpremaci-search" placeholder="🔍 Pretraži po imenu otpremača..." onkeyup="filterOtremaciTable()">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('otpremaci')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table class="monthly-table" id="otpremaci-table">
@@ -485,7 +488,6 @@
                     </div>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="otpremaci-daily-search" placeholder="🔍 Pretraži..." onkeyup="filterOtremaciDailyTable()">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('otpremaci-daily')">📥 Export CSV</button>
                     </div>
                     <div class="kupci-table-wrapper">
                         <table class="kupci-table" id="otpremaci-daily-table">
@@ -501,7 +503,6 @@
                 <div class="section">
                     <h3 style="color: #0891b2; text-align: center; margin-bottom: 20px;">🏗️ Prikaz otpreme po radilištima</h3>
                     <div class="controls-bar">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('otpremaci-radilista')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table class="monthly-table" id="otpremaci-radilista-table">
@@ -527,7 +528,6 @@
                     </h3>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="otpremaci-po-kupcima-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterOtremaciPoKupcimaTable()">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('otpremaci-po-kupcima')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table class="expert-table" id="otpremaci-po-kupcima-table">
@@ -554,7 +554,6 @@
                     <h2>🏢 Godišnji pregled po kupcima</h2>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="kupci-godisnji-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciGodisnjiTable()">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('kupci-godisnji')">📥 Export CSV</button>
                     </div>
                     <div class="kupci-table-wrapper">
                         <table class="kupci-table" id="kupci-godisnji-table">
@@ -571,7 +570,6 @@
                     <h2>📅 Mjesečni pregled po kupcima</h2>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="kupci-mjesecni-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciMjesecniTable()">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('kupci-mjesecni')">📥 Export CSV</button>
                     </div>
                     <div class="kupci-table-wrapper">
                         <table class="kupci-table" id="kupci-mjesecni-table">
@@ -630,7 +628,6 @@
                 <!-- Controls -->
                 <div class="controls-bar">
                     <input type="text" class="search-input" id="primac-personal-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterPrimacPersonalTable()">
-                    <button class="btn btn-primary" onclick="exportTableToCSV('primac-personal')">📥 Export CSV</button>
                 </div>
 
                 <!-- Modern Table Card -->
@@ -748,7 +745,6 @@
                 <!-- Controls -->
                 <div class="controls-bar">
                     <input type="text" class="search-input" id="otpremac-personal-search" placeholder="🔍 Pretraži po odjelu/kupcu..." onkeyup="filterOtpremacPersonalTable()">
-                    <button class="btn btn-primary" onclick="exportTableToCSV('otpremac-personal')">📥 Export CSV</button>
                 </div>
 
                 <!-- Modern Table Card -->
@@ -1427,7 +1423,6 @@
                 <p>Kompletna analiza svih odjela sa projekat realizacijom</p>
                 <div class="controls-bar" style="margin-top: 20px;">
                     <input type="text" class="search-input" id="analytics-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterAnalyticsTable()">
-                    <button class="btn btn-primary" onclick="exportTableToCSV('analytics-odjeli')">📥 Export CSV</button>
                 </div>
                 <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                     <table class="monthly-table" id="analytics-odjeli-main-table">
@@ -1677,7 +1672,6 @@
                     <p>Kompletna tablica svih odjela sa zalihama po sortimentima</p>
                     <div class="controls-bar" style="margin-top: 20px;">
                         <input type="text" class="search-input" id="suma-lager-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterSumaLagerTable()">
-                        <button class="btn btn-primary" onclick="exportSumaLagerToCSV()">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table class="monthly-table" id="suma-lager-main-table" style="font-size: 11px;">
@@ -1888,97 +1882,6 @@
             </div>
         </div>
 
-        <!-- UPOREDBA GODINA CONTENT -->
-        <div id="uporedba-godina-content" class="container hidden">
-            <div class="page-header">
-                <div class="page-header-left">
-                    <h1>📊 Uporedba godina</h1>
-                    <p>Side-by-side prikaz sječe i otpreme po godinama</p>
-                </div>
-            </div>
-
-            <!-- Izbor godina za usporedbu -->
-            <div class="section">
-                <div class="controls-bar" style="justify-content: center; align-items: center; gap: 24px;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <label for="uporedba-year1" style="font-weight: 600; font-size: 16px;">📅 Godina 1:</label>
-                        <select id="uporedba-year1" class="year-select" onchange="loadUporedbaGodina()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
-                            
-                            
-                            <option value="2026" selected>2026</option></select>
-                    </div>
-                    <span style="font-size: 24px; font-weight: bold;">VS</span>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <label for="uporedba-year2" style="font-weight: 600; font-size: 16px;">📅 Godina 2:</label>
-                        <select id="uporedba-year2" class="year-select" onchange="loadUporedbaGodina()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #2563eb; min-width: 120px;">
-                            
-                            
-                            <option value="2026" selected>2026</option></select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mjesečna usporedba -->
-            <div class="section">
-                <h2>📅 Mjesečna usporedba sječe i otpreme</h2>
-                <div style="overflow-x: auto;">
-                    <table class="expert-table" id="uporedba-mjesecna-table">
-                        <thead id="uporedba-mjesecna-header"></thead>
-                        <tbody id="uporedba-mjesecna-body"></tbody>
-                        <tfoot id="uporedba-mjesecna-footer"></tfoot>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Godišnje ukupno -->
-            <div class="section">
-                <h2>📊 Godišnje ukupno i razlike</h2>
-                <div style="overflow-x: auto;">
-                    <table class="expert-table" id="uporedba-ukupno-table">
-                        <thead id="uporedba-ukupno-header"></thead>
-                        <tbody id="uporedba-ukupno-body"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Top 10 odjela -->
-            <div class="section">
-                <h2>🏆 Top 10 odjela po realizaciji</h2>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                    <div>
-                        <h3 id="uporedba-top10-year1-title" style="text-align: center; margin-bottom: 16px;">Godina 2025</h3>
-                        <div style="overflow-x: auto;">
-                            <table class="expert-table" id="uporedba-top10-year1-table">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Odjel</th>
-                                        <th style="text-align: right;">Sječa (m³)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="uporedba-top10-year1-body"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 id="uporedba-top10-year2-title" style="text-align: center; margin-bottom: 16px;">Godina 2026</h3>
-                        <div style="overflow-x: auto;">
-                            <table class="expert-table" id="uporedba-top10-year2-table">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Odjel</th>
-                                        <th style="text-align: right;">Sječa (m³)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="uporedba-top10-year2-body"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- KUBIKATOR CONTENT -->
         <div id="kubikator-content" class="container hidden">
             <div class="page-header">
@@ -2122,7 +2025,6 @@
                     <p style="color: #6b7280; margin-bottom: 20px;">Sortirano po ukupnoj količini (najveće na vrhu)</p>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="izvjestaji-sedmicni-primka-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterIzvjestajiTable('sedmicni-primka')">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('izvjestaji-sedmicni-primka')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto;">
                         <table id="izvjestaji-sedmicni-primka-table" class="izvjestaj-week-table">
@@ -2138,7 +2040,6 @@
                     <p style="color: #6b7280; margin-bottom: 20px;">Sortirano po ukupnoj količini (najveće na vrhu)</p>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="izvjestaji-sedmicni-otprema-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterIzvjestajiTable('sedmicni-otprema')">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('izvjestaji-sedmicni-otprema')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto;">
                         <table id="izvjestaji-sedmicni-otprema-table" class="izvjestaj-week-table">
@@ -2185,7 +2086,6 @@
                     <p style="color: #6b7280; margin-bottom: 20px;">Sortirano po ukupnoj količini (najveće na vrhu)</p>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="izvjestaji-mjesecni-primka-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterIzvjestajiTable('mjesecni-primka')">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('izvjestaji-mjesecni-primka')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto;">
                         <table id="izvjestaji-mjesecni-primka-table" class="izvjestaj-week-table">
@@ -2201,7 +2101,6 @@
                     <p style="color: #6b7280; margin-bottom: 20px;">Sortirano po ukupnoj količini (najveće na vrhu)</p>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="izvjestaji-mjesecni-otprema-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterIzvjestajiTable('mjesecni-otprema')">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('izvjestaji-mjesecni-otprema')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto;">
                         <table id="izvjestaji-mjesecni-otprema-table" class="izvjestaj-week-table">
@@ -2449,7 +2348,6 @@
                     </div>
                     <div class="page-header-right" style="display: flex; gap: 12px;">
                         <button class="btn btn-secondary" onclick="refreshStanjeZaliha()" title="Osvježi podatke sa servera">🔄 Osvježi</button>
-                        <button class="btn btn-primary" onclick="exportStanjeZalihaToCSV()">📥 Export CSV</button>
                     </div>
                 </div>
 

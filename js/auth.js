@@ -58,6 +58,7 @@
         function showApp() {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
+            if (typeof setAppViewport === 'function') setAppViewport();
             document.getElementById('user-name').textContent = currentUser.fullName;
             document.getElementById('user-role').textContent = currentUser.role === 'admin' ? 'Administrator' : currentUser.type;
 
@@ -255,10 +256,6 @@
                 window.dashboardChart.destroy();
                 window.dashboardChart = null;
             }
-            if (window.uporedbaChart) {
-                window.uporedbaChart.destroy();
-                window.uporedbaChart = null;
-            }
             if (primacChart) {
                 primacChart.destroy();
                 primacChart = null;
@@ -290,6 +287,7 @@
             localStorage.removeItem('sumarija_pass');
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('app-screen').classList.add('hidden');
+            if (typeof setLoginViewport === 'function') setLoginViewport();
             document.getElementById('dashboard-content').classList.add('hidden');
             document.getElementById('primaci-content').classList.add('hidden');
             document.getElementById('otpremaci-content').classList.add('hidden');
