@@ -1353,7 +1353,7 @@
                 // Render UKUPNO row in tfoot
                 const tfootHTML = `
                     <tr class="ukupno-row">
-                        <td style="font-weight: 800; text-transform: uppercase;">UKUPNO</td>
+                        <td style="font-weight: 800; text-transform: uppercase; text-align: center;">UKUPNO</td>
                         <td class="number" style="min-width: 120px; font-size: 15px;">${totalSjeca.toFixed(2)}</td>
                         <td class="number" style="min-width: 120px; font-size: 15px;">${totalOtprema.toFixed(2)}</td>
                         <td class="number" style="font-size: 15px;">${totalZaliha.toFixed(2)}</td>
