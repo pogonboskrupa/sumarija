@@ -1982,6 +1982,8 @@
         }
         .professional-monthly-table tfoot tr.ukupno-row td.number {
             color: white;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
         }
         .professional-monthly-table tfoot tr.ukupno-row .table-progress-bar {
             background: rgba(255, 255, 255, 0.3);
@@ -2437,18 +2439,14 @@
             padding: 12px 16px 16px;
         }
 
-        /* 4. Scroll containment — tabela skrola, ne stranica */
+        /* 4. No scroll constraint — full table visible without scrolling */
         .enterprise-card .dashboard-monthly-wrapper {
-            overflow: auto;
-            max-height: calc(100vh - 260px);
+            overflow-x: auto;
+            overflow-y: visible;
             margin: 0; padding: 0;
             -webkit-overflow-scrolling: touch;
         }
-        @media (max-height: 800px) {
-            .enterprise-card .dashboard-monthly-wrapper {
-                max-height: calc(100vh - 220px);
-            }
-        }
+        /* max-height removed — table shows all rows without vertical scroll */
 
         /* 5. FIX: contain: paint breaks sticky — override za dashboard tabelu */
         #dashboard-table {
@@ -2493,6 +2491,11 @@
         #dashboard-table tbody tr { height: 36px; }
         #dashboard-table tfoot tr.ukupno-row td {
             font-size: 14px; padding: 14px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        #dashboard-table tfoot tr.ukupno-row td:first-child {
+            text-align: center;
         }
 
         /* 8. Zebra + hover */
@@ -2518,7 +2521,7 @@
             }
             .enterprise-card-body { padding: 8px 12px 12px; }
             .enterprise-card .dashboard-monthly-wrapper {
-                max-height: none;
+                overflow-x: auto;
             }
             #dashboard-content { padding-inline: 12px; padding-block: 12px; }
         }
