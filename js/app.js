@@ -3180,17 +3180,29 @@
                     throw new Error('Greška pri učitavanju primki: ' + primkeData.error);
                 }
 
+                // Helper: parse DD.MM.YYYY to Date
+                const parseDDMMYYYY = (dateStr) => {
+                    if (!dateStr) return null;
+                    const parts = dateStr.split('.');
+                    if (parts.length >= 3) {
+                        return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                    }
+                    return null;
+                };
+
                 // Calculate date 10 days ago
                 const today = new Date();
-                const tenDaysAgo = new Date(today);
-                tenDaysAgo.setDate(today.getDate() - 10);
+                today.setHours(23, 59, 59, 999);
+                const tenDaysAgo = new Date();
+                tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+                tenDaysAgo.setHours(0, 0, 0, 0);
 
                 // Filter by poslovodja/radilišta i zadnjih 10 dana
                 const userFullName = currentUser.fullName.toUpperCase().trim();
                 const filteredPrimke = (primkeData.primke || []).filter(primka => {
-                    // Parse datum
-                    const primkaDatum = new Date(primka.datum);
-                    if (primkaDatum < tenDaysAgo || primkaDatum > today) return false;
+                    // Parse datum (DD.MM.YYYY format)
+                    const primkaDatum = parseDDMMYYYY(primka.datum);
+                    if (!primkaDatum || primkaDatum < tenDaysAgo || primkaDatum > today) return false;
 
                     // Prvo pokušaj filtrirati po poslovodja polju
                     const primkaPoslovodja = (primka.poslovodja || '').toUpperCase().trim();
@@ -3229,8 +3241,8 @@
 
                 // Convert to array and sort by date (newest first)
                 const sjecaArray = Object.values(groupedData).sort((a, b) => {
-                    const dateA = new Date(a.datum);
-                    const dateB = new Date(b.datum);
+                    const dateA = parseDDMMYYYY(a.datum);
+                    const dateB = parseDDMMYYYY(b.datum);
                     if (dateB - dateA !== 0) return dateB - dateA;
                     return a.odjel.localeCompare(b.odjel);
                 });
@@ -3357,17 +3369,29 @@
                     throw new Error('Greška pri učitavanju otprema: ' + otpremeData.error);
                 }
 
+                // Helper: parse DD.MM.YYYY to Date
+                const parseDDMMYYYY = (dateStr) => {
+                    if (!dateStr) return null;
+                    const parts = dateStr.split('.');
+                    if (parts.length >= 3) {
+                        return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                    }
+                    return null;
+                };
+
                 // Calculate date 10 days ago
                 const today = new Date();
-                const tenDaysAgo = new Date(today);
-                tenDaysAgo.setDate(today.getDate() - 10);
+                today.setHours(23, 59, 59, 999);
+                const tenDaysAgo = new Date();
+                tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+                tenDaysAgo.setHours(0, 0, 0, 0);
 
                 // Filter by poslovodja/radilišta i zadnjih 10 dana
                 const userFullName = currentUser.fullName.toUpperCase().trim();
                 const filteredOtpreme = (otpremeData.otpreme || []).filter(otprema => {
-                    // Parse datum
-                    const otpremaDatum = new Date(otprema.datum);
-                    if (otpremaDatum < tenDaysAgo || otpremaDatum > today) return false;
+                    // Parse datum (DD.MM.YYYY format)
+                    const otpremaDatum = parseDDMMYYYY(otprema.datum);
+                    if (!otpremaDatum || otpremaDatum < tenDaysAgo || otpremaDatum > today) return false;
 
                     // Prvo pokušaj filtrirati po poslovodja polju
                     const otpremaPoslovodja = (otprema.poslovodja || '').toUpperCase().trim();
@@ -3410,15 +3434,15 @@
 
                 // Convert to array and sort by date (newest first)
                 const otpremaArray = Object.values(groupedData).sort((a, b) => {
-                    const dateA = new Date(a.datum);
-                    const dateB = new Date(b.datum);
+                    const dateA = parseDDMMYYYY(a.datum);
+                    const dateB = parseDDMMYYYY(b.datum);
                     if (dateB - dateA !== 0) return dateB - dateA;
                     if (a.odjel !== b.odjel) return a.odjel.localeCompare(b.odjel);
                     return a.kupac.localeCompare(b.kupac);
                 });
 
                 // Render table
-                renderPoslovodjaOtpremaTable(otpremaArray);
+                renderPoslovodjaOtpremaTabTable(otpremaArray);
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('poslovodja-otprema-content').classList.remove('hidden');
@@ -3430,8 +3454,8 @@
             }
         }
 
-        // Render OTPREMA table
-        function renderPoslovodjaOtpremaTable(data) {
+        // Render OTPREMA TAB table (po danima)
+        function renderPoslovodjaOtpremaTabTable(data) {
             const headerElem = document.getElementById('poslovodja-otprema-header');
             const bodyElem = document.getElementById('poslovodja-otprema-body');
 
