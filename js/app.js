@@ -334,11 +334,33 @@
 
                 logPerformance(`API call: ${path}`, performance.now() - fetchStart);
 
-                // Store in cache
-                localStorage.setItem(cacheKey, JSON.stringify({
-                    data: data,
-                    timestamp: Date.now()
-                }));
+                // Store in cache (handle QuotaExceededError)
+                try {
+                    localStorage.setItem(cacheKey, JSON.stringify({
+                        data: data,
+                        timestamp: Date.now()
+                    }));
+                } catch (storageError) {
+                    if (storageError.name === 'QuotaExceededError') {
+                        // Očisti stare cache ključeve i pokušaj ponovo
+                        const keysToRemove = [];
+                        for (let i = 0; i < localStorage.length; i++) {
+                            const key = localStorage.key(i);
+                            if (key && key.startsWith('cache_')) {
+                                keysToRemove.push(key);
+                            }
+                        }
+                        keysToRemove.forEach(k => localStorage.removeItem(k));
+                        try {
+                            localStorage.setItem(cacheKey, JSON.stringify({
+                                data: data,
+                                timestamp: Date.now()
+                            }));
+                        } catch (e) {
+                            // Cache nije moguć, nastavi bez njega
+                        }
+                    }
+                }
 
                 hideCacheIndicator();
                 return data;
