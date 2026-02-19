@@ -2375,3 +2375,150 @@
                 --bg-primary: #fff;
             }
         }
+
+        /* ============================================ */
+        /* ENTERPRISE DASHBOARD - FULL-WIDTH LAYOUT     */
+        /* ============================================ */
+
+        /* 1. Full-width dashboard (override .container max-width: 1200px) */
+        #dashboard-content {
+            max-width: 100%;
+            padding-inline: 24px;
+            padding-block: 24px;
+        }
+        .header-content {
+            max-width: 100%;
+        }
+        @media (min-width: 1920px) {
+            #dashboard-content { padding-inline: 40px; }
+        }
+
+        /* 2. Grid layout za desktop (umjesto flex) */
+        @media (min-width: 1025px) {
+            .app-layout {
+                display: grid;
+                grid-template-columns: 260px 1fr;
+                gap: 0;
+            }
+            .sidebar { width: auto; min-width: auto; }
+        }
+
+        /* 3. Enterprise card za Mjesečni pregled */
+        .enterprise-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+            padding: 0;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        .enterprise-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            background: #fafbfc;
+        }
+        .enterprise-card-header h2 {
+            font-size: 18px; font-weight: 700; color: #1f2937;
+            margin: 0; display: flex; align-items: center; gap: 8px;
+        }
+        .enterprise-card-header .card-subtitle {
+            font-size: 13px; color: #6b7280; margin-top: 2px;
+        }
+        .enterprise-card-header .card-badge {
+            display: inline-block; padding: 4px 10px;
+            background: #d1fae5; color: #047857;
+            border-radius: 10px; font-size: 12px; font-weight: 600;
+        }
+        .enterprise-card-body {
+            padding: 12px 16px 16px;
+        }
+
+        /* 4. Scroll containment — tabela skrola, ne stranica */
+        .enterprise-card .dashboard-monthly-wrapper {
+            overflow: auto;
+            max-height: calc(100vh - 260px);
+            margin: 0; padding: 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        @media (max-height: 800px) {
+            .enterprise-card .dashboard-monthly-wrapper {
+                max-height: calc(100vh - 220px);
+            }
+        }
+
+        /* 5. FIX: contain: paint breaks sticky — override za dashboard tabelu */
+        #dashboard-table {
+            contain: layout style;
+        }
+
+        /* 6. Sticky prva kolona (MJESEC) */
+        #dashboard-table thead th:first-child {
+            position: sticky; left: 0; z-index: 20;
+            background: linear-gradient(to bottom, #047857 0%, #059669 100%);
+            border-right: 2px solid #10b981;
+        }
+        #dashboard-table tbody td:first-child {
+            position: sticky; left: 0; z-index: 5;
+            background: #ffffff;
+            border-right: 2px solid #e5e7eb;
+        }
+        #dashboard-table tbody tr:nth-child(even) td:first-child {
+            background: #f8fafc;
+        }
+        #dashboard-table tbody tr:hover td:first-child {
+            background: #eff6ff;
+        }
+        #dashboard-table tfoot tr.ukupno-row td:first-child {
+            position: sticky; left: 0; z-index: 5;
+            background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+            border-right: 2px solid #10b981;
+        }
+
+        /* 7. Tipografija — enterprise density */
+        #dashboard-table { font-size: 13px; }
+        #dashboard-table thead th {
+            font-size: 11px; font-weight: 600;
+            padding: 12px 14px; letter-spacing: 0.06em;
+        }
+        #dashboard-table tbody td {
+            font-weight: 450; padding: 8px 14px; line-height: 1.4;
+        }
+        #dashboard-table tbody td:first-child {
+            font-weight: 700; font-size: 13px;
+        }
+        #dashboard-table tbody tr { height: 36px; }
+        #dashboard-table tfoot tr.ukupno-row td {
+            font-size: 14px; padding: 14px;
+        }
+
+        /* 8. Zebra + hover */
+        #dashboard-table tbody tr:nth-child(even) { background: #f8fafc; }
+        #dashboard-table tbody tr:hover {
+            background: #eff6ff;
+            box-shadow: inset 0 1px 0 #e0e7ff, inset 0 -1px 0 #e0e7ff;
+        }
+
+        /* 9. Vertikalni separatori između grupa kolona */
+        #dashboard-table thead th:nth-child(5),
+        #dashboard-table tbody td:nth-child(5),
+        #dashboard-table tfoot td:nth-child(5) {
+            border-left: 2px solid #d1d5db;
+        }
+
+        /* 10. Responsive */
+        @media (max-width: 768px) {
+            .enterprise-card { border-radius: 12px; margin-bottom: 16px; }
+            .enterprise-card-header {
+                padding: 12px 14px; flex-direction: column;
+                align-items: flex-start; gap: 8px;
+            }
+            .enterprise-card-body { padding: 8px 12px 12px; }
+            .enterprise-card .dashboard-monthly-wrapper {
+                max-height: none;
+            }
+            #dashboard-content { padding-inline: 12px; padding-block: 12px; }
+        }

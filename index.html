@@ -242,27 +242,35 @@
                 </div>
             </div>
 
-            <!-- Monthly Table -->
-            <div class="section">
-                <h2>📊 Mjesečni pregled</h2>
-                <div class="controls-bar">
-                    <input type="text" class="search-input" id="dashboard-search" placeholder="🔍 Pretraži po mjesecu..." onkeyup="filterDashboardTable()">
+            <!-- Monthly Table - Enterprise Card -->
+            <div class="enterprise-card">
+                <div class="enterprise-card-header">
+                    <div>
+                        <h2>📊 Mjesečni pregled</h2>
+                        <span class="card-subtitle">Sječa, otprema i dinamika po mjesecima</span>
+                    </div>
+                    <span class="card-badge">Tekuća godina</span>
                 </div>
-                <div class="dashboard-monthly-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="professional-monthly-table" id="dashboard-table" style="width: 100%;">
-                        <thead>
-                            <tr>
-                                <th onclick="sortTable(0, 'dashboard-table')" style="text-align: left;">Mjesec ⇅</th>
-                                <th class="right" onclick="sortTable(1, 'dashboard-table')" style="min-width: 120px;">Sječa (m³) ⇅</th>
-                                <th class="right" onclick="sortTable(2, 'dashboard-table')" style="min-width: 120px;">Otprema (m³) ⇅</th>
-                                <th class="right" onclick="sortTable(3, 'dashboard-table')">Zaliha ⇅</th>
-                                <th class="right" onclick="sortTable(4, 'dashboard-table')">DINAMIKA SJEČE ⇅</th>
-                                <th class="right" onclick="sortTable(5, 'dashboard-table')">DINAMIKA OTPREME ⇅</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dashboard-monthly-table"></tbody>
-                        <tfoot id="dashboard-monthly-tfoot"></tfoot>
-                    </table>
+                <div class="enterprise-card-body">
+                    <div class="controls-bar">
+                        <input type="text" class="search-input" id="dashboard-search" placeholder="🔍 Pretraži po mjesecu..." onkeyup="filterDashboardTable()">
+                    </div>
+                    <div class="dashboard-monthly-wrapper">
+                        <table class="professional-monthly-table" id="dashboard-table" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th onclick="sortTable(0, 'dashboard-table')" style="text-align: left;">Mjesec ⇅</th>
+                                    <th class="right" onclick="sortTable(1, 'dashboard-table')" style="min-width: 120px;">Sječa (m³) ⇅</th>
+                                    <th class="right" onclick="sortTable(2, 'dashboard-table')" style="min-width: 120px;">Otprema (m³) ⇅</th>
+                                    <th class="right" onclick="sortTable(3, 'dashboard-table')">Zaliha ⇅</th>
+                                    <th class="right" onclick="sortTable(4, 'dashboard-table')">DINAMIKA SJEČE ⇅</th>
+                                    <th class="right" onclick="sortTable(5, 'dashboard-table')">DINAMIKA OTPREME ⇅</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboard-monthly-table"></tbody>
+                            <tfoot id="dashboard-monthly-tfoot"></tfoot>
+                        </table>
+                    </div>
                 </div>
             </div>
 
