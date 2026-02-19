@@ -105,11 +105,9 @@
                 ];
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
                 tabsConfig = [
-                    { id: 'poslovodja-stanje', icon: '📊', label: 'Stanje zaliha', active: true },
-                    { id: 'poslovodja-realizacija', icon: '🏗️', label: 'Odjeli u realizaciji' },
-                    { id: 'poslovodja-suma', icon: '📈', label: 'Suma Mjeseca' },
-                    { id: 'poslovodja-sjeca', icon: '🪓', label: 'SJEČA' },
+                    { id: 'poslovodja-sjeca', icon: '🪓', label: 'SJEČA', active: true },
                     { id: 'poslovodja-otprema', icon: '🚛', label: 'OTPREMA' },
+                    { id: 'poslovodja-stanje', icon: '📊', label: 'Stanje zaliha' },
                     { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' }
                 ];
             } else {
@@ -356,7 +354,7 @@
             } else if (userType === 'otpremac') {
                 loadOtpremacPersonal();
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
-                loadPoslovodjaStanje();
+                loadPoslovodjaSjeca();
             } else {
                 loadDashboard();
             }

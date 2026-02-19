@@ -33,8 +33,6 @@
             document.getElementById('operativa-content').classList.add('hidden');
             document.getElementById('stanje-odjela-admin-content').classList.add('hidden');
             document.getElementById('poslovodja-stanje-content').classList.add('hidden');
-            document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
-            document.getElementById('poslovodja-suma-content').classList.add('hidden');
             document.getElementById('poslovodja-sjeca-content').classList.add('hidden');
             document.getElementById('poslovodja-otprema-content').classList.add('hidden');
             document.getElementById('dinamika-content').classList.add('hidden');
@@ -80,10 +78,6 @@
                 loadDinamika();
             } else if (tab === 'poslovodja-stanje') {
                 loadPoslovodjaStanje();
-            } else if (tab === 'poslovodja-realizacija') {
-                loadPoslovodjaRealizacija();
-            } else if (tab === 'poslovodja-suma') {
-                loadPoslovodjaSuma();
             } else if (tab === 'poslovodja-sjeca') {
                 loadPoslovodjaSjeca();
             } else if (tab === 'poslovodja-otprema') {
