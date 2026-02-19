@@ -108,6 +108,8 @@
                     { id: 'poslovodja-stanje', icon: '📊', label: 'Stanje zaliha', active: true },
                     { id: 'poslovodja-realizacija', icon: '🏗️', label: 'Odjeli u realizaciji' },
                     { id: 'poslovodja-suma', icon: '📈', label: 'Suma Mjeseca' },
+                    { id: 'poslovodja-sjeca', icon: '🪓', label: 'SJEČA' },
+                    { id: 'poslovodja-otprema', icon: '🚛', label: 'OTPREMA' },
                     { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' }
                 ];
             } else {

@@ -35,6 +35,8 @@
             document.getElementById('poslovodja-stanje-content').classList.add('hidden');
             document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
             document.getElementById('poslovodja-suma-content').classList.add('hidden');
+            document.getElementById('poslovodja-sjeca-content').classList.add('hidden');
+            document.getElementById('poslovodja-otprema-content').classList.add('hidden');
             document.getElementById('dinamika-content').classList.add('hidden');
             document.getElementById('kubikator-content').classList.add('hidden');
             document.getElementById('ostalo-content').classList.add('hidden');
@@ -82,6 +84,10 @@
                 loadPoslovodjaRealizacija();
             } else if (tab === 'poslovodja-suma') {
                 loadPoslovodjaSuma();
+            } else if (tab === 'poslovodja-sjeca') {
+                loadPoslovodjaSjeca();
+            } else if (tab === 'poslovodja-otprema') {
+                loadPoslovodjaOtprema();
             } else if (tab === 'izvjestaji') {
                 // IZVJEŠTAJI - Sedmični i Mjesečni prikaz po odjelima
                 document.getElementById('izvjestaji-content').classList.remove('hidden');

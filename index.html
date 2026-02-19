@@ -1819,6 +1819,60 @@
             </div>
         </div>
 
+        <!-- POSLOVOĐA CONTENT - SJEČA (Zadnjih 10 dana) -->
+        <div id="poslovodja-sjeca-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>🪓 SJEČA</h1>
+                    <p>Pregled sječe zadnjih 10 dana po danima i odjelima</p>
+                </div>
+                <div class="page-header-right">
+                    <button class="btn btn-primary" onclick="loadPoslovodjaSjeca()">🔄 Osvježi</button>
+                </div>
+            </div>
+            <div id="poslovodja-radilista-info-sjeca" class="section" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list-sjeca"></span></p>
+            </div>
+
+            <!-- Sječa po danima -->
+            <div class="section">
+                <h2 style="color: #059669; margin-bottom: 15px;">📅 SJEČA - Zadnjih 10 dana</h2>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="monthly-table" id="poslovodja-sjeca-table">
+                        <thead id="poslovodja-sjeca-header"></thead>
+                        <tbody id="poslovodja-sjeca-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- POSLOVOĐA CONTENT - OTPREMA (Po danima) -->
+        <div id="poslovodja-otprema-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>🚛 OTPREMA</h1>
+                    <p>Pregled otpreme po danima (odjel, otpremač, kupac, sortimenti)</p>
+                </div>
+                <div class="page-header-right">
+                    <button class="btn btn-primary" onclick="loadPoslovodjaOtprema()">🔄 Osvježi</button>
+                </div>
+            </div>
+            <div id="poslovodja-radilista-info-otprema" class="section" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list-otprema"></span></p>
+            </div>
+
+            <!-- Otprema po danima -->
+            <div class="section">
+                <h2 style="color: #dc2626; margin-bottom: 15px;">📅 OTPREMA - Po danima</h2>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="monthly-table" id="poslovodja-otprema-table">
+                        <thead id="poslovodja-otprema-header"></thead>
+                        <tbody id="poslovodja-otprema-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- DINAMIKA CONTENT -->
         <div id="dinamika-content" class="container hidden">
             <div class="page-header">
