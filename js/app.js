@@ -2770,7 +2770,7 @@
 
                 // Render tables
                 renderPoslovodjaPrimkaTable(filteredPrimke);
-                renderPoslovodjaOtpremaTable(filteredOtpreme);
+                renderPoslovodjaOtpremaZ5Table(filteredOtpreme);
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('poslovodja-zadnjih5-content').classList.remove('hidden');
@@ -2823,10 +2823,10 @@
             bodyElem.innerHTML = bodyHtml;
         }
 
-        // Render Otprema table (zadnjih 5 dana)
-        function renderPoslovodjaOtpremaTable(otpreme) {
-            const headerElem = document.getElementById('poslovodja-otprema-header');
-            const bodyElem = document.getElementById('poslovodja-otprema-body');
+        // Render Otprema table (zadnjih 5 dana) - legacy, ne koristi se u index.html
+        function renderPoslovodjaOtpremaZ5Table(otpreme) {
+            const headerElem = document.getElementById('poslovodja-z5-otprema-header');
+            const bodyElem = document.getElementById('poslovodja-z5-otprema-body');
 
             if (otpreme.length === 0) {
                 headerElem.innerHTML = '';
@@ -3162,17 +3162,29 @@
         // ============================================
         // POSLOVOĐA - SJEČA TAB (Zadnjih 10 dana)
         // ============================================
+
+        // Sortiment kolone za SJEČA/OTPREMA tabove
+        const SORT_KOLONE = ['TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'Σ ČETINARI', 'TRUPCI L', 'OGR.DUGI', 'OGR.CIJEPANI', 'LIŠĆARI'];
+        const SORT_KOLONE_HEADER = ['TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ČETINARI', 'TRUPCI L', 'OGR.DUGI', 'OGR.CIJEPANI', 'LIŠĆARI'];
+
+        // Helper: parse DD.MM.YYYY to Date object
+        function parseDatumDDMMYYYY(dateStr) {
+            if (!dateStr) return null;
+            const parts = dateStr.split('.');
+            if (parts.length >= 3) {
+                return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+            }
+            return null;
+        }
+
         async function loadPoslovodjaSjeca() {
             document.getElementById('loading-screen').classList.remove('hidden');
             document.getElementById('poslovodja-sjeca-content').classList.add('hidden');
 
             try {
                 const radilista = getPoslovodjaRadilista();
-
-                // Display radilišta
                 document.getElementById('poslovodja-radilista-list-sjeca').textContent = radilista.join(', ');
 
-                // Load primke data
                 const primkeUrl = buildApiUrl('primke');
                 const primkeData = await fetchWithCache(primkeUrl, 'cache_primke_sjeca');
 
@@ -3180,74 +3192,63 @@
                     throw new Error('Greška pri učitavanju primki: ' + primkeData.error);
                 }
 
-                // Helper: parse DD.MM.YYYY to Date
-                const parseDDMMYYYY = (dateStr) => {
-                    if (!dateStr) return null;
-                    const parts = dateStr.split('.');
-                    if (parts.length >= 3) {
-                        return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-                    }
-                    return null;
-                };
-
-                // Calculate date 10 days ago
+                // Datum granice: zadnjih 10 dana
                 const today = new Date();
                 today.setHours(23, 59, 59, 999);
                 const tenDaysAgo = new Date();
                 tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
                 tenDaysAgo.setHours(0, 0, 0, 0);
 
-                // Filter by poslovodja/radilišta i zadnjih 10 dana
+                // Filter po poslovođi/radilištima i zadnjih 10 dana
                 const userFullName = currentUser.fullName.toUpperCase().trim();
                 const filteredPrimke = (primkeData.primke || []).filter(primka => {
-                    // Parse datum (DD.MM.YYYY format)
-                    const primkaDatum = parseDDMMYYYY(primka.datum);
+                    const primkaDatum = parseDatumDDMMYYYY(primka.datum);
                     if (!primkaDatum || primkaDatum < tenDaysAgo || primkaDatum > today) return false;
 
-                    // Prvo pokušaj filtrirati po poslovodja polju
                     const primkaPoslovodja = (primka.poslovodja || '').toUpperCase().trim();
-                    if (primkaPoslovodja && primkaPoslovodja === userFullName) {
-                        return true;
-                    }
+                    if (primkaPoslovodja && primkaPoslovodja === userFullName) return true;
 
-                    // Fallback: filter po radilištima ako postoje u mapiranju
                     if (radilista.length > 0) {
                         const primkaRadiliste = (primka.radiliste || '').toUpperCase().trim();
                         return radilista.some(r => primkaRadiliste.includes(r.toUpperCase()));
                     }
-
                     return false;
                 });
 
-                // Group by date and odjel, aggregate by primač
-                const groupedData = {};
+                // Samo agregirani sortimenti (kolone tabele)
+                const relevantSortimenti = new Set(SORT_KOLONE);
+
+                // Grupisanje po datum + odjel + primac, pivot sortimenti u kolone
+                const grouped = {};
                 filteredPrimke.forEach(primka => {
+                    const sortiment = primka.sortiment || '';
+                    if (!relevantSortimenti.has(sortiment)) return;
+
                     const datum = primka.datum;
                     const odjel = primka.odjel || 'Nepoznato';
                     const primac = primka.primac || 'Nepoznato';
-                    const kolicina = primka.kolicina || 0;
-
                     const key = `${datum}|${odjel}|${primac}`;
-                    if (!groupedData[key]) {
-                        groupedData[key] = {
-                            datum: datum,
-                            odjel: odjel,
-                            primac: primac,
-                            kolicina: 0
-                        };
+
+                    if (!grouped[key]) {
+                        grouped[key] = { datum, odjel, primac, sort: {} };
+                        SORT_KOLONE.forEach(s => grouped[key].sort[s] = 0);
                     }
-                    groupedData[key].kolicina += kolicina;
+                    grouped[key].sort[sortiment] += (primka.kolicina || 0);
                 });
 
-                // Convert to array and sort by date (newest first)
-                const sjecaArray = Object.values(groupedData).sort((a, b) => {
-                    const dateA = parseDDMMYYYY(a.datum);
-                    const dateB = parseDDMMYYYY(b.datum);
+                // Izračunaj UKUPNO Č+L za svaki red
+                Object.values(grouped).forEach(row => {
+                    row.ukupno = (row.sort['Σ ČETINARI'] || 0) + (row.sort['LIŠĆARI'] || 0);
+                });
+
+                // Sortiraj silazno po datumu, pa po odjelu
+                const sjecaArray = Object.values(grouped).sort((a, b) => {
+                    const dateA = parseDatumDDMMYYYY(a.datum);
+                    const dateB = parseDatumDDMMYYYY(b.datum);
                     if (dateB - dateA !== 0) return dateB - dateA;
                     return a.odjel.localeCompare(b.odjel);
                 });
 
-                // Render table
                 renderPoslovodjaSjecaTable(sjecaArray);
 
                 document.getElementById('loading-screen').classList.add('hidden');
@@ -3260,7 +3261,7 @@
             }
         }
 
-        // Render SJEČA table
+        // Render SJEČA table sa sortiment kolonama
         function renderPoslovodjaSjecaTable(data) {
             const headerElem = document.getElementById('poslovodja-sjeca-header');
             const bodyElem = document.getElementById('poslovodja-sjeca-body');
@@ -3271,45 +3272,44 @@
                 return;
             }
 
-            // Build header
-            let headerHtml = `
-                <tr>
-                    <th>Datum</th>
-                    <th>Odjel</th>
-                    <th>Primač</th>
-                    <th>Količina (m³)</th>
-                </tr>
-            `;
+            // Zaglavlje
+            let headerHtml = '<tr><th style="min-width:80px;">Datum</th><th style="min-width:80px;">Odjel</th><th style="min-width:100px;">Primač</th>';
+            SORT_KOLONE_HEADER.forEach(s => {
+                headerHtml += `<th style="min-width:55px; font-size:10px; text-align:right; white-space:nowrap;">${s}</th>`;
+            });
+            headerHtml += '<th style="min-width:70px; text-align:right; font-size:10px; white-space:nowrap;">UKUPNO Č+L</th></tr>';
             headerElem.innerHTML = headerHtml;
 
-            // Calculate totals by date
+            // Subtotali po datumu
             const totalsByDate = {};
-            let grandTotal = 0;
+            const grandTotals = {};
+            SORT_KOLONE.forEach(s => grandTotals[s] = 0);
+            grandTotals['ukupno'] = 0;
 
             data.forEach(item => {
                 if (!totalsByDate[item.datum]) {
-                    totalsByDate[item.datum] = 0;
+                    totalsByDate[item.datum] = {};
+                    SORT_KOLONE.forEach(s => totalsByDate[item.datum][s] = 0);
+                    totalsByDate[item.datum]['ukupno'] = 0;
                 }
-                totalsByDate[item.datum] += item.kolicina;
-                grandTotal += item.kolicina;
+                SORT_KOLONE.forEach(s => {
+                    totalsByDate[item.datum][s] += item.sort[s];
+                    grandTotals[s] += item.sort[s];
+                });
+                totalsByDate[item.datum]['ukupno'] += item.ukupno;
+                grandTotals['ukupno'] += item.ukupno;
             });
 
-            // Build body with date grouping
+            // Tijelo tabele sa grupisanjem po datumu
             let bodyHtml = '';
             let currentDate = null;
             let rowIndex = 0;
+            const numCols = 3 + SORT_KOLONE.length + 1;
 
-            data.forEach((item, index) => {
-                // Check if this is a new date (date subtotal header)
+            data.forEach(item => {
                 if (item.datum !== currentDate) {
                     if (currentDate !== null) {
-                        // Add subtotal for previous date
-                        bodyHtml += `
-                            <tr style="background: #dbeafe; border-top: 1px solid #3b82f6;">
-                                <td colspan="3" style="font-weight: 700; text-align: right; color: #1e40af;">Ukupno ${formatDateDisplay(currentDate)}:</td>
-                                <td style="text-align: right; font-family: 'Courier New', monospace; color: #1e40af; font-weight: 700;">${totalsByDate[currentDate].toFixed(2)}</td>
-                            </tr>
-                        `;
+                        bodyHtml += buildSubtotalRow(currentDate, totalsByDate[currentDate], numCols, '#dbeafe', '#1e40af');
                     }
                     currentDate = item.datum;
                 }
@@ -3317,39 +3317,51 @@
                 const rowBg = rowIndex % 2 === 0 ? '#f9fafb' : 'white';
                 rowIndex++;
 
-                bodyHtml += `
-                    <tr style="background: ${rowBg};">
-                        <td style="font-weight: 500;">${formatDateDisplay(item.datum)}</td>
-                        <td style="font-weight: 600; color: #059669;">${item.odjel}</td>
-                        <td>${item.primac}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 600;">${item.kolicina.toFixed(2)}</td>
-                    </tr>
-                `;
+                bodyHtml += `<tr style="background:${rowBg};">`;
+                bodyHtml += `<td style="font-weight:500;">${item.datum}</td>`;
+                bodyHtml += `<td style="font-weight:600; color:#059669;">${item.odjel}</td>`;
+                bodyHtml += `<td>${item.primac}</td>`;
+                SORT_KOLONE.forEach(s => {
+                    const val = item.sort[s];
+                    bodyHtml += `<td style="text-align:right; font-family:'Courier New',monospace; font-size:11px; color:${val > 0 ? '#1f2937' : '#d1d5db'};">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                });
+                bodyHtml += `<td style="text-align:right; font-family:'Courier New',monospace; font-weight:700; color:#059669;">${item.ukupno > 0 ? item.ukupno.toFixed(2) : '-'}</td>`;
+                bodyHtml += '</tr>';
             });
 
-            // Add last date subtotal
+            // Zadnji datum subtotal
             if (currentDate !== null) {
-                bodyHtml += `
-                    <tr style="background: #dbeafe; border-top: 1px solid #3b82f6;">
-                        <td colspan="3" style="font-weight: 700; text-align: right; color: #1e40af;">Ukupno ${formatDateDisplay(currentDate)}:</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace; color: #1e40af; font-weight: 700;">${totalsByDate[currentDate].toFixed(2)}</td>
-                    </tr>
-                `;
+                bodyHtml += buildSubtotalRow(currentDate, totalsByDate[currentDate], numCols, '#dbeafe', '#1e40af');
             }
 
-            // Add grand total row
-            bodyHtml += `
-                <tr style="background: #059669; color: white; border-top: 3px solid #047857;">
-                    <td colspan="3" style="font-weight: 700; text-align: right;">UKUPNO SJEČA:</td>
-                    <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 700;">${grandTotal.toFixed(2)}</td>
-                </tr>
-            `;
+            // Grand total
+            bodyHtml += `<tr style="background:#059669; color:white; border-top:3px solid #047857;">`;
+            bodyHtml += `<td colspan="3" style="font-weight:700; text-align:right;">UKUPNO SJEČA:</td>`;
+            SORT_KOLONE.forEach(s => {
+                const val = grandTotals[s];
+                bodyHtml += `<td style="text-align:right; font-family:'Courier New',monospace; font-size:11px; font-weight:700;">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+            });
+            bodyHtml += `<td style="text-align:right; font-family:'Courier New',monospace; font-weight:700;">${grandTotals['ukupno'].toFixed(2)}</td>`;
+            bodyHtml += '</tr>';
 
             bodyElem.innerHTML = bodyHtml;
         }
 
+        // Helper: subtotal red po datumu
+        function buildSubtotalRow(datum, totals, numCols, bgColor, textColor) {
+            let html = `<tr style="background:${bgColor}; border-top:1px solid ${textColor};">`;
+            html += `<td colspan="3" style="font-weight:700; text-align:right; color:${textColor};">Ukupno ${datum}:</td>`;
+            SORT_KOLONE.forEach(s => {
+                const val = totals[s];
+                html += `<td style="text-align:right; font-family:'Courier New',monospace; font-size:11px; color:${textColor}; font-weight:700;">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+            });
+            html += `<td style="text-align:right; font-family:'Courier New',monospace; color:${textColor}; font-weight:700;">${totals['ukupno'].toFixed(2)}</td>`;
+            html += '</tr>';
+            return html;
+        }
+
         // ============================================
-        // POSLOVOĐA - OTPREMA TAB (Po danima)
+        // POSLOVOĐA - OTPREMA TAB (Zadnjih 10 dana)
         // ============================================
         async function loadPoslovodjaOtprema() {
             document.getElementById('loading-screen').classList.remove('hidden');
@@ -3357,11 +3369,8 @@
 
             try {
                 const radilista = getPoslovodjaRadilista();
-
-                // Display radilišta
                 document.getElementById('poslovodja-radilista-list-otprema').textContent = radilista.join(', ');
 
-                // Load otpreme data
                 const otpremeUrl = buildApiUrl('otpreme');
                 const otpremeData = await fetchWithCache(otpremeUrl, 'cache_otpreme_tab');
 
@@ -3369,79 +3378,65 @@
                     throw new Error('Greška pri učitavanju otprema: ' + otpremeData.error);
                 }
 
-                // Helper: parse DD.MM.YYYY to Date
-                const parseDDMMYYYY = (dateStr) => {
-                    if (!dateStr) return null;
-                    const parts = dateStr.split('.');
-                    if (parts.length >= 3) {
-                        return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-                    }
-                    return null;
-                };
-
-                // Calculate date 10 days ago
+                // Datum granice: zadnjih 10 dana
                 const today = new Date();
                 today.setHours(23, 59, 59, 999);
                 const tenDaysAgo = new Date();
                 tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
                 tenDaysAgo.setHours(0, 0, 0, 0);
 
-                // Filter by poslovodja/radilišta i zadnjih 10 dana
+                // Filter po poslovođi/radilištima i zadnjih 10 dana
                 const userFullName = currentUser.fullName.toUpperCase().trim();
                 const filteredOtpreme = (otpremeData.otpreme || []).filter(otprema => {
-                    // Parse datum (DD.MM.YYYY format)
-                    const otpremaDatum = parseDDMMYYYY(otprema.datum);
+                    const otpremaDatum = parseDatumDDMMYYYY(otprema.datum);
                     if (!otpremaDatum || otpremaDatum < tenDaysAgo || otpremaDatum > today) return false;
 
-                    // Prvo pokušaj filtrirati po poslovodja polju
                     const otpremaPoslovodja = (otprema.poslovodja || '').toUpperCase().trim();
-                    if (otpremaPoslovodja && otpremaPoslovodja === userFullName) {
-                        return true;
-                    }
+                    if (otpremaPoslovodja && otpremaPoslovodja === userFullName) return true;
 
-                    // Fallback: filter po radilištima ako postoje u mapiranju
                     if (radilista.length > 0) {
                         const otpremaRadiliste = (otprema.radiliste || '').toUpperCase().trim();
                         return radilista.some(r => otpremaRadiliste.includes(r.toUpperCase()));
                     }
-
                     return false;
                 });
 
-                // Group by date, odjel, otpremač, kupac, sortiment
-                const groupedData = {};
+                // Samo agregirani sortimenti
+                const relevantSortimenti = new Set(SORT_KOLONE);
+
+                // Grupisanje po datum + odjel + otpremac + kupac, pivot sortimenti u kolone
+                const grouped = {};
                 filteredOtpreme.forEach(otprema => {
+                    const sortiment = otprema.sortiment || '';
+                    if (!relevantSortimenti.has(sortiment)) return;
+
                     const datum = otprema.datum;
                     const odjel = otprema.odjel || 'Nepoznato';
                     const otpremac = otprema.otpremac || 'Nepoznato';
                     const kupac = otprema.kupac || 'Nepoznato';
-                    const sortiment = otprema.sortiment || 'Nepoznato';
-                    const kolicina = otprema.kolicina || 0;
+                    const key = `${datum}|${odjel}|${otpremac}|${kupac}`;
 
-                    const key = `${datum}|${odjel}|${otpremac}|${kupac}|${sortiment}`;
-                    if (!groupedData[key]) {
-                        groupedData[key] = {
-                            datum: datum,
-                            odjel: odjel,
-                            otpremac: otpremac,
-                            kupac: kupac,
-                            sortiment: sortiment,
-                            kolicina: 0
-                        };
+                    if (!grouped[key]) {
+                        grouped[key] = { datum, odjel, otpremac, kupac, sort: {} };
+                        SORT_KOLONE.forEach(s => grouped[key].sort[s] = 0);
                     }
-                    groupedData[key].kolicina += kolicina;
+                    grouped[key].sort[sortiment] += (otprema.kolicina || 0);
                 });
 
-                // Convert to array and sort by date (newest first)
-                const otpremaArray = Object.values(groupedData).sort((a, b) => {
-                    const dateA = parseDDMMYYYY(a.datum);
-                    const dateB = parseDDMMYYYY(b.datum);
+                // Izračunaj UKUPNO Č+L
+                Object.values(grouped).forEach(row => {
+                    row.ukupno = (row.sort['Σ ČETINARI'] || 0) + (row.sort['LIŠĆARI'] || 0);
+                });
+
+                // Sortiraj silazno po datumu, pa po odjelu, pa po kupcu
+                const otpremaArray = Object.values(grouped).sort((a, b) => {
+                    const dateA = parseDatumDDMMYYYY(a.datum);
+                    const dateB = parseDatumDDMMYYYY(b.datum);
                     if (dateB - dateA !== 0) return dateB - dateA;
                     if (a.odjel !== b.odjel) return a.odjel.localeCompare(b.odjel);
                     return a.kupac.localeCompare(b.kupac);
                 });
 
-                // Render table
                 renderPoslovodjaOtpremaTabTable(otpremaArray);
 
                 document.getElementById('loading-screen').classList.add('hidden');
@@ -3454,7 +3449,7 @@
             }
         }
 
-        // Render OTPREMA TAB table (po danima)
+        // Render OTPREMA TAB table sa sortiment kolonama
         function renderPoslovodjaOtpremaTabTable(data) {
             const headerElem = document.getElementById('poslovodja-otprema-header');
             const bodyElem = document.getElementById('poslovodja-otprema-body');
@@ -3465,47 +3460,44 @@
                 return;
             }
 
-            // Build header
-            let headerHtml = `
-                <tr>
-                    <th>Datum</th>
-                    <th>Odjel</th>
-                    <th>Otpremač</th>
-                    <th>Kupac</th>
-                    <th>Sortiment</th>
-                    <th>Količina (m³)</th>
-                </tr>
-            `;
+            // Zaglavlje
+            let headerHtml = '<tr><th style="min-width:80px;">Datum</th><th style="min-width:80px;">Odjel</th><th style="min-width:100px;">Otpremač</th><th style="min-width:100px;">Kupac</th>';
+            SORT_KOLONE_HEADER.forEach(s => {
+                headerHtml += `<th style="min-width:55px; font-size:10px; text-align:right; white-space:nowrap;">${s}</th>`;
+            });
+            headerHtml += '<th style="min-width:70px; text-align:right; font-size:10px; white-space:nowrap;">UKUPNO Č+L</th></tr>';
             headerElem.innerHTML = headerHtml;
 
-            // Calculate totals by date
+            // Subtotali po datumu
             const totalsByDate = {};
-            let grandTotal = 0;
+            const grandTotals = {};
+            SORT_KOLONE.forEach(s => grandTotals[s] = 0);
+            grandTotals['ukupno'] = 0;
 
             data.forEach(item => {
                 if (!totalsByDate[item.datum]) {
-                    totalsByDate[item.datum] = 0;
+                    totalsByDate[item.datum] = {};
+                    SORT_KOLONE.forEach(s => totalsByDate[item.datum][s] = 0);
+                    totalsByDate[item.datum]['ukupno'] = 0;
                 }
-                totalsByDate[item.datum] += item.kolicina;
-                grandTotal += item.kolicina;
+                SORT_KOLONE.forEach(s => {
+                    totalsByDate[item.datum][s] += item.sort[s];
+                    grandTotals[s] += item.sort[s];
+                });
+                totalsByDate[item.datum]['ukupno'] += item.ukupno;
+                grandTotals['ukupno'] += item.ukupno;
             });
 
-            // Build body with date grouping
+            // Tijelo tabele sa grupisanjem po datumu
             let bodyHtml = '';
             let currentDate = null;
             let rowIndex = 0;
+            const colspanInfo = 4; // datum + odjel + otpremac + kupac
 
-            data.forEach((item, index) => {
-                // Check if this is a new date (date subtotal header)
+            data.forEach(item => {
                 if (item.datum !== currentDate) {
                     if (currentDate !== null) {
-                        // Add subtotal for previous date
-                        bodyHtml += `
-                            <tr style="background: #fee2e2; border-top: 1px solid #ef4444;">
-                                <td colspan="5" style="font-weight: 700; text-align: right; color: #dc2626;">Ukupno ${formatDateDisplay(currentDate)}:</td>
-                                <td style="text-align: right; font-family: 'Courier New', monospace; color: #dc2626; font-weight: 700;">${totalsByDate[currentDate].toFixed(2)}</td>
-                            </tr>
-                        `;
+                        bodyHtml += buildOtpremaSubtotalRow(currentDate, totalsByDate[currentDate], colspanInfo);
                     }
                     currentDate = item.datum;
                 }
@@ -3513,51 +3505,48 @@
                 const rowBg = rowIndex % 2 === 0 ? '#f9fafb' : 'white';
                 rowIndex++;
 
-                bodyHtml += `
-                    <tr style="background: ${rowBg};">
-                        <td style="font-weight: 500;">${formatDateDisplay(item.datum)}</td>
-                        <td style="font-weight: 600; color: #dc2626;">${item.odjel}</td>
-                        <td>${item.otpremac}</td>
-                        <td style="color: #7c3aed; font-weight: 500;">${item.kupac}</td>
-                        <td style="font-style: italic;">${item.sortiment}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 600;">${item.kolicina.toFixed(2)}</td>
-                    </tr>
-                `;
+                bodyHtml += `<tr style="background:${rowBg};">`;
+                bodyHtml += `<td style="font-weight:500;">${item.datum}</td>`;
+                bodyHtml += `<td style="font-weight:600; color:#dc2626;">${item.odjel}</td>`;
+                bodyHtml += `<td>${item.otpremac}</td>`;
+                bodyHtml += `<td style="color:#7c3aed; font-weight:500;">${item.kupac}</td>`;
+                SORT_KOLONE.forEach(s => {
+                    const val = item.sort[s];
+                    bodyHtml += `<td style="text-align:right; font-family:'Courier New',monospace; font-size:11px; color:${val > 0 ? '#1f2937' : '#d1d5db'};">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                });
+                bodyHtml += `<td style="text-align:right; font-family:'Courier New',monospace; font-weight:700; color:#dc2626;">${item.ukupno > 0 ? item.ukupno.toFixed(2) : '-'}</td>`;
+                bodyHtml += '</tr>';
             });
 
-            // Add last date subtotal
+            // Zadnji datum subtotal
             if (currentDate !== null) {
-                bodyHtml += `
-                    <tr style="background: #fee2e2; border-top: 1px solid #ef4444;">
-                        <td colspan="5" style="font-weight: 700; text-align: right; color: #dc2626;">Ukupno ${formatDateDisplay(currentDate)}:</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace; color: #dc2626; font-weight: 700;">${totalsByDate[currentDate].toFixed(2)}</td>
-                    </tr>
-                `;
+                bodyHtml += buildOtpremaSubtotalRow(currentDate, totalsByDate[currentDate], colspanInfo);
             }
 
-            // Add grand total row
-            bodyHtml += `
-                <tr style="background: #dc2626; color: white; border-top: 3px solid #b91c1c;">
-                    <td colspan="5" style="font-weight: 700; text-align: right;">UKUPNO OTPREMA:</td>
-                    <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 700;">${grandTotal.toFixed(2)}</td>
-                </tr>
-            `;
+            // Grand total
+            bodyHtml += `<tr style="background:#dc2626; color:white; border-top:3px solid #b91c1c;">`;
+            bodyHtml += `<td colspan="${colspanInfo}" style="font-weight:700; text-align:right;">UKUPNO OTPREMA:</td>`;
+            SORT_KOLONE.forEach(s => {
+                const val = grandTotals[s];
+                bodyHtml += `<td style="text-align:right; font-family:'Courier New',monospace; font-size:11px; font-weight:700;">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+            });
+            bodyHtml += `<td style="text-align:right; font-family:'Courier New',monospace; font-weight:700;">${grandTotals['ukupno'].toFixed(2)}</td>`;
+            bodyHtml += '</tr>';
 
             bodyElem.innerHTML = bodyHtml;
         }
 
-        // Helper: format date for display (DD.MM.YYYY)
-        function formatDateDisplay(dateStr) {
-            try {
-                const date = new Date(dateStr);
-                if (isNaN(date.getTime())) return dateStr;
-                const day = String(date.getDate()).padStart(2, '0');
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const year = date.getFullYear();
-                return `${day}.${month}.${year}`;
-            } catch (e) {
-                return dateStr;
-            }
+        // Helper: OTPREMA subtotal red
+        function buildOtpremaSubtotalRow(datum, totals, colspan) {
+            let html = `<tr style="background:#fee2e2; border-top:1px solid #ef4444;">`;
+            html += `<td colspan="${colspan}" style="font-weight:700; text-align:right; color:#dc2626;">Ukupno ${datum}:</td>`;
+            SORT_KOLONE.forEach(s => {
+                const val = totals[s];
+                html += `<td style="text-align:right; font-family:'Courier New',monospace; font-size:11px; color:#dc2626; font-weight:700;">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+            });
+            html += `<td style="text-align:right; font-family:'Courier New',monospace; color:#dc2626; font-weight:700;">${totals['ukupno'].toFixed(2)}</td>`;
+            html += '</tr>';
+            return html;
         }
 
         // Load primaci data
