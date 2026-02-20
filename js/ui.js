@@ -47,8 +47,10 @@
                 loadOperativa();
             } else if (tab === 'primaci') {
                 loadPrimaci();
+                loadPrimaciDaily();
             } else if (tab === 'otpremaci') {
                 loadOtpremaci();
+                loadOtremaciDaily();
             } else if (tab === 'kupci') {
                 loadKupci();
             } else if (tab === 'primac-personal') {
