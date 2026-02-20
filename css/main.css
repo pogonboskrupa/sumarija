@@ -2528,3 +2528,23 @@
             #dashboard-content,
             #kupci-content { padding-inline: 12px; padding-block: 12px; }
         }
+
+        /* ============================================ */
+        /* DRAG-TO-SCROLL CURSOR FEEDBACK               */
+        /* ============================================ */
+        .drag-scroll-enabled {
+            cursor: grab;
+        }
+        .drag-scroll-enabled:active,
+        .drag-scroll-active {
+            cursor: grabbing;
+        }
+        .drag-scroll-active {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        @media (hover: none) {
+            .drag-scroll-enabled {
+                cursor: auto;
+            }
+        }
