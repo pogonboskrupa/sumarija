@@ -275,27 +275,34 @@
             </div>
 
             <!-- Odjeli Table -->
-            <div class="section">
-                <h2>🏭 Pregled po odjelima</h2>
-                <div class="controls-bar">
-                    <input type="text" class="search-input" id="odjeli-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterOdjeliTable()">
+            <div class="enterprise-card">
+                <div class="enterprise-card-header">
+                    <div>
+                        <h2>🏭 Pregled po odjelima</h2>
+                        <span class="card-subtitle">Sječa, otprema, zaliha i realizacija po odjelima</span>
+                    </div>
                 </div>
-                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="monthly-table" id="odjeli-table">
-                    <thead>
-                        <tr>
-                            <th onclick="sortTable(0, 'odjeli-table')">Odjel ⇅</th>
-                            <th class="right" onclick="sortTable(1, 'odjeli-table')">Sječa (m³) ⇅</th>
-                            <th class="right" onclick="sortTable(2, 'odjeli-table')">Otprema (m³) ⇅</th>
-                            <th class="right" onclick="sortTable(3, 'odjeli-table')">Zaliha ⇅</th>
-                            <th onclick="sortTable(4, 'odjeli-table')">Radilište ⇅</th>
-                            <th onclick="sortTable(5, 'odjeli-table')">Izvođač Radova ⇅</th>
-                            <th onclick="sortTable(6, 'odjeli-table')">Zadnja Sječa ⇅</th>
-                            <th class="right" onclick="sortTable(7, 'odjeli-table')">Realizacija % ⇅</th>
-                        </tr>
-                    </thead>
-                    <tbody id="odjeli-table-body"></tbody>
-                </table>
+                <div class="enterprise-card-body">
+                    <div class="controls-bar">
+                        <input type="text" class="search-input" id="odjeli-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterOdjeliTable()">
+                    </div>
+                    <div class="odjeli-table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="odjeli-table" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable(0, 'odjeli-table')">Odjel ⇅</th>
+                                <th class="right" onclick="sortTable(1, 'odjeli-table')">Sječa (m³) ⇅</th>
+                                <th class="right" onclick="sortTable(2, 'odjeli-table')">Otprema (m³) ⇅</th>
+                                <th class="right" onclick="sortTable(3, 'odjeli-table')">Zaliha ⇅</th>
+                                <th onclick="sortTable(4, 'odjeli-table')">Radilište ⇅</th>
+                                <th onclick="sortTable(5, 'odjeli-table')">Izvođač Radova ⇅</th>
+                                <th onclick="sortTable(6, 'odjeli-table')">Zadnja Sječa ⇅</th>
+                                <th class="right" onclick="sortTable(7, 'odjeli-table')">Realizacija % ⇅</th>
+                            </tr>
+                        </thead>
+                        <tbody id="odjeli-table-body"></tbody>
+                    </table>
+                    </div>
                 </div>
             </div>
 

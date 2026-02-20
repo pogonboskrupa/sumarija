@@ -1452,12 +1452,39 @@
                             izvodjacColorMap[izv] = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
                         });
 
+                        // Month color palette for "Zadnja Sječa" column
+                        const mjesecBoje = {
+                            1:  { bg: '#dbeafe', color: '#1e40af' },  // Jan - plava
+                            2:  { bg: '#e0e7ff', color: '#3730a3' },  // Feb - indigo
+                            3:  { bg: '#d1fae5', color: '#065f46' },  // Mar - zelena
+                            4:  { bg: '#ccfbf1', color: '#0f766e' },  // Apr - teal
+                            5:  { bg: '#fef9c3', color: '#854d0e' },  // Maj - žuta
+                            6:  { bg: '#ffedd5', color: '#9a3412' },  // Jun - narandžasta
+                            7:  { bg: '#fee2e2', color: '#991b1b' },  // Jul - crvena
+                            8:  { bg: '#fce7f3', color: '#9d174d' },  // Aug - roza
+                            9:  { bg: '#f3e8ff', color: '#6b21a8' },  // Sep - ljubičasta
+                            10: { bg: '#fef3c7', color: '#92400e' },  // Okt - amber
+                            11: { bg: '#ecfccb', color: '#3f6212' },  // Nov - lime
+                            12: { bg: '#e0f2fe', color: '#075985' }   // Dec - sky
+                        };
+
+                        const getSjecaMonthStyle = (datumStr) => {
+                            if (!datumStr || datumStr === '-') return '';
+                            const parts = datumStr.split('.');
+                            if (parts.length < 2) return '';
+                            const month = parseInt(parts[1], 10);
+                            const m = mjesecBoje[month];
+                            if (!m) return '';
+                            return `background-color: ${m.bg}; color: ${m.color}; font-weight: 600; border-radius: 4px; padding: 4px 8px;`;
+                        };
+
                         const odjeliHTML = odjeliData.odjeli.map(o => {
                             if (!o) return '';
                             const radilisteClass = radilisteColorMap[o.radiliste] || '';
                             const realizacijaClass = getRealizacijaClass(o.realizacija);
                             const izvodjacBg = izvodjacColorMap[o.izvođač] || '';
                             const izvodjacStyle = izvodjacBg ? `background-color: ${izvodjacBg};` : '';
+                            const sjecaDateStyle = getSjecaMonthStyle(o.datumZadnjeSjece);
                             return `
                                 <tr>
                                     <td class="${radilisteClass}" style="font-weight: 500;">${o.odjel || '-'}</td>
@@ -1466,7 +1493,7 @@
                                     <td class="right ${radilisteClass}">${(o.sumaPanj != null && !isNaN(o.sumaPanj)) ? o.sumaPanj.toFixed(2) : '0.00'}</td>
                                     <td class="${radilisteClass}">${o.radiliste || '-'}</td>
                                     <td style="${izvodjacStyle}">${o.izvođač || '-'}</td>
-                                    <td>${o.datumZadnjeSjece || '-'}</td>
+                                    <td><span style="${sjecaDateStyle}">${o.datumZadnjeSjece || '-'}</span></td>
                                     <td class="right ${realizacijaClass}">${(o.realizacija != null && o.realizacija > 0) ? o.realizacija.toFixed(1) + '%' : '-'}</td>
                                 </tr>
                             `;
