@@ -595,38 +595,52 @@
         <div id="kupci-content" class="container hidden">
             <!-- Submenu za Kupci -->
             <div class="submenu">
-                <button class="submenu-tab" onclick="switchKupciSubmenu('godisnji')">🏢 Godišnji pregled</button>
                 <button class="submenu-tab active" onclick="switchKupciSubmenu('mjesecni')">📅 Mjesečni pregled</button>
+                <button class="submenu-tab" onclick="switchKupciSubmenu('godisnji')">🏢 Godišnji pregled</button>
             </div>
 
-            <!-- Godišnji pregled -->
-            <div id="kupci-godisnji-view" class="submenu-content hidden">
-                <div class="section">
-                    <h2>🏢 Godišnji pregled po kupcima</h2>
-                    <div class="controls-bar">
-                        <input type="text" class="search-input" id="kupci-godisnji-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciGodisnjiTable()">
+            <!-- Mjesečni pregled (default) -->
+            <div id="kupci-mjesecni-view" class="submenu-content">
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📅 Mjesečni pregled po kupcima</h2>
+                            <span class="card-subtitle">Otprema po kupcima i sortimentima za svaki mjesec</span>
+                        </div>
                     </div>
-                    <div class="kupci-table-wrapper">
-                        <table class="kupci-table" id="kupci-godisnji-table">
-                            <thead id="kupci-godisnji-header"></thead>
-                            <tbody id="kupci-godisnji-body"></tbody>
-                        </table>
+                    <div class="enterprise-card-body">
+                        <div class="controls-bar">
+                            <input type="text" class="search-input" id="kupci-mjesecni-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciMjesecniTable()">
+                        </div>
+                        <div class="kupci-table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                            <table class="kupci-table" id="kupci-mjesecni-table" style="width: 100%;">
+                                <thead id="kupci-mjesecni-header"></thead>
+                                <tbody id="kupci-mjesecni-body"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Mjesečni pregled -->
-            <div id="kupci-mjesecni-view" class="submenu-content">
-                <div class="section">
-                    <h2>📅 Mjesečni pregled po kupcima</h2>
-                    <div class="controls-bar">
-                        <input type="text" class="search-input" id="kupci-mjesecni-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciMjesecniTable()">
+            <!-- Godišnji pregled -->
+            <div id="kupci-godisnji-view" class="submenu-content hidden">
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>🏢 Godišnji pregled po kupcima</h2>
+                            <span class="card-subtitle">Ukupna otprema po kupcima za tekuću godinu</span>
+                        </div>
                     </div>
-                    <div class="kupci-table-wrapper">
-                        <table class="kupci-table" id="kupci-mjesecni-table">
-                            <thead id="kupci-mjesecni-header"></thead>
-                            <tbody id="kupci-mjesecni-body"></tbody>
-                        </table>
+                    <div class="enterprise-card-body">
+                        <div class="controls-bar">
+                            <input type="text" class="search-input" id="kupci-godisnji-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciGodisnjiTable()">
+                        </div>
+                        <div class="kupci-table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                            <table class="kupci-table" id="kupci-godisnji-table" style="width: 100%;">
+                                <thead id="kupci-godisnji-header"></thead>
+                                <tbody id="kupci-godisnji-body"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

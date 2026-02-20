@@ -2383,7 +2383,8 @@
         /* ============================================ */
 
         /* 1. Full-width dashboard (override .container max-width: 1200px) */
-        #dashboard-content {
+        #dashboard-content,
+        #kupci-content {
             max-width: 100%;
             padding-inline: 24px;
             padding-block: 24px;
@@ -2392,7 +2393,8 @@
             max-width: 100%;
         }
         @media (min-width: 1920px) {
-            #dashboard-content { padding-inline: 40px; }
+            #dashboard-content,
+            #kupci-content { padding-inline: 40px; }
         }
 
         /* 2. Grid layout za desktop (umjesto flex) */
@@ -2523,5 +2525,6 @@
             .enterprise-card .dashboard-monthly-wrapper {
                 overflow-x: auto;
             }
-            #dashboard-content { padding-inline: 12px; padding-block: 12px; }
+            #dashboard-content,
+            #kupci-content { padding-inline: 12px; padding-block: 12px; }
         }
