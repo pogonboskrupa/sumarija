@@ -2384,7 +2384,14 @@
 
         /* 1. Full-width dashboard (override .container max-width: 1200px) */
         #dashboard-content,
-        #kupci-content {
+        #kupci-content,
+        #stanje-zaliha-content,
+        #mjesecni-sortimenti-content,
+        #primaci-content,
+        #otpremaci-content,
+        #izvjestaji-content,
+        #izvjestaji-primac-content,
+        #izvjestaji-otpremac-content {
             max-width: 100%;
             padding-inline: 24px;
             padding-block: 24px;
@@ -2394,7 +2401,14 @@
         }
         @media (min-width: 1920px) {
             #dashboard-content,
-            #kupci-content { padding-inline: 40px; }
+            #kupci-content,
+            #stanje-zaliha-content,
+            #mjesecni-sortimenti-content,
+            #primaci-content,
+            #otpremaci-content,
+            #izvjestaji-content,
+            #izvjestaji-primac-content,
+            #izvjestaji-otpremac-content { padding-inline: 40px; }
         }
 
         /* 2. Grid layout za desktop (umjesto flex) */
@@ -2526,7 +2540,14 @@
                 overflow-x: auto;
             }
             #dashboard-content,
-            #kupci-content { padding-inline: 12px; padding-block: 12px; }
+            #kupci-content,
+            #stanje-zaliha-content,
+            #mjesecni-sortimenti-content,
+            #primaci-content,
+            #otpremaci-content,
+            #izvjestaji-content,
+            #izvjestaji-primac-content,
+            #izvjestaji-otpremac-content { padding-inline: 12px; padding-block: 12px; }
         }
 
         /* ============================================ */
