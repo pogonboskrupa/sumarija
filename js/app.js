@@ -3315,7 +3315,7 @@
                 function filterByPoslovodja(entries) {
                     return entries.filter(function(entry) {
                         var entryDatum = parseDatumDDMMYYYY(entry.datum);
-                        if (!entryDatum || entryDatum.getFullYear() !== currentYear) return false;
+                        if (!entryDatum) return false;
                         var entryPoslovodja = (entry.poslovodja || '').toUpperCase().trim();
                         if (entryPoslovodja && entryPoslovodja === userFullName) return true;
                         if (radilista.length > 0) {
@@ -3329,6 +3329,7 @@
                 var filteredPrimke = filterByPoslovodja(primkeData.primke || []);
                 var filteredOtpreme = filterByPoslovodja(otpremeData.otpreme || []);
 
+                // Ključ: "YYYY-MM" za jedinstvenu identifikaciju godina+mjesec
                 function aggregateByOdjelMonth(entries) {
                     var result = {};
                     entries.forEach(function(entry) {
@@ -3337,13 +3338,13 @@
                         var odjel = entry.odjel || 'Nepoznato';
                         var datum = parseDatumDDMMYYYY(entry.datum);
                         if (!datum) return;
-                        var monthIdx = datum.getMonth();
+                        var yearMonth = datum.getFullYear() + '-' + String(datum.getMonth()).padStart(2, '0');
                         if (!result[odjel]) result[odjel] = {};
-                        if (!result[odjel][monthIdx]) {
-                            result[odjel][monthIdx] = { sort: {} };
-                            SORT_KOLONE.forEach(function(s) { result[odjel][monthIdx].sort[s] = 0; });
+                        if (!result[odjel][yearMonth]) {
+                            result[odjel][yearMonth] = { sort: {}, year: datum.getFullYear(), month: datum.getMonth() };
+                            SORT_KOLONE.forEach(function(s) { result[odjel][yearMonth].sort[s] = 0; });
                         }
-                        result[odjel][monthIdx].sort[sortiment] += (entry.kolicina || 0);
+                        result[odjel][yearMonth].sort[sortiment] += (entry.kolicina || 0);
                     });
                     Object.values(result).forEach(function(months) {
                         Object.values(months).forEach(function(md) {
@@ -3392,7 +3393,7 @@
             var container = document.getElementById('poslovodja-pregled-container');
 
             if (Object.keys(radilisteOdjeli).length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za tekuću godinu</div>';
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka</div>';
                 return;
             }
 
@@ -3413,13 +3414,15 @@
         }
 
         function renderPregledSection(odjel, type, monthlyData, accentColor, headerBg) {
-            var months = Object.keys(monthlyData).map(Number).sort(function(a, b) { return a - b; });
+            // Sortiraj po year-month ključevima hronološki
+            var keys = Object.keys(monthlyData).sort();
             var html = '';
+            var thisYear = new Date().getFullYear();
 
             html += '<div style="background: ' + headerBg + '; border-left: 4px solid ' + accentColor + '; padding: 10px 16px; margin: 16px 0 8px 0; border-radius: 0 8px 8px 0;">';
             html += '<h3 style="margin: 0; color: ' + accentColor + '; font-size: 14px; font-weight: 700;">' + odjel + ' - ' + type + '</h3></div>';
 
-            if (months.length === 0) {
+            if (keys.length === 0) {
                 html += '<p style="color: #9ca3af; padding: 10px 16px; font-size: 13px; font-style: italic;">Nema podataka</p>';
                 return html;
             }
@@ -3429,7 +3432,7 @@
 
             // Header
             html += '<thead><tr style="background: #f8fafc;">';
-            html += '<th style="min-width: 90px; text-align: left; padding: 8px 10px; border-bottom: 2px solid #e5e7eb;">Mjesec</th>';
+            html += '<th style="min-width: 120px; text-align: left; padding: 8px 10px; border-bottom: 2px solid #e5e7eb;">Mjesec</th>';
             SORT_KOLONE_HEADER.forEach(function(s) {
                 html += '<th style="min-width: 60px; font-size: 10px; text-align: right; white-space: nowrap; padding: 8px 6px; border-bottom: 2px solid #e5e7eb;">' + s + '</th>';
             });
@@ -3442,12 +3445,16 @@
             SORT_KOLONE.forEach(function(s) { grandTotals[s] = 0; });
             grandTotals['ukupno'] = 0;
 
-            months.forEach(function(monthIdx, rowIndex) {
-                var monthData = monthlyData[monthIdx];
+            keys.forEach(function(key, rowIndex) {
+                var monthData = monthlyData[key];
                 var rowBg = rowIndex % 2 === 0 ? '#ffffff' : '#f9fafb';
+                var monthLabel = getMonthName(monthData.month);
+                if (monthData.year !== thisYear) {
+                    monthLabel += ' ' + monthData.year;
+                }
 
                 html += '<tr style="background: ' + rowBg + ';">';
-                html += '<td style="font-weight: 600; padding: 7px 10px; color: #374151;">' + getMonthName(monthIdx) + '</td>';
+                html += '<td style="font-weight: 600; padding: 7px 10px; color: #374151;">' + monthLabel + '</td>';
 
                 SORT_KOLONE.forEach(function(s) {
                     var val = monthData.sort[s] || 0;
