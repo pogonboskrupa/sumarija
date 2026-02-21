@@ -5622,76 +5622,121 @@
             return '';
         }
 
+        // Sort state for pending (admin) table
+        var pendingSortCol = null;
+        var pendingSortDir = 'asc';
+
+        function getUnosiColGroup(sortiment) {
+            var cetinariCols = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'CEL.DUGA', 'CEL.CIJEPANA', 'TRUPCI Č', 'ČETINARI'];
+            var liscariCols = ['F/L L', 'I L', 'II L', 'III L', 'OGR.DUGI', 'OGR.CIJEPANI', 'TRUPCI L', 'LIŠĆARI'];
+            if (cetinariCols.indexOf(sortiment) !== -1) return 'cg-c';
+            if (liscariCols.indexOf(sortiment) !== -1) return 'cg-l';
+            return '';
+        }
+
+        function sortUnosiData(data, col, dir) {
+            var sorted = data.slice();
+            sorted.sort(function(a, b) {
+                var va, vb;
+                if (col === 'tip') { va = a.tip || ''; vb = b.tip || ''; }
+                else if (col === 'datum') { va = a.datum || ''; vb = b.datum || ''; }
+                else if (col === 'odjel') { va = a.odjel || ''; vb = b.odjel || ''; }
+                else if (col === 'radnik') { va = a.radnik || ''; vb = b.radnik || ''; }
+                else if (col === 'kupac') { va = a.kupac || ''; vb = b.kupac || ''; }
+                else if (col === 'brOtpremnice') { va = a.brojOtpremnice || ''; vb = b.brojOtpremnice || ''; }
+                else if (col === 'poslano') { va = a.timestamp || ''; vb = b.timestamp || ''; }
+                else if (col.indexOf('sort_') === 0) {
+                    var sn = col.substring(5);
+                    va = sn === 'SVEUKUPNO' ? (a.ukupno || 0) : ((a.sortimenti && a.sortimenti[sn]) || 0);
+                    vb = sn === 'SVEUKUPNO' ? (b.ukupno || 0) : ((b.sortimenti && b.sortimenti[sn]) || 0);
+                }
+                else { va = ''; vb = ''; }
+
+                if (typeof va === 'number' && typeof vb === 'number') {
+                    return dir === 'asc' ? va - vb : vb - va;
+                }
+                va = String(va).toLowerCase();
+                vb = String(vb).toLowerCase();
+                if (va < vb) return dir === 'asc' ? -1 : 1;
+                if (va > vb) return dir === 'asc' ? 1 : -1;
+                return 0;
+            });
+            return sorted;
+        }
+
+        function unosiSortIcon(col, activeCol, activeDir) {
+            if (col === activeCol) {
+                return '<span class="sort-icon active">' + (activeDir === 'asc' ? '▲' : '▼') + '</span>';
+            }
+            return '<span class="sort-icon">⇅</span>';
+        }
+
         // Render pending table with filters
         function renderPendingTable(data) {
-            let html = '';
+            var html = '';
 
             if (!data || data.length === 0) {
                 html = '<p style="text-align: center; padding: 40px; color: #6b7280;">Nema dodanih unosa</p>';
             } else {
-                // Get sortimenti names from first item
-                const sortimentiNazivi = data[0] && data[0].sortimenti ? Object.keys(data[0].sortimenti) : [];
+                var sortimentiNazivi = data[0] && data[0].sortimenti ? Object.keys(data[0].sortimenti) : [];
+                var sc = pendingSortCol, sd = pendingSortDir;
 
-                html = '<div class="kupci-table-wrapper"><table class="kupci-table"><thead><tr>';
-                html += '<th style="min-width: 80px;">Tip</th>';
-                html += '<th style="min-width: 100px;">Datum</th>';
-                html += '<th style="min-width: 80px;">Odjel</th>';
-                html += '<th style="min-width: 150px;">Radnik</th>';
-                html += '<th style="min-width: 120px;">Kupac</th>';
-                html += '<th style="min-width: 120px;">Br. otpremnice</th>';
-                html += '<th style="min-width: 60px;">Slika</th>';
+                html = '<div class="unosi-table-wrapper"><table class="unosi-table" id="pending-unosi-table"><thead><tr>';
+                html += '<th class="col-freeze-1" style="min-width:80px" data-sort="tip">Tip' + unosiSortIcon('tip', sc, sd) + '</th>';
+                html += '<th class="col-freeze-2" style="min-width:95px" data-sort="datum">Datum' + unosiSortIcon('datum', sc, sd) + '</th>';
+                html += '<th data-sort="odjel">Odjel' + unosiSortIcon('odjel', sc, sd) + '</th>';
+                html += '<th data-sort="radnik">Radnik' + unosiSortIcon('radnik', sc, sd) + '</th>';
+                html += '<th data-sort="kupac">Kupac' + unosiSortIcon('kupac', sc, sd) + '</th>';
+                html += '<th data-sort="brOtpremnice">Br. otpr.' + unosiSortIcon('brOtpremnice', sc, sd) + '</th>';
+                html += '<th style="min-width:50px">Slika</th>';
 
-                // Sortimenti headers with grouping
-                for (let i = 0; i < sortimentiNazivi.length; i++) {
-                    const colClass = getColumnGroup(sortimentiNazivi[i]);
-                    html += '<th class="sortiment-col ' + colClass + '">' + sortimentiNazivi[i] + '</th>';
+                for (var i = 0; i < sortimentiNazivi.length; i++) {
+                    var cg = getUnosiColGroup(sortimentiNazivi[i]);
+                    var sk = 'sort_' + sortimentiNazivi[i];
+                    html += '<th class="sort-col ' + cg + '" data-sort="' + sk + '">' + sortimentiNazivi[i] + unosiSortIcon(sk, sc, sd) + '</th>';
                 }
 
-                html += '<th style="min-width: 130px;">Poslano</th>';
-                html += '<th style="min-width: 80px;"></th>'; // Actions column
+                html += '<th data-sort="poslano">Poslano' + unosiSortIcon('poslano', sc, sd) + '</th>';
+                html += '<th style="min-width:50px;cursor:default"></th>';
                 html += '</tr></thead><tbody>';
 
-                // Render rows
-                for (let i = 0; i < data.length; i++) {
-                    const unos = data[i];
-                    const tipColor = unos.tip === 'SJEČA' ? '#059669' : '#2563eb';
+                for (var i = 0; i < data.length; i++) {
+                    var unos = data[i];
+                    var badgeClass = unos.tip === 'SJEČA' ? 'badge-sjeca' : 'badge-otprema';
 
                     html += '<tr>';
-                    html += '<td><span style="font-weight: 600; color: ' + tipColor + '">' + unos.tip + '</span></td>';
-                    html += '<td>' + unos.datum + '</td>';
-                    html += '<td style="font-weight: 600;">' + unos.odjel + '</td>';
+                    html += '<td class="col-freeze-1"><span class="badge-tip ' + badgeClass + '">' + unos.tip + '</span></td>';
+                    html += '<td class="col-freeze-2 cell-datum">' + unos.datum + '</td>';
+                    html += '<td class="cell-odjel">' + unos.odjel + '</td>';
                     html += '<td>' + unos.radnik + '</td>';
                     html += '<td>' + (unos.kupac || '-') + '</td>';
                     html += '<td>' + (unos.brojOtpremnice || '-') + '</td>';
-                    // Slika kolona - thumbnail preview
+
                     if (unos.imageUrl) {
-                        html += '<td style="text-align: center; padding: 4px;">';
+                        html += '<td style="text-align:center;padding:4px;">';
                         html += '<a href="' + unos.imageUrl + '" target="_blank" title="Klikni za veću sliku">';
-                        html += '<img src="' + unos.imageUrl + '" alt="Slika" style="max-width: 60px; max-height: 45px; border-radius: 4px; cursor: pointer; border: 1px solid #e5e7eb; object-fit: cover;" onerror="this.style.display=\'none\'; this.parentNode.innerHTML=\'📷\'">';
+                        html += '<img src="' + unos.imageUrl + '" alt="Slika" style="max-width:50px;max-height:38px;border-radius:3px;cursor:pointer;border:1px solid #e5e7eb;object-fit:cover;" onerror="this.style.display=\'none\'; this.parentNode.innerHTML=\'-\'">';
                         html += '</a></td>';
                     } else {
-                        html += '<td style="text-align: center; color: #9ca3af;">-</td>';
+                        html += '<td style="text-align:center;color:#ccc;">-</td>';
                     }
 
-                    // Sortimenti values with grouping
-                    for (let j = 0; j < sortimentiNazivi.length; j++) {
-                        const sortiment = sortimentiNazivi[j];
-                        // Use calculated ukupno for SVEUKUPNO instead of saved value
-                        const val = sortiment === 'SVEUKUPNO' ? unos.ukupno : (unos.sortimenti[sortiment] || 0);
-                        const displayVal = val > 0 ? val.toFixed(2) : '-';
-                        const colClass = getColumnGroup(sortiment);
-                        html += '<td class="sortiment-col right ' + colClass + '">' + displayVal + '</td>';
+                    for (var j = 0; j < sortimentiNazivi.length; j++) {
+                        var sortiment = sortimentiNazivi[j];
+                        var val = sortiment === 'SVEUKUPNO' ? unos.ukupno : (unos.sortimenti[sortiment] || 0);
+                        var displayVal = val > 0 ? val.toFixed(2) : '-';
+                        var cg2 = getUnosiColGroup(sortiment);
+                        html += '<td class="sort-col ' + cg2 + '">' + displayVal + '</td>';
                     }
 
-                    html += '<td style="font-size: 11px; color: #6b7280;">' + unos.timestamp + '</td>';
+                    html += '<td class="cell-timestamp">' + unos.timestamp + '</td>';
 
-                    // Row actions dropdown
                     html += '<td>';
                     html += '<div class="row-actions">';
                     html += '<button class="row-actions-btn" onclick="toggleRowActions(' + unos.id + ')">⋮</button>';
                     html += '<div class="row-actions-dropdown" id="row-actions-' + unos.id + '">';
-                    html += '<div class="row-actions-item" onclick="editPendingUnos(' + unos.id + ', \'' + unos.tip + '\')">✏️ Uredi</div>';
-                    html += '<div class="row-actions-item danger" onclick="deletePendingUnos(' + unos.id + ', \'' + unos.tip + '\')">🗑️ Obriši</div>';
+                    html += '<div class="row-actions-item" onclick="editPendingUnos(' + unos.id + ', \'' + unos.tip + '\')">Uredi</div>';
+                    html += '<div class="row-actions-item danger" onclick="deletePendingUnos(' + unos.id + ', \'' + unos.tip + '\')">Obriši</div>';
                     html += '</div>';
                     html += '</div>';
                     html += '</td>';
@@ -5699,24 +5744,42 @@
                     html += '</tr>';
                 }
 
-                html += '</tbody></table></div>';
+                html += '</tbody></table>';
 
-                // Add summary
-                html += '<div style="margin-top: 20px; padding: 12px; background: #f9fafb; border-radius: 8px;">';
-                html += '<strong>Ukupno dodanih unosa:</strong> ' + data.length;
-
-                let sjecaCount = 0;
-                let otpremaCount = 0;
-                for (let i = 0; i < data.length; i++) {
-                    if (data[i].tip === 'SJEČA') sjecaCount++;
-                    else if (data[i].tip === 'OTPREMA') otpremaCount++;
+                // Summary bar
+                var sjecaCount = 0, otpremaCount = 0;
+                for (var k = 0; k < data.length; k++) {
+                    if (data[k].tip === 'SJEČA') sjecaCount++;
+                    else if (data[k].tip === 'OTPREMA') otpremaCount++;
                 }
-
-                html += ' (Sječa: ' + sjecaCount + ', Otprema: ' + otpremaCount + ')';
+                html += '<div class="unosi-summary">';
+                html += '<strong>' + data.length + '</strong> unosa';
+                html += '<span class="badge-tip badge-sjeca">' + sjecaCount + ' sječa</span>';
+                html += '<span class="badge-tip badge-otprema">' + otpremaCount + ' otprema</span>';
+                html += '</div>';
                 html += '</div>';
             }
 
             document.getElementById('pending-unosi-container').innerHTML = html;
+
+            // Attach sort handlers
+            var table = document.getElementById('pending-unosi-table');
+            if (table) {
+                var ths = table.querySelectorAll('thead th[data-sort]');
+                for (var t = 0; t < ths.length; t++) {
+                    ths[t].addEventListener('click', function() {
+                        var col = this.getAttribute('data-sort');
+                        if (pendingSortCol === col) {
+                            pendingSortDir = pendingSortDir === 'asc' ? 'desc' : 'asc';
+                        } else {
+                            pendingSortCol = col;
+                            pendingSortDir = 'asc';
+                        }
+                        var sorted = sortUnosiData(data, pendingSortCol, pendingSortDir);
+                        renderPendingTable(sorted);
+                    });
+                }
+            }
         }
 
         async function loadPendingUnosi() {
@@ -5844,6 +5907,10 @@
             }
         }
 
+        // Sort state for poslovodja unosi table
+        var poslovodjaSortCol = null;
+        var poslovodjaSortDir = 'asc';
+
         function renderPoslovodjaUnosiTable(data) {
             var html = '';
 
@@ -5851,74 +5918,95 @@
                 html = '<p style="text-align: center; padding: 40px; color: #6b7280;">Nema dodanih unosa za vaša radilišta</p>';
             } else {
                 var sortimentiNazivi = data[0] && data[0].sortimenti ? Object.keys(data[0].sortimenti) : [];
+                var sc = poslovodjaSortCol, sd = poslovodjaSortDir;
 
-                html = '<div class="kupci-table-wrapper"><table class="kupci-table"><thead><tr>';
-                html += '<th style="min-width: 80px;">Tip</th>';
-                html += '<th style="min-width: 100px;">Datum</th>';
-                html += '<th style="min-width: 80px;">Odjel</th>';
-                html += '<th style="min-width: 150px;">Radnik</th>';
-                html += '<th style="min-width: 120px;">Kupac</th>';
-                html += '<th style="min-width: 120px;">Br. otpremnice</th>';
-                html += '<th style="min-width: 60px;">Slika</th>';
+                html = '<div class="unosi-table-wrapper"><table class="unosi-table" id="poslovodja-unosi-table"><thead><tr>';
+                html += '<th class="col-freeze-1" style="min-width:80px" data-sort="tip">Tip' + unosiSortIcon('tip', sc, sd) + '</th>';
+                html += '<th class="col-freeze-2" style="min-width:95px" data-sort="datum">Datum' + unosiSortIcon('datum', sc, sd) + '</th>';
+                html += '<th data-sort="odjel">Odjel' + unosiSortIcon('odjel', sc, sd) + '</th>';
+                html += '<th data-sort="radnik">Radnik' + unosiSortIcon('radnik', sc, sd) + '</th>';
+                html += '<th data-sort="kupac">Kupac' + unosiSortIcon('kupac', sc, sd) + '</th>';
+                html += '<th data-sort="brOtpremnice">Br. otpr.' + unosiSortIcon('brOtpremnice', sc, sd) + '</th>';
+                html += '<th style="min-width:50px">Slika</th>';
 
                 for (var i = 0; i < sortimentiNazivi.length; i++) {
-                    var colClass = getColumnGroup(sortimentiNazivi[i]);
-                    html += '<th class="sortiment-col ' + colClass + '">' + sortimentiNazivi[i] + '</th>';
+                    var cg = getUnosiColGroup(sortimentiNazivi[i]);
+                    var sk = 'sort_' + sortimentiNazivi[i];
+                    html += '<th class="sort-col ' + cg + '" data-sort="' + sk + '">' + sortimentiNazivi[i] + unosiSortIcon(sk, sc, sd) + '</th>';
                 }
 
-                html += '<th style="min-width: 130px;">Poslano</th>';
+                html += '<th data-sort="poslano">Poslano' + unosiSortIcon('poslano', sc, sd) + '</th>';
                 html += '</tr></thead><tbody>';
 
                 for (var i = 0; i < data.length; i++) {
                     var unos = data[i];
-                    var tipColor = unos.tip === 'SJEČA' ? '#059669' : '#2563eb';
+                    var badgeClass = unos.tip === 'SJEČA' ? 'badge-sjeca' : 'badge-otprema';
 
                     html += '<tr>';
-                    html += '<td><span style="font-weight: 600; color: ' + tipColor + '">' + unos.tip + '</span></td>';
-                    html += '<td>' + unos.datum + '</td>';
-                    html += '<td style="font-weight: 600;">' + unos.odjel + '</td>';
+                    html += '<td class="col-freeze-1"><span class="badge-tip ' + badgeClass + '">' + unos.tip + '</span></td>';
+                    html += '<td class="col-freeze-2 cell-datum">' + unos.datum + '</td>';
+                    html += '<td class="cell-odjel">' + unos.odjel + '</td>';
                     html += '<td>' + unos.radnik + '</td>';
                     html += '<td>' + (unos.kupac || '-') + '</td>';
                     html += '<td>' + (unos.brojOtpremnice || '-') + '</td>';
 
                     if (unos.imageUrl) {
-                        html += '<td style="text-align: center; padding: 4px;">';
+                        html += '<td style="text-align:center;padding:4px;">';
                         html += '<a href="' + unos.imageUrl + '" target="_blank" title="Klikni za veću sliku">';
-                        html += '<img src="' + unos.imageUrl + '" alt="Slika" style="max-width: 60px; max-height: 45px; border-radius: 4px; cursor: pointer; border: 1px solid #e5e7eb; object-fit: cover;" onerror="this.style.display=\'none\'; this.parentNode.innerHTML=\'📷\'">';
+                        html += '<img src="' + unos.imageUrl + '" alt="Slika" style="max-width:50px;max-height:38px;border-radius:3px;cursor:pointer;border:1px solid #e5e7eb;object-fit:cover;" onerror="this.style.display=\'none\'; this.parentNode.innerHTML=\'-\'">';
                         html += '</a></td>';
                     } else {
-                        html += '<td style="text-align: center; color: #9ca3af;">-</td>';
+                        html += '<td style="text-align:center;color:#ccc;">-</td>';
                     }
 
                     for (var j = 0; j < sortimentiNazivi.length; j++) {
                         var sortiment = sortimentiNazivi[j];
                         var val = sortiment === 'SVEUKUPNO' ? unos.ukupno : (unos.sortimenti[sortiment] || 0);
                         var displayVal = val > 0 ? val.toFixed(2) : '-';
-                        var colClass2 = getColumnGroup(sortiment);
-                        html += '<td class="sortiment-col right ' + colClass2 + '">' + displayVal + '</td>';
+                        var cg2 = getUnosiColGroup(sortiment);
+                        html += '<td class="sort-col ' + cg2 + '">' + displayVal + '</td>';
                     }
 
-                    html += '<td style="font-size: 11px; color: #6b7280;">' + unos.timestamp + '</td>';
+                    html += '<td class="cell-timestamp">' + unos.timestamp + '</td>';
                     html += '</tr>';
                 }
 
-                html += '</tbody></table></div>';
+                html += '</tbody></table>';
 
-                html += '<div style="margin-top: 20px; padding: 12px; background: #f9fafb; border-radius: 8px;">';
-                html += '<strong>Ukupno dodanih unosa:</strong> ' + data.length;
-
-                var sjecaCount = 0;
-                var otpremaCount = 0;
-                for (var i = 0; i < data.length; i++) {
-                    if (data[i].tip === 'SJEČA') sjecaCount++;
-                    else if (data[i].tip === 'OTPREMA') otpremaCount++;
+                // Summary bar
+                var sjecaCount = 0, otpremaCount = 0;
+                for (var k = 0; k < data.length; k++) {
+                    if (data[k].tip === 'SJEČA') sjecaCount++;
+                    else if (data[k].tip === 'OTPREMA') otpremaCount++;
                 }
-
-                html += ' (Sječa: ' + sjecaCount + ', Otprema: ' + otpremaCount + ')';
+                html += '<div class="unosi-summary">';
+                html += '<strong>' + data.length + '</strong> unosa';
+                html += '<span class="badge-tip badge-sjeca">' + sjecaCount + ' sječa</span>';
+                html += '<span class="badge-tip badge-otprema">' + otpremaCount + ' otprema</span>';
+                html += '</div>';
                 html += '</div>';
             }
 
             document.getElementById('poslovodja-unosi-container').innerHTML = html;
+
+            // Attach sort handlers
+            var table = document.getElementById('poslovodja-unosi-table');
+            if (table) {
+                var ths = table.querySelectorAll('thead th[data-sort]');
+                for (var t = 0; t < ths.length; t++) {
+                    ths[t].addEventListener('click', function() {
+                        var col = this.getAttribute('data-sort');
+                        if (poslovodjaSortCol === col) {
+                            poslovodjaSortDir = poslovodjaSortDir === 'asc' ? 'desc' : 'asc';
+                        } else {
+                            poslovodjaSortCol = col;
+                            poslovodjaSortDir = 'asc';
+                        }
+                        var sorted = sortUnosiData(data, poslovodjaSortCol, poslovodjaSortDir);
+                        renderPoslovodjaUnosiTable(sorted);
+                    });
+                }
+            }
         }
 
         // Load monthly sortimenti

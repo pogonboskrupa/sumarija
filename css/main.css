@@ -497,6 +497,200 @@
         .kupci-table .totals-row td { border-bottom: 3px solid #10b981; padding: 12px 6px; }
 
         /* ============================================
+           DODANI UNOSI TABLE - Enterprise Redesign
+           ============================================ */
+        .unosi-table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid #e2e5e9;
+            border-radius: 8px;
+            background: #fff;
+        }
+        .unosi-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 13px;
+            white-space: nowrap;
+            color: #1f2937;
+        }
+        /* Header */
+        .unosi-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 15;
+            background: #f8f9fa;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #5f6b7a;
+            padding: 10px 12px;
+            border-bottom: 2px solid #e2e5e9;
+            text-align: left;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .unosi-table thead th:hover {
+            background: #eef0f3;
+            color: #374151;
+        }
+        .unosi-table thead th .sort-icon {
+            display: inline-block;
+            margin-left: 4px;
+            font-size: 10px;
+            color: #9ca3af;
+            vertical-align: middle;
+        }
+        .unosi-table thead th .sort-icon.active {
+            color: #374151;
+        }
+        /* Frozen columns - Tip (col 1) and Datum (col 2) */
+        .unosi-table th.col-freeze-1,
+        .unosi-table td.col-freeze-1 {
+            position: sticky;
+            left: 0;
+            z-index: 12;
+            background: inherit;
+        }
+        .unosi-table thead th.col-freeze-1 {
+            z-index: 20;
+            background: #f8f9fa;
+        }
+        .unosi-table th.col-freeze-2,
+        .unosi-table td.col-freeze-2 {
+            position: sticky;
+            left: 80px;
+            z-index: 11;
+            background: inherit;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.04);
+        }
+        .unosi-table thead th.col-freeze-2 {
+            z-index: 19;
+            background: #f8f9fa;
+        }
+        /* Cells */
+        .unosi-table tbody td {
+            padding: 7px 12px;
+            border-bottom: 1px solid #f0f1f3;
+            vertical-align: middle;
+        }
+        /* Zebra rows */
+        .unosi-table tbody tr:nth-child(odd) {
+            background: #ffffff;
+        }
+        .unosi-table tbody tr:nth-child(even) {
+            background: #fafbfc;
+        }
+        .unosi-table tbody tr:hover {
+            background: #f0f4ff;
+        }
+        /* Frozen col background must follow row */
+        .unosi-table tbody tr:nth-child(odd) td.col-freeze-1,
+        .unosi-table tbody tr:nth-child(odd) td.col-freeze-2 { background: #ffffff; }
+        .unosi-table tbody tr:nth-child(even) td.col-freeze-1,
+        .unosi-table tbody tr:nth-child(even) td.col-freeze-2 { background: #fafbfc; }
+        .unosi-table tbody tr:hover td.col-freeze-1,
+        .unosi-table tbody tr:hover td.col-freeze-2 { background: #f0f4ff; }
+        /* Badge styles for Tip column */
+        .badge-tip {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            line-height: 1.4;
+        }
+        .badge-sjeca {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        .badge-otprema {
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+        /* Bold datum & odjel */
+        .unosi-table .cell-datum,
+        .unosi-table .cell-odjel {
+            font-weight: 700;
+            color: #111827;
+        }
+        /* Sortiment columns */
+        .unosi-table .sort-col {
+            text-align: right;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            min-width: 72px;
+            color: #374151;
+        }
+        .unosi-table thead .sort-col {
+            text-align: center;
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.3;
+            min-width: 72px;
+        }
+        /* Column group subtle tints */
+        .unosi-table .cg-c { background-color: rgba(16, 185, 129, 0.04); border-left: 2px solid #d1fae5; }
+        .unosi-table .cg-l { background-color: rgba(245, 158, 11, 0.04); border-left: 2px solid #fef3c7; }
+        .unosi-table thead .cg-c { background: #f0faf5; border-left: 2px solid #a7f3d0; }
+        .unosi-table thead .cg-l { background: #fefbf0; border-left: 2px solid #fde68a; }
+        /* Timestamp column */
+        .unosi-table .cell-timestamp {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+        /* Summary bar */
+        .unosi-summary {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 10px 16px;
+            background: #f8f9fa;
+            border-top: 1px solid #e2e5e9;
+            font-size: 13px;
+            color: #5f6b7a;
+            border-radius: 0 0 8px 8px;
+        }
+        .unosi-summary strong {
+            color: #1f2937;
+        }
+        /* Reduced section padding for unosi */
+        .section-unosi {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .section-unosi h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #1f2937;
+        }
+        .section-unosi > p {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 16px;
+        }
+        /* Mobile adjustments for unosi table */
+        @media (max-width: 768px) {
+            .unosi-table { font-size: 11px; }
+            .unosi-table thead th { padding: 8px 8px; font-size: 10px; }
+            .unosi-table tbody td { padding: 6px 8px; }
+            .unosi-table .sort-col { min-width: 55px; font-size: 11px; }
+            .unosi-table th.col-freeze-2,
+            .unosi-table td.col-freeze-2 { left: 65px; }
+            .badge-tip { font-size: 10px; padding: 2px 7px; }
+            .section-unosi { padding: 12px; }
+        }
+
+        /* ============================================
            EXPERT TABLE STYLES - Premium Design
            ============================================ */
         .expert-table {
