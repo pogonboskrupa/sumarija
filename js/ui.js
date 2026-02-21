@@ -36,6 +36,7 @@
             document.getElementById('poslovodja-sjeca-content').classList.add('hidden');
             document.getElementById('poslovodja-otprema-content').classList.add('hidden');
             document.getElementById('poslovodja-pregled-content').classList.add('hidden');
+            document.getElementById('poslovodja-unosi-content').classList.add('hidden');
             document.getElementById('dinamika-content').classList.add('hidden');
             document.getElementById('kubikator-content').classList.add('hidden');
             document.getElementById('ostalo-content').classList.add('hidden');
@@ -87,6 +88,8 @@
                 loadPoslovodjaOtprema();
             } else if (tab === 'poslovodja-pregled') {
                 loadPoslovodjaPregled();
+            } else if (tab === 'poslovodja-unosi') {
+                loadPoslovodjaUnosi();
             } else if (tab === 'izvjestaji') {
                 // IZVJEŠTAJI - Sedmični i Mjesečni prikaz po odjelima
                 document.getElementById('izvjestaji-content').classList.remove('hidden');

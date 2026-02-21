@@ -1844,6 +1844,23 @@
             <div id="poslovodja-pregled-container"></div>
         </div>
 
+        <!-- POSLOVODJA DODANI UNOSI -->
+        <div id="poslovodja-unosi-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>📝 Dodani unosi</h1>
+                    <p>Unosi koje su radnici poslali za vaša radilišta</p>
+                </div>
+                <div class="page-header-right">
+                    <button class="btn btn-primary" onclick="loadPoslovodjaUnosi()">🔄 Osvježi</button>
+                </div>
+            </div>
+            <div style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list-unosi"></span></p>
+            </div>
+            <div id="poslovodja-unosi-container"></div>
+        </div>
+
         <!-- DINAMIKA CONTENT -->
         <div id="dinamika-content" class="container hidden">
             <div class="page-header">

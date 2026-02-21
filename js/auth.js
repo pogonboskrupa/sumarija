@@ -109,7 +109,8 @@
                     { id: 'poslovodja-otprema', icon: '🚛', label: 'OTPREMA' },
                     { id: 'poslovodja-stanje', icon: '📊', label: 'Stanje zaliha' },
                     { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
-                    { id: 'poslovodja-pregled', icon: '📑', label: 'PREGLED' }
+                    { id: 'poslovodja-pregled', icon: '📑', label: 'PREGLED' },
+                    { id: 'poslovodja-unosi', icon: '📝', label: 'Dodani unosi' }
                 ];
             } else {
                 // Admin / default user

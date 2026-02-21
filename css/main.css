@@ -2402,7 +2402,9 @@
         #otpremac-personal-content,
         #otpremac-odjeli-content,
         #my-sjece-content,
-        #my-otpreme-content {
+        #my-otpreme-content,
+        #pending-unosi-content,
+        #poslovodja-unosi-content {
             max-width: 100%;
             padding-inline: 24px;
             padding-block: 24px;
@@ -2430,7 +2432,9 @@
             #otpremac-personal-content,
             #otpremac-odjeli-content,
             #my-sjece-content,
-            #my-otpreme-content { padding-inline: 40px; }
+            #my-otpreme-content,
+            #pending-unosi-content,
+            #poslovodja-unosi-content { padding-inline: 40px; }
         }
 
         /* 2. Grid layout za desktop (umjesto flex) */
@@ -2580,7 +2584,9 @@
             #otpremac-personal-content,
             #otpremac-odjeli-content,
             #my-sjece-content,
-            #my-otpreme-content { padding-inline: 12px; padding-block: 12px; }
+            #my-otpreme-content,
+            #pending-unosi-content,
+            #poslovodja-unosi-content { padding-inline: 12px; padding-block: 12px; }
         }
 
         /* ============================================ */

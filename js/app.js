@@ -5757,6 +5757,151 @@
             }
         }
 
+        // Poslovodja dodani unosi - filtrirano po radilištima
+        var unfilteredPoslovodjaUnosiData = [];
+
+        async function loadPoslovodjaUnosi() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+            document.getElementById('poslovodja-unosi-content').classList.add('hidden');
+
+            try {
+                var radilista = getPoslovodjaRadilista();
+                document.getElementById('poslovodja-radilista-list-unosi').textContent = radilista.join(', ');
+
+                // Dohvati odjele za poslovođu (da znamo koji odjeli pripadaju radilištima)
+                var poslovodjaName = currentUser ? currentUser.fullName : '';
+                var stanjeUrl = buildApiUrl('stanje-zaliha', { poslovodja: poslovodjaName });
+                var stanjeCacheKey = 'cache_stanje_zaliha_' + (poslovodjaName || 'all').replace(/\s+/g, '_');
+
+                // Dohvati pending unosi i stanje-zaliha paralelno
+                var year = new Date().getFullYear();
+                var pendingUrl = buildApiUrl('pending-unosi', { year: year });
+
+                var results = await Promise.all([
+                    fetch(pendingUrl).then(function(r) { return r.json(); }),
+                    fetchWithCache(stanjeUrl, stanjeCacheKey, false, 60000)
+                ]);
+
+                var pendingData = results[0];
+                var stanjeData = results[1];
+
+                if (pendingData.error) {
+                    throw new Error(pendingData.error);
+                }
+
+                // Izgradi set odjela koji pripadaju poslovođi
+                var mojiOdjeli = new Set();
+                if (stanjeData.odjeli && Array.isArray(stanjeData.odjeli)) {
+                    stanjeData.odjeli.forEach(function(odjel) {
+                        if (odjel.odjel) mojiOdjeli.add(odjel.odjel.trim());
+                    });
+                }
+
+                // Filtriraj unose — samo odjeli koji pripadaju poslovođi
+                var allUnosi = pendingData.unosi || [];
+                var filtered = allUnosi.filter(function(unos) {
+                    var unosOdjel = (unos.odjel || '').trim();
+                    // Direktno podudaranje sa odjelima poslovođe
+                    if (mojiOdjeli.has(unosOdjel)) return true;
+                    // Fallback: provjeri da li radilište u imenu odjela odgovara
+                    var odjelUpper = unosOdjel.toUpperCase();
+                    return radilista.some(function(r) {
+                        return odjelUpper.includes(r.toUpperCase());
+                    });
+                });
+
+                unfilteredPoslovodjaUnosiData = filtered;
+                renderPoslovodjaUnosiTable(filtered);
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('poslovodja-unosi-content').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error loading poslovođa dodani unosi:', error);
+                document.getElementById('poslovodja-unosi-container').innerHTML =
+                    '<p style="color: #dc2626; text-align: center; padding: 40px;">Greška: ' + error.message + '</p>';
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('poslovodja-unosi-content').classList.remove('hidden');
+            }
+        }
+
+        function renderPoslovodjaUnosiTable(data) {
+            var html = '';
+
+            if (!data || data.length === 0) {
+                html = '<p style="text-align: center; padding: 40px; color: #6b7280;">Nema dodanih unosa za vaša radilišta</p>';
+            } else {
+                var sortimentiNazivi = data[0] && data[0].sortimenti ? Object.keys(data[0].sortimenti) : [];
+
+                html = '<div class="kupci-table-wrapper"><table class="kupci-table"><thead><tr>';
+                html += '<th style="min-width: 80px;">Tip</th>';
+                html += '<th style="min-width: 100px;">Datum</th>';
+                html += '<th style="min-width: 80px;">Odjel</th>';
+                html += '<th style="min-width: 150px;">Radnik</th>';
+                html += '<th style="min-width: 120px;">Kupac</th>';
+                html += '<th style="min-width: 120px;">Br. otpremnice</th>';
+                html += '<th style="min-width: 60px;">Slika</th>';
+
+                for (var i = 0; i < sortimentiNazivi.length; i++) {
+                    var colClass = getColumnGroup(sortimentiNazivi[i]);
+                    html += '<th class="sortiment-col ' + colClass + '">' + sortimentiNazivi[i] + '</th>';
+                }
+
+                html += '<th style="min-width: 130px;">Poslano</th>';
+                html += '</tr></thead><tbody>';
+
+                for (var i = 0; i < data.length; i++) {
+                    var unos = data[i];
+                    var tipColor = unos.tip === 'SJEČA' ? '#059669' : '#2563eb';
+
+                    html += '<tr>';
+                    html += '<td><span style="font-weight: 600; color: ' + tipColor + '">' + unos.tip + '</span></td>';
+                    html += '<td>' + unos.datum + '</td>';
+                    html += '<td style="font-weight: 600;">' + unos.odjel + '</td>';
+                    html += '<td>' + unos.radnik + '</td>';
+                    html += '<td>' + (unos.kupac || '-') + '</td>';
+                    html += '<td>' + (unos.brojOtpremnice || '-') + '</td>';
+
+                    if (unos.imageUrl) {
+                        html += '<td style="text-align: center; padding: 4px;">';
+                        html += '<a href="' + unos.imageUrl + '" target="_blank" title="Klikni za veću sliku">';
+                        html += '<img src="' + unos.imageUrl + '" alt="Slika" style="max-width: 60px; max-height: 45px; border-radius: 4px; cursor: pointer; border: 1px solid #e5e7eb; object-fit: cover;" onerror="this.style.display=\'none\'; this.parentNode.innerHTML=\'📷\'">';
+                        html += '</a></td>';
+                    } else {
+                        html += '<td style="text-align: center; color: #9ca3af;">-</td>';
+                    }
+
+                    for (var j = 0; j < sortimentiNazivi.length; j++) {
+                        var sortiment = sortimentiNazivi[j];
+                        var val = sortiment === 'SVEUKUPNO' ? unos.ukupno : (unos.sortimenti[sortiment] || 0);
+                        var displayVal = val > 0 ? val.toFixed(2) : '-';
+                        var colClass2 = getColumnGroup(sortiment);
+                        html += '<td class="sortiment-col right ' + colClass2 + '">' + displayVal + '</td>';
+                    }
+
+                    html += '<td style="font-size: 11px; color: #6b7280;">' + unos.timestamp + '</td>';
+                    html += '</tr>';
+                }
+
+                html += '</tbody></table></div>';
+
+                html += '<div style="margin-top: 20px; padding: 12px; background: #f9fafb; border-radius: 8px;">';
+                html += '<strong>Ukupno dodanih unosa:</strong> ' + data.length;
+
+                var sjecaCount = 0;
+                var otpremaCount = 0;
+                for (var i = 0; i < data.length; i++) {
+                    if (data[i].tip === 'SJEČA') sjecaCount++;
+                    else if (data[i].tip === 'OTPREMA') otpremaCount++;
+                }
+
+                html += ' (Sječa: ' + sjecaCount + ', Otprema: ' + otpremaCount + ')';
+                html += '</div>';
+            }
+
+            document.getElementById('poslovodja-unosi-container').innerHTML = html;
+        }
+
         // Load monthly sortimenti
         async function loadMjesecniSortimenti() {
             document.getElementById('loading-screen').classList.remove('hidden');
