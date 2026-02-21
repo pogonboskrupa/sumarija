@@ -5767,47 +5767,66 @@
             try {
                 var radilista = getPoslovodjaRadilista();
                 document.getElementById('poslovodja-radilista-list-unosi').textContent = radilista.join(', ');
+                var userFullName = currentUser.fullName.toUpperCase().trim();
 
-                // Dohvati odjele za poslovođu (da znamo koji odjeli pripadaju radilištima)
-                var poslovodjaName = currentUser ? currentUser.fullName : '';
-                var stanjeUrl = buildApiUrl('stanje-zaliha', { poslovodja: poslovodjaName });
-                var stanjeCacheKey = 'cache_stanje_zaliha_' + (poslovodjaName || 'all').replace(/\s+/g, '_');
-
-                // Dohvati pending unosi i stanje-zaliha paralelno
+                // Dohvati pending-unosi, primke i otpreme paralelno
                 var year = new Date().getFullYear();
                 var pendingUrl = buildApiUrl('pending-unosi', { year: year });
+                var primkeUrl = buildApiUrl('primke');
+                var otpremeUrl = buildApiUrl('otpreme');
 
                 var results = await Promise.all([
                     fetch(pendingUrl).then(function(r) { return r.json(); }),
-                    fetchWithCache(stanjeUrl, stanjeCacheKey, false, 60000)
+                    fetchWithCache(primkeUrl, 'cache_primke_sjeca'),
+                    fetchWithCache(otpremeUrl, 'cache_otpreme_tab')
                 ]);
 
                 var pendingData = results[0];
-                var stanjeData = results[1];
+                var primkeData = results[1];
+                var otpremeData = results[2];
 
                 if (pendingData.error) {
                     throw new Error(pendingData.error);
                 }
 
-                // Izgradi set odjela koji pripadaju poslovođi
+                // Izgradi odjel → radilište mapu iz primki i otprema
+                var odjelRadilisteMap = {};
+                var allEntries = (primkeData.primke || []).concat(otpremeData.otpreme || []);
+                allEntries.forEach(function(entry) {
+                    var odjel = (entry.odjel || '').trim();
+                    var rad = (entry.radiliste || '').trim();
+                    if (odjel && rad && !odjelRadilisteMap[odjel]) {
+                        odjelRadilisteMap[odjel] = rad;
+                    }
+                });
+
+                // Izgradi set odjela koji pripadaju poslovođi (isti pristup kao PREGLED tab)
                 var mojiOdjeli = new Set();
-                if (stanjeData.odjeli && Array.isArray(stanjeData.odjeli)) {
-                    stanjeData.odjeli.forEach(function(odjel) {
-                        if (odjel.odjel) mojiOdjeli.add(odjel.odjel.trim());
-                    });
-                }
+                allEntries.forEach(function(entry) {
+                    var entryPoslovodja = (entry.poslovodja || '').toUpperCase().trim();
+                    var entryRadiliste = (entry.radiliste || '').toUpperCase().trim();
+                    var odjel = (entry.odjel || '').trim();
+                    if (!odjel) return;
+
+                    // Poslovodja match
+                    if (entryPoslovodja && entryPoslovodja === userFullName) {
+                        mojiOdjeli.add(odjel);
+                        return;
+                    }
+                    // Radilište match
+                    if (radilista.length > 0 && entryRadiliste) {
+                        var matches = radilista.some(function(r) {
+                            return entryRadiliste.includes(r.toUpperCase());
+                        });
+                        if (matches) mojiOdjeli.add(odjel);
+                    }
+                });
 
                 // Filtriraj unose — samo odjeli koji pripadaju poslovođi
                 var allUnosi = pendingData.unosi || [];
                 var filtered = allUnosi.filter(function(unos) {
                     var unosOdjel = (unos.odjel || '').trim();
-                    // Direktno podudaranje sa odjelima poslovođe
-                    if (mojiOdjeli.has(unosOdjel)) return true;
-                    // Fallback: provjeri da li radilište u imenu odjela odgovara
-                    var odjelUpper = unosOdjel.toUpperCase();
-                    return radilista.some(function(r) {
-                        return odjelUpper.includes(r.toUpperCase());
-                    });
+                    return mojiOdjeli.has(unosOdjel);
                 });
 
                 unfilteredPoslovodjaUnosiData = filtered;
