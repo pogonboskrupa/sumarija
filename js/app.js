@@ -3375,7 +3375,20 @@
                     if (!radilisteOdjeli[rad]) radilisteOdjeli[rad] = [];
                     radilisteOdjeli[rad].push(odjel);
                 });
-                Object.values(radilisteOdjeli).forEach(function(arr) { arr.sort(); });
+
+                // Sortiraj odjele: najsvježija aktivnost prva (desc po zadnjem YYYY-MM ključu)
+                function getLatestKey(odjel) {
+                    var sKeys = sjecaByOdjelMonth[odjel] ? Object.keys(sjecaByOdjelMonth[odjel]) : [];
+                    var oKeys = otpremaByOdjelMonth[odjel] ? Object.keys(otpremaByOdjelMonth[odjel]) : [];
+                    var allKeys = sKeys.concat(oKeys);
+                    if (allKeys.length === 0) return '0000-00';
+                    return allKeys.sort().pop();
+                }
+                Object.values(radilisteOdjeli).forEach(function(arr) {
+                    arr.sort(function(a, b) {
+                        return getLatestKey(b).localeCompare(getLatestKey(a));
+                    });
+                });
 
                 renderPoslovodjaPregled(radilisteOdjeli, sjecaByOdjelMonth, otpremaByOdjelMonth);
 
