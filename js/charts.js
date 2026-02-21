@@ -738,16 +738,22 @@
 
         // Load primac personal data
         async function loadPrimacPersonal() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('primac-personal-content').classList.add('hidden');
+            var ppYear = (document.getElementById('primac-personal-year-select') || {}).value || new Date().getFullYear();
+            var ppCacheKey = 'cache_primac_detail_' + ppYear;
+            // Turbo: skip loading screen if cache exists
+            if (!localStorage.getItem(ppCacheKey)) {
+                document.getElementById('loading-screen').classList.remove('hidden');
+                document.getElementById('primac-personal-content').classList.add('hidden');
+            } else {
+                document.getElementById('primac-personal-content').classList.remove('hidden');
+            }
 
             try {
-                // ✅ Čitaj godinu iz selectora umjesto hardkodovane trenutne godine
                 const yearSelector = document.getElementById('primac-personal-year-select');
                 const year = yearSelector ? yearSelector.value : new Date().getFullYear();
 
                 const url = buildApiUrl('primac-detail', { year });
-                const data = await fetchWithCache(url, 'cache_primac_detail_' + year);
+                const data = await fetchWithCache(url, ppCacheKey);
 
 
                 if (data.error) {
@@ -840,16 +846,22 @@
 
         // Load otpremac personal data
         async function loadOtpremacPersonal() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('otpremac-personal-content').classList.add('hidden');
+            var opYear = (document.getElementById('otpremac-personal-year-select') || {}).value || new Date().getFullYear();
+            var opCacheKey = 'cache_otpremac_detail_' + opYear;
+            // Turbo: skip loading screen if cache exists
+            if (!localStorage.getItem(opCacheKey)) {
+                document.getElementById('loading-screen').classList.remove('hidden');
+                document.getElementById('otpremac-personal-content').classList.add('hidden');
+            } else {
+                document.getElementById('otpremac-personal-content').classList.remove('hidden');
+            }
 
             try {
-                // ✅ Čitaj godinu iz selectora umjesto hardkodovane trenutne godine
                 const yearSelector = document.getElementById('otpremac-personal-year-select');
                 const year = yearSelector ? yearSelector.value : new Date().getFullYear();
 
                 const url = buildApiUrl('otpremac-detail', { year });
-                const data = await fetchWithCache(url, 'cache_otpremac_detail_' + year);
+                const data = await fetchWithCache(url, opCacheKey);
 
 
                 if (data.error) {
