@@ -108,7 +108,8 @@
                     { id: 'poslovodja-sjeca', icon: '🪓', label: 'SJEČA', active: true },
                     { id: 'poslovodja-otprema', icon: '🚛', label: 'OTPREMA' },
                     { id: 'poslovodja-stanje', icon: '📊', label: 'Stanje zaliha' },
-                    { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' }
+                    { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
+                    { id: 'poslovodja-pregled', icon: '📑', label: 'PREGLED' }
                 ];
             } else {
                 // Admin / default user

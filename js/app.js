@@ -3284,6 +3284,197 @@
             return html;
         }
 
+        // ============================================
+        // POSLOVODJA - PREGLED TAB (Mjesečni po odjelima)
+        // ============================================
+        async function loadPoslovodjaPregled() {
+            document.getElementById('loading-screen').classList.remove('hidden');
+            document.getElementById('poslovodja-pregled-content').classList.add('hidden');
+
+            try {
+                var radilista = getPoslovodjaRadilista();
+                document.getElementById('poslovodja-radilista-list-pregled').textContent = radilista.join(', ');
+
+                var currentYear = new Date().getFullYear();
+                var userFullName = currentUser.fullName.toUpperCase().trim();
+
+                var primkeUrl = buildApiUrl('primke');
+                var otpremeUrl = buildApiUrl('otpreme');
+                var results = await Promise.all([
+                    fetchWithCache(primkeUrl, 'cache_primke_sjeca'),
+                    fetchWithCache(otpremeUrl, 'cache_otpreme_tab')
+                ]);
+                var primkeData = results[0];
+                var otpremeData = results[1];
+
+                if (primkeData.error) throw new Error('Greška pri učitavanju primki: ' + primkeData.error);
+                if (otpremeData.error) throw new Error('Greška pri učitavanju otprema: ' + otpremeData.error);
+
+                var relevantSortimenti = new Set(SORT_KOLONE);
+
+                function filterByPoslovodja(entries) {
+                    return entries.filter(function(entry) {
+                        var entryDatum = parseDatumDDMMYYYY(entry.datum);
+                        if (!entryDatum || entryDatum.getFullYear() !== currentYear) return false;
+                        var entryPoslovodja = (entry.poslovodja || '').toUpperCase().trim();
+                        if (entryPoslovodja && entryPoslovodja === userFullName) return true;
+                        if (radilista.length > 0) {
+                            var entryRadiliste = (entry.radiliste || '').toUpperCase().trim();
+                            return radilista.some(function(r) { return entryRadiliste.includes(r.toUpperCase()); });
+                        }
+                        return false;
+                    });
+                }
+
+                var filteredPrimke = filterByPoslovodja(primkeData.primke || []);
+                var filteredOtpreme = filterByPoslovodja(otpremeData.otpreme || []);
+
+                function aggregateByOdjelMonth(entries) {
+                    var result = {};
+                    entries.forEach(function(entry) {
+                        var sortiment = entry.sortiment || '';
+                        if (!relevantSortimenti.has(sortiment)) return;
+                        var odjel = entry.odjel || 'Nepoznato';
+                        var datum = parseDatumDDMMYYYY(entry.datum);
+                        if (!datum) return;
+                        var monthIdx = datum.getMonth();
+                        if (!result[odjel]) result[odjel] = {};
+                        if (!result[odjel][monthIdx]) {
+                            result[odjel][monthIdx] = { sort: {} };
+                            SORT_KOLONE.forEach(function(s) { result[odjel][monthIdx].sort[s] = 0; });
+                        }
+                        result[odjel][monthIdx].sort[sortiment] += (entry.kolicina || 0);
+                    });
+                    Object.values(result).forEach(function(months) {
+                        Object.values(months).forEach(function(md) {
+                            md.ukupno = (md.sort['Σ ČETINARI'] || 0) + (md.sort['LIŠĆARI'] || 0);
+                        });
+                    });
+                    return result;
+                }
+
+                var sjecaByOdjelMonth = aggregateByOdjelMonth(filteredPrimke);
+                var otpremaByOdjelMonth = aggregateByOdjelMonth(filteredOtpreme);
+
+                // Build odjel -> radiliste mapping from raw data
+                var odjelRadilisteMap = {};
+                filteredPrimke.concat(filteredOtpreme).forEach(function(entry) {
+                    var odjel = entry.odjel || 'Nepoznato';
+                    var rad = (entry.radiliste || '').trim();
+                    if (rad && !odjelRadilisteMap[odjel]) {
+                        odjelRadilisteMap[odjel] = rad;
+                    }
+                });
+
+                // Collect all odjeli, group by radiliste
+                var allOdjeli = new Set(Object.keys(sjecaByOdjelMonth).concat(Object.keys(otpremaByOdjelMonth)));
+                var radilisteOdjeli = {};
+                allOdjeli.forEach(function(odjel) {
+                    var rad = odjelRadilisteMap[odjel] || 'OSTALO';
+                    if (!radilisteOdjeli[rad]) radilisteOdjeli[rad] = [];
+                    radilisteOdjeli[rad].push(odjel);
+                });
+                Object.values(radilisteOdjeli).forEach(function(arr) { arr.sort(); });
+
+                renderPoslovodjaPregled(radilisteOdjeli, sjecaByOdjelMonth, otpremaByOdjelMonth);
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('poslovodja-pregled-content').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error loading poslovođa pregled:', error);
+                showError('Greška', 'Greška pri učitavanju pregleda: ' + error.message);
+                document.getElementById('loading-screen').classList.add('hidden');
+            }
+        }
+
+        function renderPoslovodjaPregled(radilisteOdjeli, sjecaData, otpremaData) {
+            var container = document.getElementById('poslovodja-pregled-container');
+
+            if (Object.keys(radilisteOdjeli).length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za tekuću godinu</div>';
+                return;
+            }
+
+            var html = '';
+            var sortedRadilista = Object.keys(radilisteOdjeli).sort();
+
+            sortedRadilista.forEach(function(radiliste) {
+                html += '<div style="background: linear-gradient(135deg, #1e3a5f, #2563eb); color: white; padding: 14px 20px; border-radius: 10px; margin: 30px 0 16px 0; font-size: 16px; font-weight: 700; letter-spacing: 0.5px;">📍 ' + radiliste + '</div>';
+
+                var odjeli = radilisteOdjeli[radiliste];
+                odjeli.forEach(function(odjel) {
+                    html += renderPregledSection(odjel, 'SJEČA', sjecaData[odjel] || {}, '#059669', '#ecfdf5');
+                    html += renderPregledSection(odjel, 'OTPREMA', otpremaData[odjel] || {}, '#dc2626', '#fef2f2');
+                });
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderPregledSection(odjel, type, monthlyData, accentColor, headerBg) {
+            var months = Object.keys(monthlyData).map(Number).sort(function(a, b) { return a - b; });
+            var html = '';
+
+            html += '<div style="background: ' + headerBg + '; border-left: 4px solid ' + accentColor + '; padding: 10px 16px; margin: 16px 0 8px 0; border-radius: 0 8px 8px 0;">';
+            html += '<h3 style="margin: 0; color: ' + accentColor + '; font-size: 14px; font-weight: 700;">' + odjel + ' - ' + type + '</h3></div>';
+
+            if (months.length === 0) {
+                html += '<p style="color: #9ca3af; padding: 10px 16px; font-size: 13px; font-style: italic;">Nema podataka</p>';
+                return html;
+            }
+
+            html += '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 8px;">';
+            html += '<table class="monthly-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">';
+
+            // Header
+            html += '<thead><tr style="background: #f8fafc;">';
+            html += '<th style="min-width: 90px; text-align: left; padding: 8px 10px; border-bottom: 2px solid #e5e7eb;">Mjesec</th>';
+            SORT_KOLONE_HEADER.forEach(function(s) {
+                html += '<th style="min-width: 60px; font-size: 10px; text-align: right; white-space: nowrap; padding: 8px 6px; border-bottom: 2px solid #e5e7eb;">' + s + '</th>';
+            });
+            html += '<th style="min-width: 75px; text-align: right; font-size: 10px; white-space: nowrap; padding: 8px 6px; border-bottom: 2px solid #e5e7eb;">UKUPNO Č+L</th>';
+            html += '</tr></thead>';
+
+            // Body
+            html += '<tbody>';
+            var grandTotals = {};
+            SORT_KOLONE.forEach(function(s) { grandTotals[s] = 0; });
+            grandTotals['ukupno'] = 0;
+
+            months.forEach(function(monthIdx, rowIndex) {
+                var monthData = monthlyData[monthIdx];
+                var rowBg = rowIndex % 2 === 0 ? '#ffffff' : '#f9fafb';
+
+                html += '<tr style="background: ' + rowBg + ';">';
+                html += '<td style="font-weight: 600; padding: 7px 10px; color: #374151;">' + getMonthName(monthIdx) + '</td>';
+
+                SORT_KOLONE.forEach(function(s) {
+                    var val = monthData.sort[s] || 0;
+                    grandTotals[s] += val;
+                    html += '<td style="text-align: right; font-family: \'Courier New\', monospace; font-size: 11px; padding: 7px 6px; color: ' + (val > 0 ? '#1f2937' : '#d1d5db') + ';">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
+                });
+
+                var ukupno = monthData.ukupno || 0;
+                grandTotals['ukupno'] += ukupno;
+                html += '<td style="text-align: right; font-family: \'Courier New\', monospace; font-weight: 700; padding: 7px 6px; color: ' + accentColor + ';">' + (ukupno > 0 ? ukupno.toFixed(2) : '-') + '</td>';
+                html += '</tr>';
+            });
+
+            // UKUPNO row
+            html += '<tr style="background: ' + accentColor + '; color: white; border-top: 2px solid ' + accentColor + ';">';
+            html += '<td style="font-weight: 700; padding: 8px 10px;">UKUPNO</td>';
+            SORT_KOLONE.forEach(function(s) {
+                var val = grandTotals[s];
+                html += '<td style="text-align: right; font-family: \'Courier New\', monospace; font-size: 11px; font-weight: 700; padding: 8px 6px;">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
+            });
+            html += '<td style="text-align: right; font-family: \'Courier New\', monospace; font-weight: 700; padding: 8px 6px;">' + (grandTotals['ukupno'] > 0 ? grandTotals['ukupno'].toFixed(2) : '-') + '</td>';
+            html += '</tr>';
+
+            html += '</tbody></table></div>';
+            return html;
+        }
+
         // Load primaci data
         async function loadPrimaci() {
             try {

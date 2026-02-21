@@ -1827,6 +1827,23 @@
             </div>
         </div>
 
+        <!-- POSLOVODJA CONTENT - PREGLED (Mjesečni po odjelima) -->
+        <div id="poslovodja-pregled-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>📑 PREGLED</h1>
+                    <p>Mjesečni pregled sječe i otpreme po odjelima za tekuću godinu</p>
+                </div>
+                <div class="page-header-right">
+                    <button class="btn btn-primary" onclick="loadPoslovodjaPregled()">🔄 Osvježi</button>
+                </div>
+            </div>
+            <div style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list-pregled"></span></p>
+            </div>
+            <div id="poslovodja-pregled-container"></div>
+        </div>
+
         <!-- DINAMIKA CONTENT -->
         <div id="dinamika-content" class="container hidden">
             <div class="page-header">
