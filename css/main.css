@@ -2391,7 +2391,17 @@
         #otpremaci-content,
         #izvjestaji-content,
         #izvjestaji-primac-content,
-        #izvjestaji-otpremac-content {
+        #izvjestaji-otpremac-content,
+        #poslovodja-sjeca-content,
+        #poslovodja-otprema-content,
+        #poslovodja-stanje-content,
+        #primac-personal-content,
+        #primac-godisnji-content,
+        #primac-odjeli-content,
+        #otpremac-personal-content,
+        #otpremac-odjeli-content,
+        #my-sjece-content,
+        #my-otpreme-content {
             max-width: 100%;
             padding-inline: 24px;
             padding-block: 24px;
@@ -2408,7 +2418,17 @@
             #otpremaci-content,
             #izvjestaji-content,
             #izvjestaji-primac-content,
-            #izvjestaji-otpremac-content { padding-inline: 40px; }
+            #izvjestaji-otpremac-content,
+            #poslovodja-sjeca-content,
+            #poslovodja-otprema-content,
+            #poslovodja-stanje-content,
+            #primac-personal-content,
+            #primac-godisnji-content,
+            #primac-odjeli-content,
+            #otpremac-personal-content,
+            #otpremac-odjeli-content,
+            #my-sjece-content,
+            #my-otpreme-content { padding-inline: 40px; }
         }
 
         /* 2. Grid layout za desktop (umjesto flex) */
@@ -2547,7 +2567,17 @@
             #otpremaci-content,
             #izvjestaji-content,
             #izvjestaji-primac-content,
-            #izvjestaji-otpremac-content { padding-inline: 12px; padding-block: 12px; }
+            #izvjestaji-otpremac-content,
+            #poslovodja-sjeca-content,
+            #poslovodja-otprema-content,
+            #poslovodja-stanje-content,
+            #primac-personal-content,
+            #primac-godisnji-content,
+            #primac-odjeli-content,
+            #otpremac-personal-content,
+            #otpremac-odjeli-content,
+            #my-sjece-content,
+            #my-otpreme-content { padding-inline: 12px; padding-block: 12px; }
         }
 
         /* ============================================ */
