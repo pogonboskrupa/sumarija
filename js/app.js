@@ -1567,24 +1567,13 @@
                 };
 
                 const sortimentiPrikaz = [
-                    { display: 'F/L Č', keys: ['F/L Č'] },
-                    { display: 'I Č', keys: ['I Č'] },
-                    { display: 'II Č', keys: ['II Č'] },
-                    { display: 'III Č', keys: ['III Č'] },
-                    { display: 'RD', keys: ['RD'] },
                     { display: 'TRUPCI Č', keys: ['TRUPCI Č'] },
                     { display: 'CEL.D', keys: ['CEL.DUGA'] },
                     { display: 'CEL.C', keys: ['CEL.CIJEPANA'] },
-                    { display: 'ŠKART', keys: ['ŠKART'] },
                     { display: 'Σ ČET', keys: ['Σ ČETINARI'] },
-                    { display: 'F/L L', keys: ['F/L L'] },
-                    { display: 'I L', keys: ['I L'] },
-                    { display: 'II L', keys: ['II L'] },
-                    { display: 'III L', keys: ['III L'] },
                     { display: 'TRUPCI L', keys: ['TRUPCI L'] },
                     { display: 'OGR.D', keys: ['OGR.DUGI'] },
                     { display: 'OGR.C', keys: ['OGR.CIJEPANI'] },
-                    { display: 'GULE', keys: ['GULE'] },
                     { display: 'Σ LIŠ', keys: ['LIŠĆARI'] }
                 ];
 
@@ -1691,7 +1680,7 @@
             } catch (error) {
                 console.error('Error loading tekući mjesec table:', error);
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="21" style="text-align: center; padding: 20px; color: #dc2626;">Greška pri učitavanju podataka</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #dc2626;">Greška pri učitavanju podataka</td></tr>';
             }
         }
 
@@ -1811,24 +1800,13 @@
 
                 // Sortimenti koje prikazujemo (kompaktni nazivi)
                 const sortimentiPrikaz = [
-                    { display: 'F/L Č', keys: ['F/L Č'] },
-                    { display: 'I Č', keys: ['I Č'] },
-                    { display: 'II Č', keys: ['II Č'] },
-                    { display: 'III Č', keys: ['III Č'] },
-                    { display: 'RD', keys: ['RD'] },
                     { display: 'TRUPCI Č', keys: ['TRUPCI Č'] },
                     { display: 'CEL.D', keys: ['CEL.DUGA'] },
                     { display: 'CEL.C', keys: ['CEL.CIJEPANA'] },
-                    { display: 'ŠKART', keys: ['ŠKART'] },
                     { display: 'Σ ČET', keys: ['Σ ČETINARI'] },
-                    { display: 'F/L L', keys: ['F/L L'] },
-                    { display: 'I L', keys: ['I L'] },
-                    { display: 'II L', keys: ['II L'] },
-                    { display: 'III L', keys: ['III L'] },
                     { display: 'TRUPCI L', keys: ['TRUPCI L'] },
                     { display: 'OGR.D', keys: ['OGR.DUGI'] },
                     { display: 'OGR.C', keys: ['OGR.CIJEPANI'] },
-                    { display: 'GULE', keys: ['GULE'] },
                     { display: 'Σ LIŠ', keys: ['LIŠĆARI'] }
                 ];
 
@@ -1967,7 +1945,7 @@
             } catch (error) {
                 console.error('Error loading zadnjih 5 radnih dana table:', error);
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="21" style="text-align: center; padding: 20px; color: #dc2626;">Greška pri učitavanju podataka</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #dc2626;">Greška pri učitavanju podataka</td></tr>';
             }
         }
 
@@ -1983,24 +1961,13 @@
             try {
                 // Sortimenti za prikaz (mapiranje od API naziva - iz zadnjeg reda ZALIHA tabele)
                 const sortimentiPrikaz = [
-                    { display: 'F/L Č', apiKey: 'F/L Č' },
-                    { display: 'I Č', apiKey: 'I Č' },
-                    { display: 'II Č', apiKey: 'II Č' },
-                    { display: 'III Č', apiKey: 'III Č' },
-                    { display: 'RD', apiKey: 'RD' },
                     { display: 'TRUPCI Č', apiKey: 'TRUPCI Č' },
                     { display: 'CEL.DUGA', apiKey: 'CEL.DUGA' },
                     { display: 'CEL.CIJEPANA', apiKey: 'CEL.CIJEPANA' },
-                    { display: 'ŠKART', apiKey: 'ŠKART' },
                     { display: 'ČETINARI', apiKey: 'Σ ČETINARI' },
-                    { display: 'F/L L', apiKey: 'F/L L' },
-                    { display: 'I L', apiKey: 'I L' },
-                    { display: 'II L', apiKey: 'II L' },
-                    { display: 'III L', apiKey: 'III L' },
                     { display: 'TRUPCI L', apiKey: 'TRUPCI L' },
                     { display: 'OGR.DUGI', apiKey: 'OGR.DUGI' },
                     { display: 'OGR.CIJEPANI', apiKey: 'OGR.CIJEPANI' },
-                    { display: 'GULE', apiKey: 'GULE' },
                     { display: 'LIŠĆARI', apiKey: 'LIŠĆARI' }
                 ];
 
@@ -2028,7 +1995,7 @@
                 // Renderuj tabelu - zaglavlje sa naslovom
                 let headerHtml = `
                     <tr style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);">
-                        <th colspan="21" style="color: white; font-weight: 700; text-align: center; padding: 12px 16px; font-size: 15px; letter-spacing: 0.5px;">
+                        <th colspan="10" style="color: white; font-weight: 700; text-align: center; padding: 12px 16px; font-size: 15px; letter-spacing: 0.5px;">
                             📦 Ukupne zalihe - ${brojOdjela} odjela
                         </th>
                     </tr>
@@ -2062,7 +2029,7 @@
             } catch (error) {
                 console.error('Error rendering stanje zaliha tabela:', error);
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="21" style="text-align: center; padding: 20px; color: #dc2626;">Greška pri učitavanju podataka</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #dc2626;">Greška pri učitavanju podataka</td></tr>';
             }
         }
 
@@ -2078,24 +2045,13 @@
             try {
                 // Sortimenti za prikaz (mapiranje od API naziva)
                 const sortimentiPrikaz = [
-                    { display: 'F/L Č', apiKey: 'F/L Č' },
-                    { display: 'I Č', apiKey: 'I Č' },
-                    { display: 'II Č', apiKey: 'II Č' },
-                    { display: 'III Č', apiKey: 'III Č' },
-                    { display: 'RD', apiKey: 'RD' },
                     { display: 'TRUPCI Č', apiKey: 'TRUPCI Č' },
                     { display: 'CEL.DUGA', apiKey: 'CEL.DUGA' },
                     { display: 'CEL.CIJEPANA', apiKey: 'CEL.CIJEPANA' },
-                    { display: 'ŠKART', apiKey: 'ŠKART' },
                     { display: 'ČETINARI', apiKey: 'Σ ČETINARI' },
-                    { display: 'F/L L', apiKey: 'F/L L' },
-                    { display: 'I L', apiKey: 'I L' },
-                    { display: 'II L', apiKey: 'II L' },
-                    { display: 'III L', apiKey: 'III L' },
                     { display: 'TRUPCI L', apiKey: 'TRUPCI L' },
                     { display: 'OGR.DUGI', apiKey: 'OGR.DUGI' },
                     { display: 'OGR.CIJEPANI', apiKey: 'OGR.CIJEPANI' },
-                    { display: 'GULE', apiKey: 'GULE' },
                     { display: 'LIŠĆARI', apiKey: 'LIŠĆARI' }
                 ];
 
@@ -2123,7 +2079,7 @@
                 // Renderuj tabelu - zaglavlje sa naslovom
                 let headerHtml = `
                     <tr style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);">
-                        <th colspan="21" style="color: white; font-weight: 700; text-align: center; padding: 12px 16px; font-size: 15px; letter-spacing: 0.5px;">
+                        <th colspan="10" style="color: white; font-weight: 700; text-align: center; padding: 12px 16px; font-size: 15px; letter-spacing: 0.5px;">
                             📦 Zalihe - ${poslovodjaName}
                         </th>
                     </tr>
@@ -2157,7 +2113,7 @@
             } catch (error) {
                 console.error('Error rendering poslovodja stanje zaliha tabela:', error);
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="21" style="text-align: center; padding: 20px; color: #dc2626;">Greška pri učitavanju podataka</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #dc2626;">Greška pri učitavanju podataka</td></tr>';
             }
         }
 
