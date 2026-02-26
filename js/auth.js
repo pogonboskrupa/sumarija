@@ -265,56 +265,36 @@
             }
 
             // Log final cache stats before logout
-            logCacheStats();
+            try { logCacheStats(); } catch(e) { console.error('logout logCacheStats:', e); }
 
             // Stop Delta Sync
-            if (window.DataSync) {
-                DataSync.stopSmartSync();
-                DataSync.logSyncMetrics();
-            }
+            try {
+                if (window.DataSync) {
+                    DataSync.stopSmartSync();
+                    DataSync.logSyncMetrics();
+                }
+            } catch(e) { console.error('logout DataSync:', e); }
 
             // Cleanup intervals to prevent memory leaks
-            if (cacheStatusIntervalId) {
-                clearInterval(cacheStatusIntervalId);
-                cacheStatusIntervalId = null;
-            }
+            try {
+                if (cacheStatusIntervalId) {
+                    clearInterval(cacheStatusIntervalId);
+                    cacheStatusIntervalId = null;
+                }
+            } catch(e) {}
 
             // Stop manifest checker
-            stopManifestChecker();
+            try { stopManifestChecker(); } catch(e) {}
 
             // Cleanup chart instances to prevent memory leaks
-            if (window.dashboardChart) {
-                window.dashboardChart.destroy();
-                window.dashboardChart = null;
-            }
-            if (primacChart) {
-                primacChart.destroy();
-                primacChart = null;
-            }
-            if (otpremacChart) {
-                otpremacChart.destroy();
-                otpremacChart = null;
-            }
-            if (primacDailyChart) {
-                primacDailyChart.destroy();
-                primacDailyChart = null;
-            }
-            if (otpremacDailyChart) {
-                otpremacDailyChart.destroy();
-                otpremacDailyChart = null;
-            }
-            if (primacYearlyChart) {
-                primacYearlyChart.destroy();
-                primacYearlyChart = null;
-            }
-            if (otpremacYearlyChart) {
-                otpremacYearlyChart.destroy();
-                otpremacYearlyChart = null;
-            }
-            if (window.poslovodjaDashChart) {
-                window.poslovodjaDashChart.destroy();
-                window.poslovodjaDashChart = null;
-            }
+            try { if (window.dashboardChart) { window.dashboardChart.destroy(); window.dashboardChart = null; } } catch(e) {}
+            try { if (typeof primacChart !== 'undefined' && primacChart) { primacChart.destroy(); primacChart = null; } } catch(e) {}
+            try { if (typeof otpremacChart !== 'undefined' && otpremacChart) { otpremacChart.destroy(); otpremacChart = null; } } catch(e) {}
+            try { if (typeof primacDailyChart !== 'undefined' && primacDailyChart) { primacDailyChart.destroy(); primacDailyChart = null; } } catch(e) {}
+            try { if (typeof otpremacDailyChart !== 'undefined' && otpremacDailyChart) { otpremacDailyChart.destroy(); otpremacDailyChart = null; } } catch(e) {}
+            try { if (typeof primacYearlyChart !== 'undefined' && primacYearlyChart) { primacYearlyChart.destroy(); primacYearlyChart = null; } } catch(e) {}
+            try { if (typeof otpremacYearlyChart !== 'undefined' && otpremacYearlyChart) { otpremacYearlyChart.destroy(); otpremacYearlyChart = null; } } catch(e) {}
+            try { if (window.poslovodjaDashChart) { window.poslovodjaDashChart.destroy(); window.poslovodjaDashChart = null; } } catch(e) {}
 
             currentUser = null;
             currentPassword = null;
@@ -323,28 +303,29 @@
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('app-screen').classList.add('hidden');
             if (typeof setLoginViewport === 'function') setLoginViewport();
-            document.getElementById('dashboard-content').classList.add('hidden');
-            document.getElementById('primaci-content').classList.add('hidden');
-            document.getElementById('otpremaci-content').classList.add('hidden');
-            document.getElementById('kupci-content').classList.add('hidden');
-            document.getElementById('primac-personal-content').classList.add('hidden');
-            document.getElementById('primac-godisnji-content').classList.add('hidden');
-            document.getElementById('otpremac-personal-content').classList.add('hidden');
-            document.getElementById('otpremac-godisnji-content').classList.add('hidden');
-            document.getElementById('primac-odjeli-content').classList.add('hidden');
-            document.getElementById('otpremac-odjeli-content').classList.add('hidden');
-            document.getElementById('add-sjeca-content').classList.add('hidden');
-            document.getElementById('add-otprema-content').classList.add('hidden');
-            document.getElementById('my-sjece-content').classList.add('hidden');
-            document.getElementById('my-otpreme-content').classList.add('hidden');
-            document.getElementById('edit-sjeca-content').classList.add('hidden');
-            document.getElementById('edit-otprema-content').classList.add('hidden');
-            document.getElementById('pending-unosi-content').classList.add('hidden');
-            document.getElementById('operativa-content').classList.add('hidden');
-            document.getElementById('poslovodja-dashboard-content').classList.add('hidden');
-            document.getElementById('poslovodja-stanje-content').classList.add('hidden');
-            document.getElementById('izvjestaji-primac-content').classList.add('hidden');
-            document.getElementById('izvjestaji-otpremac-content').classList.add('hidden');
+
+            // Hide all content panels (safe - won't crash if element missing)
+            var panelIds = [
+                'dashboard-content', 'primaci-content', 'otpremaci-content', 'kupci-content',
+                'primac-personal-content', 'primac-godisnji-content',
+                'otpremac-personal-content', 'otpremac-godisnji-content',
+                'primac-odjeli-content', 'otpremac-odjeli-content',
+                'add-sjeca-content', 'add-otprema-content',
+                'my-sjece-content', 'my-otpreme-content',
+                'edit-sjeca-content', 'edit-otprema-content',
+                'pending-unosi-content', 'operativa-content',
+                'poslovodja-dashboard-content', 'poslovodja-stanje-content',
+                'poslovodja-sjeca-content', 'poslovodja-otprema-content',
+                'poslovodja-pregled-content', 'poslovodja-unosi-content',
+                'izvjestaji-content', 'izvjestaji-primac-content', 'izvjestaji-otpremac-content',
+                'mjesecni-sortimenti-content', 'stanje-odjela-admin-content',
+                'dinamika-content', 'kubikator-content', 'ostalo-content', 'stanje-zaliha-content'
+            ];
+            panelIds.forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+
             document.getElementById('loading-screen').classList.remove('hidden');
         }
 
