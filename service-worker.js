@@ -1,12 +1,13 @@
 // ========== Service Worker - Offline Support ==========
 // Cache static assets, fallback za offline
 
-const CACHE_VERSION = 'v4'; // 🔄 Updated paths for GitHub Pages deployment
+const CACHE_VERSION = 'v5';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
     '/sumarija/',
     '/sumarija/index.html',
+    '/sumarija/offline.html',
     '/sumarija/idb-helper.js',
     '/sumarija/data-sync.js'
 ];
@@ -120,7 +121,10 @@ self.addEventListener('fetch', (event) => {
                         if (cachedResponse) {
                             return cachedResponse;
                         }
-                        // Return proper JSON error response instead of plain text
+                        // Navigation requests (page loads) → offline.html
+                        if (request.mode === 'navigate') {
+                            return caches.match('/sumarija/offline.html');
+                        }
                         return new Response(JSON.stringify({
                             success: false,
                             error: 'Offline - no cached data available',

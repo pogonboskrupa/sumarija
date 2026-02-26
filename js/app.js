@@ -10252,3 +10252,29 @@
             window.print();
         }
 
+        // ========== PWA INSTALL PROMPT ==========
+        let deferredPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            deferredPrompt = e;
+            var btn = document.getElementById('pwa-install-btn');
+            if (btn) btn.style.display = '';
+        });
+
+        function installPwa() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(function() {
+                deferredPrompt = null;
+                var btn = document.getElementById('pwa-install-btn');
+                if (btn) btn.style.display = 'none';
+            });
+        }
+
+        window.addEventListener('appinstalled', function() {
+            deferredPrompt = null;
+            var btn = document.getElementById('pwa-install-btn');
+            if (btn) btn.style.display = 'none';
+        });
+
