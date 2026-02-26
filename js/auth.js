@@ -89,6 +89,7 @@
             } else if (userType === 'otpremac') {
                 tabsConfig = [
                     { id: 'otpremac-personal', icon: '🚛', label: 'Pregled otpreme', active: true },
+                    { id: 'otpremac-godisnji', icon: '📅', label: 'Godišnji prikaz' },
                     { id: 'otpremac-odjeli', icon: '🏭', label: 'Prikaz po odjelima' },
                     { id: 'add-otprema', icon: '➕', label: 'Dodaj otpremu' },
                     { id: 'my-otpreme', icon: '📝', label: 'Moje otpreme' },
@@ -105,12 +106,13 @@
                 ];
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
                 tabsConfig = [
-                    { id: 'poslovodja-sjeca', icon: '🪓', label: 'SJEČA', active: true },
+                    { id: 'poslovodja-dashboard', icon: '📊', label: 'Dashboard', active: true },
+                    { id: 'poslovodja-sjeca', icon: '🪓', label: 'SJEČA' },
                     { id: 'poslovodja-otprema', icon: '🚛', label: 'OTPREMA' },
-                    { id: 'poslovodja-stanje', icon: '📊', label: 'Stanje zaliha' },
+                    { id: 'poslovodja-stanje', icon: '📦', label: 'Stanje zaliha' },
                     { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
                     { id: 'poslovodja-pregled', icon: '📑', label: 'PREGLED' },
-                    { id: 'poslovodja-unosi', icon: '📝', label: 'Dodani unosi' }
+                    { id: 'poslovodja-unosi', icon: '📝', label: 'Dodani unosi', hasBadge: true }
                 ];
             } else {
                 // Admin / default user
@@ -309,6 +311,10 @@
                 otpremacYearlyChart.destroy();
                 otpremacYearlyChart = null;
             }
+            if (window.poslovodjaDashChart) {
+                window.poslovodjaDashChart.destroy();
+                window.poslovodjaDashChart = null;
+            }
 
             currentUser = null;
             currentPassword = null;
@@ -322,7 +328,9 @@
             document.getElementById('otpremaci-content').classList.add('hidden');
             document.getElementById('kupci-content').classList.add('hidden');
             document.getElementById('primac-personal-content').classList.add('hidden');
+            document.getElementById('primac-godisnji-content').classList.add('hidden');
             document.getElementById('otpremac-personal-content').classList.add('hidden');
+            document.getElementById('otpremac-godisnji-content').classList.add('hidden');
             document.getElementById('primac-odjeli-content').classList.add('hidden');
             document.getElementById('otpremac-odjeli-content').classList.add('hidden');
             document.getElementById('add-sjeca-content').classList.add('hidden');
@@ -333,6 +341,7 @@
             document.getElementById('edit-otprema-content').classList.add('hidden');
             document.getElementById('pending-unosi-content').classList.add('hidden');
             document.getElementById('operativa-content').classList.add('hidden');
+            document.getElementById('poslovodja-dashboard-content').classList.add('hidden');
             document.getElementById('poslovodja-stanje-content').classList.add('hidden');
             document.getElementById('poslovodja-realizacija-content').classList.add('hidden');
             document.getElementById('poslovodja-suma-content').classList.add('hidden');
@@ -356,7 +365,7 @@
             } else if (userType === 'otpremac') {
                 loadOtpremacPersonal();
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
-                loadPoslovodjaSjeca();
+                loadPoslovodjaDashboard();
             } else {
                 loadDashboard();
             }

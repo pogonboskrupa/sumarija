@@ -733,11 +733,15 @@
                         { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni-sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year, timeout: 120000 }
                     ];
 
-                } else if (userType === 'primac' || userType === 'otpremac') {
-                    const path = userType === 'primac' ? 'primke' : 'otpreme';
+                } else if (userType === 'primac') {
                     allViews = [
-                        { name: 'Moje unose', url: buildApiUrl(path), cacheKey: `cache_my_${path}`, timeout: 120000 },
-                        { name: 'Godišnji prikaz', url: buildApiUrl(path), cacheKey: `cache_godisnji_${path}`, timeout: 120000 }
+                        { name: 'Moje unose', url: buildApiUrl('primke'), cacheKey: 'cache_my_primke', timeout: 120000 },
+                        { name: 'Godišnji prikaz', url: buildApiUrl('primac-detail', { year }), cacheKey: 'cache_primac_godisnji_' + year, timeout: 120000 }
+                    ];
+                } else if (userType === 'otpremac') {
+                    allViews = [
+                        { name: 'Moje unose', url: buildApiUrl('otpreme'), cacheKey: 'cache_my_otpreme', timeout: 120000 },
+                        { name: 'Godišnji prikaz', url: buildApiUrl('otpremac-detail', { year }), cacheKey: 'cache_otpremac_godisnji_' + year, timeout: 120000 }
                     ];
                 }
 
@@ -2938,6 +2942,253 @@
                 return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
             }
             return null;
+        }
+
+        // ========== POSLOVODJA DASHBOARD ==========
+        async function loadPoslovodjaDashboard() {
+            var pName = currentUser ? currentUser.fullName : '';
+            var pCK = 'cache_stanje_zaliha_' + (pName || 'all').replace(/\s+/g, '_');
+
+            // Turbo: instant show cached data
+            if (!localStorage.getItem(pCK) && !localStorage.getItem('cache_primke_sjeca')) {
+                document.getElementById('loading-screen').classList.remove('hidden');
+                document.getElementById('poslovodja-dashboard-content').classList.add('hidden');
+            } else {
+                document.getElementById('poslovodja-dashboard-content').classList.remove('hidden');
+            }
+
+            try {
+                var radilista = getPoslovodjaRadilista();
+                var radilistaEl = document.getElementById('poslovodja-radilista-list-dashboard');
+                if (radilistaEl) radilistaEl.textContent = radilista.join(', ') || pName;
+
+                // Fetch all 3 data sources in parallel
+                var stanjeProm = fetchWithCache(
+                    buildApiUrl('stanje-zaliha', { poslovodja: pName }), pCK, false, 60000
+                );
+                var primkeProm = fetchWithCache(
+                    buildApiUrl('primke'), 'cache_primke_sjeca', false, 120000
+                );
+                var otpremeProm = fetchWithCache(
+                    buildApiUrl('otpreme'), 'cache_otpreme_tab', false, 120000
+                );
+
+                var results = await Promise.all([stanjeProm, primkeProm, otpremeProm]);
+                var stanjeData = results[0];
+                var primkeData = results[1];
+                var otpremeData = results[2];
+
+                // --- KPI calculations ---
+                var now = new Date();
+                var currentMonth = now.getMonth() + 1; // 1-12
+                var currentYear = now.getFullYear();
+                var userFullName = currentUser.fullName.toUpperCase().trim();
+
+                // Filter primke for current month and poslovodja's radilista
+                var monthSjeca = 0;
+                (primkeData.primke || []).forEach(function(p) {
+                    var d = parseDatumDDMMYYYY(p.datum);
+                    if (!d || d.getMonth() + 1 !== currentMonth || d.getFullYear() !== currentYear) return;
+                    var pPoslov = (p.poslovodja || '').toUpperCase().trim();
+                    var match = (pPoslov && pPoslov === userFullName);
+                    if (!match && radilista.length > 0) {
+                        var pRad = (p.radiliste || '').toUpperCase().trim();
+                        match = radilista.some(function(r) { return pRad.includes(r.toUpperCase()); });
+                    }
+                    if (match) monthSjeca += (p.kolicina || 0);
+                });
+
+                // Filter otpreme for current month
+                var monthOtprema = 0;
+                (otpremeData.otpreme || []).forEach(function(o) {
+                    var d = parseDatumDDMMYYYY(o.datum);
+                    if (!d || d.getMonth() + 1 !== currentMonth || d.getFullYear() !== currentYear) return;
+                    var oPoslov = (o.poslovodja || '').toUpperCase().trim();
+                    var match = (oPoslov && oPoslov === userFullName);
+                    if (!match && radilista.length > 0) {
+                        var oRad = (o.radiliste || '').toUpperCase().trim();
+                        match = radilista.some(function(r) { return oRad.includes(r.toUpperCase()); });
+                    }
+                    if (match) monthOtprema += (o.kolicina || 0);
+                });
+
+                var zaliha = monthSjeca - monthOtprema;
+
+                // Count pending unosi (last 30 days entries from radnici in poslovodja's radilista)
+                var pendingCount = 0;
+                var pendingRaw = localStorage.getItem('cache_pending_unosi');
+                if (pendingRaw) {
+                    try {
+                        var pendingParsed = JSON.parse(pendingRaw);
+                        if (pendingParsed && pendingParsed.data && pendingParsed.data.unosi) {
+                            pendingParsed.data.unosi.forEach(function(u) {
+                                var uRad = (u.radiliste || '').toUpperCase().trim();
+                                if (radilista.some(function(r) { return uRad.includes(r.toUpperCase()); })) {
+                                    pendingCount++;
+                                }
+                            });
+                        }
+                    } catch(e) {}
+                }
+
+                // Update KPI cards
+                var mjeseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+                document.getElementById('poslovodja-kpi-sjeca').textContent = monthSjeca.toFixed(1) + ' m\u00B3';
+                document.getElementById('poslovodja-kpi-sjeca-sub').textContent = mjeseci[currentMonth - 1] + ' ' + currentYear;
+                document.getElementById('poslovodja-kpi-otprema').textContent = monthOtprema.toFixed(1) + ' m\u00B3';
+                document.getElementById('poslovodja-kpi-otprema-sub').textContent = mjeseci[currentMonth - 1] + ' ' + currentYear;
+                document.getElementById('poslovodja-kpi-zaliha').textContent = zaliha.toFixed(1) + ' m\u00B3';
+                document.getElementById('poslovodja-kpi-zaliha-sub').textContent = 'Sječa - Otprema';
+                document.getElementById('poslovodja-kpi-unosi').textContent = pendingCount;
+                document.getElementById('poslovodja-kpi-unosi-sub').textContent = pendingCount > 0 ? 'Nepotvrđenih unosa' : 'Nema novih unosa';
+
+                // Color pending card
+                var unosiCard = document.getElementById('poslovodja-kpi-unosi-card');
+                if (unosiCard) {
+                    unosiCard.className = 'summary-card' + (pendingCount > 0 ? ' red' : ' green');
+                }
+
+                // --- Update badge count on Dodani unosi tab ---
+                var badgeEls = document.querySelectorAll('.badge-count');
+                badgeEls.forEach(function(b) {
+                    if (pendingCount > 0) {
+                        b.textContent = pendingCount;
+                        b.style.display = 'inline-flex';
+                    } else {
+                        b.style.display = 'none';
+                    }
+                });
+
+                // --- 7-day trend chart ---
+                var today = new Date();
+                today.setHours(23, 59, 59, 999);
+                var sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+                sevenDaysAgo.setHours(0, 0, 0, 0);
+
+                // Build 7 days labels + data
+                var dayLabels = [];
+                var daySjeca = [];
+                var dayOtprema = [];
+                for (var di = 0; di < 7; di++) {
+                    var dd = new Date(sevenDaysAgo);
+                    dd.setDate(dd.getDate() + di);
+                    dayLabels.push(dd.getDate() + '.' + (dd.getMonth() + 1) + '.');
+                    daySjeca.push(0);
+                    dayOtprema.push(0);
+                }
+
+                (primkeData.primke || []).forEach(function(p) {
+                    var d = parseDatumDDMMYYYY(p.datum);
+                    if (!d || d < sevenDaysAgo || d > today) return;
+                    var pPoslov = (p.poslovodja || '').toUpperCase().trim();
+                    var match = (pPoslov && pPoslov === userFullName);
+                    if (!match && radilista.length > 0) {
+                        var pRad = (p.radiliste || '').toUpperCase().trim();
+                        match = radilista.some(function(r) { return pRad.includes(r.toUpperCase()); });
+                    }
+                    if (match) {
+                        var dayIdx = Math.floor((d - sevenDaysAgo) / 86400000);
+                        if (dayIdx >= 0 && dayIdx < 7) daySjeca[dayIdx] += (p.kolicina || 0);
+                    }
+                });
+
+                (otpremeData.otpreme || []).forEach(function(o) {
+                    var d = parseDatumDDMMYYYY(o.datum);
+                    if (!d || d < sevenDaysAgo || d > today) return;
+                    var oPoslov = (o.poslovodja || '').toUpperCase().trim();
+                    var match = (oPoslov && oPoslov === userFullName);
+                    if (!match && radilista.length > 0) {
+                        var oRad = (o.radiliste || '').toUpperCase().trim();
+                        match = radilista.some(function(r) { return oRad.includes(r.toUpperCase()); });
+                    }
+                    if (match) {
+                        var dayIdx = Math.floor((d - sevenDaysAgo) / 86400000);
+                        if (dayIdx >= 0 && dayIdx < 7) dayOtprema[dayIdx] += (o.kolicina || 0);
+                    }
+                });
+
+                // Create chart
+                await window.loadChartJs();
+                var ctx = document.getElementById('poslovodjaDashChart');
+                if (window.poslovodjaDashChart) {
+                    window.poslovodjaDashChart.destroy();
+                }
+                window.poslovodjaDashChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: dayLabels,
+                        datasets: [{
+                            label: 'Sječa (m\u00B3)',
+                            data: daySjeca,
+                            backgroundColor: 'rgba(5, 150, 105, 0.7)',
+                            borderColor: '#059669',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }, {
+                            label: 'Otprema (m\u00B3)',
+                            data: dayOtprema,
+                            backgroundColor: 'rgba(37, 99, 235, 0.7)',
+                            borderColor: '#2563eb',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' },
+                            tooltip: { mode: 'index', intersect: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, title: { display: true, text: 'm\u00B3' } }
+                        }
+                    }
+                });
+
+                // --- Odjeli table from stanje-zaliha ---
+                var odjeli = (stanjeData.odjeli || []);
+                var headerEl = document.getElementById('poslovodja-dash-odjeli-header');
+                var bodyEl = document.getElementById('poslovodja-dash-odjeli-body');
+
+                if (odjeli.length > 0) {
+                    headerEl.innerHTML = '<tr><th>Odjel</th><th class="right">Sječa (m\u00B3)</th><th class="right">Otprema (m\u00B3)</th><th class="right">Zaliha (m\u00B3)</th><th>Radilište</th></tr>';
+
+                    var totalS = 0, totalO = 0, totalZ = 0;
+                    var bodyHtml = odjeli.map(function(o) {
+                        var s = o.sjeca || 0;
+                        var ot = o.otprema || 0;
+                        var z = o.zaliha || (s - ot);
+                        totalS += s; totalO += ot; totalZ += z;
+                        return '<tr><td style="font-weight:600;">' + (o.odjel || '-') + '</td>' +
+                            '<td class="right">' + s.toFixed(2) + '</td>' +
+                            '<td class="right">' + ot.toFixed(2) + '</td>' +
+                            '<td class="right" style="font-weight:600;">' + z.toFixed(2) + '</td>' +
+                            '<td>' + (o.radiliste || '-') + '</td></tr>';
+                    }).join('');
+
+                    bodyHtml += '<tr class="totals-row"><td style="font-weight:800;">UKUPNO</td>' +
+                        '<td class="right" style="font-weight:800;">' + totalS.toFixed(2) + '</td>' +
+                        '<td class="right" style="font-weight:800;">' + totalO.toFixed(2) + '</td>' +
+                        '<td class="right" style="font-weight:800;">' + totalZ.toFixed(2) + '</td>' +
+                        '<td></td></tr>';
+
+                    bodyEl.innerHTML = bodyHtml;
+                } else {
+                    headerEl.innerHTML = '';
+                    bodyEl.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px; color:#6b7280;">Nema podataka o stanju zaliha</td></tr>';
+                }
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('poslovodja-dashboard-content').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error loading poslovodja dashboard:', error);
+                showError('Greška', 'Greška pri učitavanju dashboarda: ' + error.message);
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('poslovodja-dashboard-content').classList.remove('hidden');
+            }
         }
 
         async function loadPoslovodjaSjeca() {

@@ -736,6 +736,91 @@
             }
         }
 
+        // Load otpremac godisnji prikaz (yearly view)
+        async function loadOtpremacGodisnji() {
+            try {
+                var yearSelector = document.getElementById('otpremac-godisnji-year-select');
+                var year = yearSelector ? yearSelector.value : new Date().getFullYear();
+
+                var badge = document.getElementById('otpremac-godisnji-year-badge');
+                if (badge) badge.textContent = year;
+
+                var url = buildApiUrl('otpremac-detail', { year: year });
+                var data = await fetchWithCache(url, 'cache_otpremac_godisnji_' + year);
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Group data by month
+                var monthlyData = {};
+                var mjeseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+
+                for (var i = 1; i <= 12; i++) {
+                    monthlyData[i] = { mjesec: mjeseci[i-1], sortimenti: {}, ukupno: 0 };
+                    data.sortimentiNazivi.forEach(function(s) { monthlyData[i].sortimenti[s] = 0; });
+                }
+
+                // Sum by month
+                data.unosi.forEach(function(u) {
+                    var dateParts = u.datum.split('.');
+                    if (dateParts.length >= 2) {
+                        var mjesec = parseInt(dateParts[1]);
+                        monthlyData[mjesec].ukupno += u.ukupno || 0;
+                        data.sortimentiNazivi.forEach(function(s) {
+                            monthlyData[mjesec].sortimenti[s] += (u.sortimenti[s] || 0);
+                        });
+                    }
+                });
+
+                // Create header
+                var headerHTML = '<tr><th>Mjesec</th>' +
+                    data.sortimentiNazivi.map(function(s) { return '<th class="sortiment-col">' + s + '</th>'; }).join('') +
+                    '</tr>';
+                document.getElementById('otpremac-godisnji-main-header').innerHTML = headerHTML;
+
+                // Create body
+                var totalSortimenti = {};
+                data.sortimentiNazivi.forEach(function(s) { totalSortimenti[s] = 0; });
+                var totalUkupno = 0;
+
+                var bodyHTML = mjeseci.map(function(mjesec, idx) {
+                    var mjesecNum = idx + 1;
+                    var md = monthlyData[mjesecNum];
+
+                    totalUkupno += md.ukupno;
+                    data.sortimentiNazivi.forEach(function(s) {
+                        totalSortimenti[s] += md.sortimenti[s];
+                    });
+
+                    var sortimentiCells = data.sortimentiNazivi.map(function(s) {
+                        var val = md.sortimenti[s];
+                        return '<td class="sortiment-col">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
+                    }).join('');
+
+                    return '<tr class="mjesec-' + mjesecNum + '">' +
+                        '<td style="font-weight: 700;">' + mjesec + '</td>' +
+                        sortimentiCells + '</tr>';
+                }).join('');
+
+                // Totals row
+                var totalsCells = data.sortimentiNazivi.map(function(s) {
+                    var val = totalSortimenti[s];
+                    return '<td class="sortiment-col">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
+                }).join('');
+
+                bodyHTML += '<tr class="totals-row"><td style="text-align: left;">GODIŠNJE UKUPNO</td>' + totalsCells + '</tr>';
+
+                document.getElementById('otpremac-godisnji-main-body').innerHTML = bodyHTML;
+
+                // Create yearly chart
+                await createWorkerYearlyChart('otpremac-yearly-chart', data.unosi, '#1e40af', '#3b82f6');
+
+            } catch (error) {
+                showError('Greška', 'Greška pri učitavanju godišnjeg prikaza otpreme: ' + error.message);
+            }
+        }
+
         // Load primac personal data
         async function loadPrimacPersonal() {
             var ppYear = (document.getElementById('primac-personal-year-select') || {}).value || new Date().getFullYear();

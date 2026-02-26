@@ -831,6 +831,49 @@
             </div>
         </div>
 
+        <!-- OTPREMAC GODISNJI VIEW -->
+        <div id="otpremac-godisnji-content" class="container hidden">
+            <div class="section">
+                <!-- Professional Header -->
+                <div class="worker-header otpremac">
+                    <div class="worker-header-icon">📅</div>
+                    <div style="flex: 1;">
+                        <h1 class="worker-header-title">Godišnji prikaz</h1>
+                        <p class="worker-header-subtitle">Mjesečna rekapitulacija otpreme</p>
+                    </div>
+                    <div>
+                        <select id="otpremac-godisnji-year-select" class="year-select" onchange="loadOtpremacGodisnji()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #2563eb; min-width: 120px;">
+                            <option value="2026" selected>2026</option>
+                            <option value="2025">2025</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Mjesečni dijagram otpreme -->
+                <div class="worker-chart-card otpremac">
+                    <h3 class="worker-chart-title">📊 Mjesečna otprema - Grafički prikaz</h3>
+                    <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">Mjesečne rekapitulacije za cijelu godinu</p>
+                    <canvas id="otpremac-yearly-chart" class="worker-chart-canvas"></canvas>
+                </div>
+
+                <!-- Godišnja tabela -->
+                <div class="worker-table-card">
+                    <div class="worker-table-card-header">
+                        <h3 class="worker-table-card-title">
+                            📅 Godišnja rekapitulacija po mjesecima
+                        </h3>
+                        <span class="worker-table-card-badge otpremac" id="otpremac-godisnji-year-badge">2026</span>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="worker-table" id="otpremac-godisnji-main-table">
+                            <thead id="otpremac-godisnji-main-header"></thead>
+                            <tbody id="otpremac-godisnji-main-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- PRIMAC ODJELI VIEW (By Department) -->
         <div id="primac-odjeli-content" class="container hidden">
             <div class="section">
@@ -1769,6 +1812,57 @@
                             <tbody id="suma-lager-table"></tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- POSLOVOĐA DASHBOARD -->
+        <div id="poslovodja-dashboard-content" class="container hidden">
+            <!-- KPI Cards -->
+            <div class="summary-cards" id="poslovodja-kpi-cards">
+                <div class="summary-card green">
+                    <div class="summary-card-title">Sječa (tekući mjesec)</div>
+                    <div class="summary-card-value" id="poslovodja-kpi-sjeca">--</div>
+                    <div class="summary-card-subtitle" id="poslovodja-kpi-sjeca-sub">Učitavam...</div>
+                </div>
+                <div class="summary-card blue">
+                    <div class="summary-card-title">Otprema (tekući mjesec)</div>
+                    <div class="summary-card-value" id="poslovodja-kpi-otprema">--</div>
+                    <div class="summary-card-subtitle" id="poslovodja-kpi-otprema-sub">Učitavam...</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-card-title">Zaliha (šuma/panj)</div>
+                    <div class="summary-card-value" id="poslovodja-kpi-zaliha">--</div>
+                    <div class="summary-card-subtitle" id="poslovodja-kpi-zaliha-sub">Sječa - Otprema</div>
+                </div>
+                <div class="summary-card" id="poslovodja-kpi-unosi-card">
+                    <div class="summary-card-title">Dodani unosi</div>
+                    <div class="summary-card-value" id="poslovodja-kpi-unosi">--</div>
+                    <div class="summary-card-subtitle" id="poslovodja-kpi-unosi-sub">Nepotvrđeni unosi radnika</div>
+                </div>
+            </div>
+
+            <!-- 7-day trend chart -->
+            <div class="section">
+                <h2>📈 Sječa i otprema - zadnjih 7 dana</h2>
+                <div class="chart-container" style="min-height: 280px; position: relative;">
+                    <canvas id="poslovodjaDashChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Radilišta info -->
+            <div class="section" style="background: #eff6ff; padding: 15px; border-radius: 8px;">
+                <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list-dashboard"></span></p>
+            </div>
+
+            <!-- Stanje po odjelima -->
+            <div class="section">
+                <h2>🏭 Stanje po odjelima</h2>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="monthly-table" id="poslovodja-dash-odjeli-table">
+                        <thead id="poslovodja-dash-odjeli-header"></thead>
+                        <tbody id="poslovodja-dash-odjeli-body"></tbody>
+                    </table>
                 </div>
             </div>
         </div>

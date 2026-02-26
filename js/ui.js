@@ -33,10 +33,12 @@
             document.getElementById('operativa-content').classList.add('hidden');
             document.getElementById('stanje-odjela-admin-content').classList.add('hidden');
             document.getElementById('poslovodja-stanje-content').classList.add('hidden');
+            document.getElementById('poslovodja-dashboard-content').classList.add('hidden');
             document.getElementById('poslovodja-sjeca-content').classList.add('hidden');
             document.getElementById('poslovodja-otprema-content').classList.add('hidden');
             document.getElementById('poslovodja-pregled-content').classList.add('hidden');
             document.getElementById('poslovodja-unosi-content').classList.add('hidden');
+            document.getElementById('otpremac-godisnji-content').classList.add('hidden');
             document.getElementById('dinamika-content').classList.add('hidden');
             document.getElementById('kubikator-content').classList.add('hidden');
             document.getElementById('ostalo-content').classList.add('hidden');
@@ -62,6 +64,9 @@
                 document.getElementById('primac-godisnji-content').classList.remove('hidden');
             } else if (tab === 'otpremac-personal') {
                 loadOtpremacPersonal();
+            } else if (tab === 'otpremac-godisnji') {
+                loadOtpremacGodisnji();
+                document.getElementById('otpremac-godisnji-content').classList.remove('hidden');
             } else if (tab === 'primac-odjeli') {
                 loadPrimacOdjeli();
             } else if (tab === 'otpremac-odjeli') {
@@ -80,6 +85,8 @@
                 loadMjesecniSortimenti();
             } else if (tab === 'dinamika') {
                 loadDinamika();
+            } else if (tab === 'poslovodja-dashboard') {
+                loadPoslovodjaDashboard();
             } else if (tab === 'poslovodja-stanje') {
                 loadPoslovodjaStanje();
             } else if (tab === 'poslovodja-sjeca') {
