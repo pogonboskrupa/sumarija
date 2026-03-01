@@ -3309,7 +3309,7 @@
 
                     const primkaOdjel = (primka.odjel || '').toUpperCase().trim();
                     if (primkaOdjel && myOdjeli[primkaOdjel]) return true;
-                    }
+
                     return false;
                 });
 
