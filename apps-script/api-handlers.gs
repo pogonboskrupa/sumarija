@@ -3398,43 +3398,66 @@ function handlePoslovodjaAktivnost(username, password, radiliste) {
 }
 
 // ========================================
-// HELPER: Dohvati odjele koje je poslovođa radila iz INDEKS_PRIMKA
-// Kolona C = Odjel, Kolona F = Poslovođa
+// HELPER: Dohvati radilišta poslovođe iz INFO sheeta
+// Kolona I (indeks 8) = Poslovođa, Kolona J (indeks 9) = Radilište
 // ========================================
-function getPoslovodjaOdjeliFromPrimka(ss, poslovodjaName) {
+function getPoslovodjaRadilistaFromInfo(ss, poslovodjaName) {
   try {
-    const primkaSheet = ss.getSheetByName("INDEKS_PRIMKA");
-    if (!primkaSheet) {
-      Logger.log('INDEKS_PRIMKA sheet not found');
+    const infoSheet = ss.getSheetByName("INFO");
+    if (!infoSheet) {
+      Logger.log('INFO sheet not found');
       return null;
     }
 
-    const data = primkaSheet.getDataRange().getValues();
-    const odjeliSet = new Set();
+    const data = infoSheet.getDataRange().getValues();
+    const radilistaSet = new Set();
 
-    // Preskoči header red (prvi red)
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
-      const odjel = String(row[2] || '').toUpperCase().trim();  // Kolona C (indeks 2)
-      const poslovodja = String(row[5] || '').toUpperCase().trim();  // Kolona F (indeks 5)
+      const poslovodja = String(row[8] || '').toUpperCase().trim();  // Kolona I (indeks 8)
+      const radiliste = String(row[9] || '').toUpperCase().trim();   // Kolona J (indeks 9)
 
-      if (odjel && poslovodja === poslovodjaName) {
-        odjeliSet.add(odjel);
+      if (radiliste && poslovodja === poslovodjaName) {
+        radilistaSet.add(radiliste);
       }
     }
 
-    const odjeliArray = Array.from(odjeliSet);
-    Logger.log(`getPoslovodjaOdjeliFromPrimka: Pronađeno ${odjeliArray.length} odjela za ${poslovodjaName}`);
-    return odjeliArray.length > 0 ? odjeliArray : null;
+    const radilistaArray = Array.from(radilistaSet);
+    Logger.log('getPoslovodjaRadilistaFromInfo: Pronađeno ' + radilistaArray.length + ' radilišta za ' + poslovodjaName + ': ' + radilistaArray.join(', '));
+    return radilistaArray.length > 0 ? radilistaArray : null;
   } catch (error) {
-    Logger.log('ERROR in getPoslovodjaOdjeliFromPrimka: ' + error.toString());
+    Logger.log('ERROR in getPoslovodjaRadilistaFromInfo: ' + error.toString());
     return null;
   }
 }
 
 // ========================================
+// POSLOVODJA RADILISTA API - Vraća mapping poslovodja→radilišta iz INFO sheeta
+// ========================================
+function handlePoslovodjaRadilista(username, password, poslovodja) {
+  try {
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const poslovodjaName = (poslovodja || '').toUpperCase().trim();
+    const radilista = getPoslovodjaRadilistaFromInfo(ss, poslovodjaName);
+
+    return createJsonResponse({
+      poslovodja: poslovodjaName,
+      radilista: radilista || []
+    }, true);
+  } catch (error) {
+    Logger.log('ERROR in handlePoslovodjaRadilista: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+// ========================================
 // STANJE ZALIHA API - Čita podatke sa STANJE_ZALIHA sheeta
-// Opciono filtrira po poslovođi (čita odjele iz INDEKS_PRIMKA kolona C i F)
+// Filtrira po poslovođi (čita radilišta iz INFO sheeta kolona I i J)
 // ========================================
 function handleStanjeZaliha(username, password, poslovodja) {
   try {
@@ -3454,11 +3477,11 @@ function handleStanjeZaliha(username, password, poslovodja) {
       return createJsonResponse({ error: "STANJE_ZALIHA sheet not found in BAZA_PODATAKA" }, false);
     }
 
-    // Ako je proslijeđena poslovođa, dohvati odjele koje je radila iz INDEKS_PRIMKA
-    let poslovodjaOdjeli = null;
+    // Ako je proslijeđena poslovođa, dohvati radilišta iz INFO sheeta (kolona I=poslovođa, J=radilište)
+    let poslovodjaRadilista = null;
     if (poslovodja && poslovodja.trim() !== '') {
-      poslovodjaOdjeli = getPoslovodjaOdjeliFromPrimka(ss, poslovodja.trim().toUpperCase());
-      Logger.log('Poslovodja odjeli: ' + (poslovodjaOdjeli ? poslovodjaOdjeli.join(', ') : 'NONE'));
+      poslovodjaRadilista = getPoslovodjaRadilistaFromInfo(ss, poslovodja.trim().toUpperCase());
+      Logger.log('Poslovodja radilista: ' + (poslovodjaRadilista ? poslovodjaRadilista.join(', ') : 'NONE'));
     }
 
     const data = stanjeSheet.getDataRange().getValues();
@@ -3590,10 +3613,10 @@ function handleStanjeZaliha(username, password, poslovodja) {
         const otpremaData = otpremaRow ? parseSortimenti(otpremaRow.row) : parseSortimenti([]);
         const zalihaData = zalihaRow ? parseSortimenti(zalihaRow.row) : parseSortimenti([]);
 
-        // Ako je filter aktivan, provjeri da li je odjel u listi poslovođinih odjela
-        if (poslovodjaOdjeli !== null) {
-          const odjelUpper = odjelNaziv.toUpperCase().trim();
-          const matchFound = poslovodjaOdjeli.some(po => odjelUpper.includes(po) || po.includes(odjelUpper));
+        // Ako je filter aktivan, provjeri da li radilište odjela odgovara poslovođinim radilištima iz INFO sheeta
+        if (poslovodjaRadilista !== null) {
+          const radilisteUpper = radilisteNaziv.toUpperCase().trim();
+          const matchFound = poslovodjaRadilista.some(pr => radilisteUpper.includes(pr) || pr.includes(radilisteUpper));
           if (!matchFound) {
             // Preskoči - traži sljedeći ODJEL
             i++;

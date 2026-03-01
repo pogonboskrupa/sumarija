@@ -25,6 +25,7 @@
                     localStorage.setItem('sumarija_pass', password);
                     showApp();
                     startCacheStatusUpdater();
+                    loadPoslovodjaRadilistaMapping(); // Dohvati poslovodja→radilista iz INFO sheeta
                     loadData();
                     loadOdjeli(); // Load odjeli list after manual login
 
@@ -298,9 +299,7 @@
 
             currentUser = null;
             currentPassword = null;
-            _poslovodjaRadilistaCache = null;
-            _poslovodjaOdjeliCache = null;
-            _poslovodjaRadilistaCacheTs = null;
+            _poslovodjaRadilistaFromApi = null;
             localStorage.removeItem('sumarija_user');
             localStorage.removeItem('sumarija_pass');
             document.getElementById('login-screen').classList.remove('hidden');

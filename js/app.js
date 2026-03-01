@@ -842,12 +842,30 @@
             return `${API_URL}?${params.toString()}`;
         }
 
-        // POSLOVOĐA RADILIŠTA MAPPING
-        const POSLOVODJA_RADILISTA = {
+        // POSLOVOĐA RADILIŠTA MAPPING (dohvaćeno sa API-ja iz INFO sheeta)
+        // Hardkodirani fallback ako API ne vrati podatke
+        const POSLOVODJA_RADILISTA_FALLBACK = {
             'HARBAŠ MEHMEDALIJA': ['BJELAJSKE UVALE', 'VOJSKOVA'],
             'JASMIN PORIĆ': ['RADIĆKE UVALE', 'BAŠTRA ĆORKOVAČA'],
             'IRFAN HADŽIPAŠIĆ': ['TURSKE VODE']
         };
+        let _poslovodjaRadilistaFromApi = null;
+
+        // Dohvati poslovodja→radilista mapping sa API-ja (iz INFO sheeta)
+        async function loadPoslovodjaRadilistaMapping() {
+            if (!currentUser) return;
+            try {
+                var url = buildApiUrl('poslovodja-radilista', { poslovodja: currentUser.fullName });
+                var response = await fetch(url);
+                var data = await response.json();
+                if (data && data.radilista && data.radilista.length > 0) {
+                    _poslovodjaRadilistaFromApi = data.radilista;
+                    console.log('[RADILISTA] Loaded from INFO sheet:', _poslovodjaRadilistaFromApi);
+                }
+            } catch (e) {
+                console.warn('[RADILISTA] API fetch failed, using fallback:', e.message);
+            }
+        }
 
         // Load odjeli list from API
         async function loadOdjeli() {
@@ -1051,6 +1069,7 @@
                 currentPassword = savedPass;
                 showApp();
                 startCacheStatusUpdater();
+                loadPoslovodjaRadilistaMapping(); // Dohvati poslovodja→radilista iz INFO sheeta
                 loadData();
                 loadOdjeli(); // Load odjeli list after auto-login
 
@@ -2154,7 +2173,7 @@
         let poslovodjaStanjeOdjeliAll = [];
         let poslovodjaStanjeRadilista = [];
 
-        // Helper: Get radilišta for current poslovodja
+        // Helper: Get radilišta for current poslovodja (API sa fallback na hardkodirano)
         function getPoslovodjaRadilista() {
             if (!currentUser) {
                 return [];
@@ -2163,20 +2182,12 @@
             if (userType !== 'poslovođa' && userType !== 'poslovodja') {
                 return [];
             }
+            // Prioritet: API podaci iz INFO sheeta, pa fallback na hardkodirano
+            if (_poslovodjaRadilistaFromApi && _poslovodjaRadilistaFromApi.length > 0) {
+                return _poslovodjaRadilistaFromApi;
+            }
             const fullName = currentUser.fullName.toUpperCase().trim();
-            return POSLOVODJA_RADILISTA[fullName] || [];
-        }
-
-        // Helper: filter stanje-zaliha odjeli to only those belonging to current poslovodja
-        function filterStanjeOdjeliByRadilista(odjeliArray) {
-            var radilista = getPoslovodjaRadilista();
-            if (radilista.length === 0) return odjeliArray; // no mapping, return all
-            return (odjeliArray || []).filter(function(o) {
-                var odjelRadiliste = (o.radiliste || '').toUpperCase().trim();
-                return radilista.some(function(r) {
-                    return odjelRadiliste.includes(r.toUpperCase());
-                });
-            });
+            return POSLOVODJA_RADILISTA_FALLBACK[fullName] || [];
         }
 
         // Load STANJE ZALIHA za poslovođu (filtrirano po poslovođi na backendu)
@@ -2189,11 +2200,10 @@
             var cached = turboShow(cacheKey, 'poslovodja-stanje-content', function(d) { return d.odjeli; });
             if (cached) {
                 document.getElementById('poslovodja-radilista-list').textContent = poslovodjaName || 'Svi odjeli';
-                var filteredCached = filterStanjeOdjeliByRadilista(cached.odjeli);
-                poslovodjaStanjeOdjeliAll = filteredCached;
-                populatePoslovodjaRadilisteDropdown(filteredCached);
-                renderPoslovodjaStanjeZalihaTabela(filteredCached);
-                renderPoslovodjaStanjeCards(filteredCached);
+                poslovodjaStanjeOdjeliAll = cached.odjeli;
+                populatePoslovodjaRadilisteDropdown(cached.odjeli);
+                renderPoslovodjaStanjeZalihaTabela(cached.odjeli);
+                renderPoslovodjaStanjeCards(cached.odjeli);
                 hasCached = true;
             }
 
@@ -2212,11 +2222,10 @@
                     throw new Error(data.error || 'Nema podataka o odjelima');
                 }
 
-                var filteredOdjeli = filterStanjeOdjeliByRadilista(data.odjeli);
-                poslovodjaStanjeOdjeliAll = filteredOdjeli;
-                populatePoslovodjaRadilisteDropdown(filteredOdjeli);
-                renderPoslovodjaStanjeZalihaTabela(filteredOdjeli);
-                renderPoslovodjaStanjeCards(filteredOdjeli);
+                poslovodjaStanjeOdjeliAll = data.odjeli;
+                populatePoslovodjaRadilisteDropdown(data.odjeli);
+                renderPoslovodjaStanjeZalihaTabela(data.odjeli);
+                renderPoslovodjaStanjeCards(data.odjeli);
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('poslovodja-stanje-content').classList.remove('hidden');
@@ -2234,18 +2243,17 @@
                         console.log('Using cached data as fallback');
 
                         // Sačuvaj filtrirane podatke globalno
-                        var filteredFallback = filterStanjeOdjeliByRadilista(parsed.data.odjeli);
-                        poslovodjaStanjeOdjeliAll = filteredFallback;
+                        poslovodjaStanjeOdjeliAll = parsed.data.odjeli;
 
                         document.getElementById('poslovodja-radilista-list').textContent = (poslovodjaName || 'Svi odjeli') + ' (keširani podaci)';
 
                         // Popuni dropdown
-                        populatePoslovodjaRadilisteDropdown(filteredFallback);
+                        populatePoslovodjaRadilisteDropdown(parsed.data.odjeli);
 
                         // Render agregirana tabela zaliha na vrhu
-                        renderPoslovodjaStanjeZalihaTabela(filteredFallback);
+                        renderPoslovodjaStanjeZalihaTabela(parsed.data.odjeli);
 
-                        renderPoslovodjaStanjeCards(filteredFallback);
+                        renderPoslovodjaStanjeCards(parsed.data.odjeli);
 
                         document.getElementById('loading-screen').classList.add('hidden');
                         document.getElementById('poslovodja-stanje-content').classList.remove('hidden');
@@ -3172,7 +3180,7 @@
                 });
 
                 // --- Odjeli table from stanje-zaliha ---
-                var odjeli = filterStanjeOdjeliByRadilista(stanjeData.odjeli || []);
+                var odjeli = (stanjeData.odjeli || []);
                 var headerEl = document.getElementById('poslovodja-dash-odjeli-header');
                 var bodyEl = document.getElementById('poslovodja-dash-odjeli-body');
 
@@ -3181,9 +3189,9 @@
 
                     var totalS = 0, totalO = 0, totalZ = 0;
                     var bodyHtml = odjeli.map(function(o) {
-                        var s = parseFloat(o.sjeca) || 0;
-                        var ot = parseFloat(o.otprema) || 0;
-                        var z = parseFloat(o.zaliha) || (s - ot);
+                        var s = parseFloat(o.ukupnoSjeca) || 0;
+                        var ot = parseFloat(o.ukupnoOtprema) || 0;
+                        var z = parseFloat(o.ukupnoZaliha) || (s - ot);
                         totalS += s; totalO += ot; totalZ += z;
                         return '<tr><td style="font-weight:600;">' + (o.odjel || '-') + '</td>' +
                             '<td class="right">' + s.toFixed(2) + '</td>' +

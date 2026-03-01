@@ -117,6 +117,9 @@ function doGet(e) {
     } else if (path === 'get-images') {
       // 📷 GET IMAGES - Dohvati aktivne slike (za admina)
       return handleGetImages(e.parameter.username, e.parameter.password);
+    } else if (path === 'poslovodja-radilista') {
+      // 🗺️ POSLOVODJA RADILISTA - Dohvati mapping poslovodja→radilišta iz INFO sheeta
+      return handlePoslovodjaRadilista(e.parameter.username, e.parameter.password, e.parameter.poslovodja);
     }
 
     Logger.log('Unknown path: ' + path);
