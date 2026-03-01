@@ -294,7 +294,7 @@
             try { if (typeof otpremacDailyChart !== 'undefined' && otpremacDailyChart) { otpremacDailyChart.destroy(); otpremacDailyChart = null; } } catch(e) {}
             try { if (typeof primacYearlyChart !== 'undefined' && primacYearlyChart) { primacYearlyChart.destroy(); primacYearlyChart = null; } } catch(e) {}
             try { if (typeof otpremacYearlyChart !== 'undefined' && otpremacYearlyChart) { otpremacYearlyChart.destroy(); otpremacYearlyChart = null; } } catch(e) {}
-            try { if (window.poslovodjaDashChart) { window.poslovodjaDashChart.destroy(); window.poslovodjaDashChart = null; } } catch(e) {}
+            try { if (window._poslovodjaDashChartInst) { window._poslovodjaDashChartInst.destroy(); window._poslovodjaDashChartInst = null; } } catch(e) {}
 
             currentUser = null;
             currentPassword = null;

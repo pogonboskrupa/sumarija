@@ -2985,8 +2985,11 @@
                 var userFullName = currentUser.fullName.toUpperCase().trim();
 
                 // Filter primke for current month and poslovodja's radilista
+                // Only count aggregate sortiments (Σ ČETINARI + LIŠĆARI) to avoid double-counting
                 var monthSjeca = 0;
                 (primkeData.primke || []).forEach(function(p) {
+                    var sort = (p.sortiment || '');
+                    if (sort !== 'Σ ČETINARI' && sort !== 'LIŠĆARI') return;
                     var d = parseDatumDDMMYYYY(p.datum);
                     if (!d || d.getMonth() + 1 !== currentMonth || d.getFullYear() !== currentYear) return;
                     var pPoslov = (p.poslovodja || '').toUpperCase().trim();
@@ -3001,6 +3004,8 @@
                 // Filter otpreme for current month
                 var monthOtprema = 0;
                 (otpremeData.otpreme || []).forEach(function(o) {
+                    var sort = (o.sortiment || '');
+                    if (sort !== 'Σ ČETINARI' && sort !== 'LIŠĆARI') return;
                     var d = parseDatumDDMMYYYY(o.datum);
                     if (!d || d.getMonth() + 1 !== currentMonth || d.getFullYear() !== currentYear) return;
                     var oPoslov = (o.poslovodja || '').toUpperCase().trim();
@@ -3079,6 +3084,8 @@
                 }
 
                 (primkeData.primke || []).forEach(function(p) {
+                    var sort = (p.sortiment || '');
+                    if (sort !== 'Σ ČETINARI' && sort !== 'LIŠĆARI') return;
                     var d = parseDatumDDMMYYYY(p.datum);
                     if (!d || d < sevenDaysAgo || d > today) return;
                     var pPoslov = (p.poslovodja || '').toUpperCase().trim();
@@ -3094,6 +3101,8 @@
                 });
 
                 (otpremeData.otpreme || []).forEach(function(o) {
+                    var sort = (o.sortiment || '');
+                    if (sort !== 'Σ ČETINARI' && sort !== 'LIŠĆARI') return;
                     var d = parseDatumDDMMYYYY(o.datum);
                     if (!d || d < sevenDaysAgo || d > today) return;
                     var oPoslov = (o.poslovodja || '').toUpperCase().trim();
@@ -3111,10 +3120,10 @@
                 // Create chart
                 await window.loadChartJs();
                 var ctx = document.getElementById('poslovodjaDashChart');
-                if (window.poslovodjaDashChart) {
-                    window.poslovodjaDashChart.destroy();
+                if (window._poslovodjaDashChartInst) {
+                    window._poslovodjaDashChartInst.destroy();
                 }
-                window.poslovodjaDashChart = new Chart(ctx, {
+                window._poslovodjaDashChartInst = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: dayLabels,
