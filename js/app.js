@@ -3203,9 +3203,9 @@
 
                     var totalS = 0, totalO = 0, totalZ = 0;
                     var bodyHtml = odjeli.map(function(o) {
-                        var s = o.sjeca || 0;
-                        var ot = o.otprema || 0;
-                        var z = o.zaliha || (s - ot);
+                        var s = parseFloat(o.sjeca) || 0;
+                        var ot = parseFloat(o.otprema) || 0;
+                        var z = parseFloat(o.zaliha) || (s - ot);
                         totalS += s; totalO += ot; totalZ += z;
                         return '<tr><td style="font-weight:600;">' + (o.odjel || '-') + '</td>' +
                             '<td class="right">' + s.toFixed(2) + '</td>' +
