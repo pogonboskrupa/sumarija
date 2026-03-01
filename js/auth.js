@@ -299,6 +299,7 @@
             currentUser = null;
             currentPassword = null;
             _poslovodjaRadilistaCache = null;
+            _poslovodjaOdjeliCache = null;
             _poslovodjaRadilistaCacheTs = null;
             localStorage.removeItem('sumarija_user');
             localStorage.removeItem('sumarija_pass');
