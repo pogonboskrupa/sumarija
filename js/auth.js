@@ -298,6 +298,8 @@
 
             currentUser = null;
             currentPassword = null;
+            _poslovodjaRadilistaCache = null;
+            _poslovodjaRadilistaCacheTs = null;
             localStorage.removeItem('sumarija_user');
             localStorage.removeItem('sumarija_pass');
             document.getElementById('login-screen').classList.remove('hidden');

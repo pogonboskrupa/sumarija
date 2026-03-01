@@ -842,12 +842,25 @@
             return `${API_URL}?${params.toString()}`;
         }
 
-        // POSLOVOĐA RADILIŠTA MAPPING
-        const POSLOVODJA_RADILISTA = {
-            'HARBAŠ MEHMEDALIJA': ['BJELAJSKE UVALE', 'VOJSKOVA'],
-            'JASMIN PORIĆ': ['RADIĆKE UVALE', 'BAŠTRA ĆORKOVAČA'],
-            'IRFAN HADŽIPAŠIĆ': ['TURSKE VODE']
-        };
+        // POSLOVOĐA RADILIŠTA MAPPING (dynamic, built from primke data)
+        let _poslovodjaRadilistaCache = null;
+        let _poslovodjaRadilistaCacheTs = null;
+
+        function buildPoslovodjaRadilistaMap(primkeArray) {
+            var map = {};
+            (primkeArray || []).forEach(function(primka) {
+                var poslovodja = (primka.poslovodja || '').toUpperCase().trim();
+                var radiliste = (primka.radiliste || '').toUpperCase().trim();
+                if (!poslovodja || !radiliste) return;
+                if (!map[poslovodja]) {
+                    map[poslovodja] = [];
+                }
+                if (map[poslovodja].indexOf(radiliste) === -1) {
+                    map[poslovodja].push(radiliste);
+                }
+            });
+            return map;
+        }
 
         // Load odjeli list from API
         async function loadOdjeli() {
@@ -2154,17 +2167,35 @@
         let poslovodjaStanjeOdjeliAll = [];
         let poslovodjaStanjeRadilista = [];
 
-        // Helper: Get radilišta for current poslovodja
+        // Helper: Get radilišta for current poslovodja (dynamic from primke data)
         function getPoslovodjaRadilista() {
-            if (!currentUser) {
-                return [];
+            if (!currentUser) return [];
+            var userType = (currentUser.type || '').toLowerCase();
+            if (userType !== 'poslovođa' && userType !== 'poslovodja') return [];
+
+            // Lazy-build mapping from cached primke data
+            var cacheRaw = localStorage.getItem('cache_primke_sjeca');
+            if (cacheRaw) {
+                try {
+                    var parsed = JSON.parse(cacheRaw);
+                    var dataTimestamp = parsed.timestamp || 0;
+                    if (!_poslovodjaRadilistaCache || _poslovodjaRadilistaCacheTs !== dataTimestamp) {
+                        _poslovodjaRadilistaCache = buildPoslovodjaRadilistaMap(
+                            parsed.data ? (parsed.data.primke || []) : []
+                        );
+                        _poslovodjaRadilistaCacheTs = dataTimestamp;
+                        console.log('[RADILISTA] Built dynamic mapping (ts=' + dataTimestamp + '):',
+                            Object.keys(_poslovodjaRadilistaCache).length + ' poslovodja entries');
+                    }
+                } catch (e) {
+                    console.error('[RADILISTA] Error parsing cache_primke_sjeca:', e);
+                }
             }
-            const userType = (currentUser.type || '').toLowerCase();
-            if (userType !== 'poslovođa' && userType !== 'poslovodja') {
-                return [];
-            }
-            const fullName = currentUser.fullName.toUpperCase().trim();
-            return POSLOVODJA_RADILISTA[fullName] || [];
+
+            if (!_poslovodjaRadilistaCache) return [];
+
+            var fullName = currentUser.fullName.toUpperCase().trim();
+            return _poslovodjaRadilistaCache[fullName] || [];
         }
 
         // Load STANJE ZALIHA za poslovođu (filtrirano po poslovođi na backendu)
@@ -2978,6 +3009,12 @@
                 var primkeData = results[1];
                 var otpremeData = results[2];
 
+                // Re-derive radilista after fresh data fetch (first-load case)
+                if (radilista.length === 0) {
+                    radilista = getPoslovodjaRadilista();
+                    if (radilistaEl) radilistaEl.textContent = radilista.join(', ') || pName;
+                }
+
                 // --- KPI calculations ---
                 var now = new Date();
                 var currentMonth = now.getMonth() + 1; // 1-12
@@ -3210,7 +3247,7 @@
             }
 
             try {
-                const radilista = getPoslovodjaRadilista();
+                let radilista = getPoslovodjaRadilista();
                 document.getElementById('poslovodja-radilista-list-sjeca').textContent = radilista.join(', ');
 
                 const primkeUrl = buildApiUrl('primke');
@@ -3218,6 +3255,12 @@
 
                 if (primkeData.error) {
                     throw new Error('Greška pri učitavanju primki: ' + primkeData.error);
+                }
+
+                // Re-derive radilista after fresh data fetch (first-load case)
+                if (radilista.length === 0) {
+                    radilista = getPoslovodjaRadilista();
+                    document.getElementById('poslovodja-radilista-list-sjeca').textContent = radilista.join(', ');
                 }
 
                 // Datum granice: zadnjih 10 dana
@@ -3612,6 +3655,12 @@
 
                 if (primkeData.error) throw new Error('Greška pri učitavanju primki: ' + primkeData.error);
                 if (otpremeData.error) throw new Error('Greška pri učitavanju otprema: ' + otpremeData.error);
+
+                // Re-derive radilista after fresh data fetch (first-load case)
+                if (radilista.length === 0) {
+                    radilista = getPoslovodjaRadilista();
+                    document.getElementById('poslovodja-radilista-list-pregled').textContent = radilista.join(', ');
+                }
 
                 var relevantSortimenti = new Set(SORT_KOLONE);
 
@@ -6166,6 +6215,12 @@
 
                 if (pendingData.error) {
                     throw new Error(pendingData.error);
+                }
+
+                // Re-derive radilista after fresh data fetch (first-load case)
+                if (radilista.length === 0) {
+                    radilista = getPoslovodjaRadilista();
+                    document.getElementById('poslovodja-radilista-list-unosi').textContent = radilista.join(', ');
                 }
 
                 // Izgradi odjel → radilište mapu iz primki i otprema

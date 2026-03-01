@@ -4965,12 +4965,25 @@
             return `${API_URL}?${params.toString()}`;
         }
 
-        // POSLOVOĐA RADILIŠTA MAPPING
-        const POSLOVODJA_RADILISTA = {
-            'HARBAŠ MEHMEDALIJA': ['BJELAJSKE UVALE', 'VOJSKOVA'],
-            'JASMIN PORIĆ': ['RADIĆKE UVALE', 'BAŠTRA ĆORKOVAČA'],
-            'IRFAN HADŽIPAŠIĆ': ['TURSKE VODE']
-        };
+        // POSLOVOĐA RADILIŠTA MAPPING (dynamic, built from primke data)
+        let _poslovodjaRadilistaCache = null;
+        let _poslovodjaRadilistaCacheTs = null;
+
+        function buildPoslovodjaRadilistaMap(primkeArray) {
+            var map = {};
+            (primkeArray || []).forEach(function(primka) {
+                var poslovodja = (primka.poslovodja || '').toUpperCase().trim();
+                var radiliste = (primka.radiliste || '').toUpperCase().trim();
+                if (!poslovodja || !radiliste) return;
+                if (!map[poslovodja]) {
+                    map[poslovodja] = [];
+                }
+                if (map[poslovodja].indexOf(radiliste) === -1) {
+                    map[poslovodja].push(radiliste);
+                }
+            });
+            return map;
+        }
 
         // Load odjeli list from API
         async function loadOdjeli() {
@@ -5402,6 +5415,8 @@
 
             currentUser = null;
             currentPassword = null;
+            _poslovodjaRadilistaCache = null;
+            _poslovodjaRadilistaCacheTs = null;
             localStorage.removeItem('sumarija_user');
             localStorage.removeItem('sumarija_pass');
             document.getElementById('login-screen').classList.remove('hidden');
@@ -5969,17 +5984,39 @@
         // POSLOVOĐA FUNCTIONS
         // ========================================
 
-        // Helper: Get radilišta for current poslovodja
+        // Helper: Get radilišta for current poslovodja (dynamic from primke data)
         function getPoslovodjaRadilista() {
-            if (!currentUser) {
-                return [];
+            if (!currentUser) return [];
+            var userType = (currentUser.type || '').toLowerCase();
+            if (userType !== 'poslovođa' && userType !== 'poslovodja') return [];
+
+            // Lazy-build mapping from cached primke data (check multiple cache keys)
+            var cacheKeys = ['cache_primke_sjeca', 'cache_primke_zadnjih5', 'cache_primke_suma'];
+            for (var i = 0; i < cacheKeys.length; i++) {
+                var cacheRaw = localStorage.getItem(cacheKeys[i]);
+                if (cacheRaw) {
+                    try {
+                        var parsed = JSON.parse(cacheRaw);
+                        var dataTimestamp = parsed.timestamp || 0;
+                        if (!_poslovodjaRadilistaCache || _poslovodjaRadilistaCacheTs !== dataTimestamp) {
+                            _poslovodjaRadilistaCache = buildPoslovodjaRadilistaMap(
+                                parsed.data ? (parsed.data.primke || []) : []
+                            );
+                            _poslovodjaRadilistaCacheTs = dataTimestamp;
+                            console.log('[RADILISTA] Built dynamic mapping from ' + cacheKeys[i] + ' (ts=' + dataTimestamp + '):',
+                                Object.keys(_poslovodjaRadilistaCache).length + ' poslovodja entries');
+                        }
+                        break;
+                    } catch (e) {
+                        console.error('[RADILISTA] Error parsing ' + cacheKeys[i] + ':', e);
+                    }
+                }
             }
-            const userType = (currentUser.type || '').toLowerCase();
-            if (userType !== 'poslovođa' && userType !== 'poslovodja') {
-                return [];
-            }
-            const fullName = currentUser.fullName.toUpperCase().trim();
-            return POSLOVODJA_RADILISTA[fullName] || [];
+
+            if (!_poslovodjaRadilistaCache) return [];
+
+            var fullName = currentUser.fullName.toUpperCase().trim();
+            return _poslovodjaRadilistaCache[fullName] || [];
         }
 
         // Load STANJE ODJELA za poslovođu
