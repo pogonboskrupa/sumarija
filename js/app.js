@@ -468,6 +468,14 @@
 
         // Clear all cache - TRUE HARD REFRESH (like Ctrl+Shift+R)
         async function clearAllCache() {
+            showConfirmModal(
+                'Brisanje keša',
+                'Da li ste sigurni da želite obrisati sav keš? Stranica će se osvježiti.',
+                async function() { await _doClearAllCache(); }
+            );
+        }
+
+        async function _doClearAllCache() {
             try {
                 console.log('[CACHE CLEAR] Starting COMPLETE cache clear (hard refresh)...');
 
@@ -7651,6 +7659,137 @@
         }
 
         // Submit Sjeca Form
+        // ========== EXCEL EXPORT ==========
+        function exportTableToExcel(tableId, filename) {
+            try {
+                if (typeof XLSX === 'undefined') {
+                    showError('Export', 'Excel biblioteka nije učitana. Provjerite internet konekciju i osvježite stranicu.');
+                    return;
+                }
+                const table = document.getElementById(tableId);
+                if (!table) {
+                    showError('Export', 'Tabela nije pronađena');
+                    return;
+                }
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.table_to_sheet(table, { raw: false });
+
+                // Auto-size columns
+                const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+                const colWidths = [];
+                for (let c = range.s.c; c <= range.e.c; c++) {
+                    let maxLen = 8;
+                    for (let r = range.s.r; r <= range.e.r; r++) {
+                        const cell = ws[XLSX.utils.encode_cell({ r: r, c: c })];
+                        if (cell && cell.v) {
+                            const len = String(cell.v).length;
+                            if (len > maxLen) maxLen = Math.min(len, 30);
+                        }
+                    }
+                    colWidths.push({ wch: maxLen + 2 });
+                }
+                ws['!cols'] = colWidths;
+
+                XLSX.utils.book_append_sheet(wb, ws, filename.substring(0, 31));
+                const date = new Date().toISOString().split('T')[0];
+                XLSX.writeFile(wb, filename + '_' + date + '.xlsx');
+                showSuccess('Export', 'Fajl uspješno preuzet');
+            } catch (error) {
+                showError('Export', 'Greška pri exportu: ' + error.message);
+            }
+        }
+
+        // Export any visible table by its container element
+        function exportVisibleTable(containerId, filename) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            // Find the first visible sub-content with a table, or fallback to any table
+            let table = null;
+            const visibleSubs = container.querySelectorAll('.submenu-content:not(.hidden), .sub-content:not(.hidden)');
+            if (visibleSubs.length > 0) {
+                for (const sub of visibleSubs) {
+                    table = sub.querySelector('table');
+                    if (table) break;
+                }
+            }
+            if (!table) {
+                table = container.querySelector('table');
+            }
+            if (!table) {
+                showError('Export', 'Nema tabele za export');
+                return;
+            }
+            if (!table.id) {
+                table.id = 'export-temp-' + Date.now();
+            }
+            exportTableToExcel(table.id, filename);
+        }
+
+        // ========== INPUT VALIDATION ==========
+        function validateFormData(prefix) {
+            const errors = [];
+            const getVal = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
+            const getNum = (id) => { const el = document.getElementById(id); return el ? (parseFloat(el.value) || 0) : 0; };
+
+            // 1. Datum validation
+            const datum = getVal(prefix + '-datum');
+            if (!datum) {
+                errors.push('Datum je obavezan');
+            } else {
+                const datumDate = new Date(datum);
+                const today = new Date();
+                today.setHours(23, 59, 59, 999);
+                if (datumDate > today) {
+                    errors.push('Datum ne može biti u budućnosti');
+                }
+                // Ne stariji od 90 dana
+                const minDate = new Date();
+                minDate.setDate(minDate.getDate() - 90);
+                if (datumDate < minDate) {
+                    errors.push('Datum ne može biti stariji od 90 dana');
+                }
+            }
+
+            // 2. Odjel validation
+            const odjel = getVal(prefix + '-odjel');
+            if (!odjel || odjel.trim() === '') {
+                errors.push('Odaberi odjel');
+            }
+
+            // 3. Količina validation - barem jedan sortiment mora imati vrijednost > 0
+            const sortimentIds = [
+                '-FL-C', '-I-C', '-II-C', '-III-C', '-RD',
+                '-CEL-DUGA', '-CEL-CIJEPANA', '-SKART',
+                '-FL-L', '-I-L', '-II-L', '-III-L',
+                '-OGR-DUGI', '-OGR-CIJEPANI', '-GULE'
+            ];
+            let hasAnyValue = false;
+            for (const sid of sortimentIds) {
+                const val = getNum(prefix + sid);
+                if (val < 0) {
+                    errors.push('Količina ne može biti negativna');
+                    break;
+                }
+                if (val > 10000) {
+                    errors.push('Količina po sortimentu ne može biti veća od 10.000 m³');
+                    break;
+                }
+                if (val > 0) hasAnyValue = true;
+            }
+            if (!hasAnyValue && errors.length === 0) {
+                errors.push('Unesite barem jedan sortiment (količina > 0)');
+            }
+
+            // 4. Ukupno validation
+            const ukupno = getNum(prefix + '-UKUPNO-CL');
+            if (ukupno > 50000) {
+                errors.push('Ukupna količina prevelika (max 50.000 m³)');
+            }
+
+            return errors;
+        }
+
         async function submitSjeca(event) {
             event.preventDefault();
 
@@ -7668,15 +7807,17 @@
                 return el ? (Number(el.value) || 0) : 0;
             };
 
-            // Validation: only ODJEL is required
-            const odjel = getVal('sjeca-odjel');
-            if (!odjel || odjel.trim() === '') {
-                messageDiv.innerHTML = '❌ Odaberi odjel';
+            // Validation
+            const validationErrors = validateFormData('sjeca');
+            if (validationErrors.length > 0) {
+                messageDiv.innerHTML = '❌ ' + validationErrors.join('<br>❌ ');
                 messageDiv.style.background = '#fee2e2';
                 messageDiv.style.color = '#991b1b';
                 messageDiv.classList.remove('hidden');
                 return;
             }
+
+            const odjel = getVal('sjeca-odjel');
 
             submitBtn.disabled = true;
             submitBtn.textContent = 'Dodavanje...';
@@ -7777,6 +7918,16 @@
 
             const submitBtn = document.getElementById('submit-otprema-btn');
             const messageDiv = document.getElementById('otprema-message');
+
+            // Validation
+            const validationErrors = validateFormData('otprema');
+            if (validationErrors.length > 0) {
+                messageDiv.innerHTML = '❌ ' + validationErrors.join('<br>❌ ');
+                messageDiv.style.background = '#fee2e2';
+                messageDiv.style.color = '#991b1b';
+                messageDiv.classList.remove('hidden');
+                return;
+            }
 
             submitBtn.disabled = true;
             submitBtn.textContent = 'Dodavanje...';

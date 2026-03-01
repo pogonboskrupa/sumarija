@@ -39,6 +39,9 @@
     <!-- Preconnect -->
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
 
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.mini.min.js" defer></script>
+
     <!-- Performance Modules -->
     <script src="js/cache-helper.js" defer></script>
     <script src="js/api-optimized.js" defer></script>
@@ -282,6 +285,7 @@
                         <h2>🏭 Pregled po odjelima</h2>
                         <span class="card-subtitle">Sječa, otprema, zaliha i realizacija po odjelima</span>
                     </div>
+                    <button onclick="exportTableToExcel('odjeli-table', 'Odjeli')" style="background: rgba(5,150,105,0.1); color: #059669; border: 1px solid #059669; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export</button>
                 </div>
                 <div class="enterprise-card-body">
                     <div class="controls-bar">
@@ -352,6 +356,7 @@
                         </h2>
                         <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Prikaz mjesečnih podataka za tekuću godinu</p>
                     </div>
+                    <button onclick="exportTableToExcel('mjesecna-sjeca-table', 'Sjeca-po-mjesecima')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
                         <span>📥</span> Export
                     </button>
                 </div>
@@ -374,6 +379,7 @@
                         </h2>
                         <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Prikaz mjesečnih podataka za tekuću godinu</p>
                     </div>
+                    <button onclick="exportTableToExcel('mjesecna-otprema-table', 'Otprema-po-mjesecima')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
                         <span>📥</span> Export
                     </button>
                 </div>
@@ -389,7 +395,10 @@
 
         <!-- PRIMACI CONTENT (Prikaz po primačima) -->
         <div id="primaci-content" class="container hidden">
-            <h2>👷 SJEČA</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <h2>👷 SJEČA</h2>
+                <button onclick="exportVisibleTable('primaci-content', 'Sjeca')" style="background: #1e3a5f; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+            </div>
 
             <!-- Submenu -->
             <div class="submenu">
@@ -493,7 +502,10 @@
 
         <!-- OTPREMACI CONTENT (Prikaz po otpremačima) -->
         <div id="otpremaci-content" class="container hidden">
-            <h2>🚛 OTPREMA</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <h2>🚛 OTPREMA</h2>
+                <button onclick="exportVisibleTable('otpremaci-content', 'Otprema')" style="background: #7c2d12; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+            </div>
 
             <!-- Submenu -->
             <div class="submenu">
@@ -935,23 +947,23 @@
                     <div class="worker-form-grid">
                         <div class="worker-form-group">
                             <label class="worker-form-label">F/L Č</label>
-                            <input type="number" step="0.01" id="sjeca-FL-C" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-FL-C" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">I Č</label>
-                            <input type="number" step="0.01" id="sjeca-I-C" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-I-C" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">II Č</label>
-                            <input type="number" step="0.01" id="sjeca-II-C" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-II-C" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">III Č</label>
-                            <input type="number" step="0.01" id="sjeca-III-C" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-III-C" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">RD</label>
-                            <input type="number" step="0.01" id="sjeca-RD" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-RD" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">TRUPCI Č <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
@@ -959,15 +971,15 @@
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">CEL.DUGA</label>
-                            <input type="number" step="0.01" id="sjeca-CEL-DUGA" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-CEL-DUGA" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">CEL.CIJEPANA</label>
-                            <input type="number" step="0.01" id="sjeca-CEL-CIJEPANA" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-CEL-CIJEPANA" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">ŠKART</label>
-                            <input type="number" step="0.01" id="sjeca-SKART" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-SKART" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">Σ ČETINARI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
@@ -982,19 +994,19 @@
                     <div class="worker-form-grid">
                         <div class="worker-form-group">
                             <label class="worker-form-label">F/L L</label>
-                            <input type="number" step="0.01" id="sjeca-FL-L" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-FL-L" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">I L</label>
-                            <input type="number" step="0.01" id="sjeca-I-L" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-I-L" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">II L</label>
-                            <input type="number" step="0.01" id="sjeca-II-L" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-II-L" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">III L</label>
-                            <input type="number" step="0.01" id="sjeca-III-L" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-III-L" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">TRUPCI L <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
@@ -1002,15 +1014,15 @@
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">OGR.DUGI</label>
-                            <input type="number" step="0.01" id="sjeca-OGR-DUGI" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-OGR-DUGI" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">OGR.CIJEPANI</label>
-                            <input type="number" step="0.01" id="sjeca-OGR-CIJEPANI" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-OGR-CIJEPANI" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">GULE</label>
-                            <input type="number" step="0.01" id="sjeca-GULE" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-GULE" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">LIŠĆARI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
@@ -1105,23 +1117,23 @@
                     <div class="worker-form-grid">
                         <div class="worker-form-group">
                             <label class="worker-form-label">F/L Č</label>
-                            <input type="number" step="0.01" id="otprema-FL-C" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-FL-C" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">I Č</label>
-                            <input type="number" step="0.01" id="otprema-I-C" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-I-C" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">II Č</label>
-                            <input type="number" step="0.01" id="otprema-II-C" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-II-C" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">III Č</label>
-                            <input type="number" step="0.01" id="otprema-III-C" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-III-C" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">RD</label>
-                            <input type="number" step="0.01" id="otprema-RD" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-RD" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">TRUPCI Č <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
@@ -1129,15 +1141,15 @@
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">CEL.DUGA</label>
-                            <input type="number" step="0.01" id="otprema-CEL-DUGA" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-CEL-DUGA" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">CEL.CIJEPANA</label>
-                            <input type="number" step="0.01" id="otprema-CEL-CIJEPANA" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-CEL-CIJEPANA" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">ŠKART</label>
-                            <input type="number" step="0.01" id="otprema-SKART" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-SKART" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">Σ ČETINARI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
@@ -1152,19 +1164,19 @@
                     <div class="worker-form-grid">
                         <div class="worker-form-group">
                             <label class="worker-form-label">F/L L</label>
-                            <input type="number" step="0.01" id="otprema-FL-L" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-FL-L" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">I L</label>
-                            <input type="number" step="0.01" id="otprema-I-L" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-I-L" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">II L</label>
-                            <input type="number" step="0.01" id="otprema-II-L" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-II-L" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">III L</label>
-                            <input type="number" step="0.01" id="otprema-III-L" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-III-L" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">TRUPCI L <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
@@ -1172,15 +1184,15 @@
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">OGR.DUGI</label>
-                            <input type="number" step="0.01" id="otprema-OGR-DUGI" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-OGR-DUGI" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">OGR.CIJEPANI</label>
-                            <input type="number" step="0.01" id="otprema-OGR-CIJEPANI" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-OGR-CIJEPANI" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">GULE</label>
-                            <input type="number" step="0.01" id="otprema-GULE" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-GULE" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">LIŠĆARI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
@@ -2142,6 +2154,9 @@
                     <h1>📋 Izvještaji</h1>
                     <p>Sedmični i mjesečni prikaz po odjelima</p>
                 </div>
+                <div class="page-header-right">
+                    <button onclick="exportVisibleTable('izvjestaji-content', 'Izvjestaj')" style="background: #059669; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+                </div>
             </div>
 
             <!-- SUB-MENU TABS -->
@@ -2508,6 +2523,7 @@
                         <p>Pregled zaliha po odjelima - Projekat, Sječa, Otprema, Zaliha</p>
                     </div>
                     <div class="page-header-right" style="display: flex; gap: 12px;">
+                        <button class="btn btn-secondary" onclick="exportTableToExcel('stanje-zaliha-tabela', 'Stanje-Zaliha')" title="Exportuj u Excel">📥 Export</button>
                         <button class="btn btn-secondary" onclick="refreshStanjeZaliha()" title="Osvježi podatke sa servera">🔄 Osvježi</button>
                     </div>
                 </div>
