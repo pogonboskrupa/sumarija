@@ -33,7 +33,6 @@
             document.getElementById('operativa-content').classList.add('hidden');
             document.getElementById('stanje-odjela-admin-content').classList.add('hidden');
             document.getElementById('poslovodja-stanje-content').classList.add('hidden');
-            document.getElementById('poslovodja-dashboard-content').classList.add('hidden');
             document.getElementById('poslovodja-sjeca-content').classList.add('hidden');
             document.getElementById('poslovodja-otprema-content').classList.add('hidden');
             document.getElementById('poslovodja-pregled-content').classList.add('hidden');
@@ -85,8 +84,6 @@
                 loadMjesecniSortimenti();
             } else if (tab === 'dinamika') {
                 loadDinamika();
-            } else if (tab === 'poslovodja-dashboard') {
-                loadPoslovodjaDashboard();
             } else if (tab === 'poslovodja-stanje') {
                 loadPoslovodjaStanje();
             } else if (tab === 'poslovodja-sjeca') {

@@ -107,8 +107,7 @@
                 ];
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
                 tabsConfig = [
-                    { id: 'poslovodja-dashboard', icon: '📊', label: 'Dashboard', active: true },
-                    { id: 'poslovodja-sjeca', icon: '🪓', label: 'SJEČA' },
+                    { id: 'poslovodja-sjeca', icon: '🪓', label: 'SJEČA', active: true },
                     { id: 'poslovodja-otprema', icon: '🚛', label: 'OTPREMA' },
                     { id: 'poslovodja-stanje', icon: '📦', label: 'Stanje zaliha' },
                     { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
@@ -295,7 +294,7 @@
             try { if (typeof otpremacDailyChart !== 'undefined' && otpremacDailyChart) { otpremacDailyChart.destroy(); otpremacDailyChart = null; } } catch(e) {}
             try { if (typeof primacYearlyChart !== 'undefined' && primacYearlyChart) { primacYearlyChart.destroy(); primacYearlyChart = null; } } catch(e) {}
             try { if (typeof otpremacYearlyChart !== 'undefined' && otpremacYearlyChart) { otpremacYearlyChart.destroy(); otpremacYearlyChart = null; } } catch(e) {}
-            try { if (window._poslovodjaDashChartInst) { window._poslovodjaDashChartInst.destroy(); window._poslovodjaDashChartInst = null; } } catch(e) {}
+
 
             currentUser = null;
             currentPassword = null;
@@ -316,7 +315,7 @@
                 'my-sjece-content', 'my-otpreme-content',
                 'edit-sjeca-content', 'edit-otprema-content',
                 'pending-unosi-content', 'operativa-content',
-                'poslovodja-dashboard-content', 'poslovodja-stanje-content',
+                'poslovodja-stanje-content',
                 'poslovodja-sjeca-content', 'poslovodja-otprema-content',
                 'poslovodja-pregled-content', 'poslovodja-unosi-content',
                 'izvjestaji-content', 'izvjestaji-primac-content', 'izvjestaji-otpremac-content',
@@ -346,7 +345,7 @@
             } else if (userType === 'otpremac') {
                 loadOtpremacPersonal();
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
-                loadPoslovodjaDashboard();
+                loadPoslovodjaSjeca();
             } else {
                 loadDashboard();
             }

@@ -1828,57 +1828,6 @@
             </div>
         </div>
 
-        <!-- POSLOVOĐA DASHBOARD -->
-        <div id="poslovodja-dashboard-content" class="container hidden">
-            <!-- KPI Cards -->
-            <div class="summary-cards" id="poslovodja-kpi-cards">
-                <div class="summary-card green">
-                    <div class="summary-card-title">Sječa (tekući mjesec)</div>
-                    <div class="summary-card-value" id="poslovodja-kpi-sjeca">--</div>
-                    <div class="summary-card-subtitle" id="poslovodja-kpi-sjeca-sub">Učitavam...</div>
-                </div>
-                <div class="summary-card blue">
-                    <div class="summary-card-title">Otprema (tekući mjesec)</div>
-                    <div class="summary-card-value" id="poslovodja-kpi-otprema">--</div>
-                    <div class="summary-card-subtitle" id="poslovodja-kpi-otprema-sub">Učitavam...</div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-card-title">Zaliha (šuma/panj)</div>
-                    <div class="summary-card-value" id="poslovodja-kpi-zaliha">--</div>
-                    <div class="summary-card-subtitle" id="poslovodja-kpi-zaliha-sub">Sječa - Otprema</div>
-                </div>
-                <div class="summary-card" id="poslovodja-kpi-unosi-card">
-                    <div class="summary-card-title">Dodani unosi</div>
-                    <div class="summary-card-value" id="poslovodja-kpi-unosi">--</div>
-                    <div class="summary-card-subtitle" id="poslovodja-kpi-unosi-sub">Nepotvrđeni unosi radnika</div>
-                </div>
-            </div>
-
-            <!-- 7-day trend chart -->
-            <div class="section">
-                <h2>📈 Sječa i otprema - zadnjih 7 dana</h2>
-                <div class="chart-container" style="min-height: 280px; position: relative;">
-                    <canvas id="poslovodjaDashChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Radilišta info -->
-            <div class="section" style="background: #eff6ff; padding: 15px; border-radius: 8px;">
-                <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list-dashboard"></span></p>
-            </div>
-
-            <!-- Stanje po odjelima -->
-            <div class="section">
-                <h2>🏭 Stanje po odjelima</h2>
-                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="monthly-table" id="poslovodja-dash-odjeli-table">
-                        <thead id="poslovodja-dash-odjeli-header"></thead>
-                        <tbody id="poslovodja-dash-odjeli-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
         <!-- POSLOVOĐA CONTENT - SJEČA (Zadnjih 10 dana) -->
         <div id="poslovodja-sjeca-content" class="container hidden">
             <div class="page-header">
