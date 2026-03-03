@@ -62,15 +62,6 @@
         .badge.success { background: #d1fae5; color: #047857; }
         .badge.warning { background: #fef3c7; color: #92400e; }
 
-        /* Cache Status Indicator */
-        .cache-status { background: #f3f4f6; color: #6b7280; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: help; transition: all 0.2s; }
-        .cache-status:hover { background: #e5e7eb; }
-        .cache-status.cache-fresh { background: #d1fae5; color: #047857; }
-        .cache-status.cache-loading { background: #fef3c7; color: #92400e; }
-        .cache-status.cache-stale { background: #fee2e2; color: #dc2626; }
-        .cache-status-icon { font-size: 12px; }
-        .cache-status-text { white-space: nowrap; }
-
         /* Tables */
         table { width: 100%; border-collapse: collapse; }
         thead { background: #f9fafb; position: sticky; top: 0; z-index: 10; }

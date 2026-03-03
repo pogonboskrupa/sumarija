@@ -24,7 +24,6 @@
                     localStorage.setItem('sumarija_user', JSON.stringify(data));
                     localStorage.setItem('sumarija_pass', password);
                     showApp();
-                    startCacheStatusUpdater();
                     loadPoslovodjaRadilistaMapping(); // Dohvati poslovodja→radilista iz INFO sheeta
                     loadData();
                     loadOdjeli(); // Load odjeli list after manual login
@@ -189,9 +188,9 @@
         }
 
         // Scheduled auto-refresh for Poslovodja and Radnici panels
-        // Runs twice daily at 10:00 and 12:00 on weekdays (Monday-Friday)
+        // Runs daily at 09:00 on weekdays (Monday-Friday), when data entry ends
         function setupScheduledRefresh() {
-            const REFRESH_TIMES = ['10:00', '12:00'];
+            const REFRESH_TIMES = ['09:00'];
             let lastRefreshDate = null;
 
             function checkAndRefresh() {
@@ -274,14 +273,6 @@
                     DataSync.logSyncMetrics();
                 }
             } catch(e) { console.error('logout DataSync:', e); }
-
-            // Cleanup intervals to prevent memory leaks
-            try {
-                if (cacheStatusIntervalId) {
-                    clearInterval(cacheStatusIntervalId);
-                    cacheStatusIntervalId = null;
-                }
-            } catch(e) {}
 
             // Stop manifest checker
             try { stopManifestChecker(); } catch(e) {}

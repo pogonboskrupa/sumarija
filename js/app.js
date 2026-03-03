@@ -843,7 +843,6 @@
         let currentUser = null;
         let currentPassword = null;
         let odjeliList = [];
-        let cacheStatusIntervalId = null;
 
         // Global data version for cache invalidation across panels
         window.APP_DATA_VERSION = localStorage.getItem('app_data_version') || '1';
@@ -952,71 +951,6 @@
             });
         }
 
-        /**
-         * Ažurira cache status indikator u headeru
-         * Pokazuje korisnicima koliko dugo će podaci biti keširani
-         */
-        function updateCacheStatusIndicator() {
-            const indicator = document.getElementById('cache-status-indicator');
-            if (!indicator) return;
-
-            const iconSpan = indicator.querySelector('.cache-status-icon');
-            const textSpan = indicator.querySelector('.cache-status-text');
-
-            // Dobij pametno cache vrijeme
-            const cacheTTL = getSmartCacheTTL();
-            const hours = cacheTTL / (60 * 60 * 1000);
-            const minutes = cacheTTL / (60 * 1000);
-
-            // Odaberi ikonicu i tekst ovisno o vremenu
-            const now = new Date();
-            const currentHour = now.getHours();
-            const currentMinutes = now.getMinutes();
-            const currentTimeInMinutes = currentHour * 60 + currentMinutes;
-            const dataEntryStart = 6 * 60 + 30;  // 6:30
-            const dataEntryEnd = 9 * 60;         // 9:00
-
-            // Tokom unosa podataka (6:30-9:00)
-            if (currentTimeInMinutes >= dataEntryStart && currentTimeInMinutes < dataEntryEnd) {
-                indicator.className = 'cache-status cache-loading';
-                iconSpan.textContent = '🔄';
-                textSpan.textContent = `Unos podataka (${Math.round(minutes)}min cache)`;
-                indicator.title = 'Podaci se trenutno učitavaju - kraći cache (6:30-9:00)';
-            }
-            // Nakon 9:00 - stabilni podaci
-            else if (currentTimeInMinutes >= dataEntryEnd) {
-                indicator.className = 'cache-status cache-fresh';
-                iconSpan.textContent = '✅';
-                if (hours >= 1) {
-                    textSpan.textContent = `Podaci stabilni (${Math.round(hours * 10) / 10}h cache)`;
-                } else {
-                    textSpan.textContent = `Podaci stabilni (${Math.round(minutes)}min cache)`;
-                }
-                indicator.title = 'Podaci su stabilni do sutra ujutro - agresivno keširanje aktivno';
-            }
-            // Prije 6:30
-            else {
-                indicator.className = 'cache-status cache-fresh';
-                iconSpan.textContent = '💤';
-                if (hours >= 1) {
-                    textSpan.textContent = `Prije unosa (${Math.round(hours * 10) / 10}h cache)`;
-                } else {
-                    textSpan.textContent = `Prije unosa (${Math.round(minutes)}min cache)`;
-                }
-                indicator.title = 'Podaci iz prethodnog dana - cache aktivan do početka unosa (6:30)';
-            }
-        }
-
-        // Periodično ažuriraj cache status (svaka minuta)
-        function startCacheStatusUpdater() {
-            // Clear existing interval if any to prevent memory leaks
-            if (cacheStatusIntervalId) {
-                clearInterval(cacheStatusIntervalId);
-            }
-            updateCacheStatusIndicator();
-            cacheStatusIntervalId = setInterval(updateCacheStatusIndicator, 60 * 1000); // Svaka minuta
-        }
-
         // Initialize year selectors with current year
         function initializeYearSelectors() {
             const currentYear = new Date().getFullYear();
@@ -1104,7 +1038,6 @@
                 currentUser = JSON.parse(savedUser);
                 currentPassword = savedPass;
                 showApp();
-                startCacheStatusUpdater();
                 loadPoslovodjaRadilistaMapping(); // Dohvati poslovodja→radilista iz INFO sheeta
                 loadData();
                 loadOdjeli(); // Load odjeli list after auto-login
