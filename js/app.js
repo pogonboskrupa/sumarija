@@ -870,8 +870,8 @@
         // POSLOVOĐA RADILIŠTA MAPPING (dohvaćeno sa API-ja iz INFO sheeta)
         // Hardkodirani fallback ako API ne vrati podatke
         const POSLOVODJA_RADILISTA_FALLBACK = {
-            'HARBAŠ MEHMEDALIJA': ['BJELAJSKE UVALE', 'VOJSKOVA'],
-            'JASMIN PORIĆ': ['RADIĆKE UVALE', 'BAŠTRA ĆORKOVAČA'],
+            'MEHMEDALIJA HARBAŠ': ['BJELAJSKE UVALE', 'VOJSKOVA'],
+            'JASMIN PORIĆ': ['RADIĆKE UVALE'],
             'IRFAN HADŽIPAŠIĆ': ['TURSKE VODE']
         };
         let _poslovodjaRadilistaFromApi = null;
@@ -2240,7 +2240,7 @@
                     cachedOdjeli = cached.odjeli.filter(function(odjel) {
                         var odjelRadiliste = (odjel.radiliste || '').toUpperCase().trim();
                         return cachedRadilista.some(function(r) {
-                            return odjelRadiliste.includes(r.toUpperCase()) || r.toUpperCase().includes(odjelRadiliste);
+                            return odjelRadiliste === r.toUpperCase();
                         });
                     });
                 }
@@ -2273,7 +2273,7 @@
                     filteredOdjeli = data.odjeli.filter(function(odjel) {
                         var odjelRadiliste = (odjel.radiliste || '').toUpperCase().trim();
                         return radilista.some(function(r) {
-                            return odjelRadiliste.includes(r.toUpperCase()) || r.toUpperCase().includes(odjelRadiliste);
+                            return odjelRadiliste === r.toUpperCase();
                         });
                     });
                 }
@@ -2305,7 +2305,7 @@
                             fallbackOdjeli = fallbackOdjeli.filter(function(odjel) {
                                 var odjelRadiliste = (odjel.radiliste || '').toUpperCase().trim();
                                 return fallbackRadilista.some(function(r) {
-                                    return odjelRadiliste.includes(r.toUpperCase()) || r.toUpperCase().includes(odjelRadiliste);
+                                    return odjelRadiliste === r.toUpperCase();
                                 });
                             });
                         }
@@ -2888,7 +2888,7 @@
                     // Fallback: filter po radilištima ako postoje u mapiranju
                     if (radilista.length > 0) {
                         const primkaRadiliste = (primka.radiliste || '').toUpperCase().trim();
-                        return radilista.some(r => primkaRadiliste.includes(r.toUpperCase()));
+                        return radilista.some(r => primkaRadiliste === r.toUpperCase());
                     }
 
                     return false;
@@ -2910,7 +2910,7 @@
                     // Fallback: filter po radilištima ako postoje u mapiranju
                     if (radilista.length > 0) {
                         const otpremaRadiliste = (otprema.radiliste || '').toUpperCase().trim();
-                        return radilista.some(r => otpremaRadiliste.includes(r.toUpperCase()));
+                        return radilista.some(r => otpremaRadiliste === r.toUpperCase());
                     }
 
                     return false;
@@ -3073,7 +3073,7 @@
 
                     if (radilista.length > 0) {
                         const primkaRadiliste = (primka.radiliste || '').toUpperCase().trim();
-                        return radilista.some(r => primkaRadiliste.includes(r.toUpperCase()));
+                        return radilista.some(r => primkaRadiliste === r.toUpperCase());
                     }
                     return false;
                 });
@@ -3264,7 +3264,7 @@
 
                     if (radilista.length > 0) {
                         const otpremaRadiliste = (otprema.radiliste || '').toUpperCase().trim();
-                        return radilista.some(r => otpremaRadiliste.includes(r.toUpperCase()));
+                        return radilista.some(r => otpremaRadiliste === r.toUpperCase());
                     }
                     return false;
                 });
@@ -3458,7 +3458,7 @@
                         if (entryPoslovodja && entryPoslovodja === userFullName) return true;
                         if (radilista.length > 0) {
                             var entryRadiliste = (entry.radiliste || '').toUpperCase().trim();
-                            return radilista.some(function(r) { return entryRadiliste.includes(r.toUpperCase()); });
+                            return radilista.some(function(r) { return entryRadiliste === r.toUpperCase(); });
                         }
                         return false;
                     });
@@ -6027,10 +6027,10 @@
                         mojiOdjeli.add(odjel);
                         return;
                     }
-                    // Radilište match
+                    // Radilište match (tačno podudaranje)
                     if (radilista.length > 0 && entryRadiliste) {
                         var matches = radilista.some(function(r) {
-                            return entryRadiliste.includes(r.toUpperCase());
+                            return entryRadiliste === r.toUpperCase();
                         });
                         if (matches) mojiOdjeli.add(odjel);
                     }

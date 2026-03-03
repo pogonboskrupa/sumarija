@@ -3614,10 +3614,10 @@ function handleStanjeZaliha(username, password, poslovodja) {
         const otpremaData = otpremaRow ? parseSortimenti(otpremaRow.row) : parseSortimenti([]);
         const zalihaData = zalihaRow ? parseSortimenti(zalihaRow.row) : parseSortimenti([]);
 
-        // Ako je filter aktivan, provjeri da li radilište odjela odgovara poslovođinim radilištima iz INFO sheeta
+        // Ako je filter aktivan, provjeri da li radilište odjela TAČNO odgovara poslovođinim radilištima iz INFO sheeta
         if (poslovodjaRadilista !== null) {
           const radilisteUpper = radilisteNaziv.toUpperCase().trim();
-          const matchFound = poslovodjaRadilista.some(pr => radilisteUpper.includes(pr) || pr.includes(radilisteUpper));
+          const matchFound = poslovodjaRadilista.some(pr => radilisteUpper === pr);
           if (!matchFound) {
             // Preskoči - traži sljedeći ODJEL
             i++;
