@@ -871,8 +871,11 @@
         // Hardkodirani fallback ako API ne vrati podatke
         const POSLOVODJA_RADILISTA_FALLBACK = {
             'MEHMEDALIJA HARBAŠ': ['BJELAJSKE UVALE', 'VOJSKOVA'],
+            'HARBAŠ MEHMEDALIJA': ['BJELAJSKE UVALE', 'VOJSKOVA'],
             'JASMIN PORIĆ': ['RADIĆKE UVALE'],
-            'IRFAN HADŽIPAŠIĆ': ['TURSKE VODE']
+            'PORIĆ JASMIN': ['RADIĆKE UVALE'],
+            'IRFAN HADŽIPAŠIĆ': ['TURSKE VODE'],
+            'HADŽIPAŠIĆ IRFAN': ['TURSKE VODE']
         };
         let _poslovodjaRadilistaFromApi = null;
 
@@ -2220,7 +2223,19 @@
                 return _poslovodjaRadilistaFromApi;
             }
             const fullName = currentUser.fullName.toUpperCase().trim();
-            return POSLOVODJA_RADILISTA_FALLBACK[fullName] || [];
+            // Pokušaj direktno ime, pa obrnuti redoslijed (IME PREZIME <-> PREZIME IME)
+            if (POSLOVODJA_RADILISTA_FALLBACK[fullName]) {
+                return POSLOVODJA_RADILISTA_FALLBACK[fullName];
+            }
+            // Fallback: normaliziraj ime (sortiraj dijelove) i traži match
+            const normalizedName = fullName.split(/\s+/).sort().join(' ');
+            for (const key in POSLOVODJA_RADILISTA_FALLBACK) {
+                const normalizedKey = key.toUpperCase().trim().split(/\s+/).sort().join(' ');
+                if (normalizedKey === normalizedName) {
+                    return POSLOVODJA_RADILISTA_FALLBACK[key];
+                }
+            }
+            return [];
         }
 
         // Load STANJE ZALIHA za poslovođu (filtrirano po poslovođi na backendu)

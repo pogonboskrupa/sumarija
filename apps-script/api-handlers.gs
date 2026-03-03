@@ -3412,12 +3412,18 @@ function getPoslovodjaRadilistaFromInfo(ss, poslovodjaName) {
     const data = infoSheet.getDataRange().getValues();
     const radilistaSet = new Set();
 
+    // Normalizuj ime za poređenje - sortiraj dijelove imena da podrži oba redoslijeda
+    // npr. "MEHMEDALIJA HARBAŠ" i "HARBAŠ MEHMEDALIJA" će se oba pretvoriti u "HARBAŠ MEHMEDALIJA"
+    const normalizedSearchName = poslovodjaName.toUpperCase().trim().split(/\s+/).sort().join(' ');
+
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
       const poslovodja = String(row[8] || '').toUpperCase().trim();  // Kolona I (indeks 8)
       const radiliste = String(row[9] || '').toUpperCase().trim();   // Kolona J (indeks 9)
 
-      if (radiliste && poslovodja === poslovodjaName) {
+      // Poređenje normalizovanih imena (podržava oba redoslijeda: IME PREZIME i PREZIME IME)
+      const normalizedSheetName = poslovodja.split(/\s+/).sort().join(' ');
+      if (radiliste && normalizedSheetName === normalizedSearchName) {
         radilistaSet.add(radiliste);
       }
     }
