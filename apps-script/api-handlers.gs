@@ -3482,6 +3482,11 @@ function handleStanjeZaliha(username, password, poslovodja) {
     if (poslovodja && poslovodja.trim() !== '') {
       poslovodjaRadilista = getPoslovodjaRadilistaFromInfo(ss, poslovodja.trim().toUpperCase());
       Logger.log('Poslovodja radilista: ' + (poslovodjaRadilista ? poslovodjaRadilista.join(', ') : 'NONE'));
+      // Ako poslovođa nema dodijeljena radilišta u INFO sheetu, vrati prazan rezultat
+      if (!poslovodjaRadilista || poslovodjaRadilista.length === 0) {
+        Logger.log('Poslovodja ' + poslovodja + ' nema dodijeljena radilišta - vraćam prazan rezultat');
+        poslovodjaRadilista = ['__NO_MATCH__'];  // Osiguraj da nijedan odjel ne prođe filter
+      }
     }
 
     const data = stanjeSheet.getDataRange().getValues();
@@ -3603,10 +3608,6 @@ function handleStanjeZaliha(username, password, poslovodja) {
           Logger.log('ZALIHA: ' + firstBlockDiag.ZALIHA);
         }
 
-        if (radilisteNaziv) {
-          radilistaSet.add(radilisteNaziv);
-        }
-
         // Parsiraj sortimente ako su nađeni redovi
         const projekatData = projekatRow ? parseSortimenti(projekatRow.row) : parseSortimenti([]);
         const sjecaData = sjecaRow ? parseSortimenti(sjecaRow.row) : parseSortimenti([]);
@@ -3622,6 +3623,11 @@ function handleStanjeZaliha(username, password, poslovodja) {
             i++;
             continue;
           }
+        }
+
+        // Dodaj radilište u set TEK NAKON filtriranja (da dropdown prikazuje samo poslovođina radilišta)
+        if (radilisteNaziv) {
+          radilistaSet.add(radilisteNaziv);
         }
 
         const odjelData = {
