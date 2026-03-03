@@ -74,15 +74,6 @@
         .badge.success { background: #d1fae5; color: #047857; }
         .badge.warning { background: #fef3c7; color: #92400e; }
 
-        /* Cache Status Indicator */
-        .cache-status { background: #f3f4f6; color: #6b7280; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: help; transition: all 0.2s; }
-        .cache-status:hover { background: #e5e7eb; }
-        .cache-status.cache-fresh { background: #d1fae5; color: #047857; }
-        .cache-status.cache-loading { background: #fef3c7; color: #92400e; }
-        .cache-status.cache-stale { background: #fee2e2; color: #dc2626; }
-        .cache-status-icon { font-size: 12px; }
-        .cache-status-text { white-space: nowrap; }
-
         /* Tables */
         table { width: 100%; border-collapse: collapse; }
         thead { background: #f9fafb; position: sticky; top: 0; z-index: 10; }
@@ -2093,10 +2084,6 @@
                     <img src="logo-zuti.png" alt="ŠPD Unsko-Sanske Šume Logo" class="company-logo" id="company-logo">
                 </div>
                 <div class="header-right">
-                    <div class="cache-status" id="cache-status-indicator" title="Status keširanja podataka">
-                        <span class="cache-status-icon">⏱️</span>
-                        <span class="cache-status-text">Cache...</span>
-                    </div>
                     <div class="header-user">
                         <div class="header-user-name" id="user-name"></div>
                         <div class="header-user-role" id="user-role"></div>
@@ -4944,7 +4931,6 @@
         let currentUser = null;
         let currentPassword = null;
         let odjeliList = [];
-        let cacheStatusIntervalId = null;
 
         // Helper function to build secure API URLs with encoded credentials
         function buildApiUrl(path, additionalParams = {}) {
@@ -5042,71 +5028,6 @@
             });
         }
 
-        /**
-         * Ažurira cache status indikator u headeru
-         * Pokazuje korisnicima koliko dugo će podaci biti keširani
-         */
-        function updateCacheStatusIndicator() {
-            const indicator = document.getElementById('cache-status-indicator');
-            if (!indicator) return;
-
-            const iconSpan = indicator.querySelector('.cache-status-icon');
-            const textSpan = indicator.querySelector('.cache-status-text');
-
-            // Dobij pametno cache vrijeme
-            const cacheTTL = getSmartCacheTTL();
-            const hours = cacheTTL / (60 * 60 * 1000);
-            const minutes = cacheTTL / (60 * 1000);
-
-            // Odaberi ikonicu i tekst ovisno o vremenu
-            const now = new Date();
-            const currentHour = now.getHours();
-            const currentMinutes = now.getMinutes();
-            const currentTimeInMinutes = currentHour * 60 + currentMinutes;
-            const dataEntryStart = 6 * 60 + 30;  // 6:30
-            const dataEntryEnd = 9 * 60;         // 9:00
-
-            // Tokom unosa podataka (6:30-9:00)
-            if (currentTimeInMinutes >= dataEntryStart && currentTimeInMinutes < dataEntryEnd) {
-                indicator.className = 'cache-status cache-loading';
-                iconSpan.textContent = '🔄';
-                textSpan.textContent = `Unos podataka (${Math.round(minutes)}min cache)`;
-                indicator.title = 'Podaci se trenutno učitavaju - kraći cache (6:30-9:00)';
-            }
-            // Nakon 9:00 - stabilni podaci
-            else if (currentTimeInMinutes >= dataEntryEnd) {
-                indicator.className = 'cache-status cache-fresh';
-                iconSpan.textContent = '✅';
-                if (hours >= 1) {
-                    textSpan.textContent = `Podaci stabilni (${Math.round(hours * 10) / 10}h cache)`;
-                } else {
-                    textSpan.textContent = `Podaci stabilni (${Math.round(minutes)}min cache)`;
-                }
-                indicator.title = 'Podaci su stabilni do sutra ujutro - agresivno keširanje aktivno';
-            }
-            // Prije 6:30
-            else {
-                indicator.className = 'cache-status cache-fresh';
-                iconSpan.textContent = '💤';
-                if (hours >= 1) {
-                    textSpan.textContent = `Prije unosa (${Math.round(hours * 10) / 10}h cache)`;
-                } else {
-                    textSpan.textContent = `Prije unosa (${Math.round(minutes)}min cache)`;
-                }
-                indicator.title = 'Podaci iz prethodnog dana - cache aktivan do početka unosa (6:30)';
-            }
-        }
-
-        // Periodično ažuriraj cache status (svaka minuta)
-        function startCacheStatusUpdater() {
-            // Clear existing interval if any to prevent memory leaks
-            if (cacheStatusIntervalId) {
-                clearInterval(cacheStatusIntervalId);
-            }
-            updateCacheStatusIndicator();
-            cacheStatusIntervalId = setInterval(updateCacheStatusIndicator, 60 * 1000); // Svaka minuta
-        }
-
         // Initialize year selectors with current year
         function initializeYearSelectors() {
             const currentYear = new Date().getFullYear();
@@ -5183,7 +5104,6 @@
                 currentUser = JSON.parse(savedUser);
                 currentPassword = savedPass;
                 showApp();
-                startCacheStatusUpdater();
                 loadData();
                 loadOdjeli(); // Load odjeli list after auto-login
             }
@@ -5217,7 +5137,6 @@
                     localStorage.setItem('sumarija_user', JSON.stringify(data));
                     localStorage.setItem('sumarija_pass', password);
                     showApp();
-                    startCacheStatusUpdater();
                     loadData();
                     loadOdjeli(); // Load odjeli list after manual login
                 } else {
@@ -5317,7 +5236,7 @@
         // Scheduled auto-refresh for Poslovođa and Radnici (Primači/Otpremači) panels
         // Runs twice daily at 10:00 and 12:00 on weekdays (Monday-Friday)
         function setupScheduledRefresh() {
-            const REFRESH_TIMES = ['10:00', '12:00']; // HH:MM format
+            const REFRESH_TIMES = ['09:00']; // HH:MM format
             let lastRefreshDate = null; // Track last refresh to avoid duplicates
 
             function checkAndRefresh() {
@@ -5378,12 +5297,6 @@
             if (window.DataSync) {
                 DataSync.stopSmartSync();
                 DataSync.logSyncMetrics();
-            }
-
-            // Cleanup intervals to prevent memory leaks
-            if (cacheStatusIntervalId) {
-                clearInterval(cacheStatusIntervalId);
-                cacheStatusIntervalId = null;
             }
 
             // Stop manifest checker
