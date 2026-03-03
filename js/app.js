@@ -328,95 +328,112 @@
                 perfMetrics.cacheMisses++;
             }
 
-            // Cache miss or stale - fetch from network with timeout
-            try {
-                perfMetrics.apiCalls++;
-                const fetchStart = performance.now();
+            // Cache miss or stale - fetch from network with retry for transient errors
+            const MAX_RETRIES = 3;
+            let lastError = null;
 
-                // Fetch with configurable timeout (default 8s, but can be higher for heavy endpoints)
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-                const response = await fetch(url, { signal: controller.signal });
-                clearTimeout(timeoutId);
-
-                // Check if response is OK
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                // Check if response is JSON before parsing
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    const text = await response.text();
-                    console.error('Invalid response (not JSON):', text);
-                    throw new Error('Server returned invalid response format');
-                }
-
-                const data = await response.json();
-
-                logPerformance(`API call: ${path}`, performance.now() - fetchStart);
-
-                // Store in cache (handle QuotaExceededError)
+            for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
                 try {
-                    localStorage.setItem(cacheKey, JSON.stringify({
-                        data: data,
-                        timestamp: Date.now()
-                    }));
-                } catch (storageError) {
-                    if (storageError.name === 'QuotaExceededError') {
-                        // Očisti stare cache ključeve i pokušaj ponovo
-                        const keysToRemove = [];
-                        for (let i = 0; i < localStorage.length; i++) {
-                            const key = localStorage.key(i);
-                            if (key && key.startsWith('cache_')) {
-                                keysToRemove.push(key);
+                    perfMetrics.apiCalls++;
+                    const fetchStart = performance.now();
+
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+                    const response = await fetch(url, { signal: controller.signal });
+                    clearTimeout(timeoutId);
+
+                    // Check if response is OK
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    // Check if response is JSON before parsing
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        const text = await response.text();
+                        console.error('Invalid response (not JSON):', text);
+                        throw new Error('Server returned invalid response format');
+                    }
+
+                    const data = await response.json();
+
+                    logPerformance(`API call: ${path}`, performance.now() - fetchStart);
+
+                    // Store in cache (handle QuotaExceededError)
+                    try {
+                        localStorage.setItem(cacheKey, JSON.stringify({
+                            data: data,
+                            timestamp: Date.now()
+                        }));
+                    } catch (storageError) {
+                        if (storageError.name === 'QuotaExceededError') {
+                            // Očisti stare cache ključeve i pokušaj ponovo
+                            const keysToRemove = [];
+                            for (let i = 0; i < localStorage.length; i++) {
+                                const key = localStorage.key(i);
+                                if (key && key.startsWith('cache_')) {
+                                    keysToRemove.push(key);
+                                }
+                            }
+                            keysToRemove.forEach(k => localStorage.removeItem(k));
+                            try {
+                                localStorage.setItem(cacheKey, JSON.stringify({
+                                    data: data,
+                                    timestamp: Date.now()
+                                }));
+                            } catch (e) {
+                                // Cache nije moguć, nastavi bez njega
                             }
                         }
-                        keysToRemove.forEach(k => localStorage.removeItem(k));
-                        try {
-                            localStorage.setItem(cacheKey, JSON.stringify({
-                                data: data,
-                                timestamp: Date.now()
-                            }));
-                        } catch (e) {
-                            // Cache nije moguć, nastavi bez njega
-                        }
                     }
-                }
 
-                hideCacheIndicator();
-                return data;
+                    hideCacheIndicator();
+                    return data;
 
-            } catch (error) {
-                perfMetrics.apiErrors++;
+                } catch (error) {
+                    lastError = error;
 
-                // Handle timeout specifically
-                if (error.name === 'AbortError') {
-                    console.error(`Request timeout (${timeout/1000}s) - server too slow:`, path);
-                } else {
-                    console.error('Network error:', error);
-                }
-
-                // If network fails and we have stale cache, use it
-                if (cached) {
-                    try {
-                        const cachedData = JSON.parse(cached);
-                        const age = Date.now() - cachedData.timestamp;
-                        showCacheIndicator(age, true);
-                        return cachedData.data;
-                    } catch (e) {
-                        console.error('Stale cache parse error:', e);
+                    // Don't retry on abort (timeout) - user already waited long enough
+                    if (error.name === 'AbortError') {
+                        console.error(`Request timeout (${timeout/1000}s) - server too slow:`, path);
+                        break;
                     }
-                }
 
-                // If timeout, show user-friendly message
-                if (error.name === 'AbortError') {
-                    throw new Error('Server je spor, molimo pokušajte ponovo ili koristite keširane podatke.');
-                }
+                    // Retry on transient network errors (QUIC, Failed to fetch, network errors)
+                    if (attempt < MAX_RETRIES) {
+                        const delay = attempt * 2000; // 2s, 4s
+                        console.warn(`Network error (attempt ${attempt}/${MAX_RETRIES}), retrying in ${delay/1000}s:`, error.message);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    }
 
-                throw error;
+                    console.error('Network error after all retries:', error);
+                }
             }
+
+            // All retries failed
+            perfMetrics.apiErrors++;
+
+            // If network fails and we have stale cache, use it
+            if (cached) {
+                try {
+                    const cachedData = JSON.parse(cached);
+                    const age = Date.now() - cachedData.timestamp;
+                    showCacheIndicator(age, true);
+                    console.warn(`Using stale cache (${(age/1000/60).toFixed(1)} min old) after network failure`);
+                    return cachedData.data;
+                } catch (e) {
+                    console.error('Stale cache parse error:', e);
+                }
+            }
+
+            // If timeout, show user-friendly message
+            if (lastError && lastError.name === 'AbortError') {
+                throw new Error('Server je spor, molimo pokušajte ponovo ili koristite keširane podatke.');
+            }
+
+            throw lastError || new Error('Network request failed');
         }
 
         // Show cache indicator
@@ -862,16 +879,24 @@
         // Dohvati poslovodja→radilista mapping sa API-ja (iz INFO sheeta)
         async function loadPoslovodjaRadilistaMapping() {
             if (!currentUser) return;
-            try {
-                var url = buildApiUrl('poslovodja-radilista', { poslovodja: currentUser.fullName });
-                var response = await fetch(url);
-                var data = await response.json();
-                if (data && data.radilista && data.radilista.length > 0) {
-                    _poslovodjaRadilistaFromApi = data.radilista;
-                    console.log('[RADILISTA] Loaded from INFO sheet:', _poslovodjaRadilistaFromApi);
+            var url = buildApiUrl('poslovodja-radilista', { poslovodja: currentUser.fullName });
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    var response = await fetch(url);
+                    var data = await response.json();
+                    if (data && data.radilista && data.radilista.length > 0) {
+                        _poslovodjaRadilistaFromApi = data.radilista;
+                        console.log('[RADILISTA] Loaded from INFO sheet:', _poslovodjaRadilistaFromApi);
+                    }
+                    return; // Success, exit
+                } catch (e) {
+                    if (attempt < 3) {
+                        console.warn(`[RADILISTA] Fetch failed (attempt ${attempt}/3), retrying...`, e.message);
+                        await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+                    } else {
+                        console.warn('[RADILISTA] API fetch failed after 3 attempts, using fallback:', e.message);
+                    }
                 }
-            } catch (e) {
-                console.warn('[RADILISTA] API fetch failed, using fallback:', e.message);
             }
         }
 
