@@ -664,9 +664,11 @@
             return Promise.all(results);
         }
 
-        // Preload all views function (silent = ne prikazuje notifikacije)
+        // Preload all views function
+        // silent = ne prikazuje notifikacije (za auto-preload pri loginu)
+        // forceRefresh = brisuje cache i fetchuje svježe podatke (za ručni klik)
         let preloadScheduled = false; // Prevent duplicate preload scheduling
-        async function preloadAllViews(silent = false) {
+        async function preloadAllViews(silent = false, forceRefresh = false) {
             const year = new Date().getFullYear();
             let totalLoaded = 0;
             let totalFailed = 0;
@@ -681,10 +683,11 @@
                 if (userType === 'admin') {
                     // 🚀 KOMPLETNI PRELOAD - SVE UČITAJ (svi meniji + PODMENIJI)!
                     const currentMonth = new Date().getMonth(); // 0-11
+                    const currentMonthNum = currentMonth + 1; // 1-12 (za cache key koji koristi loadDashboard)
 
                     allViews = [
                         // Glavni meniji
-                        { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year, timeout: 180000 },
+                        { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year + '_m' + currentMonthNum, timeout: 180000 },
                         { name: 'Operativa (Stats)', url: buildApiUrl('stats', { year }), cacheKey: 'cache_stats_' + year, timeout: 180000 },
                         { name: 'Stanje Odjela', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_odjeli_' + year, timeout: 180000 },
                         // SKIP: Stanje Odjela Admin se učitava lazy (kad korisnik klikne na tab) jer može trajati dugo
@@ -702,7 +705,7 @@
                         // OTPREMACI meni + SVA 3 PODMENIJA
                         { name: 'Otpremaci - Monthly', url: buildApiUrl('otpremaci', { year }), cacheKey: 'cache_otpremaci_' + year, timeout: 180000 },
                         { name: 'Otpremaci - Daily', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_daily_' + year + '_' + currentMonth, timeout: 180000 },
-                        { name: 'Otpremaci - Po radilištu', url: buildApiUrl('primaci-by-radiliste', { year }), cacheKey: 'cache_otpremaci_radiliste_' + year, timeout: 180000 },
+                        { name: 'Otpremaci - Po radilištu', url: buildApiUrl('otpremaci-by-radiliste', { year }), cacheKey: 'cache_otpremaci_radiliste_' + year, timeout: 180000 },
 
                         // OSTALO meni - Kubikator nema API, ne treba preload
                     ];
@@ -749,7 +752,7 @@
                 // OPTIMIZIRANO UČITAVANJE - max 5 paralelnih poziva
                 await processQueue(allViews, async (view) => {
                     try {
-                        await fetchWithCache(view.url, view.cacheKey, false, view.timeout);
+                        await fetchWithCache(view.url, view.cacheKey, forceRefresh, view.timeout);
                         totalLoaded++;
                         console.log(`[PRELOAD] ✓ ${view.name} loaded (${totalLoaded}/${totalViews})`);
                         return { success: true, name: view.name };
@@ -8468,17 +8471,16 @@
         // Load and transform data for OPERATIVA screen
         async function loadStatsForOperativa(year) {
             try {
-                // Fetch dashboard data (60s timeout for heavy endpoint)
+                // Fetch sva 3 endpointa PARALELNO (brže od sekvencijalnog)
                 const dashboardUrl = buildApiUrl('dashboard', { year });
-                const dashboardData = await fetchWithCache(dashboardUrl, 'cache_dashboard_' + year, false, 60000);
-
-                // Fetch odjeli data (60s timeout for heavy endpoint)
                 const odjeliUrl = buildApiUrl('odjeli', { year });
-                const odjeliResponse = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year, false, 60000);
-
-                // **NOVO: Fetch STANJE ODJELA data (sa PROJEKAT podacima iz Excel redova 10-13)**
                 const stanjeOdjelaUrl = buildApiUrl('stanje-odjela');
-                const stanjeOdjelaData = await fetchWithCache(stanjeOdjelaUrl, 'cache_stanje_odjela');
+
+                const [dashboardData, odjeliResponse, stanjeOdjelaData] = await Promise.all([
+                    fetchWithCache(dashboardUrl, 'cache_dashboard_' + year, false, 60000),
+                    fetchWithCache(odjeliUrl, 'cache_odjeli_' + year, false, 60000),
+                    fetchWithCache(stanjeOdjelaUrl, 'cache_stanje_odjela'),
+                ]);
 
 
                 // DEBUG: Log odjeli count and total from API

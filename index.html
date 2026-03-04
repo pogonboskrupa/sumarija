@@ -164,7 +164,7 @@
                         </button>
                         <div class="user-menu-dropdown" id="user-menu-dropdown">
                             <div class="user-menu-item" id="pwa-install-btn" style="display:none;" onclick="event.stopPropagation(); closeUserMenu(); installPwa();">📲 Instaliraj aplikaciju</div>
-                            <div class="user-menu-item" onclick="event.stopPropagation(); closeUserMenu(); preloadAllViews();">⚡ Učitaj sve prikaze</div>
+                            <div class="user-menu-item" onclick="event.stopPropagation(); closeUserMenu(); preloadAllViews(false, true);">⚡ Učitaj sve prikaze</div>
                             <div class="user-menu-item" onclick="event.stopPropagation(); clearAllCache()">🗑️ Obriši keš</div>
                             <div class="user-menu-item danger" onclick="event.stopPropagation(); logout()">🚪 Odjavi se</div>
                         </div>
