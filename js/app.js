@@ -1736,12 +1736,14 @@
                     });
                 }
 
-                // Izračunaj zadnjih 5 RADNIH dana (pon-pet) kalendarski od danas
+                // Izračunaj zadnjih 5 RADNIH dana (pon-pet) - ne uključuje danas
+                // (podaci od današnje sječe/otpreme se unose tek sutradan)
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
 
                 const radniDani = []; // Datumi radnih dana (pon-pet)
                 let currentDate = new Date(today);
+                currentDate.setDate(currentDate.getDate() - 1); // Počni od juče
 
                 while (radniDani.length < 5) {
                     const dayOfWeek = currentDate.getDay(); // 0=ned, 1=pon, ..., 6=sub
@@ -2764,10 +2766,13 @@
                 // Display radilišta
                 document.getElementById('poslovodja-radilista-list-3').textContent = radilista.join(', ');
 
-                // Izračunaj datum prije 5 dana
+                // Izračunaj zadnjih 5 dana ne računajući danas
+                // (podaci od današnje sječe/otpreme se unose tek sutradan)
                 const today = new Date();
-                const fiveDaysAgo = new Date(today);
-                fiveDaysAgo.setDate(today.getDate() - 5);
+                const yesterday = new Date(today);
+                yesterday.setDate(today.getDate() - 1);
+                const fiveDaysAgo = new Date(yesterday);
+                fiveDaysAgo.setDate(yesterday.getDate() - 5);
 
                 // Load primke i otpreme
                 const primkeUrl = buildApiUrl('primke');
