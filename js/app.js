@@ -1959,44 +1959,35 @@
                     { display: 'LIŠĆARI', apiKey: 'LIŠĆARI' }
                 ];
 
-                const parseDatum = d => {
-                    if (!d) return 0;
-                    const [day, month, year] = d.split('.');
-                    return new Date(year, month - 1, day).getTime();
-                };
-
-                // Sortiramo odjele od najsvježije sječe prema najstarijoj
-                const sorted = odjeliData && Array.isArray(odjeliData)
-                    ? [...odjeliData].sort((a, b) => parseDatum(b.datumZadnjeSjece) - parseDatum(a.datumZadnjeSjece))
-                    : [];
-
-                // Agregiraj zalihe iz svih odjela za UKUPNO red
+                // Agregiraj zalihe iz svih odjela (čita iz odjel.zaliha - zadnji red ZALIHA tabele)
                 const zalihaSortimenti = {};
                 sortimentiPrikaz.forEach(s => zalihaSortimenti[s.display] = 0);
-                sorted.forEach(odjel => {
-                    const zalihaData = odjel.zaliha || {};
-                    sortimentiPrikaz.forEach(sp => {
-                        zalihaSortimenti[sp.display] += zalihaData[sp.apiKey] || 0;
+
+                if (odjeliData && Array.isArray(odjeliData)) {
+                    odjeliData.forEach(odjel => {
+                        const zalihaData = odjel.zaliha || {};
+                        sortimentiPrikaz.forEach(sp => {
+                            zalihaSortimenti[sp.display] += zalihaData[sp.apiKey] || 0;
+                        });
                     });
-                });
+                }
 
                 // Izračunaj UKUPNO (ČETINARI + LIŠĆARI)
                 const zalihaUkupno = zalihaSortimenti['ČETINARI'] + zalihaSortimenti['LIŠĆARI'];
-                const brojOdjela = sorted.length;
 
-                // Ukupan broj kolona: Odjel + Zadnja sječa + 8 sortimenti + UKUPNO = 11
-                const totalCols = 11;
+                // Broj odjela za prikaz u naslovu
+                const brojOdjela = odjeliData ? odjeliData.length : 0;
 
-                // Zaglavlje
+                console.log('[Stanje Zaliha Tabela] Agregirano iz', brojOdjela, 'odjela. Zalihe:', zalihaSortimenti, 'UKUPNO:', zalihaUkupno);
+
+                // Renderuj tabelu - zaglavlje sa naslovom
                 let headerHtml = `
                     <tr style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);">
-                        <th colspan="${totalCols}" style="color: white; font-weight: 700; text-align: center; padding: 12px 16px; font-size: 15px; letter-spacing: 0.5px;">
-                            📦 Zalihe po odjelima — ${brojOdjela} odjela (sortirano po svježini sječe)
+                        <th colspan="10" style="color: white; font-weight: 700; text-align: center; padding: 12px 16px; font-size: 15px; letter-spacing: 0.5px;">
+                            📦 Ukupne zalihe - ${brojOdjela} odjela
                         </th>
                     </tr>
-                    <tr style="background: #1e3a5f;">
-                        <th style="color: white; font-weight: 600; text-align: left; padding: 10px 10px; font-size: 12px; border: 1px solid #374151;">Odjel</th>
-                        <th style="color: #93c5fd; font-weight: 600; text-align: center; padding: 10px 8px; font-size: 12px; border: 1px solid #374151;">🪓 Zadnja sječa</th>`;
+                    <tr style="background: #1e3a5f;">`;
                 sortimentiPrikaz.forEach(sort => {
                     const isSum = sort.display === 'ČETINARI' || sort.display === 'LIŠĆARI';
                     const bgColor = isSum ? '#2d5a87' : '#1e3a5f';
@@ -2006,38 +1997,19 @@
                 headerHtml += '</tr>';
                 headerElem.innerHTML = headerHtml;
 
-                // Body — jedan red po odjelu, sortiran
-                let bodyHtml = '';
-                sorted.forEach((odjel, idx) => {
-                    const rowBg = idx % 2 === 0 ? '#f9fafb' : 'white';
-                    const zalihaData = odjel.zaliha || {};
-                    let odjelUkupno = (zalihaData['Σ ČETINARI'] || 0) + (zalihaData['LIŠĆARI'] || 0);
-                    const ukupnoColor = odjelUkupno >= 0 ? '#059669' : '#dc2626';
-
-                    bodyHtml += `<tr style="background: ${rowBg};">`;
-                    bodyHtml += `<td style="font-weight: 600; padding: 9px 10px; border: 1px solid #e5e7eb; font-size: 13px; white-space: nowrap;">${odjel.odjel || '-'}</td>`;
-                    bodyHtml += `<td style="text-align: center; padding: 9px 8px; border: 1px solid #e5e7eb; font-size: 12px; color: #1d4ed8; font-weight: 600;">${odjel.datumZadnjeSjece || '-'}</td>`;
-                    sortimentiPrikaz.forEach(sort => {
-                        const val = zalihaData[sort.apiKey] || 0;
-                        const color = val >= 0 ? '#059669' : '#dc2626';
-                        const isSum = sort.display === 'ČETINARI' || sort.display === 'LIŠĆARI';
-                        bodyHtml += `<td style="text-align: right; padding: 9px 8px; font-family: 'Roboto Mono', monospace; font-size: 12px; font-weight: ${isSum ? '700' : '500'}; color: ${color}; border: 1px solid #e5e7eb; ${isSum ? 'background:#f0fdf4;' : ''}">${val !== 0 ? val.toFixed(2) : '-'}</td>`;
-                    });
-                    bodyHtml += `<td style="text-align: right; padding: 9px 10px; font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: 700; color: ${ukupnoColor}; background: #f0fdf4; border: 1px solid #e5e7eb;">${odjelUkupno.toFixed(2)}</td>`;
-                    bodyHtml += '</tr>';
-                });
-
-                // UKUPNO red na dnu
-                const ukupnoColor = zalihaUkupno >= 0 ? '#047857' : '#dc2626';
-                bodyHtml += `<tr style="background: #ecfdf5; border-top: 2px solid #059669;">`;
-                bodyHtml += `<td colspan="2" style="font-weight: 800; padding: 11px 10px; border: 2px solid #059669; font-size: 13px; color: #047857;">ΣΣΣΣ UKUPNO</td>`;
+                // Renderuj body - jedan red sa zalihama
+                let bodyHtml = '<tr style="background: #f0fdf4;">';
                 sortimentiPrikaz.forEach(sort => {
                     const val = zalihaSortimenti[sort.display] || 0;
+                    const display = val.toFixed(2);
                     const color = val >= 0 ? '#059669' : '#dc2626';
                     const isSum = sort.display === 'ČETINARI' || sort.display === 'LIŠĆARI';
-                    bodyHtml += `<td style="text-align: right; padding: 11px 8px; font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: ${isSum ? '800' : '700'}; color: ${color}; border: 2px solid #059669; ${isSum ? 'background:#d1fae5;' : ''}">${val.toFixed(2)}</td>`;
+                    const bgColor = isSum ? '#d1fae5' : '';
+                    bodyHtml += `<td style="text-align: right; padding: 12px 8px; font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: ${isSum ? '700' : '600'}; color: ${color}; border: 1px solid #d1d5db; ${bgColor ? 'background:' + bgColor + ';' : ''}">${display}</td>`;
                 });
-                bodyHtml += `<td style="text-align: right; padding: 11px 10px; font-family: 'Roboto Mono', monospace; font-size: 14px; font-weight: 800; color: ${ukupnoColor}; background: #d1fae5; border: 2px solid #059669;">${zalihaUkupno.toFixed(2)}</td>`;
+                // UKUPNO kolona
+                const ukupnoColor = zalihaUkupno >= 0 ? '#047857' : '#dc2626';
+                bodyHtml += `<td style="text-align: right; padding: 12px 12px; font-family: 'Roboto Mono', monospace; font-size: 14px; font-weight: 700; color: ${ukupnoColor}; background: #d1fae5; border: 1px solid #d1d5db;">${zalihaUkupno.toFixed(2)}</td>`;
                 bodyHtml += '</tr>';
 
                 bodyElem.innerHTML = bodyHtml;
@@ -2045,7 +2017,7 @@
             } catch (error) {
                 console.error('Error rendering stanje zaliha tabela:', error);
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="11" style="text-align: center; padding: 20px; color: #dc2626;">Greška pri učitavanju podataka</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #dc2626;">Greška pri učitavanju podataka</td></tr>';
             }
         }
 
