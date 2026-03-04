@@ -6997,7 +6997,17 @@
                 return;
             }
 
-            countEl.textContent = `Prikazano: ${data.length} odjela`;
+            // Sortiramo od najsvježije sječe prema najstarijoj (DD.MM.YYYY)
+            const parseDatum = d => {
+                if (!d) return 0;
+                const [day, month, year] = d.split('.');
+                return new Date(year, month - 1, day).getTime();
+            };
+            const sorted = [...data].sort((a, b) =>
+                parseDatum(b.datumZadnjeSjece) - parseDatum(a.datumZadnjeSjece)
+            );
+
+            countEl.textContent = `Prikazano: ${sorted.length} odjela`;
 
             // Sortimenti names for display (shortened for table headers)
             const sortimentiShort = [
@@ -7009,7 +7019,7 @@
 
             let html = '';
 
-            data.forEach((odjel, index) => {
+            sorted.forEach((odjel, index) => {
                 // Determine status color based on zaliha
                 let statusClass = 'neutral';
                 let statusIcon = '📦';
