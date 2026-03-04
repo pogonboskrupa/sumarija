@@ -156,7 +156,6 @@
         }
 
         .sidebar-nav {
-            flex: 1;
             padding: 16px 0;
             overflow-y: auto;
         }
@@ -988,9 +987,26 @@
             .kupci-table .ukupno-col { min-width: 70px; font-size: 9px; }
         }
 
-        /* Sidebar company logo */
-        .sidebar-company-logo { padding: 8px 16px 12px; display: flex; justify-content: center; border-top: 1px solid #e5e7eb; }
-        .sidebar-company-logo .company-logo { height: 48px; }
+        /* Sidebar company logo - fills space between nav and user footer */
+        .sidebar-company-logo {
+            flex: 1;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            overflow: hidden;
+            border-top: 1px solid rgba(255, 255, 255, 0.07);
+        }
+        .sidebar-company-logo img {
+            width: auto;
+            height: 100%;
+            max-height: 100%;
+            max-width: calc(100% - 24px);
+            object-fit: contain;
+            display: block;
+            opacity: 0.9;
+        }
         .btn-clear-cache {
             background: #f59e0b;
             color: white;
