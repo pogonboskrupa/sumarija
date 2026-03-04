@@ -607,20 +607,6 @@
             .kupci-table .ukupno-col { min-width: 70px; font-size: 9px; }
         }
 
-        /* Cache indicator */
-        .cache-indicator {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            padding: 4px 8px;
-            font-size: 10px;
-            font-weight: 500;
-            border-radius: 4px;
-            z-index: 9999;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            max-width: 200px;
-            transition: all 0.3s ease;
-        }
         .btn-clear-cache {
             background: #f59e0b;
             color: white;
@@ -2080,9 +2066,6 @@
                         <p>Evidencija sječe i otpreme</p>
                     </div>
                 </div>
-                <div class="header-center">
-                    <img src="logo-zuti.png" alt="ŠPD Unsko-Sanske Šume Logo" class="company-logo" id="company-logo">
-                </div>
                 <div class="header-right">
                     <div class="header-user">
                         <div class="header-user-name" id="user-name"></div>
@@ -2103,9 +2086,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Cache indicator -->
-        <div id="cache-indicator" class="cache-indicator hidden"></div>
 
         <div class="tabs-container">
             <div class="tabs" id="tabs-menu">
@@ -4697,44 +4677,11 @@
             }
         }
 
-        // Show cache indicator
-        function showCacheIndicator(age, isStale = false) {
-            const indicator = document.getElementById('cache-indicator');
-            if (!indicator) return;
+        // Show cache indicator - disabled
+        function showCacheIndicator(age, isStale = false) {}
 
-            const minutes = Math.round(age / 60000);
-            const seconds = Math.round(age / 1000);
-            const hours = Math.round(age / 3600000);
-
-            if (isStale) {
-                indicator.innerHTML = `⚠️ Keš ${minutes}m`;
-                indicator.style.background = '#fef3c7';
-                indicator.style.color = '#92400e';
-            } else {
-                // Show time in most appropriate unit
-                let timeStr;
-                if (hours > 0) {
-                    timeStr = `${hours}h`;
-                } else if (minutes > 0) {
-                    timeStr = `${minutes}m`;
-                } else {
-                    timeStr = `${seconds}s`;
-                }
-
-                indicator.innerHTML = `⚡ ${timeStr}`;
-                indicator.style.background = '#d1fae5';
-                indicator.style.color = '#047857';
-            }
-            indicator.classList.remove('hidden');
-        }
-
-        // Hide cache indicator
-        function hideCacheIndicator() {
-            const indicator = document.getElementById('cache-indicator');
-            if (indicator) {
-                indicator.classList.add('hidden');
-            }
-        }
+        // Hide cache indicator - disabled
+        function hideCacheIndicator() {}
 
         // Clear cache by pattern
         function clearCacheByPattern(pattern) {

@@ -436,44 +436,11 @@
             throw lastError || new Error('Network request failed');
         }
 
-        // Show cache indicator
-        function showCacheIndicator(age, isStale = false) {
-            const indicator = document.getElementById('cache-indicator');
-            if (!indicator) return;
+        // Show cache indicator - disabled
+        function showCacheIndicator(age, isStale = false) {}
 
-            const minutes = Math.round(age / 60000);
-            const seconds = Math.round(age / 1000);
-            const hours = Math.round(age / 3600000);
-
-            if (isStale) {
-                indicator.innerHTML = `⚠️ Keš ${minutes}m`;
-                indicator.style.background = '#fef3c7';
-                indicator.style.color = '#92400e';
-            } else {
-                // Show time in most appropriate unit
-                let timeStr;
-                if (hours > 0) {
-                    timeStr = `${hours}h`;
-                } else if (minutes > 0) {
-                    timeStr = `${minutes}m`;
-                } else {
-                    timeStr = `${seconds}s`;
-                }
-
-                indicator.innerHTML = `⚡ ${timeStr}`;
-                indicator.style.background = '#d1fae5';
-                indicator.style.color = '#047857';
-            }
-            indicator.classList.remove('hidden');
-        }
-
-        // Hide cache indicator
-        function hideCacheIndicator() {
-            const indicator = document.getElementById('cache-indicator');
-            if (indicator) {
-                indicator.classList.add('hidden');
-            }
-        }
+        // Hide cache indicator - disabled
+        function hideCacheIndicator() {}
 
         // Clear cache by pattern
         function clearCacheByPattern(pattern) {

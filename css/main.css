@@ -988,20 +988,9 @@
             .kupci-table .ukupno-col { min-width: 70px; font-size: 9px; }
         }
 
-        /* Cache indicator */
-        .cache-indicator {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            padding: 4px 8px;
-            font-size: 10px;
-            font-weight: 500;
-            border-radius: 4px;
-            z-index: 9999;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            max-width: 200px;
-            transition: all 0.3s ease;
-        }
+        /* Sidebar company logo */
+        .sidebar-company-logo { padding: 8px 16px 12px; display: flex; justify-content: center; border-top: 1px solid #e5e7eb; }
+        .sidebar-company-logo .company-logo { height: 48px; }
         .btn-clear-cache {
             background: #f59e0b;
             color: white;
