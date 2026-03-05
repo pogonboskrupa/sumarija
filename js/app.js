@@ -3611,6 +3611,11 @@
                 // 🔄 BACKGROUND REFRESH (180s timeout)
                 try {
                     const data = await fetchWithCache(url, cacheKey, false, 180000);
+                    if (data.error) {
+                        if (!hasCachedData) throw new Error(data.error);
+                        markTabRendered('primaci');
+                        return;
+                    }
                     renderPrimaci(data);
                     hideCacheIndicator();
                     markTabRendered('primaci');
@@ -3782,6 +3787,11 @@
                 // 🔄 BACKGROUND REFRESH (180s timeout)
                 try {
                     const data = await fetchWithCache(url, cacheKey, false, 180000);
+                    if (data.error) {
+                        if (!hasCachedData) throw new Error(data.error);
+                        markTabRendered('otpremaci');
+                        return;
+                    }
                     renderOtpremaci(data);
                     hideCacheIndicator();
                     markTabRendered('otpremaci');

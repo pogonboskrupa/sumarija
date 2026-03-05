@@ -209,6 +209,11 @@ async function clearStore(storeName) {
     });
 }
 
+async function clearAll() {
+    const storeNames = Object.values(STORES);
+    await Promise.all(storeNames.map(storeName => clearStore(storeName)));
+}
+
 // Export funkcija
 window.IDBHelper = {
     STORES,
@@ -219,7 +224,8 @@ window.IDBHelper = {
     countRows,
     setMeta,
     getMeta,
-    clearStore
+    clearStore,
+    clearAll
 };
 
 console.log('[IDB] Helper module loaded');
