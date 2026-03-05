@@ -83,6 +83,8 @@ function doGet(e) {
       return handlePrimaciByRadiliste(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'primaci-by-izvodjac') {
       return handlePrimaciByIzvodjac(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'primaci-sortimenti-by-primac') {
+      return handlePrimaciSortimentiByPrimac(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
     } else if (path === 'primke') {
       return handlePrimke(e.parameter.username, e.parameter.password);
     } else if (path === 'otpreme') {

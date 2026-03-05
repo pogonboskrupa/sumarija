@@ -4564,6 +4564,85 @@
             }
         }
 
+        // Load primaci sortimenti by primac (grupisano po radilištu, za odabrani mjesec)
+        async function loadPrimaciSortimentiByPrimac(selectedMonth) {
+            const year = new Date().getFullYear();
+            const month = parseInt(selectedMonth !== undefined ? selectedMonth : new Date().getMonth());
+            const cacheKey = `cache_primaci_sort_primac_${year}_${month}`;
+            const url = buildApiUrl('primaci-sortimenti-by-primac', { year, month });
+
+            const container = document.getElementById('primaci-sortimenti-primac-container');
+            container.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280;">⏳ Učitavam...</div>';
+
+            try {
+                const data = await fetchWithCache(url, cacheKey, false, 180000);
+                if (data.error) throw new Error(data.error);
+                renderPrimaciSortimentiByPrimac(data, month, year);
+            } catch (err) {
+                console.error('Error in loadPrimaciSortimentiByPrimac:', err);
+                container.innerHTML = `<p style="color:#dc2626;text-align:center;padding:40px;">Greška: ${err.message}</p>`;
+            }
+        }
+
+        function renderPrimaciSortimentiByPrimac(data, month, year) {
+            const MJESECI_NAZIVI = ['Januar','Februar','Mart','April','Maj','Juni','Juli','Avgust','Septembar','Oktobar','Novembar','Decembar'];
+            const container = document.getElementById('primaci-sortimenti-primac-container');
+
+            if (!data.radilista || data.radilista.length === 0) {
+                container.innerHTML = `<p style="text-align:center;padding:40px;color:#6b7280;">Nema podataka za ${MJESECI_NAZIVI[month]} ${year}.</p>`;
+                return;
+            }
+
+            const sortNazivi = data.sortimentiNazivi; // 20 naziva
+            let html = `<p style="color:#6b7280;font-size:13px;margin-bottom:12px;">📅 Prikazani podaci za: <strong>${MJESECI_NAZIVI[month]} ${year}</strong></p>`;
+
+            data.radilista.forEach(radiliste => {
+                html += `<h4 style="background:#ea580c;color:white;padding:10px 16px;border-radius:6px;margin:20px 0 8px;">🏗️ ${radiliste.naziv}</h4>`;
+                html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">';
+                html += '<table class="monthly-table" style="min-width:900px;">';
+                html += '<thead><tr>';
+                html += `<th style="background:linear-gradient(135deg,#ea580c,#dc2626);color:white;padding:10px;position:sticky;left:0;z-index:10;min-width:160px;">👷 Primač</th>`;
+                sortNazivi.forEach((s, i) => {
+                    const isTotal = i === 19;
+                    const bg = isTotal ? 'linear-gradient(135deg,#7c2d12,#451a03)' : 'linear-gradient(135deg,#ea580c,#dc2626)';
+                    html += `<th style="background:${bg};color:white;padding:8px 4px;font-size:10px;min-width:65px;white-space:nowrap;">${s}</th>`;
+                });
+                html += '</tr></thead><tbody>';
+
+                const radilisteUkupno = Array(20).fill(0);
+                radiliste.primaci.forEach((primac, idx) => {
+                    const bg = idx % 2 === 0 ? '#fff7ed' : '#ffffff';
+                    html += `<tr style="background:${bg};" onmouseover="this.style.background='#ffedd5'" onmouseout="this.style.background='${bg}'">`;
+                    html += `<td style="font-weight:700;font-size:12px;border:1px solid #fed7aa;padding:9px;color:#7c2d12;position:sticky;left:0;background:${bg};">${primac.naziv}</td>`;
+                    primac.sortimentiVrijednosti.forEach((val, j) => {
+                        radilisteUkupno[j] += val;
+                        const disp = val > 0 ? val.toFixed(2) : '-';
+                        const isTotal = j === 19;
+                        const cellStyle = isTotal
+                            ? 'background:#fef3c7;border:2px solid #f59e0b;font-weight:900;font-size:12px;color:#92400e;'
+                            : (val > 0 ? 'font-weight:700;color:#7c2d12;' : 'color:#d1d5db;');
+                        html += `<td style="${cellStyle}border:1px solid #fed7aa;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:7px;">${disp}</td>`;
+                    });
+                    html += '</tr>';
+                });
+
+                // UKUPNO red za radilište
+                html += `<tr style="background:linear-gradient(135deg,#ea580c,#dc2626);">`;
+                html += `<td style="font-weight:900;color:white;padding:10px;border:1px solid #c2410c;position:sticky;left:0;background:#ea580c;">UKUPNO</td>`;
+                radilisteUkupno.forEach((val, j) => {
+                    const disp = val > 0 ? val.toFixed(2) : '-';
+                    const isTotal = j === 19;
+                    const cellStyle = isTotal ? 'background:#7c2d12;font-size:13px;font-weight:900;' : 'font-weight:700;';
+                    html += `<td style="${cellStyle}color:white;border:1px solid #c2410c;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:8px;">${disp}</td>`;
+                });
+                html += '</tr>';
+
+                html += '</tbody></table></div>';
+            });
+
+            container.innerHTML = html;
+        }
+
         // Load otpremaci by radiliste
         async function loadOtremaciByRadiliste() {
             try {

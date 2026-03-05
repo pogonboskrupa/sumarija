@@ -224,6 +224,7 @@
             document.getElementById('primaci-daily-view').classList.add('hidden');
             document.getElementById('primaci-radilista-view').classList.add('hidden');
             document.getElementById('primaci-izvodjaci-view').classList.add('hidden');
+            document.getElementById('primaci-sortimenti-primac-view').classList.add('hidden');
 
             // Show selected view
             if (view === 'monthly') {
@@ -245,6 +246,15 @@
                 // Load izvodjaci data if not already loaded
                 if (!document.getElementById('primaci-izvodjaci-header').innerHTML) {
                     loadPrimaciByIzvodjac();
+                }
+            } else if (view === 'sortimenti-by-primac') {
+                document.getElementById('primaci-sortimenti-primac-view').classList.remove('hidden');
+                // Load on first open with current month as default
+                const container = document.getElementById('primaci-sortimenti-primac-container');
+                if (!container.innerHTML) {
+                    const currentMonth = new Date().getMonth();
+                    document.getElementById('primaci-sortimenti-month-select').value = currentMonth;
+                    loadPrimaciSortimentiByPrimac(currentMonth);
                 }
             }
         }

@@ -3937,3 +3937,69 @@ function setupImageCleanupTrigger() {
 }
 
 // Helper funkcija za formatiranje datuma
+
+// ========================================
+// PRIMACI SORTIMENTI BY PRIMAC - Prikaz sječe po primačima (20 sortimentnih kolona), grupisano po radilištu, za odabrani mjesec
+// ========================================
+
+function handlePrimaciSortimentiByPrimac(year, month, username, password) {
+  const loginResult = JSON.parse(handleLogin(username, password).getContent());
+  if (!loginResult.success) return createJsonResponse({ error: "Unauthorized" }, false);
+
+  Logger.log('=== HANDLE PRIMACI SORTIMENTI BY PRIMAC START ===');
+  Logger.log('Year: ' + year + ', Month: ' + month);
+
+  try {
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const sheet = ss.getSheetByName("INDEKS_PRIMKA");
+    if (!sheet) return createJsonResponse({ error: "INDEKS_PRIMKA sheet not found" }, false);
+
+    const data = sheet.getDataRange().getValues();
+    const targetYear = parseInt(year);
+    const targetMonth = parseInt(month); // 0-11
+
+    // Struktura: radiliste -> primac -> [20 sortimentnih vrijednosti]
+    const radilistaMap = {};
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const datum = row[PRIMKA_COL.DATE];
+      if (!datum) continue;
+
+      const d = parseDate(datum);
+      if (d.getFullYear() !== targetYear) continue;
+      if (d.getMonth() !== targetMonth) continue;
+
+      const radiliste = String(row[PRIMKA_COL.RADILISTE] || 'Nepoznato').trim();
+      const primac = String(row[PRIMKA_COL.RADNIK] || 'Nepoznato').trim();
+
+      if (!radilistaMap[radiliste]) radilistaMap[radiliste] = {};
+      if (!radilistaMap[radiliste][primac]) {
+        radilistaMap[radiliste][primac] = Array(20).fill(0);
+      }
+
+      for (let j = 0; j < 20; j++) {
+        radilistaMap[radiliste][primac][j] += parseFloat(row[PRIMKA_COL.SORT_START + j]) || 0;
+      }
+    }
+
+    // Konvertuj u array strukturu (sortirano po radilištu, unutar po ukupnom kubiku desc)
+    const radilista = Object.keys(radilistaMap).sort().map(naziv => {
+      const primaci = Object.keys(radilistaMap[naziv]).sort().map(pNaziv => ({
+        naziv: pNaziv,
+        sortimentiVrijednosti: radilistaMap[naziv][pNaziv],
+        ukupno: radilistaMap[naziv][pNaziv][19] // indeks 19 = UKUPNO Č+L
+      }));
+      primaci.sort((a, b) => b.ukupno - a.ukupno);
+      return { naziv, primaci };
+    });
+
+    Logger.log('=== HANDLE PRIMACI SORTIMENTI BY PRIMAC END === Radilista: ' + radilista.length);
+
+    return createJsonResponse({ radilista: radilista, sortimentiNazivi: SORTIMENTI_NAZIVI }, true);
+
+  } catch (err) {
+    Logger.log('ERROR in handlePrimaciSortimentiByPrimac: ' + err.toString());
+    return createJsonResponse({ error: err.toString() }, false);
+  }
+}
