@@ -4003,3 +4003,70 @@ function handlePrimaciSortimentiByPrimac(year, month, username, password) {
     return createJsonResponse({ error: err.toString() }, false);
   }
 }
+
+// ========================================
+// OTPREMACI SORTIMENTI BY OTPREMAC - Prikaz otpreme po otpremačima (20 sortimentnih kolona),
+// grupisano po radilištu, za odabrani mjesec
+// ========================================
+
+function handleOtremaciSortimentiByOtpremac(year, month, username, password) {
+  const loginResult = JSON.parse(handleLogin(username, password).getContent());
+  if (!loginResult.success) return createJsonResponse({ error: "Unauthorized" }, false);
+
+  Logger.log('=== HANDLE OTPREMACI SORTIMENTI BY OTPREMAC START ===');
+  Logger.log('Year: ' + year + ', Month: ' + month);
+
+  try {
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const sheet = ss.getSheetByName("INDEKS_OTPREMA");
+    if (!sheet) return createJsonResponse({ error: "INDEKS_OTPREMA sheet not found" }, false);
+
+    const data = sheet.getDataRange().getValues();
+    const targetYear = parseInt(year);
+    const targetMonth = parseInt(month); // 0-11
+
+    // Struktura: radiliste -> otpremac -> [20 sortimentnih vrijednosti]
+    const radilistaMap = {};
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const datum = row[OTPREMA_COL.DATE];
+      if (!datum) continue;
+
+      const d = parseDate(datum);
+      if (d.getFullYear() !== targetYear) continue;
+      if (d.getMonth() !== targetMonth) continue;
+
+      const radiliste = String(row[OTPREMA_COL.RADILISTE] || 'Nepoznato').trim();
+      const otpremac = String(row[OTPREMA_COL.OTPREMAC] || 'Nepoznato').trim();
+
+      if (!radilistaMap[radiliste]) radilistaMap[radiliste] = {};
+      if (!radilistaMap[radiliste][otpremac]) {
+        radilistaMap[radiliste][otpremac] = Array(20).fill(0);
+      }
+
+      for (let j = 0; j < 20; j++) {
+        radilistaMap[radiliste][otpremac][j] += parseFloat(row[OTPREMA_COL.SORT_START + j]) || 0;
+      }
+    }
+
+    // Konvertuj u array strukturu (sortirano po radilištu, unutar po ukupnom kubiku desc)
+    const radilista = Object.keys(radilistaMap).sort().map(naziv => {
+      const otpremaci = Object.keys(radilistaMap[naziv]).sort().map(oNaziv => ({
+        naziv: oNaziv,
+        sortimentiVrijednosti: radilistaMap[naziv][oNaziv],
+        ukupno: radilistaMap[naziv][oNaziv][19] // indeks 19 = UKUPNO Č+L
+      }));
+      otpremaci.sort((a, b) => b.ukupno - a.ukupno);
+      return { naziv, otpremaci };
+    });
+
+    Logger.log('=== HANDLE OTPREMACI SORTIMENTI BY OTPREMAC END === Radilista: ' + radilista.length);
+
+    return createJsonResponse({ radilista: radilista, sortimentiNazivi: SORTIMENTI_NAZIVI }, true);
+
+  } catch (err) {
+    Logger.log('ERROR in handleOtremaciSortimentiByOtpremac: ' + err.toString());
+    return createJsonResponse({ error: err.toString() }, false);
+  }
+}

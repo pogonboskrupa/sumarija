@@ -534,6 +534,7 @@
                 <button class="submenu-tab active" onclick="switchOtremaciSubmenu('daily')">📅 Po danima</button>
                 <button class="submenu-tab" onclick="switchOtremaciSubmenu('radilista')">🏗️ Radilišta</button>
                 <button class="submenu-tab" onclick="switchOtremaciSubmenu('po-kupcima')" id="otpremaci-po-kupcima-tab">🏢 Otprema u <span id="current-month-name">tekućem mjesecu</span></button>
+                <button class="submenu-tab" onclick="switchOtremaciSubmenu('sortimenti-by-otpremac')">🏷️ Sortimentni prikaz po otpremačima</button>
             </div>
 
             <!-- Mjesečni prikaz -->
@@ -621,6 +622,31 @@
                             <tfoot id="otpremaci-po-kupcima-footer"></tfoot>
                         </table>
                     </div>
+                </div>
+            </div>
+
+            <!-- Sortimentni prikaz po otpremačima (po radilištu, za odabrani mjesec) -->
+            <div id="otpremaci-sortimenti-otpremac-view" class="submenu-content hidden">
+                <div class="section">
+                    <h3 style="color: #0891b2; text-align: center; margin-bottom: 20px;">🏷️ Sortimentni prikaz po otpremačima</h3>
+                    <div class="month-selector">
+                        <label>📅 Izaberi mjesec:</label>
+                        <select id="otpremaci-sortimenti-month-select" class="month-select" onchange="loadOtremaciSortimentiByOtpremac(this.value)">
+                            <option value="0">Januar</option>
+                            <option value="1">Februar</option>
+                            <option value="2">Mart</option>
+                            <option value="3">April</option>
+                            <option value="4">Maj</option>
+                            <option value="5">Juni</option>
+                            <option value="6">Juli</option>
+                            <option value="7">Avgust</option>
+                            <option value="8">Septembar</option>
+                            <option value="9">Oktobar</option>
+                            <option value="10">Novembar</option>
+                            <option value="11">Decembar</option>
+                        </select>
+                    </div>
+                    <div id="otpremaci-sortimenti-otpremac-container"></div>
                 </div>
             </div>
         </div>

@@ -85,6 +85,8 @@ function doGet(e) {
       return handlePrimaciByIzvodjac(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'primaci-sortimenti-by-primac') {
       return handlePrimaciSortimentiByPrimac(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
+    } else if (path === 'otpremaci-sortimenti-by-otpremac') {
+      return handleOtremaciSortimentiByOtpremac(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
     } else if (path === 'primke') {
       return handlePrimke(e.parameter.username, e.parameter.password);
     } else if (path === 'otpreme') {

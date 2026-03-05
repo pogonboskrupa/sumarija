@@ -271,6 +271,7 @@
             document.getElementById('otpremaci-daily-view').classList.add('hidden');
             document.getElementById('otpremaci-radilista-view').classList.add('hidden');
             document.getElementById('otpremaci-po-kupcima-view').classList.add('hidden');
+            document.getElementById('otpremaci-sortimenti-otpremac-view').classList.add('hidden');
 
             // Show selected view
             if (view === 'monthly') {
@@ -292,6 +293,14 @@
                 // Load kupci data if not already loaded
                 if (!document.getElementById('otpremaci-po-kupcima-header').innerHTML) {
                     loadOtremaciPoKupcima();
+                }
+            } else if (view === 'sortimenti-by-otpremac') {
+                document.getElementById('otpremaci-sortimenti-otpremac-view').classList.remove('hidden');
+                const container = document.getElementById('otpremaci-sortimenti-otpremac-container');
+                if (!container.innerHTML) {
+                    const currentMonth = new Date().getMonth();
+                    document.getElementById('otpremaci-sortimenti-month-select').value = currentMonth;
+                    loadOtremaciSortimentiByOtpremac(currentMonth);
                 }
             }
         }
