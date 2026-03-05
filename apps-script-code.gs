@@ -5893,69 +5893,6 @@ function handleOtremaciSortimentiByOtpremac(year, month, username, password) {
   }
 }
 
-// ========================================
-// PRIMAC YEARLY SJECA - Sve sječe odabranog primača za cijelu godinu
-// ========================================
-
-function handlePrimacYearlySjeca(year, primac, username, password) {
-  const loginResult = JSON.parse(handleLogin(username, password).getContent());
-  if (!loginResult.success) return createJsonResponse({ error: "Unauthorized" }, false);
-
-  Logger.log('=== HANDLE PRIMAC YEARLY SJECA START ===');
-  Logger.log('Year: ' + year + ', Primac: ' + primac);
-
-  try {
-    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
-    const sheet = ss.getSheetByName("INDEKS_PRIMKA");
-    if (!sheet) return createJsonResponse({ error: "INDEKS_PRIMKA sheet not found" }, false);
-
-    const data = sheet.getDataRange().getValues();
-    const targetYear = parseInt(year);
-    const targetPrimac = String(primac || '').trim();
-    const dailyData = [];
-
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      const datum = row[PRIMKA_COL.DATE];
-      if (!datum) continue;
-
-      const d = parseDate(datum);
-      if (d.getFullYear() !== targetYear) continue;
-
-      const rowPrimac = String(row[PRIMKA_COL.RADNIK] || '').trim();
-      if (rowPrimac !== targetPrimac) continue;
-
-      const odjel = row[PRIMKA_COL.ODJEL] || '';
-
-      const sortimenti = {};
-      for (let j = 0; j < SORTIMENTI_NAZIVI.length; j++) {
-        sortimenti[SORTIMENTI_NAZIVI[j]] = parseFloat(row[PRIMKA_COL.SORT_START + j]) || 0;
-      }
-
-      dailyData.push({
-        datum: Utilities.formatDate(d, Session.getScriptTimeZone(), "dd.MM.yyyy"),
-        datumSort: d.getTime(),
-        odjel: odjel,
-        sortimenti: sortimenti
-      });
-    }
-
-    // Sort by date descending (newest first)
-    dailyData.sort((a, b) => b.datumSort - a.datumSort);
-
-    Logger.log('=== HANDLE PRIMAC YEARLY SJECA END === Records: ' + dailyData.length);
-
-    return createJsonResponse({
-      sortimentiNazivi: SORTIMENTI_NAZIVI,
-      data: dailyData
-    }, true);
-
-  } catch (err) {
-    Logger.log('ERROR in handlePrimacYearlySjeca: ' + err.toString());
-    return createJsonResponse({ error: err.toString() }, false);
-  }
-}
-
 // ==========================================
 // FILE: main.gs
 // ==========================================
@@ -6048,8 +5985,6 @@ function doGet(e) {
       return handlePrimaciSortimentiByPrimac(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
     } else if (path === 'otpremaci-sortimenti-by-otpremac') {
       return handleOtremaciSortimentiByOtpremac(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
-    } else if (path === 'primac-yearly-sjeca') {
-      return handlePrimacYearlySjeca(e.parameter.year, e.parameter.primac, e.parameter.username, e.parameter.password);
     } else if (path === 'primke') {
       return handlePrimke(e.parameter.username, e.parameter.password);
     } else if (path === 'otpreme') {
