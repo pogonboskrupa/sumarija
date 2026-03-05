@@ -531,17 +531,12 @@
                 }
 
                 closeUserMenu(); // Close menu
-                showSuccess('✅ Keš obrisan', 'Stranica će se refresh-ovati (ostat ćeš prijavljen)...');
+                showSuccess('✅ Keš obrisan', 'Učitavam sve prikaze...');
 
-                // Step 8: RELOAD bez brisanja login-a (NE koristi location.replace!)
-                console.log('[CACHE CLEAR] Step 8: Initiating page reload...');
-                console.log('[CACHE CLEAR] Login credentials preserved - staying logged in');
-
-                // Wait a moment for user to see the message
+                // Step 8: Učitaj sve prikaze bez reload-a (forceRefresh = true)
+                console.log('[CACHE CLEAR] Step 8: Loading all views (force refresh)...');
                 setTimeout(() => {
-                    // Običan reload - login credentials ostaju u localStorage!
-                    console.log('[CACHE CLEAR] Reloading page...');
-                    window.location.reload();
+                    preloadAllViews(false, true);
                 }, 800);
 
             } catch (error) {
