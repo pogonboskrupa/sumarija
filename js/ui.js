@@ -40,7 +40,6 @@
                 'poslovodja-pregled': 'poslovodja-pregled-content',
                 'poslovodja-unosi': 'poslovodja-unosi-content',
                 'stanje-zaliha': 'stanje-zaliha-content',
-                'primaci-pregled': 'primaci-pregled-content',
             };
             const ttl = (typeof getSmartCacheTTL === 'function') ? Math.min(getSmartCacheTTL(), 5 * 60 * 1000) : 60000;
             const lastRender = window._tabRenderTime[tab];
@@ -89,7 +88,6 @@
             document.getElementById('kubikator-content').classList.add('hidden');
             document.getElementById('ostalo-content').classList.add('hidden');
             document.getElementById('stanje-zaliha-content').classList.add('hidden');
-            document.getElementById('primaci-pregled-content').classList.add('hidden');
 
             // Load appropriate content
             if (tab === 'dashboard') {
@@ -174,18 +172,7 @@
                 switchOstaloTab('kubikator');
             } else if (tab === 'stanje-zaliha') {
                 loadStanjeZaliha();
-            } else if (tab === 'primaci-pregled') {
-                loadPrimaciPregled();
             }
-        }
-
-        // Switch between Primači pregled submenus
-        function switchPrimaciPregledSubmenu(view) {
-            const submenuTabs = document.querySelectorAll('#primaci-pregled-content .submenu-tab');
-            submenuTabs.forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
-            // Trenutno samo jedan view
-            document.getElementById('primaci-pregled-godisnja-view').classList.remove('hidden');
         }
 
         // Switch between Ostalo tabs - samo Kubikator
