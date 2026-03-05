@@ -7,9 +7,47 @@
 // Ovaj fajl sadrži glavne entry point funkcije (doGet, doPost, doOptions)
 // i routing logiku za sve API endpoint-e
 
+// Provjera da li su svi potrebni fajlovi uključeni u Apps Script projekat
+function _checkRequiredFunctions() {
+  var missing = [];
+  var required = [
+    'handleLogin', 'handleStats', 'handleDashboard', 'handleSortimenti',
+    'handlePrimaci', 'handleOtpremaci', 'handleKupci', 'handleOdjeli',
+    'handlePrimacDetail', 'handleOtpremacDetail', 'handlePrimacOdjeli',
+    'handleOtpremacOdjeli', 'handleAddSjeca', 'handleAddOtprema',
+    'handlePendingUnosi', 'handleMyPending', 'handleUpdatePending',
+    'handleDeletePending', 'handleGetOdjeliList', 'handleMjesecniSortimenti',
+    'handlePrimaciDaily', 'handleOtremaciDaily', 'handleDailyChart',
+    'handleStanjeOdjela', 'handleSyncStanjeOdjela', 'handleSyncIndex',
+    'createJsonResponse'
+  ];
+  for (var i = 0; i < required.length; i++) {
+    try {
+      if (typeof this[required[i]] !== 'function') {
+        missing.push(required[i]);
+      }
+    } catch (e) {
+      missing.push(required[i]);
+    }
+  }
+  return missing;
+}
+
 // Glavni handler za sve zahtjeve
 function doGet(e) {
   try {
+    // Provjeri da li su svi potrebni fajlovi uključeni
+    var missingFunctions = _checkRequiredFunctions();
+    if (missingFunctions.length > 0) {
+      Logger.log('GREŠKA: Nedostaju funkcije: ' + missingFunctions.join(', '));
+      Logger.log('Provjerite da su svi .gs fajlovi dodani u Apps Script projekat:');
+      Logger.log('- main.gs, api-handlers.gs, authentication.gs, config.gs, services.gs, utils-triggers.gs');
+      return ContentService.createTextOutput(JSON.stringify({
+        success: false,
+        error: 'Nedostaju funkcije: ' + missingFunctions.join(', ') + '. Provjerite da su svi .gs fajlovi (api-handlers.gs, authentication.gs, config.gs, services.gs, utils-triggers.gs) dodani u Apps Script projekat.'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     Logger.log('=== DOGET CALLED ===');
     Logger.log('Full e.parameter: ' + JSON.stringify(e.parameter));
     Logger.log('e.queryString: ' + e.queryString);
@@ -129,6 +167,15 @@ function doGet(e) {
     Logger.log('Unknown path: ' + path);
     return createJsonResponse({ error: 'Unknown path: ' + path }, false);
   } catch (error) {
+    Logger.log('doGet error: ' + error.toString());
+    // Ako je ReferenceError (funkcija nije definisana), daj jasniju poruku
+    if (error instanceof ReferenceError) {
+      var errorMsg = error.toString() + '. Provjerite da su svi .gs fajlovi (api-handlers.gs, authentication.gs, config.gs, services.gs, utils-triggers.gs) dodani u Apps Script projekat.';
+      return ContentService.createTextOutput(JSON.stringify({
+        success: false,
+        error: errorMsg
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
     return createJsonResponse({ error: error.toString() }, false);
   }
 }
