@@ -688,6 +688,8 @@
                     allViews = [
                         // Glavni meniji
                         { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year + '_m' + currentMonthNum, timeout: 180000 },
+                        // Operativa tab koristi cache_dashboard_${year} (bez sufiks-a mjeseca)
+                        { name: 'Operativa - Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year, timeout: 60000 },
                         { name: 'Operativa (Stats)', url: buildApiUrl('stats', { year }), cacheKey: 'cache_stats_' + year, timeout: 180000 },
                         { name: 'Stanje Odjela', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_odjeli_' + year, timeout: 180000 },
                         // SKIP: Stanje Odjela Admin se učitava lazy (kad korisnik klikne na tab) jer može trajati dugo
@@ -695,6 +697,7 @@
                         { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
                         { name: 'Pending Unosi', url: buildApiUrl('pending-unosi'), cacheKey: 'cache_pending_unosi', timeout: 120000 },
                         { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni-sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year, timeout: 120000 },
+                        { name: 'Dinamika', url: buildApiUrl('get_dinamika', { year }), cacheKey: 'cache_dinamika_' + year, timeout: 120000 },
 
                         // PRIMACI meni + SVA 4 PODMENIJA
                         { name: 'Primaci - Monthly', url: buildApiUrl('primaci', { year }), cacheKey: 'cache_primaci_' + year, timeout: 180000 },
@@ -742,9 +745,10 @@
 
                 totalViews = allViews.length;
 
-                // Prikaži notifikaciju samo ako NIJE silent mod
+                // Progress toast - ostaje vidljiv tokom učitavanja (duration=0 = ne briše se automatski)
+                let progressToast = null;
                 if (!silent) {
-                    showInfo('⚡ Učitavanje...', `Učitavam ${totalViews} prikaza u pozadini...`);
+                    progressToast = showInfo('⚡ Učitavanje...', `0 / ${totalViews} prikaza`, 0);
                 }
 
                 console.log(`[PRELOAD] Starting preload of ${totalViews} views (silent=${silent})...`);
@@ -755,22 +759,38 @@
                         await fetchWithCache(view.url, view.cacheKey, forceRefresh, view.timeout);
                         totalLoaded++;
                         console.log(`[PRELOAD] ✓ ${view.name} loaded (${totalLoaded}/${totalViews})`);
+                        // Ažuriraj progress toast u realnom vremenu
+                        if (!silent && progressToast) {
+                            const msgEl = progressToast.querySelector('.toast-message');
+                            if (msgEl) msgEl.textContent = `${totalLoaded} / ${totalViews} prikaza`;
+                        }
                         return { success: true, name: view.name };
                     } catch (error) {
                         totalFailed++;
+                        totalLoaded++;
                         console.error(`[PRELOAD] ✗ ${view.name} failed:`, error);
+                        if (!silent && progressToast) {
+                            const msgEl = progressToast.querySelector('.toast-message');
+                            if (msgEl) msgEl.textContent = `${totalLoaded} / ${totalViews} prikaza`;
+                        }
                         return { success: false, name: view.name };
                     }
                 }, 5); // Max 5 paralelnih poziva
 
                 console.log(`[PRELOAD] Finished! Loaded: ${totalLoaded}/${totalViews}, Failed: ${totalFailed}`);
 
-                // Prikaži rezultat samo ako NIJE silent mod
+                // Ukloni progress toast i prikaži rezultat
                 if (!silent) {
-                    if (totalLoaded > 0) {
-                        showSuccess('⚡ Gotovo!', `✅ Učitano ${totalLoaded}/${totalViews} prikaza!\n${totalFailed > 0 ? `⚠️ ${totalFailed} nije uspjelo` : '🎉 Sve uspješno!'}`);
+                    if (progressToast) {
+                        progressToast.classList.remove('show');
+                        progressToast.classList.add('hide');
+                        setTimeout(() => progressToast && progressToast.remove(), 300);
+                    }
+                    const uspjesno = totalLoaded - totalFailed;
+                    if (uspjesno > 0) {
+                        showSuccess('⚡ Gotovo!', `✅ Učitano ${uspjesno}/${totalViews} prikaza${totalFailed > 0 ? ` (${totalFailed} nije uspjelo)` : ' 🎉'}`);
                     } else {
-                        showError('Greška', `Nije učitano nijedan prikaz. Server je možda nedostupan.`);
+                        showError('Greška', 'Nije učitano nijedan prikaz. Server je možda nedostupan.');
                     }
                 }
 
@@ -1085,6 +1105,7 @@
 
                     // Hide cache indicator when fresh data arrives
                     hideCacheIndicator();
+                    markTabRendered('dashboard');
 
                 } catch (error) {
                     // If we have cached data, silently ignore errors - user already has data!
@@ -1092,6 +1113,7 @@
                         throw error;
                     } else {
                         // Silently failed but user already has cached data - no problem!
+                        markTabRendered('dashboard');
                     }
                 }
 
@@ -3596,10 +3618,12 @@
                     const data = await fetchWithCache(url, cacheKey, false, 180000);
                     renderPrimaci(data);
                     hideCacheIndicator();
+                    markTabRendered('primaci');
                 } catch (error) {
                     if (!hasCachedData) {
                         throw error;
                     }
+                    markTabRendered('primaci');
                     // Silently fail if we have cached data
                 }
 
@@ -3765,10 +3789,12 @@
                     const data = await fetchWithCache(url, cacheKey, false, 180000);
                     renderOtpremaci(data);
                     hideCacheIndicator();
+                    markTabRendered('otpremaci');
                 } catch (error) {
                     if (!hasCachedData) {
                         throw error;
                     }
+                    markTabRendered('otpremaci');
                     // Silently fail if we have cached data
                 }
 
@@ -4706,6 +4732,7 @@
                     if (!hasCachedData) {
                         throw new Error(data.error || 'Nema podataka');
                     }
+                    markTabRendered('kupci');
                     return; // Silently fail if we have cached data
                 }
 
@@ -4713,6 +4740,7 @@
                 renderKupciGodisnjiTable(data.godisnji, data.sortimentiNazivi);
                 renderKupciMjesecniTable(data.mjesecni, data.sortimentiNazivi);
                 hideCacheIndicator();
+                markTabRendered('kupci');
 
             } catch (error) {
                 console.error('Error loading kupci:', error);
@@ -6124,6 +6152,7 @@
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('mjesecni-sortimenti-content').classList.remove('hidden');
+                markTabRendered('mjesecni-sortimenti');
 
             } catch (error) {
                 console.error('Error loading mjesečni sortimenti:', error);
@@ -8579,6 +8608,7 @@
 
                 // Load OPERATIVA with transformed data
                 loadOperativaData(transformedData);
+                markTabRendered('operativa');
 
             } catch (error) {
                 console.error('Error in loadStatsForOperativa:', error);
@@ -9502,6 +9532,10 @@
 
                 // Izračunaj ukupno
                 calculateDinamikaTotal();
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('dinamika-content').classList.remove('hidden');
+                markTabRendered('dinamika');
 
             } catch (error) {
                 console.error('Error loading dinamika:', error);

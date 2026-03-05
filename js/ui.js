@@ -1,6 +1,12 @@
         // ========== UI MODULE ==========
         // Navigation (switchTab, sub-menus), filters, sorting, toggles
 
+        // Prati kada je svaki tab zadnji put renderovan
+        window._tabRenderTime = window._tabRenderTime || {};
+        function markTabRendered(tab) {
+            window._tabRenderTime[tab] = Date.now();
+        }
+
         // Switch between tabs
         function switchTab(tab) {
             // Update tab buttons - set active on all matching tabs (sidebar + mobile)
@@ -8,6 +14,46 @@
 
             // Find and activate tabs that switch to this tab (works for both sidebar and mobile)
             document.querySelectorAll(`.tab[onclick*="'${tab}'"]`).forEach(t => t.classList.add('active'));
+
+            // Provjeri može li se tab prikazati iz prethodno renderovanog DOM-a
+            // (preskoči fetch/render ako su podaci još svježi)
+            const tabContentMap = {
+                'dashboard': 'dashboard-content',
+                'operativa': 'operativa-content',
+                'primaci': 'primaci-content',
+                'otpremaci': 'otpremaci-content',
+                'kupci': 'kupci-content',
+                'primac-personal': 'primac-personal-content',
+                'primac-godisnji': 'primac-godisnji-content',
+                'otpremac-personal': 'otpremac-personal-content',
+                'otpremac-godisnji': 'otpremac-godisnji-content',
+                'primac-odjeli': 'primac-odjeli-content',
+                'otpremac-odjeli': 'otpremac-odjeli-content',
+                'my-sjece': 'my-sjece-content',
+                'my-otpreme': 'my-otpreme-content',
+                'pending-unosi': 'pending-unosi-content',
+                'mjesecni-sortimenti': 'mjesecni-sortimenti-content',
+                'dinamika': 'dinamika-content',
+                'poslovodja-stanje': 'poslovodja-stanje-content',
+                'poslovodja-sjeca': 'poslovodja-sjeca-content',
+                'poslovodja-otprema': 'poslovodja-otprema-content',
+                'poslovodja-pregled': 'poslovodja-pregled-content',
+                'poslovodja-unosi': 'poslovodja-unosi-content',
+                'stanje-zaliha': 'stanje-zaliha-content',
+            };
+            const ttl = (typeof getSmartCacheTTL === 'function') ? Math.min(getSmartCacheTTL(), 5 * 60 * 1000) : 60000;
+            const lastRender = window._tabRenderTime[tab];
+            const contentId = tabContentMap[tab];
+            if (lastRender && contentId && (Date.now() - lastRender) < ttl) {
+                const el = document.getElementById(contentId);
+                if (el && el.children.length > 0) {
+                    // Sakrij sve, prikaži samo ovaj tab
+                    document.querySelectorAll('[id$="-content"]').forEach(c => c.classList.add('hidden'));
+                    el.classList.remove('hidden');
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    return;
+                }
+            }
 
             // Hide all content sections
             document.getElementById('dashboard-content').classList.add('hidden');
