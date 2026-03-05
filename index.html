@@ -651,6 +651,36 @@
             </div>
         </div>
 
+        <!-- PRIMAČI PREGLED (Admin - odabir primača + godišnji prikaz sječe) -->
+        <div id="primaci-pregled-content" class="container hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <h2>👷 Primači</h2>
+                <button onclick="exportVisibleTable('primaci-pregled-content', 'Primac')" style="background: #7c2d12; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+            </div>
+
+            <!-- Dropdown za odabir primača -->
+            <div class="month-selector" style="margin-bottom: 12px;">
+                <label>👷 Izaberi primača:</label>
+                <select id="primaci-pregled-select" class="month-select" style="min-width: 220px;" onchange="loadPrimacYearlySjeca(this.value)">
+                    <option value="">-- Izaberi primača --</option>
+                </select>
+            </div>
+
+            <!-- Submenu -->
+            <div class="submenu">
+                <button class="submenu-tab active" onclick="switchPrimaciPregledSubmenu('godisnja-sjeca')">🪓 Sječa u tekućoj godini</button>
+            </div>
+
+            <!-- Sječa u tekućoj godini -->
+            <div id="primaci-pregled-godisnja-view" class="submenu-content">
+                <div class="section">
+                    <div id="primaci-pregled-container">
+                        <p style="text-align:center;padding:40px;color:#6b7280;">Izaberi primača iz dropdown-a</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- KUPCI CONTENT (Prikaz po kupcima) -->
         <div id="kupci-content" class="container hidden">
             <!-- Submenu za Kupci -->

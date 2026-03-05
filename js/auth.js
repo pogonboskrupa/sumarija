@@ -122,6 +122,7 @@
                     { id: 'mjesecni-sortimenti', icon: '📅', label: 'Sječa/otprema' },
                     { id: 'primaci', icon: '👷', label: 'SJEČA' },
                     { id: 'otpremaci', icon: '🚛', label: 'OTPREMA' },
+                    { id: 'primaci-pregled', icon: '👷', label: 'Primači' },
                     { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
                     { id: 'pending-unosi', icon: '📋', label: 'Dodani unosi', hasBadge: true },
                     { id: 'ostalo', icon: '⚙️', label: 'Ostalo' }
