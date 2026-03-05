@@ -312,11 +312,17 @@
 
                     // If cache is fresh, return it immediately
                     if (age < cacheTTL) {
-                        perfMetrics.cacheHits++;
-                        showCacheIndicator(age);
-                        const cacheRetrievalTime = performance.now() - cacheCheckStart;
-                        logPerformance(`Cache HIT: ${path} (age: ${(age/1000).toFixed(1)}s)`, cacheRetrievalTime);
-                        return cachedData.data;
+                        // If cached data is an error response, clear it and fetch fresh
+                        if (cachedData.data && cachedData.data.error) {
+                            localStorage.removeItem(cacheKey);
+                            perfMetrics.cacheMisses++;
+                        } else {
+                            perfMetrics.cacheHits++;
+                            showCacheIndicator(age);
+                            const cacheRetrievalTime = performance.now() - cacheCheckStart;
+                            logPerformance(`Cache HIT: ${path} (age: ${(age/1000).toFixed(1)}s)`, cacheRetrievalTime);
+                            return cachedData.data;
+                        }
                     } else {
                         perfMetrics.cacheMisses++;
                     }
@@ -359,6 +365,11 @@
                     const data = await response.json();
 
                     logPerformance(`API call: ${path}`, performance.now() - fetchStart);
+
+                    // Do NOT cache API error responses - let them be retried fresh
+                    if (data.error) {
+                        return data;
+                    }
 
                     // Store in cache (handle QuotaExceededError)
                     try {
@@ -1094,6 +1105,12 @@
                 // 🔄 BACKGROUND REFRESH: Fetch fresh data in background (180s timeout - super patient!)
                 try {
                     const data = await fetchWithCache(url, cacheKey, false, 180000);
+
+                    if (data.error) {
+                        if (!hasCachedData) throw new Error(data.error);
+                        markTabRendered('dashboard');
+                        return;
+                    }
 
                     // Silently update with fresh data
                     await renderDashboard(data);
