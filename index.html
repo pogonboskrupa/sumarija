@@ -651,6 +651,127 @@
             </div>
         </div>
 
+        <!-- PRIMACI ADMIN CONTENT (Primači na šuma panju - admin panel) -->
+        <div id="primaci-admin-content" class="container hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+                <h2 style="margin: 0;">🌲 Primači na šuma panju</h2>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <select id="primaci-admin-select" onchange="onPrimaciAdminSelectChange()" style="padding: 8px 12px; border-radius: 8px; border: 2px solid #10b981; font-size: 14px; min-width: 200px; background: white;">
+                        <option value="">-- Izaberi primača --</option>
+                    </select>
+                    <select id="primaci-admin-year-select" onchange="onPrimaciAdminYearChange()" style="padding: 8px 12px; border-radius: 8px; border: 2px solid #10b981; font-size: 14px; background: white;">
+                    </select>
+                    <button onclick="exportVisibleTable('primaci-admin-content', 'Primac-Admin')" style="background: #047857; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+                </div>
+            </div>
+
+            <!-- Submenu - skriven dok se ne izabere primač -->
+            <div class="submenu" id="primaci-admin-submenu" style="display: none;">
+                <button class="submenu-tab active" onclick="switchPrimaciAdminSubmenu('pregled')">🪓 Pregled sječe</button>
+                <button class="submenu-tab" onclick="switchPrimaciAdminSubmenu('godisnji')">📅 Godišnji prikaz</button>
+                <button class="submenu-tab" onclick="switchPrimaciAdminSubmenu('odjeli')">🏭 Prikaz po odjelima</button>
+            </div>
+
+            <!-- Placeholder kad primač nije izabran -->
+            <div id="primaci-admin-placeholder" style="text-align: center; padding: 60px 20px; color: #6b7280;">
+                <div style="font-size: 48px; margin-bottom: 16px;">👷</div>
+                <p style="font-size: 16px; margin: 0;">Izaberite primača iz dropdown menija za prikaz podataka.</p>
+            </div>
+
+            <!-- Loading indikator -->
+            <div id="primaci-admin-loading" class="hidden" style="text-align: center; padding: 40px;">
+                <div class="loading-icon" style="font-size: 32px;">⏳</div>
+                <p>Učitavanje podataka...</p>
+            </div>
+
+            <!-- Pregled sječe (dnevni prikaz + chart) -->
+            <div id="primaci-admin-pregled-view" class="submenu-content hidden">
+                <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <h3 style="margin: 0; color: #047857;" id="primaci-admin-primac-name"></h3>
+                    <span id="primaci-admin-total-badge" style="background: #047857; color: white; padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: 700;"></span>
+                </div>
+
+                <!-- Dnevni chart sa mjesec selektorom -->
+                <div style="margin-bottom: 20px; background: white; border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="margin: 0; color: #374151;">Dnevni prikaz</h4>
+                        <select id="primaci-admin-month-select" onchange="onPrimaciAdminMonthChange()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px;">
+                            <option value="1">Januar</option>
+                            <option value="2">Februar</option>
+                            <option value="3">Mart</option>
+                            <option value="4">April</option>
+                            <option value="5">Maj</option>
+                            <option value="6">Juni</option>
+                            <option value="7">Juli</option>
+                            <option value="8">August</option>
+                            <option value="9">Septembar</option>
+                            <option value="10">Oktobar</option>
+                            <option value="11">Novembar</option>
+                            <option value="12">Decembar</option>
+                        </select>
+                    </div>
+                    <canvas id="primaci-admin-daily-chart" height="200"></canvas>
+                </div>
+
+                <!-- Mjesečni chart -->
+                <div style="margin-bottom: 20px; background: white; border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb;">
+                    <h4 style="margin: 0 0 12px 0; color: #374151;">Mjesečni pregled</h4>
+                    <canvas id="primaci-admin-monthly-chart" height="200"></canvas>
+                </div>
+
+                <!-- Tabela sa svim unosima -->
+                <div style="background: white; border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="margin: 0; color: #374151;">Svi unosi</h4>
+                        <input type="text" id="primaci-admin-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterPrimaciAdminTable()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px; width: 200px;">
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table" id="primaci-admin-table">
+                            <thead id="primaci-admin-header"></thead>
+                            <tbody id="primaci-admin-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Godišnji prikaz -->
+            <div id="primaci-admin-godisnji-view" class="submenu-content hidden">
+                <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+                    <h3 style="margin: 0; color: #047857;" id="primaci-admin-godisnji-name"></h3>
+                    <span id="primaci-admin-godisnji-year-badge" style="background: #fbbf24; color: #78350f; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700;"></span>
+                </div>
+
+                <!-- Godišnji chart -->
+                <div style="margin-bottom: 20px; background: white; border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb;">
+                    <h4 style="margin: 0 0 12px 0; color: #374151;">Godišnji pregled po mjesecima</h4>
+                    <canvas id="primaci-admin-yearly-chart" height="200"></canvas>
+                </div>
+
+                <!-- Godišnja tabela -->
+                <div style="background: white; border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb;">
+                    <div class="table-wrapper">
+                        <table class="data-table" id="primaci-admin-godisnji-table">
+                            <thead id="primaci-admin-godisnji-header"></thead>
+                            <tbody id="primaci-admin-godisnji-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prikaz po odjelima -->
+            <div id="primaci-admin-odjeli-view" class="submenu-content hidden">
+                <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+                    <h3 style="margin: 0; color: #047857;" id="primaci-admin-odjeli-name"></h3>
+                </div>
+                <div id="primaci-admin-odjeli-container"></div>
+                <div style="display: flex; justify-content: center; gap: 10px; margin-top: 16px; align-items: center;">
+                    <button id="primaci-admin-odjeli-prev" onclick="prevPagePrimaciAdminOdjeli()" class="submenu-tab" style="padding: 6px 16px;">← Prethodna</button>
+                    <span id="primaci-admin-odjeli-page-info" style="font-size: 13px; color: #6b7280;">Stranica 1</span>
+                    <button id="primaci-admin-odjeli-next" onclick="nextPagePrimaciAdminOdjeli()" class="submenu-tab" style="padding: 6px 16px;">Sledeća →</button>
+                </div>
+            </div>
+        </div>
+
         <!-- KUPCI CONTENT (Prikaz po kupcima) -->
         <div id="kupci-content" class="container hidden">
             <!-- Submenu za Kupci -->

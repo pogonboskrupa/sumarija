@@ -87,6 +87,10 @@ function doGet(e) {
       return handlePrimacOdjeli(e.parameter.year, e.parameter.username, e.parameter.password, e.parameter.limit);
     } else if (path === 'otpremac-odjeli') {
       return handleOtpremacOdjeli(e.parameter.year, e.parameter.username, e.parameter.password, e.parameter.limit);
+    } else if (path === 'primac-detail-admin') {
+      return handlePrimacDetailAdmin(e.parameter.year, e.parameter.username, e.parameter.password, e.parameter.primacName);
+    } else if (path === 'primac-odjeli-admin') {
+      return handlePrimacOdjeliAdmin(e.parameter.year, e.parameter.username, e.parameter.password, e.parameter.primacName, e.parameter.limit);
     } else if (path === 'add-sjeca') {
       return handleAddSjeca(e.parameter);
     } else if (path === 'add-otprema') {

@@ -2958,6 +2958,143 @@ function handlePrimacOdjeli(year, username, password, limit) {
 }
 
 // ========================================
+// ADMIN: PRIMAC DETAIL - Prikaz podataka za izabranog primača (admin only)
+// ========================================
+function handlePrimacDetailAdmin(year, username, password, primacName) {
+  const loginResult = JSON.parse(handleLogin(username, password).getContent());
+  if (!loginResult.success) {
+    return createJsonResponse({ error: "Unauthorized" }, false);
+  }
+  if (username !== ADMIN_USERNAME) {
+    return createJsonResponse({ error: "Samo admin može koristiti ovaj endpoint" }, false);
+  }
+  if (!primacName) {
+    return createJsonResponse({ error: "Parametar primacName je obavezan" }, false);
+  }
+
+  const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+  const primkaSheet = ss.getSheetByName("INDEKS_PRIMKA");
+  if (!primkaSheet) {
+    return createJsonResponse({ error: "INDEKS_PRIMKA sheet not found in BAZA_PODATAKA" }, false);
+  }
+
+  const primkaData = primkaSheet.getDataRange().getValues();
+  const unosi = [];
+
+  for (let i = 1; i < primkaData.length; i++) {
+    const row = primkaData[i];
+    const datum = row[PRIMKA_COL.DATE];
+    const primac = row[PRIMKA_COL.RADNIK];
+    const odjel = row[PRIMKA_COL.ODJEL];
+    const radiliste = row[PRIMKA_COL.RADILISTE];
+    const izvodjac = row[PRIMKA_COL.IZVODJAC];
+    const kubik = parseFloat(row[PRIMKA_COL.UKUPNO]) || 0;
+
+    if (!datum || !primac) continue;
+    const datumObj = parseDate(datum);
+    if (datumObj.getFullYear() !== parseInt(year)) continue;
+    if (String(primac).trim().toLowerCase() !== String(primacName).trim().toLowerCase()) continue;
+
+    const sortimenti = {};
+    for (let j = 0; j < 20; j++) {
+      sortimenti[SORTIMENTI_NAZIVI[j]] = parseFloat(row[PRIMKA_COL.SORT_START + j]) || 0;
+    }
+
+    unosi.push({
+      datum: formatDate(datumObj), datumObj: datumObj, odjel: odjel,
+      radiliste: radiliste, izvodjac: izvodjac, primac: String(primac).trim(),
+      sortimenti: sortimenti, ukupno: kubik
+    });
+  }
+
+  unosi.sort((a, b) => b.datumObj - a.datumObj);
+
+  return createJsonResponse({
+    sortimentiNazivi: SORTIMENTI_NAZIVI,
+    unosi: unosi.map(u => ({ datum: u.datum, odjel: u.odjel, radiliste: u.radiliste, izvodjac: u.izvodjac, primac: u.primac, sortimenti: u.sortimenti, ukupno: u.ukupno }))
+  }, true);
+}
+
+// ========================================
+// ADMIN: PRIMAC ODJELI - Prikaz po odjelima za izabranog primača (admin only)
+// ========================================
+function handlePrimacOdjeliAdmin(year, username, password, primacName, limit) {
+  const loginResult = JSON.parse(handleLogin(username, password).getContent());
+  if (!loginResult.success) {
+    return createJsonResponse({ error: "Unauthorized" }, false);
+  }
+  if (username !== ADMIN_USERNAME) {
+    return createJsonResponse({ error: "Samo admin može koristiti ovaj endpoint" }, false);
+  }
+  if (!primacName) {
+    return createJsonResponse({ error: "Parametar primacName je obavezan" }, false);
+  }
+
+  const odjeliLimit = limit ? parseInt(limit) : 15;
+  const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+  const primkaSheet = ss.getSheetByName("INDEKS_PRIMKA");
+  if (!primkaSheet) {
+    return createJsonResponse({ error: "INDEKS_PRIMKA sheet not found in BAZA_PODATAKA" }, false);
+  }
+
+  const primkaData = primkaSheet.getDataRange().getValues();
+  const odjeliMap = {};
+
+  for (let i = 1; i < primkaData.length; i++) {
+    const row = primkaData[i];
+    const datum = row[PRIMKA_COL.DATE];
+    const primac = row[PRIMKA_COL.RADNIK];
+    const odjel = row[PRIMKA_COL.ODJEL];
+    const kubik = parseFloat(row[PRIMKA_COL.UKUPNO]) || 0;
+
+    if (!datum || !primac || !odjel) continue;
+    const datumObj = parseDate(datum);
+    if (String(primac).trim().toLowerCase() !== String(primacName).trim().toLowerCase()) continue;
+
+    if (!odjeliMap[odjel]) {
+      odjeliMap[odjel] = { sortimenti: {}, ukupno: 0, zadnjiDatum: null };
+      for (let s = 0; s < SORTIMENTI_NAZIVI.length; s++) {
+        odjeliMap[odjel].sortimenti[SORTIMENTI_NAZIVI[s]] = 0;
+      }
+    }
+
+    for (let j = 0; j < 20; j++) {
+      odjeliMap[odjel].sortimenti[SORTIMENTI_NAZIVI[j]] += parseFloat(row[PRIMKA_COL.SORT_START + j]) || 0;
+    }
+    odjeliMap[odjel].ukupno += kubik;
+    if (!odjeliMap[odjel].zadnjiDatum || datumObj > odjeliMap[odjel].zadnjiDatum) {
+      odjeliMap[odjel].zadnjiDatum = datumObj;
+    }
+  }
+
+  const odjeliArray = [];
+  for (const odjelNaziv in odjeliMap) {
+    const o = odjeliMap[odjelNaziv];
+    odjeliArray.push({
+      odjel: odjelNaziv, sortimenti: o.sortimenti, ukupno: o.ukupno,
+      zadnjiDatumStr: o.zadnjiDatum ? formatDate(o.zadnjiDatum) : '',
+      zadnjiDatum: o.zadnjiDatum,
+      godina: o.zadnjiDatum ? o.zadnjiDatum.getFullYear() : null
+    });
+  }
+
+  odjeliArray.sort((a, b) => {
+    if (!a.zadnjiDatum && !b.zadnjiDatum) return 0;
+    if (!a.zadnjiDatum) return 1;
+    if (!b.zadnjiDatum) return -1;
+    return b.zadnjiDatum - a.zadnjiDatum;
+  });
+
+  return createJsonResponse({
+    sortimentiNazivi: SORTIMENTI_NAZIVI,
+    odjeli: odjeliArray.slice(0, odjeliLimit).map(o => ({
+      odjel: o.odjel, sortimenti: o.sortimenti, ukupno: o.ukupno,
+      zadnjiDatum: o.zadnjiDatumStr, godina: o.godina
+    }))
+  }, true);
+}
+
+// ========================================
 // OTPREMAC ODJELI API - Prikaz po odjelima za otpremača
 // ========================================
 
@@ -5947,6 +6084,10 @@ function doGet(e) {
       return handlePrimacOdjeli(e.parameter.year, e.parameter.username, e.parameter.password, e.parameter.limit);
     } else if (path === 'otpremac-odjeli') {
       return handleOtpremacOdjeli(e.parameter.year, e.parameter.username, e.parameter.password, e.parameter.limit);
+    } else if (path === 'primac-detail-admin') {
+      return handlePrimacDetailAdmin(e.parameter.year, e.parameter.username, e.parameter.password, e.parameter.primacName);
+    } else if (path === 'primac-odjeli-admin') {
+      return handlePrimacOdjeliAdmin(e.parameter.year, e.parameter.username, e.parameter.password, e.parameter.primacName, e.parameter.limit);
     } else if (path === 'add-sjeca') {
       return handleAddSjeca(e.parameter);
     } else if (path === 'add-otprema') {

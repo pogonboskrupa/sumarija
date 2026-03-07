@@ -5757,6 +5757,415 @@
             }
         }
 
+        // ========================================
+        // ADMIN: PRIMAČI NA ŠUMA PANJU
+        // ========================================
+
+        // Globalne varijable za primaci-admin tab
+        var primaciAdminData = null;         // Cached data od primac-detail-admin
+        var primaciAdminOdjeliData = null;   // Cached data od primac-odjeli-admin
+        var primaciAdminOdjeliPage = 0;
+        var primaciAdminOdjeliPageSize = 5;
+        var _primaciAdminCurrentSubmenu = 'pregled';
+
+        // Inicijalizacija taba - popuni dropdown sa primačima
+        async function loadPrimaciAdminTab() {
+            var content = document.getElementById('primaci-admin-content');
+            content.classList.remove('hidden');
+
+            var yearSelect = document.getElementById('primaci-admin-year-select');
+            if (!yearSelect.options.length || yearSelect.options.length <= 1) {
+                var currentYear = new Date().getFullYear();
+                yearSelect.innerHTML = '';
+                for (var y = currentYear; y >= 2024; y--) {
+                    var opt = document.createElement('option');
+                    opt.value = y;
+                    opt.textContent = y;
+                    yearSelect.appendChild(opt);
+                }
+            }
+
+            // Popuni month selector sa default na tekući mjesec
+            var monthSelect = document.getElementById('primaci-admin-month-select');
+            if (monthSelect) {
+                monthSelect.value = new Date().getMonth() + 1;
+            }
+
+            // Dohvati listu primača iz primaci endpoint-a
+            var primacSelect = document.getElementById('primaci-admin-select');
+            if (primacSelect.options.length <= 1) {
+                try {
+                    var year = yearSelect.value || new Date().getFullYear();
+                    var url = buildApiUrl('primaci', { year: year });
+                    var data = await fetchWithCache(url, 'cache_primaci_' + year);
+                    if (data && data.primaci) {
+                        data.primaci.forEach(function(p) {
+                            var opt = document.createElement('option');
+                            opt.value = p.primac;
+                            opt.textContent = p.primac + ' (' + p.ukupno.toFixed(0) + ' m³)';
+                            primacSelect.appendChild(opt);
+                        });
+                    }
+                } catch (err) {
+                    console.error('Greška pri učitavanju liste primača:', err);
+                }
+            }
+
+            markTabRendered('primaci-admin');
+        }
+
+        // Kada se izabere primač iz dropdown-a
+        function onPrimaciAdminSelectChange() {
+            var primacName = document.getElementById('primaci-admin-select').value;
+            if (!primacName) {
+                document.getElementById('primaci-admin-submenu').style.display = 'none';
+                document.getElementById('primaci-admin-placeholder').style.display = 'block';
+                document.getElementById('primaci-admin-pregled-view').classList.add('hidden');
+                document.getElementById('primaci-admin-godisnji-view').classList.add('hidden');
+                document.getElementById('primaci-admin-odjeli-view').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('primaci-admin-submenu').style.display = '';
+            document.getElementById('primaci-admin-placeholder').style.display = 'none';
+
+            // Reset submenu to "Pregled sječe"
+            _primaciAdminCurrentSubmenu = 'pregled';
+            var submenuTabs = document.querySelectorAll('#primaci-admin-content .submenu-tab');
+            submenuTabs.forEach(function(t, i) { t.classList.toggle('active', i === 0); });
+
+            // Reset cached data
+            primaciAdminData = null;
+            primaciAdminOdjeliData = null;
+
+            // Load pregled sječe
+            loadPrimaciAdminData();
+        }
+
+        // Kada se promijeni godina
+        function onPrimaciAdminYearChange() {
+            var primacName = document.getElementById('primaci-admin-select').value;
+            if (!primacName) return;
+
+            // Resetuj primac listu za novu godinu
+            var primacSelect = document.getElementById('primaci-admin-select');
+            var selectedPrimac = primacSelect.value;
+            // Ponovo učitaj listu za novu godinu
+            while (primacSelect.options.length > 1) primacSelect.remove(1);
+
+            var year = document.getElementById('primaci-admin-year-select').value;
+            var url = buildApiUrl('primaci', { year: year });
+            fetchWithCache(url, 'cache_primaci_' + year).then(function(data) {
+                if (data && data.primaci) {
+                    data.primaci.forEach(function(p) {
+                        var opt = document.createElement('option');
+                        opt.value = p.primac;
+                        opt.textContent = p.primac + ' (' + p.ukupno.toFixed(0) + ' m³)';
+                        primacSelect.appendChild(opt);
+                    });
+                    // Re-selektuj istog primača ako postoji
+                    if (selectedPrimac) {
+                        primacSelect.value = selectedPrimac;
+                        if (primacSelect.value === selectedPrimac) {
+                            primaciAdminData = null;
+                            primaciAdminOdjeliData = null;
+                            loadPrimaciAdminData();
+                        }
+                    }
+                }
+            });
+        }
+
+        // Kada se promijeni mjesec za daily chart
+        function onPrimaciAdminMonthChange() {
+            if (!primaciAdminData) return;
+            var year = document.getElementById('primaci-admin-year-select').value;
+            var month = document.getElementById('primaci-admin-month-select').value;
+            createWorkerDailyChart('primaci-admin-daily-chart', primaciAdminData.unosi, month, year, '#047857', '#10b981');
+        }
+
+        // Učitaj podatke za izabranog primača (Pregled sječe)
+        async function loadPrimaciAdminData() {
+            var primacName = document.getElementById('primaci-admin-select').value;
+            var year = document.getElementById('primaci-admin-year-select').value;
+            if (!primacName) return;
+
+            var loading = document.getElementById('primaci-admin-loading');
+            loading.classList.remove('hidden');
+            document.getElementById('primaci-admin-pregled-view').classList.add('hidden');
+            document.getElementById('primaci-admin-godisnji-view').classList.add('hidden');
+            document.getElementById('primaci-admin-odjeli-view').classList.add('hidden');
+
+            try {
+                var url = buildApiUrl('primac-detail-admin', { year: year, primacName: primacName });
+                var cacheKey = 'cache_primac_detail_admin_' + primacName + '_' + year;
+                var data = await fetchWithCache(url, cacheKey);
+
+                if (data.error) throw new Error(data.error);
+
+                primaciAdminData = data;
+
+                // Ime i ukupno badge
+                var totalKubik = 0;
+                data.unosi.forEach(function(u) { totalKubik += u.ukupno; });
+
+                document.getElementById('primaci-admin-primac-name').textContent = primacName;
+                document.getElementById('primaci-admin-total-badge').textContent = 'Ukupno: ' + totalKubik.toFixed(2) + ' m³';
+
+                // Header tabele
+                var headerHTML = '<tr>' +
+                    '<th onclick="sortTable(0, \'primaci-admin-table\')">Datum ⇅</th>' +
+                    '<th onclick="sortTable(1, \'primaci-admin-table\')">Odjel ⇅</th>' +
+                    data.sortimentiNazivi.map(function(s, i) {
+                        return '<th class="sortiment-col" onclick="sortTable(' + (i+2) + ', \'primaci-admin-table\')">' + s + ' ⇅</th>';
+                    }).join('') +
+                    '<th class="ukupno-col" onclick="sortTable(' + (data.sortimentiNazivi.length + 2) + ', \'primaci-admin-table\')">Ukupno ⇅</th>' +
+                    '</tr>';
+                document.getElementById('primaci-admin-header').innerHTML = headerHTML;
+
+                // Body tabele sa totalima
+                var totals = { sortimenti: {}, ukupno: 0 };
+                data.sortimentiNazivi.forEach(function(s) { totals.sortimenti[s] = 0; });
+
+                var bodyHTML = data.unosi.map(function(u) {
+                    data.sortimentiNazivi.forEach(function(s) {
+                        totals.sortimenti[s] += (u.sortimenti[s] || 0);
+                    });
+                    totals.ukupno += u.ukupno;
+
+                    var sortimentiCells = data.sortimentiNazivi.map(function(s) {
+                        var val = u.sortimenti[s] || 0;
+                        return '<td class="sortiment-col">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
+                    }).join('');
+
+                    var dateParts = u.datum.split('.');
+                    var mjesec = dateParts.length >= 2 ? parseInt(dateParts[1]) : 1;
+
+                    return '<tr class="mjesec-' + mjesec + '">' +
+                        '<td style="font-weight: 500;">' + u.datum + '</td>' +
+                        '<td>' + u.odjel + '</td>' +
+                        sortimentiCells +
+                        '<td class="ukupno-col">' + u.ukupno.toFixed(2) + '</td>' +
+                        '</tr>';
+                }).join('');
+
+                var totalsCells = data.sortimentiNazivi.map(function(s) {
+                    var val = totals.sortimenti[s];
+                    return '<td class="sortiment-col">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
+                }).join('');
+
+                bodyHTML += '<tr class="totals-row">' +
+                    '<td colspan="2" style="text-align: left; font-weight: 700;">UKUPNO</td>' +
+                    totalsCells +
+                    '<td class="ukupno-col">' + totals.ukupno.toFixed(2) + '</td>' +
+                    '</tr>';
+
+                document.getElementById('primaci-admin-body').innerHTML = bodyHTML;
+
+                // Mjesečni chart
+                await createWorkerMonthlyChart('primaci-admin-monthly-chart', data.unosi, '#047857', '#10b981');
+
+                // Daily chart za izabrani mjesec
+                var monthSelect = document.getElementById('primaci-admin-month-select');
+                var selectedMonth = monthSelect ? monthSelect.value : (new Date().getMonth() + 1);
+                await createWorkerDailyChart('primaci-admin-daily-chart', data.unosi, selectedMonth, year, '#047857', '#10b981');
+
+                loading.classList.add('hidden');
+                document.getElementById('primaci-admin-pregled-view').classList.remove('hidden');
+
+            } catch (error) {
+                loading.classList.add('hidden');
+                showError('Greška', 'Greška pri učitavanju podataka: ' + error.message);
+            }
+        }
+
+        // Godišnji prikaz za izabranog primača
+        async function loadPrimaciAdminGodisnji() {
+            var primacName = document.getElementById('primaci-admin-select').value;
+            var year = document.getElementById('primaci-admin-year-select').value;
+            if (!primacName) return;
+
+            try {
+                var data = primaciAdminData;
+                if (!data) {
+                    var url = buildApiUrl('primac-detail-admin', { year: year, primacName: primacName });
+                    data = await fetchWithCache(url, 'cache_primac_detail_admin_' + primacName + '_' + year);
+                    if (data.error) throw new Error(data.error);
+                    primaciAdminData = data;
+                }
+
+                document.getElementById('primaci-admin-godisnji-name').textContent = primacName;
+                document.getElementById('primaci-admin-godisnji-year-badge').textContent = year;
+
+                // Grupiši po mjesecima
+                var mjeseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+                var monthlyData = {};
+                for (var i = 1; i <= 12; i++) {
+                    monthlyData[i] = { mjesec: mjeseci[i-1], sortimenti: {}, ukupno: 0 };
+                    data.sortimentiNazivi.forEach(function(s) { monthlyData[i].sortimenti[s] = 0; });
+                }
+
+                data.unosi.forEach(function(u) {
+                    var dateParts = u.datum.split('.');
+                    if (dateParts.length >= 2) {
+                        var mjesec = parseInt(dateParts[1]);
+                        monthlyData[mjesec].ukupno += u.ukupno || 0;
+                        data.sortimentiNazivi.forEach(function(s) {
+                            monthlyData[mjesec].sortimenti[s] += (u.sortimenti[s] || 0);
+                        });
+                    }
+                });
+
+                // Header
+                var headerHTML = '<tr><th>Mjesec</th>' +
+                    data.sortimentiNazivi.map(function(s) { return '<th class="sortiment-col">' + s + '</th>'; }).join('') +
+                    '<th class="ukupno-col">Ukupno</th></tr>';
+                document.getElementById('primaci-admin-godisnji-header').innerHTML = headerHTML;
+
+                // Body
+                var totalSortimenti = {};
+                data.sortimentiNazivi.forEach(function(s) { totalSortimenti[s] = 0; });
+                var totalUkupno = 0;
+
+                var bodyHTML = mjeseci.map(function(mjesec, idx) {
+                    var mjesecNum = idx + 1;
+                    var md = monthlyData[mjesecNum];
+                    totalUkupno += md.ukupno;
+
+                    var sortimentiCells = data.sortimentiNazivi.map(function(s) {
+                        totalSortimenti[s] += md.sortimenti[s];
+                        var val = md.sortimenti[s];
+                        return '<td class="sortiment-col">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
+                    }).join('');
+
+                    return '<tr class="mjesec-' + mjesecNum + '">' +
+                        '<td style="font-weight: 700;">' + mjesec + '</td>' +
+                        sortimentiCells +
+                        '<td class="ukupno-col">' + (md.ukupno > 0 ? md.ukupno.toFixed(2) : '-') + '</td>' +
+                        '</tr>';
+                }).join('');
+
+                // Totals red
+                var totalsCells = data.sortimentiNazivi.map(function(s) {
+                    var val = totalSortimenti[s];
+                    return '<td class="sortiment-col">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
+                }).join('');
+
+                bodyHTML += '<tr class="totals-row">' +
+                    '<td style="text-align: left; font-weight: 700;">GODIŠNJE UKUPNO</td>' +
+                    totalsCells +
+                    '<td class="ukupno-col">' + totalUkupno.toFixed(2) + '</td>' +
+                    '</tr>';
+
+                document.getElementById('primaci-admin-godisnji-body').innerHTML = bodyHTML;
+
+                // Yearly chart
+                await createWorkerYearlyChart('primaci-admin-yearly-chart', data.unosi, '#047857', '#10b981');
+
+            } catch (error) {
+                showError('Greška', 'Greška pri učitavanju godišnjeg prikaza: ' + error.message);
+            }
+        }
+
+        // Prikaz po odjelima za izabranog primača
+        async function loadPrimaciAdminOdjeli() {
+            var primacName = document.getElementById('primaci-admin-select').value;
+            if (!primacName) return;
+
+            var loading = document.getElementById('primaci-admin-loading');
+
+            try {
+                if (!primaciAdminOdjeliData) {
+                    loading.classList.remove('hidden');
+                    var url = buildApiUrl('primac-odjeli-admin', { primacName: primacName, limit: 50 });
+                    var cacheKey = 'cache_primac_odjeli_admin_' + primacName;
+                    var data = await fetchWithCache(url, cacheKey);
+
+                    if (data.error) throw new Error(data.error);
+                    primaciAdminOdjeliData = data;
+                    loading.classList.add('hidden');
+                }
+
+                document.getElementById('primaci-admin-odjeli-name').textContent = primacName + ' - Odjeli';
+                primaciAdminOdjeliPage = 0;
+                renderPrimaciAdminOdjeliPage();
+
+            } catch (error) {
+                loading.classList.add('hidden');
+                showError('Greška', 'Greška pri učitavanju odjela: ' + error.message);
+            }
+        }
+
+        // Renderuj stranicu odjela za primaci-admin
+        function renderPrimaciAdminOdjeliPage() {
+            if (!primaciAdminOdjeliData || !primaciAdminOdjeliData.odjeli) return;
+
+            var start = primaciAdminOdjeliPage * primaciAdminOdjeliPageSize;
+            var end = Math.min(start + primaciAdminOdjeliPageSize, primaciAdminOdjeliData.odjeli.length);
+            var pageOdjeli = primaciAdminOdjeliData.odjeli.slice(start, end);
+
+            var html = '';
+            pageOdjeli.forEach(function(odjel) {
+                var yearBadge = odjel.godina ? '<span style="background: #fbbf24; color: #78350f; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; margin-left: 10px;">' + odjel.godina + '</span>' : '';
+
+                var sortHeaderCells = primaciAdminOdjeliData.sortimentiNazivi.map(function(s) {
+                    return '<th class="sortiment-col">' + s + '</th>';
+                }).join('');
+
+                var sortValCells = primaciAdminOdjeliData.sortimentiNazivi.map(function(s) {
+                    var val = odjel.sortimenti[s] || 0;
+                    return '<td class="sortiment-col">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
+                }).join('');
+
+                var sortPctCells = primaciAdminOdjeliData.sortimentiNazivi.map(function(s) {
+                    var val = odjel.sortimenti[s] || 0;
+                    var pct = odjel.ukupno > 0 ? (val / odjel.ukupno) * 100 : 0;
+                    return '<td class="sortiment-col">' + (pct > 0 ? pct.toFixed(1) + '%' : '-') + '</td>';
+                }).join('');
+
+                html += '<div style="margin-bottom: 24px; border: 2px solid #10b981; border-radius: 12px; padding: 20px; background: #f0fdf4;">' +
+                    '<h3 style="color: #047857; margin-bottom: 12px;">📁 ' + odjel.odjel + ' ' + yearBadge + '</h3>' +
+                    '<p style="font-size: 13px; color: #6b7280; margin-bottom: 12px;">Zadnji unos: ' + (odjel.zadnjiDatum || 'N/A') + ' | Ukupno: <strong>' + odjel.ukupno.toFixed(2) + ' m³</strong></p>' +
+                    '<h4 style="font-size: 14px; margin-bottom: 8px; color: #059669;">Apsolutne vrijednosti (m³)</h4>' +
+                    '<div class="kupci-table-wrapper" style="margin-bottom: 16px;">' +
+                    '<table class="kupci-table"><thead><tr>' + sortHeaderCells + '<th class="ukupno-col">Ukupno</th></tr></thead>' +
+                    '<tbody><tr>' + sortValCells + '<td class="ukupno-col">' + odjel.ukupno.toFixed(2) + '</td></tr></tbody></table></div>' +
+                    '<h4 style="font-size: 14px; margin-bottom: 8px; color: #059669;">Procentualni udio (%)</h4>' +
+                    '<div class="kupci-table-wrapper">' +
+                    '<table class="kupci-table"><thead><tr>' + sortHeaderCells + '</tr></thead>' +
+                    '<tbody><tr>' + sortPctCells + '</tr></tbody></table></div>' +
+                    '</div>';
+            });
+
+            if (pageOdjeli.length === 0) {
+                html = '<div style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka o odjelima za ovog primača.</div>';
+            }
+
+            document.getElementById('primaci-admin-odjeli-container').innerHTML = html;
+
+            // Pagination
+            var totalPages = Math.ceil(primaciAdminOdjeliData.odjeli.length / primaciAdminOdjeliPageSize);
+            document.getElementById('primaci-admin-odjeli-page-info').textContent = 'Stranica ' + (primaciAdminOdjeliPage + 1) + ' od ' + Math.max(totalPages, 1);
+            document.getElementById('primaci-admin-odjeli-prev').disabled = primaciAdminOdjeliPage === 0;
+            document.getElementById('primaci-admin-odjeli-next').disabled = primaciAdminOdjeliPage >= totalPages - 1;
+        }
+
+        function prevPagePrimaciAdminOdjeli() {
+            if (primaciAdminOdjeliPage > 0) {
+                primaciAdminOdjeliPage--;
+                renderPrimaciAdminOdjeliPage();
+            }
+        }
+
+        function nextPagePrimaciAdminOdjeli() {
+            if (!primaciAdminOdjeliData) return;
+            var totalPages = Math.ceil(primaciAdminOdjeliData.odjeli.length / primaciAdminOdjeliPageSize);
+            if (primaciAdminOdjeliPage < totalPages - 1) {
+                primaciAdminOdjeliPage++;
+                renderPrimaciAdminOdjeliPage();
+            }
+        }
+
         // Load otpremac odjeli data (ZADNJIH 15 ODJELA IZ SVIH GODINA)
         // ✅ OPTIMIZOVANO: Jedan API poziv sa limit=15 (backend procesira sve godine)
         async function loadOtpremacOdjeli() {
