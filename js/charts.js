@@ -210,9 +210,11 @@
             // Destroy existing chart if exists
             if (canvasId === 'primac-chart' && primacChart) {
                 primacChart.destroy();
-            }
-            if (canvasId === 'otpremac-chart' && otpremacChart) {
+            } else if (canvasId === 'otpremac-chart' && otpremacChart) {
                 otpremacChart.destroy();
+            } else {
+                var existingChart = Chart.getChart(canvas);
+                if (existingChart) existingChart.destroy();
             }
 
             // Group by month
@@ -336,9 +338,11 @@
             // Destroy existing chart if exists
             if (canvasId === 'primac-daily-chart' && primacDailyChart) {
                 primacDailyChart.destroy();
-            }
-            if (canvasId === 'otpremac-daily-chart' && otpremacDailyChart) {
+            } else if (canvasId === 'otpremac-daily-chart' && otpremacDailyChart) {
                 otpremacDailyChart.destroy();
+            } else {
+                var existingChart = Chart.getChart(canvas);
+                if (existingChart) existingChart.destroy();
             }
 
             // Filter by selected month
@@ -496,9 +500,11 @@
             // Destroy existing chart if exists
             if (canvasId === 'primac-yearly-chart' && primacYearlyChart) {
                 primacYearlyChart.destroy();
-            }
-            if (canvasId === 'otpremac-yearly-chart' && otpremacYearlyChart) {
+            } else if (canvasId === 'otpremac-yearly-chart' && otpremacYearlyChart) {
                 otpremacYearlyChart.destroy();
+            } else {
+                var existingChart = Chart.getChart(canvas);
+                if (existingChart) existingChart.destroy();
             }
 
             // Group by month
