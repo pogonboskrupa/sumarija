@@ -6268,12 +6268,33 @@
                     totalAbsCells + '</tr>';
 
                 // === TABELA 2: Procentualni udio - primači kao redovi ===
-                var pctRows = '';
-                primaciArr.forEach(function(p) {
-                    var cells = sortNazivi.map(function(s) {
+                // Izračunaj rankove po svakom sortimentu za obojenje (zlato/srebro/bronza)
+                var medalBoje = ['#FFD700', '#C0C0C0', '#CD7F32'];
+                var pctData = primaciArr.map(function(p) {
+                    return sortNazivi.map(function(s) {
                         var pVal = (p.sortimenti && p.sortimenti[s]) || 0;
-                        var pct = p.ukupno > 0 ? (pVal / p.ukupno) * 100 : 0;
-                        return '<td class="sortiment-col">' + (pct > 0 ? pct.toFixed(1) + '%' : '-') + '</td>';
+                        return p.ukupno > 0 ? (pVal / p.ukupno) * 100 : 0;
+                    });
+                });
+                // Za svaku kolonu odredi rang (top 3)
+                var colRanks = sortNazivi.map(function(s, colIdx) {
+                    var vals = pctData.map(function(row, rowIdx) { return { val: row[colIdx], idx: rowIdx }; })
+                        .filter(function(v) { return v.val > 0; })
+                        .sort(function(a, b) { return b.val - a.val; });
+                    var ranks = {};
+                    for (var r = 0; r < Math.min(3, vals.length); r++) {
+                        ranks[vals[r].idx] = r;
+                    }
+                    return ranks;
+                });
+
+                var pctRows = '';
+                primaciArr.forEach(function(p, pIdx) {
+                    var cells = sortNazivi.map(function(s, colIdx) {
+                        var pct = pctData[pIdx][colIdx];
+                        var rank = colRanks[colIdx][pIdx];
+                        var bg = rank !== undefined ? ' background: ' + medalBoje[rank] + ';' : '';
+                        return '<td class="sortiment-col" style="' + bg + '">' + (pct > 0 ? pct.toFixed(1) + '%' : '-') + '</td>';
                     }).join('');
                     pctRows += '<tr><td style="white-space: nowrap; font-weight: 500; position: sticky; left: 0; background: white; z-index: 1;">' + p.ime + '</td>' + cells + '</tr>';
                 });
