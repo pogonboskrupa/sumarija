@@ -6214,6 +6214,16 @@
                         return false;
                     });
 
+                    // Kanonski redoslijed sortimenta (isti kao SORTIMENTI_NAZIVI u config.gs)
+                    var SORTIMENTI_ORDER = [
+                        "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+                        "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+                        "F/L L", "I L", "II L", "III L", "TRUPCI L",
+                        "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI"
+                    ];
+                    // Subtotali - ne računaju se u ukupno jer su već sadržani u pojedinačnim
+                    var SUBTOTALI = { "Σ ČETINARI": true, "LIŠĆARI": true };
+
                     // Agregacija po odjelima
                     var odjeliMap = {};
                     var allSortimentiSet = {};
@@ -6228,14 +6238,20 @@
                             odjeliMap[odjel] = { odjel: odjel, sortimenti: {}, primaci: {}, ukupno: 0 };
                         }
                         odjeliMap[odjel].sortimenti[sortiment] = (odjeliMap[odjel].sortimenti[sortiment] || 0) + kolicina;
-                        odjeliMap[odjel].ukupno += kolicina;
-                        odjeliMap[odjel].primaci[primac] = (odjeliMap[odjel].primaci[primac] || 0) + kolicina;
+                        // Ne dodaj subtotale u ukupno (Σ ČETINARI i LIŠĆARI su zbrojevi pojedinačnih)
+                        if (!SUBTOTALI[sortiment]) {
+                            odjeliMap[odjel].ukupno += kolicina;
+                        }
+                        if (!SUBTOTALI[sortiment]) {
+                            odjeliMap[odjel].primaci[primac] = (odjeliMap[odjel].primaci[primac] || 0) + kolicina;
+                        }
                         allSortimentiSet[sortiment] = true;
                     });
 
                     // Sortiraj odjele po ukupno descending
                     var odjeliArr = Object.values(odjeliMap).sort(function(a, b) { return b.ukupno - a.ukupno; });
-                    var sortimentiNazivi = Object.keys(allSortimentiSet).sort();
+                    // Koristi kanonski redoslijed sortimenta umjesto abecednog
+                    var sortimentiNazivi = SORTIMENTI_ORDER.filter(function(s) { return allSortimentiSet[s]; });
 
                     odjeliDefaultData = { odjeli: odjeliArr, sortimentiNazivi: sortimentiNazivi };
                     if (loadingEl) loadingEl.style.display = 'none';
