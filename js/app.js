@@ -6319,7 +6319,7 @@
                     // Tabela 2: Procentualni udio sa primačima kao redovima
                     '<h4 style="font-size: 14px; margin: 0 0 8px 0; color: ' + boja.header + ';">Procentualni udio (%)</h4>' +
                     '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">' +
-                    '<table class="kupci-table"><thead><tr><th style="position: sticky; left: 0; background: inherit; z-index: 2;">Prima\u010D</th>' + sortHeaderCells + '</tr></thead>' +
+                    '<table class="kupci-table odjeli-pct-table"><thead><tr><th style="position: sticky; left: 0; background: inherit; z-index: 2;">Prima\u010D</th>' + sortHeaderCells + '</tr></thead>' +
                     '<tbody>' + pctRows + '</tbody></table></div>' +
                     '</div></div>';
             });

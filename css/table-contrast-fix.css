@@ -831,6 +831,12 @@ th[style*="color: white"] {
 }
 
 /* ============================================ */
+/* Odjeli procentualna tabela - poništi bold na zadnjem redu */
+.odjeli-pct-table tbody tr:last-child td {
+    font-weight: 500 !important;
+    font-size: inherit !important;
+}
+
 /* 🎨 STANJE ZALIHA - TABLE READABILITY */
 /* ============================================ */
 
