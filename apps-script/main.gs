@@ -87,6 +87,8 @@ function doGet(e) {
       return handlePrimacOdjeli(e.parameter.year, e.parameter.username, e.parameter.password, e.parameter.limit);
     } else if (path === 'otpremac-odjeli') {
       return handleOtpremacOdjeli(e.parameter.year, e.parameter.username, e.parameter.password, e.parameter.limit);
+    } else if (path === 'odjeli-all') {
+      return handleOdjeliAll(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'primac-detail-admin') {
       return handlePrimacDetailAdmin(e.parameter.year, e.parameter.username, e.parameter.password, e.parameter.primacName);
     } else if (path === 'primac-odjeli-admin') {

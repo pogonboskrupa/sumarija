@@ -6199,61 +6199,25 @@
                     containerEl.innerHTML = '';
 
                     var year = document.getElementById('primaci-admin-year-select').value || new Date().getFullYear();
-                    var primkeUrl = buildApiUrl('primke');
-                    var primkeData = await fetchWithCache(primkeUrl, 'cache_primke_odjeli_default');
+                    var odjeliUrl = buildApiUrl('odjeli-all', { year: year });
+                    var odjeliData = await fetchWithCache(odjeliUrl, 'cache_odjeli_all_' + year);
 
-                    if (primkeData.error) throw new Error(primkeData.error);
+                    if (odjeliData.error) throw new Error(odjeliData.error);
 
-                    // Filtriraj po godini
-                    var primke = (primkeData.primke || []).filter(function(p) {
-                        if (!p.datum) return false;
-                        var parts = p.datum.split('.');
-                        if (parts.length >= 3) {
-                            return parseInt(parts[2]) === parseInt(year);
-                        }
-                        return false;
+                    // Podaci dolaze već agregirani sa backenda (sortimenti po odjelu + primači + ukupno iz UKUPNO kolone)
+                    var odjeli = (odjeliData.odjeli || []).map(function(o) {
+                        return {
+                            odjel: o.odjel,
+                            sortimenti: o.sortimenti || {},
+                            ukupno: o.ukupno || 0,
+                            primaci: o.primaci || {}
+                        };
                     });
 
-                    // Kanonski redoslijed sortimenta (isti kao SORTIMENTI_NAZIVI u config.gs)
-                    var SORTIMENTI_ORDER = [
-                        "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
-                        "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
-                        "F/L L", "I L", "II L", "III L", "TRUPCI L",
-                        "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI"
-                    ];
-                    // Subtotali - ne računaju se u ukupno jer su već sadržani u pojedinačnim
-                    var SUBTOTALI = { "Σ ČETINARI": true, "LIŠĆARI": true };
+                    // Sortimenti nazivi dolaze u kanonskom redoslijedu sa backenda
+                    var sortimentiNazivi = odjeliData.sortimentiNazivi || [];
 
-                    // Agregacija po odjelima
-                    var odjeliMap = {};
-                    var allSortimentiSet = {};
-
-                    primke.forEach(function(p) {
-                        var odjel = p.odjel || 'Nepoznato';
-                        var sortiment = p.sortiment || 'Ostalo';
-                        var kolicina = parseFloat(p.kolicina) || 0;
-                        var primac = p.primac || 'Nepoznato';
-
-                        if (!odjeliMap[odjel]) {
-                            odjeliMap[odjel] = { odjel: odjel, sortimenti: {}, primaci: {}, ukupno: 0 };
-                        }
-                        odjeliMap[odjel].sortimenti[sortiment] = (odjeliMap[odjel].sortimenti[sortiment] || 0) + kolicina;
-                        // Ne dodaj subtotale u ukupno (Σ ČETINARI i LIŠĆARI su zbrojevi pojedinačnih)
-                        if (!SUBTOTALI[sortiment]) {
-                            odjeliMap[odjel].ukupno += kolicina;
-                        }
-                        if (!SUBTOTALI[sortiment]) {
-                            odjeliMap[odjel].primaci[primac] = (odjeliMap[odjel].primaci[primac] || 0) + kolicina;
-                        }
-                        allSortimentiSet[sortiment] = true;
-                    });
-
-                    // Sortiraj odjele po ukupno descending
-                    var odjeliArr = Object.values(odjeliMap).sort(function(a, b) { return b.ukupno - a.ukupno; });
-                    // Koristi kanonski redoslijed sortimenta umjesto abecednog
-                    var sortimentiNazivi = SORTIMENTI_ORDER.filter(function(s) { return allSortimentiSet[s]; });
-
-                    odjeliDefaultData = { odjeli: odjeliArr, sortimentiNazivi: sortimentiNazivi };
+                    odjeliDefaultData = { odjeli: odjeli, sortimentiNazivi: sortimentiNazivi };
                     if (loadingEl) loadingEl.style.display = 'none';
                 }
 

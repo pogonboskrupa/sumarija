@@ -2872,6 +2872,99 @@ function handlePrimaciByIzvodjac(year, username, password) {
 }
 
 // ========================================
+// HANDLE ODJELI ALL - Pregled po odjelima za sve primače (admin)
+// ========================================
+function handleOdjeliAll(year, username, password) {
+  try {
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    var userType = String(loginResult.type || '').trim().toLowerCase();
+    if (userType !== 'admin' && username !== ADMIN_USERNAME) {
+      return createJsonResponse({ error: "Samo admin može koristiti ovaj endpoint" }, false);
+    }
+
+    Logger.log('=== HANDLE ODJELI ALL START ===');
+    Logger.log('Year: ' + year);
+
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const primkaSheet = ss.getSheetByName("INDEKS_PRIMKA");
+
+    if (!primkaSheet) {
+      return createJsonResponse({ error: "INDEKS_PRIMKA sheet not found" }, false);
+    }
+
+    const primkaData = primkaSheet.getDataRange().getValues();
+    const odjeliMap = {};
+    const targetYear = parseInt(year);
+
+    for (let i = 1; i < primkaData.length; i++) {
+      const row = primkaData[i];
+      const datum = row[PRIMKA_COL.DATE];
+      const primac = row[PRIMKA_COL.RADNIK];
+      const odjel = row[PRIMKA_COL.ODJEL];
+      const kubik = parseFloat(row[PRIMKA_COL.UKUPNO]) || 0;
+
+      if (!datum || !odjel) continue;
+
+      const datumObj = parseDate(datum);
+      if (datumObj.getFullYear() !== targetYear) continue;
+
+      const odjelStr = String(odjel);
+
+      if (!odjeliMap[odjelStr]) {
+        odjeliMap[odjelStr] = { sortimenti: {}, ukupno: 0, primaci: {} };
+        for (let s = 0; s < SORTIMENTI_NAZIVI.length; s++) {
+          odjeliMap[odjelStr].sortimenti[SORTIMENTI_NAZIVI[s]] = 0;
+        }
+      }
+
+      // Agregiraj sortimente
+      for (let j = 0; j < 20; j++) {
+        const vrijednost = parseFloat(row[PRIMKA_COL.SORT_START + j]) || 0;
+        odjeliMap[odjelStr].sortimenti[SORTIMENTI_NAZIVI[j]] += vrijednost;
+      }
+
+      // Ukupno iz UKUPNO kolone (ne iz zbroja sortimenta)
+      odjeliMap[odjelStr].ukupno += kubik;
+
+      // Primači po odjelu
+      var primacStr = String(primac || '').trim();
+      if (primacStr) {
+        odjeliMap[odjelStr].primaci[primacStr] = (odjeliMap[odjelStr].primaci[primacStr] || 0) + kubik;
+      }
+    }
+
+    // Sortiraj po ukupno descending
+    const odjeliArray = [];
+    for (const odjelNaziv in odjeliMap) {
+      const o = odjeliMap[odjelNaziv];
+      odjeliArray.push({
+        odjel: odjelNaziv,
+        sortimenti: o.sortimenti,
+        ukupno: o.ukupno,
+        primaci: o.primaci
+      });
+    }
+    odjeliArray.sort((a, b) => b.ukupno - a.ukupno);
+
+    Logger.log('=== HANDLE ODJELI ALL END ===');
+    Logger.log('Total odjeli: ' + odjeliArray.length);
+
+    return createJsonResponse({
+      sortimentiNazivi: SORTIMENTI_NAZIVI,
+      odjeli: odjeliArray
+    }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleOdjeliAll: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+// ========================================
 // HANDLE PRIMKE - Vraća sve pojedinačne primke
 // ========================================
 function handlePrimke(username, password) {
