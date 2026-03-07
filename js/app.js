@@ -5825,12 +5825,14 @@
         // Kada se izabere primač iz dropdown-a
         function onPrimaciAdminSelectChange() {
             var primacName = document.getElementById('primaci-admin-select').value;
+            var yearSelect = document.getElementById('primaci-admin-year-select');
             if (!primacName) {
                 document.getElementById('primaci-admin-submenu').style.display = 'none';
                 document.getElementById('primaci-admin-placeholder').style.display = 'block';
                 document.getElementById('primaci-admin-pregled-view').classList.add('hidden');
                 document.getElementById('primaci-admin-godisnji-view').classList.add('hidden');
                 document.getElementById('primaci-admin-odjeli-view').classList.add('hidden');
+                yearSelect.style.display = 'none';
                 // Ponovo učitaj default odjeli pregled ako nemamo podatke
                 if (!odjeliDefaultData) loadOdjeliDefaultView();
                 return;
@@ -5838,6 +5840,7 @@
 
             document.getElementById('primaci-admin-submenu').style.display = '';
             document.getElementById('primaci-admin-placeholder').style.display = 'none';
+            yearSelect.style.display = '';
 
             // Reset submenu to "Pregled sječe"
             _primaciAdminCurrentSubmenu = 'pregled';
@@ -6239,82 +6242,68 @@
             var html = '';
             pageOdjeli.forEach(function(odjel, idx) {
                 var boja = odjelBoje[(start + idx) % odjelBoje.length];
+                var primaciArr = odjel.primaci || [];
+                var sortNazivi = odjeliDefaultData.sortimentiNazivi;
 
-                // Header sa sortimentima
-                var sortHeaderCells = odjeliDefaultData.sortimentiNazivi.map(function(s) {
+                // Header sortimenta za tabele
+                var sortHeaderCells = sortNazivi.map(function(s) {
                     return '<th class="sortiment-col" style="white-space: nowrap;">' + s + '</th>';
                 }).join('');
 
-                // Apsolutne vrijednosti
-                var sortValCells = odjeliDefaultData.sortimentiNazivi.map(function(s) {
-                    var val = odjel.sortimenti[s] || 0;
-                    return '<td class="sortiment-col">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
-                }).join('');
-
-                // Procentualni udio
-                var sortPctCells = odjeliDefaultData.sortimentiNazivi.map(function(s) {
-                    var val = odjel.sortimenti[s] || 0;
-                    var pct = odjel.ukupno > 0 ? (val / odjel.ukupno) * 100 : 0;
-                    return '<td class="sortiment-col">' + (pct > 0 ? pct.toFixed(1) + '%' : '-') + '</td>';
-                }).join('');
-
-                // Lista primača sa sortimentima - sortirani po ukupno desc (već sortirani sa backenda)
-                var primaciArr = odjel.primaci || [];
-                var primaciHTML = '';
+                // === TABELA 1: Apsolutne vrijednosti - primači kao redovi ===
+                var absRows = '';
                 primaciArr.forEach(function(p) {
-                    var pct = odjel.ukupno > 0 ? ((p.ukupno / odjel.ukupno) * 100).toFixed(1) : '0.0';
-
-                    // Apsolutne vrijednosti primača
-                    var pSortValCells = odjeliDefaultData.sortimentiNazivi.map(function(s) {
+                    var cells = sortNazivi.map(function(s) {
                         var val = (p.sortimenti && p.sortimenti[s]) || 0;
                         return '<td class="sortiment-col">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
                     }).join('');
+                    absRows += '<tr><td style="white-space: nowrap; font-weight: 500; position: sticky; left: 0; background: white; z-index: 1;">' + p.ime + '</td>' + cells +
+                        '<td class="ukupno-col" style="font-weight: 600;">' + p.ukupno.toFixed(2) + '</td></tr>';
+                });
+                // UKUPNO red
+                var totalAbsCells = sortNazivi.map(function(s) {
+                    var val = odjel.sortimenti[s] || 0;
+                    return '<td class="sortiment-col" style="font-weight: 700;">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
+                }).join('');
+                absRows += '<tr style="background: ' + boja.bg + '; border-top: 2px solid ' + boja.border + ';"><td style="font-weight: 700; position: sticky; left: 0; background: ' + boja.bg + '; z-index: 1;">UKUPNO</td>' +
+                    totalAbsCells + '<td class="ukupno-col" style="font-weight: 700;">' + odjel.ukupno.toFixed(2) + '</td></tr>';
 
-                    // Procentualni udio primača (u odnosu na odjel ukupno po sortimentu)
-                    var pSortPctCells = odjeliDefaultData.sortimentiNazivi.map(function(s) {
+                // === TABELA 2: Procentualni udio - primači kao redovi ===
+                var pctRows = '';
+                primaciArr.forEach(function(p) {
+                    var pctUk = odjel.ukupno > 0 ? ((p.ukupno / odjel.ukupno) * 100).toFixed(1) : '0.0';
+                    var cells = sortNazivi.map(function(s) {
                         var pVal = (p.sortimenti && p.sortimenti[s]) || 0;
                         var oVal = odjel.sortimenti[s] || 0;
-                        var pctS = oVal > 0 ? (pVal / oVal) * 100 : 0;
-                        return '<td class="sortiment-col">' + (pctS > 0 ? pctS.toFixed(1) + '%' : '-') + '</td>';
+                        var pct = oVal > 0 ? (pVal / oVal) * 100 : 0;
+                        return '<td class="sortiment-col">' + (pct > 0 ? pct.toFixed(1) + '%' : '-') + '</td>';
                     }).join('');
-
-                    primaciHTML += '<div style="margin-bottom: 12px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">' +
-                        '<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f9fafb; border-bottom: 1px solid #e5e7eb;">' +
-                        '<span style="font-weight: 600;">' + p.ime + '</span>' +
-                        '<span style="display: flex; gap: 10px; align-items: center;">' +
-                        '<span style="color: ' + boja.accent + '; font-weight: 600;">' + p.ukupno.toFixed(2) + ' m\u00B3</span>' +
-                        '<span style="background: ' + boja.border + '; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">' + pct + '%</span>' +
-                        '</span></div>' +
-                        '<div style="padding: 8px;">' +
-                        '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 4px;">' +
-                        '<table class="kupci-table" style="font-size: 12px;"><thead><tr>' + sortHeaderCells + '<th class="ukupno-col">Ukupno</th></tr></thead>' +
-                        '<tbody><tr>' + pSortValCells + '<td class="ukupno-col" style="font-weight: 700;">' + p.ukupno.toFixed(2) + '</td></tr>' +
-                        '<tr style="background: #f9fafb;">' + pSortPctCells + '<td class="ukupno-col" style="font-weight: 700;">' + pct + '%</td></tr></tbody></table></div>' +
-                        '</div></div>';
+                    pctRows += '<tr><td style="white-space: nowrap; font-weight: 500; position: sticky; left: 0; background: white; z-index: 1;">' + p.ime + '</td>' + cells +
+                        '<td class="ukupno-col" style="font-weight: 600;">' + pctUk + '%</td></tr>';
                 });
+
+                // Zadnji datum
+                var zadnjiDatumStr = odjel.zadnjiDatum ? ' \u2022 Zadnja sje\u010Da: ' + odjel.zadnjiDatum : '';
 
                 html += '<div style="margin-bottom: 28px; border: 2px solid ' + boja.border + '; border-radius: 12px; overflow: hidden;">' +
                     // Header odjela
                     '<div style="background: ' + boja.border + '; color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">' +
                     '<h3 style="margin: 0; font-size: 18px;">\uD83D\uDCC1 ' + odjel.odjel + '</h3>' +
+                    '<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">' +
+                    '<span style="font-size: 13px; opacity: 0.9;">' + zadnjiDatumStr + '</span>' +
                     '<span style="background: rgba(255,255,255,0.25); padding: 4px 14px; border-radius: 6px; font-size: 14px; font-weight: 700;">' + odjel.ukupno.toFixed(2) + ' m\u00B3</span>' +
-                    '</div>' +
+                    '</div></div>' +
                     '<div style="background: ' + boja.bg + '; padding: 20px;">' +
-                    // Tabela 1: Apsolutne vrijednosti
+                    // Tabela 1: Apsolutne vrijednosti sa primačima kao redovima
                     '<h4 style="font-size: 14px; margin: 0 0 8px 0; color: ' + boja.header + ';">Apsolutne vrijednosti (m\u00B3)</h4>' +
                     '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 16px;">' +
-                    '<table class="kupci-table"><thead><tr>' + sortHeaderCells + '<th class="ukupno-col">Ukupno</th></tr></thead>' +
-                    '<tbody><tr>' + sortValCells + '<td class="ukupno-col" style="font-weight: 700;">' + odjel.ukupno.toFixed(2) + '</td></tr></tbody></table></div>' +
-                    // Tabela 2: Procentualni udio
+                    '<table class="kupci-table"><thead><tr><th style="position: sticky; left: 0; background: inherit; z-index: 2;">Prima\u010D</th>' + sortHeaderCells + '<th class="ukupno-col">Ukupno</th></tr></thead>' +
+                    '<tbody>' + absRows + '</tbody></table></div>' +
+                    // Tabela 2: Procentualni udio sa primačima kao redovima
                     '<h4 style="font-size: 14px; margin: 0 0 8px 0; color: ' + boja.header + ';">Procentualni udio (%)</h4>' +
-                    '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 16px;">' +
-                    '<table class="kupci-table"><thead><tr>' + sortHeaderCells + '</tr></thead>' +
-                    '<tbody><tr>' + sortPctCells + '</tr></tbody></table></div>' +
-                    // Lista primača
-                    '<h4 style="font-size: 14px; margin: 0 0 8px 0; color: ' + boja.header + ';">Prima\u010Di u odjelu (' + primaciArr.length + ')</h4>' +
-                    '<div style="background: white; border-radius: 8px; border: 1px solid #e5e7eb; overflow: hidden;">' +
-                    primaciHTML +
-                    '</div>' +
+                    '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">' +
+                    '<table class="kupci-table"><thead><tr><th style="position: sticky; left: 0; background: inherit; z-index: 2;">Prima\u010D</th>' + sortHeaderCells + '<th class="ukupno-col">Ukupno</th></tr></thead>' +
+                    '<tbody>' + pctRows + '</tbody></table></div>' +
                     '</div></div>';
             });
 

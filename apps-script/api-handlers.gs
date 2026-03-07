@@ -2907,13 +2907,19 @@ function handleOdjeliAll(year, username, password) {
 
       if (!datum || !odjel) continue;
 
+      const datumObj = parseDate(datum);
       const odjelStr = String(odjel);
 
       if (!odjeliMap[odjelStr]) {
-        odjeliMap[odjelStr] = { sortimenti: {}, ukupno: 0, primaci: {} };
+        odjeliMap[odjelStr] = { sortimenti: {}, ukupno: 0, primaci: {}, zadnjiDatum: null };
         for (let s = 0; s < SORTIMENTI_NAZIVI.length; s++) {
           odjeliMap[odjelStr].sortimenti[SORTIMENTI_NAZIVI[s]] = 0;
         }
+      }
+
+      // Prati zadnji datum sječe
+      if (!odjeliMap[odjelStr].zadnjiDatum || datumObj > odjeliMap[odjelStr].zadnjiDatum) {
+        odjeliMap[odjelStr].zadnjiDatum = datumObj;
       }
 
       // Agregiraj sortimente odjela
@@ -2942,11 +2948,10 @@ function handleOdjeliAll(year, username, password) {
       }
     }
 
-    // Sortiraj po ukupno descending
+    // Sortiraj po zadnjem datumu descending (najnovija sječa prvo)
     const odjeliArray = [];
     for (const odjelNaziv in odjeliMap) {
       const o = odjeliMap[odjelNaziv];
-      // Pretvori primaci mapu u niz sortiran po ukupno desc
       const primaciArray = [];
       for (const pName in o.primaci) {
         primaciArray.push({
@@ -2961,10 +2966,19 @@ function handleOdjeliAll(year, username, password) {
         odjel: odjelNaziv,
         sortimenti: o.sortimenti,
         ukupno: o.ukupno,
-        primaci: primaciArray
+        primaci: primaciArray,
+        zadnjiDatum: o.zadnjiDatum ? formatDate(o.zadnjiDatum) : ''
       });
     }
-    odjeliArray.sort((a, b) => b.ukupno - a.ukupno);
+    odjeliArray.sort((a, b) => {
+      if (!a.zadnjiDatum && !b.zadnjiDatum) return 0;
+      if (!a.zadnjiDatum) return 1;
+      if (!b.zadnjiDatum) return -1;
+      // Parse dd.mm.yyyy za sortiranje
+      var pA = a.zadnjiDatum.split('.'), pB = b.zadnjiDatum.split('.');
+      var dA = new Date(pA[2], pA[1] - 1, pA[0]), dB = new Date(pB[2], pB[1] - 1, pB[0]);
+      return dB - dA;
+    });
 
     Logger.log('=== HANDLE ODJELI ALL END ===');
     Logger.log('Total odjeli: ' + odjeliArray.length);
