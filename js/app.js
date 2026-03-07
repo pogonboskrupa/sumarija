@@ -5854,12 +5854,9 @@
 
         // Kada se promijeni godina
         function onPrimaciAdminYearChange() {
-            // Resetuj default odjeli pregled za novu godinu
-            odjeliDefaultData = null;
-
             var primacName = document.getElementById('primaci-admin-select').value;
             if (!primacName) {
-                loadOdjeliDefaultView();
+                // Default pregled ne ovisi o godini - ne treba reload
                 return;
             }
 
@@ -6198,26 +6195,15 @@
                     if (paginationEl) paginationEl.style.display = 'none';
                     containerEl.innerHTML = '';
 
-                    var year = document.getElementById('primaci-admin-year-select').value || new Date().getFullYear();
-                    var odjeliUrl = buildApiUrl('odjeli-all', { year: year });
-                    var odjeliData = await fetchWithCache(odjeliUrl, 'cache_odjeli_all_' + year);
+                    var odjeliUrl = buildApiUrl('odjeli-all');
+                    var odjeliData = await fetchWithCache(odjeliUrl, 'cache_odjeli_all');
 
                     if (odjeliData.error) throw new Error(odjeliData.error);
 
-                    // Podaci dolaze već agregirani sa backenda (sortimenti po odjelu + primači + ukupno iz UKUPNO kolone)
-                    var odjeli = (odjeliData.odjeli || []).map(function(o) {
-                        return {
-                            odjel: o.odjel,
-                            sortimenti: o.sortimenti || {},
-                            ukupno: o.ukupno || 0,
-                            primaci: o.primaci || {}
-                        };
-                    });
-
-                    // Sortimenti nazivi dolaze u kanonskom redoslijedu sa backenda
-                    var sortimentiNazivi = odjeliData.sortimentiNazivi || [];
-
-                    odjeliDefaultData = { odjeli: odjeli, sortimentiNazivi: sortimentiNazivi };
+                    odjeliDefaultData = {
+                        odjeli: odjeliData.odjeli || [],
+                        sortimentiNazivi: odjeliData.sortimentiNazivi || []
+                    };
                     if (loadingEl) loadingEl.style.display = 'none';
                 }
 
@@ -6272,17 +6258,40 @@
                     return '<td class="sortiment-col">' + (pct > 0 ? pct.toFixed(1) + '%' : '-') + '</td>';
                 }).join('');
 
-                // Lista primača sortirana po količini
-                var primaciArr = Object.entries(odjel.primaci).sort(function(a, b) { return b[1] - a[1]; });
-                var primaciHTML = primaciArr.map(function(p) {
-                    var pct = odjel.ukupno > 0 ? ((p[1] / odjel.ukupno) * 100).toFixed(1) : '0.0';
-                    return '<div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; border-bottom: 1px solid #e5e7eb;">' +
-                        '<span style="font-weight: 500;">' + p[0] + '</span>' +
-                        '<span style="display: flex; gap: 12px;">' +
-                        '<span style="color: ' + boja.accent + '; font-weight: 600;">' + p[1].toFixed(2) + ' m\u00B3</span>' +
+                // Lista primača sa sortimentima - sortirani po ukupno desc (već sortirani sa backenda)
+                var primaciArr = odjel.primaci || [];
+                var primaciHTML = '';
+                primaciArr.forEach(function(p) {
+                    var pct = odjel.ukupno > 0 ? ((p.ukupno / odjel.ukupno) * 100).toFixed(1) : '0.0';
+
+                    // Apsolutne vrijednosti primača
+                    var pSortValCells = odjeliDefaultData.sortimentiNazivi.map(function(s) {
+                        var val = (p.sortimenti && p.sortimenti[s]) || 0;
+                        return '<td class="sortiment-col">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
+                    }).join('');
+
+                    // Procentualni udio primača (u odnosu na odjel ukupno po sortimentu)
+                    var pSortPctCells = odjeliDefaultData.sortimentiNazivi.map(function(s) {
+                        var pVal = (p.sortimenti && p.sortimenti[s]) || 0;
+                        var oVal = odjel.sortimenti[s] || 0;
+                        var pctS = oVal > 0 ? (pVal / oVal) * 100 : 0;
+                        return '<td class="sortiment-col">' + (pctS > 0 ? pctS.toFixed(1) + '%' : '-') + '</td>';
+                    }).join('');
+
+                    primaciHTML += '<div style="margin-bottom: 12px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">' +
+                        '<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f9fafb; border-bottom: 1px solid #e5e7eb;">' +
+                        '<span style="font-weight: 600;">' + p.ime + '</span>' +
+                        '<span style="display: flex; gap: 10px; align-items: center;">' +
+                        '<span style="color: ' + boja.accent + '; font-weight: 600;">' + p.ukupno.toFixed(2) + ' m\u00B3</span>' +
                         '<span style="background: ' + boja.border + '; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">' + pct + '%</span>' +
-                        '</span></div>';
-                }).join('');
+                        '</span></div>' +
+                        '<div style="padding: 8px;">' +
+                        '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 4px;">' +
+                        '<table class="kupci-table" style="font-size: 12px;"><thead><tr>' + sortHeaderCells + '<th class="ukupno-col">Ukupno</th></tr></thead>' +
+                        '<tbody><tr>' + pSortValCells + '<td class="ukupno-col" style="font-weight: 700;">' + p.ukupno.toFixed(2) + '</td></tr>' +
+                        '<tr style="background: #f9fafb;">' + pSortPctCells + '<td class="ukupno-col" style="font-weight: 700;">' + pct + '%</td></tr></tbody></table></div>' +
+                        '</div></div>';
+                });
 
                 html += '<div style="margin-bottom: 28px; border: 2px solid ' + boja.border + '; border-radius: 12px; overflow: hidden;">' +
                     // Header odjela
@@ -6310,7 +6319,7 @@
             });
 
             if (pageOdjeli.length === 0) {
-                html = '<div style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka o odjelima za odabranu godinu.</div>';
+                html = '<div style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka o odjelima.</div>';
             }
 
             containerEl.innerHTML = html;

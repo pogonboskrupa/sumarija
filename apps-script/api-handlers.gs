@@ -2872,7 +2872,7 @@ function handlePrimaciByIzvodjac(year, username, password) {
 }
 
 // ========================================
-// HANDLE ODJELI ALL - Pregled po odjelima za sve primače (admin)
+// HANDLE ODJELI ALL - Pregled po odjelima za sve primače (admin), sve godine
 // ========================================
 function handleOdjeliAll(year, username, password) {
   try {
@@ -2887,7 +2887,6 @@ function handleOdjeliAll(year, username, password) {
     }
 
     Logger.log('=== HANDLE ODJELI ALL START ===');
-    Logger.log('Year: ' + year);
 
     const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
     const primkaSheet = ss.getSheetByName("INDEKS_PRIMKA");
@@ -2898,7 +2897,6 @@ function handleOdjeliAll(year, username, password) {
 
     const primkaData = primkaSheet.getDataRange().getValues();
     const odjeliMap = {};
-    const targetYear = parseInt(year);
 
     for (let i = 1; i < primkaData.length; i++) {
       const row = primkaData[i];
@@ -2909,9 +2907,6 @@ function handleOdjeliAll(year, username, password) {
 
       if (!datum || !odjel) continue;
 
-      const datumObj = parseDate(datum);
-      if (datumObj.getFullYear() !== targetYear) continue;
-
       const odjelStr = String(odjel);
 
       if (!odjeliMap[odjelStr]) {
@@ -2921,19 +2916,29 @@ function handleOdjeliAll(year, username, password) {
         }
       }
 
-      // Agregiraj sortimente
+      // Agregiraj sortimente odjela
       for (let j = 0; j < 20; j++) {
         const vrijednost = parseFloat(row[PRIMKA_COL.SORT_START + j]) || 0;
         odjeliMap[odjelStr].sortimenti[SORTIMENTI_NAZIVI[j]] += vrijednost;
       }
 
-      // Ukupno iz UKUPNO kolone (ne iz zbroja sortimenta)
+      // Ukupno iz UKUPNO kolone
       odjeliMap[odjelStr].ukupno += kubik;
 
-      // Primači po odjelu
+      // Primači po odjelu - sa sortimentima
       var primacStr = String(primac || '').trim();
       if (primacStr) {
-        odjeliMap[odjelStr].primaci[primacStr] = (odjeliMap[odjelStr].primaci[primacStr] || 0) + kubik;
+        if (!odjeliMap[odjelStr].primaci[primacStr]) {
+          odjeliMap[odjelStr].primaci[primacStr] = { sortimenti: {}, ukupno: 0 };
+          for (let s = 0; s < SORTIMENTI_NAZIVI.length; s++) {
+            odjeliMap[odjelStr].primaci[primacStr].sortimenti[SORTIMENTI_NAZIVI[s]] = 0;
+          }
+        }
+        for (let j = 0; j < 20; j++) {
+          const vrijednost = parseFloat(row[PRIMKA_COL.SORT_START + j]) || 0;
+          odjeliMap[odjelStr].primaci[primacStr].sortimenti[SORTIMENTI_NAZIVI[j]] += vrijednost;
+        }
+        odjeliMap[odjelStr].primaci[primacStr].ukupno += kubik;
       }
     }
 
@@ -2941,11 +2946,22 @@ function handleOdjeliAll(year, username, password) {
     const odjeliArray = [];
     for (const odjelNaziv in odjeliMap) {
       const o = odjeliMap[odjelNaziv];
+      // Pretvori primaci mapu u niz sortiran po ukupno desc
+      const primaciArray = [];
+      for (const pName in o.primaci) {
+        primaciArray.push({
+          ime: pName,
+          sortimenti: o.primaci[pName].sortimenti,
+          ukupno: o.primaci[pName].ukupno
+        });
+      }
+      primaciArray.sort((a, b) => b.ukupno - a.ukupno);
+
       odjeliArray.push({
         odjel: odjelNaziv,
         sortimenti: o.sortimenti,
         ukupno: o.ukupno,
-        primaci: o.primaci
+        primaci: primaciArray
       });
     }
     odjeliArray.sort((a, b) => b.ukupno - a.ukupno);
