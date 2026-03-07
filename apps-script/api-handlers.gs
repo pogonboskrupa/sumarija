@@ -1145,8 +1145,8 @@ function handlePrimacDetailAdmin(year, username, password, primacName) {
     return createJsonResponse({ error: "Unauthorized" }, false);
   }
 
-  // Admin provjera
-  if (username !== ADMIN_USERNAME) {
+  // Admin provjera - tip iz kolone D ili hardcoded admin credentials
+  if (loginResult.type !== 'admin' && username !== ADMIN_USERNAME) {
     return createJsonResponse({ error: "Samo admin može koristiti ovaj endpoint" }, false);
   }
 
@@ -1234,8 +1234,8 @@ function handlePrimacOdjeliAdmin(year, username, password, primacName, limit) {
     return createJsonResponse({ error: "Unauthorized" }, false);
   }
 
-  // Admin provjera
-  if (username !== ADMIN_USERNAME) {
+  // Admin provjera - tip iz kolone D ili hardcoded admin credentials
+  if (loginResult.type !== 'admin' && username !== ADMIN_USERNAME) {
     return createJsonResponse({ error: "Samo admin može koristiti ovaj endpoint" }, false);
   }
 
