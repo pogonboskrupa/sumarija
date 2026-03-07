@@ -5768,6 +5768,11 @@
         var primaciAdminOdjeliPageSize = 5;
         var _primaciAdminCurrentSubmenu = 'pregled';
 
+        // Default odjeli pregled varijable
+        var odjeliDefaultData = null;        // Agregirani podaci po odjelima
+        var odjeliDefaultPage = 0;
+        var odjeliDefaultPageSize = 3;
+
         // Inicijalizacija taba - popuni dropdown sa primačima
         async function loadPrimaciAdminTab() {
             var content = document.getElementById('primaci-admin-content');
@@ -5811,6 +5816,9 @@
                 }
             }
 
+            // Učitaj default pregled po odjelima
+            loadOdjeliDefaultView();
+
             markTabRendered('primaci-admin');
         }
 
@@ -5823,6 +5831,8 @@
                 document.getElementById('primaci-admin-pregled-view').classList.add('hidden');
                 document.getElementById('primaci-admin-godisnji-view').classList.add('hidden');
                 document.getElementById('primaci-admin-odjeli-view').classList.add('hidden');
+                // Ponovo učitaj default odjeli pregled ako nemamo podatke
+                if (!odjeliDefaultData) loadOdjeliDefaultView();
                 return;
             }
 
@@ -5844,8 +5854,14 @@
 
         // Kada se promijeni godina
         function onPrimaciAdminYearChange() {
+            // Resetuj default odjeli pregled za novu godinu
+            odjeliDefaultData = null;
+
             var primacName = document.getElementById('primaci-admin-select').value;
-            if (!primacName) return;
+            if (!primacName) {
+                loadOdjeliDefaultView();
+                return;
+            }
 
             // Resetuj primac listu za novu godinu
             var primacSelect = document.getElementById('primaci-admin-select');
@@ -6163,6 +6179,187 @@
             if (primaciAdminOdjeliPage < totalPages - 1) {
                 primaciAdminOdjeliPage++;
                 renderPrimaciAdminOdjeliPage();
+            }
+        }
+
+        // ========================================
+        // DEFAULT PREGLED PO ODJELIMA (bez izbora primača)
+        // ========================================
+        async function loadOdjeliDefaultView() {
+            var loadingEl = document.getElementById('primaci-admin-odjeli-default-loading');
+            var containerEl = document.getElementById('primaci-admin-odjeli-default-container');
+            var paginationEl = document.getElementById('primaci-admin-odjeli-default-pagination');
+
+            if (!containerEl) return;
+
+            try {
+                if (!odjeliDefaultData) {
+                    if (loadingEl) loadingEl.style.display = '';
+                    if (paginationEl) paginationEl.style.display = 'none';
+                    containerEl.innerHTML = '';
+
+                    var year = document.getElementById('primaci-admin-year-select').value || new Date().getFullYear();
+                    var primkeUrl = buildApiUrl('primke');
+                    var primkeData = await fetchWithCache(primkeUrl, 'cache_primke_odjeli_default');
+
+                    if (primkeData.error) throw new Error(primkeData.error);
+
+                    // Filtriraj po godini
+                    var primke = (primkeData.primke || []).filter(function(p) {
+                        if (!p.datum) return false;
+                        var parts = p.datum.split('.');
+                        if (parts.length >= 3) {
+                            return parseInt(parts[2]) === parseInt(year);
+                        }
+                        return false;
+                    });
+
+                    // Agregacija po odjelima
+                    var odjeliMap = {};
+                    var allSortimentiSet = {};
+
+                    primke.forEach(function(p) {
+                        var odjel = p.odjel || 'Nepoznato';
+                        var sortiment = p.sortiment || 'Ostalo';
+                        var kolicina = parseFloat(p.kolicina) || 0;
+                        var primac = p.primac || 'Nepoznato';
+
+                        if (!odjeliMap[odjel]) {
+                            odjeliMap[odjel] = { odjel: odjel, sortimenti: {}, primaci: {}, ukupno: 0 };
+                        }
+                        odjeliMap[odjel].sortimenti[sortiment] = (odjeliMap[odjel].sortimenti[sortiment] || 0) + kolicina;
+                        odjeliMap[odjel].ukupno += kolicina;
+                        odjeliMap[odjel].primaci[primac] = (odjeliMap[odjel].primaci[primac] || 0) + kolicina;
+                        allSortimentiSet[sortiment] = true;
+                    });
+
+                    // Sortiraj odjele po ukupno descending
+                    var odjeliArr = Object.values(odjeliMap).sort(function(a, b) { return b.ukupno - a.ukupno; });
+                    var sortimentiNazivi = Object.keys(allSortimentiSet).sort();
+
+                    odjeliDefaultData = { odjeli: odjeliArr, sortimentiNazivi: sortimentiNazivi };
+                    if (loadingEl) loadingEl.style.display = 'none';
+                }
+
+                odjeliDefaultPage = 0;
+                renderOdjeliDefaultPage();
+
+            } catch (error) {
+                if (loadingEl) loadingEl.style.display = 'none';
+                containerEl.innerHTML = '<div style="text-align: center; padding: 40px; color: #dc2626;">Greška pri učitavanju: ' + error.message + '</div>';
+            }
+        }
+
+        // Boje za vizualno razdvajanje odjela
+        var odjelBoje = [
+            { border: '#10b981', bg: '#f0fdf4', header: '#047857', accent: '#059669' },
+            { border: '#3b82f6', bg: '#eff6ff', header: '#1d4ed8', accent: '#2563eb' },
+            { border: '#f59e0b', bg: '#fffbeb', header: '#b45309', accent: '#d97706' },
+            { border: '#8b5cf6', bg: '#f5f3ff', header: '#6d28d9', accent: '#7c3aed' },
+            { border: '#ef4444', bg: '#fef2f2', header: '#b91c1c', accent: '#dc2626' },
+            { border: '#06b6d4', bg: '#ecfeff', header: '#0e7490', accent: '#0891b2' }
+        ];
+
+        function renderOdjeliDefaultPage() {
+            if (!odjeliDefaultData || !odjeliDefaultData.odjeli) return;
+
+            var containerEl = document.getElementById('primaci-admin-odjeli-default-container');
+            var paginationEl = document.getElementById('primaci-admin-odjeli-default-pagination');
+
+            var start = odjeliDefaultPage * odjeliDefaultPageSize;
+            var end = Math.min(start + odjeliDefaultPageSize, odjeliDefaultData.odjeli.length);
+            var pageOdjeli = odjeliDefaultData.odjeli.slice(start, end);
+
+            var html = '';
+            pageOdjeli.forEach(function(odjel, idx) {
+                var boja = odjelBoje[(start + idx) % odjelBoje.length];
+
+                // Header sa sortimentima
+                var sortHeaderCells = odjeliDefaultData.sortimentiNazivi.map(function(s) {
+                    return '<th class="sortiment-col" style="white-space: nowrap;">' + s + '</th>';
+                }).join('');
+
+                // Apsolutne vrijednosti
+                var sortValCells = odjeliDefaultData.sortimentiNazivi.map(function(s) {
+                    var val = odjel.sortimenti[s] || 0;
+                    return '<td class="sortiment-col">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
+                }).join('');
+
+                // Procentualni udio
+                var sortPctCells = odjeliDefaultData.sortimentiNazivi.map(function(s) {
+                    var val = odjel.sortimenti[s] || 0;
+                    var pct = odjel.ukupno > 0 ? (val / odjel.ukupno) * 100 : 0;
+                    return '<td class="sortiment-col">' + (pct > 0 ? pct.toFixed(1) + '%' : '-') + '</td>';
+                }).join('');
+
+                // Lista primača sortirana po količini
+                var primaciArr = Object.entries(odjel.primaci).sort(function(a, b) { return b[1] - a[1]; });
+                var primaciHTML = primaciArr.map(function(p) {
+                    var pct = odjel.ukupno > 0 ? ((p[1] / odjel.ukupno) * 100).toFixed(1) : '0.0';
+                    return '<div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; border-bottom: 1px solid #e5e7eb;">' +
+                        '<span style="font-weight: 500;">' + p[0] + '</span>' +
+                        '<span style="display: flex; gap: 12px;">' +
+                        '<span style="color: ' + boja.accent + '; font-weight: 600;">' + p[1].toFixed(2) + ' m\u00B3</span>' +
+                        '<span style="background: ' + boja.border + '; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">' + pct + '%</span>' +
+                        '</span></div>';
+                }).join('');
+
+                html += '<div style="margin-bottom: 28px; border: 2px solid ' + boja.border + '; border-radius: 12px; overflow: hidden;">' +
+                    // Header odjela
+                    '<div style="background: ' + boja.border + '; color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">' +
+                    '<h3 style="margin: 0; font-size: 18px;">\uD83D\uDCC1 ' + odjel.odjel + '</h3>' +
+                    '<span style="background: rgba(255,255,255,0.25); padding: 4px 14px; border-radius: 6px; font-size: 14px; font-weight: 700;">' + odjel.ukupno.toFixed(2) + ' m\u00B3</span>' +
+                    '</div>' +
+                    '<div style="background: ' + boja.bg + '; padding: 20px;">' +
+                    // Tabela 1: Apsolutne vrijednosti
+                    '<h4 style="font-size: 14px; margin: 0 0 8px 0; color: ' + boja.header + ';">Apsolutne vrijednosti (m\u00B3)</h4>' +
+                    '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 16px;">' +
+                    '<table class="kupci-table"><thead><tr>' + sortHeaderCells + '<th class="ukupno-col">Ukupno</th></tr></thead>' +
+                    '<tbody><tr>' + sortValCells + '<td class="ukupno-col" style="font-weight: 700;">' + odjel.ukupno.toFixed(2) + '</td></tr></tbody></table></div>' +
+                    // Tabela 2: Procentualni udio
+                    '<h4 style="font-size: 14px; margin: 0 0 8px 0; color: ' + boja.header + ';">Procentualni udio (%)</h4>' +
+                    '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 16px;">' +
+                    '<table class="kupci-table"><thead><tr>' + sortHeaderCells + '</tr></thead>' +
+                    '<tbody><tr>' + sortPctCells + '</tr></tbody></table></div>' +
+                    // Lista primača
+                    '<h4 style="font-size: 14px; margin: 0 0 8px 0; color: ' + boja.header + ';">Prima\u010Di u odjelu (' + primaciArr.length + ')</h4>' +
+                    '<div style="background: white; border-radius: 8px; border: 1px solid #e5e7eb; overflow: hidden;">' +
+                    primaciHTML +
+                    '</div>' +
+                    '</div></div>';
+            });
+
+            if (pageOdjeli.length === 0) {
+                html = '<div style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka o odjelima za odabranu godinu.</div>';
+            }
+
+            containerEl.innerHTML = html;
+
+            // Pagination
+            var totalPages = Math.ceil(odjeliDefaultData.odjeli.length / odjeliDefaultPageSize);
+            if (totalPages > 1) {
+                paginationEl.style.display = 'flex';
+                document.getElementById('primaci-admin-odjeli-default-page-info').textContent = 'Stranica ' + (odjeliDefaultPage + 1) + ' od ' + totalPages;
+                document.getElementById('primaci-admin-odjeli-default-prev').disabled = odjeliDefaultPage === 0;
+                document.getElementById('primaci-admin-odjeli-default-next').disabled = odjeliDefaultPage >= totalPages - 1;
+            } else {
+                paginationEl.style.display = 'none';
+            }
+        }
+
+        function prevPageOdjeliDefault() {
+            if (odjeliDefaultPage > 0) {
+                odjeliDefaultPage--;
+                renderOdjeliDefaultPage();
+            }
+        }
+
+        function nextPageOdjeliDefault() {
+            if (!odjeliDefaultData) return;
+            var totalPages = Math.ceil(odjeliDefaultData.odjeli.length / odjeliDefaultPageSize);
+            if (odjeliDefaultPage < totalPages - 1) {
+                odjeliDefaultPage++;
+                renderOdjeliDefaultPage();
             }
         }
 

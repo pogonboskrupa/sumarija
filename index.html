@@ -672,10 +672,18 @@
                 <button class="submenu-tab" onclick="switchPrimaciAdminSubmenu('odjeli')">🏭 Prikaz po odjelima</button>
             </div>
 
-            <!-- Placeholder kad primač nije izabran -->
-            <div id="primaci-admin-placeholder" style="text-align: center; padding: 60px 20px; color: #6b7280;">
-                <div style="font-size: 48px; margin-bottom: 16px;">👷</div>
-                <p style="font-size: 16px; margin: 0;">Izaberite primača iz dropdown menija za prikaz podataka.</p>
+            <!-- Placeholder kad primač nije izabran - Pregled po odjelima (DEFAULT) -->
+            <div id="primaci-admin-placeholder">
+                <div id="primaci-admin-odjeli-default-loading" style="text-align: center; padding: 40px; color: #6b7280;">
+                    <div class="loading-icon" style="font-size: 32px;">⏳</div>
+                    <p>Učitavanje pregleda po odjelima...</p>
+                </div>
+                <div id="primaci-admin-odjeli-default-container"></div>
+                <div id="primaci-admin-odjeli-default-pagination" style="display: none; justify-content: center; gap: 10px; margin-top: 16px; align-items: center;">
+                    <button id="primaci-admin-odjeli-default-prev" onclick="prevPageOdjeliDefault()" class="submenu-tab" style="padding: 6px 16px;">← Prethodna</button>
+                    <span id="primaci-admin-odjeli-default-page-info" style="font-size: 13px; color: #6b7280;">Stranica 1</span>
+                    <button id="primaci-admin-odjeli-default-next" onclick="nextPageOdjeliDefault()" class="submenu-tab" style="padding: 6px 16px;">Sledeća →</button>
+                </div>
             </div>
 
             <!-- Loading indikator -->
