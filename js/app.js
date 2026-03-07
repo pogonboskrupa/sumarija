@@ -6257,8 +6257,7 @@
                         var val = (p.sortimenti && p.sortimenti[s]) || 0;
                         return '<td class="sortiment-col">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
                     }).join('');
-                    absRows += '<tr><td style="white-space: nowrap; font-weight: 500; position: sticky; left: 0; background: white; z-index: 1;">' + p.ime + '</td>' + cells +
-                        '<td class="ukupno-col" style="font-weight: 600;">' + p.ukupno.toFixed(2) + '</td></tr>';
+                    absRows += '<tr><td style="white-space: nowrap; font-weight: 500; position: sticky; left: 0; background: white; z-index: 1;">' + p.ime + '</td>' + cells + '</tr>';
                 });
                 // UKUPNO red
                 var totalAbsCells = sortNazivi.map(function(s) {
@@ -6266,7 +6265,7 @@
                     return '<td class="sortiment-col" style="font-weight: 700;">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
                 }).join('');
                 absRows += '<tr style="background: ' + boja.bg + '; border-top: 2px solid ' + boja.border + ';"><td style="font-weight: 700; position: sticky; left: 0; background: ' + boja.bg + '; z-index: 1;">UKUPNO</td>' +
-                    totalAbsCells + '<td class="ukupno-col" style="font-weight: 700;">' + odjel.ukupno.toFixed(2) + '</td></tr>';
+                    totalAbsCells + '</tr>';
 
                 // === TABELA 2: Procentualni udio - primači kao redovi ===
                 var pctRows = '';
@@ -6276,8 +6275,7 @@
                         var pct = p.ukupno > 0 ? (pVal / p.ukupno) * 100 : 0;
                         return '<td class="sortiment-col">' + (pct > 0 ? pct.toFixed(1) + '%' : '-') + '</td>';
                     }).join('');
-                    pctRows += '<tr><td style="white-space: nowrap; font-weight: 500; position: sticky; left: 0; background: white; z-index: 1;">' + p.ime + '</td>' + cells +
-                        '<td class="ukupno-col" style="font-weight: 600;">100%</td></tr>';
+                    pctRows += '<tr><td style="white-space: nowrap; font-weight: 500; position: sticky; left: 0; background: white; z-index: 1;">' + p.ime + '</td>' + cells + '</tr>';
                 });
 
                 // Zadnji datum
@@ -6295,12 +6293,12 @@
                     // Tabela 1: Apsolutne vrijednosti sa primačima kao redovima
                     '<h4 style="font-size: 14px; margin: 0 0 8px 0; color: ' + boja.header + ';">Apsolutne vrijednosti (m\u00B3)</h4>' +
                     '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 16px;">' +
-                    '<table class="kupci-table"><thead><tr><th style="position: sticky; left: 0; background: inherit; z-index: 2;">Prima\u010D</th>' + sortHeaderCells + '<th class="ukupno-col">Ukupno</th></tr></thead>' +
+                    '<table class="kupci-table"><thead><tr><th style="position: sticky; left: 0; background: inherit; z-index: 2;">Prima\u010D</th>' + sortHeaderCells + '</tr></thead>' +
                     '<tbody>' + absRows + '</tbody></table></div>' +
                     // Tabela 2: Procentualni udio sa primačima kao redovima
                     '<h4 style="font-size: 14px; margin: 0 0 8px 0; color: ' + boja.header + ';">Procentualni udio (%)</h4>' +
                     '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">' +
-                    '<table class="kupci-table"><thead><tr><th style="position: sticky; left: 0; background: inherit; z-index: 2;">Prima\u010D</th>' + sortHeaderCells + '<th class="ukupno-col">Ukupno</th></tr></thead>' +
+                    '<table class="kupci-table"><thead><tr><th style="position: sticky; left: 0; background: inherit; z-index: 2;">Prima\u010D</th>' + sortHeaderCells + '</tr></thead>' +
                     '<tbody>' + pctRows + '</tbody></table></div>' +
                     '</div></div>';
             });
