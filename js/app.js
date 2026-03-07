@@ -6271,15 +6271,13 @@
                 // === TABELA 2: Procentualni udio - primači kao redovi ===
                 var pctRows = '';
                 primaciArr.forEach(function(p) {
-                    var pctUk = odjel.ukupno > 0 ? ((p.ukupno / odjel.ukupno) * 100).toFixed(1) : '0.0';
                     var cells = sortNazivi.map(function(s) {
                         var pVal = (p.sortimenti && p.sortimenti[s]) || 0;
-                        var oVal = odjel.sortimenti[s] || 0;
-                        var pct = oVal > 0 ? (pVal / oVal) * 100 : 0;
+                        var pct = p.ukupno > 0 ? (pVal / p.ukupno) * 100 : 0;
                         return '<td class="sortiment-col">' + (pct > 0 ? pct.toFixed(1) + '%' : '-') + '</td>';
                     }).join('');
                     pctRows += '<tr><td style="white-space: nowrap; font-weight: 500; position: sticky; left: 0; background: white; z-index: 1;">' + p.ime + '</td>' + cells +
-                        '<td class="ukupno-col" style="font-weight: 600;">' + pctUk + '%</td></tr>';
+                        '<td class="ukupno-col" style="font-weight: 600;">100%</td></tr>';
                 });
 
                 // Zadnji datum
