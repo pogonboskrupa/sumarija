@@ -5990,15 +5990,20 @@
                     var mjesec = dateParts.length >= 2 ? parseInt(dateParts[1]) : 1;
 
                     var mjesecBoje = {
-                        1: '#be185d', 2: '#7e22ce', 3: '#4338ca', 4: '#1d4ed8',
-                        5: '#0891b2', 6: '#0d9488', 7: '#047857', 8: '#4d7c0f',
-                        9: '#a16207', 10: '#c2410c', 11: '#dc2626', 12: '#4b5563'
+                        1: '#9d174d', 2: '#6b21a8', 3: '#3730a3', 4: '#1e40af',
+                        5: '#0e7490', 6: '#0f766e', 7: '#065f46', 8: '#3f6212',
+                        9: '#854d0e', 10: '#9a3412', 11: '#b91c1c', 12: '#374151'
                     };
-                    var mBoja = mjesecBoje[mjesec] || '#374151';
+                    var mBoja = mjesecBoje[mjesec] || '#1f2937';
+                    var mBg = {
+                        1: '#fce7f3', 2: '#f3e8ff', 3: '#e0e7ff', 4: '#dbeafe',
+                        5: '#cffafe', 6: '#ccfbf1', 7: '#d1fae5', 8: '#ecfccb',
+                        9: '#fef9c3', 10: '#ffedd5', 11: '#fee2e2', 12: '#f3f4f6'
+                    };
 
                     return '<tr class="mjesec-' + mjesec + '">' +
-                        '<td style="font-weight: 700; color: ' + mBoja + ';">' + u.datum + '</td>' +
-                        '<td style="font-weight: 600; color: ' + mBoja + ';">' + u.odjel + '</td>' +
+                        '<td style="font-weight: 700; color: ' + mBoja + '; background: ' + mBg[mjesec] + '; border-left: 4px solid ' + mBoja + ';">' + u.datum + '</td>' +
+                        '<td style="font-weight: 700; color: ' + mBoja + '; background: ' + mBg[mjesec] + ';">' + u.odjel + '</td>' +
                         sortimentiCells +
                         '<td class="ukupno-col">' + u.ukupno.toFixed(2) + '</td>' +
                         '</tr>';
