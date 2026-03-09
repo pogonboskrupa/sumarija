@@ -2067,28 +2067,28 @@
         /* ============================================ */
 
         @media (max-width: 768px) {
-            /* Touch-friendly sizing for Android */
+            /* Desktop-quality tables on Android with touch support */
             table {
-                font-size: 14px;
-                min-width: 100%;
+                font-size: 13px;
+                min-width: max-content;
             }
 
             thead th {
-                padding: 14px 10px;
-                font-size: 11px;
+                padding: 12px 10px;
+                font-size: 12px;
                 line-height: 1.3;
             }
 
             tbody td {
-                padding: 12px 10px;
-                font-size: 14px;
+                padding: 10px 8px;
+                font-size: 13px;
             }
 
-            /* Larger tap targets for mobile */
+            /* Touch-friendly buttons */
             .btn {
                 min-height: 44px;
                 padding: 12px 20px;
-                font-size: 15px;
+                font-size: 14px;
             }
 
             /* Improve scrolling performance on Android */
@@ -2099,60 +2099,18 @@
                 scroll-snap-type: x proximity;
                 overscroll-behavior-x: contain;
             }
-
-            /* Better sticky columns on mobile */
-            table td:first-child,
-            table th:first-child {
-                min-width: 120px;
-                max-width: 150px;
-                font-size: 13px;
-            }
-
-            /* Horizontal scroll indicator for mobile */
-            .kupci-table-wrapper::after,
-            .expert-table-wrapper::after,
-            .mjesecni-table-wrapper::after {
-                content: '← Swipe →';
-                position: absolute;
-                bottom: 8px;
-                right: 8px;
-                background: rgba(31, 41, 55, 0.8);
-                color: #ffffff;
-                padding: 6px 12px;
-                border-radius: 16px;
-                font-size: 11px;
-                font-weight: 600;
-                pointer-events: none;
-                opacity: 0.7;
-                z-index: 5;
-            }
-
-            /* Hide scroll indicator after interaction */
-            .kupci-table-wrapper:active::after,
-            .expert-table-wrapper:active::after,
-            .mjesecni-table-wrapper:active::after {
-                opacity: 0;
-                transition: opacity 0.3s;
-            }
         }
 
         /* Small mobile devices (Android phones in portrait) */
         @media (max-width: 480px) {
             thead th {
-                padding: 10px 6px;
-                font-size: 10px;
+                padding: 10px 8px;
+                font-size: 11px;
             }
 
             tbody td {
-                padding: 10px 6px;
+                padding: 10px 8px;
                 font-size: 13px;
-            }
-
-            table td:first-child,
-            table th:first-child {
-                min-width: 100px;
-                max-width: 120px;
-                font-size: 12px;
             }
 
             /* Compact controls for small screens */
