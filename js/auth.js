@@ -40,7 +40,7 @@
                                 console.error('[AUTO-PRELOAD] Preload failed:', err);
                                 preloadScheduled = false;
                             });
-                        }, 15000);
+                        }, 2000);
                     }
                 } else {
                     errorMsg.textContent = data.error || 'Greška pri prijavi';

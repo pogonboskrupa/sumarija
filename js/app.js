@@ -787,7 +787,34 @@
                     ];
                 }
 
+                // Skip views that are already cached (unless forceRefresh)
+                if (!forceRefresh) {
+                    const smartTTL = getSmartCacheTTL();
+                    const uncachedViews = allViews.filter(view => {
+                        try {
+                            const cached = localStorage.getItem(view.cacheKey);
+                            if (cached) {
+                                const cachedData = JSON.parse(cached);
+                                if (cachedData.data && !cachedData.data.error && (Date.now() - cachedData.timestamp) < smartTTL) {
+                                    return false; // Already cached & fresh - skip
+                                }
+                            }
+                        } catch (e) {}
+                        return true; // Not cached or stale - fetch
+                    });
+                    const skipped = allViews.length - uncachedViews.length;
+                    if (skipped > 0) {
+                        console.log(`[PRELOAD] Skipping ${skipped} already-cached views, fetching ${uncachedViews.length} remaining`);
+                    }
+                    allViews = uncachedViews;
+                }
+
                 totalViews = allViews.length;
+
+                if (totalViews === 0) {
+                    console.log('[PRELOAD] All views already cached - nothing to fetch!');
+                    return;
+                }
 
                 // Progress toast - ostaje vidljiv tokom učitavanja (duration=0 = ne briše se automatski)
                 let progressToast = null;
@@ -797,7 +824,7 @@
 
                 console.log(`[PRELOAD] Starting preload of ${totalViews} views (silent=${silent})...`);
 
-                // OPTIMIZIRANO UČITAVANJE - max 5 paralelnih poziva
+                // OPTIMIZIRANO UČITAVANJE - max 8 paralelnih poziva
                 await processQueue(allViews, async (view) => {
                     try {
                         await fetchWithCache(view.url, view.cacheKey, forceRefresh, view.timeout);
@@ -1088,7 +1115,7 @@
                             console.error('[AUTO-PRELOAD] ⚠️ Preload failed:', err);
                             preloadScheduled = false; // Reset after error
                         });
-                    }, 15000); // Pokreni nakon 15s (da ne opterećuje initial load)
+                    }, 2000); // Pokreni nakon 2s (dovoljno da initial load završi)
                 }
             }
         });
