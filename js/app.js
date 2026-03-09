@@ -754,14 +754,36 @@
                     ];
 
                 } else if (userType === 'primac') {
+                    const currentMonth = new Date().getMonth(); // 0-11
                     allViews = [
-                        { name: 'Moje unose', url: buildApiUrl('primke'), cacheKey: 'cache_my_primke', timeout: 120000 },
-                        { name: 'Godišnji prikaz', url: buildApiUrl('primac-detail', { year }), cacheKey: 'cache_primac_godisnji_' + year, timeout: 120000 }
+                        // Pregled sječe (primac-personal)
+                        { name: 'Pregled sječe', url: buildApiUrl('primac-detail', { year }), cacheKey: 'cache_primac_detail_' + year, timeout: 120000 },
+                        // Godišnji prikaz
+                        { name: 'Godišnji prikaz', url: buildApiUrl('primac-detail', { year }), cacheKey: 'cache_primac_godisnji_' + year, timeout: 120000 },
+                        // Prikaz po odjelima
+                        { name: 'Prikaz po odjelima', url: buildApiUrl('primac-odjeli', { limit: 15 }), cacheKey: 'cache_primac_odjeli_top15', timeout: 120000 },
+                        // Moje sječe
+                        { name: 'Moje sječe', url: buildApiUrl('my-pending', { tip: 'sjeca' }), cacheKey: 'cache_my_sjece_' + (currentUser.username || ''), timeout: 120000 },
+                        // Izvještaji - sedmični (tekući mjesec)
+                        { name: 'Izvještaji (sedmični)', url: buildApiUrl('primac-detail', { year }), cacheKey: 'cache_primac_sedmicni_' + year + '_' + currentMonth, timeout: 120000 },
+                        // Izvještaji - mjesečni (tekući mjesec)
+                        { name: 'Izvještaji (mjesečni)', url: buildApiUrl('primac-detail', { year }), cacheKey: 'cache_primac_mjesecni_' + year + '_' + currentMonth, timeout: 120000 }
                     ];
                 } else if (userType === 'otpremac') {
+                    const currentMonth = new Date().getMonth(); // 0-11
                     allViews = [
-                        { name: 'Moje unose', url: buildApiUrl('otpreme'), cacheKey: 'cache_my_otpreme', timeout: 120000 },
-                        { name: 'Godišnji prikaz', url: buildApiUrl('otpremac-detail', { year }), cacheKey: 'cache_otpremac_godisnji_' + year, timeout: 120000 }
+                        // Pregled otpreme (otpremac-personal)
+                        { name: 'Pregled otpreme', url: buildApiUrl('otpremac-detail', { year }), cacheKey: 'cache_otpremac_detail_' + year, timeout: 120000 },
+                        // Godišnji prikaz
+                        { name: 'Godišnji prikaz', url: buildApiUrl('otpremac-detail', { year }), cacheKey: 'cache_otpremac_godisnji_' + year, timeout: 120000 },
+                        // Prikaz po odjelima
+                        { name: 'Prikaz po odjelima', url: buildApiUrl('otpremac-odjeli', { limit: 15 }), cacheKey: 'cache_otpremac_odjeli_top15', timeout: 120000 },
+                        // Moje otpreme
+                        { name: 'Moje otpreme', url: buildApiUrl('my-pending', { tip: 'otprema' }), cacheKey: 'cache_my_otpreme_' + (currentUser.username || ''), timeout: 120000 },
+                        // Izvještaji - sedmični (tekući mjesec)
+                        { name: 'Izvještaji (sedmični)', url: buildApiUrl('otpremac-detail', { year }), cacheKey: 'cache_otpremac_sedmicni_' + year + '_' + currentMonth, timeout: 120000 },
+                        // Izvještaji - mjesečni (tekući mjesec)
+                        { name: 'Izvještaji (mjesečni)', url: buildApiUrl('otpremac-detail', { year }), cacheKey: 'cache_otpremac_mjesecni_' + year + '_' + currentMonth, timeout: 120000 }
                     ];
                 }
 
