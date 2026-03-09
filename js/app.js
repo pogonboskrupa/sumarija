@@ -5989,9 +5989,16 @@
                     var dateParts = u.datum.split('.');
                     var mjesec = dateParts.length >= 2 ? parseInt(dateParts[1]) : 1;
 
+                    var mjesecBoje = {
+                        1: '#be185d', 2: '#7e22ce', 3: '#4338ca', 4: '#1d4ed8',
+                        5: '#0891b2', 6: '#0d9488', 7: '#047857', 8: '#4d7c0f',
+                        9: '#a16207', 10: '#c2410c', 11: '#dc2626', 12: '#4b5563'
+                    };
+                    var mBoja = mjesecBoje[mjesec] || '#374151';
+
                     return '<tr class="mjesec-' + mjesec + '">' +
-                        '<td style="font-weight: 500;">' + u.datum + '</td>' +
-                        '<td>' + u.odjel + '</td>' +
+                        '<td style="font-weight: 700; color: ' + mBoja + ';">' + u.datum + '</td>' +
+                        '<td style="font-weight: 600; color: ' + mBoja + ';">' + u.odjel + '</td>' +
                         sortimentiCells +
                         '<td class="ukupno-col">' + u.ukupno.toFixed(2) + '</td>' +
                         '</tr>';
