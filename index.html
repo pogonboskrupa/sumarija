@@ -699,6 +699,20 @@
                     <span id="primaci-admin-total-badge" style="background: #047857; color: white; padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: 700;"></span>
                 </div>
 
+                <!-- Tabela sa svim unosima -->
+                <div style="margin-bottom: 20px; background: white; border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="margin: 0; color: #374151;">Svi unosi</h4>
+                        <input type="text" id="primaci-admin-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterPrimaciAdminTable()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px; width: 200px;">
+                    </div>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="data-table worker-table" id="primaci-admin-table">
+                            <thead id="primaci-admin-header"></thead>
+                            <tbody id="primaci-admin-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Dnevni chart sa mjesec selektorom -->
                 <div style="margin-bottom: 20px; background: white; border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -725,20 +739,6 @@
                 <div style="margin-bottom: 20px; background: white; border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb;">
                     <h4 style="margin: 0 0 12px 0; color: #374151;">Mjesečni pregled</h4>
                     <canvas id="primaci-admin-monthly-chart" height="200"></canvas>
-                </div>
-
-                <!-- Tabela sa svim unosima -->
-                <div style="background: white; border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <h4 style="margin: 0; color: #374151;">Svi unosi</h4>
-                        <input type="text" id="primaci-admin-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterPrimaciAdminTable()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px; width: 200px;">
-                    </div>
-                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                        <table class="data-table worker-table" id="primaci-admin-table">
-                            <thead id="primaci-admin-header"></thead>
-                            <tbody id="primaci-admin-body"></tbody>
-                        </table>
-                    </div>
                 </div>
             </div>
 
