@@ -44,8 +44,13 @@
                 'poslovodja-unosi': 'poslovodja-unosi-content',
                 'stanje-zaliha': 'stanje-zaliha-content',
                 'primaci-admin': 'primaci-admin-content',
+                'izvjestaji': 'izvjestaji-content',
+                'izvjestaji-primac': 'izvjestaji-primac-content',
+                'izvjestaji-otpremac': 'izvjestaji-otpremac-content',
+                'kubikator': 'kubikator-content',
+                'ostalo': 'ostalo-content',
             };
-            const ttl = (typeof getSmartCacheTTL === 'function') ? Math.min(getSmartCacheTTL(), 5 * 60 * 1000) : 60000;
+            const ttl = (typeof getSmartCacheTTL === 'function') ? getSmartCacheTTL() : 60000;
             const lastRender = window._tabRenderTime[tab];
             const contentId = tabContentMap[tab];
             if (lastRender && contentId && (Date.now() - lastRender) < ttl) {
@@ -254,10 +259,16 @@
                 // Data already loaded from initial select
             } else if (view === 'godisnji') {
                 document.getElementById('primaci-admin-godisnji-view').classList.remove('hidden');
-                loadPrimaciAdminGodisnji();
+                // Load only if not already rendered
+                if (!document.getElementById('primaci-admin-godisnji-header').innerHTML) {
+                    loadPrimaciAdminGodisnji();
+                }
             } else if (view === 'odjeli') {
                 document.getElementById('primaci-admin-odjeli-view').classList.remove('hidden');
-                loadPrimaciAdminOdjeli();
+                // Load only if not already rendered
+                if (!document.getElementById('primaci-admin-odjeli-container').innerHTML) {
+                    loadPrimaciAdminOdjeli();
+                }
             }
         }
 
