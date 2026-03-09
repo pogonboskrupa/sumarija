@@ -2537,8 +2537,23 @@
         }
 
         body.force-android-view table {
-            font-size: 13px !important;
+            font-size: 14px !important;
             width: 100% !important;
+            table-layout: auto !important;
+        }
+
+        body.force-android-view table th,
+        body.force-android-view table td {
+            padding: 14px 12px !important;
+            white-space: nowrap !important;
+        }
+
+        body.force-android-view th {
+            font-size: 11px !important;
+        }
+
+        body.force-android-view td {
+            font-size: 14px !important;
         }
 
         body.force-android-view .professional-monthly-table th,
@@ -2547,12 +2562,94 @@
             font-size: 13px !important;
         }
 
+        body.force-android-view .monthly-table th,
+        body.force-android-view .monthly-table td {
+            font-size: 13px !important;
+            padding: 14px 12px !important;
+        }
+
+        body.force-android-view .kupci-table {
+            font-size: 14px !important;
+        }
+
+        body.force-android-view .kupci-table th,
+        body.force-android-view .kupci-table td {
+            padding: 12px 10px !important;
+            font-size: 14px !important;
+        }
+
+        body.force-android-view .kupci-table thead th {
+            font-size: 11px !important;
+            padding: 14px 10px !important;
+        }
+
+        body.force-android-view .kupci-table th:first-child,
+        body.force-android-view .kupci-table td:first-child {
+            min-width: 180px !important;
+            max-width: none !important;
+            font-size: 14px !important;
+        }
+
+        body.force-android-view .kupci-table th:nth-child(2),
+        body.force-android-view .kupci-table td:nth-child(2) {
+            min-width: 100px !important;
+            font-size: 14px !important;
+        }
+
+        body.force-android-view .kupci-table .sortiment-col {
+            min-width: 80px !important;
+            max-width: none !important;
+            font-size: 14px !important;
+        }
+
+        body.force-android-view .kupci-table .ukupno-col {
+            min-width: 100px !important;
+            font-size: 14px !important;
+        }
+
+        body.force-android-view .kupci-table .totals-row {
+            font-size: 14px !important;
+        }
+
+        body.force-android-view .kupci-table-wrapper {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
         body.force-android-view .cards {
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
         }
 
         body.force-android-view .summary-cards {
             grid-template-columns: repeat(4, 1fr) !important;
+            gap: 16px !important;
+        }
+
+        body.force-android-view .summary-card {
+            padding: 20px !important;
+        }
+
+        body.force-android-view .summary-card-value {
+            font-size: 28px !important;
+        }
+
+        body.force-android-view .summary-card-title {
+            font-size: 13px !important;
+        }
+
+        /* Override mobilne stilove za controls */
+        body.force-android-view .controls-bar {
+            flex-direction: row !important;
+            gap: 12px !important;
+        }
+
+        body.force-android-view .search-input {
+            width: auto !important;
+            min-width: 200px !important;
+        }
+
+        body.force-android-view .btn {
+            width: auto !important;
         }
 
         body.force-android-view .text-outline-firma {
