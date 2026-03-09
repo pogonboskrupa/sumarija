@@ -6310,7 +6310,7 @@
                     '<span style="font-size: 13px; opacity: 0.9;">' + zadnjiDatumStr + '</span>' +
                     '<span style="background: rgba(255,255,255,0.25); padding: 4px 14px; border-radius: 6px; font-size: 14px; font-weight: 700;">' + odjel.ukupno.toFixed(2) + ' m\u00B3</span>' +
                     '</div></div>' +
-                    '<div style="background: ' + boja.bg + '; padding: 20px;">' +
+                    '<div style="background: ' + boja.bg + '; padding: 12px;">' +
                     // Tabela 1: Apsolutne vrijednosti sa primačima kao redovima
                     '<h4 style="font-size: 14px; margin: 0 0 8px 0; color: ' + boja.header + ';">Apsolutne vrijednosti (m\u00B3)</h4>' +
                     '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 16px;">' +
