@@ -1115,22 +1115,24 @@
                 currentPassword = savedPass;
                 showApp();
                 loadPoslovodjaRadilistaMapping(); // Dohvati poslovodja→radilista iz INFO sheeta
-                loadData();
                 loadOdjeli(); // Load odjeli list after auto-login
 
-                // 🚀 AUTO-PRELOAD: Automatski učitaj SVE prikaze u pozadini (silent mod)!
+                // Učitaj početni prikaz PA TEK ONDA preload ostale
+                const initialLoad = loadData();
+
+                // 🚀 AUTO-PRELOAD: Čekaj da početni prikaz završi, pa tek onda preloaduj ostalo
                 if (!preloadScheduled) {
-                    console.log('[AUTO-PRELOAD] Scheduling background preload (auto-login)...');
                     preloadScheduled = true;
-                    setTimeout(() => {
-                        preloadAllViews(true).then(() => {
-                            console.log('[AUTO-PRELOAD] ✅ All views preloaded in background!');
-                            preloadScheduled = false; // Reset after completion
-                        }).catch(err => {
-                            console.error('[AUTO-PRELOAD] ⚠️ Preload failed:', err);
-                            preloadScheduled = false; // Reset after error
-                        });
-                    }, 2000); // Pokreni nakon 2s (dovoljno da initial load završi)
+                    Promise.resolve(initialLoad).then(() => {
+                        console.log('[AUTO-PRELOAD] Initial view loaded, starting background preload...');
+                        return preloadAllViews(true);
+                    }).then(() => {
+                        console.log('[AUTO-PRELOAD] ✅ All views preloaded in background!');
+                        preloadScheduled = false;
+                    }).catch(err => {
+                        console.error('[AUTO-PRELOAD] ⚠️ Preload failed:', err);
+                        preloadScheduled = false;
+                    });
                 }
             }
         });
