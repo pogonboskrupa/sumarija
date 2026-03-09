@@ -1461,11 +1461,11 @@
                         // Helper function for realizacija heatmap class
                         const getRealizacijaClass = (val) => {
                             if (val == null || val <= 0) return '';
-                            if (val >= 100) return 'real-over-100';
-                            if (val >= 75) return 'real-75-100';
-                            if (val >= 50) return 'real-50-75';
-                            if (val >= 25) return 'real-25-50';
-                            return 'real-0-25';
+                            if (val >= 116) return 'real-over-115';
+                            if (val >= 106) return 'real-106-115';
+                            if (val >= 76) return 'real-76-105';
+                            if (val >= 51) return 'real-51-75';
+                            return 'real-0-50';
                         };
 
                         // Deterministic hash function for izvođač colors
