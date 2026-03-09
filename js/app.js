@@ -721,7 +721,18 @@
                         { name: 'Otpremaci - Daily', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_daily_' + year + '_' + currentMonth, timeout: 180000 },
                         { name: 'Otpremaci - Po radilištu', url: buildApiUrl('otpremaci-by-radiliste', { year }), cacheKey: 'cache_otpremaci_radiliste_' + year, timeout: 180000 },
 
-                        // OSTALO meni - Kubikator nema API, ne treba preload
+                        // STANJE ZALIHA
+                        { name: 'Stanje Zaliha', url: buildApiUrl('stanje-zaliha'), cacheKey: 'cache_stanje_zaliha', timeout: 180000 },
+
+                        // PRIMACI ADMIN (koristi isti endpoint kao primaci monthly)
+                        { name: 'Primaci Admin', url: buildApiUrl('primaci', { year }), cacheKey: 'cache_primaci_' + year, timeout: 180000 },
+
+                        // SORTIMENTI PO PRIMAC/OTPREMAC (tekući mjesec)
+                        { name: 'Primaci - Sortimenti po primaču', url: buildApiUrl('primaci-sortimenti-by-primac', { year, month: currentMonth }), cacheKey: 'cache_primaci_sort_primac_' + year + '_' + currentMonth, timeout: 180000 },
+                        { name: 'Otpremaci - Sortimenti po otpremaču', url: buildApiUrl('otpremaci-sortimenti-by-otpremac', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_sort_otpremac_' + year + '_' + currentMonth, timeout: 180000 },
+
+                        // OTPREMACI PO KUPCIMA (koristi isti endpoint kao kupci)
+                        { name: 'Otpremaci - Po kupcima', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
                     ];
 
                 } else if (userType === 'poslovođa' || userType === 'poslovodja') {
@@ -786,7 +797,7 @@
                         }
                         return { success: false, name: view.name };
                     }
-                }, 5); // Max 5 paralelnih poziva
+                }, 8); // Max 8 paralelnih poziva
 
                 console.log(`[PRELOAD] Finished! Loaded: ${totalLoaded}/${totalViews}, Failed: ${totalFailed}`);
 
