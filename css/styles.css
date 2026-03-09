@@ -2432,15 +2432,10 @@
         }
 
         /* ============================================ */
-        /* 📱 ANDROID VIEW - Desktop layout bez sidebar-a */
-        /* Horizontalni tabovi na vrhu, sadržaj preko cijelog ekrana */
+        /* 📱 ANDROID VIEW - Isto kao Desktop view ali bez sidebar-a */
+        /* Sidebar sakriven, horizontalni tabovi, širi sadržaj */
+        /* Viewport 1200px sa zoom in/out mogućnošću */
         /* ============================================ */
-
-        body.force-android-view {
-            min-width: 1100px !important;
-            width: 1100px !important;
-            overflow-x: auto !important;
-        }
 
         /* Sakrij sidebar, prikaži horizontalne tabove */
         body.force-android-view .sidebar.desktop-only {
@@ -2451,149 +2446,29 @@
             display: block !important;
         }
 
+        /* Layout bez sidebar-a - sve ide preko cijelog ekrana */
         body.force-android-view .app-layout {
             flex-direction: column !important;
         }
 
         body.force-android-view .main-content {
             width: 100% !important;
-        }
-
-        /* Header - horizontalni layout */
-        body.force-android-view .header {
-            flex-direction: row !important;
-            padding: 12px 20px !important;
-            flex-wrap: nowrap !important;
-        }
-
-        body.force-android-view .header-content {
-            flex-direction: row !important;
-            gap: 16px !important;
-            flex-wrap: nowrap !important;
-            justify-content: space-between !important;
-        }
-
-        body.force-android-view .header-left {
-            width: auto !important;
-            flex-shrink: 0 !important;
-        }
-
-        body.force-android-view .header-center {
-            margin: 0 16px !important;
-            flex: 0 0 auto !important;
-        }
-
-        body.force-android-view .company-logo {
-            height: 70px !important;
-        }
-
-        body.force-android-view .header-right {
-            width: auto !important;
-            gap: 12px !important;
-            flex-wrap: nowrap !important;
-            flex-shrink: 0 !important;
-        }
-
-        body.force-android-view .header-title h1 {
-            font-size: 16px !important;
-        }
-
-        body.force-android-view .header-title p {
-            font-size: 11px !important;
-        }
-
-        body.force-android-view .header-user {
-            display: block !important;
+            max-width: 100% !important;
         }
 
         /* Tabovi - horizontalni scrollable */
         body.force-android-view .tabs-container {
             overflow-x: auto !important;
             -webkit-overflow-scrolling: touch !important;
-            padding: 8px 12px !important;
         }
 
         body.force-android-view .tabs {
             display: flex !important;
             flex-wrap: nowrap !important;
-            gap: 4px !important;
-            padding: 0 !important;
         }
 
         body.force-android-view .tab {
-            padding: 12px 18px !important;
-            font-size: 13px !important;
             white-space: nowrap !important;
-        }
-
-        /* Container i sekcije - full width */
-        body.force-android-view .container {
-            padding: 20px 16px !important;
-            max-width: 100% !important;
-        }
-
-        body.force-android-view .section {
-            padding: 24px !important;
-        }
-
-        /* Summary kartice - 2 kolone */
-        body.force-android-view .summary-cards {
-            grid-template-columns: repeat(2, 1fr) !important;
-        }
-
-        body.force-android-view .cards {
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
-        }
-
-        /* Tabele - desktop kvaliteta */
-        body.force-android-view table {
-            font-size: 13px !important;
-            width: 100% !important;
-        }
-
-        body.force-android-view th,
-        body.force-android-view td {
-            padding: 10px 10px !important;
-            white-space: nowrap !important;
-        }
-
-        body.force-android-view th {
-            font-size: 12px !important;
-        }
-
-        body.force-android-view .sortiment-col {
-            min-width: 70px !important;
-            font-size: 12px !important;
-        }
-
-        body.force-android-view .professional-monthly-table th,
-        body.force-android-view .professional-monthly-table td {
-            padding: 12px 14px !important;
-            font-size: 13px !important;
-        }
-
-        /* Buttons - touch friendly */
-        body.force-android-view .btn {
-            min-height: 40px !important;
-            padding: 10px 16px !important;
-            font-size: 13px !important;
-        }
-
-        body.force-android-view .summary-card-value {
-            font-size: 22px !important;
-        }
-
-        body.force-android-view .summary-card-title {
-            font-size: 12px !important;
-        }
-
-        /* Badge */
-        body.force-android-view .badge {
-            font-size: 11px !important;
-        }
-
-        body.force-android-view .text-outline-firma {
-            font-size: 18px !important;
         }
 
         /* ============================================ */

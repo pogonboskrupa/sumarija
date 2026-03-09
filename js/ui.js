@@ -405,10 +405,10 @@
                 }
             }
 
-            // Android view: full device width, zoomed out to fit content
+            // Android view: same as desktop (1200px) with zoom in/out
             var viewport = document.querySelector('meta[name=viewport]');
             if (isAndroid) {
-                viewport.setAttribute('content', 'width=1100, initial-scale=0.35, user-scalable=yes');
+                viewport.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes');
             } else {
                 viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
             }
