@@ -2798,3 +2798,258 @@
                 cursor: auto;
             }
         }
+
+        /* ============================================ */
+        /* 📱 ANDROID VIEW - Desktop prikaz bez sidebar-a */
+        /* Sidebar sakriven, horizontalni tabovi, full-width tabele */
+        /* ============================================ */
+
+        body.force-android-view {
+            min-width: 1200px !important;
+            width: 1200px !important;
+            overflow-x: auto !important;
+        }
+
+        body.force-android-view .sidebar.desktop-only {
+            display: none !important;
+        }
+
+        body.force-android-view .tabs-container.mobile-only {
+            display: block !important;
+        }
+
+        body.force-android-view .app-layout {
+            flex-direction: column !important;
+        }
+
+        body.force-android-view .main-content {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        body.force-android-view .header {
+            flex-direction: row !important;
+            padding: 16px 24px !important;
+            flex-wrap: nowrap !important;
+        }
+
+        body.force-android-view .header-content {
+            flex-direction: row !important;
+            gap: 16px !important;
+            flex-wrap: nowrap !important;
+            justify-content: space-between !important;
+        }
+
+        body.force-android-view .header-left {
+            width: auto !important;
+            flex-shrink: 0 !important;
+        }
+
+        body.force-android-view .header-center {
+            margin: 0 20px !important;
+            flex: 0 0 auto !important;
+        }
+
+        body.force-android-view .company-logo {
+            height: 90px !important;
+        }
+
+        body.force-android-view .header-right {
+            width: auto !important;
+            gap: 16px !important;
+            flex-wrap: nowrap !important;
+            flex-shrink: 0 !important;
+        }
+
+        body.force-android-view .header-title h1 {
+            font-size: 18px !important;
+        }
+
+        body.force-android-view .header-title p {
+            font-size: 12px !important;
+        }
+
+        body.force-android-view .header-user {
+            display: block !important;
+        }
+
+        body.force-android-view .tabs-container {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
+
+        body.force-android-view .tabs {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            gap: 4px !important;
+            padding: 0 !important;
+        }
+
+        body.force-android-view .tab {
+            padding: 14px 20px !important;
+            font-size: 14px !important;
+            white-space: nowrap !important;
+        }
+
+        body.force-android-view .section {
+            padding: 32px !important;
+        }
+
+        body.force-android-view .container {
+            padding: 32px 24px !important;
+            max-width: 100% !important;
+        }
+
+        body.force-android-view table {
+            font-size: 14px !important;
+            width: 100% !important;
+            table-layout: auto !important;
+        }
+
+        body.force-android-view table th,
+        body.force-android-view table td {
+            padding: 14px 12px !important;
+            white-space: nowrap !important;
+        }
+
+        body.force-android-view th {
+            font-size: 11px !important;
+        }
+
+        body.force-android-view td {
+            font-size: 14px !important;
+        }
+
+        body.force-android-view .professional-monthly-table th,
+        body.force-android-view .professional-monthly-table td {
+            padding: 14px 18px !important;
+            font-size: 13px !important;
+        }
+
+        body.force-android-view .monthly-table th,
+        body.force-android-view .monthly-table td {
+            font-size: 13px !important;
+            padding: 14px 12px !important;
+        }
+
+        body.force-android-view .kupci-table {
+            font-size: 14px !important;
+        }
+
+        body.force-android-view .kupci-table th,
+        body.force-android-view .kupci-table td {
+            padding: 12px 10px !important;
+            font-size: 14px !important;
+        }
+
+        body.force-android-view .kupci-table thead th {
+            font-size: 11px !important;
+            padding: 14px 10px !important;
+        }
+
+        body.force-android-view .kupci-table th:first-child,
+        body.force-android-view .kupci-table td:first-child {
+            min-width: 180px !important;
+            max-width: none !important;
+            font-size: 14px !important;
+        }
+
+        body.force-android-view .kupci-table th:nth-child(2),
+        body.force-android-view .kupci-table td:nth-child(2) {
+            min-width: 100px !important;
+            font-size: 14px !important;
+        }
+
+        body.force-android-view .kupci-table .sortiment-col {
+            min-width: 80px !important;
+            max-width: none !important;
+            font-size: 14px !important;
+        }
+
+        body.force-android-view .kupci-table .ukupno-col {
+            min-width: 100px !important;
+            font-size: 14px !important;
+        }
+
+        body.force-android-view .kupci-table .totals-row {
+            font-size: 14px !important;
+        }
+
+        body.force-android-view .kupci-table-wrapper {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        body.force-android-view .cards {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+        }
+
+        body.force-android-view .summary-cards {
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 16px !important;
+        }
+
+        body.force-android-view .summary-card {
+            padding: 20px !important;
+        }
+
+        body.force-android-view .summary-card-value {
+            font-size: 28px !important;
+        }
+
+        body.force-android-view .summary-card-title {
+            font-size: 13px !important;
+        }
+
+        body.force-android-view .controls-bar {
+            flex-direction: row !important;
+            gap: 12px !important;
+        }
+
+        body.force-android-view .search-input {
+            width: auto !important;
+            min-width: 200px !important;
+        }
+
+        body.force-android-view .btn {
+            width: auto !important;
+        }
+
+        body.force-android-view .text-outline-firma {
+            font-size: 20px !important;
+        }
+
+        /* ========== PULL TO REFRESH ========== */
+        #pull-refresh-indicator {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%) translateY(-50px);
+            z-index: 99999;
+            background: #059669;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 0 0 16px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+        #pull-refresh-indicator.ready {
+            background: #047857;
+        }
+        #pull-refresh-indicator.refreshing .pull-refresh-icon {
+            animation: ptr-spin 0.8s linear infinite;
+        }
+        .pull-refresh-icon {
+            font-size: 18px;
+        }
+        @keyframes ptr-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
