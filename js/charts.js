@@ -639,6 +639,7 @@
 
         // Load Primac Godišnji Prikaz
         async function loadPrimacGodisnji() {
+            if (window.currentTab && window.currentTab !== 'primac-godisnji') return;
             try {
                 // Get year from selector, default to current year
                 const yearSelector = document.getElementById('primac-godisnji-year-select');
@@ -744,6 +745,7 @@
 
         // Load otpremac godisnji prikaz (yearly view)
         async function loadOtpremacGodisnji() {
+            if (window.currentTab && window.currentTab !== 'otpremac-godisnji') return;
             try {
                 var yearSelector = document.getElementById('otpremac-godisnji-year-select');
                 var year = yearSelector ? yearSelector.value : new Date().getFullYear();
@@ -829,6 +831,7 @@
 
         // Load primac personal data
         async function loadPrimacPersonal() {
+            if (window.currentTab && window.currentTab !== 'primac-personal') return;
             var ppYear = (document.getElementById('primac-personal-year-select') || {}).value || new Date().getFullYear();
             var ppCacheKey = 'cache_primac_detail_' + ppYear;
             // Turbo: skip loading screen if cache exists
@@ -937,6 +940,7 @@
 
         // Load otpremac personal data
         async function loadOtpremacPersonal() {
+            if (window.currentTab && window.currentTab !== 'otpremac-personal') return;
             var opYear = (document.getElementById('otpremac-personal-year-select') || {}).value || new Date().getFullYear();
             var opCacheKey = 'cache_otpremac_detail_' + opYear;
             // Turbo: skip loading screen if cache exists

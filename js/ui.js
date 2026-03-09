@@ -9,6 +9,9 @@
 
         // Switch between tabs
         function switchTab(tab) {
+            // Prati aktivni tab za sprečavanje bleeding-a kod async operacija
+            window.currentTab = tab;
+
             // Update tab buttons - set active on all matching tabs (sidebar + mobile)
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
 
@@ -57,40 +60,7 @@
             }
 
             // Hide all content sections
-            document.getElementById('dashboard-content').classList.add('hidden');
-            document.getElementById('primaci-content').classList.add('hidden');
-            document.getElementById('otpremaci-content').classList.add('hidden');
-            document.getElementById('kupci-content').classList.add('hidden');
-            document.getElementById('primac-personal-content').classList.add('hidden');
-            document.getElementById('primac-godisnji-content').classList.add('hidden');
-            document.getElementById('otpremac-personal-content').classList.add('hidden');
-            document.getElementById('primac-odjeli-content').classList.add('hidden');
-            document.getElementById('otpremac-odjeli-content').classList.add('hidden');
-            document.getElementById('add-sjeca-content').classList.add('hidden');
-            document.getElementById('add-otprema-content').classList.add('hidden');
-            document.getElementById('my-sjece-content').classList.add('hidden');
-            document.getElementById('my-otpreme-content').classList.add('hidden');
-            document.getElementById('edit-sjeca-content').classList.add('hidden');
-            document.getElementById('edit-otprema-content').classList.add('hidden');
-            document.getElementById('pending-unosi-content').classList.add('hidden');
-            document.getElementById('mjesecni-sortimenti-content').classList.add('hidden');
-            document.getElementById('izvjestaji-content').classList.add('hidden');
-            document.getElementById('izvjestaji-primac-content').classList.add('hidden');
-            document.getElementById('izvjestaji-otpremac-content').classList.add('hidden');
-            document.getElementById('operativa-content').classList.add('hidden');
-            document.getElementById('stanje-odjela-admin-content').classList.add('hidden');
-            document.getElementById('poslovodja-stanje-content').classList.add('hidden');
-            document.getElementById('poslovodja-sjeca-content').classList.add('hidden');
-            document.getElementById('poslovodja-otprema-content').classList.add('hidden');
-            document.getElementById('poslovodja-pregled-content').classList.add('hidden');
-            document.getElementById('poslovodja-unosi-content').classList.add('hidden');
-            document.getElementById('otpremac-godisnji-content').classList.add('hidden');
-            document.getElementById('dinamika-content').classList.add('hidden');
-            document.getElementById('kubikator-content').classList.add('hidden');
-            document.getElementById('ostalo-content').classList.add('hidden');
-            document.getElementById('stanje-zaliha-content').classList.add('hidden');
-            var primaciAdminEl = document.getElementById('primaci-admin-content');
-            if (primaciAdminEl) primaciAdminEl.classList.add('hidden');
+            document.querySelectorAll('[id$="-content"]').forEach(c => c.classList.add('hidden'));
 
             // Load appropriate content
             if (tab === 'dashboard') {

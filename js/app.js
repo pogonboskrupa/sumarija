@@ -2,6 +2,11 @@
         const APP_VERSION = '2026-01-12-v18-MONTHLY-BY-ODJELI';
         const BUILD_COMMIT = 'pending';
 
+        // Helper: provjeri da li je tab još uvijek aktivan (sprečava bleeding async sadržaja)
+        function isActiveTab(tabName) {
+            return window.currentTab === tabName;
+        }
+
         // SUPER VISIBLE VERSION CHECK
         console.clear();
 
@@ -1082,6 +1087,7 @@
                         const parsed = JSON.parse(cachedDashboard);
                         if (parsed.data && parsed.data.mjesecnaStatistika) {
                             // ✨ INSTANT: Show cached data immediately WITHOUT loading screen
+                            if (!isActiveTab('dashboard')) return;
                             document.getElementById('loading-screen').classList.add('hidden');
                             document.getElementById('dashboard-content').classList.remove('hidden');
                             await renderDashboard(parsed.data);
@@ -1113,6 +1119,7 @@
                     }
 
                     // Silently update with fresh data
+                    if (!isActiveTab('dashboard')) return;
                     await renderDashboard(data);
 
                     // Hide cache indicator when fresh data arrives
@@ -1531,6 +1538,7 @@
                 loadPendingCount();
 
                 // Show content (in case it was hidden during initial load)
+                if (!isActiveTab('dashboard')) return;
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('dashboard-content').classList.remove('hidden');
 
@@ -2179,6 +2187,7 @@
 
         // Load STANJE ZALIHA za poslovođu (filtrirano po poslovođi na backendu)
         async function loadPoslovodjaStanje() {
+            if (!isActiveTab('poslovodja-stanje')) return;
             const poslovodjaName = currentUser ? currentUser.fullName : '';
             const cacheKey = 'cache_stanje_zaliha_' + (poslovodjaName || 'all').replace(/\s+/g, '_');
 
@@ -2237,6 +2246,7 @@
                 renderPoslovodjaStanjeZalihaTabela(filteredOdjeli);
                 renderPoslovodjaStanjeCards(filteredOdjeli);
 
+                if (!isActiveTab('poslovodja-stanje')) return;
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('poslovodja-stanje-content').classList.remove('hidden');
 
@@ -2993,6 +3003,7 @@
         }
 
         async function loadPoslovodjaSjeca() {
+            if (!isActiveTab('poslovodja-sjeca')) return;
             // Turbo: skip loading screen if cache exists
             if (!localStorage.getItem('cache_primke_sjeca')) {
                 document.getElementById('loading-screen').classList.remove('hidden');
@@ -3184,6 +3195,7 @@
         // POSLOVOĐA - OTPREMA TAB (Zadnjih 10 dana)
         // ============================================
         async function loadPoslovodjaOtprema() {
+            if (!isActiveTab('poslovodja-otprema')) return;
             // Turbo: skip loading screen if cache exists
             if (!localStorage.getItem('cache_otpreme_tab')) {
                 document.getElementById('loading-screen').classList.remove('hidden');
@@ -3378,6 +3390,7 @@
         // POSLOVODJA - PREGLED TAB (Mjesečni po odjelima)
         // ============================================
         async function loadPoslovodjaPregled() {
+            if (!isActiveTab('poslovodja-pregled')) return;
             // Turbo: skip loading screen if both caches exist
             if (!localStorage.getItem('cache_primke_sjeca') || !localStorage.getItem('cache_otpreme_tab')) {
                 document.getElementById('loading-screen').classList.remove('hidden');
@@ -3605,6 +3618,7 @@
                         const parsed = JSON.parse(cachedPrimaci);
                         if (parsed.data && parsed.data.primaci) {
                             // ✨ INSTANT: Show cached data immediately
+                            if (!isActiveTab('primaci')) return;
                             document.getElementById('loading-screen').classList.add('hidden');
                             document.getElementById('primaci-content').classList.remove('hidden');
                             renderPrimaci(parsed.data);
@@ -3762,6 +3776,7 @@
 
                 document.getElementById('primaci-body').innerHTML = bodyHTML + totalsRow;
 
+                if (!isActiveTab('primaci')) return;
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('primaci-content').classList.remove('hidden');
         }
@@ -3781,6 +3796,7 @@
                         const parsed = JSON.parse(cachedOtpremaci);
                         if (parsed.data && parsed.data.otpremaci) {
                             // ✨ INSTANT: Show cached data immediately
+                            if (!isActiveTab('otpremaci')) return;
                             document.getElementById('loading-screen').classList.add('hidden');
                             document.getElementById('otpremaci-content').classList.remove('hidden');
                             renderOtpremaci(parsed.data);
@@ -3938,6 +3954,7 @@
 
                 document.getElementById('otpremaci-body').innerHTML = bodyHTML + totalsRow;
 
+                if (!isActiveTab('otpremaci')) return;
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('otpremaci-content').classList.remove('hidden');
         }
@@ -4884,6 +4901,7 @@
                         const parsed = JSON.parse(cachedKupci);
                         if (parsed.data && parsed.data.godisnji) {
                             // ✨ INSTANT: Show cached data immediately
+                            if (!isActiveTab('kupci')) return;
                             document.getElementById('kupci-content').classList.remove('hidden');
                             document.getElementById('loading-screen').classList.add('hidden');
                             renderKupciGodisnjiTable(parsed.data.godisnji, parsed.data.sortimentiNazivi);
@@ -4917,6 +4935,7 @@
                 }
 
                 // Update with fresh data
+                if (!isActiveTab('kupci')) return;
                 renderKupciGodisnjiTable(data.godisnji, data.sortimentiNazivi);
                 renderKupciMjesecniTable(data.mjesecni, data.sortimentiNazivi);
                 hideCacheIndicator();
@@ -5632,6 +5651,7 @@
         // Load primac odjeli data (ZADNJIH 15 ODJELA IZ SVIH GODINA)
         // ✅ OPTIMIZOVANO: Jedan API poziv sa limit=15 (backend procesira sve godine)
         async function loadPrimacOdjeli() {
+            if (!isActiveTab('primac-odjeli')) return;
             // Turbo: skip loading screen if cache exists
             if (!localStorage.getItem('cache_primac_odjeli_top15')) {
                 document.getElementById('loading-screen').classList.remove('hidden');
@@ -5775,6 +5795,7 @@
 
         // Inicijalizacija taba - popuni dropdown sa primačima
         async function loadPrimaciAdminTab() {
+            if (!isActiveTab('primaci-admin')) return;
             var content = document.getElementById('primaci-admin-content');
             content.classList.remove('hidden');
 
@@ -6361,6 +6382,7 @@
         // Load otpremac odjeli data (ZADNJIH 15 ODJELA IZ SVIH GODINA)
         // ✅ OPTIMIZOVANO: Jedan API poziv sa limit=15 (backend procesira sve godine)
         async function loadOtpremacOdjeli() {
+            if (!isActiveTab('otpremac-odjeli')) return;
             // Turbo: skip loading screen if cache exists
             if (!localStorage.getItem('cache_otpremac_odjeli_top15')) {
                 document.getElementById('loading-screen').classList.remove('hidden');
@@ -6661,6 +6683,7 @@
         }
 
         async function loadPendingUnosi() {
+            if (!isActiveTab('pending-unosi')) return;
             document.getElementById('loading-screen').classList.remove('hidden');
             document.getElementById('pending-unosi-content').classList.add('hidden');
 
@@ -6702,6 +6725,7 @@
         var unfilteredPoslovodjaUnosiData = [];
 
         async function loadPoslovodjaUnosi() {
+            if (!isActiveTab('poslovodja-unosi')) return;
             // Turbo: skip loading screen if supporting caches exist
             if (!localStorage.getItem('cache_primke_sjeca') || !localStorage.getItem('cache_otpreme_tab')) {
                 document.getElementById('loading-screen').classList.remove('hidden');
@@ -6894,6 +6918,7 @@
 
         // Load monthly sortimenti
         async function loadMjesecniSortimenti() {
+            if (!isActiveTab('mjesecni-sortimenti')) return;
             const year = new Date().getFullYear();
             const msCacheKey = `cache_mjesecni_sortimenti_${year}`;
 
@@ -7715,6 +7740,7 @@
         let stanjeZalihaSortimenti = [];
 
         async function loadStanjeZaliha() {
+            if (!isActiveTab('stanje-zaliha')) return;
             // Turbo: instant show cached data
             var szCached = turboShow('cache_stanje_zaliha', 'stanje-zaliha-content', function(d) { return d.odjeli; });
             var szHasCached = false;
@@ -8740,6 +8766,7 @@
 
         // Load My Sjece (last 10 pending entries for current user)
         async function loadMySjece() {
+            if (!isActiveTab('my-sjece')) return;
             var msCacheKey = `cache_my_sjece_${currentUser.username}`;
             // Turbo: skip loading screen if cache exists
             if (!localStorage.getItem(msCacheKey)) {
@@ -8812,6 +8839,7 @@
 
         // Load My Otpreme (last 10 pending entries for current user)
         async function loadMyOtpreme() {
+            if (!isActiveTab('my-otpreme')) return;
             var moCacheKey = `cache_my_otpreme_${currentUser.username}`;
             // Turbo: skip loading screen if cache exists
             if (!localStorage.getItem(moCacheKey)) {
@@ -9280,6 +9308,7 @@
 
         // Load OPERATIVA screen and populate analytics
         function loadOperativa() {
+            if (!isActiveTab('operativa')) return;
             document.getElementById('operativa-content').classList.remove('hidden');
             document.getElementById('loading-screen').classList.add('hidden');
 
@@ -10279,6 +10308,7 @@
 
         // Load dinamika data
         async function loadDinamika() {
+            if (!isActiveTab('dinamika')) return;
             const container = document.getElementById('dinamika-container');
 
             const year = new Date().getFullYear();
