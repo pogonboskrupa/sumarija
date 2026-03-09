@@ -5975,6 +5975,7 @@
                 var totals = { sortimenti: {}, ukupno: 0 };
                 data.sortimentiNazivi.forEach(function(s) { totals.sortimenti[s] = 0; });
 
+                var odjelBojeMap = {}, odjelBojeIdx = 0;
                 var bodyHTML = data.unosi.map(function(u) {
                     data.sortimentiNazivi.forEach(function(s) {
                         totals.sortimenti[s] += (u.sortimenti[s] || 0);
@@ -6001,9 +6002,33 @@
                         9: '#fef9c3', 10: '#ffedd5', 11: '#fee2e2', 12: '#f3f4f6'
                     };
 
+                    // Boje za odjele
+                    if (!odjelBojeMap[u.odjel]) {
+                        var ob = [
+                            { bg: '#dbeafe', text: '#1e40af', border: '#3b82f6' },
+                            { bg: '#d1fae5', text: '#065f46', border: '#10b981' },
+                            { bg: '#fef3c7', text: '#92400e', border: '#f59e0b' },
+                            { bg: '#ede9fe', text: '#5b21b6', border: '#8b5cf6' },
+                            { bg: '#fce7f3', text: '#9d174d', border: '#ec4899' },
+                            { bg: '#ffedd5', text: '#9a3412', border: '#f97316' },
+                            { bg: '#cffafe', text: '#155e75', border: '#06b6d4' },
+                            { bg: '#fee2e2', text: '#991b1b', border: '#ef4444' },
+                            { bg: '#e0e7ff', text: '#3730a3', border: '#6366f1' },
+                            { bg: '#ecfccb', text: '#3f6212', border: '#84cc16' },
+                            { bg: '#f3e8ff', text: '#6b21a8', border: '#a855f7' },
+                            { bg: '#ccfbf1', text: '#134e4a', border: '#14b8a6' },
+                            { bg: '#fef9c3', text: '#854d0e', border: '#eab308' },
+                            { bg: '#e0f2fe', text: '#075985', border: '#0ea5e9' },
+                            { bg: '#fce7f3', text: '#831843', border: '#db2777' }
+                        ];
+                        odjelBojeMap[u.odjel] = ob[odjelBojeIdx % ob.length];
+                        odjelBojeIdx++;
+                    }
+                    var oBoja = odjelBojeMap[u.odjel];
+
                     return '<tr class="mjesec-' + mjesec + '">' +
                         '<td style="font-weight: 700; color: ' + mBoja + '; background: ' + mBg[mjesec] + '; border-left: 4px solid ' + mBoja + ';">' + u.datum + '</td>' +
-                        '<td style="font-weight: 700; color: ' + mBoja + '; background: ' + mBg[mjesec] + ';">' + u.odjel + '</td>' +
+                        '<td style="font-weight: 700; color: ' + oBoja.text + '; background: ' + oBoja.bg + '; border-left: 3px solid ' + oBoja.border + ';">' + u.odjel + '</td>' +
                         sortimentiCells +
                         '<td class="ukupno-col">' + u.ukupno.toFixed(2) + '</td>' +
                         '</tr>';
