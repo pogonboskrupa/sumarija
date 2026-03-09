@@ -710,3 +710,96 @@
             }
         }
 
+        // ========== PULL TO REFRESH ==========
+        (function initPullToRefresh() {
+            var startY = 0;
+            var currentY = 0;
+            var pulling = false;
+            var threshold = 80;
+            var indicator = null;
+
+            function createIndicator() {
+                if (indicator) return indicator;
+                indicator = document.createElement('div');
+                indicator.id = 'pull-refresh-indicator';
+                indicator.innerHTML = '<span class="pull-refresh-icon">↓</span><span class="pull-refresh-text">Povuci za osvježavanje</span>';
+                document.body.appendChild(indicator);
+                return indicator;
+            }
+
+            document.addEventListener('touchstart', function(e) {
+                if (window.scrollY > 5) return;
+                startY = e.touches[0].clientY;
+                pulling = true;
+            }, { passive: true });
+
+            document.addEventListener('touchmove', function(e) {
+                if (!pulling) return;
+                currentY = e.touches[0].clientY;
+                var pullDistance = currentY - startY;
+
+                if (pullDistance < 0) { pulling = false; return; }
+
+                var ind = createIndicator();
+                var progress = Math.min(pullDistance / threshold, 1);
+                ind.style.transform = 'translateY(' + (pullDistance * 0.4 - 50) + 'px)';
+                ind.style.opacity = progress;
+
+                if (progress >= 1) {
+                    ind.querySelector('.pull-refresh-icon').textContent = '↑';
+                    ind.querySelector('.pull-refresh-text').textContent = 'Pusti za osvježavanje';
+                    ind.classList.add('ready');
+                } else {
+                    ind.querySelector('.pull-refresh-icon').textContent = '↓';
+                    ind.querySelector('.pull-refresh-text').textContent = 'Povuci za osvježavanje';
+                    ind.classList.remove('ready');
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchend', function() {
+                if (!pulling) return;
+                var pullDistance = currentY - startY;
+                pulling = false;
+                currentY = 0;
+
+                if (indicator) {
+                    if (pullDistance >= threshold) {
+                        indicator.querySelector('.pull-refresh-icon').textContent = '⟳';
+                        indicator.querySelector('.pull-refresh-text').textContent = 'Osvježavam...';
+                        indicator.classList.add('refreshing');
+
+                        // Obriši sve cache ključeve
+                        var keysToRemove = [];
+                        for (var i = 0; i < localStorage.length; i++) {
+                            var key = localStorage.key(i);
+                            if (key && key.startsWith('cache_')) {
+                                keysToRemove.push(key);
+                            }
+                        }
+                        keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
+                        window._tabRenderTime = {};
+
+                        console.log('[PULL-REFRESH] Cache cleared (' + keysToRemove.length + ' keys), reloading current view...');
+
+                        // Ponovo učitaj trenutni tab
+                        var tab = window.currentTab;
+                        if (tab) {
+                            switchTab(tab);
+                        }
+
+                        setTimeout(function() {
+                            if (indicator) {
+                                indicator.style.transform = 'translateY(-50px)';
+                                indicator.style.opacity = '0';
+                                indicator.classList.remove('ready', 'refreshing');
+                            }
+                        }, 800);
+                    } else {
+                        indicator.style.transform = 'translateY(-50px)';
+                        indicator.style.opacity = '0';
+                        indicator.classList.remove('ready');
+                    }
+                }
+            }, { passive: true });
+        })();
+

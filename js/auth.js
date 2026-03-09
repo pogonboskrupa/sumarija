@@ -150,6 +150,12 @@
                 `).join('');
             }
 
+            // Postavi currentTab na prvi aktivni tab PRIJE loadData
+            const activeTab = tabsConfig.find(t => t.active);
+            if (activeTab) {
+                window.currentTab = activeTab.id;
+            }
+
             // Initialize Delta Sync System
             if (window.DataSync) {
                 DataSync.initSyncConfig(API_URL, currentUser.username, currentPassword);
