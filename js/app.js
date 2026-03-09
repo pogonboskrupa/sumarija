@@ -1081,6 +1081,21 @@
                 }
             }
 
+            // Load Android view preference
+            const androidView = localStorage.getItem('android-view');
+            if (androidView === 'enabled') {
+                document.body.classList.add('force-android-view');
+                const aBtn = document.getElementById('android-view-btn');
+                if (aBtn) {
+                    aBtn.classList.add('active');
+                    aBtn.title = 'Isključi Android prikaz';
+                }
+                let vpAndroid = document.querySelector('meta[name=viewport]');
+                if (vpAndroid) {
+                    vpAndroid.setAttribute('content', 'width=1100, initial-scale=0.35, user-scalable=yes');
+                }
+            }
+
             // Add event listeners for dinamika calculation inputs
             for (let i = 1; i <= 12; i++) {
                 const mjesecKey = String(i).padStart(2, '0');
