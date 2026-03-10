@@ -1066,6 +1066,21 @@
 
 
             // Load desktop view preference
+            const desktopView = localStorage.getItem('desktop-view');
+            if (desktopView === 'enabled') {
+                document.body.classList.add('force-desktop-view');
+                const btn = document.getElementById('desktop-view-btn');
+                if (btn) {
+                    btn.classList.add('active');
+                    btn.title = 'Prebaci na mobilni prikaz';
+                }
+                let viewport = document.querySelector('meta[name=viewport]');
+                if (viewport) {
+                    viewport.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes');
+                }
+            }
+
+            // Load Android view preference
             const androidView = localStorage.getItem('android-view');
             if (androidView === 'enabled') {
                 document.body.classList.add('force-android-view');

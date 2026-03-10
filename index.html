@@ -152,10 +152,14 @@
                         <div class="header-user-name" id="user-name"></div>
                         <div class="header-user-role" id="user-role"></div>
                     </div>
-                    <div class="desktop-view-toggle">
-                        <button class="desktop-view-button" onclick="toggleAndroidView()" id="android-view-btn" title="Prebaci na desktop prikaz">
+                    <div class="desktop-view-toggle" style="display: flex; gap: 6px;">
+                        <button class="desktop-view-button" onclick="toggleDesktopView()" id="desktop-view-btn" title="Prebaci na desktop prikaz">
                             <span>🖥️</span>
                             <span>Desktop</span>
+                        </button>
+                        <button class="desktop-view-button" onclick="toggleAndroidView()" id="android-view-btn" title="Prebaci na Android prikaz">
+                            <span>📱</span>
+                            <span>Android</span>
                         </button>
                     </div>
                     <div class="user-menu">
