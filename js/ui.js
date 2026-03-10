@@ -342,23 +342,18 @@
 
 
         // Desktop view toggle
-        function toggleDesktopView() {
-            // Turn off Android view if active
-            if (document.body.classList.contains('force-android-view')) {
-                document.body.classList.remove('force-android-view');
-                localStorage.setItem('android-view', 'disabled');
-                var aBtn = document.getElementById('android-view-btn');
-                if (aBtn) { aBtn.classList.remove('active'); aBtn.title = 'Prebaci na Android prikaz'; }
-            }
+        function toggleAndroidView() {
+            // Očisti stari desktop-view ako postoji u localStorage
+            localStorage.removeItem('desktop-view');
+            document.body.classList.remove('force-desktop-view');
 
-            document.body.classList.toggle('force-desktop-view');
-            const isDesktopView = document.body.classList.contains('force-desktop-view');
-            localStorage.setItem('desktop-view', isDesktopView ? 'enabled' : 'disabled');
+            document.body.classList.toggle('force-android-view');
+            var isActive = document.body.classList.contains('force-android-view');
+            localStorage.setItem('android-view', isActive ? 'enabled' : 'disabled');
 
-            // Update button state
-            const btn = document.getElementById('desktop-view-btn');
+            var btn = document.getElementById('android-view-btn');
             if (btn) {
-                if (isDesktopView) {
+                if (isActive) {
                     btn.classList.add('active');
                     btn.title = 'Prebaci na mobilni prikaz';
                 } else {
@@ -367,47 +362,8 @@
                 }
             }
 
-            // Update viewport meta tag for desktop view
-            let viewport = document.querySelector('meta[name=viewport]');
-            if (isDesktopView) {
-                // Force desktop layout with minimum width
-                viewport.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes');
-            } else {
-                // Return to responsive mobile layout
-                viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
-            }
-
-            // Force page to re-layout
-            window.scrollTo(0, 0);
-        }
-
-        function toggleAndroidView() {
-            // Turn off desktop view if active
-            if (document.body.classList.contains('force-desktop-view')) {
-                document.body.classList.remove('force-desktop-view');
-                localStorage.setItem('desktop-view', 'disabled');
-                var dBtn = document.getElementById('desktop-view-btn');
-                if (dBtn) { dBtn.classList.remove('active'); dBtn.title = 'Prebaci na desktop prikaz'; }
-            }
-
-            document.body.classList.toggle('force-android-view');
-            var isAndroid = document.body.classList.contains('force-android-view');
-            localStorage.setItem('android-view', isAndroid ? 'enabled' : 'disabled');
-
-            var btn = document.getElementById('android-view-btn');
-            if (btn) {
-                if (isAndroid) {
-                    btn.classList.add('active');
-                    btn.title = 'Isključi Android prikaz';
-                } else {
-                    btn.classList.remove('active');
-                    btn.title = 'Prebaci na Android prikaz';
-                }
-            }
-
-            // Android view: same as desktop (1200px) with zoom in/out
             var viewport = document.querySelector('meta[name=viewport]');
-            if (isAndroid) {
+            if (isActive) {
                 viewport.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes');
             } else {
                 viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
