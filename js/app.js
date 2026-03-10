@@ -2759,30 +2759,47 @@
 
             let html = '';
 
-            data.forEach((odjel, index) => {
-                // Determine status color based on zaliha
-                let statusClass = 'neutral';
-                let statusIcon = '📦';
-                const ukupnoZaliha = odjel.ukupnoZaliha || 0;
+            // Grupiraj odjele po radilištu
+            var grouped = {};
+            data.forEach(function(odjel) {
+                var r = odjel.radiliste || 'N/A';
+                if (!grouped[r]) grouped[r] = [];
+                grouped[r].push(odjel);
+            });
 
-                if (ukupnoZaliha > 100) {
-                    statusClass = 'warning';
-                    statusIcon = '⚠️';
-                } else if (ukupnoZaliha > 0) {
-                    statusClass = 'success';
-                    statusIcon = '✅';
-                } else if (ukupnoZaliha < 0) {
-                    statusClass = 'danger';
-                    statusIcon = '❌';
-                }
+            Object.keys(grouped).forEach(function(radiliste) {
+                var odjeli = grouped[radiliste];
 
+                // Section header za radilište
                 html += `
+                <div style="margin: 32px 0 16px; padding: 12px 20px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-left: 4px solid #3b82f6; border-radius: 8px;">
+                    <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: #1e3a5f;">📍 ${radiliste}</h2>
+                    <p style="margin: 4px 0 0; font-size: 13px; color: #6b7280;">${odjeli.length} odjela</p>
+                </div>`;
+
+                odjeli.forEach(function(odjel, index) {
+                    // Determine status color based on zaliha
+                    let statusClass = 'neutral';
+                    let statusIcon = '📦';
+                    const ukupnoZaliha = odjel.ukupnoZaliha || 0;
+
+                    if (ukupnoZaliha > 100) {
+                        statusClass = 'warning';
+                        statusIcon = '⚠️';
+                    } else if (ukupnoZaliha > 0) {
+                        statusClass = 'success';
+                        statusIcon = '✅';
+                    } else if (ukupnoZaliha < 0) {
+                        statusClass = 'danger';
+                        statusIcon = '❌';
+                    }
+
+                    html += `
                 <div class="stanje-zaliha-card ${statusClass}" style="margin-bottom: 24px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden;">
                     <!-- Card Header -->
                     <div class="stanje-zaliha-card-header" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <h3 style="margin: 0; font-size: 18px; font-weight: 700;">${odjel.odjel}</h3>
-                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.85;">📍 ${odjel.radiliste || 'N/A'}</p>
                         </div>
                         <div style="text-align: right;">
                             <div style="font-size: 24px; font-weight: 700;">${ukupnoZaliha.toFixed(2)} m³</div>
@@ -2852,6 +2869,7 @@
                         </div>
                     </details>
                 </div>`;
+                });
             });
 
             container.innerHTML = html;
