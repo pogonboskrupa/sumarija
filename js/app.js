@@ -2274,9 +2274,9 @@
                 document.getElementById('poslovodja-radilista-list').textContent = poslovodjaName || 'Svi odjeli';
                 // Backend već filtrira po poslovođi - koristimo podatke direktno
                 poslovodjaStanjeOdjeliAll = cached.odjeli;
-                populatePoslovodjaRadilisteDropdown(cachedOdjeli);
-                renderPoslovodjaStanjeZalihaTabela(cachedOdjeli);
-                renderPoslovodjaStanjeCards(cachedOdjeli);
+                populatePoslovodjaRadilisteDropdown(cached.odjeli);
+                renderPoslovodjaStanjeZalihaTabela(cached.odjeli);
+                renderPoslovodjaStanjeCards(cached.odjeli);
                 hasCached = true;
             }
 
