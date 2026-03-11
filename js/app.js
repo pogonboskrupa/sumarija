@@ -2272,18 +2272,8 @@
             var cached = turboShow(cacheKey, 'poslovodja-stanje-content', function(d) { return d.odjeli; });
             if (cached) {
                 document.getElementById('poslovodja-radilista-list').textContent = poslovodjaName || 'Svi odjeli';
-                // Frontend sigurnosni filter za keširane podatke
-                var cachedRadilista = getPoslovodjaRadilista();
-                var cachedOdjeli = cached.odjeli;
-                if (cachedRadilista.length > 0) {
-                    cachedOdjeli = cached.odjeli.filter(function(odjel) {
-                        var odjelRadiliste = (odjel.radiliste || '').toUpperCase().trim();
-                        return cachedRadilista.some(function(r) {
-                            return odjelRadiliste === r.toUpperCase();
-                        });
-                    });
-                }
-                poslovodjaStanjeOdjeliAll = cachedOdjeli;
+                // Backend već filtrira po poslovođi - koristimo podatke direktno
+                poslovodjaStanjeOdjeliAll = cached.odjeli;
                 populatePoslovodjaRadilisteDropdown(cachedOdjeli);
                 renderPoslovodjaStanjeZalihaTabela(cachedOdjeli);
                 renderPoslovodjaStanjeCards(cachedOdjeli);
@@ -2305,22 +2295,11 @@
                     throw new Error(data.error || 'Nema podataka o odjelima');
                 }
 
-                // Frontend sigurnosni filter: prikaži samo odjele koji pripadaju poslovođinim radilištima
-                var radilista = getPoslovodjaRadilista();
-                var filteredOdjeli = data.odjeli;
-                if (radilista.length > 0) {
-                    filteredOdjeli = data.odjeli.filter(function(odjel) {
-                        var odjelRadiliste = (odjel.radiliste || '').toUpperCase().trim();
-                        return radilista.some(function(r) {
-                            return odjelRadiliste === r.toUpperCase();
-                        });
-                    });
-                }
-
-                poslovodjaStanjeOdjeliAll = filteredOdjeli;
-                populatePoslovodjaRadilisteDropdown(filteredOdjeli);
-                renderPoslovodjaStanjeZalihaTabela(filteredOdjeli);
-                renderPoslovodjaStanjeCards(filteredOdjeli);
+                // Backend već filtrira po POSLOVOĐA polju iz STANJE_ZALIHA
+                poslovodjaStanjeOdjeliAll = data.odjeli;
+                populatePoslovodjaRadilisteDropdown(data.odjeli);
+                renderPoslovodjaStanjeZalihaTabela(data.odjeli);
+                renderPoslovodjaStanjeCards(data.odjeli);
 
                 if (!isActiveTab('poslovodja-stanje')) return;
                 document.getElementById('loading-screen').classList.add('hidden');

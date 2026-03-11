@@ -3806,16 +3806,16 @@ function handleStanjeZaliha(username, password, poslovodja) {
       return createJsonResponse({ error: "STANJE_ZALIHA sheet not found in BAZA_PODATAKA" }, false);
     }
 
-    // Ako je proslijeđena poslovođa, dohvati radilišta iz INFO sheeta (kolona I=poslovođa, J=radilište)
+    // Ako je proslijeđena poslovođa, koristimo IME poslovođe za filtriranje
+    // direktno po POSLOVOĐA polju u STANJE_ZALIHA (iz PRIMKA svakog odjela)
+    let poslovodjaFilter = null;
     let poslovodjaRadilista = null;
     if (poslovodja && poslovodja.trim() !== '') {
+      poslovodjaFilter = poslovodja.trim().toUpperCase().split(/\s+/).sort().join(' ');
+      Logger.log('Poslovodja filter (normalized): ' + poslovodjaFilter);
+      // Također dohvati radilišta iz INFO sheeta (za dropdown, ne za filtriranje)
       poslovodjaRadilista = getPoslovodjaRadilistaFromInfo(ss, poslovodja.trim().toUpperCase());
-      Logger.log('Poslovodja radilista: ' + (poslovodjaRadilista ? poslovodjaRadilista.join(', ') : 'NONE'));
-      // Ako poslovođa nema dodijeljena radilišta u INFO sheetu, vrati prazan rezultat
-      if (!poslovodjaRadilista || poslovodjaRadilista.length === 0) {
-        Logger.log('Poslovodja ' + poslovodja + ' nema dodijeljena radilišta - vraćam prazan rezultat');
-        poslovodjaRadilista = ['__NO_MATCH__'];  // Osiguraj da nijedan odjel ne prođe filter
-      }
+      Logger.log('Poslovodja radilista iz INFO: ' + (poslovodjaRadilista ? poslovodjaRadilista.join(', ') : 'NONE'));
     }
 
     const data = stanjeSheet.getDataRange().getValues();
@@ -3943,12 +3943,11 @@ function handleStanjeZaliha(username, password, poslovodja) {
         const otpremaData = otpremaRow ? parseSortimenti(otpremaRow.row) : parseSortimenti([]);
         const zalihaData = zalihaRow ? parseSortimenti(zalihaRow.row) : parseSortimenti([]);
 
-        // Ako je filter aktivan, provjeri da li radilište odjela TAČNO odgovara poslovođinim radilištima iz INFO sheeta
-        if (poslovodjaRadilista !== null) {
-          const radilisteUpper = radilisteNaziv.toUpperCase().trim();
-          const matchFound = poslovodjaRadilista.some(pr => radilisteUpper === pr);
-          if (!matchFound) {
-            // Preskoči - traži sljedeći ODJEL
+        // Filtriraj po POSLOVOĐA polju iz STANJE_ZALIHA (direktno iz PRIMKA svakog odjela)
+        if (poslovodjaFilter !== null) {
+          const sheetPoslovodja = poslovodjaNaziv.toUpperCase().trim().split(/\s+/).sort().join(' ');
+          if (sheetPoslovodja !== poslovodjaFilter) {
+            // Preskoči - ovaj odjel ne pripada ovom poslovođi
             i++;
             continue;
           }
