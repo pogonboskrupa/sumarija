@@ -80,13 +80,17 @@ async function loadIzvjestajiSedmicni() {
         if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
         if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
 
+        // Filtriraj po radilištima poslovođe (ako je poslovođa ulogiran)
+        var primkaFiltered = filterByPoslovodjaRadilista(primkaData.data);
+        var otpremaFiltered = filterByPoslovodjaRadilista(otpremaData.data);
+
         // Izračunaj sedmice u mjesecu (1. počinje od prvog dana, sedmica završava u nedjelju)
         const weeks = calculateWeeksInMonth(year, month);
         console.log('[IZVJEŠTAJI SEDMICNI] Weeks:', weeks);
 
         // Grupiraj podatke po sedmicama i odjelima
-        const primkaByWeek = aggregateByWeekAndOdjel(primkaData.data, primkaData.sortimentiNazivi, weeks, year, month);
-        const otpremaByWeek = aggregateByWeekAndOdjel(otpremaData.data, otpremaData.sortimentiNazivi, weeks, year, month);
+        const primkaByWeek = aggregateByWeekAndOdjel(primkaFiltered, primkaData.sortimentiNazivi, weeks, year, month);
+        const otpremaByWeek = aggregateByWeekAndOdjel(otpremaFiltered, otpremaData.sortimentiNazivi, weeks, year, month);
 
         // Render tables po sedmicama
         renderIzvjestajiSedmicniTable(primkaByWeek, primkaData.sortimentiNazivi, 'sedmicni-primka', weeks);
@@ -340,9 +344,13 @@ async function loadIzvjestajiMjesecni() {
         if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
         if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
 
+        // Filtriraj po radilištima poslovođe (ako je poslovođa ulogiran)
+        var primkaFiltered = filterByPoslovodjaRadilista(primkaData.data);
+        var otpremaFiltered = filterByPoslovodjaRadilista(otpremaData.data);
+
         // Aggregate by odjel
-        const primkaByOdjel = aggregateByOdjelIzvjestaji(primkaData.data, primkaData.sortimentiNazivi);
-        const otpremaByOdjel = aggregateByOdjelIzvjestaji(otpremaData.data, otpremaData.sortimentiNazivi);
+        const primkaByOdjel = aggregateByOdjelIzvjestaji(primkaFiltered, primkaData.sortimentiNazivi);
+        const otpremaByOdjel = aggregateByOdjelIzvjestaji(otpremaFiltered, otpremaData.sortimentiNazivi);
 
         // Render tables
         renderIzvjestajiTable(primkaByOdjel, primkaData.sortimentiNazivi, 'mjesecni-primka');
@@ -490,6 +498,35 @@ function filterIzvjestajiTable(tablePrefix) {
             }
         }
     }
+}
+
+// Filtriraj podatke po radilištima poslovođe (samo za poslovođa ulogu)
+function filterByPoslovodjaRadilista(data) {
+    if (typeof getPoslovodjaRadilista !== 'function') return data;
+    var radilista = getPoslovodjaRadilista();
+
+    // Fallback: ako getPoslovodjaRadilista() vrati prazan niz,
+    // izvuci radilišta iz poslovodjaStanjeOdjeliAll (popunjen iz Stanje zaliha taba)
+    if ((!radilista || radilista.length === 0) && typeof poslovodjaStanjeOdjeliAll !== 'undefined' && poslovodjaStanjeOdjeliAll && poslovodjaStanjeOdjeliAll.length > 0) {
+        var set = {};
+        poslovodjaStanjeOdjeliAll.forEach(function(o) {
+            if (o.radiliste) set[o.radiliste.toUpperCase().trim()] = true;
+        });
+        radilista = Object.keys(set);
+        console.log('[IZVJEŠTAJI] Radilišta iz Stanje zaliha fallback:', radilista.join(', '));
+    }
+
+    if (!radilista || radilista.length === 0) return data;
+
+    console.log('[IZVJEŠTAJI] Filtriranje po radilištima:', radilista.join(', '));
+    var filtered = data.filter(function(row) {
+        var r = (row.radiliste || '').toUpperCase().trim();
+        return radilista.some(function(pr) {
+            return r === pr.toUpperCase().trim();
+        });
+    });
+    console.log('[IZVJEŠTAJI] Filtrirano: ' + filtered.length + '/' + data.length + ' redova');
+    return filtered;
 }
 
 console.log('[IZVJEŠTAJI] ✓ New izvjestaji functions loaded');
