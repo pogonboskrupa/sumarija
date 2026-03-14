@@ -64,6 +64,9 @@
             document.getElementById('user-name').textContent = currentUser.fullName;
             document.getElementById('user-role').textContent = currentUser.role === 'admin' ? 'Administrator' : currentUser.type;
 
+            // Initialize notification UI if module loaded
+            if (typeof initNotificationUI === 'function') initNotificationUI();
+
             // Update sidebar user info
             const sidebarUserName = document.getElementById('sidebar-user-name');
             const sidebarUserRole = document.getElementById('sidebar-user-role');

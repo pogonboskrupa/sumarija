@@ -1,7 +1,7 @@
 // ========== Service Worker - Offline Support ==========
 // Cache static assets, fallback za offline
 
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
@@ -9,7 +9,8 @@ const STATIC_ASSETS = [
     '/index.html',
     '/offline.html',
     '/idb-helper.js',
-    '/data-sync.js'
+    '/data-sync.js',
+    '/js/notifications.js'
 ];
 
 // Install event - cache static assets
@@ -134,6 +135,27 @@ self.addEventListener('fetch', (event) => {
                             headers: { 'Content-Type': 'application/json' }
                         });
                     });
+            })
+    );
+});
+
+// Handle notification click - open/focus the app
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    const urlToOpen = event.notification.data?.url || '/';
+
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true })
+            .then((clientList) => {
+                // Focus existing window if found
+                for (const client of clientList) {
+                    if (client.url.includes(self.location.origin) && 'focus' in client) {
+                        return client.focus();
+                    }
+                }
+                // Otherwise open new window
+                return clients.openWindow(urlToOpen);
             })
     );
 });
