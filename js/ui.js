@@ -53,14 +53,19 @@
             const ttl = (typeof getSmartCacheTTL === 'function') ? getSmartCacheTTL() : 60000;
             const lastRender = window._tabRenderTime[tab];
             const contentId = tabContentMap[tab];
-            if (lastRender && contentId && (Date.now() - lastRender) < ttl) {
+            if (contentId) {
                 const el = document.getElementById(contentId);
                 if (el && el.children.length > 0) {
-                    // Sakrij sve, prikaži samo ovaj tab
+                    // INSTANT: Uvijek prikaži postojeći DOM odmah (bez loading screen-a)
                     document.querySelectorAll('[id$="-content"]').forEach(c => c.classList.add('hidden'));
                     el.classList.remove('hidden');
                     document.getElementById('loading-screen').classList.add('hidden');
-                    return;
+                    // Ako je cache još svjež, ne treba ponovo učitavati
+                    if (lastRender && (Date.now() - lastRender) < ttl) {
+                        return;
+                    }
+                    // Cache je star - osvježi u pozadini bez loading screen-a
+                    // (korisnik već vidi podatke, refresh će ažurirati tiho)
                 }
             }
 
@@ -722,6 +727,8 @@
             }
 
             document.addEventListener('touchstart', function(e) {
+                // Pinch-to-zoom koristi 2+ prsta - ne aktiviraj pull-to-refresh
+                if (e.touches.length > 1) { pulling = false; return; }
                 if (window.scrollY > 5) return;
                 startY = e.touches[0].clientY;
                 pulling = true;
@@ -729,6 +736,16 @@
 
             document.addEventListener('touchmove', function(e) {
                 if (!pulling) return;
+                // Ako korisnik doda drugi prst (zoom), prekini pull-to-refresh
+                if (e.touches.length > 1) {
+                    pulling = false;
+                    if (indicator) {
+                        indicator.style.transform = 'translateY(-50px)';
+                        indicator.style.opacity = '0';
+                        indicator.classList.remove('ready');
+                    }
+                    return;
+                }
                 currentY = e.touches[0].clientY;
                 var pullDistance = currentY - startY;
 
@@ -773,12 +790,16 @@
                         keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
                         window._tabRenderTime = {};
 
-                        console.log('[PULL-REFRESH] Cache cleared (' + keysToRemove.length + ' keys), reloading current view...');
+                        console.log('[PULL-REFRESH] Cache cleared (' + keysToRemove.length + ' keys), loading ALL views...');
 
-                        // Ponovo učitaj trenutni tab
+                        // Ponovo učitaj trenutni tab + sve ostale u pozadini
                         var tab = window.currentTab;
                         if (tab) {
                             switchTab(tab);
+                        }
+                        // Učitaj SVE prikaze u pozadini (za sve panele: admin, poslovođa, radnici)
+                        if (typeof preloadAllViews === 'function') {
+                            preloadAllViews(false, true);
                         }
 
                         setTimeout(function() {
