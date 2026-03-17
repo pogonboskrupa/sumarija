@@ -4999,6 +4999,7 @@
                             if (!isActiveTab('kupci')) return;
                             document.getElementById('kupci-content').classList.remove('hidden');
                             document.getElementById('loading-screen').classList.add('hidden');
+                            kupciMjesecniRawData = parsed.data.mjesecni || [];
                             renderKupciGodisnjiTable(parsed.data.godisnji, parsed.data.sortimentiNazivi);
                             renderKupciMjesecniTable(parsed.data.mjesecni, parsed.data.sortimentiNazivi);
                             hasCachedData = true;
@@ -5031,6 +5032,7 @@
 
                 // Update with fresh data
                 if (!isActiveTab('kupci')) return;
+                kupciMjesecniRawData = data.mjesecni || [];
                 renderKupciGodisnjiTable(data.godisnji, data.sortimentiNazivi);
                 renderKupciMjesecniTable(data.mjesecni, data.sortimentiNazivi);
                 hideCacheIndicator();
@@ -5113,6 +5115,8 @@
             // Re-renderuj tabelu
             if (tabType === 'godisnji') {
                 renderKupciGodisnjiTableBody();
+            } else if (tabType === 'kvartalni') {
+                renderKupciKvartalniTableBody();
             } else {
                 renderKupciMjesecniTableBody();
             }
@@ -5339,6 +5343,156 @@
             rows.forEach(row => {
                 const kupac = row.getAttribute('data-kupac');
                 // UKUPNO red nema data-kupac atribut - uvijek ga prikaži
+                if (kupac === null) {
+                    row.style.display = '';
+                } else if (kupac.includes(searchInput)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // ============================================
+        // 📊 KUPCI - KVARTALNI PRIKAZ
+        // ============================================
+
+        let kupciMjesecniRawData = []; // Svi mjesečni podaci (nefiltrirani) za kvartalni prikaz
+        let kupciKvartalniData = [];
+
+        // Kvartali sa mjesecima
+        const kvartalMjeseci = {
+            1: ['Januar', 'Februar', 'Mart'],
+            2: ['April', 'Maj', 'Juni'],
+            3: ['Juli', 'August', 'Septembar'],
+            4: ['Oktobar', 'Novembar', 'Decembar']
+        };
+
+        const kvartalLabels = {
+            1: 'Q1 (Januar - Mart)',
+            2: 'Q2 (April - Juni)',
+            3: 'Q3 (Juli - Septembar)',
+            4: 'Q4 (Oktobar - Decembar)'
+        };
+
+        // Sort stanje za kvartalni tab
+        kupciSortState.kvartalni = { key: 'SVEUKUPNO', direction: 'desc' };
+
+        // Renderuj kvartalnu tabelu
+        function renderKupciKvartalniTable() {
+            const headerElem = document.getElementById('kupci-kvartalni-header');
+            const bodyElem = document.getElementById('kupci-kvartalni-body');
+            const selectElem = document.getElementById('kupci-kvartalni-select');
+
+            if (!selectElem) return;
+
+            const selectedQuarter = parseInt(selectElem.value);
+            const mjeseciZaKvartal = kvartalMjeseci[selectedQuarter];
+
+            // Filtriraj mjesečne podatke za odabrani kvartal
+            const kvartalData = (kupciMjesecniRawData || []).filter(red => mjeseciZaKvartal.includes(red.mjesec));
+
+            // Agregiraj po kupcu
+            const kupciMap = {};
+            kvartalData.forEach(red => {
+                const kupac = red.kupac || '-';
+                if (!kupciMap[kupac]) {
+                    kupciMap[kupac] = { kupac: kupac, sortimenti: {}, ukupno: 0 };
+                }
+                // Sumiraj sortimente
+                if (red.sortimenti) {
+                    Object.keys(red.sortimenti).forEach(key => {
+                        if (key === 'SVEUKUPNO') return;
+                        const val = parseFloat(red.sortimenti[key]) || 0;
+                        kupciMap[kupac].sortimenti[key] = (kupciMap[kupac].sortimenti[key] || 0) + val;
+                    });
+                }
+                kupciMap[kupac].ukupno += (red.ukupno || 0);
+            });
+
+            // Dodaj SVEUKUPNO u sortimente
+            const aggregated = Object.values(kupciMap);
+            aggregated.forEach(k => {
+                k.sortimenti['SVEUKUPNO'] = k.ukupno;
+            });
+
+            kupciKvartalniData = aggregated;
+
+            if (aggregated.length === 0) {
+                headerElem.innerHTML = '';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za ' + kvartalLabels[selectedQuarter] + '</td></tr>';
+                return;
+            }
+
+            // Renderuj header
+            headerElem.innerHTML = renderKupciSortableHeader('kvartalni', kupciSortimentiNazivi, '#7c3aed', '#6d28d9');
+
+            // Renderuj body
+            renderKupciKvartalniTableBody();
+        }
+
+        // Renderuj samo body dio kvartalne tabele
+        function renderKupciKvartalniTableBody() {
+            const bodyElem = document.getElementById('kupci-kvartalni-body');
+            const state = kupciSortState.kvartalni;
+            const sortimentiNazivi = kupciSortimentiNazivi;
+
+            // Sortiraj podatke
+            const sortedData = sortKupciData(kupciKvartalniData, state.key, state.direction);
+
+            const stickyCol1Style = 'position: sticky; left: 0; z-index: 11; min-width: 50px;';
+            const stickyCol2Style = 'position: sticky; left: 50px; z-index: 10; min-width: 150px; box-shadow: 2px 0 4px rgba(0,0,0,0.1);';
+
+            // Ažuriraj header
+            const headerElem = document.getElementById('kupci-kvartalni-header');
+            headerElem.innerHTML = renderKupciSortableHeader('kvartalni', sortimentiNazivi, '#7c3aed', '#6d28d9');
+
+            // Sume za UKUPNO red
+            const ukupnoSume = {};
+            sortimentiNazivi.forEach(s => ukupnoSume[s] = 0);
+
+            let bodyHtml = '';
+            sortedData.forEach((kupac, index) => {
+                const rowBg = index % 2 === 0 ? '#f5f3ff' : 'white';
+                const redniBroj = index + 1;
+                const kupacName = (kupac.kupac || '').replace(/'/g, "\\'");
+                bodyHtml += `<tr style="background: ${rowBg}; cursor: pointer;" data-kupac="${(kupac.kupac || '').toLowerCase()}" onclick="showKupacDetails('${kupacName}')" title="Klikni za detalje">`;
+                bodyHtml += `<td style="text-align: center; font-weight: 600; color: #000000; padding: 8px 4px; background: ${rowBg}; ${stickyCol1Style}">${redniBroj}.</td>`;
+                bodyHtml += `<td style="font-weight: 600; background: ${rowBg}; ${stickyCol2Style}">${kupac.kupac || '-'}</td>`;
+
+                sortimentiNazivi.forEach(sortiment => {
+                    const kolicina = kupac.sortimenti[sortiment] || 0;
+                    ukupnoSume[sortiment] += kolicina;
+                    const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
+                    const color = kolicina > 0 ? '#000000' : '#9ca3af';
+                    const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #ede9fe; font-weight: 700;' : '';
+                    bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}">${display}</td>`;
+                });
+
+                bodyHtml += '</tr>';
+            });
+
+            // UKUPNO red
+            bodyHtml += '<tr style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); font-weight: 700;">';
+            bodyHtml += `<td style="color: white; font-weight: 700; text-align: center; background: #7c3aed; ${stickyCol1Style}"></td>`;
+            bodyHtml += `<td style="color: white; font-weight: 700; background: #7c3aed; ${stickyCol2Style}">UKUPNO</td>`;
+            sortimentiNazivi.forEach(sortiment => {
+                const suma = ukupnoSume[sortiment] || 0;
+                const display = suma > 0 ? suma.toFixed(2) : '-';
+                bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 700; color: white; text-shadow: 0 1px 1px rgba(0,0,0,0.3);">${display}</td>`;
+            });
+            bodyHtml += '</tr>';
+
+            bodyElem.innerHTML = bodyHtml;
+        }
+
+        // Filter za kvartalni prikaz
+        function filterKupciKvartalniTable() {
+            const searchInput = document.getElementById('kupci-kvartalni-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#kupci-kvartalni-body tr');
+
+            rows.forEach(row => {
+                const kupac = row.getAttribute('data-kupac');
                 if (kupac === null) {
                     row.style.display = '';
                 } else if (kupac.includes(searchInput)) {

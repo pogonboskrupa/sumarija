@@ -844,6 +844,7 @@
             <!-- Submenu za Kupci -->
             <div class="submenu">
                 <button class="submenu-tab active" onclick="switchKupciSubmenu('mjesecni')">📅 Mjesečni pregled</button>
+                <button class="submenu-tab" onclick="switchKupciSubmenu('kvartalni')">📊 Kvartalni prikaz</button>
                 <button class="submenu-tab" onclick="switchKupciSubmenu('godisnji')">🏢 Godišnji pregled</button>
             </div>
 
@@ -864,6 +865,35 @@
                             <table class="kupci-table" id="kupci-mjesecni-table" style="width: 100%;">
                                 <thead id="kupci-mjesecni-header"></thead>
                                 <tbody id="kupci-mjesecni-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kvartalni prikaz -->
+            <div id="kupci-kvartalni-view" class="submenu-content hidden">
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📊 Kvartalni prikaz po kupcima</h2>
+                            <span class="card-subtitle">Otprema po kupcima i sortimentima za odabrani kvartal</span>
+                        </div>
+                    </div>
+                    <div class="enterprise-card-body">
+                        <div class="controls-bar" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                            <select id="kupci-kvartalni-select" onchange="renderKupciKvartalniTable()" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white; min-width: 200px; cursor: pointer;">
+                                <option value="1">Q1 — Januar, Februar, Mart</option>
+                                <option value="2">Q2 — April, Maj, Juni</option>
+                                <option value="3">Q3 — Juli, August, Septembar</option>
+                                <option value="4">Q4 — Oktobar, Novembar, Decembar</option>
+                            </select>
+                            <input type="text" class="search-input" id="kupci-kvartalni-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciKvartalniTable()">
+                        </div>
+                        <div class="kupci-table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                            <table class="kupci-table" id="kupci-kvartalni-table" style="width: 100%;">
+                                <thead id="kupci-kvartalni-header"></thead>
+                                <tbody id="kupci-kvartalni-body"></tbody>
                             </table>
                         </div>
                     </div>

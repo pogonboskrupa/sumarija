@@ -333,12 +333,19 @@
             // Hide all submenu content
             document.getElementById('kupci-godisnji-view').classList.add('hidden');
             document.getElementById('kupci-mjesecni-view').classList.add('hidden');
+            document.getElementById('kupci-kvartalni-view').classList.add('hidden');
 
             // Show selected view
             if (view === 'godisnji') {
                 document.getElementById('kupci-godisnji-view').classList.remove('hidden');
             } else if (view === 'mjesecni') {
                 document.getElementById('kupci-mjesecni-view').classList.remove('hidden');
+            } else if (view === 'kvartalni') {
+                document.getElementById('kupci-kvartalni-view').classList.remove('hidden');
+                // Auto-select current quarter
+                const currentQuarter = Math.floor(new Date().getMonth() / 3) + 1;
+                document.getElementById('kupci-kvartalni-select').value = currentQuarter;
+                renderKupciKvartalniTable();
             }
         }
 
