@@ -1568,6 +1568,28 @@
                             return `background-color: ${m.bg}; color: ${m.color}; font-weight: 600; border-radius: 4px; padding: 4px 8px;`;
                         };
 
+                        // Izračunaj top 3 za svaku numeričku kolonu (za medalje)
+                        const getTop3 = (arr, key) => {
+                            return arr
+                                .filter(o => o && o[key] != null && !isNaN(o[key]) && o[key] > 0)
+                                .map(o => o[key])
+                                .sort((a, b) => b - a)
+                                .slice(0, 3);
+                        };
+
+                        const top3Sjeca = getTop3(odjeliData.odjeli, 'sjeca');
+                        const top3Otprema = getTop3(odjeliData.odjeli, 'otprema');
+                        const top3Zaliha = getTop3(odjeliData.odjeli, 'sumaPanj');
+                        const top3Realizacija = getTop3(odjeliData.odjeli, 'realizacija');
+
+                        const getMedalClass = (value, top3) => {
+                            if (value == null || isNaN(value) || value <= 0 || top3.length === 0) return '';
+                            if (value >= top3[0]) return 'medal-gold';
+                            if (top3.length > 1 && value >= top3[1]) return 'medal-silver';
+                            if (top3.length > 2 && value >= top3[2]) return 'medal-bronze';
+                            return '';
+                        };
+
                         const odjeliHTML = odjeliData.odjeli.map(o => {
                             if (!o) return '';
                             const radilisteClass = radilisteColorMap[o.radiliste] || '';
@@ -1575,16 +1597,22 @@
                             const izvodjacBg = izvodjacColorMap[o.izvođač] || '';
                             const izvodjacStyle = izvodjacBg ? `background-color: ${izvodjacBg};` : '';
                             const sjecaDateStyle = getSjecaMonthStyle(o.datumZadnjeSjece);
+
+                            const sjecaMedal = getMedalClass(o.sjeca, top3Sjeca);
+                            const otpremaMedal = getMedalClass(o.otprema, top3Otprema);
+                            const zalihaMedal = getMedalClass(o.sumaPanj, top3Zaliha);
+                            const realizacijaMedal = getMedalClass(o.realizacija, top3Realizacija);
+
                             return `
                                 <tr>
                                     <td class="${radilisteClass}" style="font-weight: 500;">${o.odjel || '-'}</td>
-                                    <td class="right ${radilisteClass}">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
-                                    <td class="right ${radilisteClass}">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
-                                    <td class="right ${radilisteClass}">${(o.sumaPanj != null && !isNaN(o.sumaPanj)) ? o.sumaPanj.toFixed(2) : '0.00'}</td>
+                                    <td class="right ${radilisteClass} ${sjecaMedal}">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
+                                    <td class="right ${radilisteClass} ${otpremaMedal}">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
+                                    <td class="right ${radilisteClass} ${zalihaMedal}">${(o.sumaPanj != null && !isNaN(o.sumaPanj)) ? o.sumaPanj.toFixed(2) : '0.00'}</td>
                                     <td class="${radilisteClass}">${o.radiliste || '-'}</td>
                                     <td style="${izvodjacStyle}">${o.izvođač || '-'}</td>
                                     <td><span style="${sjecaDateStyle}">${o.datumZadnjeSjece || '-'}</span></td>
-                                    <td class="right ${realizacijaClass}">${(o.realizacija != null && o.realizacija > 0) ? o.realizacija.toFixed(1) + '%' : '-'}</td>
+                                    <td class="right ${realizacijaClass} ${realizacijaMedal}">${(o.realizacija != null && o.realizacija > 0) ? o.realizacija.toFixed(1) + '%' : '-'}</td>
                                 </tr>
                             `;
                         }).join('');
