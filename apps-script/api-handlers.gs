@@ -305,7 +305,7 @@ function handlePrimaci(year, username, password) {
   const primkaData = primkaSheet.getDataRange().getValues();
   const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
 
-  // Map: primacIme -> { mjeseci: [0,0,0,...], ukupno: 0 }
+  // Map: primacIme -> { mjeseci: [0,0,0,...], ukupno: 0, radniDaniSet: [Set x 12] }
   let primaciMap = {};
 
   // Procesiranje PRIMKA podataka
@@ -321,27 +321,34 @@ function handlePrimaci(year, username, password) {
     if (datumObj.getFullYear() !== parseInt(year)) continue;
 
     const mjesec = datumObj.getMonth();
+    const datumKey = datumObj.toISOString().split('T')[0]; // YYYY-MM-DD za jedinstveni dan
 
     // Inicijalizuj primača ako ne postoji
     if (!primaciMap[primac]) {
       primaciMap[primac] = {
         mjeseci: Array(12).fill(0),
-        ukupno: 0
+        ukupno: 0,
+        radniDaniSet: Array.from({length: 12}, () => ({}))
       };
     }
 
     primaciMap[primac].mjeseci[mjesec] += kubik;
     primaciMap[primac].ukupno += kubik;
+    primaciMap[primac].radniDaniSet[mjesec][datumKey] = true;
   }
 
   // Generiši array primaciPrikaz
   const primaciPrikaz = [];
   for (const primacIme in primaciMap) {
     const primac = primaciMap[primacIme];
+    const radniDani = primac.radniDaniSet.map(function(daniObj) {
+      return Object.keys(daniObj).length;
+    });
     primaciPrikaz.push({
       primac: primacIme,
       mjeseci: primac.mjeseci,
-      ukupno: primac.ukupno
+      ukupno: primac.ukupno,
+      radniDani: radniDani
     });
   }
 

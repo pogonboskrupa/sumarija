@@ -2219,6 +2219,7 @@
             <!-- Mjesečni prikaz -->
             <div id="primaci-monthly-view" class="submenu-content">
                 <div class="section">
+                    <h3 style="color: #059669; text-align: center; margin-bottom: 15px;">📊 Prikaz sječe po primačima (m³)</h3>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="primaci-search" placeholder="🔍 Pretraži po imenu primača..." onkeyup="filterPrimaciTable()">
                         <button class="btn btn-primary" onclick="exportTableToCSV('primaci')">📥 Export CSV</button>
@@ -2227,6 +2228,26 @@
                         <table class="monthly-table" id="primaci-table">
                             <thead id="primaci-header"></thead>
                             <tbody id="primaci-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="section" style="margin-top: 30px;">
+                    <h3 style="color: #2563eb; text-align: center; margin-bottom: 15px;">📈 Prosječna sječa po radnom danu (m³/dan)</h3>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="primaci-prosjek-table">
+                            <thead id="primaci-prosjek-header"></thead>
+                            <tbody id="primaci-prosjek-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="section" style="margin-top: 30px;">
+                    <h3 style="color: #d97706; text-align: center; margin-bottom: 15px;">📅 Broj radnih dana po mjesecima</h3>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="primaci-radni-dani-table">
+                            <thead id="primaci-radni-dani-header"></thead>
+                            <tbody id="primaci-radni-dani-body"></tbody>
                         </table>
                     </div>
                 </div>
@@ -6858,6 +6879,159 @@
                 `;
 
                 document.getElementById('primaci-body').innerHTML = bodyHTML + totalsRow;
+
+                // ===== TABELA 2: Prosječna sječa po radnom danu =====
+                const prosjekHeaderHTML = `
+                    <tr>
+                        <th style="position: sticky; left: 0; background: #2563eb; z-index: 20; border-right: 3px solid #1d4ed8; min-width: 150px; color: white;">
+                            👷 Primač
+                        </th>
+                        ${data.mjeseci.map((m, idx) => `
+                            <th class="right" style="min-width: 80px; background: #2563eb; color: white; font-weight: 700; border: 1px solid #1d4ed8;">
+                                ${m}
+                            </th>
+                        `).join('')}
+                        <th class="right" style="min-width: 100px; background: #1d4ed8; color: white; font-weight: 900; border: 2px solid #1e3a5f;">
+                            📊 PROSJEK
+                        </th>
+                    </tr>
+                `;
+                document.getElementById('primaci-prosjek-header').innerHTML = prosjekHeaderHTML;
+
+                const prosjekMonthTotals = new Array(12).fill(0);
+                const prosjekMonthDays = new Array(12).fill(0);
+
+                const prosjekBodyHTML = data.primaci.map((p, idx) => {
+                    const rowBg = idx % 2 === 0 ? '#eff6ff' : 'white';
+                    const hoverBg = idx % 2 === 0 ? '#dbeafe' : '#eff6ff';
+                    const radniDani = p.radniDani || new Array(12).fill(0);
+                    const mjeseci = (p.mjeseci && Array.isArray(p.mjeseci)) ? p.mjeseci : new Array(12).fill(0);
+
+                    let totalKubika = 0;
+                    let totalDana = 0;
+
+                    const cells = mjeseci.map((v, mIdx) => {
+                        const val = (v != null && !isNaN(v)) ? v : 0;
+                        const dani = radniDani[mIdx] || 0;
+                        const prosjek = dani > 0 ? val / dani : 0;
+
+                        if (val > 0) {
+                            prosjekMonthTotals[mIdx] += val;
+                            prosjekMonthDays[mIdx] += dani;
+                        }
+                        totalKubika += val;
+                        totalDana += dani;
+
+                        const displayVal = prosjek > 0 ? prosjek.toFixed(2) : '-';
+                        const cellStyle = prosjek > 0 ? 'font-weight: 600; color: #000000;' : 'color: #9ca3af;';
+                        return `<td class="right" style="${cellStyle} border: 1px solid #bfdbfe; padding: 8px; font-size: 11px; font-family: 'Roboto Mono', ui-monospace, monospace;">${displayVal}</td>`;
+                    }).join('');
+
+                    const ukupniProsjek = totalDana > 0 ? (totalKubika / totalDana).toFixed(2) : '0.00';
+
+                    return `
+                        <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
+                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #2563eb; padding: 10px; font-size: 11px;">
+                                ${p.primac || '-'}
+                            </td>
+                            ${cells}
+                            <td class="right" style="font-weight: 700; background: linear-gradient(to right, #dbeafe, #bfdbfe); border: 2px solid #2563eb; padding: 10px; font-size: 11px; color: #1e3a5f;">
+                                ${ukupniProsjek} m³/dan
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                const prosjekTotalsRow = `
+                    <tr style="background: linear-gradient(to bottom, #dbeafe, #bfdbfe); color: #1e3a5f; font-weight: 700; border-top: 3px solid #60a5fa;">
+                        <td style="position: sticky; left: 0; background: #dbeafe; z-index: 10; border-right: 3px solid #60a5fa; padding: 12px; font-size: 12px;">
+                            📈 PROSJEK
+                        </td>
+                        ${prosjekMonthTotals.map((total, idx) => {
+                            const dani = prosjekMonthDays[idx];
+                            const prosjek = dani > 0 ? total / dani : 0;
+                            return `
+                            <td class="right" style="border: 1px solid #93c5fd; padding: 10px; font-size: 12px; font-weight: 700; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace;">
+                                ${prosjek > 0 ? prosjek.toFixed(2) : '-'}
+                            </td>`;
+                        }).join('')}
+                        <td class="right" style="background: #bfdbfe; border: 2px solid #60a5fa; padding: 12px; font-size: 13px; font-weight: 900; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace;">
+                            ${(() => { const tK = prosjekMonthTotals.reduce((a,b) => a+b, 0); const tD = prosjekMonthDays.reduce((a,b) => a+b, 0); return tD > 0 ? (tK/tD).toFixed(2) : '0.00'; })()} m³/dan
+                        </td>
+                    </tr>
+                `;
+
+                document.getElementById('primaci-prosjek-body').innerHTML = prosjekBodyHTML + prosjekTotalsRow;
+
+                // ===== TABELA 3: Broj radnih dana po mjesecima =====
+                const daniHeaderHTML = `
+                    <tr>
+                        <th style="position: sticky; left: 0; background: #d97706; z-index: 20; border-right: 3px solid #b45309; min-width: 150px; color: white;">
+                            👷 Primač
+                        </th>
+                        ${data.mjeseci.map((m, idx) => `
+                            <th class="right" style="min-width: 80px; background: #d97706; color: white; font-weight: 700; border: 1px solid #b45309;">
+                                ${m}
+                            </th>
+                        `).join('')}
+                        <th class="right" style="min-width: 100px; background: #b45309; color: white; font-weight: 900; border: 2px solid #92400e;">
+                            📊 UKUPNO
+                        </th>
+                    </tr>
+                `;
+                document.getElementById('primaci-radni-dani-header').innerHTML = daniHeaderHTML;
+
+                const daniMonthTotals = new Array(12).fill(0);
+                let daniGrandTotal = 0;
+
+                const daniBodyHTML = data.primaci.map((p, idx) => {
+                    const rowBg = idx % 2 === 0 ? '#fffbeb' : 'white';
+                    const hoverBg = idx % 2 === 0 ? '#fef3c7' : '#fffbeb';
+                    const radniDani = p.radniDani || new Array(12).fill(0);
+                    let ukupnoDana = 0;
+
+                    const cells = radniDani.map((dani, mIdx) => {
+                        const val = dani || 0;
+                        daniMonthTotals[mIdx] = Math.max(daniMonthTotals[mIdx], val);
+                        ukupnoDana += val;
+                        const displayVal = val > 0 ? val : '-';
+                        const cellStyle = val > 0 ? 'font-weight: 600; color: #000000;' : 'color: #9ca3af;';
+                        return `<td class="right" style="${cellStyle} border: 1px solid #fde68a; padding: 8px; font-size: 11px; font-family: 'Roboto Mono', ui-monospace, monospace;">${displayVal}</td>`;
+                    }).join('');
+
+                    daniGrandTotal = Math.max(daniGrandTotal, ukupnoDana);
+
+                    return `
+                        <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
+                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #d97706; padding: 10px; font-size: 11px;">
+                                ${p.primac || '-'}
+                            </td>
+                            ${cells}
+                            <td class="right" style="font-weight: 700; background: linear-gradient(to right, #fef3c7, #fde68a); border: 2px solid #d97706; padding: 10px; font-size: 11px; color: #92400e;">
+                                ${ukupnoDana} dana
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                const daniTotalsRow = `
+                    <tr style="background: linear-gradient(to bottom, #fef3c7, #fde68a); color: #92400e; font-weight: 700; border-top: 3px solid #fbbf24;">
+                        <td style="position: sticky; left: 0; background: #fef3c7; z-index: 10; border-right: 3px solid #fbbf24; padding: 12px; font-size: 12px;">
+                            📈 MAX DANA
+                        </td>
+                        ${daniMonthTotals.map(total => {
+                            return `
+                            <td class="right" style="border: 1px solid #fcd34d; padding: 10px; font-size: 12px; font-weight: 700; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace;">
+                                ${total > 0 ? total : '-'}
+                            </td>`;
+                        }).join('')}
+                        <td class="right" style="background: #fde68a; border: 2px solid #fbbf24; padding: 12px; font-size: 13px; font-weight: 900; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace;">
+                            ${daniGrandTotal} dana
+                        </td>
+                    </tr>
+                `;
+
+                document.getElementById('primaci-radni-dani-body').innerHTML = daniBodyHTML + daniTotalsRow;
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('primaci-content').classList.remove('hidden');

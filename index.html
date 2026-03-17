@@ -466,6 +466,7 @@
             <!-- Mjesečni prikaz -->
             <div id="primaci-monthly-view" class="submenu-content hidden">
                 <div class="section">
+                    <h3 style="color: #059669; text-align: center; margin-bottom: 15px;">📊 Prikaz sječe po primačima (m³)</h3>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="primaci-search" placeholder="🔍 Pretraži po imenu primača..." onkeyup="filterPrimaciTable()">
                     </div>
@@ -473,6 +474,26 @@
                         <table class="monthly-table" id="primaci-table">
                             <thead id="primaci-header"></thead>
                             <tbody id="primaci-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="section" style="margin-top: 30px;">
+                    <h3 style="color: #2563eb; text-align: center; margin-bottom: 15px;">📈 Prosječna sječa po radnom danu (m³/dan)</h3>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="primaci-prosjek-table">
+                            <thead id="primaci-prosjek-header"></thead>
+                            <tbody id="primaci-prosjek-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="section" style="margin-top: 30px;">
+                    <h3 style="color: #d97706; text-align: center; margin-bottom: 15px;">📅 Broj radnih dana po mjesecima</h3>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="primaci-radni-dani-table">
+                            <thead id="primaci-radni-dani-header"></thead>
+                            <tbody id="primaci-radni-dani-body"></tbody>
                         </table>
                     </div>
                 </div>
