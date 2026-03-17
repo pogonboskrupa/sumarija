@@ -1568,28 +1568,6 @@
                             return `background-color: ${m.bg}; color: ${m.color}; font-weight: 600; border-radius: 4px; padding: 4px 8px;`;
                         };
 
-                        // Izračunaj top 3 za svaku numeričku kolonu (za medalje)
-                        const getTop3 = (arr, key) => {
-                            return arr
-                                .filter(o => o && o[key] != null && !isNaN(o[key]) && o[key] > 0)
-                                .map(o => o[key])
-                                .sort((a, b) => b - a)
-                                .slice(0, 3);
-                        };
-
-                        const top3Sjeca = getTop3(odjeliData.odjeli, 'sjeca');
-                        const top3Otprema = getTop3(odjeliData.odjeli, 'otprema');
-                        const top3Zaliha = getTop3(odjeliData.odjeli, 'sumaPanj');
-                        const top3Realizacija = getTop3(odjeliData.odjeli, 'realizacija');
-
-                        const getMedalClass = (value, top3) => {
-                            if (value == null || isNaN(value) || value <= 0 || top3.length === 0) return '';
-                            if (value >= top3[0]) return 'medal-gold';
-                            if (top3.length > 1 && value >= top3[1]) return 'medal-silver';
-                            if (top3.length > 2 && value >= top3[2]) return 'medal-bronze';
-                            return '';
-                        };
-
                         const odjeliHTML = odjeliData.odjeli.map(o => {
                             if (!o) return '';
                             const radilisteClass = radilisteColorMap[o.radiliste] || '';
@@ -1597,22 +1575,16 @@
                             const izvodjacBg = izvodjacColorMap[o.izvođač] || '';
                             const izvodjacStyle = izvodjacBg ? `background-color: ${izvodjacBg};` : '';
                             const sjecaDateStyle = getSjecaMonthStyle(o.datumZadnjeSjece);
-
-                            const sjecaMedal = getMedalClass(o.sjeca, top3Sjeca);
-                            const otpremaMedal = getMedalClass(o.otprema, top3Otprema);
-                            const zalihaMedal = getMedalClass(o.sumaPanj, top3Zaliha);
-                            const realizacijaMedal = getMedalClass(o.realizacija, top3Realizacija);
-
                             return `
                                 <tr>
                                     <td class="${radilisteClass}" style="font-weight: 500;">${o.odjel || '-'}</td>
-                                    <td class="right ${radilisteClass} ${sjecaMedal}">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
-                                    <td class="right ${radilisteClass} ${otpremaMedal}">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
-                                    <td class="right ${radilisteClass} ${zalihaMedal}">${(o.sumaPanj != null && !isNaN(o.sumaPanj)) ? o.sumaPanj.toFixed(2) : '0.00'}</td>
+                                    <td class="right ${radilisteClass}">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
+                                    <td class="right ${radilisteClass}">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
+                                    <td class="right ${radilisteClass}">${(o.sumaPanj != null && !isNaN(o.sumaPanj)) ? o.sumaPanj.toFixed(2) : '0.00'}</td>
                                     <td class="${radilisteClass}">${o.radiliste || '-'}</td>
                                     <td style="${izvodjacStyle}">${o.izvođač || '-'}</td>
                                     <td><span style="${sjecaDateStyle}">${o.datumZadnjeSjece || '-'}</span></td>
-                                    <td class="right ${realizacijaClass} ${realizacijaMedal}">${(o.realizacija != null && o.realizacija > 0) ? o.realizacija.toFixed(1) + '%' : '-'}</td>
+                                    <td class="right ${realizacijaClass}">${(o.realizacija != null && o.realizacija > 0) ? o.realizacija.toFixed(1) + '%' : '-'}</td>
                                 </tr>
                             `;
                         }).join('');
@@ -5224,17 +5196,24 @@
             const ukupnoSume = {};
             sortimentiNazivi.forEach(s => ukupnoSume[s] = 0);
 
-            // Izračunaj maksimalnu količinu po svakom sortimentu (bez SVEUKUPNO)
-            const maxPoSortimentu = {};
+            // Izračunaj top 3 za svaki sortiment (za medalje)
+            const top3PoSortimentu = {};
             sortimentiNazivi.forEach(sortiment => {
                 if (sortiment === 'SVEUKUPNO') return;
-                let maxVal = 0;
-                sortedData.forEach(kupac => {
-                    const kolicina = kupac.sortimenti[sortiment] || 0;
-                    if (kolicina > maxVal) maxVal = kolicina;
-                });
-                maxPoSortimentu[sortiment] = maxVal;
+                const values = sortedData
+                    .map(kupac => kupac.sortimenti[sortiment] || 0)
+                    .filter(v => v > 0)
+                    .sort((a, b) => b - a);
+                top3PoSortimentu[sortiment] = [...new Set(values)].slice(0, 3);
             });
+
+            const getMedalClass = (value, top3) => {
+                if (!top3 || top3.length === 0 || value <= 0) return '';
+                if (value >= top3[0]) return 'medal-gold';
+                if (top3.length > 1 && value >= top3[1]) return 'medal-silver';
+                if (top3.length > 2 && value >= top3[2]) return 'medal-bronze';
+                return '';
+            };
 
             // Body redovi (sa rednim brojem)
             let bodyHtml = '';
@@ -5251,9 +5230,9 @@
                     ukupnoSume[sortiment] += kolicina; // Dodaj u sumu
                     const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
                     const color = kolicina > 0 ? '#000000' : '#9ca3af';
-                    const isMax = sortiment !== 'SVEUKUPNO' && kolicina > 0 && kolicina === maxPoSortimentu[sortiment];
-                    const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #d1fae5; font-weight: 700;' : (isMax ? ' background: #bbf7d0; font-weight: 700;' : '');
-                    bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}">${display}</td>`;
+                    const medalClass = sortiment !== 'SVEUKUPNO' ? getMedalClass(kolicina, top3PoSortimentu[sortiment]) : '';
+                    const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #d1fae5; font-weight: 700;' : '';
+                    bodyHtml += `<td class="${medalClass}" style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}">${display}</td>`;
                 });
 
                 bodyHtml += '</tr>';
@@ -5323,17 +5302,24 @@
             const ukupnoSume = {};
             sortimentiNazivi.forEach(s => ukupnoSume[s] = 0);
 
-            // Izračunaj maksimalnu količinu po svakom sortimentu (bez SVEUKUPNO)
-            const maxPoSortimentu = {};
+            // Izračunaj top 3 za svaki sortiment (za medalje)
+            const top3PoSortimentu = {};
             sortimentiNazivi.forEach(sortiment => {
                 if (sortiment === 'SVEUKUPNO') return;
-                let maxVal = 0;
-                sortedData.forEach(red => {
-                    const kolicina = red.sortimenti[sortiment] || 0;
-                    if (kolicina > maxVal) maxVal = kolicina;
-                });
-                maxPoSortimentu[sortiment] = maxVal;
+                const values = sortedData
+                    .map(red => red.sortimenti[sortiment] || 0)
+                    .filter(v => v > 0)
+                    .sort((a, b) => b - a);
+                top3PoSortimentu[sortiment] = [...new Set(values)].slice(0, 3);
             });
+
+            const getMedalClass = (value, top3) => {
+                if (!top3 || top3.length === 0 || value <= 0) return '';
+                if (value >= top3[0]) return 'medal-gold';
+                if (top3.length > 1 && value >= top3[1]) return 'medal-silver';
+                if (top3.length > 2 && value >= top3[2]) return 'medal-bronze';
+                return '';
+            };
 
             // Body redovi (sa rednim brojem)
             let bodyHtml = '';
@@ -5350,9 +5336,9 @@
                     ukupnoSume[sortiment] += kolicina; // Dodaj u sumu
                     const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
                     const color = kolicina > 0 ? '#000000' : '#9ca3af';
-                    const isMax = sortiment !== 'SVEUKUPNO' && kolicina > 0 && kolicina === maxPoSortimentu[sortiment];
-                    const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #bae6fd; font-weight: 700;' : (isMax ? ' background: #bbf7d0; font-weight: 700;' : '');
-                    bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}">${display}</td>`;
+                    const medalClass = sortiment !== 'SVEUKUPNO' ? getMedalClass(kolicina, top3PoSortimentu[sortiment]) : '';
+                    const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #bae6fd; font-weight: 700;' : '';
+                    bodyHtml += `<td class="${medalClass}" style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}">${display}</td>`;
                 });
 
                 bodyHtml += '</tr>';
@@ -5505,17 +5491,24 @@
             const ukupnoSume = {};
             sortimentiNazivi.forEach(s => ukupnoSume[s] = 0);
 
-            // Izračunaj maksimalnu količinu po svakom sortimentu (bez SVEUKUPNO)
-            const maxPoSortimentu = {};
+            // Izračunaj top 3 za svaki sortiment (za medalje)
+            const top3PoSortimentu = {};
             sortimentiNazivi.forEach(sortiment => {
                 if (sortiment === 'SVEUKUPNO') return;
-                let maxVal = 0;
-                sortedData.forEach(kupac => {
-                    const kolicina = kupac.sortimenti[sortiment] || 0;
-                    if (kolicina > maxVal) maxVal = kolicina;
-                });
-                maxPoSortimentu[sortiment] = maxVal;
+                const values = sortedData
+                    .map(kupac => kupac.sortimenti[sortiment] || 0)
+                    .filter(v => v > 0)
+                    .sort((a, b) => b - a);
+                top3PoSortimentu[sortiment] = [...new Set(values)].slice(0, 3);
             });
+
+            const getMedalClass = (value, top3) => {
+                if (!top3 || top3.length === 0 || value <= 0) return '';
+                if (value >= top3[0]) return 'medal-gold';
+                if (top3.length > 1 && value >= top3[1]) return 'medal-silver';
+                if (top3.length > 2 && value >= top3[2]) return 'medal-bronze';
+                return '';
+            };
 
             let bodyHtml = '';
             sortedData.forEach((kupac, index) => {
@@ -5531,9 +5524,9 @@
                     ukupnoSume[sortiment] += kolicina;
                     const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
                     const color = kolicina > 0 ? '#000000' : '#9ca3af';
-                    const isMax = sortiment !== 'SVEUKUPNO' && kolicina > 0 && kolicina === maxPoSortimentu[sortiment];
-                    const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #ede9fe; font-weight: 700;' : (isMax ? ' background: #bbf7d0; font-weight: 700;' : '');
-                    bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}">${display}</td>`;
+                    const medalClass = sortiment !== 'SVEUKUPNO' ? getMedalClass(kolicina, top3PoSortimentu[sortiment]) : '';
+                    const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #ede9fe; font-weight: 700;' : '';
+                    bodyHtml += `<td class="${medalClass}" style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}">${display}</td>`;
                 });
 
                 bodyHtml += '</tr>';
