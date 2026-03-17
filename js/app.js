@@ -4764,12 +4764,12 @@
 
                 // UKUPNO red za radilište
                 html += `<tr style="background:#3F4752;">`;
-                html += `<td style="font-weight:800;color:#F3F4F6;padding:10px 12px;border-top:2px solid #6B7280;position:sticky;left:0;background:#3F4752;z-index:5;font-size:12px;">UKUPNO</td>`;
+                html += `<td style="font-weight:800;color:#FFFFFF;padding:10px 12px;border-top:2px solid #6B7280;position:sticky;left:0;background:#3F4752;z-index:5;font-size:12px;">UKUPNO</td>`;
                 radilisteUkupno.forEach((val, j) => {
                     const disp = val > 0 ? val.toFixed(2) : '-';
                     const isTotal = j === 19;
                     const cellStyle = isTotal ? 'background:#2F343A;font-size:13px;font-weight:900;' : 'font-weight:700;';
-                    html += `<td style="${cellStyle}color:#F3F4F6;border-top:2px solid #6B7280;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:8px 6px;">${disp}</td>`;
+                    html += `<td style="${cellStyle}color:#FFFFFF;border-top:2px solid #6B7280;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:8px 6px;">${disp}</td>`;
                 });
                 html += '</tr>';
 
