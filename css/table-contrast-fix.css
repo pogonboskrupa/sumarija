@@ -519,7 +519,11 @@ tr[style*="background: linear-gradient"][style*="#065f46"] td {
 .monthly-table tfoot td,
 .monthly-table .ukupno-row td,
 .monthly-table tbody tr[style*="background: #047857"] td,
-.monthly-table tbody tr[style*="background: #065f46"] td {
+.monthly-table tbody tr[style*="background: #065f46"] td,
+.monthly-table tbody tr[style*="background:#3F4752"] td,
+.monthly-table tbody tr[style*="background:#2F343A"] td,
+.monthly-table tbody tr[style*="background:linear-gradient(135deg,#0891b2"] td,
+.monthly-table tbody tr[style*="background:#164e63"] td {
     color: white !important;
 }
 
