@@ -133,6 +133,13 @@
         .month-select:hover { background: #f0fdf4; }
         .month-select:focus { outline: none; border-color: #047857; box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1); }
 
+        /* Neutral month selector variant (for professional/dashboard views) */
+        .month-selector--neutral { background: #F3F4F6; border: 1px solid #D1D5DB; }
+        .month-selector--neutral label { color: #2F343A; }
+        .month-selector--neutral .month-select { border-color: #9CA3AF; color: #2F343A; }
+        .month-selector--neutral .month-select:hover { background: #F8FAFC; }
+        .month-selector--neutral .month-select:focus { border-color: #4B5563; box-shadow: 0 0 0 3px rgba(75, 85, 99, 0.1); }
+
         /* Summary cards */
         .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 28px; }
         .summary-card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #f3f4f6; transition: all 0.2s; }

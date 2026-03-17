@@ -4725,51 +4725,51 @@
             const container = document.getElementById('primaci-sortimenti-primac-container');
 
             if (!data.radilista || data.radilista.length === 0) {
-                container.innerHTML = `<p style="text-align:center;padding:40px;color:#6b7280;">Nema podataka za ${MJESECI_NAZIVI[month]} ${year}.</p>`;
+                container.innerHTML = `<p style="text-align:center;padding:40px;color:#6B7280;">Nema podataka za ${MJESECI_NAZIVI[month]} ${year}.</p>`;
                 return;
             }
 
             const sortNazivi = data.sortimentiNazivi; // 20 naziva
-            let html = `<p style="color:#6b7280;font-size:13px;margin-bottom:12px;">📅 Prikazani podaci za: <strong>${MJESECI_NAZIVI[month]} ${year}</strong></p>`;
+            let html = `<p style="color:#6B7280;font-size:13px;margin-bottom:16px;">📅 Prikazani podaci za: <strong style="color:#2F343A;">${MJESECI_NAZIVI[month]} ${year}</strong></p>`;
 
             data.radilista.forEach(radiliste => {
-                html += `<h4 style="background:#ea580c;color:white;padding:10px 16px;border-radius:6px;margin:20px 0 8px;">🏗️ ${radiliste.naziv}</h4>`;
-                html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">';
-                html += '<table class="monthly-table" style="min-width:900px;">';
+                html += `<h4 style="background:#2F343A;color:#F3F4F6;padding:11px 18px;border-radius:8px;margin:24px 0 10px;font-weight:600;font-size:14px;letter-spacing:0.02em;">🏗️ ${radiliste.naziv}</h4>`;
+                html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid #D1D5DB;">';
+                html += '<table class="monthly-table" style="min-width:900px;border-collapse:collapse;">';
                 html += '<thead><tr>';
-                html += `<th style="background:linear-gradient(135deg,#ea580c,#dc2626);color:white;padding:10px;position:sticky;left:0;z-index:10;min-width:160px;">👷 Primač</th>`;
+                html += `<th style="background:#2F343A;color:#F3F4F6;padding:10px 12px;position:sticky;left:0;z-index:10;min-width:160px;font-size:12px;font-weight:600;border-bottom:2px solid #4B5563;">👷 Primač</th>`;
                 sortNazivi.forEach((s, i) => {
                     const isTotal = i === 19;
-                    const bg = isTotal ? 'linear-gradient(135deg,#7c2d12,#451a03)' : 'linear-gradient(135deg,#ea580c,#dc2626)';
-                    html += `<th style="background:${bg};color:white;padding:8px 4px;font-size:10px;min-width:65px;white-space:nowrap;">${s}</th>`;
+                    const bg = isTotal ? '#1F2937' : '#2F343A';
+                    html += `<th style="background:${bg};color:#F3F4F6;padding:8px 4px;font-size:10px;min-width:65px;white-space:nowrap;font-weight:600;border-bottom:2px solid #4B5563;">${s}</th>`;
                 });
                 html += '</tr></thead><tbody>';
 
                 const radilisteUkupno = Array(20).fill(0);
                 radiliste.primaci.forEach((primac, idx) => {
-                    const bg = idx % 2 === 0 ? '#fff7ed' : '#ffffff';
-                    html += `<tr style="background:${bg};" onmouseover="this.style.background='#ffedd5'" onmouseout="this.style.background='${bg}'">`;
-                    html += `<td style="font-weight:700;font-size:12px;border:1px solid #fed7aa;padding:9px;color:#7c2d12;position:sticky;left:0;background:${bg};">${primac.naziv}</td>`;
+                    const bg = idx % 2 === 0 ? '#F8FAFC' : '#FFFFFF';
+                    html += `<tr style="background:${bg};transition:background 0.15s;" onmouseover="this.style.background='#EEF0F3'" onmouseout="this.style.background='${bg}'">`;
+                    html += `<td style="font-weight:600;font-size:12px;border-bottom:1px solid #E5E7EB;padding:9px 12px;color:#2F343A;position:sticky;left:0;background:${bg};z-index:5;">${primac.naziv}</td>`;
                     primac.sortimentiVrijednosti.forEach((val, j) => {
                         radilisteUkupno[j] += val;
                         const disp = val > 0 ? val.toFixed(2) : '-';
                         const isTotal = j === 19;
                         const cellStyle = isTotal
-                            ? 'background:#fef3c7;border:2px solid #f59e0b;font-weight:900;font-size:12px;color:#92400e;'
-                            : (val > 0 ? 'font-weight:700;color:#7c2d12;' : 'color:#d1d5db;');
-                        html += `<td style="${cellStyle}border:1px solid #fed7aa;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:7px;">${disp}</td>`;
+                            ? 'background:#EEF0F3;border-left:2px solid #9CA3AF;font-weight:800;font-size:12px;color:#1F2937;'
+                            : (val > 0 ? 'font-weight:600;color:#374151;' : 'color:#CBD5E1;');
+                        html += `<td style="${cellStyle}border-bottom:1px solid #E5E7EB;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:7px 6px;">${disp}</td>`;
                     });
                     html += '</tr>';
                 });
 
                 // UKUPNO red za radilište
-                html += `<tr style="background:linear-gradient(135deg,#ea580c,#dc2626);">`;
-                html += `<td style="font-weight:900;color:white;padding:10px;border:1px solid #c2410c;position:sticky;left:0;background:#ea580c;">UKUPNO</td>`;
+                html += `<tr style="background:#3F4752;">`;
+                html += `<td style="font-weight:800;color:#F3F4F6;padding:10px 12px;border-top:2px solid #6B7280;position:sticky;left:0;background:#3F4752;z-index:5;font-size:12px;">UKUPNO</td>`;
                 radilisteUkupno.forEach((val, j) => {
                     const disp = val > 0 ? val.toFixed(2) : '-';
                     const isTotal = j === 19;
-                    const cellStyle = isTotal ? 'background:#7c2d12;font-size:13px;font-weight:900;' : 'font-weight:700;';
-                    html += `<td style="${cellStyle}color:white;border:1px solid #c2410c;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:8px;">${disp}</td>`;
+                    const cellStyle = isTotal ? 'background:#2F343A;font-size:13px;font-weight:900;' : 'font-weight:700;';
+                    html += `<td style="${cellStyle}color:#F3F4F6;border-top:2px solid #6B7280;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:8px 6px;">${disp}</td>`;
                 });
                 html += '</tr>';
 
