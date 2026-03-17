@@ -5196,6 +5196,18 @@
             const ukupnoSume = {};
             sortimentiNazivi.forEach(s => ukupnoSume[s] = 0);
 
+            // Izračunaj maksimalnu količinu po svakom sortimentu (bez SVEUKUPNO)
+            const maxPoSortimentu = {};
+            sortimentiNazivi.forEach(sortiment => {
+                if (sortiment === 'SVEUKUPNO') return;
+                let maxVal = 0;
+                sortedData.forEach(kupac => {
+                    const kolicina = kupac.sortimenti[sortiment] || 0;
+                    if (kolicina > maxVal) maxVal = kolicina;
+                });
+                maxPoSortimentu[sortiment] = maxVal;
+            });
+
             // Body redovi (sa rednim brojem)
             let bodyHtml = '';
             sortedData.forEach((kupac, index) => {
@@ -5211,7 +5223,8 @@
                     ukupnoSume[sortiment] += kolicina; // Dodaj u sumu
                     const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
                     const color = kolicina > 0 ? '#000000' : '#9ca3af';
-                    const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #d1fae5; font-weight: 700;' : '';
+                    const isMax = sortiment !== 'SVEUKUPNO' && kolicina > 0 && kolicina === maxPoSortimentu[sortiment];
+                    const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #d1fae5; font-weight: 700;' : (isMax ? ' background: #bbf7d0; font-weight: 700;' : '');
                     bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}">${display}</td>`;
                 });
 
@@ -5282,6 +5295,18 @@
             const ukupnoSume = {};
             sortimentiNazivi.forEach(s => ukupnoSume[s] = 0);
 
+            // Izračunaj maksimalnu količinu po svakom sortimentu (bez SVEUKUPNO)
+            const maxPoSortimentu = {};
+            sortimentiNazivi.forEach(sortiment => {
+                if (sortiment === 'SVEUKUPNO') return;
+                let maxVal = 0;
+                sortedData.forEach(red => {
+                    const kolicina = red.sortimenti[sortiment] || 0;
+                    if (kolicina > maxVal) maxVal = kolicina;
+                });
+                maxPoSortimentu[sortiment] = maxVal;
+            });
+
             // Body redovi (sa rednim brojem)
             let bodyHtml = '';
             sortedData.forEach((red, index) => {
@@ -5297,7 +5322,8 @@
                     ukupnoSume[sortiment] += kolicina; // Dodaj u sumu
                     const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
                     const color = kolicina > 0 ? '#000000' : '#9ca3af';
-                    const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #bae6fd; font-weight: 700;' : '';
+                    const isMax = sortiment !== 'SVEUKUPNO' && kolicina > 0 && kolicina === maxPoSortimentu[sortiment];
+                    const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #bae6fd; font-weight: 700;' : (isMax ? ' background: #bbf7d0; font-weight: 700;' : '');
                     bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}">${display}</td>`;
                 });
 
@@ -5451,6 +5477,18 @@
             const ukupnoSume = {};
             sortimentiNazivi.forEach(s => ukupnoSume[s] = 0);
 
+            // Izračunaj maksimalnu količinu po svakom sortimentu (bez SVEUKUPNO)
+            const maxPoSortimentu = {};
+            sortimentiNazivi.forEach(sortiment => {
+                if (sortiment === 'SVEUKUPNO') return;
+                let maxVal = 0;
+                sortedData.forEach(kupac => {
+                    const kolicina = kupac.sortimenti[sortiment] || 0;
+                    if (kolicina > maxVal) maxVal = kolicina;
+                });
+                maxPoSortimentu[sortiment] = maxVal;
+            });
+
             let bodyHtml = '';
             sortedData.forEach((kupac, index) => {
                 const rowBg = index % 2 === 0 ? '#f5f3ff' : 'white';
@@ -5465,7 +5503,8 @@
                     ukupnoSume[sortiment] += kolicina;
                     const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
                     const color = kolicina > 0 ? '#000000' : '#9ca3af';
-                    const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #ede9fe; font-weight: 700;' : '';
+                    const isMax = sortiment !== 'SVEUKUPNO' && kolicina > 0 && kolicina === maxPoSortimentu[sortiment];
+                    const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #ede9fe; font-weight: 700;' : (isMax ? ' background: #bbf7d0; font-weight: 700;' : '');
                     bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}">${display}</td>`;
                 });
 
