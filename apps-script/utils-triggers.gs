@@ -78,25 +78,8 @@ function parseDate(datum) {
 
 // Pomoćna funkcija za JSON response
 function createJsonResponse(data, success) {
-  const output = ContentService.createTextOutput(JSON.stringify(data));
-  output.setMimeType(ContentService.MimeType.JSON);
-
-  // ✅ CORS Support - Try setHeader (V8 runtime), fallback if not available (Rhino)
-  try {
-    if (typeof output.setHeader === 'function') {
-      output.setHeader('Access-Control-Allow-Origin', '*');
-      output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-      Logger.log('[CORS] Headers set successfully using setHeader()');
-    } else {
-      Logger.log('[CORS] WARNING: setHeader not available (Rhino runtime?)');
-    }
-  } catch (e) {
-    Logger.log('[CORS] WARNING: setHeader failed: ' + e.toString());
-    // Continue without headers - CORS won't work but at least no error
-  }
-
-  return output;
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 // Helper funkcija za formatiranje datuma
@@ -143,4 +126,48 @@ function setupStanjeOdjelaDailyTrigger() {
 
   // Odmah izvrši prvi put
   syncStanjeOdjela();
+}
+
+/**
+ * Briši slike starije od 5 dana iz IMAGES_FOLDER_ID
+ */
+function deleteOldImages() {
+  try {
+    const folder = DriveApp.getFolderById(IMAGES_FOLDER_ID);
+    const files = folder.getFiles();
+    const fiveDaysAgo = new Date();
+    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+
+    let deletedCount = 0;
+    while (files.hasNext()) {
+      const file = files.next();
+      if (file.getDateCreated() < fiveDaysAgo) {
+        file.setTrashed(true);
+        deletedCount++;
+      }
+    }
+    Logger.log('Obrisano ' + deletedCount + ' slika starijih od 5 dana');
+  } catch (error) {
+    Logger.log('ERROR deleteOldImages: ' + error.toString());
+  }
+}
+
+/**
+ * Setup dnevnog triggera za brisanje starih slika
+ */
+function setupDeleteOldImagesTrigger() {
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(trigger => {
+    if (trigger.getHandlerFunction() === 'deleteOldImages') {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  });
+
+  ScriptApp.newTrigger('deleteOldImages')
+    .timeBased()
+    .atHour(3)
+    .everyDays(1)
+    .create();
+
+  Logger.log('Kreiran trigger za deleteOldImages (izvršavanje u 3:00 AM)');
 }

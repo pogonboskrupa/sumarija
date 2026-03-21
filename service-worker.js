@@ -1,14 +1,16 @@
 // ========== Service Worker - Offline Support ==========
 // Cache static assets, fallback za offline
 
-const CACHE_VERSION = 'v4'; // 🔄 Updated paths for GitHub Pages deployment
+const CACHE_VERSION = 'v7';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
-    '/sumarija/',
-    '/sumarija/index.html',
-    '/sumarija/idb-helper.js',
-    '/sumarija/data-sync.js'
+    '/',
+    '/index.html',
+    '/offline.html',
+    '/idb-helper.js',
+    '/data-sync.js',
+    '/js/notifications.js'
 ];
 
 // Install event - cache static assets
@@ -120,7 +122,10 @@ self.addEventListener('fetch', (event) => {
                         if (cachedResponse) {
                             return cachedResponse;
                         }
-                        // Return proper JSON error response instead of plain text
+                        // Navigation requests (page loads) → offline.html
+                        if (request.mode === 'navigate') {
+                            return caches.match('/sumarija/offline.html');
+                        }
                         return new Response(JSON.stringify({
                             success: false,
                             error: 'Offline - no cached data available',
@@ -130,6 +135,27 @@ self.addEventListener('fetch', (event) => {
                             headers: { 'Content-Type': 'application/json' }
                         });
                     });
+            })
+    );
+});
+
+// Handle notification click - open/focus the app
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    const urlToOpen = event.notification.data?.url || '/';
+
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true })
+            .then((clientList) => {
+                // Focus existing window if found
+                for (const client of clientList) {
+                    if (client.url.includes(self.location.origin) && 'focus' in client) {
+                        return client.focus();
+                    }
+                }
+                // Otherwise open new window
+                return clients.openWindow(urlToOpen);
             })
     );
 });

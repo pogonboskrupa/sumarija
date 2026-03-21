@@ -2,9 +2,18 @@
 <html lang="bs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Desktop prikaz kao default - fiksna širina 1280px, omogućen zoom -->
+    <meta name="viewport" content="width=1280, user-scalable=yes, minimum-scale=0.2, maximum-scale=3.0">
+    <!-- iOS optimizacije -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta http-equiv="Cache-Control" content="public, max-age=31536000, immutable">
+    <meta name="theme-color" content="#166534">
     <title>Šumarija - Preglednik</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.webmanifest">
 
     <!-- Preload -->
     <link rel="preload" href="css/main.css" as="style">
@@ -12,22 +21,27 @@
     <link rel="preload" href="js/cache-helper.js" as="script">
     <link rel="preload" href="js/api-optimized.js" as="script">
 
-    <!-- Favicon -->
+    <!-- Favicon & Icons -->
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="alternate icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
 
     <!-- CSS -->
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/login-optimized.css">
     <link rel="stylesheet" href="css/table-contrast-fix.css">
 
-    <!-- Google Fonts - Roboto Mono for numeric data -->
+    <!-- Google Fonts - Inter for numbers, Comfortaa for labels -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Comfortaa:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Preconnect -->
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
+
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.mini.min.js" defer></script>
 
     <!-- Performance Modules -->
     <script src="js/cache-helper.js" defer></script>
@@ -41,8 +55,14 @@
     <script src="idb-helper.js" defer></script>
     <script src="data-sync.js" defer></script>
 
-    <!-- Main App -->
+    <!-- App Modules -->
+    <script src="js/utils.js" defer></script>
     <script src="js/app.js" defer></script>
+    <script src="js/auth.js" defer></script>
+    <script src="js/ui.js" defer></script>
+    <script src="js/drag-scroll.js" defer></script>
+    <script src="js/charts.js" defer></script>
+    <script src="js/notifications.js" defer></script>
 
     <script>
         let chartJsLoaded = false;
@@ -63,16 +83,23 @@
             });
         };
 
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js').catch(() => {});
-            });
+        // Dynamic viewport: device-width za login, 1280 za app
+        function setLoginViewport() {
+            const meta = document.querySelector('meta[name="viewport"]');
+            if (meta) meta.setAttribute('content',
+                'width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=3.0');
+        }
+        function setAppViewport() {
+            const meta = document.querySelector('meta[name="viewport"]');
+            if (meta) meta.setAttribute('content',
+                'width=1280, user-scalable=yes, minimum-scale=0.2, maximum-scale=3.0');
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             const loginScreen = document.getElementById('login-screen');
             if (loginScreen && !loginScreen.classList.contains('hidden')) {
                 document.body.classList.add('login-active');
+                setLoginViewport();
             }
         });
     </script>
@@ -116,27 +143,24 @@
             <div class="header-content">
                 <div class="header-left">
                     <div class="header-title">
-                        <p class="text-outline-firma" style="font-size: 20px; margin-bottom: 4px; letter-spacing: 0.5px;">ŠPD "UNSKO-SANSKE ŠUME" D.O.O. BOS.KRUPA</p>
+                        <p class="company-name-header">ŠPD "UNSKO-SANSKE ŠUME" D.O.O. BOS.KRUPA</p>
                         <h1>Pogon gospodarenja Bos. Krupa</h1>
                         <p>Evidencija sječe i otpreme</p>
                     </div>
                 </div>
-                <div class="header-center">
-                    <img src="logo-zuti.png" alt="ŠPD Unsko-Sanske Šume Logo" class="company-logo" id="company-logo">
-                </div>
                 <div class="header-right">
-                    <div class="cache-status" id="cache-status-indicator" title="Status keširanja podataka">
-                        <span class="cache-status-icon">⏱️</span>
-                        <span class="cache-status-text">Cache...</span>
-                    </div>
                     <div class="header-user">
                         <div class="header-user-name" id="user-name"></div>
                         <div class="header-user-role" id="user-role"></div>
                     </div>
-                    <div class="desktop-view-toggle">
+                    <div class="desktop-view-toggle" style="display: flex; gap: 6px;">
                         <button class="desktop-view-button" onclick="toggleDesktopView()" id="desktop-view-btn" title="Prebaci na desktop prikaz">
                             <span>🖥️</span>
                             <span>Desktop</span>
+                        </button>
+                        <button class="desktop-view-button" onclick="toggleAndroidView()" id="android-view-btn" title="Prebaci na Android prikaz">
+                            <span>📱</span>
+                            <span>Android</span>
                         </button>
                     </div>
                     <div class="user-menu">
@@ -145,9 +169,12 @@
                             <span>Meni</span>
                         </button>
                         <div class="user-menu-dropdown" id="user-menu-dropdown">
-                            <div class="user-menu-item" onclick="event.stopPropagation(); closeUserMenu(); toggleDarkMode();">🌙 Dark Mode</div>
-                            <div class="user-menu-item" onclick="event.stopPropagation(); closeUserMenu(); preloadAllViews();">⚡ Učitaj sve prikaze</div>
-                            <div class="user-menu-item" id="sync-index-menu-item" onclick="event.stopPropagation(); closeUserMenu(); triggerSyncIndex();" style="display: none;">🔄 Pokreni indeksiranje</div>
+                            <div class="user-menu-item" id="pwa-install-btn" style="display:none;" onclick="event.stopPropagation(); closeUserMenu(); installPwa();">📲 Instaliraj aplikaciju</div>
+                            <div class="user-menu-item" onclick="event.stopPropagation(); closeUserMenu(); preloadAllViews(false, true);">⚡ Učitaj sve prikaze</div>
+                            <div class="user-menu-item" id="notif-menu-item" onclick="event.stopPropagation(); toggleNotifPanel();" style="display:none;">
+                                🔔 Notifikacije
+                                <span id="notif-status-badge" style="font-size: 11px; margin-left: 6px; padding: 2px 6px; border-radius: 10px; background: #e5e7eb; color: #6b7280;">OFF</span>
+                            </div>
                             <div class="user-menu-item" onclick="event.stopPropagation(); clearAllCache()">🗑️ Obriši keš</div>
                             <div class="user-menu-item danger" onclick="event.stopPropagation(); logout()">🚪 Odjavi se</div>
                         </div>
@@ -156,17 +183,93 @@
             </div>
         </div>
 
-        <!-- Cache indicator -->
-        <div id="cache-indicator" class="cache-indicator hidden"></div>
+        <!-- Notification Settings Panel (modal overlay) -->
+        <div id="notif-settings-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:10000; display:none;" onclick="closeNotifPanel()">
+            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; border-radius:16px; padding:28px; width:340px; max-width:90vw; box-shadow:0 20px 60px rgba(0,0,0,0.3);" onclick="event.stopPropagation()">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3 style="margin:0; font-size:18px; color:#1f2937;">🔔 Notifikacije</h3>
+                    <button onclick="closeNotifPanel()" style="background:none; border:none; font-size:20px; cursor:pointer; color:#6b7280; padding:4px;">✕</button>
+                </div>
 
-        <div class="tabs-container">
-            <div class="tabs" id="tabs-menu">
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f3f4f6;">
+                    <div>
+                        <div style="font-weight:600; color:#1f2937;">Omogući obavijesti</div>
+                        <div style="font-size:12px; color:#6b7280; margin-top:2px;">Primaj obavijesti o novim podacima</div>
+                    </div>
+                    <label style="position:relative; width:44px; height:24px; display:inline-block;">
+                        <input type="checkbox" id="notif-toggle" onchange="handleNotifToggle(this.checked)" style="opacity:0; width:0; height:0;">
+                        <span style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#ccc; border-radius:24px; transition:.3s;"></span>
+                        <span id="notif-toggle-knob" style="position:absolute; content:''; height:18px; width:18px; left:3px; bottom:3px; background:white; border-radius:50%; transition:.3s; pointer-events:none;"></span>
+                    </label>
+                </div>
+
+                <div id="notif-options-panel" style="display:none; padding-top:12px;">
+                    <div style="font-size:13px; font-weight:600; color:#6b7280; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Obavijesti za:</div>
+
+                    <label style="display:flex; align-items:center; padding:10px 0; cursor:pointer; gap:10px;">
+                        <input type="checkbox" id="notif-primka" checked onchange="NotificationManager.updatePref('novaPrimka', this.checked)" style="width:18px; height:18px; accent-color:#059669;">
+                        <div>
+                            <div style="font-weight:500; color:#1f2937;">Nova sječa (primka)</div>
+                            <div style="font-size:12px; color:#6b7280;">Kad se unesu novi zapisi sječe</div>
+                        </div>
+                    </label>
+
+                    <label style="display:flex; align-items:center; padding:10px 0; cursor:pointer; gap:10px;">
+                        <input type="checkbox" id="notif-otprema" checked onchange="NotificationManager.updatePref('novaOtprema', this.checked)" style="width:18px; height:18px; accent-color:#2563eb;">
+                        <div>
+                            <div style="font-weight:500; color:#1f2937;">Nova otprema</div>
+                            <div style="font-size:12px; color:#6b7280;">Kad se unesu novi zapisi otpreme</div>
+                        </div>
+                    </label>
+
+                    <div style="margin-top:16px; padding:12px; background:#f0fdf4; border-radius:8px; font-size:12px; color:#166534;">
+                        Obavijesti se prikazuju kad aplikacija detektuje nove podatke putem automatskog sync-a. Radi dok je tab otvoren.
+                    </div>
+                </div>
+
+                <div id="notif-denied-msg" style="display:none; margin-top:12px; padding:12px; background:#fef2f2; border-radius:8px; font-size:12px; color:#991b1b;">
+                    Notifikacije su blokirane u browseru. Kliknite na ikonu lokota u adresnoj traci i dozvolite notifikacije.
+                </div>
+            </div>
+        </div>
+
+
+        <!-- DESKTOP: Horizontal tabs (hidden on desktop, shown on mobile) -->
+        <div class="tabs-container mobile-only">
+            <div class="tabs" id="tabs-menu-mobile">
                 <!-- Tabs will be dynamically populated based on user type -->
             </div>
         </div>
 
-        <div id="loading-screen" class="loading">
-            <div class="loading-icon">⏳</div>
+        <!-- Main App Layout with Sidebar -->
+        <div class="app-layout">
+            <!-- DESKTOP SIDEBAR -->
+            <aside class="sidebar desktop-only" id="sidebar">
+                <div class="sidebar-header">
+                    <div class="sidebar-logo">🌲</div>
+                    <span class="sidebar-title">Navigacija</span>
+                </div>
+                <nav class="sidebar-nav" id="tabs-menu">
+                    <!-- Tabs will be dynamically populated based on user type -->
+                </nav>
+                <div class="sidebar-company-logo">
+                    <img src="logo-zuti.png" alt="ŠPD Unsko-Sanske Šume Logo" class="company-logo">
+                </div>
+                <div class="sidebar-footer">
+                    <div class="sidebar-user">
+                        <span class="sidebar-user-icon">👤</span>
+                        <div class="sidebar-user-info">
+                            <span class="sidebar-user-name" id="sidebar-user-name"></span>
+                            <span class="sidebar-user-role" id="sidebar-user-role"></span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- MAIN CONTENT AREA -->
+            <main class="main-content">
+                <div id="loading-screen" class="loading">
+            <div class="loading-icon"><img src="1773603789726.png" alt="Šumarija Bos. Krupa" style="width: 120px; height: auto;"></div>
             <div class="loading-text">Učitavam podatke...</div>
         </div>
         
@@ -175,58 +278,118 @@
             <!-- Summary Cards -->
             <div class="summary-cards" id="summary-cards"></div>
 
-            <!-- Monthly Table -->
+            <!-- Sječa i Otprema tekućeg mjeseca -->
             <div class="section">
-                <h2>📊 Mjesečni pregled</h2>
-                <div class="controls-bar">
-                    <input type="text" class="search-input" id="dashboard-search" placeholder="🔍 Pretraži po mjesecu..." onkeyup="filterDashboardTable()">
-                    <button class="btn btn-primary" onclick="exportTableToCSV('dashboard')">📥 Export CSV</button>
-                </div>
+                <h2>📅 Sječa i otprema tekućeg mjeseca <span id="tekuci-mjesec-period" style="font-weight: 400; font-size: 14px; color: #6b7280;"></span></h2>
                 <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="professional-monthly-table" id="dashboard-table">
-                        <thead>
-                            <tr>
-                                <th onclick="sortTable(0, 'dashboard-table')" style="text-align: left;">Mjesec ⇅</th>
-                                <th class="right" onclick="sortTable(1, 'dashboard-table')">Sječa (m³) ⇅</th>
-                                <th class="right" onclick="sortTable(2, 'dashboard-table')">Otprema (m³) ⇅</th>
-                                <th class="right" onclick="sortTable(3, 'dashboard-table')">Zaliha ⇅</th>
-                                <th class="right" onclick="sortTable(4, 'dashboard-table')">Dinamika ⇅</th>
-                                <th class="right" onclick="sortTable(5, 'dashboard-table')">Razlika Sječa - Dinamika ⇅</th>
-                                <th class="right" onclick="sortTable(6, 'dashboard-table')">Razlika Otprema - Dinamika ⇅</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dashboard-monthly-table"></tbody>
+                    <table class="monthly-table" id="tekuci-mjesec-table" style="width: 100%; border-collapse: collapse;">
+                        <thead id="tekuci-mjesec-header"></thead>
+                        <tbody id="tekuci-mjesec-body"></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- Odjeli Table -->
+            <!-- Sječa i Otprema zadnjih 5 radnih dana -->
             <div class="section">
-                <h2>🏭 Pregled po odjelima</h2>
-                <div class="controls-bar">
-                    <input type="text" class="search-input" id="odjeli-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterOdjeliTable()">
-                    <button class="btn btn-primary" onclick="exportTableToCSV('odjeli')">📥 Export CSV</button>
-                </div>
+                <h2>📅 Sječa i otprema zadnjih 5 radnih dana <span id="zadnjih5-period" style="font-weight: 400; font-size: 14px; color: #6b7280;"></span></h2>
                 <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="monthly-table" id="odjeli-table">
-                    <thead>
-                        <tr>
-                            <th onclick="sortTable(0, 'odjeli-table')">Odjel ⇅</th>
-                            <th class="right" onclick="sortTable(1, 'odjeli-table')">Sječa (m³) ⇅</th>
-                            <th class="right" onclick="sortTable(2, 'odjeli-table')">Otprema (m³) ⇅</th>
-                            <th class="right" onclick="sortTable(3, 'odjeli-table')">Zaliha ⇅</th>
-                            <th onclick="sortTable(4, 'odjeli-table')">Radilište ⇅</th>
-                            <th onclick="sortTable(5, 'odjeli-table')">Izvođač Radova ⇅</th>
-                            <th onclick="sortTable(6, 'odjeli-table')">Datum Zadnje Sječe ⇅</th>
-                            <th class="right" onclick="sortTable(7, 'odjeli-table')">Realizacija % ⇅</th>
-                        </tr>
-                    </thead>
-                    <tbody id="odjeli-table-body"></tbody>
-                </table>
+                    <table class="monthly-table" id="zadnjih5-dana-table" style="width: 100%; border-collapse: collapse;">
+                        <thead id="zadnjih5-dana-header"></thead>
+                        <tbody id="zadnjih5-dana-body"></tbody>
+                    </table>
                 </div>
             </div>
 
-            <!-- Chart -->
+            <!-- Monthly Table - Enterprise Card -->
+            <div class="enterprise-card">
+                <div class="enterprise-card-header">
+                    <div>
+                        <h2>📊 Mjesečni pregled</h2>
+                        <span class="card-subtitle">Sječa, otprema i dinamika po mjesecima</span>
+                    </div>
+                    <span class="card-badge">Tekuća godina</span>
+                </div>
+                <div class="enterprise-card-body">
+                    <div class="controls-bar">
+                        <input type="text" class="search-input" id="dashboard-search" placeholder="🔍 Pretraži po mjesecu..." onkeyup="filterDashboardTable()">
+                    </div>
+                    <div class="dashboard-monthly-wrapper">
+                        <table class="professional-monthly-table" id="dashboard-table" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th onclick="sortTable(0, 'dashboard-table')" style="text-align: left;">Mjesec ⇅</th>
+                                    <th class="right" onclick="sortTable(1, 'dashboard-table')" style="min-width: 120px;">Sječa (m³) ⇅</th>
+                                    <th class="right" onclick="sortTable(2, 'dashboard-table')" style="min-width: 120px;">Otprema (m³) ⇅</th>
+                                    <th class="right" onclick="sortTable(3, 'dashboard-table')">Zaliha ⇅</th>
+                                    <th class="right" onclick="sortTable(4, 'dashboard-table')">DINAMIKA SJEČE ⇅</th>
+                                    <th class="right" onclick="sortTable(5, 'dashboard-table')">DINAMIKA OTPREME ⇅</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboard-monthly-table"></tbody>
+                            <tfoot id="dashboard-monthly-tfoot"></tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Odjeli Table -->
+            <div class="enterprise-card">
+                <div class="enterprise-card-header">
+                    <div>
+                        <h2>🏭 Pregled po odjelima</h2>
+                        <span class="card-subtitle">Sječa, otprema, zaliha i realizacija po odjelima</span>
+                    </div>
+                    <button onclick="exportTableToExcel('odjeli-table', 'Odjeli')" style="background: rgba(5,150,105,0.1); color: #059669; border: 1px solid #059669; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export</button>
+                </div>
+                <div class="enterprise-card-body">
+                    <div class="controls-bar">
+                        <input type="text" class="search-input" id="odjeli-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterOdjeliTable()">
+                    </div>
+                    <div class="odjeli-table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="odjeli-table" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable(0, 'odjeli-table')">Odjel ⇅</th>
+                                <th class="right" onclick="sortTable(1, 'odjeli-table')">Sječa (m³) ⇅</th>
+                                <th class="right" onclick="sortTable(2, 'odjeli-table')">Otprema (m³) ⇅</th>
+                                <th class="right" onclick="sortTable(3, 'odjeli-table')">Zaliha ⇅</th>
+                                <th onclick="sortTable(4, 'odjeli-table')">Radilište ⇅</th>
+                                <th onclick="sortTable(5, 'odjeli-table')">Izvođač Radova ⇅</th>
+                                <th onclick="sortTable(6, 'odjeli-table')">Zadnja Sječa ⇅</th>
+                                <th class="right" onclick="sortTable(7, 'odjeli-table')">Realizacija % ⇅</th>
+                            </tr>
+                        </thead>
+                        <tbody id="odjeli-table-body"></tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dnevni Chart za tekući mjesec -->
+            <div class="section">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+                    <h2 style="margin: 0;">📅 Dnevna sječa i otprema - Tekući mjesec</h2>
+                    <select id="dashboard-daily-month-select" onchange="loadDashboardDailyChart()" style="padding: 10px 16px; font-size: 14px; border-radius: 8px; border: 2px solid #059669; min-width: 150px; font-family: 'Inter', sans-serif;">
+                        <option value="0">Januar</option>
+                        <option value="1">Februar</option>
+                        <option value="2">Mart</option>
+                        <option value="3">April</option>
+                        <option value="4">Maj</option>
+                        <option value="5">Juni</option>
+                        <option value="6">Juli</option>
+                        <option value="7">August</option>
+                        <option value="8">Septembar</option>
+                        <option value="9">Oktobar</option>
+                        <option value="10">Novembar</option>
+                        <option value="11">Decembar</option>
+                    </select>
+                </div>
+                <div class="chart-container" style="min-height: 300px; position: relative;">
+                    <canvas id="dashboardDailyChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Godišnji Chart -->
             <div class="section">
                 <h2>📈 Trendovi sječe i otpreme</h2>
                 <div class="chart-container">
@@ -237,38 +400,46 @@
 
         <!-- MJESEČNI SORTIMENTI CONTENT -->
         <div id="mjesecni-sortimenti-content" class="container hidden">
-            <!-- SJEČA PO MJESECIMA -->
-            <div class="section">
-                <div class="page-header">
-                    <div class="page-header-left">
-                        <h1>📊 Sječa po mjesecima i sortimentima</h1>
-                        <p>Prikaz mjesečnih podataka za tekuću godinu</p>
+            <!-- SJEČA PO MJESECIMA - Pro Card -->
+            <div class="mjesecni-card" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 32px; overflow: hidden;">
+                <!-- Card Header -->
+                <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="margin: 0; color: white; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">📊</span> Sječa po mjesecima i sortimentima
+                        </h2>
+                        <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Prikaz mjesečnih podataka za tekuću godinu</p>
                     </div>
-                    <div class="page-header-right">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('mjesecna-sjeca')">📥 Export CSV</button>
-                    </div>
+                    <button onclick="exportTableToExcel('mjesecna-sjeca-table', 'Sjeca-po-mjesecima')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                        <span>📥</span> Export
+                    </button>
                 </div>
-                <div class="kupci-table-wrapper mjesecni-table-wrapper">
-                    <table class="kupci-table" id="mjesecna-sjeca-table">
+                <!-- Table Container -->
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="pro-mjesecna-table" id="mjesecna-sjeca-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
                         <thead id="mjesecna-sjeca-header"></thead>
                         <tbody id="mjesecna-sjeca-body"></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- OTPREMA PO MJESECIMA -->
-            <div class="section">
-                <div class="page-header">
-                    <div class="page-header-left">
-                        <h1>🚛 Otprema po mjesecima i sortimentima</h1>
-                        <p>Prikaz mjesečnih podataka za tekuću godinu</p>
+            <!-- OTPREMA PO MJESECIMA - Pro Card -->
+            <div class="mjesecni-card" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 32px; overflow: hidden;">
+                <!-- Card Header -->
+                <div style="background: linear-gradient(135deg, #7c2d12 0%, #b45309 100%); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="margin: 0; color: white; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">🚛</span> Otprema po mjesecima i sortimentima
+                        </h2>
+                        <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Prikaz mjesečnih podataka za tekuću godinu</p>
                     </div>
-                    <div class="page-header-right">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('mjesecna-otprema')">📥 Export CSV</button>
-                    </div>
+                    <button onclick="exportTableToExcel('mjesecna-otprema-table', 'Otprema-po-mjesecima')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                        <span>📥</span> Export
+                    </button>
                 </div>
-                <div class="kupci-table-wrapper mjesecni-table-wrapper">
-                    <table class="kupci-table" id="mjesecna-otprema-table">
+                <!-- Table Container -->
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="pro-mjesecna-table" id="mjesecna-otprema-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
                         <thead id="mjesecna-otprema-header"></thead>
                         <tbody id="mjesecna-otprema-body"></tbody>
                     </table>
@@ -278,22 +449,26 @@
 
         <!-- PRIMACI CONTENT (Prikaz po primačima) -->
         <div id="primaci-content" class="container hidden">
-            <h2>👷 Prikaz sječe</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <h2>👷 SJEČA</h2>
+                <button onclick="exportVisibleTable('primaci-content', 'Sjeca')" style="background: #1e3a5f; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+            </div>
 
             <!-- Submenu -->
             <div class="submenu">
-                <button class="submenu-tab active" onclick="switchPrimaciSubmenu('monthly')">📊 Mjesečni prikaz</button>
-                <button class="submenu-tab" onclick="switchPrimaciSubmenu('daily')">📅 Po danima</button>
+                <button class="submenu-tab active" onclick="switchPrimaciSubmenu('daily')">📅 Sječa po danima</button>
+                <button class="submenu-tab" onclick="switchPrimaciSubmenu('monthly')">📊 Mjesečni prikaz</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('radilista')">🏗️ Radilišta</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('izvodjaci')">👷 Izvođači</button>
+                <button class="submenu-tab" onclick="switchPrimaciSubmenu('sortimenti-by-primac')">🏷️ Sortimentni po primačima</button>
             </div>
 
             <!-- Mjesečni prikaz -->
-            <div id="primaci-monthly-view" class="submenu-content">
+            <div id="primaci-monthly-view" class="submenu-content hidden">
                 <div class="section">
+                    <h3 style="color: #059669; text-align: center; margin-bottom: 15px;">📊 Prikaz sječe po primačima (m³)</h3>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="primaci-search" placeholder="🔍 Pretraži po imenu primača..." onkeyup="filterPrimaciTable()">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('primaci')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table class="monthly-table" id="primaci-table">
@@ -302,10 +477,30 @@
                         </table>
                     </div>
                 </div>
+
+                <div class="section" style="margin-top: 30px;">
+                    <h3 style="color: #2563eb; text-align: center; margin-bottom: 15px;">📈 Prosječna sječa po radnom danu (m³/dan)</h3>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="primaci-prosjek-table">
+                            <thead id="primaci-prosjek-header"></thead>
+                            <tbody id="primaci-prosjek-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="section" style="margin-top: 30px;">
+                    <h3 style="color: #d97706; text-align: center; margin-bottom: 15px;">📅 Broj radnih dana po mjesecima</h3>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="primaci-radni-dani-table">
+                            <thead id="primaci-radni-dani-header"></thead>
+                            <tbody id="primaci-radni-dani-body"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <!-- Dnevni prikaz - tekući mjesec -->
-            <div id="primaci-daily-view" class="submenu-content hidden">
+            <div id="primaci-daily-view" class="submenu-content">
                 <div class="section">
                     <div class="month-selector">
                         <label for="primaci-month-select">📅 Izaberi mjesec:</label>
@@ -326,7 +521,6 @@
                     </div>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="primaci-daily-search" placeholder="🔍 Pretraži..." onkeyup="filterPrimaciDailyTable()">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('primaci-daily')">📥 Export CSV</button>
                     </div>
                     <div class="kupci-table-wrapper">
                         <table class="kupci-table" id="primaci-daily-table">
@@ -342,7 +536,6 @@
                 <div class="section">
                     <h3 style="color: #ea580c; text-align: center; margin-bottom: 20px;">🏗️ Prikaz sječe po radilištima</h3>
                     <div class="controls-bar">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('primaci-radilista')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table class="monthly-table" id="primaci-radilista-table">
@@ -360,12 +553,36 @@
                 </div>
             </div>
 
+            <!-- Sortimentni prikaz po primačima (po radilištu, za odabrani mjesec) -->
+            <div id="primaci-sortimenti-primac-view" class="submenu-content hidden">
+                <div class="section">
+                    <h3 style="color: #2F343A; text-align: center; margin-bottom: 20px; font-weight: 600; letter-spacing: 0.02em;">🏷️ Sortimentni prikaz po primačima</h3>
+                    <div class="month-selector month-selector--neutral">
+                        <label>📅 Izaberi mjesec:</label>
+                        <select id="primaci-sortimenti-month-select" class="month-select" onchange="loadPrimaciSortimentiByPrimac(this.value)">
+                            <option value="0">Januar</option>
+                            <option value="1">Februar</option>
+                            <option value="2">Mart</option>
+                            <option value="3">April</option>
+                            <option value="4">Maj</option>
+                            <option value="5">Juni</option>
+                            <option value="6">Juli</option>
+                            <option value="7">Avgust</option>
+                            <option value="8">Septembar</option>
+                            <option value="9">Oktobar</option>
+                            <option value="10">Novembar</option>
+                            <option value="11">Decembar</option>
+                        </select>
+                    </div>
+                    <div id="primaci-sortimenti-primac-container"></div>
+                </div>
+            </div>
+
             <!-- Prikaz po izvođačima -->
             <div id="primaci-izvodjaci-view" class="submenu-content hidden">
                 <div class="section">
                     <h3 style="color: #ea580c; text-align: center; margin-bottom: 20px;">👷 Prikaz sječe po izvođačima radova</h3>
                     <div class="controls-bar">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('primaci-izvodjaci')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table class="monthly-table" id="primaci-izvodjaci-table">
@@ -386,22 +603,25 @@
 
         <!-- OTPREMACI CONTENT (Prikaz po otpremačima) -->
         <div id="otpremaci-content" class="container hidden">
-            <h2>🚛 Prikaz otpreme</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <h2>🚛 OTPREMA</h2>
+                <button onclick="exportVisibleTable('otpremaci-content', 'Otprema')" style="background: #7c2d12; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+            </div>
 
             <!-- Submenu -->
             <div class="submenu">
-                <button class="submenu-tab active" onclick="switchOtremaciSubmenu('monthly')">📊 Mjesečni prikaz</button>
-                <button class="submenu-tab" onclick="switchOtremaciSubmenu('daily')">📅 Po danima</button>
+                <button class="submenu-tab" onclick="switchOtremaciSubmenu('monthly')">📊 Mjesečni prikaz</button>
+                <button class="submenu-tab active" onclick="switchOtremaciSubmenu('daily')">📅 Po danima</button>
                 <button class="submenu-tab" onclick="switchOtremaciSubmenu('radilista')">🏗️ Radilišta</button>
                 <button class="submenu-tab" onclick="switchOtremaciSubmenu('po-kupcima')" id="otpremaci-po-kupcima-tab">🏢 Otprema u <span id="current-month-name">tekućem mjesecu</span></button>
+                <button class="submenu-tab" onclick="switchOtremaciSubmenu('sortimenti-by-otpremac')">🏷️ Sortimentni prikaz po otpremačima</button>
             </div>
 
             <!-- Mjesečni prikaz -->
-            <div id="otpremaci-monthly-view" class="submenu-content">
+            <div id="otpremaci-monthly-view" class="submenu-content hidden">
                 <div class="section">
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="otpremaci-search" placeholder="🔍 Pretraži po imenu otpremača..." onkeyup="filterOtremaciTable()">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('otpremaci')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table class="monthly-table" id="otpremaci-table">
@@ -413,7 +633,7 @@
             </div>
 
             <!-- Dnevni prikaz - tekući mjesec -->
-            <div id="otpremaci-daily-view" class="submenu-content hidden">
+            <div id="otpremaci-daily-view" class="submenu-content">
                 <div class="section">
                     <div class="month-selector">
                         <label for="otpremaci-month-select">📅 Izaberi mjesec:</label>
@@ -434,7 +654,6 @@
                     </div>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="otpremaci-daily-search" placeholder="🔍 Pretraži..." onkeyup="filterOtremaciDailyTable()">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('otpremaci-daily')">📥 Export CSV</button>
                     </div>
                     <div class="kupci-table-wrapper">
                         <table class="kupci-table" id="otpremaci-daily-table">
@@ -450,7 +669,6 @@
                 <div class="section">
                     <h3 style="color: #0891b2; text-align: center; margin-bottom: 20px;">🏗️ Prikaz otpreme po radilištima</h3>
                     <div class="controls-bar">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('otpremaci-radilista')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table class="monthly-table" id="otpremaci-radilista-table">
@@ -476,7 +694,6 @@
                     </h3>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="otpremaci-po-kupcima-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterOtremaciPoKupcimaTable()">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('otpremaci-po-kupcima')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table class="expert-table" id="otpremaci-po-kupcima-table">
@@ -487,46 +704,242 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Sortimentni prikaz po otpremačima (po radilištu, za odabrani mjesec) -->
+            <div id="otpremaci-sortimenti-otpremac-view" class="submenu-content hidden">
+                <div class="section">
+                    <h3 style="color: #0891b2; text-align: center; margin-bottom: 20px;">🏷️ Sortimentni prikaz po otpremačima</h3>
+                    <div class="month-selector">
+                        <label>📅 Izaberi mjesec:</label>
+                        <select id="otpremaci-sortimenti-month-select" class="month-select" onchange="loadOtremaciSortimentiByOtpremac(this.value)">
+                            <option value="0">Januar</option>
+                            <option value="1">Februar</option>
+                            <option value="2">Mart</option>
+                            <option value="3">April</option>
+                            <option value="4">Maj</option>
+                            <option value="5">Juni</option>
+                            <option value="6">Juli</option>
+                            <option value="7">Avgust</option>
+                            <option value="8">Septembar</option>
+                            <option value="9">Oktobar</option>
+                            <option value="10">Novembar</option>
+                            <option value="11">Decembar</option>
+                        </select>
+                    </div>
+                    <div id="otpremaci-sortimenti-otpremac-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PRIMACI ADMIN CONTENT (Primači na šuma panju - admin panel) -->
+        <div id="primaci-admin-content" class="container hidden" style="max-width: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+                <h2 style="margin: 0;">🌲 Primači na šuma panju</h2>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <select id="primaci-admin-select" onchange="onPrimaciAdminSelectChange()" style="padding: 8px 12px; border-radius: 8px; border: 2px solid #10b981; font-size: 14px; min-width: 200px; background: white;">
+                        <option value="">-- Izaberi primača --</option>
+                    </select>
+                    <select id="primaci-admin-year-select" onchange="onPrimaciAdminYearChange()" style="display: none; padding: 8px 12px; border-radius: 8px; border: 2px solid #10b981; font-size: 14px; background: white;">
+                    </select>
+                    <button onclick="exportVisibleTable('primaci-admin-content', 'Primac-Admin')" style="background: #047857; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+                </div>
+            </div>
+
+            <!-- Submenu - skriven dok se ne izabere primač -->
+            <div class="submenu" id="primaci-admin-submenu" style="display: none;">
+                <button class="submenu-tab active" onclick="switchPrimaciAdminSubmenu('pregled')">🪓 Pregled sječe</button>
+                <button class="submenu-tab" onclick="switchPrimaciAdminSubmenu('godisnji')">📅 Godišnji prikaz</button>
+                <button class="submenu-tab" onclick="switchPrimaciAdminSubmenu('odjeli')">🏭 Prikaz po odjelima</button>
+            </div>
+
+            <!-- Placeholder kad primač nije izabran - Pregled po odjelima (DEFAULT) -->
+            <div id="primaci-admin-placeholder">
+                <div id="primaci-admin-odjeli-default-loading" style="text-align: center; padding: 40px; color: #6b7280;">
+                    <div class="loading-icon" style="font-size: 32px;">⏳</div>
+                    <p>Učitavanje pregleda po odjelima...</p>
+                </div>
+                <div id="primaci-admin-odjeli-default-container"></div>
+                <div id="primaci-admin-odjeli-default-pagination" style="display: none; justify-content: center; gap: 10px; margin-top: 16px; align-items: center;">
+                    <button id="primaci-admin-odjeli-default-prev" onclick="prevPageOdjeliDefault()" class="submenu-tab" style="padding: 6px 16px;">← Prethodna</button>
+                    <span id="primaci-admin-odjeli-default-page-info" style="font-size: 13px; color: #6b7280;">Stranica 1</span>
+                    <button id="primaci-admin-odjeli-default-next" onclick="nextPageOdjeliDefault()" class="submenu-tab" style="padding: 6px 16px;">Sledeća →</button>
+                </div>
+            </div>
+
+            <!-- Loading indikator -->
+            <div id="primaci-admin-loading" class="hidden" style="text-align: center; padding: 40px;">
+                <div class="loading-icon" style="font-size: 32px;">⏳</div>
+                <p>Učitavanje podataka...</p>
+            </div>
+
+            <!-- Pregled sječe (dnevni prikaz + chart) -->
+            <div id="primaci-admin-pregled-view" class="submenu-content hidden">
+                <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <h3 style="margin: 0; color: #047857;" id="primaci-admin-primac-name"></h3>
+                    <span id="primaci-admin-total-badge" style="background: #047857; color: white; padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: 700;"></span>
+                </div>
+
+                <!-- Tabela sa svim unosima -->
+                <div style="margin-bottom: 20px; background: white; border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="margin: 0; color: #374151;">Svi unosi</h4>
+                        <input type="text" id="primaci-admin-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterPrimaciAdminTable()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px; width: 200px;">
+                    </div>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="data-table worker-table" id="primaci-admin-table">
+                            <thead id="primaci-admin-header"></thead>
+                            <tbody id="primaci-admin-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Dnevni chart sa mjesec selektorom -->
+                <div style="margin-bottom: 20px; background: white; border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="margin: 0; color: #374151;">Dnevni prikaz</h4>
+                        <select id="primaci-admin-month-select" onchange="onPrimaciAdminMonthChange()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px;">
+                            <option value="1">Januar</option>
+                            <option value="2">Februar</option>
+                            <option value="3">Mart</option>
+                            <option value="4">April</option>
+                            <option value="5">Maj</option>
+                            <option value="6">Juni</option>
+                            <option value="7">Juli</option>
+                            <option value="8">August</option>
+                            <option value="9">Septembar</option>
+                            <option value="10">Oktobar</option>
+                            <option value="11">Novembar</option>
+                            <option value="12">Decembar</option>
+                        </select>
+                    </div>
+                    <canvas id="primaci-admin-daily-chart" height="200"></canvas>
+                </div>
+
+                <!-- Mjesečni chart -->
+                <div style="margin-bottom: 20px; background: white; border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb;">
+                    <h4 style="margin: 0 0 12px 0; color: #374151;">Mjesečni pregled</h4>
+                    <canvas id="primaci-admin-monthly-chart" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Godišnji prikaz -->
+            <div id="primaci-admin-godisnji-view" class="submenu-content hidden">
+                <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+                    <h3 style="margin: 0; color: #047857;" id="primaci-admin-godisnji-name"></h3>
+                    <span id="primaci-admin-godisnji-year-badge" style="background: #fbbf24; color: #78350f; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700;"></span>
+                </div>
+
+                <!-- Godišnji chart -->
+                <div style="margin-bottom: 20px; background: white; border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb;">
+                    <h4 style="margin: 0 0 12px 0; color: #374151;">Godišnji pregled po mjesecima</h4>
+                    <canvas id="primaci-admin-yearly-chart" height="200"></canvas>
+                </div>
+
+                <!-- Godišnja tabela -->
+                <div style="background: white; border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb;">
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="data-table" id="primaci-admin-godisnji-table">
+                            <thead id="primaci-admin-godisnji-header"></thead>
+                            <tbody id="primaci-admin-godisnji-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prikaz po odjelima -->
+            <div id="primaci-admin-odjeli-view" class="submenu-content hidden">
+                <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+                    <h3 style="margin: 0; color: #047857;" id="primaci-admin-odjeli-name"></h3>
+                </div>
+                <div id="primaci-admin-odjeli-container"></div>
+                <div style="display: flex; justify-content: center; gap: 10px; margin-top: 16px; align-items: center;">
+                    <button id="primaci-admin-odjeli-prev" onclick="prevPagePrimaciAdminOdjeli()" class="submenu-tab" style="padding: 6px 16px;">← Prethodna</button>
+                    <span id="primaci-admin-odjeli-page-info" style="font-size: 13px; color: #6b7280;">Stranica 1</span>
+                    <button id="primaci-admin-odjeli-next" onclick="nextPagePrimaciAdminOdjeli()" class="submenu-tab" style="padding: 6px 16px;">Sledeća →</button>
+                </div>
+            </div>
         </div>
 
         <!-- KUPCI CONTENT (Prikaz po kupcima) -->
         <div id="kupci-content" class="container hidden">
             <!-- Submenu za Kupci -->
             <div class="submenu">
-                <button class="submenu-tab active" onclick="switchKupciSubmenu('godisnji')">🏢 Godišnji pregled</button>
-                <button class="submenu-tab" onclick="switchKupciSubmenu('mjesecni')">📅 Mjesečni pregled</button>
+                <button class="submenu-tab active" onclick="switchKupciSubmenu('mjesecni')">📅 Mjesečni pregled</button>
+                <button class="submenu-tab" onclick="switchKupciSubmenu('kvartalni')">📊 Kvartalni prikaz</button>
+                <button class="submenu-tab" onclick="switchKupciSubmenu('godisnji')">🏢 Godišnji pregled</button>
             </div>
 
-            <!-- Godišnji pregled -->
-            <div id="kupci-godisnji-view" class="submenu-content">
-                <div class="section">
-                    <h2>🏢 Godišnji pregled po kupcima</h2>
-                    <div class="controls-bar">
-                        <input type="text" class="search-input" id="kupci-godisnji-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciGodisnjiTable()">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('kupci-godisnji')">📥 Export CSV</button>
+            <!-- Mjesečni pregled (default) -->
+            <div id="kupci-mjesecni-view" class="submenu-content">
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📅 Mjesečni pregled po kupcima</h2>
+                            <span class="card-subtitle">Otprema po kupcima i sortimentima za svaki mjesec</span>
+                        </div>
                     </div>
-                    <div class="kupci-table-wrapper">
-                        <table class="kupci-table" id="kupci-godisnji-table">
-                            <thead id="kupci-godisnji-header"></thead>
-                            <tbody id="kupci-godisnji-body"></tbody>
-                        </table>
+                    <div class="enterprise-card-body">
+                        <div class="controls-bar">
+                            <input type="text" class="search-input" id="kupci-mjesecni-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciMjesecniTable()">
+                        </div>
+                        <div class="kupci-table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                            <table class="kupci-table" id="kupci-mjesecni-table" style="width: 100%;">
+                                <thead id="kupci-mjesecni-header"></thead>
+                                <tbody id="kupci-mjesecni-body"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Mjesečni pregled -->
-            <div id="kupci-mjesecni-view" class="submenu-content hidden">
-                <div class="section">
-                    <h2>📅 Mjesečni pregled po kupcima</h2>
-                    <div class="controls-bar">
-                        <input type="text" class="search-input" id="kupci-mjesecni-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciMjesecniTable()">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('kupci-mjesecni')">📥 Export CSV</button>
+            <!-- Kvartalni prikaz -->
+            <div id="kupci-kvartalni-view" class="submenu-content hidden">
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📊 Kvartalni prikaz po kupcima</h2>
+                            <span class="card-subtitle">Otprema po kupcima i sortimentima za odabrani kvartal</span>
+                        </div>
                     </div>
-                    <div class="kupci-table-wrapper">
-                        <table class="kupci-table" id="kupci-mjesecni-table">
-                            <thead id="kupci-mjesecni-header"></thead>
-                            <tbody id="kupci-mjesecni-body"></tbody>
-                        </table>
+                    <div class="enterprise-card-body">
+                        <div class="controls-bar" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                            <select id="kupci-kvartalni-select" onchange="renderKupciKvartalniTable()" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white; min-width: 200px; cursor: pointer;">
+                                <option value="1">Q1 — Januar, Februar, Mart</option>
+                                <option value="2">Q2 — April, Maj, Juni</option>
+                                <option value="3">Q3 — Juli, August, Septembar</option>
+                                <option value="4">Q4 — Oktobar, Novembar, Decembar</option>
+                            </select>
+                            <input type="text" class="search-input" id="kupci-kvartalni-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciKvartalniTable()">
+                        </div>
+                        <div class="kupci-table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                            <table class="kupci-table" id="kupci-kvartalni-table" style="width: 100%;">
+                                <thead id="kupci-kvartalni-header"></thead>
+                                <tbody id="kupci-kvartalni-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Godišnji pregled -->
+            <div id="kupci-godisnji-view" class="submenu-content hidden">
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>🏢 Godišnji pregled po kupcima</h2>
+                            <span class="card-subtitle">Ukupna otprema po kupcima za tekuću godinu</span>
+                        </div>
+                    </div>
+                    <div class="enterprise-card-body">
+                        <div class="controls-bar">
+                            <input type="text" class="search-input" id="kupci-godisnji-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciGodisnjiTable()">
+                        </div>
+                        <div class="kupci-table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                            <table class="kupci-table" id="kupci-godisnji-table" style="width: 100%;">
+                                <thead id="kupci-godisnji-header"></thead>
+                                <tbody id="kupci-godisnji-body"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -579,7 +992,6 @@
                 <!-- Controls -->
                 <div class="controls-bar">
                     <input type="text" class="search-input" id="primac-personal-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterPrimacPersonalTable()">
-                    <button class="btn btn-primary" onclick="exportTableToCSV('primac-personal')">📥 Export CSV</button>
                 </div>
 
                 <!-- Modern Table Card -->
@@ -697,7 +1109,6 @@
                 <!-- Controls -->
                 <div class="controls-bar">
                     <input type="text" class="search-input" id="otpremac-personal-search" placeholder="🔍 Pretraži po odjelu/kupcu..." onkeyup="filterOtpremacPersonalTable()">
-                    <button class="btn btn-primary" onclick="exportTableToCSV('otpremac-personal')">📥 Export CSV</button>
                 </div>
 
                 <!-- Modern Table Card -->
@@ -712,6 +1123,49 @@
                         <table class="worker-table otpremac" id="otpremac-personal-table">
                             <thead id="otpremac-personal-header"></thead>
                             <tbody id="otpremac-personal-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OTPREMAC GODISNJI VIEW -->
+        <div id="otpremac-godisnji-content" class="container hidden">
+            <div class="section">
+                <!-- Professional Header -->
+                <div class="worker-header otpremac">
+                    <div class="worker-header-icon">📅</div>
+                    <div style="flex: 1;">
+                        <h1 class="worker-header-title">Godišnji prikaz</h1>
+                        <p class="worker-header-subtitle">Mjesečna rekapitulacija otpreme</p>
+                    </div>
+                    <div>
+                        <select id="otpremac-godisnji-year-select" class="year-select" onchange="loadOtpremacGodisnji()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #2563eb; min-width: 120px;">
+                            <option value="2026" selected>2026</option>
+                            <option value="2025">2025</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Mjesečni dijagram otpreme -->
+                <div class="worker-chart-card otpremac">
+                    <h3 class="worker-chart-title">📊 Mjesečna otprema - Grafički prikaz</h3>
+                    <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">Mjesečne rekapitulacije za cijelu godinu</p>
+                    <canvas id="otpremac-yearly-chart" class="worker-chart-canvas"></canvas>
+                </div>
+
+                <!-- Godišnja tabela -->
+                <div class="worker-table-card">
+                    <div class="worker-table-card-header">
+                        <h3 class="worker-table-card-title">
+                            📅 Godišnja rekapitulacija po mjesecima
+                        </h3>
+                        <span class="worker-table-card-badge otpremac" id="otpremac-godisnji-year-badge">2026</span>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="worker-table" id="otpremac-godisnji-main-table">
+                            <thead id="otpremac-godisnji-main-header"></thead>
+                            <tbody id="otpremac-godisnji-main-body"></tbody>
                         </table>
                     </div>
                 </div>
@@ -779,23 +1233,23 @@
                     <div class="worker-form-grid">
                         <div class="worker-form-group">
                             <label class="worker-form-label">F/L Č</label>
-                            <input type="number" step="0.01" id="sjeca-FL-C" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-FL-C" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">I Č</label>
-                            <input type="number" step="0.01" id="sjeca-I-C" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-I-C" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">II Č</label>
-                            <input type="number" step="0.01" id="sjeca-II-C" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-II-C" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">III Č</label>
-                            <input type="number" step="0.01" id="sjeca-III-C" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-III-C" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">RD</label>
-                            <input type="number" step="0.01" id="sjeca-RD" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-RD" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">TRUPCI Č <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
@@ -803,15 +1257,15 @@
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">CEL.DUGA</label>
-                            <input type="number" step="0.01" id="sjeca-CEL-DUGA" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-CEL-DUGA" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">CEL.CIJEPANA</label>
-                            <input type="number" step="0.01" id="sjeca-CEL-CIJEPANA" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-CEL-CIJEPANA" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">ŠKART</label>
-                            <input type="number" step="0.01" id="sjeca-SKART" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-SKART" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">Σ ČETINARI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
@@ -826,19 +1280,19 @@
                     <div class="worker-form-grid">
                         <div class="worker-form-group">
                             <label class="worker-form-label">F/L L</label>
-                            <input type="number" step="0.01" id="sjeca-FL-L" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-FL-L" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">I L</label>
-                            <input type="number" step="0.01" id="sjeca-I-L" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-I-L" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">II L</label>
-                            <input type="number" step="0.01" id="sjeca-II-L" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-II-L" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">III L</label>
-                            <input type="number" step="0.01" id="sjeca-III-L" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-III-L" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">TRUPCI L <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
@@ -846,15 +1300,15 @@
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">OGR.DUGI</label>
-                            <input type="number" step="0.01" id="sjeca-OGR-DUGI" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-OGR-DUGI" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">OGR.CIJEPANI</label>
-                            <input type="number" step="0.01" id="sjeca-OGR-CIJEPANI" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-OGR-CIJEPANI" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">GULE</label>
-                            <input type="number" step="0.01" id="sjeca-GULE" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="sjeca-GULE" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">LIŠĆARI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
@@ -865,7 +1319,34 @@
                     <!-- Total Box -->
                     <div class="worker-form-total-box">
                         <div class="worker-form-total-label">📊 UKUPNO Č+L</div>
-                        <input type="number" step="0.01" id="sjeca-UKUPNO Č+L" value="0" readonly class="worker-form-total-value" style="border: none; background: transparent;">
+                        <input type="number" step="0.01" id="sjeca-UKUPNO-CL" value="0" readonly class="worker-form-total-value" style="border: none; background: transparent;">
+                    </div>
+
+                    <!-- Image Upload Section -->
+                    <div class="worker-form-image-section" style="margin-top: 24px; padding: 20px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 12px; border: 2px dashed #059669;">
+                        <h3 class="worker-form-section-title" style="margin-bottom: 16px;">
+                            <span>📷</span>
+                            Dodaj sliku (opciono)
+                        </h3>
+                        <p style="font-size: 13px; color: #065f46; margin-bottom: 16px;">
+                            Slika će biti dostupna do sutra u 10:00h, nakon čega se automatski briše.
+                        </p>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <label class="worker-form-btn worker-form-btn-secondary" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                                <span>📁</span> Odaberi iz galerije
+                                <input type="file" id="sjeca-image-input" accept="image/*" style="display: none;" onchange="previewSjecaImage(event)">
+                            </label>
+                            <button type="button" class="worker-form-btn worker-form-btn-secondary" onclick="captureSjecaPhoto()" style="display: inline-flex; align-items: center; gap: 8px;">
+                                <span>📸</span> Uslikaj
+                            </button>
+                        </div>
+                        <div id="sjeca-image-preview" style="margin-top: 16px; display: none;">
+                            <div style="position: relative; display: inline-block;">
+                                <img id="sjeca-image-preview-img" style="max-width: 100%; max-height: 200px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                                <button type="button" onclick="removeSjecaImage()" style="position: absolute; top: -10px; right: -10px; width: 28px; height: 28px; border-radius: 50%; background: #dc2626; color: white; border: none; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">×</button>
+                            </div>
+                            <p id="sjeca-image-name" style="margin-top: 8px; font-size: 12px; color: #065f46;"></p>
+                        </div>
                     </div>
 
                     <!-- Actions -->
@@ -922,23 +1403,23 @@
                     <div class="worker-form-grid">
                         <div class="worker-form-group">
                             <label class="worker-form-label">F/L Č</label>
-                            <input type="number" step="0.01" id="otprema-FL-C" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-FL-C" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">I Č</label>
-                            <input type="number" step="0.01" id="otprema-I-C" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-I-C" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">II Č</label>
-                            <input type="number" step="0.01" id="otprema-II-C" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-II-C" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">III Č</label>
-                            <input type="number" step="0.01" id="otprema-III-C" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-III-C" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">RD</label>
-                            <input type="number" step="0.01" id="otprema-RD" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-RD" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">TRUPCI Č <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
@@ -946,15 +1427,15 @@
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">CEL.DUGA</label>
-                            <input type="number" step="0.01" id="otprema-CEL-DUGA" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-CEL-DUGA" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">CEL.CIJEPANA</label>
-                            <input type="number" step="0.01" id="otprema-CEL-CIJEPANA" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-CEL-CIJEPANA" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">ŠKART</label>
-                            <input type="number" step="0.01" id="otprema-SKART" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-SKART" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">Σ ČETINARI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
@@ -969,19 +1450,19 @@
                     <div class="worker-form-grid">
                         <div class="worker-form-group">
                             <label class="worker-form-label">F/L L</label>
-                            <input type="number" step="0.01" id="otprema-FL-L" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-FL-L" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">I L</label>
-                            <input type="number" step="0.01" id="otprema-I-L" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-I-L" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">II L</label>
-                            <input type="number" step="0.01" id="otprema-II-L" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-II-L" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">III L</label>
-                            <input type="number" step="0.01" id="otprema-III-L" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-III-L" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">TRUPCI L <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
@@ -989,15 +1470,15 @@
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">OGR.DUGI</label>
-                            <input type="number" step="0.01" id="otprema-OGR-DUGI" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-OGR-DUGI" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">OGR.CIJEPANI</label>
-                            <input type="number" step="0.01" id="otprema-OGR-CIJEPANI" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-OGR-CIJEPANI" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">GULE</label>
-                            <input type="number" step="0.01" id="otprema-GULE" value="0" min="0" class="worker-form-input">
+                            <input type="number" step="0.01" id="otprema-GULE" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
                             <label class="worker-form-label">LIŠĆARI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
@@ -1008,7 +1489,34 @@
                     <!-- Total Box -->
                     <div class="worker-form-total-box">
                         <div class="worker-form-total-label">📊 UKUPNO Č+L</div>
-                        <input type="number" step="0.01" id="otprema-UKUPNO Č+L" value="0" readonly class="worker-form-total-value" style="border: none; background: transparent;">
+                        <input type="number" step="0.01" id="otprema-UKUPNO-CL" value="0" readonly class="worker-form-total-value" style="border: none; background: transparent;">
+                    </div>
+
+                    <!-- Image Upload Section -->
+                    <div class="worker-form-image-section" style="margin-top: 24px; padding: 20px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; border: 2px dashed #2563eb;">
+                        <h3 class="worker-form-section-title" style="margin-bottom: 16px;">
+                            <span>📷</span>
+                            Dodaj sliku (opciono)
+                        </h3>
+                        <p style="font-size: 13px; color: #1e40af; margin-bottom: 16px;">
+                            Slika će biti dostupna do sutra u 10:00h, nakon čega se automatski briše.
+                        </p>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <label class="worker-form-btn worker-form-btn-secondary" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                                <span>📁</span> Odaberi iz galerije
+                                <input type="file" id="otprema-image-input" accept="image/*" style="display: none;" onchange="previewOtpremaImage(event)">
+                            </label>
+                            <button type="button" class="worker-form-btn worker-form-btn-secondary" onclick="captureOtpremaPhoto()" style="display: inline-flex; align-items: center; gap: 8px;">
+                                <span>📸</span> Uslikaj
+                            </button>
+                        </div>
+                        <div id="otprema-image-preview" style="margin-top: 16px; display: none;">
+                            <div style="position: relative; display: inline-block;">
+                                <img id="otprema-image-preview-img" style="max-width: 100%; max-height: 200px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                                <button type="button" onclick="removeOtpremaImage()" style="position: absolute; top: -10px; right: -10px; width: 28px; height: 28px; border-radius: 50%; background: #dc2626; color: white; border: none; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">×</button>
+                            </div>
+                            <p id="otprema-image-name" style="margin-top: 8px; font-size: 12px; color: #1e40af;"></p>
+                        </div>
                     </div>
 
                     <!-- Actions -->
@@ -1109,7 +1617,7 @@
                     <!-- Total Box -->
                     <div class="worker-form-total-box">
                         <div class="worker-form-total-label">📊 UKUPNO Č+L</div>
-                        <input type="number" step="0.01" id="edit-sjeca-UKUPNO Č+L" value="0" readonly class="worker-form-total-value" style="border: none; background: transparent;">
+                        <input type="number" step="0.01" id="edit-sjeca-UKUPNO-CL" value="0" readonly class="worker-form-total-value" style="border: none; background: transparent;">
                     </div>
 
                     <!-- Actions -->
@@ -1172,7 +1680,7 @@
                     <!-- Total Box -->
                     <div class="worker-form-total-box">
                         <div class="worker-form-total-label">📊 UKUPNO Č+L</div>
-                        <input type="number" step="0.01" id="edit-otprema-UKUPNO Č+L" value="0" readonly class="worker-form-total-value" style="border: none; background: transparent;">
+                        <input type="number" step="0.01" id="edit-otprema-UKUPNO-CL" value="0" readonly class="worker-form-total-value" style="border: none; background: transparent;">
                     </div>
 
                     <!-- Actions -->
@@ -1322,7 +1830,6 @@
                 <p>Kompletna analiza svih odjela sa projekat realizacijom</p>
                 <div class="controls-bar" style="margin-top: 20px;">
                     <input type="text" class="search-input" id="analytics-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterAnalyticsTable()">
-                    <button class="btn btn-primary" onclick="exportTableToCSV('analytics-odjeli')">📥 Export CSV</button>
                 </div>
                 <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                     <table class="monthly-table" id="analytics-odjeli-main-table">
@@ -1448,34 +1955,49 @@
             </div>
         </div>
 
-        <!-- POSLOVOĐA CONTENT - STANJE ODJELA -->
+        <!-- POSLOVOĐA CONTENT - STANJE ZALIHA (Card-based view) -->
         <div id="poslovodja-stanje-content" class="container hidden">
-            <div class="page-header">
-                <div class="page-header-left">
-                    <h1>📊 Stanje Odjela</h1>
-                    <p>Pregled stanja odjela sa vaših radilišta</p>
-                </div>
-                <div class="page-header-right">
-                    <button class="btn btn-primary" onclick="loadPoslovodjaStanje()">🔄 Osvježi</button>
-                </div>
-            </div>
-            <div id="poslovodja-radilista-info" class="section" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                    <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list"></span></p>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <label for="poslovodja-radiliste-select" style="color: #1e40af; font-weight: 600; white-space: nowrap;">Filtriraj po radilištu:</label>
-                        <select id="poslovodja-radiliste-select" onchange="filterPoslovodjaStanje()" style="padding: 8px 12px; border: 2px solid #3b82f6; border-radius: 6px; font-size: 14px; background: white; color: #1e40af; font-weight: 600; cursor: pointer; min-width: 200px;">
-                            <option value="">Sva radilišta</option>
-                        </select>
+            <div class="section">
+                <!-- Professional Header -->
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <h1>📦 Stanje Zaliha</h1>
+                        <p>Pregled zaliha po odjelima - Projekat, Sječa, Otprema, Zaliha</p>
+                    </div>
+                    <div class="page-header-right" style="display: flex; gap: 12px;">
+                        <button class="btn btn-primary" onclick="loadPoslovodjaStanje()">🔄 Osvježi</button>
                     </div>
                 </div>
-            </div>
-            <div class="section">
-                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="monthly-table" id="poslovodja-stanje-table">
-                        <thead id="poslovodja-stanje-header"></thead>
-                        <tbody id="poslovodja-stanje-body"></tbody>
-                    </table>
+
+                <!-- STANJE ZALIHA - Agregirana tabela za poslovođina radilišta -->
+                <div id="poslovodja-stanje-zaliha-tabela-section" style="margin-bottom: 24px;">
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="poslovodja-stanje-zaliha-tabela" style="width: 100%; border-collapse: collapse;">
+                            <thead id="poslovodja-stanje-zaliha-tabela-header"></thead>
+                            <tbody id="poslovodja-stanje-zaliha-tabela-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Info Bar -->
+                <div id="poslovodja-radilista-info" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <p style="margin: 0; color: #1e40af; font-weight: 600;">👤 Poslovođa: <span id="poslovodja-radilista-list"></span></p>
+                </div>
+
+                <!-- Filter Bar -->
+                <div class="controls-bar" style="margin-bottom: 24px;">
+                    <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                        <label style="font-weight: 600; color: #374151;">Radilište:</label>
+                        <select id="poslovodja-radiliste-select" class="filter-select" onchange="filterPoslovodjaStanje()" style="min-width: 200px; padding: 10px 16px; border: 2px solid #d1d5db; border-radius: 8px; font-size: 14px;">
+                            <option value="">Sva radilišta</option>
+                        </select>
+                        <span id="poslovodja-stanje-count" style="color: #6b7280; font-size: 14px;"></span>
+                    </div>
+                </div>
+
+                <!-- Stanje Zaliha Container (Cards) -->
+                <div id="poslovodja-stanje-container">
+                    <!-- Cards will be rendered here -->
                 </div>
             </div>
         </div>
@@ -1557,7 +2079,6 @@
                     <p>Kompletna tablica svih odjela sa zalihama po sortimentima</p>
                     <div class="controls-bar" style="margin-top: 20px;">
                         <input type="text" class="search-input" id="suma-lager-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterSumaLagerTable()">
-                        <button class="btn btn-primary" onclick="exportSumaLagerToCSV()">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table class="monthly-table" id="suma-lager-main-table" style="font-size: 11px;">
@@ -1593,59 +2114,51 @@
             </div>
         </div>
 
-        <!-- POSLOVOĐA CONTENT - ODJELI U REALIZACIJI -->
-        <div id="poslovodja-realizacija-content" class="container hidden">
+        <!-- POSLOVOĐA CONTENT - SJEČA (Zadnjih 10 dana) -->
+        <div id="poslovodja-sjeca-content" class="container hidden">
             <div class="page-header">
                 <div class="page-header-left">
-                    <h1>🏗️ Odjeli u realizaciji</h1>
-                    <p>Trenutni odjeli u radilištu koji vodite</p>
+                    <h1>🪓 SJEČA</h1>
+                    <p>Pregled sječe zadnjih 10 dana po danima i odjelima</p>
                 </div>
                 <div class="page-header-right">
-                    <button class="btn btn-primary" onclick="loadPoslovodjaRealizacija()">🔄 Osvježi</button>
+                    <button class="btn btn-primary" onclick="loadPoslovodjaSjeca()">🔄 Osvježi</button>
                 </div>
             </div>
-            <div id="poslovodja-radilista-info-2" class="section" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list-2"></span></p>
+            <div id="poslovodja-radilista-info-sjeca" class="section" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list-sjeca"></span></p>
             </div>
+
+            <!-- Sječa po danima -->
             <div class="section">
+                <h2 style="color: #059669; margin-bottom: 15px;">📅 SJEČA - Zadnjih 10 dana</h2>
                 <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="monthly-table" id="poslovodja-realizacija-table">
-                        <thead id="poslovodja-realizacija-header"></thead>
-                        <tbody id="poslovodja-realizacija-body"></tbody>
+                    <table class="monthly-table" id="poslovodja-sjeca-table">
+                        <thead id="poslovodja-sjeca-header"></thead>
+                        <tbody id="poslovodja-sjeca-body"></tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- POSLOVOĐA CONTENT - ZADNJIH 5 DANA -->
-        <div id="poslovodja-zadnjih5-content" class="container hidden">
+        <!-- POSLOVOĐA CONTENT - OTPREMA (Po danima) -->
+        <div id="poslovodja-otprema-content" class="container hidden">
             <div class="page-header">
                 <div class="page-header-left">
-                    <h1>📅 Zadnjih 5 Dana</h1>
-                    <p>Pregled primke i otpreme sa vaših radilišta</p>
+                    <h1>🚛 OTPREMA</h1>
+                    <p>Pregled otpreme po danima (odjel, otpremač, kupac, sortimenti)</p>
                 </div>
                 <div class="page-header-right">
-                    <button class="btn btn-primary" onclick="loadPoslovodjaZadnjih5()">🔄 Osvježi</button>
+                    <button class="btn btn-primary" onclick="loadPoslovodjaOtprema()">🔄 Osvježi</button>
                 </div>
             </div>
-            <div id="poslovodja-radilista-info-3" class="section" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list-3"></span></p>
+            <div id="poslovodja-radilista-info-otprema" class="section" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list-otprema"></span></p>
             </div>
 
-            <!-- PRIMKA Zadnjih 5 dana -->
+            <!-- Otprema po danima -->
             <div class="section">
-                <h2 style="color: #059669; margin-bottom: 15px;">🌲 PRIMKA - Zadnjih 5 Dana</h2>
-                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="monthly-table" id="poslovodja-primka-table">
-                        <thead id="poslovodja-primka-header"></thead>
-                        <tbody id="poslovodja-primka-body"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- OTPREMA Zadnjih 5 dana -->
-            <div class="section" style="margin-top: 30px;">
-                <h2 style="color: #dc2626; margin-bottom: 15px;">🚛 OTPREMA - Zadnjih 5 Dana</h2>
+                <h2 style="color: #dc2626; margin-bottom: 15px;">📅 OTPREMA - Po danima</h2>
                 <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                     <table class="monthly-table" id="poslovodja-otprema-table">
                         <thead id="poslovodja-otprema-header"></thead>
@@ -1655,42 +2168,38 @@
             </div>
         </div>
 
-        <!-- POSLOVOĐA CONTENT - SUMA MJESECA -->
-        <div id="poslovodja-suma-content" class="container hidden">
+        <!-- POSLOVODJA CONTENT - PREGLED (Mjesečni po odjelima) -->
+        <div id="poslovodja-pregled-content" class="container hidden">
             <div class="page-header">
                 <div class="page-header-left">
-                    <h1>📈 Suma Mjeseca</h1>
-                    <p>Mjesečne sume za odjele i radilišta</p>
+                    <h1>📑 PREGLED</h1>
+                    <p>Mjesečni pregled sječe i otpreme po odjelima za cijeli period realizacije</p>
                 </div>
                 <div class="page-header-right">
-                    <button class="btn btn-primary" onclick="loadPoslovodjaSuma()">🔄 Osvježi</button>
+                    <button class="btn btn-primary" onclick="loadPoslovodjaPregled()">🔄 Osvježi</button>
                 </div>
             </div>
-            <div id="poslovodja-radilista-info-4" class="section" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list-4"></span></p>
+            <div style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list-pregled"></span></p>
             </div>
+            <div id="poslovodja-pregled-container"></div>
+        </div>
 
-            <!-- Suma mjeseca za ODJELE -->
-            <div class="section">
-                <h2 style="color: #059669; margin-bottom: 15px;">📊 SUMA MJESECA - Po Odjelima</h2>
-                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="monthly-table" id="poslovodja-suma-odjeli-table">
-                        <thead id="poslovodja-suma-odjeli-header"></thead>
-                        <tbody id="poslovodja-suma-odjeli-body"></tbody>
-                    </table>
+        <!-- POSLOVODJA DODANI UNOSI -->
+        <div id="poslovodja-unosi-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>📝 Dodani unosi</h1>
+                    <p>Unosi koje su radnici poslali za vaša radilišta</p>
+                </div>
+                <div class="page-header-right">
+                    <button class="btn btn-primary" onclick="loadPoslovodjaUnosi()">🔄 Osvježi</button>
                 </div>
             </div>
-
-            <!-- Suma mjeseca za RADILIŠTE -->
-            <div class="section" style="margin-top: 30px;">
-                <h2 style="color: #dc2626; margin-bottom: 15px;">📍 SUMA MJESECA - Po Radilištima</h2>
-                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="monthly-table" id="poslovodja-suma-radiliste-table">
-                        <thead id="poslovodja-suma-radiliste-header"></thead>
-                        <tbody id="poslovodja-suma-radiliste-body"></tbody>
-                    </table>
-                </div>
+            <div style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list-unosi"></span></p>
             </div>
+            <div id="poslovodja-unosi-container"></div>
         </div>
 
         <!-- DINAMIKA CONTENT -->
@@ -1778,97 +2287,6 @@
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
-
-        <!-- UPOREDBA GODINA CONTENT -->
-        <div id="uporedba-godina-content" class="container hidden">
-            <div class="page-header">
-                <div class="page-header-left">
-                    <h1>📊 Uporedba godina</h1>
-                    <p>Side-by-side prikaz sječe i otpreme po godinama</p>
-                </div>
-            </div>
-
-            <!-- Izbor godina za usporedbu -->
-            <div class="section">
-                <div class="controls-bar" style="justify-content: center; align-items: center; gap: 24px;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <label for="uporedba-year1" style="font-weight: 600; font-size: 16px;">📅 Godina 1:</label>
-                        <select id="uporedba-year1" class="year-select" onchange="loadUporedbaGodina()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
-                            
-                            
-                            <option value="2026" selected>2026</option></select>
-                    </div>
-                    <span style="font-size: 24px; font-weight: bold;">VS</span>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <label for="uporedba-year2" style="font-weight: 600; font-size: 16px;">📅 Godina 2:</label>
-                        <select id="uporedba-year2" class="year-select" onchange="loadUporedbaGodina()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #2563eb; min-width: 120px;">
-                            
-                            
-                            <option value="2026" selected>2026</option></select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mjesečna usporedba -->
-            <div class="section">
-                <h2>📅 Mjesečna usporedba sječe i otpreme</h2>
-                <div style="overflow-x: auto;">
-                    <table class="expert-table" id="uporedba-mjesecna-table">
-                        <thead id="uporedba-mjesecna-header"></thead>
-                        <tbody id="uporedba-mjesecna-body"></tbody>
-                        <tfoot id="uporedba-mjesecna-footer"></tfoot>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Godišnje ukupno -->
-            <div class="section">
-                <h2>📊 Godišnje ukupno i razlike</h2>
-                <div style="overflow-x: auto;">
-                    <table class="expert-table" id="uporedba-ukupno-table">
-                        <thead id="uporedba-ukupno-header"></thead>
-                        <tbody id="uporedba-ukupno-body"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Top 10 odjela -->
-            <div class="section">
-                <h2>🏆 Top 10 odjela po realizaciji</h2>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                    <div>
-                        <h3 id="uporedba-top10-year1-title" style="text-align: center; margin-bottom: 16px;">Godina 2025</h3>
-                        <div style="overflow-x: auto;">
-                            <table class="expert-table" id="uporedba-top10-year1-table">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Odjel</th>
-                                        <th style="text-align: right;">Sječa (m³)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="uporedba-top10-year1-body"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 id="uporedba-top10-year2-title" style="text-align: center; margin-bottom: 16px;">Godina 2026</h3>
-                        <div style="overflow-x: auto;">
-                            <table class="expert-table" id="uporedba-top10-year2-table">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Odjel</th>
-                                        <th style="text-align: right;">Sječa (m³)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="uporedba-top10-year2-body"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -1971,6 +2389,9 @@
                     <h1>📋 Izvještaji</h1>
                     <p>Sedmični i mjesečni prikaz po odjelima</p>
                 </div>
+                <div class="page-header-right">
+                    <button onclick="exportVisibleTable('izvjestaji-content', 'Izvjestaj')" style="background: #059669; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+                </div>
             </div>
 
             <!-- SUB-MENU TABS -->
@@ -2015,10 +2436,9 @@
                     <p style="color: #6b7280; margin-bottom: 20px;">Sortirano po ukupnoj količini (najveće na vrhu)</p>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="izvjestaji-sedmicni-primka-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterIzvjestajiTable('sedmicni-primka')">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('izvjestaji-sedmicni-primka')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto;">
-                        <table id="izvjestaji-sedmicni-primka-table" class="izvjestaji-table">
+                        <table id="izvjestaji-sedmicni-primka-table" class="izvjestaj-week-table">
                             <thead id="izvjestaji-sedmicni-primka-header"></thead>
                             <tbody id="izvjestaji-sedmicni-primka-body"></tbody>
                         </table>
@@ -2031,10 +2451,9 @@
                     <p style="color: #6b7280; margin-bottom: 20px;">Sortirano po ukupnoj količini (najveće na vrhu)</p>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="izvjestaji-sedmicni-otprema-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterIzvjestajiTable('sedmicni-otprema')">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('izvjestaji-sedmicni-otprema')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto;">
-                        <table id="izvjestaji-sedmicni-otprema-table" class="izvjestaji-table">
+                        <table id="izvjestaji-sedmicni-otprema-table" class="izvjestaj-week-table">
                             <thead id="izvjestaji-sedmicni-otprema-header"></thead>
                             <tbody id="izvjestaji-sedmicni-otprema-body"></tbody>
                         </table>
@@ -2078,10 +2497,9 @@
                     <p style="color: #6b7280; margin-bottom: 20px;">Sortirano po ukupnoj količini (najveće na vrhu)</p>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="izvjestaji-mjesecni-primka-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterIzvjestajiTable('mjesecni-primka')">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('izvjestaji-mjesecni-primka')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto;">
-                        <table id="izvjestaji-mjesecni-primka-table" class="izvjestaji-table">
+                        <table id="izvjestaji-mjesecni-primka-table" class="izvjestaj-week-table">
                             <thead id="izvjestaji-mjesecni-primka-header"></thead>
                             <tbody id="izvjestaji-mjesecni-primka-body"></tbody>
                         </table>
@@ -2094,10 +2512,9 @@
                     <p style="color: #6b7280; margin-bottom: 20px;">Sortirano po ukupnoj količini (najveće na vrhu)</p>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="izvjestaji-mjesecni-otprema-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterIzvjestajiTable('mjesecni-otprema')">
-                        <button class="btn btn-primary" onclick="exportTableToCSV('izvjestaji-mjesecni-otprema')">📥 Export CSV</button>
                     </div>
                     <div style="overflow-x: auto;">
-                        <table id="izvjestaji-mjesecni-otprema-table" class="izvjestaji-table">
+                        <table id="izvjestaji-mjesecni-otprema-table" class="izvjestaj-week-table">
                             <thead id="izvjestaji-mjesecni-otprema-header"></thead>
                             <tbody id="izvjestaji-mjesecni-otprema-body"></tbody>
                         </table>
@@ -2150,7 +2567,7 @@
 
                 <div class="section">
                     <div style="overflow-x: auto;">
-                        <table class="expert-table" id="primac-sedmicni-table">
+                        <table class="izvjestaj-week-table" id="primac-sedmicni-table">
                             <thead id="primac-sedmicni-header"></thead>
                             <tbody id="primac-sedmicni-body"></tbody>
                             <tfoot id="primac-sedmicni-footer"></tfoot>
@@ -2188,7 +2605,7 @@
 
                 <div class="section">
                     <div style="overflow-x: auto;">
-                        <table class="expert-table" id="primac-mjesecni-table">
+                        <table class="izvjestaj-week-table" id="primac-mjesecni-table">
                             <thead id="primac-mjesecni-header"></thead>
                             <tbody id="primac-mjesecni-body"></tbody>
                             <tfoot id="primac-mjesecni-footer"></tfoot>
@@ -2242,7 +2659,7 @@
 
                 <div class="section">
                     <div style="overflow-x: auto;">
-                        <table class="expert-table" id="otpremac-sedmicni-table">
+                        <table class="izvjestaj-week-table" id="otpremac-sedmicni-table">
                             <thead id="otpremac-sedmicni-header"></thead>
                             <tbody id="otpremac-sedmicni-body"></tbody>
                             <tfoot id="otpremac-sedmicni-footer"></tfoot>
@@ -2280,7 +2697,7 @@
 
                 <div class="section">
                     <div style="overflow-x: auto;">
-                        <table class="expert-table" id="otpremac-mjesecni-table">
+                        <table class="izvjestaj-week-table" id="otpremac-mjesecni-table">
                             <thead id="otpremac-mjesecni-header"></thead>
                             <tbody id="otpremac-mjesecni-body"></tbody>
                             <tfoot id="otpremac-mjesecni-footer"></tfoot>
@@ -2292,13 +2709,13 @@
 
         <!-- DODANI UNOSI VIEW (For Rukovodilac/Admin) -->
         <div id="pending-unosi-content" class="container hidden">
-            <div class="section">
-                <h2>📋 Dodani Unosi - Pregled</h2>
-                <p style="color: #6b7280; margin-bottom: 20px;">Unosi koje su radnici poslali na pregled</p>
+            <div class="section-unosi">
+                <h2>Dodani Unosi - Pregled</h2>
+                <p>Unosi koje su radnici poslali na pregled</p>
 
                 <!-- Filter Bar -->
                 <div class="filter-bar">
-                    <div class="filter-bar-title">🔍 Filteri</div>
+                    <div class="filter-bar-title">Filteri</div>
                     <div class="filter-grid">
                         <div class="filter-group">
                             <label class="filter-label">Datum od:</label>
@@ -2331,57 +2748,57 @@
             </div>
         </div>
 
+        <!-- STANJE ZALIHA VIEW -->
+        <div id="stanje-zaliha-content" class="container hidden">
+            <div class="section">
+                <!-- Professional Header -->
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <h1>📦 Stanje Zaliha</h1>
+                        <p>Pregled zaliha po odjelima - Projekat, Sječa, Otprema, Zaliha</p>
+                    </div>
+                    <div class="page-header-right" style="display: flex; gap: 12px;">
+                        <button class="btn btn-secondary" onclick="exportTableToExcel('stanje-zaliha-tabela', 'Stanje-Zaliha')" title="Exportuj u Excel">📥 Export</button>
+                        <button class="btn btn-secondary" onclick="refreshStanjeZaliha()" title="Osvježi podatke sa servera">🔄 Osvježi</button>
+                    </div>
+                </div>
+
+                <!-- Filter Bar -->
+                <div class="controls-bar" style="margin-bottom: 24px;">
+                    <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                        <label style="font-weight: 600; color: #374151;">Radilište:</label>
+                        <select id="stanje-zaliha-radiliste" class="filter-select" onchange="filterStanjeZaliha()" style="min-width: 200px; padding: 10px 16px; border: 2px solid #d1d5db; border-radius: 8px; font-size: 14px;">
+                            <option value="">Sva radilišta</option>
+                        </select>
+                        <span id="stanje-zaliha-count" style="color: #6b7280; font-size: 14px;"></span>
+                    </div>
+                </div>
+
+                <!-- AGREGIRANA TABELA ZALIHA - Sumirane zalihe svih odjela -->
+                <div class="section" id="stanje-zaliha-tabela-section" style="margin-bottom: 24px;">
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="stanje-zaliha-tabela" style="width: 100%; border-collapse: collapse;">
+                            <thead id="stanje-zaliha-tabela-header"></thead>
+                            <tbody id="stanje-zaliha-tabela-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Stanje Zaliha Container -->
+                <div id="stanje-zaliha-container">
+                    <!-- Cards will be rendered here -->
+                </div>
+            </div>
+        </div>
+
         <!-- OSTALO VIEW -->
         <div id="ostalo-content" class="container hidden">
             <div class="section">
                 <h2>⚙️ Ostalo</h2>
                 <p style="color: #6b7280; margin-bottom: 32px;">Dodatne funkcionalnosti i pregledi</p>
 
-                <!-- Tab submenu za Ostalo -->
-                <div class="tabs-submenu" style="margin-bottom: 24px;">
-                    <button class="tab-sub active" onclick="switchOstaloTab('dinamika')">📊 Dinamika</button>
-                    <button class="tab-sub" onclick="switchOstaloTab('uporedba-godina')">📈 Uporedba godina</button>
-                    <button class="tab-sub" onclick="switchOstaloTab('kubikator')">📐 Kubikator</button>
-                </div>
-
-                <!-- Dinamika View - Obrisano: duplikat forme, koristi se zasebna stranica dinamika-content -->
-                <div id="ostalo-dinamika-view" class="ostalo-view">
-                    <div class="chart-card" style="padding: 32px; text-align: center;">
-                        <h3 style="margin-bottom: 16px;">📊 Dinamika</h3>
-                        <p style="color: #6b7280; margin-bottom: 24px;">Za unos planiranih mjesečnih količina koristite glavnu stranicu Dinamika</p>
-                        <button class="btn btn-primary" onclick="switchTab('dinamika')" style="padding: 12px 24px; font-size: 16px;">
-                            ➡️ Idi na Dinamiku
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Uporedba godina View -->
-                <div id="ostalo-uporedba-view" class="ostalo-view hidden">
-                    <h3>📈 Uporedba godina - Tekuća vs Prošla</h3>
-                    <p style="color: #6b7280;">Usporedba sječe i otpreme po godinama</p>
-                    <div id="uporedba-godina-container">
-                        <div class="chart-card">
-                            <h4>Odaberi godine za usporedbu:</h4>
-                            <div style="display: flex; gap: 16px; margin-bottom: 24px;">
-                                <select id="uporedba-year1" onchange="loadUporedbaGodina()" style="padding: 8px 16px; border: 2px solid #d1d5db; border-radius: 6px; font-size: 14px;">
-                                    <option value="2026" selected>2026</option>
-                                    <option value="2025">2025</option>
-                                    <option value="2024">2024</option>
-                                </select>
-                                <span style="display: flex; align-items: center; font-weight: bold;">vs</span>
-                                <select id="uporedba-year2" onchange="loadUporedbaGodina()" style="padding: 8px 16px; border: 2px solid #d1d5db; border-radius: 6px; font-size: 14px;">
-                                    <option value="2026">2026</option>
-                                    <option value="2025" selected>2025</option>
-                                    <option value="2024">2024</option>
-                                </select>
-                            </div>
-                            <canvas id="uporedba-chart" style="max-height: 400px;"></canvas>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Kubikator View -->
-                <div id="ostalo-kubikator-view" class="ostalo-view hidden">
+                <div id="ostalo-kubikator-view" class="ostalo-view">
                     <div class="chart-card" style="padding: 32px; text-align: center;">
                         <h3 style="margin-bottom: 16px;">📐 Kubikator</h3>
                         <p style="color: #6b7280; margin-bottom: 24px;">Kalkulator zapremine oblog drveta - Huber metoda</p>
@@ -2391,8 +2808,9 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+            </main><!-- /main-content -->
+        </div><!-- /app-layout -->
+    </div><!-- /app-screen -->
 
     <!-- Confirm Modal -->
     <div class="modal-overlay" id="confirm-modal">
@@ -2406,6 +2824,27 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeConfirmModal()">Otkaži</button>
                 <button class="btn btn-danger" id="modal-confirm-btn">Obriši</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kupac Details Modal -->
+    <div class="modal-overlay" id="kupac-details-modal" style="display: none;">
+        <div class="modal" style="max-width: 95vw; width: 1200px; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; padding: 16px 20px; border-radius: 12px 12px 0 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div class="modal-title" id="kupac-modal-title" style="font-size: 18px; font-weight: 700;">
+                        🏢 Detalji kupca
+                    </div>
+                    <button onclick="closeKupacDetailsModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 24px; cursor: pointer; padding: 4px 12px; border-radius: 6px; transition: all 0.2s;"
+                        onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body" id="kupac-modal-body" style="padding: 0; overflow: auto; flex: 1;">
+                <div style="text-align: center; padding: 40px; color: #6b7280;">
+                    <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+                    Učitavanje podataka...
+                </div>
             </div>
         </div>
     </div>

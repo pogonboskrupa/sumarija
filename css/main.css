@@ -62,15 +62,6 @@
         .badge.success { background: #d1fae5; color: #047857; }
         .badge.warning { background: #fef3c7; color: #92400e; }
 
-        /* Cache Status Indicator */
-        .cache-status { background: #f3f4f6; color: #6b7280; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: help; transition: all 0.2s; }
-        .cache-status:hover { background: #e5e7eb; }
-        .cache-status.cache-fresh { background: #d1fae5; color: #047857; }
-        .cache-status.cache-loading { background: #fef3c7; color: #92400e; }
-        .cache-status.cache-stale { background: #fee2e2; color: #dc2626; }
-        .cache-status-icon { font-size: 12px; }
-        .cache-status-text { white-space: nowrap; }
-
         /* Tables */
         table { width: 100%; border-collapse: collapse; }
         thead { background: #f9fafb; position: sticky; top: 0; z-index: 10; }
@@ -115,6 +106,194 @@
         .tab { background: transparent; border: none; padding: 14px 20px; font-size: 14px; font-weight: 600; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
         .tab:hover { color: #374151; background: #f9fafb; }
         .tab.active { color: #047857; border-bottom-color: #047857; background: #f0fdf4; }
+
+        /* ============================================ */
+        /* 🎨 DESKTOP SIDEBAR NAVIGATION */
+        /* Vertikalni sidebar za desktop verziju */
+        /* ============================================ */
+
+        /* App Layout - Sidebar + Content */
+        .app-layout {
+            display: flex;
+            min-height: calc(100vh - 100px);
+        }
+
+        /* Desktop Sidebar */
+        .sidebar {
+            width: 260px;
+            min-width: 260px;
+            background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: calc(100vh - 100px);
+            overflow-y: auto;
+            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-logo {
+            font-size: 28px;
+        }
+
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #10b981;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-nav {
+            padding: 16px 0;
+            overflow-y: auto;
+        }
+
+        /* Sidebar Tab Buttons */
+        .sidebar-nav .tab {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 14px 20px;
+            background: transparent;
+            border: none;
+            border-bottom: none;
+            border-left: 3px solid transparent;
+            color: #9ca3af;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .sidebar-nav .tab:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e5e7eb;
+            border-left-color: #6b7280;
+        }
+
+        .sidebar-nav .tab.active {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border-left-color: #10b981;
+            font-weight: 600;
+        }
+
+        .sidebar-nav .tab .tab-icon {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+
+        .sidebar-nav .tab .tab-label {
+            flex: 1;
+        }
+
+        /* Notification badge in sidebar */
+        .sidebar-nav .tab .badge-count {
+            background: #dc2626;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-left: auto;
+        }
+
+        /* Sidebar Footer - User Info */
+        .sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-user-icon {
+            font-size: 24px;
+            background: rgba(16, 185, 129, 0.2);
+            padding: 8px;
+            border-radius: 50%;
+        }
+
+        .sidebar-user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .sidebar-user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+
+        .sidebar-user-role {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            min-width: 0;
+            overflow-x: hidden;
+        }
+
+        /* Desktop/Mobile visibility helpers */
+        .desktop-only {
+            display: flex;
+        }
+
+        .mobile-only {
+            display: none;
+        }
+
+        /* Hide horizontal tabs on desktop */
+        @media (min-width: 1025px) {
+            .tabs-container.mobile-only {
+                display: none;
+            }
+        }
+
+        /* ============================================ */
+        /* 📱 MOBILE: Hide sidebar, show horizontal tabs */
+        /* ============================================ */
+        @media (max-width: 1024px) {
+            .sidebar.desktop-only {
+                display: none;
+            }
+
+            .mobile-only {
+                display: block;
+            }
+
+            .app-layout {
+                flex-direction: column;
+            }
+
+            .main-content {
+                width: 100%;
+            }
+        }
 
         /* Tabs submenu for Ostalo */
         .tabs-submenu { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -214,17 +393,7 @@
         /* Column Grouping */
         .col-group-cetinari { background: linear-gradient(to bottom, #f0fdf4 0%, #dcfce7 100%); border-left: 2px solid #10b981; border-right: 2px solid #10b981; }
         .col-group-liscari { background: linear-gradient(to bottom, #fef3c7 0%, #fde68a 100%); border-left: 2px solid #f59e0b; border-right: 2px solid #f59e0b; }
-        body.dark-mode .col-group-cetinari { background: linear-gradient(to bottom, #064e3b 0%, #065f46 100%); }
-        body.dark-mode .col-group-liscari { background: linear-gradient(to bottom, #78350f 0%, #92400e 100%); }
-
         /* Dark mode */
-        body.dark-mode { background: #1f2937; color: #f3f4f6; }
-        body.dark-mode .container, body.dark-mode .section, body.dark-mode table,
-        body.dark-mode .summary-card, body.dark-mode .chart-container,
-        body.dark-mode .tabs-container { background: #374151; color: #f3f4f6; border-color: #4b5563; }
-        body.dark-mode table thead { background: #1f2937; }
-        body.dark-mode .search-input { background: #4b5563; color: #f3f4f6; border-color: #6b7280; }
-
         /* Progress bar in table */
         .table-progress-bar { background: #e5e7eb; height: 4px; border-radius: 2px; overflow: hidden; margin-top: 4px; }
         .table-progress-fill { background: #059669; height: 100%; border-radius: 2px; }
@@ -233,29 +402,50 @@
         .kupci-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -24px; padding: 0 24px; }
         .kupci-table { font-size: 15px; white-space: nowrap; width: 100%; border-collapse: separate; border-spacing: 0; }
         .kupci-table th, .kupci-table td { padding: 12px 10px; border-bottom: 1px solid #e5e7eb; }
-        .kupci-table th:first-child, .kupci-table td:first-child {
-            position: sticky; left: 0; background: white; z-index: 2;
-            min-width: 140px; max-width: 200px; white-space: normal;
-            border-right: 2px solid #d1d5db; padding-right: 12px; font-weight: 600;
+
+        /* Sticky columns for Kupci tables - R.br. (col 1) and Kupac (col 2) */
+        #kupci-godisnji-table th:first-child,
+        #kupci-godisnji-table td:first-child,
+        #kupci-mjesecni-table th:first-child,
+        #kupci-mjesecni-table td:first-child {
+            position: sticky !important;
+            left: 0 !important;
+            z-index: 11 !important;
+            min-width: 50px;
         }
-        .kupci-table th:nth-child(2), .kupci-table td:nth-child(2) {
-            position: sticky; left: 140px; background: white; z-index: 2;
-            min-width: 90px; border-right: 2px solid #d1d5db; font-weight: 500;
+        #kupci-godisnji-table th:nth-child(2),
+        #kupci-godisnji-table td:nth-child(2),
+        #kupci-mjesecni-table th:nth-child(2),
+        #kupci-mjesecni-table td:nth-child(2) {
+            position: sticky !important;
+            left: 50px !important;
+            z-index: 10 !important;
+            min-width: 150px;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.1);
         }
-        body.dark-mode .kupci-table th:first-child, body.dark-mode .kupci-table td:first-child,
-        body.dark-mode .kupci-table th:nth-child(2), body.dark-mode .kupci-table td:nth-child(2) { background: #374151; }
+
+        /* Dark mode support for sticky columns */
         .kupci-table thead th {
             background: linear-gradient(to bottom, #f9fafb 0%, #f3f4f6 100%);
             position: sticky !important; top: 0; z-index: 15 !important; font-weight: 700;
             border-top: 2px solid #10b981; border-bottom: 2px solid #10b981;
             padding: 12px 6px; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;
         }
-        /* Enhanced sticky for kupci godisnji and mjesecni tables */
+        /* Enhanced sticky for kupci godisnji and mjesecni tables - header row */
         #kupci-godisnji-table thead th,
         #kupci-mjesecni-table thead th {
             position: sticky !important;
             top: 0;
             z-index: 15 !important;
+        }
+        /* First two header columns need higher z-index to stay above other headers */
+        #kupci-godisnji-table thead th:first-child,
+        #kupci-mjesecni-table thead th:first-child {
+            z-index: 20 !important;
+        }
+        #kupci-godisnji-table thead th:nth-child(2),
+        #kupci-mjesecni-table thead th:nth-child(2) {
+            z-index: 19 !important;
         }
         #kupci-godisnji-table td:first-child,
         #kupci-mjesecni-table td:first-child {
@@ -267,13 +457,9 @@
         #kupci-mjesecni-table th:first-child {
             z-index: 20 !important;
         }
-        body.dark-mode .kupci-table thead th { background: linear-gradient(to bottom, #1f2937 0%, #111827 100%); }
         .kupci-table tbody tr:nth-child(even) { background: #f9fafb; }
-        body.dark-mode .kupci-table tbody tr:nth-child(even) { background: #2d3748; }
         .kupci-table tbody tr:hover { background: #f0fdf4; }
-        body.dark-mode .kupci-table tbody tr:hover { background: #064e3b; }
         .kupci-table tbody tr:nth-child(even):hover { background: #ecfdf5; }
-        body.dark-mode .kupci-table tbody tr:nth-child(even):hover { background: #065f46; }
         .kupci-table .sortiment-col {
             min-width: 85px;
             max-width: 110px;
@@ -294,13 +480,205 @@
             min-width: 95px; border-left: 3px solid #10b981; text-align: right;
             font-size: 12px; font-family: 'Courier New', monospace;
         }
-        body.dark-mode .kupci-table .ukupno-col { background: linear-gradient(to right, #064e3b 0%, #065f46 100%); }
         .kupci-table .totals-row {
             background: linear-gradient(to bottom, #dcfce7 0%, #bbf7d0 100%);
             font-weight: 700; font-size: 12px; border-top: 3px solid #10b981;
         }
-        body.dark-mode .kupci-table .totals-row { background: linear-gradient(to bottom, #065f46 0%, #047857 100%); }
         .kupci-table .totals-row td { border-bottom: 3px solid #10b981; padding: 12px 6px; }
+
+        /* ============================================
+           DODANI UNOSI TABLE - Enterprise Redesign
+           ============================================ */
+        .unosi-table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid #e2e5e9;
+            border-radius: 8px;
+            background: #fff;
+        }
+        .unosi-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 13px;
+            white-space: nowrap;
+            color: #1f2937;
+        }
+        /* Header */
+        .unosi-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 15;
+            background: #f8f9fa;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #5f6b7a;
+            padding: 10px 12px;
+            border-bottom: 2px solid #e2e5e9;
+            text-align: left;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .unosi-table thead th:hover {
+            background: #eef0f3;
+            color: #374151;
+        }
+        .unosi-table thead th .sort-icon {
+            display: inline-block;
+            margin-left: 4px;
+            font-size: 10px;
+            color: #9ca3af;
+            vertical-align: middle;
+        }
+        .unosi-table thead th .sort-icon.active {
+            color: #374151;
+        }
+        /* Frozen columns - Tip (col 1) and Datum (col 2) */
+        .unosi-table th.col-freeze-1,
+        .unosi-table td.col-freeze-1 {
+            position: sticky;
+            left: 0;
+            z-index: 12;
+            background: inherit;
+        }
+        .unosi-table thead th.col-freeze-1 {
+            z-index: 20;
+            background: #f8f9fa;
+        }
+        .unosi-table th.col-freeze-2,
+        .unosi-table td.col-freeze-2 {
+            position: sticky;
+            left: 80px;
+            z-index: 11;
+            background: inherit;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.04);
+        }
+        .unosi-table thead th.col-freeze-2 {
+            z-index: 19;
+            background: #f8f9fa;
+        }
+        /* Cells */
+        .unosi-table tbody td {
+            padding: 7px 12px;
+            border-bottom: 1px solid #f0f1f3;
+            vertical-align: middle;
+        }
+        /* Zebra rows */
+        .unosi-table tbody tr:nth-child(odd) {
+            background: #ffffff;
+        }
+        .unosi-table tbody tr:nth-child(even) {
+            background: #fafbfc;
+        }
+        .unosi-table tbody tr:hover {
+            background: #f0f4ff;
+        }
+        /* Frozen col background must follow row */
+        .unosi-table tbody tr:nth-child(odd) td.col-freeze-1,
+        .unosi-table tbody tr:nth-child(odd) td.col-freeze-2 { background: #ffffff; }
+        .unosi-table tbody tr:nth-child(even) td.col-freeze-1,
+        .unosi-table tbody tr:nth-child(even) td.col-freeze-2 { background: #fafbfc; }
+        .unosi-table tbody tr:hover td.col-freeze-1,
+        .unosi-table tbody tr:hover td.col-freeze-2 { background: #f0f4ff; }
+        /* Badge styles for Tip column */
+        .badge-tip {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            line-height: 1.4;
+        }
+        .badge-sjeca {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        .badge-otprema {
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+        /* Bold datum & odjel */
+        .unosi-table .cell-datum,
+        .unosi-table .cell-odjel {
+            font-weight: 700;
+            color: #111827;
+        }
+        /* Sortiment columns */
+        .unosi-table .sort-col {
+            text-align: right;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            min-width: 72px;
+            color: #374151;
+        }
+        .unosi-table thead .sort-col {
+            text-align: center;
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.3;
+            min-width: 72px;
+        }
+        /* Column group subtle tints */
+        .unosi-table .cg-c { background-color: rgba(16, 185, 129, 0.04); border-left: 2px solid #d1fae5; }
+        .unosi-table .cg-l { background-color: rgba(245, 158, 11, 0.04); border-left: 2px solid #fef3c7; }
+        .unosi-table thead .cg-c { background: #f0faf5; border-left: 2px solid #a7f3d0; }
+        .unosi-table thead .cg-l { background: #fefbf0; border-left: 2px solid #fde68a; }
+        /* Timestamp column */
+        .unosi-table .cell-timestamp {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+        /* Summary bar */
+        .unosi-summary {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 10px 16px;
+            background: #f8f9fa;
+            border-top: 1px solid #e2e5e9;
+            font-size: 13px;
+            color: #5f6b7a;
+            border-radius: 0 0 8px 8px;
+        }
+        .unosi-summary strong {
+            color: #1f2937;
+        }
+        /* Reduced section padding for unosi */
+        .section-unosi {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .section-unosi h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #1f2937;
+        }
+        .section-unosi > p {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 16px;
+        }
+        /* Mobile adjustments for unosi table */
+        @media (max-width: 768px) {
+            .unosi-table { font-size: 11px; }
+            .unosi-table thead th { padding: 8px 8px; font-size: 10px; }
+            .unosi-table tbody td { padding: 6px 8px; }
+            .unosi-table .sort-col { min-width: 55px; font-size: 11px; }
+            .unosi-table th.col-freeze-2,
+            .unosi-table td.col-freeze-2 { left: 65px; }
+            .badge-tip { font-size: 10px; padding: 2px 7px; }
+            .section-unosi { padding: 12px; }
+        }
 
         /* ============================================
            EXPERT TABLE STYLES - Premium Design
@@ -588,8 +966,7 @@
             .loading-text { font-size: 16px; }
 
             /* Hide dark mode button text on mobile */
-            .btn[onclick="toggleDarkMode()"] { font-size: 20px; padding: 8px 12px; }
-        }
+            }
 
         /* Extra small devices (< 480px) */
         @media (max-width: 480px) {
@@ -610,19 +987,25 @@
             .kupci-table .ukupno-col { min-width: 70px; font-size: 9px; }
         }
 
-        /* Cache indicator */
-        .cache-indicator {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            padding: 4px 8px;
-            font-size: 10px;
-            font-weight: 500;
-            border-radius: 4px;
-            z-index: 9999;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            max-width: 200px;
-            transition: all 0.3s ease;
+        /* Sidebar company logo - fills space between nav and user footer */
+        .sidebar-company-logo {
+            flex: 1;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            overflow: hidden;
+            border-top: 1px solid rgba(255, 255, 255, 0.07);
+        }
+        .sidebar-company-logo img {
+            width: auto;
+            height: 100%;
+            max-height: 100%;
+            max-width: calc(100% - 24px);
+            object-fit: contain;
+            display: block;
+            opacity: 0.9;
         }
         .btn-clear-cache {
             background: #f59e0b;
@@ -738,8 +1121,6 @@
             .badge { padding: 4px 8px; font-size: 10px; }
 
             /* Export button */
-            .export-btn { width: 100%; margin-bottom: 12px; }
-
             /* Search input */
             .search-container { margin-bottom: 12px; }
             .search-input { font-size: 14px; }
@@ -1718,7 +2099,7 @@
 
         /* Professional Monthly Table */
         .professional-monthly-table {
-            width: auto;
+            width: 100%;
             border-collapse: separate;
             border-spacing: 0;
             font-size: 15px;
@@ -1773,33 +2154,75 @@
             font-size: 17px;
             color: #047857;
         }
+        /* UKUPNO row styling */
+        .professional-monthly-table tfoot tr.ukupno-row {
+            background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+        }
+        .professional-monthly-table tfoot tr.ukupno-row td {
+            color: white;
+            font-weight: 700;
+            font-size: 15px;
+            padding: 18px 14px;
+            border-top: 3px solid #10b981;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        .professional-monthly-table tfoot tr.ukupno-row td:first-child {
+            color: white;
+            font-size: 16px;
+        }
+        .professional-monthly-table tfoot tr.ukupno-row td.number {
+            color: white;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .professional-monthly-table tfoot tr.ukupno-row .table-progress-bar {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .professional-monthly-table tfoot tr.ukupno-row .table-progress-fill {
+            background: #10b981 !important;
+        }
+        .professional-monthly-table tfoot tr.ukupno-row small {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+        /* Dinamika dash for future months */
+        .professional-monthly-table .dinamika-dash {
+            color: #9ca3af;
+            font-weight: 400;
+        }
 
         /* Dark mode for OPERATIVA */
-        body.dark-mode .kpi-card-small {
-            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
-            border-left-color: #10b981;
-        }
-        body.dark-mode .kpi-card-small.blue {
-            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-            border-left-color: #3b82f6;
-        }
-        body.dark-mode .kpi-card-small.yellow {
-            background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
-            border-left-color: #f59e0b;
-        }
-        body.dark-mode .kpi-value-small,
-        body.dark-mode .ranking-name,
-        body.dark-mode .ranking-value {
-            color: #f3f4f6;
-        }
-        body.dark-mode .professional-monthly-table thead th {
-            background: linear-gradient(to bottom, #064e3b 0%, #065f46 100%);
-        }
-        body.dark-mode .professional-monthly-table tbody tr:nth-child(even) {
-            background: #1f2937;
-        }
-        body.dark-mode .professional-monthly-table tbody tr:hover {
-            background: #065f46;
+        /* Mobile responsive for dashboard monthly table */
+        @media (max-width: 768px) {
+            .dashboard-monthly-wrapper {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                margin: 0 -16px;
+                padding: 0 16px;
+            }
+            .professional-monthly-table {
+                min-width: 700px;
+                font-size: 13px;
+            }
+            .professional-monthly-table thead th {
+                padding: 12px 10px;
+                font-size: 11px;
+                position: sticky;
+                top: 0;
+                z-index: 10;
+            }
+            .professional-monthly-table tbody td,
+            .professional-monthly-table tfoot td {
+                padding: 12px 10px;
+                font-size: 13px;
+            }
+            .professional-monthly-table tbody td.number,
+            .professional-monthly-table tfoot td.number {
+                font-size: 14px;
+            }
+            .professional-monthly-table tfoot tr.ukupno-row td {
+                padding: 14px 10px;
+                font-size: 13px;
+            }
         }
 
         /* Performance Alerts */
@@ -1998,7 +2421,7 @@
             font-weight: 700;
         }
 
-        /* Zelena boja sa žutim outline - za naziv firme */
+        /* Zelena boja sa žutim outline - za naziv firme (legacy) */
         .text-outline-firma {
             color: #059669 !important;
             text-shadow: -1px -1px 0 #fbbf24, 1px -1px 0 #fbbf24,
@@ -2006,6 +2429,46 @@
                          -2px 0 0 #fbbf24, 2px 0 0 #fbbf24,
                          0 -2px 0 #fbbf24, 0 2px 0 #fbbf24;
             font-weight: 700;
+        }
+
+        /* ============================================ */
+        /* 🏢 COMPANY NAME HEADER - Modern Clean Design */
+        /* ============================================ */
+        .company-name-header {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 18px;
+            font-weight: 800;
+            color: #047857;
+            margin-bottom: 6px;
+            letter-spacing: 0.3px;
+            line-height: 1.3;
+            background: linear-gradient(135deg, #047857 0%, #059669 50%, #10b981 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Fallback for browsers that don't support gradient text */
+        @supports not (-webkit-background-clip: text) {
+            .company-name-header {
+                color: #047857;
+                background: none;
+            }
+        }
+
+        /* Dark mode support */
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .company-name-header {
+                font-size: 15px;
+                font-weight: 700;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .company-name-header {
+                font-size: 13px;
+            }
         }
 
         /* Primjena na specifične elemente */
@@ -2033,3 +2496,323 @@
             text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff,
                          -1px 1px 0 #fff, 1px 1px 0 #fff;
         }
+
+        /* ========================================
+           MOBILE/TOUCH OPTIMIZACIJE (Desktop prikaz)
+           ======================================== */
+
+        /* Smooth scrolling za touch uređaje */
+        html {
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Touch-friendly elementi */
+        @media (pointer: coarse) {
+            /* Veći touch targets za buttone */
+            button, .btn, .tab, [role="button"] {
+                min-height: 44px;
+                min-width: 44px;
+            }
+
+            /* Veći padding za linkove u navigaciji */
+            .nav-link, .menu-item {
+                padding: 12px 16px;
+            }
+
+            /* Bolji touch feedback */
+            button:active, .btn:active, .tab:active {
+                transform: scale(0.97);
+                transition: transform 0.1s ease;
+            }
+
+            /* Veći checkbox/radio */
+            input[type="checkbox"], input[type="radio"] {
+                min-width: 20px;
+                min-height: 20px;
+            }
+
+            /* Lakše selektovanje teksta u input poljima */
+            input, textarea, select {
+                font-size: 16px; /* Sprečava iOS auto-zoom */
+            }
+        }
+
+        /* Optimizacije za horizontalni scroll tabela */
+        .table-responsive, [style*="overflow-x"] {
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }
+
+        /* Sticky header za tabele na touch uređajima */
+        @media (hover: none) {
+            thead th {
+                position: sticky;
+                top: 0;
+                z-index: 10;
+            }
+        }
+
+        /* Disable text selection na interaktivnim elementima */
+        button, .btn, .tab, .nav-link {
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Poboljšan contrast za outdoor čitanje */
+        @media (prefers-contrast: more) {
+            body {
+                --text-primary: #000;
+                --bg-primary: #fff;
+            }
+        }
+
+        /* ============================================ */
+        /* ENTERPRISE DASHBOARD - FULL-WIDTH LAYOUT     */
+        /* ============================================ */
+
+        /* 1. Full-width dashboard (override .container max-width: 1200px) */
+        #dashboard-content,
+        #kupci-content,
+        #stanje-zaliha-content,
+        #mjesecni-sortimenti-content,
+        #primaci-content,
+        #otpremaci-content,
+        #izvjestaji-content,
+        #izvjestaji-primac-content,
+        #izvjestaji-otpremac-content,
+        #poslovodja-sjeca-content,
+        #poslovodja-otprema-content,
+        #poslovodja-stanje-content,
+        #poslovodja-pregled-content,
+        #primac-personal-content,
+        #primac-godisnji-content,
+        #primac-odjeli-content,
+        #otpremac-personal-content,
+        #otpremac-odjeli-content,
+        #my-sjece-content,
+        #my-otpreme-content,
+        #pending-unosi-content,
+        #poslovodja-unosi-content {
+            max-width: 100%;
+            padding-inline: 24px;
+            padding-block: 24px;
+        }
+        .header-content {
+            max-width: 100%;
+        }
+        @media (min-width: 1920px) {
+            #dashboard-content,
+            #kupci-content,
+            #stanje-zaliha-content,
+            #mjesecni-sortimenti-content,
+            #primaci-content,
+            #otpremaci-content,
+            #izvjestaji-content,
+            #izvjestaji-primac-content,
+            #izvjestaji-otpremac-content,
+            #poslovodja-sjeca-content,
+            #poslovodja-otprema-content,
+            #poslovodja-stanje-content,
+            #poslovodja-pregled-content,
+            #primac-personal-content,
+            #primac-godisnji-content,
+            #primac-odjeli-content,
+            #otpremac-personal-content,
+            #otpremac-odjeli-content,
+            #my-sjece-content,
+            #my-otpreme-content,
+            #pending-unosi-content,
+            #poslovodja-unosi-content { padding-inline: 40px; }
+        }
+
+        /* 2. Grid layout za desktop (umjesto flex) */
+        @media (min-width: 1025px) {
+            .app-layout {
+                display: grid;
+                grid-template-columns: 260px 1fr;
+                gap: 0;
+            }
+            .sidebar { width: auto; min-width: auto; }
+        }
+
+        /* 3. Enterprise card za Mjesečni pregled */
+        .enterprise-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+            padding: 0;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        .enterprise-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            background: #fafbfc;
+        }
+        .enterprise-card-header h2 {
+            font-size: 18px; font-weight: 700; color: #1f2937;
+            margin: 0; display: flex; align-items: center; gap: 8px;
+        }
+        .enterprise-card-header .card-subtitle {
+            font-size: 13px; color: #6b7280; margin-top: 2px;
+        }
+        .enterprise-card-header .card-badge {
+            display: inline-block; padding: 4px 10px;
+            background: #d1fae5; color: #047857;
+            border-radius: 10px; font-size: 12px; font-weight: 600;
+        }
+        .enterprise-card-body {
+            padding: 12px 16px 16px;
+        }
+
+        /* 4. No scroll constraint — full table visible without scrolling */
+        .enterprise-card .dashboard-monthly-wrapper {
+            overflow-x: auto;
+            overflow-y: visible;
+            margin: 0; padding: 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        /* max-height removed — table shows all rows without vertical scroll */
+
+        /* 5. FIX: contain: paint breaks sticky — override za dashboard tabelu */
+        #dashboard-table {
+            contain: layout style;
+        }
+
+        /* 6. Sticky prva kolona (MJESEC) */
+        #dashboard-table thead th:first-child {
+            position: sticky; left: 0; z-index: 20;
+            background: linear-gradient(to bottom, #047857 0%, #059669 100%);
+            border-right: 2px solid #10b981;
+        }
+        #dashboard-table tbody td:first-child {
+            position: sticky; left: 0; z-index: 5;
+            background: #ffffff;
+            border-right: 2px solid #e5e7eb;
+        }
+        #dashboard-table tbody tr:nth-child(even) td:first-child {
+            background: #f8fafc;
+        }
+        #dashboard-table tbody tr:hover td:first-child {
+            background: #eff6ff;
+        }
+        #dashboard-table tfoot tr.ukupno-row td:first-child {
+            position: sticky; left: 0; z-index: 5;
+            background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+            border-right: 2px solid #10b981;
+        }
+
+        /* 7. Tipografija — enterprise density */
+        #dashboard-table { font-size: 13px; }
+        #dashboard-table thead th {
+            font-size: 11px; font-weight: 600;
+            padding: 12px 14px; letter-spacing: 0.06em;
+        }
+        #dashboard-table tbody td {
+            font-weight: 450; padding: 8px 14px; line-height: 1.4;
+        }
+        #dashboard-table tbody td:first-child {
+            font-weight: 700; font-size: 13px;
+        }
+        #dashboard-table tbody tr { height: 36px; }
+        #dashboard-table tfoot tr.ukupno-row td {
+            font-size: 14px; padding: 14px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        #dashboard-table tfoot tr.ukupno-row td:first-child {
+            text-align: center;
+        }
+
+        /* 8. Zebra + hover */
+        #dashboard-table tbody tr:nth-child(even) { background: #f8fafc; }
+        #dashboard-table tbody tr:hover {
+            background: #eff6ff;
+            box-shadow: inset 0 1px 0 #e0e7ff, inset 0 -1px 0 #e0e7ff;
+        }
+
+        /* 9. Vertikalni separatori između grupa kolona */
+        #dashboard-table thead th:nth-child(5),
+        #dashboard-table tbody td:nth-child(5),
+        #dashboard-table tfoot td:nth-child(5) {
+            border-left: 2px solid #d1d5db;
+        }
+
+        /* 10. Responsive */
+        @media (max-width: 768px) {
+            .enterprise-card { border-radius: 12px; margin-bottom: 16px; }
+            .enterprise-card-header {
+                padding: 12px 14px; flex-direction: column;
+                align-items: flex-start; gap: 8px;
+            }
+            .enterprise-card-body { padding: 8px 12px 12px; }
+            .enterprise-card .dashboard-monthly-wrapper {
+                overflow-x: auto;
+            }
+            #dashboard-content,
+            #kupci-content,
+            #stanje-zaliha-content,
+            #mjesecni-sortimenti-content,
+            #primaci-content,
+            #otpremaci-content,
+            #izvjestaji-content,
+            #izvjestaji-primac-content,
+            #izvjestaji-otpremac-content,
+            #poslovodja-sjeca-content,
+            #poslovodja-otprema-content,
+            #poslovodja-stanje-content,
+            #poslovodja-pregled-content,
+            #primac-personal-content,
+            #primac-godisnji-content,
+            #primac-odjeli-content,
+            #otpremac-personal-content,
+            #otpremac-odjeli-content,
+            #my-sjece-content,
+            #my-otpreme-content,
+            #pending-unosi-content,
+            #poslovodja-unosi-content { padding-inline: 12px; padding-block: 12px; }
+        }
+
+        /* ============================================ */
+        /* DRAG-TO-SCROLL CURSOR FEEDBACK               */
+        /* ============================================ */
+        .drag-scroll-enabled {
+            cursor: grab;
+        }
+        .drag-scroll-enabled:active,
+        .drag-scroll-active {
+            cursor: grabbing;
+        }
+        .drag-scroll-active {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        @media (hover: none) {
+            .drag-scroll-enabled {
+                cursor: auto;
+            }
+        }
+
+        /* ============================================ */
+        /* 📱 ANDROID VIEW - Desktop prikaz bez sidebara */
+        /* Identično desktop-u, samo sidebar → horizontalni tabovi */
+        /* ============================================ */
+
+        body.force-android-view .sidebar.desktop-only {
+            display: none !important;
+        }
+
+        body.force-android-view .tabs-container.mobile-only {
+            display: block !important;
+        }
+
+        body.force-android-view .app-layout {
+            grid-template-columns: 1fr !important;
+        }
+

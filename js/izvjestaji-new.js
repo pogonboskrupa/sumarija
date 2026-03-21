@@ -80,13 +80,17 @@ async function loadIzvjestajiSedmicni() {
         if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
         if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
 
+        // Filtriraj po radilištima poslovođe (ako je poslovođa ulogiran)
+        var primkaFiltered = filterByPoslovodjaRadilista(primkaData.data);
+        var otpremaFiltered = filterByPoslovodjaRadilista(otpremaData.data);
+
         // Izračunaj sedmice u mjesecu (1. počinje od prvog dana, sedmica završava u nedjelju)
         const weeks = calculateWeeksInMonth(year, month);
         console.log('[IZVJEŠTAJI SEDMICNI] Weeks:', weeks);
 
         // Grupiraj podatke po sedmicama i odjelima
-        const primkaByWeek = aggregateByWeekAndOdjel(primkaData.data, primkaData.sortimentiNazivi, weeks, year, month);
-        const otpremaByWeek = aggregateByWeekAndOdjel(otpremaData.data, otpremaData.sortimentiNazivi, weeks, year, month);
+        const primkaByWeek = aggregateByWeekAndOdjel(primkaFiltered, primkaData.sortimentiNazivi, weeks, year, month);
+        const otpremaByWeek = aggregateByWeekAndOdjel(otpremaFiltered, otpremaData.sortimentiNazivi, weeks, year, month);
 
         // Render tables po sedmicama
         renderIzvjestajiSedmicniTable(primkaByWeek, primkaData.sortimentiNazivi, 'sedmicni-primka', weeks);
@@ -122,11 +126,16 @@ function calculateWeeksInMonth(year, month) {
         }
 
         // Ako smo na nedjelji ili kraju mjeseca
+        const wNum = weeks.length + 1;
+        const ws = String(weekStart).padStart(2, '0');
+        const we = String(weekEnd).padStart(2, '0');
+        const mm = String(month + 1).padStart(2, '0');
         weeks.push({
-            weekNum: weeks.length + 1,
+            weekNum: wNum,
             start: weekStart,
             end: weekEnd,
-            label: `${weekStart}. - ${weekEnd}.`
+            label: `S${wNum}`,
+            dateRange: `${ws}.${mm} - ${we}.${mm}`
         });
 
         weekStart = weekEnd + 1;
@@ -202,41 +211,24 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
         return;
     }
 
-    // Helper functions za boje
-    function isLiscari(s) {
-        return s.includes(' L') || s.includes('OGR.') || s === 'TRUPCI L' || s === 'LIŠĆARI';
-    }
-
-    function isCetinari(s) {
-        return s.includes(' Č') || s.includes('CEL.') || s.includes('RD') || s === 'Σ ČETINARI';
-    }
-
-    // Build header
-    let headerHtml = '<tr><th style="background: #374151; color: white;">Sedmica</th><th style="background: #374151; color: white;">Odjel</th>';
+    // Build header - uniformna tamno siva boja
+    let headerHtml = '<tr><th class="col-sedmica">SEDMICA</th><th>Odjel</th>';
     sortimentiNazivi.forEach(sortiment => {
-        let bgColor;
-        if (sortiment === 'UKUPNO Č+L') {
-            bgColor = '#dc2626';
-        } else if (sortiment === 'LIŠĆARI') {
-            bgColor = '#d97706';
-        } else if (sortiment === 'Σ ČETINARI') {
-            bgColor = '#047857';
-        } else if (isLiscari(sortiment)) {
-            bgColor = '#ea580c';
-        } else if (isCetinari(sortiment)) {
-            bgColor = '#059669';
-        } else {
-            bgColor = '#6b7280';
-        }
-        headerHtml += `<th style="background: ${bgColor}; color: white;">${sortiment}</th>`;
+        let extraClass = '';
+        if (sortiment === 'UKUPNO Č+L' || sortiment === 'SVEUKUPNO') extraClass = 'col-sveukupno';
+        else if (sortiment === 'LIŠĆARI') extraClass = 'col-liscari';
+        else if (sortiment === 'Σ ČETINARI' || sortiment === 'ČETINARI') extraClass = 'col-cetinari';
+
+        headerHtml += `<th class="${extraClass}">${sortiment}</th>`;
     });
     headerHtml += '</tr>';
     headerElem.innerHTML = headerHtml;
 
     // Build body - grupirano po sedmicama
     let bodyHtml = '';
+    let isFirstWeek = true;
 
-    weeks.forEach((week, weekIndex) => {
+    weeks.forEach((week) => {
         const weekData = dataByWeek[week.weekNum] || {};
         const odjeli = Object.keys(weekData).sort();
 
@@ -252,50 +244,39 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
             });
         });
 
-        // Header za sedmicu (tamni red)
-        bodyHtml += `<tr style="background: #1f2937;">`;
-        bodyHtml += `<td style="color: white; font-weight: bold;" rowspan="${odjeli.length + 1}">${week.label}</td>`;
-        bodyHtml += `<td style="color: #fbbf24; font-weight: bold;">UKUPNO SEDMICA</td>`;
+        // Separator klasa za vizualno razdvajanje sedmica
+        const separatorClass = isFirstWeek ? '' : ' week-separator';
+        isFirstWeek = false;
+
+        // SEDMICA ćelija sa rowspan - tamna pozadina, dvored prikaz
+        bodyHtml += `<tr class="week-totals-row${separatorClass}">`;
+        bodyHtml += `<td class="week-label-cell" rowspan="${odjeli.length + 1}">`;
+        bodyHtml += `<span class="week-num">${week.label}</span>`;
+        bodyHtml += `<span class="week-date">${week.dateRange}</span>`;
+        bodyHtml += `</td>`;
+        bodyHtml += `<td><strong>UKUPNO</strong></td>`;
         sortimentiNazivi.forEach(s => {
             const val = weekTotals[s];
             const display = val > 0 ? val.toFixed(2) : '-';
-            bodyHtml += `<td style="color: #fbbf24; font-weight: bold; text-align: right;">${display}</td>`;
+            bodyHtml += `<td>${display}</td>`;
         });
         bodyHtml += '</tr>';
 
         // Redovi za svaki odjel
-        odjeli.forEach((odjel, odjelIndex) => {
-            const rowBg = odjelIndex % 2 === 0 ? '#f9fafb' : 'white';
-            bodyHtml += `<tr style="background: ${rowBg};">`;
-            bodyHtml += `<td style="padding-left: 20px;">${odjel}</td>`;
+        odjeli.forEach((odjel, idx) => {
+            bodyHtml += `<tr class="week-detail-row">`;
+            bodyHtml += `<td>${odjel}</td>`;
 
             sortimentiNazivi.forEach(sortiment => {
                 const value = weekData[odjel][sortiment] || 0;
-                const displayValue = value > 0 ? value.toFixed(2) : '';
+                const displayValue = value > 0 ? value.toFixed(2) : '-';
 
-                let bgColor = 'transparent';
-                let textColor = '#1f2937';
+                let extraClass = '';
+                if (sortiment === 'UKUPNO Č+L' || sortiment === 'SVEUKUPNO') extraClass = 'col-sveukupno';
+                else if (sortiment === 'LIŠĆARI') extraClass = 'col-liscari';
+                else if (sortiment === 'Σ ČETINARI' || sortiment === 'ČETINARI') extraClass = 'col-cetinari';
 
-                if (value > 0) {
-                    if (sortiment === 'UKUPNO Č+L') {
-                        bgColor = '#fecaca';
-                        textColor = '#7f1d1d';
-                    } else if (sortiment === 'LIŠĆARI') {
-                        bgColor = '#fed7aa';
-                        textColor = '#78350f';
-                    } else if (sortiment === 'Σ ČETINARI') {
-                        bgColor = '#a7f3d0';
-                        textColor = '#065f46';
-                    } else if (isLiscari(sortiment)) {
-                        bgColor = '#ffedd5';
-                        textColor = '#78350f';
-                    } else if (isCetinari(sortiment)) {
-                        bgColor = '#d1fae5';
-                        textColor = '#065f46';
-                    }
-                }
-
-                bodyHtml += `<td style="background: ${bgColor}; color: ${textColor}; text-align: right;">${displayValue}</td>`;
+                bodyHtml += `<td class="${extraClass}">${displayValue}</td>`;
             });
 
             bodyHtml += '</tr>';
@@ -315,12 +296,12 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
         });
     });
 
-    bodyHtml += `<tr style="background: linear-gradient(135deg, #047857 0%, #065f46 100%);">`;
-    bodyHtml += `<td colspan="2" style="color: white; font-weight: bold;">UKUPNO MJESEC</td>`;
+    bodyHtml += `<tr class="grand-totals-row">`;
+    bodyHtml += `<td colspan="2">UKUPNO MJESEC</td>`;
     sortimentiNazivi.forEach(s => {
         const val = grandTotals[s];
         const display = val > 0 ? val.toFixed(2) : '-';
-        bodyHtml += `<td style="color: white; font-weight: bold; text-align: right;">${display}</td>`;
+        bodyHtml += `<td>${display}</td>`;
     });
     bodyHtml += '</tr>';
 
@@ -363,9 +344,13 @@ async function loadIzvjestajiMjesecni() {
         if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
         if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
 
+        // Filtriraj po radilištima poslovođe (ako je poslovođa ulogiran)
+        var primkaFiltered = filterByPoslovodjaRadilista(primkaData.data);
+        var otpremaFiltered = filterByPoslovodjaRadilista(otpremaData.data);
+
         // Aggregate by odjel
-        const primkaByOdjel = aggregateByOdjelIzvjestaji(primkaData.data, primkaData.sortimentiNazivi);
-        const otpremaByOdjel = aggregateByOdjelIzvjestaji(otpremaData.data, otpremaData.sortimentiNazivi);
+        const primkaByOdjel = aggregateByOdjelIzvjestaji(primkaFiltered, primkaData.sortimentiNazivi);
+        const otpremaByOdjel = aggregateByOdjelIzvjestaji(otpremaFiltered, otpremaData.sortimentiNazivi);
 
         // Render tables
         renderIzvjestajiTable(primkaByOdjel, primkaData.sortimentiNazivi, 'mjesecni-primka');
@@ -408,100 +393,83 @@ function aggregateByOdjelIzvjestaji(data, sortimentiNazivi) {
     return result;
 }
 
-// Render izvjestaji table with SORTING BY SVEUKUPNO (DESC)
+// ============================================
+// 📅 MJESEČNI IZVJEŠTAJ - Nova čista verzija
+// Uniformne boje, pregledna tabela
+// ============================================
 function renderIzvjestajiTable(data, sortimentiNazivi, tablePrefix) {
-    console.log(`[RENDER ${tablePrefix}] Rendering table...`);
+    console.log(`[RENDER ${tablePrefix}] Rendering mjesečni table...`);
 
     const headerElem = document.getElementById(`izvjestaji-${tablePrefix}-header`);
     const bodyElem = document.getElementById(`izvjestaji-${tablePrefix}-body`);
 
     if (!data || data.length === 0) {
         headerElem.innerHTML = '';
-        bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za odabrani period</td></tr>';
+        bodyElem.innerHTML = `
+            <tr>
+                <td colspan="100" style="text-align: center; padding: 60px; color: #6b7280;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">📭</div>
+                    <div style="font-size: 16px;">Nema podataka za odabrani period</div>
+                </td>
+            </tr>`;
         return;
     }
 
-    // ✅ SORT BY SVEUKUPNO COLUMN (DESC - largest first)
+    // Sort po UKUPNO koloni (DESC - najveći prvi)
     data.sort((a, b) => {
-        const aSveukupno = parseFloat(a.sortimenti['UKUPNO Č+L']) || 0;
-        const bSveukupno = parseFloat(b.sortimenti['UKUPNO Č+L']) || 0;
-        return bSveukupno - aSveukupno; // DESC
+        const aTotal = parseFloat(a.sortimenti['UKUPNO Č+L']) || parseFloat(a.sortimenti['SVEUKUPNO']) || 0;
+        const bTotal = parseFloat(b.sortimenti['UKUPNO Č+L']) || parseFloat(b.sortimenti['SVEUKUPNO']) || 0;
+        return bTotal - aTotal;
     });
 
-    // Helper functions
-    function isLiscari(s) {
-        return s.includes(' L') || s.includes('OGR.') || s.includes('TRUPCI') || s === 'LIŠĆARI';
-    }
+    // ========== HEADER ==========
+    // Uniformna tamno siva boja - sve kolone iste
+    let headerHtml = '<tr>';
+    headerHtml += '<th style="text-align: left;">Odjel</th>';
 
-    function isCetinari(s) {
-        return s.includes(' Č') || s.includes('CEL.') || s.includes('RD') || s === 'Σ ČETINARI';
-    }
-
-    // Build header
-    let headerHtml = '<tr><th>Odjel</th>';
     sortimentiNazivi.forEach(sortiment => {
-        let bgColor;
-        let textColor = 'white';
-
-        if (sortiment === 'UKUPNO Č+L') {
-            bgColor = '#dc2626'; // Red
-        } else if (sortiment === 'LIŠĆARI') {
-            bgColor = '#d97706'; // Dark orange
-        } else if (sortiment === 'Σ ČETINARI') {
-            bgColor = '#047857'; // Dark green
-        } else if (isLiscari(sortiment)) {
-            bgColor = '#ea580c'; // Orange
-        } else if (isCetinari(sortiment)) {
-            bgColor = '#059669'; // Green
-        } else {
-            bgColor = '#6b7280'; // Gray
-        }
-
-        headerHtml += `<th style="background: ${bgColor}; color: ${textColor};">${sortiment}</th>`;
+        headerHtml += `<th>${sortiment}</th>`;
     });
     headerHtml += '</tr>';
     headerElem.innerHTML = headerHtml;
 
-    // Build body
+    // ========== BODY ==========
+    // Čisti bijeli/sivi redovi bez šarenja
     let bodyHtml = '';
-    data.forEach(row => {
+    const totals = {};
+    sortimentiNazivi.forEach(s => totals[s] = 0);
+
+    data.forEach((row, index) => {
+        // Naizmjenični bijeli/sivi redovi - CSS :nth-child radi ovo automatski
         bodyHtml += '<tr>';
         bodyHtml += `<td>${row.odjel}</td>`;
 
         sortimentiNazivi.forEach(sortiment => {
             const value = parseFloat(row.sortimenti[sortiment]) || 0;
-            const displayValue = value > 0 ? value.toFixed(2) : '';
+            totals[sortiment] += value;
 
-            let bgColor = 'transparent';
-            let textColor = '#1f2937';
-
-            if (value > 0) {
-                if (sortiment === 'UKUPNO Č+L') {
-                    bgColor = '#fecaca'; // Light red
-                    textColor = '#7f1d1d'; // Dark red text
-                } else if (sortiment === 'LIŠĆARI') {
-                    bgColor = '#fed7aa'; // Light orange
-                    textColor = '#78350f'; // Dark orange text
-                } else if (sortiment === 'Σ ČETINARI') {
-                    bgColor = '#a7f3d0'; // Light green
-                    textColor = '#065f46'; // Dark green text
-                } else if (isLiscari(sortiment)) {
-                    bgColor = '#ffedd5'; // Very light orange
-                    textColor = '#78350f'; // Dark orange text
-                } else if (isCetinari(sortiment)) {
-                    bgColor = '#d1fae5'; // Very light green
-                    textColor = '#065f46'; // Dark green text
-                }
-            }
-
-            bodyHtml += `<td style="background: ${bgColor}; color: ${textColor};">${displayValue}</td>`;
+            // Prikaži vrijednost ili crticu ako je 0
+            const displayValue = value > 0 ? value.toFixed(2) : '-';
+            bodyHtml += `<td>${displayValue}</td>`;
         });
 
         bodyHtml += '</tr>';
     });
 
+    // ========== UKUPNO ROW ==========
+    // Zelena pozadina za isticanje
+    bodyHtml += '<tr class="totals-row">';
+    bodyHtml += '<td>📊 UKUPNO MJESEC</td>';
+
+    sortimentiNazivi.forEach(sortiment => {
+        const totalValue = totals[sortiment];
+        const display = totalValue > 0 ? totalValue.toFixed(2) : '-';
+        bodyHtml += `<td>${display}</td>`;
+    });
+    bodyHtml += '</tr>';
+
     bodyElem.innerHTML = bodyHtml;
-    console.log(`[RENDER ${tablePrefix}] ✓ Table rendered (${data.length} rows)`);
+    console.log(`[RENDER ${tablePrefix}] ✓ Mjesečni table renderiran (${data.length} odjela)`);
 }
 
 // Filter table by odjel name
@@ -530,6 +498,35 @@ function filterIzvjestajiTable(tablePrefix) {
             }
         }
     }
+}
+
+// Filtriraj podatke po radilištima poslovođe (samo za poslovođa ulogu)
+function filterByPoslovodjaRadilista(data) {
+    if (typeof getPoslovodjaRadilista !== 'function') return data;
+    var radilista = getPoslovodjaRadilista();
+
+    // Fallback: ako getPoslovodjaRadilista() vrati prazan niz,
+    // izvuci radilišta iz poslovodjaStanjeOdjeliAll (popunjen iz Stanje zaliha taba)
+    if ((!radilista || radilista.length === 0) && typeof poslovodjaStanjeOdjeliAll !== 'undefined' && poslovodjaStanjeOdjeliAll && poslovodjaStanjeOdjeliAll.length > 0) {
+        var set = {};
+        poslovodjaStanjeOdjeliAll.forEach(function(o) {
+            if (o.radiliste) set[o.radiliste.toUpperCase().trim()] = true;
+        });
+        radilista = Object.keys(set);
+        console.log('[IZVJEŠTAJI] Radilišta iz Stanje zaliha fallback:', radilista.join(', '));
+    }
+
+    if (!radilista || radilista.length === 0) return data;
+
+    console.log('[IZVJEŠTAJI] Filtriranje po radilištima:', radilista.join(', '));
+    var filtered = data.filter(function(row) {
+        var r = (row.radiliste || '').toUpperCase().trim();
+        return radilista.some(function(pr) {
+            return r === pr.toUpperCase().trim();
+        });
+    });
+    console.log('[IZVJEŠTAJI] Filtrirano: ' + filtered.length + '/' + data.length + ' redova');
+    return filtered;
 }
 
 console.log('[IZVJEŠTAJI] ✓ New izvjestaji functions loaded');

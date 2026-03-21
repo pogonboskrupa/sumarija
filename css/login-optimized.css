@@ -7,6 +7,9 @@
 body.login-active {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     background-attachment: fixed;
+    overflow-x: hidden;
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
 }
 
 /* 🔧 KRITIČNO: Osiguraj da login screen nestane kada je hidden */
@@ -24,8 +27,11 @@ body.login-active {
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    padding: 40px 20px;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
+    padding: 20px;
     position: relative;
+    overflow: hidden; /* Spriječi horizontalno skrolanje od dekorativnih krugova */
+    box-sizing: border-box;
 }
 
 /* Decorative background circles */
@@ -58,12 +64,14 @@ body.login-active {
     background: white;
     border-radius: 20px;
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
-    padding: 50px 40px;
-    max-width: 450px;
-    width: 100%;
+    padding: 40px 32px;
+    max-width: 380px;
+    width: calc(100% - 40px);
     position: relative;
     z-index: 1;
     animation: fadeInUp 0.6s ease;
+    box-sizing: border-box;
+    margin: auto;
 }
 
 @keyframes fadeInUp {
@@ -80,13 +88,13 @@ body.login-active {
 /* Logo container */
 .login-box .logo-container {
     text-align: center;
-    margin-bottom: 32px;
+    margin-bottom: 20px;
 }
 
 .login-box .logo-container img {
-    width: 200px;
+    width: 100px;
     height: auto;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     transition: transform 0.3s ease;
 }
 
@@ -95,28 +103,46 @@ body.login-active {
 }
 
 .login-box .text-outline-firma {
-    font-size: 16px;
-    margin-bottom: 6px;
-    letter-spacing: 0.5px;
-    color: #374151;
-    font-weight: 700;
+    font-size: 11px;
+    margin-bottom: 2px;
+    letter-spacing: 1px;
+    color: #9ca3af;
+    font-weight: 600;
     text-transform: uppercase;
 }
 
+/* Override main.css !important green color + yellow text-shadow */
+.login-box .logo-container .text-outline-firma {
+    color: #9ca3af !important;
+    text-shadow: none !important;
+}
+
 .login-box .company-subtitle {
-    font-size: 14px;
-    font-weight: 600;
-    color: #6b7280;
-    margin-bottom: 12px;
+    font-size: 10px;
+    font-weight: 500;
+    color: #9ca3af;
+    margin-bottom: 0;
+    letter-spacing: 0.5px;
+}
+
+/* Vizuelni separator između brandinga i forme */
+.login-box .logo-container::after {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 2px;
+    margin: 16px auto 0;
 }
 
 /* Headings */
 .login-box h2 {
     text-align: center;
-    font-size: 36px;
-    font-weight: 800;
+    font-size: 26px;
+    font-weight: 700;
     color: #1f2937;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -125,9 +151,9 @@ body.login-active {
 
 .login-box > p {
     text-align: center;
-    color: #6b7280;
-    margin-bottom: 36px;
-    font-size: 15px;
+    color: #9ca3af;
+    margin-bottom: 24px;
+    font-size: 13px;
 }
 
 /* Form groups */
@@ -220,16 +246,16 @@ body.login-active {
 /* ============================================ */
 @media (min-width: 768px) and (max-width: 1024px) {
     .login-box {
-        max-width: 500px;
-        padding: 50px 45px;
+        max-width: 400px;
+        padding: 44px 36px;
     }
 
     .login-box .logo-container img {
-        width: 220px;
+        width: 90px;
     }
 
     .login-box h2 {
-        font-size: 40px;
+        font-size: 26px;
     }
 }
 
@@ -238,34 +264,35 @@ body.login-active {
 /* ============================================ */
 @media (min-width: 1025px) {
     .login-container {
-        padding: 60px 40px;
+        padding: 40px;
     }
 
     .login-box {
-        max-width: 520px;
-        padding: 60px 50px;
+        max-width: 420px;
+        padding: 48px 40px;
     }
 
     .login-box .logo-container img {
-        width: 240px;
+        width: 100px;
     }
 
     .login-box h2 {
-        font-size: 42px;
+        font-size: 28px;
     }
 
     .login-box > p {
-        font-size: 16px;
+        font-size: 13px;
     }
 
     .form-group input {
-        font-size: 17px;
-        padding: 16px 20px;
+        font-size: 16px;
+        padding: 14px 18px;
     }
 
     .login-box .btn {
-        padding: 18px;
-        font-size: 17px;
+        padding: 16px;
+        font-size: 16px;
+        margin-top: 4px;
     }
 }
 
@@ -274,47 +301,53 @@ body.login-active {
 /* ============================================ */
 @media (max-width: 767px) {
     .login-container {
-        padding: 20px;
+        padding: 16px;
+        min-height: 100vh;
+        min-height: 100dvh;
+        align-items: center;
     }
 
     .login-box {
-        padding: 36px 28px;
+        padding: 32px 24px;
         border-radius: 16px;
-        max-width: 100%;
+        max-width: 340px;
+        width: calc(100% - 32px);
     }
 
     .login-box .logo-container img {
-        width: 160px;
+        width: 72px;
     }
 
     .login-box .text-outline-firma {
-        font-size: 14px;
+        font-size: 10px;
     }
 
     .login-box .company-subtitle {
-        font-size: 12px;
+        font-size: 9px;
     }
 
     .login-box h2 {
-        font-size: 28px;
+        font-size: 22px;
+        margin-bottom: 4px;
     }
 
     .login-box > p {
-        font-size: 14px;
-        margin-bottom: 28px;
+        font-size: 12px;
+        margin-bottom: 18px;
     }
 
     .form-group {
-        margin-bottom: 20px;
+        margin-bottom: 18px;
     }
 
     .form-group label {
         font-size: 13px;
+        margin-bottom: 6px;
     }
 
     .form-group input {
-        padding: 12px 16px;
-        font-size: 15px;
+        padding: 12px 14px;
+        font-size: 16px; /* 16px sprječava zoom na iOS */
     }
 
     .login-box .btn {
@@ -327,54 +360,68 @@ body.login-active {
     .login-container::after {
         display: none;
     }
+
+    .login-box .logo-container::after {
+        width: 36px;
+        height: 2px;
+        margin: 12px auto 0;
+    }
 }
 
 /* Extra small devices (< 480px) */
 @media (max-width: 480px) {
+    .login-container {
+        padding: 12px;
+    }
+
     .login-box {
-        padding: 30px 24px;
+        padding: 28px 20px;
+        width: calc(100% - 24px);
+        max-width: 320px;
+    }
+
+    .login-box .logo-container {
+        margin-bottom: 16px;
     }
 
     .login-box .logo-container img {
-        width: 140px;
+        width: 60px;
+        margin-bottom: 8px;
+    }
+
+    .login-box .logo-container::after {
+        width: 32px;
+        height: 2px;
+        margin: 10px auto 0;
+    }
+
+    .login-box .text-outline-firma {
+        font-size: 10px;
+    }
+
+    .login-box .company-subtitle {
+        font-size: 9px;
     }
 
     .login-box h2 {
-        font-size: 24px;
+        font-size: 20px;
     }
 
     .login-box > p {
-        font-size: 13px;
+        font-size: 11px;
+        margin-bottom: 14px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .login-box .btn {
+        padding: 12px;
+        font-size: 14px;
     }
 }
 
 /* ============================================ */
 /* DARK MODE SUPPORT (optional) */
 /* ============================================ */
-body.dark-mode .login-box {
-    background: #1f2937;
-    color: #f9fafb;
-}
-
-body.dark-mode .login-box h2 {
-    color: #f9fafb;
-}
-
-body.dark-mode .login-box .text-outline-firma,
-body.dark-mode .login-box .company-subtitle {
-    color: #d1d5db;
-}
-
-body.dark-mode .form-group label {
-    color: #e5e7eb;
-}
-
-body.dark-mode .form-group input {
-    background: #374151;
-    border-color: #4b5563;
-    color: #f9fafb;
-}
-
-body.dark-mode .form-group input::placeholder {
-    color: #9ca3af;
-}

@@ -7,9 +7,47 @@
 // Ovaj fajl sadrži glavne entry point funkcije (doGet, doPost, doOptions)
 // i routing logiku za sve API endpoint-e
 
+// Provjera da li su svi potrebni fajlovi uključeni u Apps Script projekat
+function _checkRequiredFunctions() {
+  var missing = [];
+  var required = [
+    'handleLogin', 'handleStats', 'handleDashboard', 'handleSortimenti',
+    'handlePrimaci', 'handleOtpremaci', 'handleKupci', 'handleOdjeli',
+    'handlePrimacDetail', 'handleOtpremacDetail', 'handlePrimacOdjeli',
+    'handleOtpremacOdjeli', 'handleAddSjeca', 'handleAddOtprema',
+    'handlePendingUnosi', 'handleMyPending', 'handleUpdatePending',
+    'handleDeletePending', 'handleGetOdjeliList', 'handleMjesecniSortimenti',
+    'handlePrimaciDaily', 'handleOtremaciDaily', 'handleDailyChart',
+    'handleStanjeOdjela', 'handleSyncStanjeOdjela', 'handleSyncIndex',
+    'createJsonResponse'
+  ];
+  for (var i = 0; i < required.length; i++) {
+    try {
+      if (typeof this[required[i]] !== 'function') {
+        missing.push(required[i]);
+      }
+    } catch (e) {
+      missing.push(required[i]);
+    }
+  }
+  return missing;
+}
+
 // Glavni handler za sve zahtjeve
 function doGet(e) {
   try {
+    // Provjeri da li su svi potrebni fajlovi uključeni
+    var missingFunctions = _checkRequiredFunctions();
+    if (missingFunctions.length > 0) {
+      Logger.log('GREŠKA: Nedostaju funkcije: ' + missingFunctions.join(', '));
+      Logger.log('Provjerite da su svi .gs fajlovi dodani u Apps Script projekat:');
+      Logger.log('- main.gs, api-handlers.gs, authentication.gs, config.gs, services.gs, utils-triggers.gs');
+      return ContentService.createTextOutput(JSON.stringify({
+        success: false,
+        error: 'Nedostaju funkcije: ' + missingFunctions.join(', ') + '. Provjerite da su svi .gs fajlovi (api-handlers.gs, authentication.gs, config.gs, services.gs, utils-triggers.gs) dodani u Apps Script projekat.'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     Logger.log('=== DOGET CALLED ===');
     Logger.log('Full e.parameter: ' + JSON.stringify(e.parameter));
     Logger.log('e.queryString: ' + e.queryString);
@@ -49,6 +87,12 @@ function doGet(e) {
       return handlePrimacOdjeli(e.parameter.year, e.parameter.username, e.parameter.password, e.parameter.limit);
     } else if (path === 'otpremac-odjeli') {
       return handleOtpremacOdjeli(e.parameter.year, e.parameter.username, e.parameter.password, e.parameter.limit);
+    } else if (path === 'odjeli-all') {
+      return handleOdjeliAll(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'primac-detail-admin') {
+      return handlePrimacDetailAdmin(e.parameter.year, e.parameter.username, e.parameter.password, e.parameter.primacName);
+    } else if (path === 'primac-odjeli-admin') {
+      return handlePrimacOdjeliAdmin(e.parameter.year, e.parameter.username, e.parameter.password, e.parameter.primacName, e.parameter.limit);
     } else if (path === 'add-sjeca') {
       return handleAddSjeca(e.parameter);
     } else if (path === 'add-otprema') {
@@ -69,6 +113,8 @@ function doGet(e) {
       return handlePrimaciDaily(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
     } else if (path === 'otpremaci-daily') {
       return handleOtremaciDaily(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
+    } else if (path === 'daily-chart') {
+      return handleDailyChart(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
     } else if (path === 'stanje-odjela') {
       return handleStanjeOdjela(e.parameter.username, e.parameter.password);
     } else if (path === 'sync-stanje-odjela') {
@@ -81,6 +127,10 @@ function doGet(e) {
       return handlePrimaciByRadiliste(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'primaci-by-izvodjac') {
       return handlePrimaciByIzvodjac(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'primaci-sortimenti-by-primac') {
+      return handlePrimaciSortimentiByPrimac(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
+    } else if (path === 'otpremaci-sortimenti-by-otpremac') {
+      return handleOtremaciSortimentiByOtpremac(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
     } else if (path === 'primke') {
       return handlePrimke(e.parameter.username, e.parameter.password);
     } else if (path === 'otpreme') {
@@ -103,11 +153,35 @@ function doGet(e) {
       Logger.log('save_dinamika endpoint called');
       Logger.log('Parameters: ' + JSON.stringify(e.parameter));
       return handleSaveDinamika(e.parameter.username, e.parameter.password, e.parameter.godina, e.parameter.mjeseci);
+    } else if (path === 'stanje-zaliha') {
+      // 📦 STANJE ZALIHA - Čita podatke sa STANJE_ZALIHA sheeta (opciono filtrirano po poslovođi)
+      return handleStanjeZaliha(e.parameter.username, e.parameter.password, e.parameter.poslovodja);
+    } else if (path === 'poslovodja-aktivnost') {
+      // 📅 POSLOVODJA AKTIVNOST - Zadnjih 5 dana sječa/otprema po odjelima (filtrirano po radilištu)
+      return handlePoslovodjaAktivnost(e.parameter.username, e.parameter.password, e.parameter.radiliste);
+    } else if (path === 'upload-image') {
+      // 📷 UPLOAD IMAGE - Upload slike na Google Drive (privremeno do 10h idućeg dana)
+      return handleUploadImage(e.parameter.username, e.parameter.password, e.parameter.type, e.parameter.imageData);
+    } else if (path === 'get-images') {
+      // 📷 GET IMAGES - Dohvati aktivne slike (za admina)
+      return handleGetImages(e.parameter.username, e.parameter.password);
+    } else if (path === 'poslovodja-radilista') {
+      // 🗺️ POSLOVODJA RADILISTA - Dohvati mapping poslovodja→radilišta iz INFO sheeta
+      return handlePoslovodjaRadilista(e.parameter.username, e.parameter.password, e.parameter.poslovodja);
     }
 
     Logger.log('Unknown path: ' + path);
     return createJsonResponse({ error: 'Unknown path: ' + path }, false);
   } catch (error) {
+    Logger.log('doGet error: ' + error.toString());
+    // Ako je ReferenceError (funkcija nije definisana), daj jasniju poruku
+    if (error instanceof ReferenceError) {
+      var errorMsg = error.toString() + '. Provjerite da su svi .gs fajlovi (api-handlers.gs, authentication.gs, config.gs, services.gs, utils-triggers.gs) dodani u Apps Script projekat.';
+      return ContentService.createTextOutput(JSON.stringify({
+        success: false,
+        error: errorMsg
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
     return createJsonResponse({ error: error.toString() }, false);
   }
 }
@@ -145,7 +219,7 @@ function doOptions(e) {
 // ========================================
 // POST Handler
 // ========================================
-// Handles POST requests (trenutno samo save_dinamika)
+// Handles POST requests (save_dinamika, upload-image)
 function doPost(e) {
   try {
     const path = e.parameter.path;
@@ -153,10 +227,19 @@ function doPost(e) {
 
     if (path === 'save_dinamika') {
       return handleSaveDinamika(postData);
+    } else if (path === 'upload-image') {
+      // Upload image via POST (base64 data is too large for GET URL)
+      return handleUploadImage(
+        postData.username,
+        postData.password,
+        postData.type,
+        postData.imageData
+      );
     }
 
     return createJsonResponse({ error: 'Unknown POST path' }, false);
   } catch (error) {
+    Logger.log('doPost error: ' + error.toString());
     return createJsonResponse({ error: error.toString() }, false);
   }
 }
