@@ -3905,7 +3905,16 @@ function handleStanjeZaliha(username, password, poslovodja) {
             poslovodjaNaziv = String(blockRow[1] || '').trim();
           }
           if (blockColA === 'ZADNJA OTPREMA') {
-            zadnjaOtpremaStr = String(blockRow[1] || '').trim();
+            const rawVal = blockRow[1];
+            if (rawVal instanceof Date) {
+              // Formatiraj Date objekt kao DD.MM.YYYY
+              const dd = String(rawVal.getDate()).padStart(2, '0');
+              const mm = String(rawVal.getMonth() + 1).padStart(2, '0');
+              const yyyy = rawVal.getFullYear();
+              zadnjaOtpremaStr = dd + '.' + mm + '.' + yyyy;
+            } else {
+              zadnjaOtpremaStr = String(rawVal || '').trim();
+            }
           }
 
           // Čitaj podatke po markerima u koloni C
