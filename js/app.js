@@ -2804,12 +2804,30 @@
 
         function buildCorrectedZaliha(z) {
             if (!z) return {};
-            const pos = k => Math.max(0, z[k] || 0);
+            // Korekcija preklasiranja: ako je jedan sortiment pozitivan a parnjak < -10m³,
+            // radi se o preklasiranju na terenu — offsetujemo ih jedan o drugi
+            const corrected = Object.assign({}, z);
+            const parovi = [["CEL.DUGA", "CEL.CIJEPANA"], ["OGR.DUGI", "OGR.CIJEPANI"]];
+            parovi.forEach(([a, b]) => {
+                const va = corrected[a] || 0;
+                const vb = corrected[b] || 0;
+                if ((va > 0 && vb < -10) || (vb > 0 && va < -10)) {
+                    const net = va + vb;
+                    if (va > 0) {
+                        corrected[a] = Math.max(0, net);
+                        corrected[b] = Math.min(0, net);
+                    } else {
+                        corrected[b] = Math.max(0, net);
+                        corrected[a] = Math.min(0, net);
+                    }
+                }
+            });
+            const pos = k => Math.max(0, corrected[k] || 0);
             const trupciC  = pos("F/L Č") + pos("I Č") + pos("II Č") + pos("III Č") + pos("RD");
             const cetinari = trupciC + pos("CEL.DUGA") + pos("CEL.CIJEPANA") + pos("ŠKART");
             const trupciL  = pos("F/L L") + pos("I L") + pos("II L") + pos("III L");
             const liscari  = trupciL + pos("OGR.DUGI") + pos("OGR.CIJEPANI") + pos("GULE");
-            return Object.assign({}, z, {
+            return Object.assign({}, corrected, {
                 "TRUPCI Č":   trupciC,
                 "Σ ČETINARI": cetinari,
                 "TRUPCI L":   trupciL,
@@ -2881,10 +2899,11 @@
                     const ukupnoZaliha = odjel.ukupnoZaliha || 0;
                     // Sumarni prikaz: samo pozitivne količine po individualnim sortimentima
                     // (izuzimaju se zbiri: Σ ČETINARI [idx9], LIŠĆARI [idx18], UKUPNO Č+L [idx19])
-                    const pozitivnaZaliha = odjel.zaliha
+                    const correctedZ = buildCorrectedZaliha(odjel.zaliha);
+                    const pozitivnaZaliha = correctedZ && Object.keys(correctedZ).length
                         ? sortimentiFull.reduce((s, k, i) => {
                             if (i === 5 || i === 9 || i === 14 || i === 18 || i === 19) return s;
-                            const v = odjel.zaliha[k] || 0;
+                            const v = correctedZ[k] || 0;
                             return s + (v > 0 ? v : 0);
                           }, 0)
                         : Math.max(0, ukupnoZaliha);
@@ -8511,10 +8530,11 @@
                 const ukupnoZaliha = odjel.ukupnoZaliha || 0;
                 // Sumarni prikaz: samo pozitivne količine po individualnim sortimentima
                 // (izuzimaju se zbiri: idx9=Σ ČETINARI, idx18=LIŠĆARI, idx19=UKUPNO Č+L)
-                const pozitivnaZaliha = odjel.zaliha
+                const correctedZ = buildCorrectedZaliha(odjel.zaliha);
+                const pozitivnaZaliha = correctedZ && Object.keys(correctedZ).length
                     ? sortimentiFull.reduce((s, k, i) => {
                         if (i === 5 || i === 9 || i === 14 || i === 18 || i === 19) return s;
-                        const v = odjel.zaliha[k] || 0;
+                        const v = correctedZ[k] || 0;
                         return s + (v > 0 ? v : 0);
                       }, 0)
                     : Math.max(0, ukupnoZaliha);
