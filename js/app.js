@@ -891,6 +891,7 @@
         let currentUser = null;
         let currentPassword = null;
         let odjeliList = [];
+        let preklasiranjaPodaci = []; // [{rowIndex, odjel, iz, u, kolicina, napomena, korisnik, datum}]
 
         // Global data version for cache invalidation across panels
         window.APP_DATA_VERSION = localStorage.getItem('app_data_version') || '1';
@@ -2070,7 +2071,7 @@
 
                 if (odjeliData && Array.isArray(odjeliData)) {
                     odjeliData.forEach(odjel => {
-                        const zalihaData = buildCorrectedZaliha(odjel.zaliha);
+                        const zalihaData = buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel));
                         sortimentiPrikaz.forEach(sp => {
                             zalihaSortimenti[sp.display] += Math.max(0, zalihaData[sp.apiKey] || 0);
                         });
@@ -2156,7 +2157,7 @@
 
                 if (odjeliData && Array.isArray(odjeliData)) {
                     odjeliData.forEach(odjel => {
-                        const zalihaData = buildCorrectedZaliha(odjel.zaliha);
+                        const zalihaData = buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel));
                         sortimentiPrikaz.forEach(sp => {
                             zalihaSortimenti[sp.display] += Math.max(0, zalihaData[sp.apiKey] || 0);
                         });
@@ -2280,11 +2281,16 @@
                 document.getElementById('poslovodja-radilista-list').textContent = poslovodjaName || 'Svi odjeli';
 
                 const url = buildApiUrl('stanje-zaliha', { poslovodja: poslovodjaName });
-                const data = await fetchWithCache(url, cacheKey, false, 60000);
+                const urlPrekl = buildApiUrl('get-preklasiranja');
+                const [data, preklData] = await Promise.all([
+                    fetchWithCache(url, cacheKey, false, 60000),
+                    fetch(urlPrekl).then(r => r.json()).catch(() => ({ preklasiranja: [] }))
+                ]);
 
                 if (data.error || !data.odjeli) {
                     throw new Error(data.error || 'Nema podataka o odjelima');
                 }
+                preklasiranjaPodaci = (preklData && preklData.preklasiranja) || [];
 
                 // Backend već filtrira po POSLOVOĐA polju iz STANJE_ZALIHA
                 poslovodjaStanjeOdjeliAll = data.odjeli;
@@ -2716,7 +2722,7 @@
 
             // Pre-compute values for each odjel
             const rows = odjeliData.map(odjel => {
-                const z = buildCorrectedZaliha(odjel.zaliha);
+                const z = buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel));
                 const values = {};
                 cols.forEach(c => { values[c.key] = Math.max(0, z[c.key] || 0); });
                 values['__ukupno'] = values['Σ ČETINARI'] + values['LIŠĆARI'];
@@ -2800,6 +2806,20 @@
                     tbody.innerHTML = buildBodyRows(sorted);
                 });
             }
+        }
+
+        // Primjenjuje eksplicitna ručna preklasiranja na sirovi zaliha objekat za dati odjel.
+        // Poziva se PRIJE buildCorrectedZaliha tako da heuristika radi na već korigiranim podacima.
+        function applyPreklasiranja(rawZaliha, odjelNaziv) {
+            if (!rawZaliha || !preklasiranjaPodaci.length) return rawZaliha;
+            const result = Object.assign({}, rawZaliha);
+            preklasiranjaPodaci
+                .filter(p => p.odjel === odjelNaziv)
+                .forEach(p => {
+                    result[p.iz] = (result[p.iz] || 0) - p.kolicina;
+                    result[p.u]  = (result[p.u]  || 0) + p.kolicina;
+                });
+            return result;
         }
 
         function buildCorrectedZaliha(z) {
@@ -2899,7 +2919,7 @@
                     const ukupnoZaliha = odjel.ukupnoZaliha || 0;
                     // Sumarni prikaz: samo pozitivne količine po individualnim sortimentima
                     // (izuzimaju se zbiri: Σ ČETINARI [idx9], LIŠĆARI [idx18], UKUPNO Č+L [idx19])
-                    const correctedZ = buildCorrectedZaliha(odjel.zaliha);
+                    const correctedZ = buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel));
                     const pozitivnaZaliha = correctedZ && Object.keys(correctedZ).length
                         ? sortimentiFull.reduce((s, k, i) => {
                             if (i === 5 || i === 9 || i === 14 || i === 18 || i === 19) return s;
@@ -2973,7 +2993,7 @@
                                         const rowColors = { projekat: '#eff6ff', sjeca: '#ecfdf5', otprema: '#fffbeb', zaliha: '#faf5ff' };
                                         const textColors = { projekat: '#1e40af', sjeca: '#065f46', otprema: '#b45309', zaliha: '#7c3aed' };
                                         const sortimenti = vrsta === 'zaliha'
-                                            ? buildCorrectedZaliha(odjel.zaliha)
+                                            ? buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel))
                                             : (odjel[vrsta] || {});
 
                                         return `
@@ -8421,9 +8441,14 @@
 
             try {
                 const url = buildApiUrl('stanje-zaliha');
-                const data = await fetchWithCache(url, 'cache_stanje_zaliha', false, 180000);
+                const urlPrekl = buildApiUrl('get-preklasiranja');
+                const [data, preklData] = await Promise.all([
+                    fetchWithCache(url, 'cache_stanje_zaliha', false, 180000),
+                    fetch(urlPrekl).then(r => r.json()).catch(() => ({ preklasiranja: [] }))
+                ]);
 
                 if (data.error) throw new Error(data.error);
+                preklasiranjaPodaci = (preklData && preklData.preklasiranja) || [];
 
                 stanjeZalihaData = data.odjeli || [];
                 stanjeZalihaRadilista = data.radilista || [];
@@ -8438,6 +8463,9 @@
                 // Render cards
                 renderStanjeZalihaCards(stanjeZalihaData);
 
+                // Init preklasiranje admin section
+                initPreklasiranjeAdminSection();
+
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('stanje-zaliha-content').classList.remove('hidden');
 
@@ -8445,6 +8473,169 @@
                 console.error('Error loading stanje zaliha:', error);
                 showError('Greška', 'Greška pri učitavanju stanja zaliha: ' + error.message);
                 document.getElementById('loading-screen').classList.add('hidden');
+            }
+        }
+
+        // ========================================
+        // PREKLASIRANJE - Admin UI
+        // ========================================
+
+        const SORTIMENTI_INDIVIDUALNI = [
+            "F/L Č","I Č","II Č","III Č","RD",
+            "CEL.DUGA","CEL.CIJEPANA","ŠKART",
+            "F/L L","I L","II L","III L",
+            "OGR.DUGI","OGR.CIJEPANI","GULE"
+        ];
+
+        function initPreklasiranjeAdminSection() {
+            const isAdmin = currentUser && (currentUser.type || '').toLowerCase() === 'admin';
+            const section = document.getElementById('preklasiranje-admin-section');
+            if (!section) return;
+            section.style.display = isAdmin ? 'block' : 'none';
+            if (isAdmin) renderPreklasiranjaTabelaAdmin();
+        }
+
+        function renderPreklasiranjaTabelaAdmin() {
+            const container = document.getElementById('preklasiranje-tabela-container');
+            if (!container) return;
+            if (!preklasiranjaPodaci.length) {
+                container.innerHTML = '<p style="color:#6b7280;font-size:13px;">Nema unesenih preklasiranja.</p>';
+                return;
+            }
+            let html = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
+                <thead><tr style="background:#1e3a5f;color:white;">
+                    <th style="padding:8px 10px;text-align:left;border:1px solid #374151;">Datum</th>
+                    <th style="padding:8px 10px;text-align:left;border:1px solid #374151;">Odjel</th>
+                    <th style="padding:8px 10px;text-align:left;border:1px solid #374151;">Iz → U</th>
+                    <th style="padding:8px 10px;text-align:right;border:1px solid #374151;">Kol. (m³)</th>
+                    <th style="padding:8px 10px;text-align:left;border:1px solid #374151;">Napomena</th>
+                    <th style="padding:8px 10px;text-align:left;border:1px solid #374151;">Korisnik</th>
+                    <th style="padding:8px 6px;border:1px solid #374151;"></th>
+                </tr></thead><tbody>`;
+            preklasiranjaPodaci.forEach(p => {
+                html += `<tr style="background:white;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">
+                    <td style="padding:7px 10px;border:1px solid #e5e7eb;">${p.datum || ''}</td>
+                    <td style="padding:7px 10px;border:1px solid #e5e7eb;font-weight:600;">${p.odjel}</td>
+                    <td style="padding:7px 10px;border:1px solid #e5e7eb;">${p.iz} → ${p.u}</td>
+                    <td style="padding:7px 10px;border:1px solid #e5e7eb;text-align:right;font-family:monospace;">${(p.kolicina||0).toFixed(2)}</td>
+                    <td style="padding:7px 10px;border:1px solid #e5e7eb;color:#6b7280;">${p.napomena || '—'}</td>
+                    <td style="padding:7px 10px;border:1px solid #e5e7eb;color:#6b7280;">${p.korisnik || ''}</td>
+                    <td style="padding:4px 6px;border:1px solid #e5e7eb;text-align:center;">
+                        <button onclick="deletePreklasiranje(${p.rowIndex})" style="background:#fee2e2;border:none;color:#dc2626;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;">Briši</button>
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+
+        function openPreklasiranjeModal() {
+            // Populate odjeli dropdown
+            const odjelSel = document.getElementById('prekl-odjel');
+            odjelSel.innerHTML = '<option value="">— Odaberi odjel —</option>';
+            const odjeli = stanjeZalihaData.map(o => o.odjel).filter(Boolean).sort();
+            odjeli.forEach(o => {
+                odjelSel.innerHTML += `<option value="${o}">${o}</option>`;
+            });
+
+            // Populate sortimenti dropdowns
+            const izSel = document.getElementById('prekl-iz');
+            const uSel = document.getElementById('prekl-u');
+            izSel.innerHTML = '<option value="">— Odaberi —</option>';
+            uSel.innerHTML = '<option value="">— Odaberi —</option>';
+            SORTIMENTI_INDIVIDUALNI.forEach(s => {
+                izSel.innerHTML += `<option value="${s}">${s}</option>`;
+                uSel.innerHTML += `<option value="${s}">${s}</option>`;
+            });
+
+            document.getElementById('prekl-kolicina').value = '';
+            document.getElementById('prekl-napomena').value = '';
+            document.getElementById('prekl-error').style.display = 'none';
+            document.getElementById('prekl-submit-btn').disabled = false;
+            document.getElementById('preklasiranje-modal').style.display = 'flex';
+        }
+
+        function filterPreklUSort() {
+            const izVal = document.getElementById('prekl-iz').value;
+            const uSel = document.getElementById('prekl-u');
+            const current = uSel.value;
+            uSel.innerHTML = '<option value="">— Odaberi —</option>';
+            SORTIMENTI_INDIVIDUALNI.forEach(s => {
+                if (s !== izVal) uSel.innerHTML += `<option value="${s}">${s}</option>`;
+            });
+            if (current && current !== izVal) uSel.value = current;
+        }
+
+        function closePreklasiranjeModal() {
+            document.getElementById('preklasiranje-modal').style.display = 'none';
+        }
+
+        async function submitPreklasiranje() {
+            const odjel    = document.getElementById('prekl-odjel').value.trim();
+            const iz       = document.getElementById('prekl-iz').value.trim();
+            const u        = document.getElementById('prekl-u').value.trim();
+            const kolicina = document.getElementById('prekl-kolicina').value.trim();
+            const napomena = document.getElementById('prekl-napomena').value.trim();
+            const errEl    = document.getElementById('prekl-error');
+
+            if (!odjel || !iz || !u || !kolicina) {
+                errEl.textContent = 'Popunite sva obavezna polja.';
+                errEl.style.display = 'block';
+                return;
+            }
+            if (iz === u) {
+                errEl.textContent = 'Iz i u sortiment moraju biti različiti.';
+                errEl.style.display = 'block';
+                return;
+            }
+            if (parseFloat(kolicina) <= 0) {
+                errEl.textContent = 'Količina mora biti pozitivna.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            const btn = document.getElementById('prekl-submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Slanje...';
+            errEl.style.display = 'none';
+
+            try {
+                const url = buildApiUrl('add-preklasiranje', {
+                    odjel, iz, u, kolicina, napomena
+                });
+                const resp = await fetch(url).then(r => r.json());
+                if (!resp.success) throw new Error(resp.error || 'Nepoznata greška');
+
+                closePreklasiranjeModal();
+                // Refresh preklasiranja and re-render
+                const preklData = await fetch(buildApiUrl('get-preklasiranja')).then(r => r.json()).catch(() => ({ preklasiranja: [] }));
+                preklasiranjaPodaci = (preklData && preklData.preklasiranja) || [];
+                renderPreklasiranjaTabelaAdmin();
+                // Re-render zaliha tables with new corrections
+                renderStanjeZalihaTabela(stanjeZalihaData);
+                renderStanjeZalihaCards(stanjeZalihaData);
+            } catch (err) {
+                errEl.textContent = 'Greška: ' + err.message;
+                errEl.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Spremi';
+            }
+        }
+
+        async function deletePreklasiranje(rowIndex) {
+            if (!confirm('Obrisati ovo preklasiranje?')) return;
+            try {
+                const url = buildApiUrl('delete-preklasiranje', { rowIndex });
+                const resp = await fetch(url).then(r => r.json());
+                if (!resp.success) throw new Error(resp.error || 'Greška pri brisanju');
+
+                const preklData = await fetch(buildApiUrl('get-preklasiranja')).then(r => r.json()).catch(() => ({ preklasiranja: [] }));
+                preklasiranjaPodaci = (preklData && preklData.preklasiranja) || [];
+                renderPreklasiranjaTabelaAdmin();
+                renderStanjeZalihaTabela(stanjeZalihaData);
+                renderStanjeZalihaCards(stanjeZalihaData);
+            } catch (err) {
+                alert('Greška: ' + err.message);
             }
         }
 
@@ -8530,7 +8721,7 @@
                 const ukupnoZaliha = odjel.ukupnoZaliha || 0;
                 // Sumarni prikaz: samo pozitivne količine po individualnim sortimentima
                 // (izuzimaju se zbiri: idx9=Σ ČETINARI, idx18=LIŠĆARI, idx19=UKUPNO Č+L)
-                const correctedZ = buildCorrectedZaliha(odjel.zaliha);
+                const correctedZ = buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel));
                 const pozitivnaZaliha = correctedZ && Object.keys(correctedZ).length
                     ? sortimentiFull.reduce((s, k, i) => {
                         if (i === 5 || i === 9 || i === 14 || i === 18 || i === 19) return s;
@@ -8604,7 +8795,7 @@
                                         const rowColors = { projekat: '#eff6ff', sjeca: '#ecfdf5', otprema: '#fffbeb', zaliha: '#faf5ff' };
                                         const textColors = { projekat: '#1e40af', sjeca: '#065f46', otprema: '#b45309', zaliha: '#7c3aed' };
                                         const sortimenti = vrsta === 'zaliha'
-                                            ? buildCorrectedZaliha(odjel.zaliha)
+                                            ? buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel))
                                             : (odjel[vrsta] || {});
 
                                         return `

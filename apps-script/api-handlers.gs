@@ -4421,3 +4421,136 @@ function handleOtremaciSortimentiByOtpremac(year, month, username, password) {
     return createJsonResponse({ error: err.toString() }, false);
   }
 }
+
+// ========================================
+// PREKLASIRANJE HANDLERS
+// ========================================
+
+function handleAddPreklasiranje(params) {
+  try {
+    const loginResult = JSON.parse(handleLogin(params.username, params.password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+    if (loginResult.type !== 'admin') {
+      return createJsonResponse({ error: "Samo admin može unositi preklasiranja" }, false);
+    }
+
+    const odjel     = (params.odjel || '').trim();
+    const iz        = (params.iz || '').trim();
+    const u         = (params.u || '').trim();
+    const kolicina  = parseFloat(params.kolicina);
+    const napomena  = (params.napomena || '').trim();
+
+    if (!odjel || !iz || !u) {
+      return createJsonResponse({ error: "Odjel, iz i u sortiment su obavezni" }, false);
+    }
+    if (iz === u) {
+      return createJsonResponse({ error: "Iz i u sortiment moraju biti različiti" }, false);
+    }
+    if (isNaN(kolicina) || kolicina <= 0) {
+      return createJsonResponse({ error: "Količina mora biti pozitivan broj" }, false);
+    }
+
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    let sheet = ss.getSheetByName("PREKLASIRANJE");
+    if (!sheet) {
+      sheet = ss.insertSheet("PREKLASIRANJE");
+      const headers = ["DATUM", "ODJEL", "IZ_SORTIMENTA", "U_SORTIMENT", "KOLIČINA", "NAPOMENA", "KORISNIK"];
+      sheet.appendRow(headers);
+      const headerRange = sheet.getRange(1, 1, 1, headers.length);
+      headerRange.setBackground("#1e3a5f");
+      headerRange.setFontColor("white");
+      headerRange.setFontWeight("bold");
+    }
+
+    sheet.appendRow([formatDate(new Date()), odjel, iz, u, kolicina, napomena, loginResult.fullName || params.username]);
+    invalidateAllCache();
+
+    Logger.log('Preklasiranje uneseno: ' + odjel + ' ' + iz + ' -> ' + u + ' ' + kolicina);
+    return createJsonResponse({ success: true, message: "Preklasiranje uneseno" }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleAddPreklasiranje: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+function handleGetPreklasiranja(username, password, odjel) {
+  try {
+    const loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const sheet = ss.getSheetByName("PREKLASIRANJE");
+    if (!sheet) {
+      return createJsonResponse({ success: true, preklasiranja: [] }, true);
+    }
+
+    const data = sheet.getDataRange().getValues();
+    const odjelFilter = odjel ? odjel.trim() : null;
+    const preklasiranja = [];
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row[0]) continue; // prazan red
+      const odjelRow = String(row[1] || '').trim();
+      if (odjelFilter && odjelRow !== odjelFilter) continue;
+      preklasiranja.push({
+        rowIndex: i + 1, // 1-based za deleteRow
+        datum:    String(row[0] || ''),
+        odjel:    odjelRow,
+        iz:       String(row[2] || '').trim(),
+        u:        String(row[3] || '').trim(),
+        kolicina: parseFloat(row[4]) || 0,
+        napomena: String(row[5] || '').trim(),
+        korisnik: String(row[6] || '').trim()
+      });
+    }
+
+    return createJsonResponse({ success: true, preklasiranja: preklasiranja }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleGetPreklasiranja: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+function handleDeletePreklasiranje(params) {
+  try {
+    const loginResult = JSON.parse(handleLogin(params.username, params.password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+    if (loginResult.type !== 'admin') {
+      return createJsonResponse({ error: "Samo admin može brisati preklasiranja" }, false);
+    }
+
+    const rowIndex = parseInt(params.rowIndex);
+    if (isNaN(rowIndex) || rowIndex < 2) {
+      return createJsonResponse({ error: "Neispravan rowIndex" }, false);
+    }
+
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const sheet = ss.getSheetByName("PREKLASIRANJE");
+    if (!sheet) {
+      return createJsonResponse({ error: "PREKLASIRANJE sheet ne postoji" }, false);
+    }
+
+    const lastRow = sheet.getLastRow();
+    if (rowIndex > lastRow) {
+      return createJsonResponse({ error: "Red ne postoji" }, false);
+    }
+
+    sheet.deleteRow(rowIndex);
+    invalidateAllCache();
+
+    return createJsonResponse({ success: true, message: "Preklasiranje obrisano" }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleDeletePreklasiranje: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
