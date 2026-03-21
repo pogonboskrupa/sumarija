@@ -2756,10 +2756,14 @@
                     let statusClass = 'neutral';
                     let statusIcon = '📦';
                     const ukupnoZaliha = odjel.ukupnoZaliha || 0;
-                    // Sumarni prikaz: samo pozitivne vrijednosti (negativne = razlika mjerenja, ne stvarna zaliha)
-                    const _zalihaZbiri = new Set(["Σ ČETINARI", "LIŠĆARI", "UKUPNO Č+L"]);
+                    // Sumarni prikaz: samo pozitivne količine po individualnim sortimentima
+                    // (izuzimaju se zbiri: Σ ČETINARI [idx9], LIŠĆARI [idx18], UKUPNO Č+L [idx19])
                     const pozitivnaZaliha = odjel.zaliha
-                        ? Object.entries(odjel.zaliha).filter(([k, v]) => !_zalihaZbiri.has(k) && v > 0).reduce((s, [, v]) => s + v, 0)
+                        ? sortimentiFull.reduce((s, k, i) => {
+                            if (i === 9 || i === 18 || i === 19) return s;
+                            const v = odjel.zaliha[k] || 0;
+                            return s + (v > 0 ? v : 0);
+                          }, 0)
                         : Math.max(0, ukupnoZaliha);
 
                     if (ukupnoZaliha > 100) {
@@ -8368,6 +8372,13 @@
                 "F/L L", "I L", "II L", "III L", "TRUPCI L",
                 "OGR.D", "OGR.C", "GULE", "LIŠĆ", "UKUPNO"
             ];
+            // Puni nazivi ključeva iz zaliha objekta (moraju se podudarati s backend sortimentiHeader)
+            const sortimentiFull = [
+                "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
+                "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
+                "F/L L", "I L", "II L", "III L", "TRUPCI L",
+                "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
+            ];
 
             let html = '';
 
@@ -8376,10 +8387,14 @@
                 let statusClass = 'neutral';
                 let statusIcon = '📦';
                 const ukupnoZaliha = odjel.ukupnoZaliha || 0;
-                // Sumarni prikaz: samo pozitivne vrijednosti (negativne = razlika mjerenja, ne stvarna zaliha)
-                const _zalihaZbiri = new Set(["Σ ČETINARI", "LIŠĆARI", "UKUPNO Č+L"]);
+                // Sumarni prikaz: samo pozitivne količine po individualnim sortimentima
+                // (izuzimaju se zbiri: idx9=Σ ČETINARI, idx18=LIŠĆARI, idx19=UKUPNO Č+L)
                 const pozitivnaZaliha = odjel.zaliha
-                    ? Object.entries(odjel.zaliha).filter(([k, v]) => !_zalihaZbiri.has(k) && v > 0).reduce((s, [, v]) => s + v, 0)
+                    ? sortimentiFull.reduce((s, k, i) => {
+                        if (i === 9 || i === 18 || i === 19) return s;
+                        const v = odjel.zaliha[k] || 0;
+                        return s + (v > 0 ? v : 0);
+                      }, 0)
                     : Math.max(0, ukupnoZaliha);
 
                 if (ukupnoZaliha > 100) {
