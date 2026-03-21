@@ -2760,7 +2760,7 @@
                     // (izuzimaju se zbiri: Σ ČETINARI [idx9], LIŠĆARI [idx18], UKUPNO Č+L [idx19])
                     const pozitivnaZaliha = odjel.zaliha
                         ? sortimentiFull.reduce((s, k, i) => {
-                            if (i === 9 || i === 18 || i === 19) return s;
+                            if (i === 5 || i === 9 || i === 14 || i === 18 || i === 19) return s;
                             const v = odjel.zaliha[k] || 0;
                             return s + (v > 0 ? v : 0);
                           }, 0)
@@ -8391,7 +8391,7 @@
                 // (izuzimaju se zbiri: idx9=Σ ČETINARI, idx18=LIŠĆARI, idx19=UKUPNO Č+L)
                 const pozitivnaZaliha = odjel.zaliha
                     ? sortimentiFull.reduce((s, k, i) => {
-                        if (i === 9 || i === 18 || i === 19) return s;
+                        if (i === 5 || i === 9 || i === 14 || i === 18 || i === 19) return s;
                         const v = odjel.zaliha[k] || 0;
                         return s + (v > 0 ? v : 0);
                       }, 0)
