@@ -2774,6 +2774,7 @@
                     <div class="stanje-zaliha-card-header" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <h3 style="margin: 0; font-size: 18px; font-weight: 700;">${odjel.odjel}</h3>
+                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.85;">📍 ${odjel.radiliste || 'N/A'}${odjel.zadnjaOtprema ? ' &nbsp;|&nbsp; 🚛 ' + odjel.zadnjaOtprema : ''}</p>
                         </div>
                         <div style="text-align: right;">
                             <div style="font-size: 24px; font-weight: 700;">${ukupnoZaliha.toFixed(2)} m³</div>
