@@ -2070,9 +2070,9 @@
 
                 if (odjeliData && Array.isArray(odjeliData)) {
                     odjeliData.forEach(odjel => {
-                        const zalihaData = odjel.zaliha || {};
+                        const zalihaData = buildCorrectedZaliha(odjel.zaliha);
                         sortimentiPrikaz.forEach(sp => {
-                            zalihaSortimenti[sp.display] += zalihaData[sp.apiKey] || 0;
+                            zalihaSortimenti[sp.display] += Math.max(0, zalihaData[sp.apiKey] || 0);
                         });
                     });
                 }
@@ -2154,9 +2154,9 @@
 
                 if (odjeliData && Array.isArray(odjeliData)) {
                     odjeliData.forEach(odjel => {
-                        const zalihaData = odjel.zaliha || {};
+                        const zalihaData = buildCorrectedZaliha(odjel.zaliha);
                         sortimentiPrikaz.forEach(sp => {
-                            zalihaSortimenti[sp.display] += zalihaData[sp.apiKey] || 0;
+                            zalihaSortimenti[sp.display] += Math.max(0, zalihaData[sp.apiKey] || 0);
                         });
                     });
                 }
