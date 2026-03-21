@@ -2119,6 +2119,8 @@
 
                 bodyElem.innerHTML = bodyHtml;
 
+                renderZalihaDetaljiTabela('stanje-zaliha-detalji-section', odjeliData);
+
             } catch (error) {
                 console.error('Error rendering stanje zaliha tabela:', error);
                 headerElem.innerHTML = '';
@@ -2202,6 +2204,8 @@
                 bodyHtml += '</tr>';
 
                 bodyElem.innerHTML = bodyHtml;
+
+                renderZalihaDetaljiTabela('poslovodja-stanje-zaliha-detalji-section', odjeliData);
 
             } catch (error) {
                 console.error('Error rendering poslovodja stanje zaliha tabela:', error);
@@ -2695,6 +2699,78 @@
         }
 
         // Render Stanje Zaliha cards for poslovođa (identično admin view-u)
+        function renderZalihaDetaljiTabela(containerId, odjeliData, naslov) {
+            const container = document.getElementById(containerId);
+            if (!container || !odjeliData || !odjeliData.length) return;
+
+            const cols = [
+                { label: 'TRUPCI Č',    key: 'TRUPCI Č',    sum: false },
+                { label: 'CEL.DUGA',    key: 'CEL.DUGA',    sum: false },
+                { label: 'CEL.CIJ.',    key: 'CEL.CIJEPANA',sum: false },
+                { label: 'ČETINARI',    key: 'Σ ČETINARI',  sum: true  },
+                { label: 'TRUPCI L',    key: 'TRUPCI L',    sum: false },
+                { label: 'OGR.DUGI',    key: 'OGR.DUGI',    sum: false },
+                { label: 'OGR.CIJ.',    key: 'OGR.CIJEPANI',sum: false },
+                { label: 'LIŠĆARI',     key: 'LIŠĆARI',     sum: true  }
+            ];
+
+            const thStyle = (isSum, isUkupno) => {
+                const bg = isUkupno ? '#064e3b' : isSum ? '#2d5a87' : '#1e3a5f';
+                return `style="color:white;font-weight:600;text-align:center;padding:8px 6px;font-size:12px;background:${bg};border:1px solid #374151;white-space:nowrap;"`;
+            };
+            const tdStyle = (isSum, isUkupno, val) => {
+                const bg = isUkupno ? '#d1fae5' : isSum ? '#ede9fe' : '';
+                const fw = (isSum || isUkupno) ? '700' : '500';
+                const color = val > 0 ? (isUkupno ? '#047857' : '#374151') : '#9ca3af';
+                return `style="text-align:right;padding:8px 6px;font-size:12px;font-weight:${fw};color:${color};border:1px solid #e5e7eb;${bg ? 'background:' + bg + ';' : ''}"`;
+            };
+
+            let headerRow = `<th ${thStyle(false,false)}>ODJEL / RADILIŠTE</th>`;
+            cols.forEach(c => { headerRow += `<th ${thStyle(c.sum, false)}>${c.label}</th>`; });
+            headerRow += `<th ${thStyle(false, true)}>UKUPNO</th>`;
+
+            let bodyRows = '';
+            odjeliData.forEach(odjel => {
+                const z = buildCorrectedZaliha(odjel.zaliha);
+                const cetinari = Math.max(0, z['Σ ČETINARI'] || 0);
+                const liscari  = Math.max(0, z['LIŠĆARI']    || 0);
+                const ukupno   = cetinari + liscari;
+                const naziv = (odjel.radiliste ? odjel.radiliste + ' / ' : '') + (odjel.odjel || '');
+
+                let cells = `<td style="padding:8px 10px;font-size:12px;font-weight:600;color:#1e3a5f;border:1px solid #e5e7eb;white-space:nowrap;">${naziv}</td>`;
+                cols.forEach(c => {
+                    const val = Math.max(0, z[c.key] || 0);
+                    cells += `<td ${tdStyle(c.sum, false, val)}>${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                });
+                cells += `<td ${tdStyle(false, true, ukupno)}>${ukupno > 0 ? ukupno.toFixed(2) : '-'}</td>`;
+                bodyRows += `<tr style="background:white;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">${cells}</tr>`;
+            });
+
+            container.innerHTML = `
+            <details id="${containerId}-details">
+                <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:12px 16px;background:linear-gradient(135deg,#1e3a5f 0%,#2d5a87 100%);color:white;border-radius:8px;font-weight:600;font-size:14px;user-select:none;">
+                    <span id="${containerId}-arrow" style="transition:transform .2s;display:inline-block;">▶</span>
+                    Detaljni prikaz po odjelima — ${odjeliData.length} odjela
+                </summary>
+                <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:2px;border:1px solid #e5e7eb;border-radius:0 0 8px 8px;">
+                    <table style="width:100%;border-collapse:collapse;">
+                        <thead>
+                            <tr style="background:#1e3a5f;">${headerRow}</tr>
+                        </thead>
+                        <tbody>${bodyRows}</tbody>
+                    </table>
+                </div>
+            </details>`;
+
+            const det = document.getElementById(containerId + '-details');
+            const arrow = document.getElementById(containerId + '-arrow');
+            if (det && arrow) {
+                det.addEventListener('toggle', () => {
+                    arrow.style.transform = det.open ? 'rotate(90deg)' : 'rotate(0deg)';
+                });
+            }
+        }
+
         function buildCorrectedZaliha(z) {
             if (!z) return {};
             const pos = k => Math.max(0, z[k] || 0);
