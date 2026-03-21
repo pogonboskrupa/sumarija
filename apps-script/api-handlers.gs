@@ -3841,11 +3841,11 @@ function handleStanjeZaliha(username, password, poslovodja) {
     // MARKER-BASED PARSING (po labelama, ne po offset-ima)
     // ========================================
     // Struktura bloka (6 redova):
-    // R1: A="ODJEL",     B=<naziv>,      C="OPIS",     D:W = zaglavlje sortimenta
-    // R2: A="RADILIŠTE", B=<naziv>,      C="PROJEKAT", D:W = projekat values
-    // R3: A="IZVOĐAČ",   B=<naziv>,      C="SJEČA",    D:W = sječa values
-    // R4: A="POSLOVOĐA", B=<naziv>,      C="OTPREMA",  D:W = otprema values
-    // R5: A="",          B="",           C="ZALIHA",   D:W = zaliha values
+    // R1: A="ODJEL",          B=<naziv>, C="OPIS",     D:W = zaglavlje sortimenta
+    // R2: A="RADILIŠTE",      B=<naziv>, C="PROJEKAT", D:W = projekat values
+    // R3: A="IZVOĐAČ",        B=<naziv>, C="SJEČA",    D:W = sječa values
+    // R4: A="POSLOVOĐA",      B=<naziv>, C="OTPREMA",  D:W = otprema values
+    // R5: A="ZADNJA OTPREMA", B=datum,   C="ZALIHA",   D:W = zaliha values
     // R6: prazan separator
     // ========================================
 
@@ -3879,6 +3879,7 @@ function handleStanjeZaliha(username, password, poslovodja) {
         let radilisteNaziv = '';
         let izvodjacNaziv = '';
         let poslovodjaNaziv = '';
+        let zadnjaOtpremaStr = '';
         let projekatRow = null;
         let sjecaRow = null;
         let otpremaRow = null;
@@ -3902,6 +3903,18 @@ function handleStanjeZaliha(username, password, poslovodja) {
           }
           if (blockColA === 'POSLOVOĐA' || blockColA === 'POSLOVODJA') {
             poslovodjaNaziv = String(blockRow[1] || '').trim();
+          }
+          if (blockColA === 'ZADNJA OTPREMA') {
+            const rawVal = blockRow[1];
+            if (rawVal instanceof Date) {
+              // Formatiraj Date objekt kao DD.MM.YYYY
+              const dd = String(rawVal.getDate()).padStart(2, '0');
+              const mm = String(rawVal.getMonth() + 1).padStart(2, '0');
+              const yyyy = rawVal.getFullYear();
+              zadnjaOtpremaStr = dd + '.' + mm + '.' + yyyy;
+            } else {
+              zadnjaOtpremaStr = String(rawVal || '').trim();
+            }
           }
 
           // Čitaj podatke po markerima u koloni C
@@ -3970,6 +3983,7 @@ function handleStanjeZaliha(username, password, poslovodja) {
           radiliste: radilisteNaziv,
           izvodjac: izvodjacNaziv,
           poslovodja: poslovodjaNaziv,
+          zadnjaOtprema: zadnjaOtpremaStr,
           projekat: projekatData,
           sjeca: sjecaData,
           otprema: otpremaData,
@@ -3986,8 +4000,16 @@ function handleStanjeZaliha(username, password, poslovodja) {
       i++;
     }
 
-    // Sortiraj po zadnjoj otpremi (od najveće ka najmanjoj)
-    odjeli.sort((a, b) => b.ukupnoOtprema - a.ukupnoOtprema);
+    // Sortiraj po datumu zadnje otpreme (najsvježiji odjeli prvi)
+    odjeli.sort((a, b) => {
+      const parse = d => {
+        if (!d) return 0;
+        const p = d.split('.');
+        if (p.length !== 3) return 0;
+        return new Date(p[2], p[1] - 1, p[0]).getTime();
+      };
+      return parse(b.zadnjaOtprema) - parse(a.zadnjaOtprema);
+    });
 
     // Pretvori Set u Array za radilišta
     const radilista = Array.from(radilistaSet).sort();

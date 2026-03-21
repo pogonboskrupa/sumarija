@@ -2734,7 +2734,15 @@
             });
 
             Object.keys(grouped).forEach(function(radiliste) {
-                var odjeli = grouped[radiliste];
+                var odjeli = grouped[radiliste].sort((a, b) => {
+                    const parse = d => {
+                        if (!d) return 0;
+                        const p = d.split('.');
+                        if (p.length !== 3) return 0;
+                        return new Date(p[2], p[1] - 1, p[0]).getTime();
+                    };
+                    return parse(b.zadnjaOtprema) - parse(a.zadnjaOtprema);
+                });
 
                 // Section header za radilište
                 html += `
@@ -8335,14 +8343,14 @@
                 return;
             }
 
-            // Sortiramo od najsvježije sječe prema najstarijoj (DD.MM.YYYY)
+            // Sortiramo od najsvježije otpreme prema najstarijoj (DD.MM.YYYY)
             const parseDatum = d => {
                 if (!d) return 0;
                 const [day, month, year] = d.split('.');
                 return new Date(year, month - 1, day).getTime();
             };
             const sorted = [...data].sort((a, b) =>
-                parseDatum(b.datumZadnjeSjece) - parseDatum(a.datumZadnjeSjece)
+                parseDatum(b.zadnjaOtprema) - parseDatum(a.zadnjaOtprema)
             );
 
             countEl.textContent = `Prikazano: ${sorted.length} odjela`;
@@ -8380,7 +8388,7 @@
                     <div class="stanje-zaliha-card-header" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <h3 style="margin: 0; font-size: 18px; font-weight: 700;">${odjel.odjel}</h3>
-                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.85;">📍 ${odjel.radiliste || 'N/A'}</p>
+                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.85;">📍 ${odjel.radiliste || 'N/A'}${odjel.zadnjaOtprema ? ' &nbsp;|&nbsp; 🚛 ' + odjel.zadnjaOtprema : ''}</p>
                         </div>
                         <div style="text-align: right;">
                             <div style="font-size: 24px; font-weight: 700;">${ukupnoZaliha.toFixed(2)} m³</div>
