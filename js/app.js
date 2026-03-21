@@ -2695,6 +2695,22 @@
         }
 
         // Render Stanje Zaliha cards for poslovođa (identično admin view-u)
+        function buildCorrectedZaliha(z) {
+            if (!z) return {};
+            const pos = k => Math.max(0, z[k] || 0);
+            const trupciC  = pos("F/L Č") + pos("I Č") + pos("II Č") + pos("III Č") + pos("RD");
+            const cetinari = trupciC + pos("CEL.DUGA") + pos("CEL.CIJEPANA") + pos("ŠKART");
+            const trupciL  = pos("F/L L") + pos("I L") + pos("II L") + pos("III L");
+            const liscari  = trupciL + pos("OGR.DUGI") + pos("OGR.CIJEPANI") + pos("GULE");
+            return Object.assign({}, z, {
+                "TRUPCI Č":   trupciC,
+                "Σ ČETINARI": cetinari,
+                "TRUPCI L":   trupciL,
+                "LIŠĆARI":    liscari,
+                "UKUPNO Č+L": cetinari + liscari
+            });
+        }
+
         function renderPoslovodjaStanjeCards(data) {
             const container = document.getElementById('poslovodja-stanje-container');
             const countEl = document.getElementById('poslovodja-stanje-count');
@@ -2766,15 +2782,12 @@
                           }, 0)
                         : Math.max(0, ukupnoZaliha);
 
-                    if (ukupnoZaliha > 100) {
+                    if (pozitivnaZaliha > 100) {
                         statusClass = 'warning';
                         statusIcon = '⚠️';
-                    } else if (ukupnoZaliha > 0) {
+                    } else if (pozitivnaZaliha > 0) {
                         statusClass = 'success';
                         statusIcon = '✅';
-                    } else if (ukupnoZaliha < 0) {
-                        statusClass = 'danger';
-                        statusIcon = '❌';
                     }
 
                     html += `
@@ -2833,7 +2846,9 @@
                                         const labels = { projekat: '📋 PROJEKAT', sjeca: '🪓 SJEČA', otprema: '🚛 OTPREMA', zaliha: '📦 ZALIHA' };
                                         const rowColors = { projekat: '#eff6ff', sjeca: '#ecfdf5', otprema: '#fffbeb', zaliha: '#faf5ff' };
                                         const textColors = { projekat: '#1e40af', sjeca: '#065f46', otprema: '#b45309', zaliha: '#7c3aed' };
-                                        const sortimenti = odjel[vrsta] || {};
+                                        const sortimenti = vrsta === 'zaliha'
+                                            ? buildCorrectedZaliha(odjel.zaliha)
+                                            : (odjel[vrsta] || {});
 
                                         return `
                                         <tr style="background: ${rowColors[vrsta]};">
@@ -8397,15 +8412,12 @@
                       }, 0)
                     : Math.max(0, ukupnoZaliha);
 
-                if (ukupnoZaliha > 100) {
+                if (pozitivnaZaliha > 100) {
                     statusClass = 'warning';
                     statusIcon = '⚠️';
-                } else if (ukupnoZaliha > 0) {
+                } else if (pozitivnaZaliha > 0) {
                     statusClass = 'success';
                     statusIcon = '✅';
-                } else if (ukupnoZaliha < 0) {
-                    statusClass = 'danger';
-                    statusIcon = '❌';
                 }
 
                 html += `
@@ -8464,7 +8476,9 @@
                                         const labels = { projekat: '📋 PROJEKAT', sjeca: '🪓 SJEČA', otprema: '🚛 OTPREMA', zaliha: '📦 ZALIHA' };
                                         const rowColors = { projekat: '#eff6ff', sjeca: '#ecfdf5', otprema: '#fffbeb', zaliha: '#faf5ff' };
                                         const textColors = { projekat: '#1e40af', sjeca: '#065f46', otprema: '#b45309', zaliha: '#7c3aed' };
-                                        const sortimenti = odjel[vrsta] || {};
+                                        const sortimenti = vrsta === 'zaliha'
+                                            ? buildCorrectedZaliha(odjel.zaliha)
+                                            : (odjel[vrsta] || {});
 
                                         return `
                                         <tr style="background: ${rowColors[vrsta]};">
