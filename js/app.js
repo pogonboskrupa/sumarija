@@ -2756,6 +2756,11 @@
                     let statusClass = 'neutral';
                     let statusIcon = '📦';
                     const ukupnoZaliha = odjel.ukupnoZaliha || 0;
+                    // Sumarni prikaz: samo pozitivne vrijednosti (negativne = razlika mjerenja, ne stvarna zaliha)
+                    const _zalihaZbiri = new Set(["Σ ČETINARI", "LIŠĆARI", "UKUPNO Č+L"]);
+                    const pozitivnaZaliha = odjel.zaliha
+                        ? Object.entries(odjel.zaliha).filter(([k, v]) => !_zalihaZbiri.has(k) && v > 0).reduce((s, [, v]) => s + v, 0)
+                        : Math.max(0, ukupnoZaliha);
 
                     if (ukupnoZaliha > 100) {
                         statusClass = 'warning';
@@ -2777,7 +2782,7 @@
                             <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.85;">📍 ${odjel.radiliste || 'N/A'}${odjel.zadnjaOtprema ? ' &nbsp;|&nbsp; 🚛 ' + odjel.zadnjaOtprema : ''}</p>
                         </div>
                         <div style="text-align: right;">
-                            <div style="font-size: 24px; font-weight: 700;">${ukupnoZaliha.toFixed(2)} m³</div>
+                            <div style="font-size: 24px; font-weight: 700;">${pozitivnaZaliha.toFixed(2)} m³</div>
                             <div style="font-size: 12px; opacity: 0.85;">${statusIcon} Zaliha</div>
                         </div>
                     </div>
@@ -2798,7 +2803,7 @@
                         </div>
                         <div style="background: white; padding: 12px 16px; text-align: center;">
                             <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">📦 Zaliha</div>
-                            <div style="font-size: 16px; font-weight: 700; color: ${ukupnoZaliha >= 0 ? '#059669' : '#dc2626'};">${ukupnoZaliha.toFixed(2)}</div>
+                            <div style="font-size: 16px; font-weight: 700; color: #059669;">${pozitivnaZaliha.toFixed(2)}</div>
                         </div>
                     </div>
 
@@ -8371,6 +8376,11 @@
                 let statusClass = 'neutral';
                 let statusIcon = '📦';
                 const ukupnoZaliha = odjel.ukupnoZaliha || 0;
+                // Sumarni prikaz: samo pozitivne vrijednosti (negativne = razlika mjerenja, ne stvarna zaliha)
+                const _zalihaZbiri = new Set(["Σ ČETINARI", "LIŠĆARI", "UKUPNO Č+L"]);
+                const pozitivnaZaliha = odjel.zaliha
+                    ? Object.entries(odjel.zaliha).filter(([k, v]) => !_zalihaZbiri.has(k) && v > 0).reduce((s, [, v]) => s + v, 0)
+                    : Math.max(0, ukupnoZaliha);
 
                 if (ukupnoZaliha > 100) {
                     statusClass = 'warning';
@@ -8392,7 +8402,7 @@
                             <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.85;">📍 ${odjel.radiliste || 'N/A'}${odjel.zadnjaOtprema ? ' &nbsp;|&nbsp; 🚛 ' + odjel.zadnjaOtprema : ''}</p>
                         </div>
                         <div style="text-align: right;">
-                            <div style="font-size: 24px; font-weight: 700;">${ukupnoZaliha.toFixed(2)} m³</div>
+                            <div style="font-size: 24px; font-weight: 700;">${pozitivnaZaliha.toFixed(2)} m³</div>
                             <div style="font-size: 12px; opacity: 0.85;">${statusIcon} Zaliha</div>
                         </div>
                     </div>
@@ -8413,7 +8423,7 @@
                         </div>
                         <div style="background: white; padding: 12px 16px; text-align: center;">
                             <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">📦 Zaliha</div>
-                            <div style="font-size: 16px; font-weight: 700; color: ${ukupnoZaliha >= 0 ? '#059669' : '#dc2626'};">${ukupnoZaliha.toFixed(2)}</div>
+                            <div style="font-size: 16px; font-weight: 700; color: #059669;">${pozitivnaZaliha.toFixed(2)}</div>
                         </div>
                     </div>
 
