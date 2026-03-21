@@ -2699,52 +2699,68 @@
         }
 
         // Render Stanje Zaliha cards for poslovođa (identično admin view-u)
-        function renderZalihaDetaljiTabela(containerId, odjeliData, naslov) {
+        function renderZalihaDetaljiTabela(containerId, odjeliData) {
             const container = document.getElementById(containerId);
             if (!container || !odjeliData || !odjeliData.length) return;
 
             const cols = [
-                { label: 'TRUPCI Č',    key: 'TRUPCI Č',    sum: false },
-                { label: 'CEL.DUGA',    key: 'CEL.DUGA',    sum: false },
-                { label: 'CEL.CIJ.',    key: 'CEL.CIJEPANA',sum: false },
-                { label: 'ČETINARI',    key: 'Σ ČETINARI',  sum: true  },
-                { label: 'TRUPCI L',    key: 'TRUPCI L',    sum: false },
-                { label: 'OGR.DUGI',    key: 'OGR.DUGI',    sum: false },
-                { label: 'OGR.CIJ.',    key: 'OGR.CIJEPANI',sum: false },
-                { label: 'LIŠĆARI',     key: 'LIŠĆARI',     sum: true  }
+                { label: 'TRUPCI Č',  key: 'TRUPCI Č',    sum: false },
+                { label: 'CEL.DUGA',  key: 'CEL.DUGA',    sum: false },
+                { label: 'CEL.CIJ.', key: 'CEL.CIJEPANA', sum: false },
+                { label: 'ČETINARI',  key: 'Σ ČETINARI',  sum: true  },
+                { label: 'TRUPCI L',  key: 'TRUPCI L',    sum: false },
+                { label: 'OGR.DUGI',  key: 'OGR.DUGI',    sum: false },
+                { label: 'OGR.CIJ.', key: 'OGR.CIJEPANI', sum: false },
+                { label: 'LIŠĆARI',   key: 'LIŠĆARI',     sum: true  }
             ];
 
-            const thStyle = (isSum, isUkupno) => {
+            // Pre-compute values for each odjel
+            const rows = odjeliData.map(odjel => {
+                const z = buildCorrectedZaliha(odjel.zaliha);
+                const values = {};
+                cols.forEach(c => { values[c.key] = Math.max(0, z[c.key] || 0); });
+                values['__ukupno'] = values['Σ ČETINARI'] + values['LIŠĆARI'];
+                values['__naziv'] = (odjel.radiliste ? odjel.radiliste + ' / ' : '') + (odjel.odjel || '');
+                return values;
+            });
+
+            let sortKey = null;
+            let sortDir = -1; // -1 = desc
+
+            const thBase = (isSum, isUkupno) => {
                 const bg = isUkupno ? '#064e3b' : isSum ? '#2d5a87' : '#1e3a5f';
-                return `style="color:white;font-weight:600;text-align:center;padding:8px 6px;font-size:12px;background:${bg};border:1px solid #374151;white-space:nowrap;"`;
+                return `cursor:pointer;color:white;font-weight:600;text-align:center;padding:8px 6px;font-size:12px;background:${bg};border:1px solid #374151;white-space:nowrap;user-select:none;`;
             };
             const tdStyle = (isSum, isUkupno, val) => {
                 const bg = isUkupno ? '#d1fae5' : isSum ? '#ede9fe' : '';
                 const fw = (isSum || isUkupno) ? '700' : '500';
                 const color = val > 0 ? (isUkupno ? '#047857' : '#374151') : '#9ca3af';
-                return `style="text-align:right;padding:8px 6px;font-size:12px;font-weight:${fw};color:${color};border:1px solid #e5e7eb;${bg ? 'background:' + bg + ';' : ''}"`;
+                return `text-align:right;padding:8px 6px;font-size:12px;font-weight:${fw};color:${color};border:1px solid #e5e7eb;${bg ? 'background:' + bg + ';' : ''}`;
             };
 
-            let headerRow = `<th ${thStyle(false,false)}>ODJEL / RADILIŠTE</th>`;
-            cols.forEach(c => { headerRow += `<th ${thStyle(c.sum, false)}>${c.label}</th>`; });
-            headerRow += `<th ${thStyle(false, true)}>UKUPNO</th>`;
-
-            let bodyRows = '';
-            odjeliData.forEach(odjel => {
-                const z = buildCorrectedZaliha(odjel.zaliha);
-                const cetinari = Math.max(0, z['Σ ČETINARI'] || 0);
-                const liscari  = Math.max(0, z['LIŠĆARI']    || 0);
-                const ukupno   = cetinari + liscari;
-                const naziv = (odjel.radiliste ? odjel.radiliste + ' / ' : '') + (odjel.odjel || '');
-
-                let cells = `<td style="padding:8px 10px;font-size:12px;font-weight:600;color:#1e3a5f;border:1px solid #e5e7eb;white-space:nowrap;">${naziv}</td>`;
+            function buildHeaderRow(activeSortKey) {
+                let h = `<th style="${thBase(false,false)}">ODJEL / RADILIŠTE</th>`;
                 cols.forEach(c => {
-                    const val = Math.max(0, z[c.key] || 0);
-                    cells += `<td ${tdStyle(c.sum, false, val)}>${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                    const indicator = activeSortKey === c.key ? ' ▼' : '';
+                    h += `<th data-sortkey="${c.key}" style="${thBase(c.sum, false)}">${c.label}${indicator}</th>`;
                 });
-                cells += `<td ${tdStyle(false, true, ukupno)}>${ukupno > 0 ? ukupno.toFixed(2) : '-'}</td>`;
-                bodyRows += `<tr style="background:white;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">${cells}</tr>`;
-            });
+                const indicator = activeSortKey === '__ukupno' ? ' ▼' : '';
+                h += `<th data-sortkey="__ukupno" style="${thBase(false, true)}">UKUPNO${indicator}</th>`;
+                return h;
+            }
+
+            function buildBodyRows(sortedRows) {
+                return sortedRows.map(r => {
+                    let cells = `<td style="padding:8px 10px;font-size:12px;font-weight:600;color:#1e3a5f;border:1px solid #e5e7eb;white-space:nowrap;">${r['__naziv']}</td>`;
+                    cols.forEach(c => {
+                        const val = r[c.key];
+                        cells += `<td style="${tdStyle(c.sum, false, val)}">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                    });
+                    const u = r['__ukupno'];
+                    cells += `<td style="${tdStyle(false, true, u)}">${u > 0 ? u.toFixed(2) : '-'}</td>`;
+                    return `<tr style="background:white;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">${cells}</tr>`;
+                }).join('');
+            }
 
             container.innerHTML = `
             <details id="${containerId}-details">
@@ -2754,19 +2770,34 @@
                 </summary>
                 <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:2px;border:1px solid #e5e7eb;border-radius:0 0 8px 8px;">
                     <table style="width:100%;border-collapse:collapse;">
-                        <thead>
-                            <tr style="background:#1e3a5f;">${headerRow}</tr>
-                        </thead>
-                        <tbody>${bodyRows}</tbody>
+                        <thead id="${containerId}-thead"><tr style="background:#1e3a5f;">${buildHeaderRow(null)}</tr></thead>
+                        <tbody id="${containerId}-tbody">${buildBodyRows(rows)}</tbody>
                     </table>
                 </div>
             </details>`;
 
+            // Toggle arrow
             const det = document.getElementById(containerId + '-details');
             const arrow = document.getElementById(containerId + '-arrow');
             if (det && arrow) {
                 det.addEventListener('toggle', () => {
                     arrow.style.transform = det.open ? 'rotate(90deg)' : 'rotate(0deg)';
+                });
+            }
+
+            // Column sort
+            const thead = document.getElementById(containerId + '-thead');
+            const tbody = document.getElementById(containerId + '-tbody');
+            if (thead && tbody) {
+                thead.addEventListener('click', e => {
+                    const th = e.target.closest('th[data-sortkey]');
+                    if (!th) return;
+                    const key = th.dataset.sortkey;
+                    sortDir = sortKey === key ? -sortDir : -1;
+                    sortKey = key;
+                    const sorted = rows.slice().sort((a, b) => sortDir * (b[key] - a[key]));
+                    thead.querySelector('tr').innerHTML = buildHeaderRow(sortKey);
+                    tbody.innerHTML = buildBodyRows(sorted);
                 });
             }
         }
