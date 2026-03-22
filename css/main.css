@@ -2826,3 +2826,64 @@
             grid-template-columns: 1fr !important;
         }
 
+
+        /* ──────────────────────────────────────────────────────────── */
+        /* 📱 KUBIKATOR: Android/iOS adaptacija za terenski rad        */
+        /* ──────────────────────────────────────────────────────────── */
+
+        /* Forma: jednokolonski layout — sve polja puna širina */
+        body.force-android-view .kub-form-grid {
+            grid-template-columns: 1fr !important;
+        }
+        body.force-android-view .kub-form-grid > div {
+            grid-column: 1 / -1 !important;
+        }
+
+        /* Inputi i selecti: veće touch area */
+        body.force-android-view #kub-precnik,
+        body.force-android-view #kub-duzina,
+        body.force-android-view #kub-napomena,
+        body.force-android-view #kub-odjel,
+        body.force-android-view #kub-sortiment {
+            padding: 16px 14px !important;
+            font-size: 18px !important;
+        }
+
+        /* Vrsta drveta dugmad: viša */
+        body.force-android-view #kub-btn-cetinari,
+        body.force-android-view #kub-btn-liscari {
+            padding: 18px 8px !important;
+            font-size: 18px !important;
+        }
+
+        /* DODAJ dugme: uvećan */
+        body.force-android-view #kub-dodaj-btn {
+            padding: 18px !important;
+            font-size: 20px !important;
+        }
+
+        /* Akcijska dugmad na dnu (ŠTAMPAJ / Obriši sve) */
+        body.force-android-view #kubikator-content .btn {
+            padding: 18px !important;
+            font-size: 17px !important;
+        }
+
+        /* Tabela: veći redovi i font */
+        body.force-android-view #kub-tabela th,
+        body.force-android-view #kub-tabela td {
+            padding: 14px 10px !important;
+            font-size: 15px !important;
+        }
+
+        /* Akcijska dugmad u tabeli (✏️ 🗑️): veće touch targete */
+        body.force-android-view .kub-action-btn {
+            padding: 9px 14px !important;
+            font-size: 16px !important;
+        }
+
+        /* Sakrij manje važne kolone u Android prikazu */
+        body.force-android-view .kub-col-rb,
+        body.force-android-view .kub-col-datum,
+        body.force-android-view .kub-col-napomena {
+            display: none !important;
+        }

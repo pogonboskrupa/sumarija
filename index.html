@@ -2329,7 +2329,7 @@
                 <!-- Forma za unos -->
                 <div id="kub-forma-section" class="card" style="margin-bottom:20px;">
                     <h3 style="margin:0 0 16px 0;color:#065f46;font-size:16px;">Novi unos</h3>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="kub-form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
 
                         <div style="grid-column:1/-1;">
                             <label style="display:block;margin-bottom:8px;font-weight:600;font-size:14px;">Vrsta drveta</label>
@@ -2441,15 +2441,15 @@
                         <table id="kub-tabela" style="width:100%;border-collapse:collapse;font-size:13px;min-width:600px;">
                             <thead>
                                 <tr style="background:#f9fafb;border-bottom:2px solid #d1d5db;">
-                                    <th style="padding:10px 8px;text-align:center;color:#6b7280;font-weight:600;">#</th>
-                                    <th style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Datum/Vrij.</th>
-                                    <th style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Odjel</th>
-                                    <th style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Sortiment</th>
-                                    <th style="padding:10px 8px;text-align:center;color:#374151;font-weight:600;">Prečnik (cm)</th>
-                                    <th style="padding:10px 8px;text-align:center;color:#374151;font-weight:600;">Dužina (m)</th>
-                                    <th style="padding:10px 8px;text-align:right;color:#047857;font-weight:700;">m³</th>
-                                    <th style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Napomena</th>
-                                    <th style="padding:10px 8px;text-align:center;color:#374151;font-weight:600;">Akcije</th>
+                                    <th class="kub-col-rb"       style="padding:10px 8px;text-align:center;color:#6b7280;font-weight:600;">#</th>
+                                    <th class="kub-col-datum"    style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Datum/Vrij.</th>
+                                    <th                          style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Odjel</th>
+                                    <th                          style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Sortiment</th>
+                                    <th                          style="padding:10px 8px;text-align:center;color:#374151;font-weight:600;">Prečnik (cm)</th>
+                                    <th                          style="padding:10px 8px;text-align:center;color:#374151;font-weight:600;">Dužina (m)</th>
+                                    <th                          style="padding:10px 8px;text-align:right;color:#047857;font-weight:700;">m³</th>
+                                    <th class="kub-col-napomena" style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Napomena</th>
+                                    <th                          style="padding:10px 8px;text-align:center;color:#374151;font-weight:600;">Akcije</th>
                                 </tr>
                             </thead>
                             <tbody id="kub-tabela-tbody">

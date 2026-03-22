@@ -283,17 +283,17 @@ function _kubRenderTabela() {
         const isEditing = u.id === _kubEditingId;
         const rowBg = isEditing ? 'background:#fffbeb;' : '';
         return `<tr style="border-bottom:1px solid #e5e7eb;${rowBg}">
-            <td style="padding:10px 8px;text-align:center;color:#9ca3af;font-size:12px;">${rb}</td>
-            <td style="padding:10px 8px;font-size:12px;white-space:nowrap;">${_kubFmtTs(u.ts)}</td>
-            <td style="padding:10px 8px;font-size:12px;color:#374151;">${u.odjel || '<span style="color:#d1d5db;">—</span>'}</td>
-            <td style="padding:10px 8px;font-weight:600;color:#065f46;">${u.sortiment || '<span style="color:#d1d5db;">—</span>'}</td>
-            <td style="padding:10px 8px;text-align:center;">${u.precnik}</td>
-            <td style="padding:10px 8px;text-align:center;">${u.duzina.toFixed(2)}</td>
-            <td style="padding:10px 8px;text-align:right;font-weight:700;color:#047857;">${u.zapremina.toFixed(2)}</td>
-            <td style="padding:10px 8px;font-size:12px;color:#6b7280;">${u.napomena || ''}</td>
+            <td class="kub-col-rb"       style="padding:10px 8px;text-align:center;color:#9ca3af;font-size:12px;">${rb}</td>
+            <td class="kub-col-datum"    style="padding:10px 8px;font-size:12px;white-space:nowrap;">${_kubFmtTs(u.ts)}</td>
+            <td                          style="padding:10px 8px;font-size:12px;color:#374151;">${u.odjel || '<span style="color:#d1d5db;">—</span>'}</td>
+            <td                          style="padding:10px 8px;font-weight:600;color:#065f46;">${u.sortiment || '<span style="color:#d1d5db;">—</span>'}</td>
+            <td                          style="padding:10px 8px;text-align:center;">${u.precnik}</td>
+            <td                          style="padding:10px 8px;text-align:center;">${u.duzina.toFixed(2)}</td>
+            <td                          style="padding:10px 8px;text-align:right;font-weight:700;color:#047857;">${u.zapremina.toFixed(2)}</td>
+            <td class="kub-col-napomena" style="padding:10px 8px;font-size:12px;color:#6b7280;">${u.napomena || ''}</td>
             <td style="padding:10px 6px;text-align:center;white-space:nowrap;">
-                <button onclick="kubikatorIzmijeni(${u.id})" style="padding:5px 10px;font-size:12px;background:#2563eb;color:white;border:none;border-radius:5px;cursor:pointer;margin-right:4px;">✏️</button>
-                <button onclick="kubikatorObrisi(${u.id})" style="padding:5px 10px;font-size:12px;background:#dc2626;color:white;border:none;border-radius:5px;cursor:pointer;">🗑️</button>
+                <button class="kub-action-btn" onclick="kubikatorIzmijeni(${u.id})" style="padding:5px 10px;font-size:12px;background:#2563eb;color:white;border:none;border-radius:5px;cursor:pointer;margin-right:4px;">✏️</button>
+                <button class="kub-action-btn" onclick="kubikatorObrisi(${u.id})"   style="padding:5px 10px;font-size:12px;background:#dc2626;color:white;border:none;border-radius:5px;cursor:pointer;">🗑️</button>
             </td>
         </tr>`;
     }).join('');
