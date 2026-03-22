@@ -2739,9 +2739,8 @@
             };
             const tdStyle = (isSum, isUkupno, val) => {
                 const bg = isUkupno ? '#d1fae5' : isSum ? '#ede9fe' : '';
-                const fw = (isSum || isUkupno) ? '700' : '500';
                 const color = val < 0 ? '#dc2626' : val > 0 ? (isUkupno ? '#047857' : '#374151') : '#9ca3af';
-                return `text-align:right;padding:8px 6px;font-size:12px;font-weight:${fw};color:${color};border:1px solid #e5e7eb;${bg ? 'background:' + bg + ';' : ''}`;
+                return `text-align:right;padding:8px 6px;font-size:12px;font-weight:500;color:${color};border:1px solid #e5e7eb;${bg ? 'background:' + bg + ';' : ''}`;
             };
 
             function buildHeaderRow(activeSortKey) {
@@ -8505,11 +8504,19 @@
         function renderPreklasiranjaTabelaAdmin() {
             const container = document.getElementById('preklasiranje-tabela-container');
             if (!container) return;
-            if (!preklasiranjaPodaci.length) {
-                container.innerHTML = '<p style="color:#6b7280;font-size:13px;">Nema unesenih preklasiranja.</p>';
+            const count = preklasiranjaPodaci.length;
+            const detailsOpen = `<details id="preklasiranje-detalji-details">
+                <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:12px 16px;background:linear-gradient(135deg,#1e3a5f 0%,#2d5a87 100%);color:white;border-radius:8px;font-weight:600;font-size:14px;user-select:none;">
+                    <span id="preklasiranje-detalji-arrow" style="transition:transform .2s;display:inline-block;">▶</span>
+                    Detaljan prikaz — ${count} ${count === 1 ? 'unos' : 'unosa'}
+                </summary>
+                <div style="border:1px solid #e5e7eb;border-radius:0 0 8px 8px;margin-top:2px;">`;
+            if (!count) {
+                container.innerHTML = detailsOpen + '<p style="padding:16px;color:#6b7280;font-size:13px;margin:0;">Nema unesenih preklasiranja.</p></div></details>';
+                setupPreklDetToggle();
                 return;
             }
-            let html = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
+            let html = detailsOpen + `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
                 <thead><tr style="background:#1e3a5f;color:white;">
                     <th style="padding:8px 10px;text-align:left;border:1px solid #374151;">Tip</th>
                     <th style="padding:8px 10px;text-align:left;border:1px solid #374151;">Datum</th>
@@ -8541,8 +8548,19 @@
                     </td>
                 </tr>`;
             });
-            html += '</tbody></table></div>';
+            html += '</tbody></table></div></div></details>';
             container.innerHTML = html;
+            setupPreklDetToggle();
+        }
+
+        function setupPreklDetToggle() {
+            const det = document.getElementById('preklasiranje-detalji-details');
+            const arrow = document.getElementById('preklasiranje-detalji-arrow');
+            if (det && arrow) {
+                det.addEventListener('toggle', () => {
+                    arrow.style.transform = det.open ? 'rotate(90deg)' : 'rotate(0deg)';
+                });
+            }
         }
 
         // Ažurira modal kada korisnik mijenja tip (Preklasiranje / Razlika mjerenja)
