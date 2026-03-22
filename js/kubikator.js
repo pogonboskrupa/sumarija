@@ -34,16 +34,22 @@ function initKubikator() {
     _kubPopuniOdjeli();
     _kubRenderAll();
 
-    ['kub-precnik', 'kub-duzina', 'kub-napomena'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('keydown', e => {
-            if (e.key === 'Enter') { e.preventDefault(); kubikatorDodaj(); }
-        });
+    // Enter tok: prečnik → dužina → dodaj
+    const precnikEl = document.getElementById('kub-precnik');
+    const duzinaEl  = document.getElementById('kub-duzina');
+    const napomEl   = document.getElementById('kub-napomena');
+    if (precnikEl) precnikEl.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); duzinaEl && duzinaEl.focus(); }
     });
-    const sortSel = document.getElementById('kub-sortiment');
-    if (sortSel) sortSel.addEventListener('keydown', e => {
-        if (e.key === 'Enter') { e.preventDefault(); document.getElementById('kub-precnik').focus(); }
+    if (duzinaEl) duzinaEl.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); kubikatorDodaj(); }
     });
+    if (napomEl) napomEl.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); kubikatorDodaj(); }
+    });
+
+    // Fokus odmah na prečnik
+    precnikEl && precnikEl.focus();
 }
 
 // ─── Popuni odjel dropdown iz cached stanje-zaliha podataka ──
@@ -191,30 +197,6 @@ function kubikatorSetFilter(val) {
     _kubRenderTabela();
 }
 
-// ─── CSV export ───────────────────────────────────────────────
-function kubikatorExportCSV() {
-    if (_kubUnosi.length === 0) { _kubAlert('Nema unosa za export.'); return; }
-    const header = ['R.B.', 'Datum/Vrijime', 'Odjel', 'Sortiment', 'Precnik_cm', 'Duzina_m', 'Zapremina_m3', 'Napomena'];
-    const rows = _kubUnosi.map((u, i) => [
-        i + 1,
-        _kubFmtTs(u.ts),
-        u.odjel || '',
-        u.sortiment || '',
-        u.precnik,
-        u.duzina.toFixed(2),
-        u.zapremina.toFixed(2),
-        u.napomena || ''
-    ]);
-    const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\r\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url;
-    a.download = `kubikator_${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a); a.click();
-    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
-}
-
 // ─── Privatne funkcije ────────────────────────────────────────
 
 function _kubSacuvaj() {
@@ -236,12 +218,8 @@ function _kubResetFormu() {
     document.getElementById('kub-napomena').value  = '';
     document.getElementById('kub-dodaj-btn').textContent = '➕ DODAJ';
     document.getElementById('kub-odustani-btn').style.display = 'none';
-    if (!_kubVrsta) {
-        const btnC = document.getElementById('kub-btn-cetinari');
-        if (btnC) btnC.focus();
-    } else {
-        document.getElementById('kub-sortiment').focus();
-    }
+    const precnikEl = document.getElementById('kub-precnik');
+    if (precnikEl) precnikEl.focus();
 }
 
 function _kubRenderAll() {

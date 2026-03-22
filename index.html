@@ -2324,11 +2324,6 @@
                         <h1>📐 Kubikator</h1>
                         <p>Terensko kubiciranje drvnih sortimenata — Huberova formula</p>
                     </div>
-                    <div class="page-header-right" style="display:flex;gap:10px;flex-wrap:wrap;">
-                        <button class="btn btn-primary" onclick="printKubikator()" style="font-weight:600;">🖨️ ŠTAMPAJ</button>
-                        <button class="btn btn-secondary" onclick="kubikatorExportCSV()">📥 CSV</button>
-                        <button class="btn btn-secondary" onclick="kubikatorOcistiSve()" style="color:#dc2626;border-color:#dc2626;">🗑️ Obriši sve</button>
-                    </div>
                 </div>
 
                 <!-- Forma za unos -->
@@ -2410,7 +2405,7 @@
                         </div>
                         <div style="text-align:center;padding:14px;background:#f0fdf4;border-radius:8px;border:2px solid #6ee7b7;">
                             <div style="font-size:12px;color:#065f46;font-weight:600;text-transform:uppercase;margin-bottom:4px;">Ukupno m³</div>
-                            <div style="font-size:30px;font-weight:700;color:#047857;"><span id="kub-ukupno-m3">0.000</span></div>
+                            <div style="font-size:30px;font-weight:700;color:#047857;"><span id="kub-ukupno-m3">0.00</span></div>
                         </div>
                     </div>
 
@@ -2462,6 +2457,12 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+
+                <!-- Akcije na dnu -->
+                <div style="display:flex;gap:12px;margin-top:20px;padding-top:4px;">
+                    <button class="btn btn-primary" onclick="printKubikator()" style="font-weight:600;flex:1;padding:14px;">🖨️ ŠTAMPAJ</button>
+                    <button class="btn btn-secondary" onclick="kubikatorOcistiSve()" style="color:#dc2626;border-color:#dc2626;flex:1;padding:14px;">🗑️ Obriši sve</button>
                 </div>
 
             </div>
