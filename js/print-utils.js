@@ -1,8 +1,70 @@
 // ============================================================
 // 🖨️ PRINT UTILS — Profesionalni ispis tabela
 // printActiveView(contentId, tabLabel, accentColor)
-// printMjesecniCard(tip)  — za Sječa/otprema tab (bez podmenija)
+// printMjesecniCard(tip)       — za Sječa/otprema tab
+// printStanjeZaliha()          — za Stanje zaliha tab
 // ============================================================
+
+function printStanjeZaliha() {
+    const accent = '#1e3a5f';
+    const year = new Date().getFullYear();
+    const datumStampe   = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const vrijemeStampe = new Date().toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' });
+
+    // Radilište filter kontekst
+    const radilisteEl = document.getElementById('stanje-zaliha-radiliste');
+    const radiliste = radilisteEl && radilisteEl.value ? radilisteEl.value : 'Sva radilišta';
+
+    // 1. Agregirana tabela
+    const glavnaTabela = document.getElementById('stanje-zaliha-tabela');
+
+    // 2. Detaljna tabela po odjelima (unutar <details>)
+    const detaljniThead = document.getElementById('stanje-zaliha-detalji-section-thead');
+    const detaljniTabela = detaljniThead ? detaljniThead.closest('table') : null;
+
+    const hasGlavna   = glavnaTabela && glavnaTabela.querySelector('tbody tr td');
+    const hasDetaljna = detaljniTabela && detaljniTabela.querySelector('tbody tr td');
+
+    if (!hasGlavna && !hasDetaljna) {
+        alert('Nema podataka za štampanje. Molimo sačekajte učitavanje.');
+        return;
+    }
+
+    let sectionsHtml = '';
+
+    if (hasGlavna) {
+        sectionsHtml += `
+        <div class="print-section">
+            <div class="section-header" style="border-left:4px solid ${accent};">
+                Pregled zaliha po sortimentima — ${radiliste}
+            </div>
+            ${tableToCleanHtml(glavnaTabela)}
+        </div>`;
+    }
+
+    if (hasDetaljna) {
+        sectionsHtml += `
+        <div class="print-section" style="page-break-before:always;">
+            <div class="section-header" style="border-left:4px solid ${accent};">
+                Detaljni prikaz po odjelima — ${radiliste}
+            </div>
+            ${tableToCleanHtml(detaljniTabela)}
+        </div>`;
+    }
+
+    const win = window.open('', '_blank', 'width=1200,height=900,scrollbars=yes');
+    win.document.write(buildPrintDocument({
+        tabLabel: 'Stanje Zaliha',
+        activeTabLabel: radiliste !== 'Sva radilišta' ? radiliste : 'Sve odjele',
+        accentColor: accent,
+        monthName: String(year),
+        year: '',
+        datumStampe,
+        vrijemeStampe,
+        sectionsHtml
+    }));
+    win.document.close();
+}
 
 function printMjesecniCard(tip) {
     const isSjeca = tip === 'sjeca';
