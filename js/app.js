@@ -2073,7 +2073,7 @@
                     odjeliData.forEach(odjel => {
                         const zalihaData = getNetZaliha(odjel);
                         sortimentiPrikaz.forEach(sp => {
-                            zalihaSortimenti[sp.display] += zalihaData[sp.apiKey] || 0;
+                            zalihaSortimenti[sp.display] += Math.max(0, zalihaData[sp.apiKey] || 0);
                         });
                     });
                 }
@@ -2159,7 +2159,7 @@
                     odjeliData.forEach(odjel => {
                         const zalihaData = getNetZaliha(odjel);
                         sortimentiPrikaz.forEach(sp => {
-                            zalihaSortimenti[sp.display] += zalihaData[sp.apiKey] || 0;
+                            zalihaSortimenti[sp.display] += Math.max(0, zalihaData[sp.apiKey] || 0);
                         });
                     });
                 }
