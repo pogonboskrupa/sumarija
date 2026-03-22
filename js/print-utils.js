@@ -34,7 +34,7 @@ function printKubikator() {
         <tr>
             <td style="padding:7px 10px;font-weight:600;">${s}</td>
             <td style="padding:7px 10px;text-align:center;">${mapa[s].kom}</td>
-            <td style="padding:7px 10px;text-align:right;font-weight:700;color:${accent};">${mapa[s].m3.toFixed(3)}</td>
+            <td style="padding:7px 10px;text-align:right;font-weight:700;color:${accent};">${mapa[s].m3.toFixed(2)}</td>
         </tr>`).join('');
 
     const rekapHtml = `
@@ -51,7 +51,7 @@ function printKubikator() {
                 <tr style="background:#f0fdf4;border-top:2px solid ${accent};">
                     <td style="padding:9px 10px;font-weight:700;">UKUPNO</td>
                     <td style="padding:9px 10px;text-align:center;font-weight:700;">${unosi.length}</td>
-                    <td style="padding:9px 10px;text-align:right;font-weight:700;color:${accent};">${ukupnoM3.toFixed(3)}</td>
+                    <td style="padding:9px 10px;text-align:right;font-weight:700;color:${accent};">${ukupnoM3.toFixed(2)}</td>
                 </tr>
             </tbody>
         </table>`;
@@ -64,7 +64,7 @@ function printKubikator() {
             <td style="padding:7px 8px;font-weight:600;">${u.sortiment}</td>
             <td style="padding:7px 8px;text-align:center;">${u.precnik}</td>
             <td style="padding:7px 8px;text-align:center;">${u.duzina.toFixed(2)}</td>
-            <td style="padding:7px 8px;text-align:right;font-weight:700;color:${accent};">${u.zapremina.toFixed(3)}</td>
+            <td style="padding:7px 8px;text-align:right;font-weight:700;color:${accent};">${u.zapremina.toFixed(2)}</td>
             <td style="padding:7px 8px;font-size:11px;color:#6b7280;">${u.napomena || ''}</td>
         </tr>`).join('');
 

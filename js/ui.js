@@ -48,7 +48,6 @@
                 'izvjestaji-primac': 'izvjestaji-primac-content',
                 'izvjestaji-otpremac': 'izvjestaji-otpremac-content',
                 'kubikator': 'kubikator-content',
-                'ostalo': 'ostalo-content',
             };
             const ttl = (typeof getSmartCacheTTL === 'function') ? getSmartCacheTTL() : 60000;
             const lastRender = window._tabRenderTime[tab];
@@ -150,10 +149,6 @@
             } else if (tab === 'kubikator') {
                 document.getElementById('kubikator-content').classList.remove('hidden');
                 if (typeof initKubikator === 'function') initKubikator();
-            } else if (tab === 'ostalo') {
-                document.getElementById('ostalo-content').classList.remove('hidden');
-                // Load kubikator by default (najbitniji podmeni)
-                switchOstaloTab('kubikator');
             } else if (tab === 'stanje-zaliha') {
                 loadStanjeZaliha();
             } else if (tab === 'primaci-admin') {
@@ -161,11 +156,6 @@
             }
         }
 
-        // Switch between Ostalo tabs - samo Kubikator
-        function switchOstaloTab(view) {
-            // Kubikator je jedini view
-            document.getElementById('ostalo-kubikator-view').classList.remove('hidden');
-        }
 
         // Switch between Stanje Odjela tabs (Pregled Stanja / Šuma Lager)
         function switchStanjeOdjelaTab(view) {
