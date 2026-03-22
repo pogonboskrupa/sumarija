@@ -2153,6 +2153,7 @@
         }
         .professional-monthly-table tbody tr.current-month-row td:first-child {
             color: #92400e !important;
+            background: #fef3c7 !important;
         }
         .professional-monthly-table .month-total {
             background: linear-gradient(to bottom, #d1fae5 0%, #a7f3d0 100%);
