@@ -1,7 +1,46 @@
 // ============================================================
 // 🖨️ PRINT UTILS — Profesionalni ispis tabela
 // printActiveView(contentId, tabLabel, accentColor)
+// printMjesecniCard(tip)  — za Sječa/otprema tab (bez podmenija)
 // ============================================================
+
+function printMjesecniCard(tip) {
+    const isSjeca = tip === 'sjeca';
+    const tableId   = isSjeca ? 'mjesecna-sjeca-table'  : 'mjesecna-otprema-table';
+    const cardTitle = isSjeca ? 'Sječa po mjesecima i sortimentima' : 'Otprema po mjesecima i sortimentima';
+    const accent    = isSjeca ? '#1e3a5f' : '#7c2d12';
+
+    const tableEl = document.getElementById(tableId);
+    if (!tableEl) { alert('Tabela nije učitana.'); return; }
+    const tbody = tableEl.querySelector('tbody');
+    if (!tbody || !tbody.querySelector('tr td')) {
+        alert('Nema podataka za štampanje. Molimo sačekajte učitavanje.');
+        return;
+    }
+
+    const year = new Date().getFullYear();
+    const datumStampe  = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const vrijemeStampe = new Date().toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' });
+
+    const sectionsHtml = `
+        <div class="print-section">
+            <div class="section-header" style="border-left:4px solid ${accent};">${cardTitle}</div>
+            ${tableToCleanHtml(tableEl)}
+        </div>`;
+
+    const win = window.open('', '_blank', 'width=1200,height=900,scrollbars=yes');
+    win.document.write(buildPrintDocument({
+        tabLabel: 'Sječa / Otprema',
+        activeTabLabel: cardTitle,
+        accentColor: accent,
+        monthName: String(year),
+        year: '',
+        datumStampe,
+        vrijemeStampe,
+        sectionsHtml
+    }));
+    win.document.close();
+}
 
 function printActiveView(contentId, tabLabel, accentColor) {
     const container = document.getElementById(contentId);
