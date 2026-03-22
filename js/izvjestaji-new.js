@@ -529,4 +529,246 @@ function filterByPoslovodjaRadilista(data) {
     return filtered;
 }
 
+// ============================================
+// 🖨️ ŠTAMPAJ - Profesionalni print prikaz
+// ============================================
+function printIzvjestaj(tip) {
+    const isSedmicni = tip === 'sedmicni';
+
+    const year = document.getElementById(`izvjestaji-${tip}-year`).value;
+    const monthIdx = parseInt(document.getElementById(`izvjestaji-${tip}-month`).value);
+    const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni',
+                           'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+    const monthName = mjeseciNazivi[monthIdx];
+    const tipLabel = isSedmicni ? 'Sedmični izvještaj' : 'Mjesečni izvještaj';
+    const datumStampe = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+    // Kloniraj obje tabele iz DOM-a
+    const primkaTable = document.getElementById(`izvjestaji-${tip}-primka-table`);
+    const otpremaTable = document.getElementById(`izvjestaji-${tip}-otprema-table`);
+
+    if (!primkaTable || !otpremaTable) {
+        alert('Tabele još nisu učitane. Molimo sačekajte da se podaci učitaju.');
+        return;
+    }
+
+    const primkaHtml = primkaTable.outerHTML;
+    const otpremaHtml = otpremaTable.outerHTML;
+
+    const printWindow = window.open('', '_blank', 'width=1100,height=850');
+    printWindow.document.write(`<!DOCTYPE html>
+<html lang="bs">
+<head>
+<meta charset="UTF-8">
+<title>${tipLabel} — ${monthName} ${year}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 11px;
+    color: #111;
+    background: #fff;
+    padding: 20mm 18mm 16mm 18mm;
+  }
+
+  /* ── ZAGLAVLJE ── */
+  .print-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 3px solid #1e3a5f;
+    padding-bottom: 10px;
+    margin-bottom: 14px;
+  }
+  .print-header-left { display: flex; flex-direction: column; gap: 2px; }
+  .company-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e3a5f;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .company-sub {
+    font-size: 10px;
+    color: #4b5563;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .print-header-right { text-align: right; }
+  .report-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e3a5f;
+  }
+  .report-period {
+    font-size: 11px;
+    color: #374151;
+    margin-top: 2px;
+  }
+  .report-meta {
+    font-size: 9px;
+    color: #6b7280;
+    margin-top: 4px;
+  }
+
+  /* ── SEKCIJA ── */
+  .section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    background: #1e3a5f;
+    padding: 6px 12px;
+    margin: 16px 0 0 0;
+    border-radius: 4px 4px 0 0;
+  }
+
+  /* ── TABELA ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+    margin-bottom: 4px;
+  }
+  thead th {
+    background: #2d5a87;
+    color: #fff;
+    font-weight: 700;
+    text-align: center;
+    padding: 5px 6px;
+    border: 1px solid #1e3a5f;
+    white-space: nowrap;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  thead th:first-child { text-align: left; }
+  tbody tr { background: #fff; }
+  tbody tr:nth-child(even) { background: #f0f4f8; }
+  tbody td {
+    padding: 4px 6px;
+    border: 1px solid #cbd5e1;
+    text-align: right;
+    white-space: nowrap;
+  }
+  tbody td:first-child { text-align: left; font-weight: 600; color: #1e3a5f; }
+
+  /* Sedmični specifični stilovi */
+  .week-label-cell {
+    background: #1e3a5f !important;
+    color: #fff !important;
+    font-weight: 700;
+    text-align: center !important;
+    vertical-align: middle;
+    padding: 6px !important;
+  }
+  .week-num { display: block; font-size: 11px; font-weight: 700; }
+  .week-date { display: block; font-size: 8px; color: #93c5fd; margin-top: 2px; }
+  .week-totals-row td { background: #dbeafe; font-weight: 700; color: #1e40af; }
+  .week-totals-row .week-label-cell { background: #1e3a5f !important; color: #fff !important; }
+  .week-separator td { border-top: 2px solid #1e3a5f; }
+  .grand-totals-row td {
+    background: #1e3a5f !important;
+    color: #fff !important;
+    font-weight: 700;
+    border-color: #1e3a5f;
+  }
+
+  /* Ukupno row za mjesečni */
+  .totals-row td, .ukupno-row td {
+    background: #1e3a5f !important;
+    color: #fff !important;
+    font-weight: 700;
+  }
+
+  /* Kolone specijalnog prikaza */
+  .col-cetinari, .col-sveukupno { background: #ede9fe; }
+  .col-liscari { background: #fef9c3; }
+  tbody .week-totals-row td.col-cetinari,
+  tbody .week-totals-row td.col-liscari,
+  tbody .week-totals-row td.col-sveukupno { background: #bfdbfe; }
+
+  /* ── FOOTER ── */
+  .print-footer {
+    margin-top: 20px;
+    padding-top: 8px;
+    border-top: 1px solid #d1d5db;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: #6b7280;
+  }
+
+  /* ── PRINT MEDIA ── */
+  @media print {
+    body { padding: 0; }
+    @page { size: A4 landscape; margin: 12mm 14mm; }
+    .no-print { display: none; }
+    table { page-break-inside: auto; }
+    tr { page-break-inside: avoid; }
+    .section-title { page-break-after: avoid; }
+  }
+
+  /* ── PRINT DUGME (ekran) ── */
+  .no-print {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .btn-print {
+    background: #1e3a5f;
+    color: white;
+    border: none;
+    padding: 10px 28px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    margin-right: 8px;
+  }
+  .btn-close {
+    background: #6b7280;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<div class="no-print" style="padding: 14px 0;">
+  <button class="btn-print" onclick="window.print()">🖨️ Štampaj</button>
+  <button class="btn-close" onclick="window.close()">✕ Zatvori</button>
+</div>
+
+<div class="print-header">
+  <div class="print-header-left">
+    <div class="company-name">ŠPD "Unsko-Sanske Šume" d.o.o.</div>
+    <div class="company-sub">Šumarija Bosanska Krupa</div>
+  </div>
+  <div class="print-header-right">
+    <div class="report-title">${tipLabel}</div>
+    <div class="report-period">Period: ${monthName} ${year}</div>
+    <div class="report-meta">Datum štampe: ${datumStampe}</div>
+  </div>
+</div>
+
+<div class="section-title">🌲 Sječa po odjelima — ${monthName} ${year}</div>
+${primkaHtml}
+
+<div class="section-title">🚛 Otprema po odjelima — ${monthName} ${year}</div>
+${otpremaHtml}
+
+<div class="print-footer">
+  <span>ŠPD "Unsko-Sanske Šume" d.o.o. — Šumarija Bosanska Krupa</span>
+  <span>Štampano: ${datumStampe}</span>
+</div>
+
+</body>
+</html>`);
+    printWindow.document.close();
+}
+
 console.log('[IZVJEŠTAJI] ✓ New izvjestaji functions loaded');
