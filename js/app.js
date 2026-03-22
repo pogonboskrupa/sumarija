@@ -2727,6 +2727,12 @@
                 cols.forEach(c => { values[c.key] = z[c.key] || 0; });
                 values['__ukupno'] = values['Σ ČETINARI'] + values['LIŠĆARI'];
                 values['__naziv'] = (odjel.radiliste ? odjel.radiliste + ' / ' : '') + (odjel.odjel || '');
+                // Sortimenti koji su bili preklasirani za ovaj odjel
+                const preklSet = new Set();
+                preklasiranjaPodaci
+                    .filter(p => p.odjel === odjel.odjel && p.tip === 'PREKLASIRANJE')
+                    .forEach(p => { preklSet.add(p.iz); preklSet.add(p.u); });
+                values['__preklSet'] = preklSet;
                 return values;
             });
 
@@ -2737,9 +2743,9 @@
                 const bg = isUkupno ? '#064e3b' : isSum ? '#2d5a87' : '#1e3a5f';
                 return `cursor:pointer;color:white;font-weight:600;text-align:center;padding:8px 6px;font-size:12px;background:${bg};border:1px solid #374151;white-space:nowrap;user-select:none;`;
             };
-            const tdStyle = (isSum, isUkupno, val) => {
-                const bg = isUkupno ? '#d1fae5' : isSum ? '#ede9fe' : '';
-                const color = val < 0 ? '#dc2626' : val > 0 ? (isUkupno ? '#047857' : '#374151') : '#9ca3af';
+            const tdStyle = (isSum, isUkupno, val, isPrekl) => {
+                const bg = isUkupno ? '#d1fae5' : isSum ? '#ede9fe' : (isPrekl ? '#fef9c3' : '');
+                const color = isPrekl ? '#92400e' : (val < 0 ? '#dc2626' : val > 0 ? (isUkupno ? '#047857' : '#374151') : '#9ca3af');
                 return `text-align:right;padding:8px 6px;font-size:12px;font-weight:500;color:${color};border:1px solid #e5e7eb;${bg ? 'background:' + bg + ';' : ''}`;
             };
 
@@ -2756,10 +2762,12 @@
 
             function buildBodyRows(sortedRows) {
                 return sortedRows.map(r => {
-                    let cells = `<td style="padding:8px 10px;font-size:12px;font-weight:600;color:#1e3a5f;border:1px solid #e5e7eb;white-space:nowrap;">${r['__naziv']}</td>`;
+                    const preklSet = r['__preklSet'] || new Set();
+                    let cells = `<td style="padding:8px 10px;font-size:12px;font-weight:400;color:#1e3a5f;border:1px solid #e5e7eb;white-space:nowrap;">${r['__naziv']}</td>`;
                     cols.forEach(c => {
                         const val = r[c.key];
-                        cells += `<td style="${tdStyle(c.sum, false, val)}">${val !== 0 ? val.toFixed(2) : '-'}</td>`;
+                        const isPrekl = !c.sum && preklSet.has(c.key);
+                        cells += `<td style="${tdStyle(c.sum, false, val, isPrekl)}">${val !== 0 ? val.toFixed(2) : '-'}</td>`;
                     });
                     const u = r['__ukupno'];
                     cells += `<td style="${tdStyle(false, true, u)}">${u !== 0 ? u.toFixed(2) : '-'}</td>`;
