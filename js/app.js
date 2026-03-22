@@ -2071,7 +2071,7 @@
 
                 if (odjeliData && Array.isArray(odjeliData)) {
                     odjeliData.forEach(odjel => {
-                        const zalihaData = buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel));
+                        const zalihaData = getNetZaliha(odjel);
                         sortimentiPrikaz.forEach(sp => {
                             zalihaSortimenti[sp.display] += zalihaData[sp.apiKey] || 0;
                         });
@@ -2157,7 +2157,7 @@
 
                 if (odjeliData && Array.isArray(odjeliData)) {
                     odjeliData.forEach(odjel => {
-                        const zalihaData = buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel));
+                        const zalihaData = getNetZaliha(odjel);
                         sortimentiPrikaz.forEach(sp => {
                             zalihaSortimenti[sp.display] += zalihaData[sp.apiKey] || 0;
                         });
@@ -2722,7 +2722,7 @@
 
             // Pre-compute values for each odjel
             const rows = odjeliData.map(odjel => {
-                const z = buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel));
+                const z = getNetZaliha(odjel);
                 const values = {};
                 cols.forEach(c => { values[c.key] = z[c.key] || 0; });
                 values['__ukupno'] = values['Σ ČETINARI'] + values['LIŠĆARI'];
@@ -2808,13 +2808,12 @@
             }
         }
 
-        // Primjenjuje eksplicitna ručna preklasiranja na sirovi zaliha objekat za dati odjel.
-        // Poziva se PRIJE buildCorrectedZaliha tako da heuristika radi na već korigiranim podacima.
+        // Primjenjuje samo PREKLASIRANJE (ne RAZLIKA_MJERENJA) unose na sirovi zaliha objekat.
         function applyPreklasiranja(rawZaliha, odjelNaziv) {
             if (!rawZaliha || !preklasiranjaPodaci.length) return rawZaliha;
             const result = Object.assign({}, rawZaliha);
             preklasiranjaPodaci
-                .filter(p => p.odjel === odjelNaziv)
+                .filter(p => p.odjel === odjelNaziv && p.tip !== 'RAZLIKA_MJERENJA')
                 .forEach(p => {
                     result[p.iz] = (result[p.iz] || 0) - p.kolicina;
                     result[p.u]  = (result[p.u]  || 0) + p.kolicina;
@@ -2822,15 +2821,38 @@
             return result;
         }
 
-        function buildCorrectedZaliha(z) {
+        // Vraća {sortiment: totalKolicina} mapu za RAZLIKA_MJERENJA unose za dati odjel.
+        // Ove količine se prikazuju u kartici ali ne ulaze u ukupne totale.
+        function getRazlikeExclusions(odjelNaziv) {
+            const excl = {};
+            preklasiranjaPodaci
+                .filter(p => p.odjel === odjelNaziv && p.tip === 'RAZLIKA_MJERENJA')
+                .forEach(p => { excl[p.iz] = (excl[p.iz] || 0) + p.kolicina; });
+            return excl;
+        }
+
+        // Vraća buildCorrectedZaliha sa primijenjena oba: preklasiranja + isklj. razlika mjerenja.
+        // Koristi se za prikaz u tabelama gdje NE SMIJU biti vidljive razlike mjerenja.
+        function getNetZaliha(odjel) {
+            const z = applyPreklasiranja(odjel.zaliha, odjel.odjel);
+            const excl = getRazlikeExclusions(odjel.odjel);
+            const net = Object.assign({}, z);
+            Object.keys(excl).forEach(k => { net[k] = (net[k] || 0) - excl[k]; });
+            return buildCorrectedZaliha(net);
+        }
+
+        // buildCorrectedZaliha(z, exclusions?)
+        // exclusions: {sortiment: amount} — oduzima od agregata (TRUPCI Č, ČETINARI, LIŠĆARI, UKUPNO)
+        //   ali NE od individualnih vrijednosti u spreadu (za prikaz razlike mjerenja u kartici).
+        function buildCorrectedZaliha(z, exclusions) {
             if (!z) return {};
-            // Preklasiranja se primjenjuju PRIJE ove funkcije (applyPreklasiranja).
-            // Ovdje samo računamo agregate — bez klampanja na 0, prikazujemo stvarne vrijednosti.
-            const val = k => z[k] || 0;
-            const trupciC  = val("F/L Č") + val("I Č") + val("II Č") + val("III Č") + val("RD");
-            const cetinari = trupciC + val("CEL.DUGA") + val("CEL.CIJEPANA") + val("ŠKART");
-            const trupciL  = val("F/L L") + val("I L") + val("II L") + val("III L");
-            const liscari  = trupciL + val("OGR.DUGI") + val("OGR.CIJEPANI") + val("GULE");
+            const excl = exclusions || {};
+            const val  = k => z[k] || 0;
+            const agg  = k => val(k) - (excl[k] || 0); // neto za agregate
+            const trupciC  = agg("F/L Č") + agg("I Č") + agg("II Č") + agg("III Č") + agg("RD");
+            const cetinari = trupciC + agg("CEL.DUGA") + agg("CEL.CIJEPANA") + agg("ŠKART");
+            const trupciL  = agg("F/L L") + agg("I L") + agg("II L") + agg("III L");
+            const liscari  = trupciL + agg("OGR.DUGI") + agg("OGR.CIJEPANI") + agg("GULE");
             return Object.assign({}, z, {
                 "TRUPCI Č":   trupciC,
                 "Σ ČETINARI": cetinari,
@@ -2901,12 +2923,12 @@
                     let statusClass = 'neutral';
                     let statusIcon = '📦';
                     const ukupnoZaliha = odjel.ukupnoZaliha || 0;
-                    // Neto zaliha: algebarski zbir svih individualnih sortimenta (s minusima)
-                    const correctedZ = buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel));
-                    const pozitivnaZaliha = correctedZ && Object.keys(correctedZ).length
+                    // Neto zaliha: algebarski zbir svih individualnih sortimenta (bez razlika mjerenja)
+                    const netZ = getNetZaliha(odjel);
+                    const pozitivnaZaliha = netZ && Object.keys(netZ).length
                         ? sortimentiFull.reduce((s, k, i) => {
                             if (i === 5 || i === 9 || i === 14 || i === 18 || i === 19) return s;
-                            return s + (correctedZ[k] || 0);
+                            return s + (netZ[k] || 0);
                           }, 0)
                         : ukupnoZaliha;
 
@@ -2978,19 +3000,21 @@
                                         const rowColors = { projekat: '#eff6ff', sjeca: '#ecfdf5', otprema: '#fffbeb', zaliha: '#faf5ff' };
                                         const textColors = { projekat: '#1e40af', sjeca: '#065f46', otprema: '#b45309', zaliha: '#7c3aed' };
                                         const sortimenti = vrsta === 'zaliha'
-                                            ? buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel))
+                                            ? buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel), getRazlikeExclusions(odjel.odjel))
                                             : (odjel[vrsta] || {});
 
+                                        const razlExcl = vrsta === 'zaliha' ? getRazlikeExclusions(odjel.odjel) : {};
                                         return `
                                         <tr style="background: ${rowColors[vrsta]};">
                                             <td style="padding: 10px 12px; font-weight: 700; color: ${textColors[vrsta]}; white-space: nowrap; border: 1px solid #d1d5db;">${labels[vrsta]}</td>
                                             ${sortimentiFull.map((s, i) => {
                                                 const value = sortimenti[s] || 0;
                                                 const isTotal = i === 9 || i === 18 || i === 19;
-                                                const displayValue = value === 0 ? '-' : value.toFixed(2);
-                                                const cellColor = vrsta === 'zaliha' && value < 0 ? '#dc2626' : '#374151';
-                                                const cellBg = isTotal ? (vrsta === 'zaliha' ? '#e9d5ff' : '#f3e8ff') : '';
-                                                return `<td style="padding: 10px 6px; text-align: right; color: ${cellColor}; border: 1px solid #d1d5db; font-weight: ${isTotal ? '700' : '400'}; ${cellBg ? 'background:' + cellBg + ';' : ''}">${displayValue}</td>`;
+                                                const isRazlika = vrsta === 'zaliha' && !isTotal && (razlExcl[s] || 0) > 0;
+                                                const displayValue = value === 0 ? '-' : value.toFixed(2) + (isRazlika ? '*' : '');
+                                                const cellColor = vrsta === 'zaliha' && value < 0 ? '#dc2626' : (isRazlika ? '#9333ea' : '#374151');
+                                                const cellBg = isTotal ? (vrsta === 'zaliha' ? '#e9d5ff' : '#f3e8ff') : (isRazlika ? '#faf5ff' : '');
+                                                return `<td title="${isRazlika ? 'Razlika mjerenja: ' + razlExcl[s].toFixed(2) + ' m³ isključeno iz ukupnog' : ''}" style="padding: 10px 6px; text-align: right; color: ${cellColor}; border: 1px solid #d1d5db; font-weight: ${isTotal ? '700' : '400'}; font-style: ${isRazlika ? 'italic' : 'normal'}; ${cellBg ? 'background:' + cellBg + ';' : ''}">${displayValue}</td>`;
                                             }).join('')}
                                         </tr>`;
                                     }).join('')}
@@ -8489,19 +8513,28 @@
             }
             let html = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
                 <thead><tr style="background:#1e3a5f;color:white;">
+                    <th style="padding:8px 10px;text-align:left;border:1px solid #374151;">Tip</th>
                     <th style="padding:8px 10px;text-align:left;border:1px solid #374151;">Datum</th>
                     <th style="padding:8px 10px;text-align:left;border:1px solid #374151;">Odjel</th>
-                    <th style="padding:8px 10px;text-align:left;border:1px solid #374151;">Iz → U</th>
+                    <th style="padding:8px 10px;text-align:left;border:1px solid #374151;">Sortiment / Iz → U</th>
                     <th style="padding:8px 10px;text-align:right;border:1px solid #374151;">Kol. (m³)</th>
                     <th style="padding:8px 10px;text-align:left;border:1px solid #374151;">Napomena</th>
                     <th style="padding:8px 10px;text-align:left;border:1px solid #374151;">Korisnik</th>
                     <th style="padding:8px 6px;border:1px solid #374151;"></th>
                 </tr></thead><tbody>`;
             preklasiranjaPodaci.forEach(p => {
+                const isRazlika = p.tip === 'RAZLIKA_MJERENJA';
+                const tipBadge = isRazlika
+                    ? `<span style="background:#f3e8ff;color:#7e22ce;border-radius:4px;padding:2px 6px;font-size:11px;white-space:nowrap;">Razlika mj.</span>`
+                    : `<span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:2px 6px;font-size:11px;white-space:nowrap;">Preklasiranje</span>`;
+                const sortimentCell = isRazlika
+                    ? `<td style="padding:7px 10px;border:1px solid #e5e7eb;font-style:italic;color:#7e22ce;">${p.iz}</td>`
+                    : `<td style="padding:7px 10px;border:1px solid #e5e7eb;">${p.iz} → ${p.u}</td>`;
                 html += `<tr style="background:white;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">
+                    <td style="padding:7px 10px;border:1px solid #e5e7eb;">${tipBadge}</td>
                     <td style="padding:7px 10px;border:1px solid #e5e7eb;">${p.datum || ''}</td>
                     <td style="padding:7px 10px;border:1px solid #e5e7eb;font-weight:600;">${p.odjel}</td>
-                    <td style="padding:7px 10px;border:1px solid #e5e7eb;">${p.iz} → ${p.u}</td>
+                    ${sortimentCell}
                     <td style="padding:7px 10px;border:1px solid #e5e7eb;text-align:right;font-family:monospace;">${(p.kolicina||0).toFixed(2)}</td>
                     <td style="padding:7px 10px;border:1px solid #e5e7eb;color:#6b7280;">${p.napomena || '—'}</td>
                     <td style="padding:7px 10px;border:1px solid #e5e7eb;color:#6b7280;">${p.korisnik || ''}</td>
@@ -8514,7 +8547,24 @@
             container.innerHTML = html;
         }
 
+        // Ažurira modal kada korisnik mijenja tip (Preklasiranje / Razlika mjerenja)
+        function onPreklTipChange() {
+            const isRazlika = document.getElementById('prekl-tip-razlika').checked;
+            const uContainer = document.getElementById('prekl-u-container');
+            const izLabel = document.getElementById('prekl-iz-label');
+            const tipPreklLabel = document.getElementById('prekl-tip-preklasiranje-label');
+            const tipRazlikaLabel = document.getElementById('prekl-tip-razlika-label');
+            uContainer.style.display = isRazlika ? 'none' : '';
+            izLabel.textContent = (isRazlika ? 'Sortiment *' : 'Iz sortimenta *');
+            tipPreklLabel.style.borderColor = isRazlika ? '#d1d5db' : '#1e3a5f';
+            tipRazlikaLabel.style.borderColor = isRazlika ? '#9333ea' : '#d1d5db';
+        }
+
         function openPreklasiranjeModal() {
+            // Reset tip
+            document.getElementById('prekl-tip-preklasiranje').checked = true;
+            onPreklTipChange();
+
             // Populate odjeli dropdown
             const odjelSel = document.getElementById('prekl-odjel');
             odjelSel.innerHTML = '<option value="">— Odaberi odjel —</option>';
@@ -8556,19 +8606,25 @@
         }
 
         async function submitPreklasiranje() {
+            const tip      = document.querySelector('input[name="prekl-tip"]:checked').value;
             const odjel    = document.getElementById('prekl-odjel').value.trim();
             const iz       = document.getElementById('prekl-iz').value.trim();
-            const u        = document.getElementById('prekl-u').value.trim();
+            const u        = tip === 'RAZLIKA_MJERENJA' ? '' : document.getElementById('prekl-u').value.trim();
             const kolicina = document.getElementById('prekl-kolicina').value.trim();
             const napomena = document.getElementById('prekl-napomena').value.trim();
             const errEl    = document.getElementById('prekl-error');
 
-            if (!odjel || !iz || !u || !kolicina) {
+            if (!odjel || !iz || !kolicina) {
                 errEl.textContent = 'Popunite sva obavezna polja.';
                 errEl.style.display = 'block';
                 return;
             }
-            if (iz === u) {
+            if (tip === 'PREKLASIRANJE' && !u) {
+                errEl.textContent = 'Odaberite u sortiment.';
+                errEl.style.display = 'block';
+                return;
+            }
+            if (tip === 'PREKLASIRANJE' && iz === u) {
                 errEl.textContent = 'Iz i u sortiment moraju biti različiti.';
                 errEl.style.display = 'block';
                 return;
@@ -8586,7 +8642,7 @@
 
             try {
                 const url = buildApiUrl('add-preklasiranje', {
-                    odjel, iz, u, kolicina, napomena
+                    tip, odjel, iz, u, kolicina, napomena
                 });
                 const resp = await fetch(url).then(r => r.json());
                 if (!resp.success) throw new Error(resp.error || 'Nepoznata greška');
@@ -8704,12 +8760,12 @@
                 let statusClass = 'neutral';
                 let statusIcon = '📦';
                 const ukupnoZaliha = odjel.ukupnoZaliha || 0;
-                // Neto zaliha: algebarski zbir svih individualnih sortimenta (s minusima)
-                const correctedZ = buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel));
-                const pozitivnaZaliha = correctedZ && Object.keys(correctedZ).length
+                // Neto zaliha: algebarski zbir svih individualnih sortimenta (bez razlika mjerenja)
+                const netZ = getNetZaliha(odjel);
+                const pozitivnaZaliha = netZ && Object.keys(netZ).length
                     ? sortimentiFull.reduce((s, k, i) => {
                         if (i === 5 || i === 9 || i === 14 || i === 18 || i === 19) return s;
-                        return s + (correctedZ[k] || 0);
+                        return s + (netZ[k] || 0);
                       }, 0)
                     : ukupnoZaliha;
 
@@ -8781,19 +8837,21 @@
                                         const rowColors = { projekat: '#eff6ff', sjeca: '#ecfdf5', otprema: '#fffbeb', zaliha: '#faf5ff' };
                                         const textColors = { projekat: '#1e40af', sjeca: '#065f46', otprema: '#b45309', zaliha: '#7c3aed' };
                                         const sortimenti = vrsta === 'zaliha'
-                                            ? buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel))
+                                            ? buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel), getRazlikeExclusions(odjel.odjel))
                                             : (odjel[vrsta] || {});
 
+                                        const razlExcl = vrsta === 'zaliha' ? getRazlikeExclusions(odjel.odjel) : {};
                                         return `
                                         <tr style="background: ${rowColors[vrsta]};">
                                             <td style="padding: 10px 12px; font-weight: 700; color: ${textColors[vrsta]}; white-space: nowrap; border: 1px solid #d1d5db;">${labels[vrsta]}</td>
                                             ${stanjeZalihaSortimenti.map((s, i) => {
                                                 const value = sortimenti[s] || 0;
                                                 const isTotal = i === 9 || i === 18 || i === 19;
-                                                const displayValue = value === 0 ? '-' : value.toFixed(2);
-                                                const cellColor = vrsta === 'zaliha' && value < 0 ? '#dc2626' : '#374151';
-                                                const cellBg = isTotal ? (vrsta === 'zaliha' ? '#e9d5ff' : '#f3e8ff') : '';
-                                                return `<td style="padding: 10px 6px; text-align: right; color: ${cellColor}; border: 1px solid #d1d5db; font-weight: ${isTotal ? '700' : '400'}; ${cellBg ? 'background:' + cellBg + ';' : ''}">${displayValue}</td>`;
+                                                const isRazlika = vrsta === 'zaliha' && !isTotal && (razlExcl[s] || 0) > 0;
+                                                const displayValue = value === 0 ? '-' : value.toFixed(2) + (isRazlika ? '*' : '');
+                                                const cellColor = vrsta === 'zaliha' && value < 0 ? '#dc2626' : (isRazlika ? '#9333ea' : '#374151');
+                                                const cellBg = isTotal ? (vrsta === 'zaliha' ? '#e9d5ff' : '#f3e8ff') : (isRazlika ? '#faf5ff' : '');
+                                                return `<td title="${isRazlika ? 'Razlika mjerenja: ' + razlExcl[s].toFixed(2) + ' m³ isključeno iz ukupnog' : ''}" style="padding: 10px 6px; text-align: right; color: ${cellColor}; border: 1px solid #d1d5db; font-weight: ${isTotal ? '700' : '400'}; font-style: ${isRazlika ? 'italic' : 'normal'}; ${cellBg ? 'background:' + cellBg + ';' : ''}">${displayValue}</td>`;
                                             }).join('')}
                                         </tr>`;
                                     }).join('')}

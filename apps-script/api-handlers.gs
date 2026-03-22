@@ -4441,12 +4441,14 @@ function handleAddPreklasiranje(params) {
     const u         = (params.u || '').trim();
     const kolicina  = parseFloat(params.kolicina);
     const napomena  = (params.napomena || '').trim();
+    const tip       = (params.tip || 'PREKLASIRANJE').trim(); // PREKLASIRANJE | RAZLIKA_MJERENJA
 
-    if (!odjel || !iz || !u) {
-      return createJsonResponse({ error: "Odjel, iz i u sortiment su obavezni" }, false);
+    if (!odjel || !iz) {
+      return createJsonResponse({ error: "Odjel i iz/sortiment su obavezni" }, false);
     }
-    if (iz === u) {
-      return createJsonResponse({ error: "Iz i u sortiment moraju biti različiti" }, false);
+    if (tip === 'PREKLASIRANJE') {
+      if (!u) return createJsonResponse({ error: "U sortiment je obavezan za preklasiranje" }, false);
+      if (iz === u) return createJsonResponse({ error: "Iz i u sortiment moraju biti različiti" }, false);
     }
     if (isNaN(kolicina) || kolicina <= 0) {
       return createJsonResponse({ error: "Količina mora biti pozitivan broj" }, false);
@@ -4456,7 +4458,7 @@ function handleAddPreklasiranje(params) {
     let sheet = ss.getSheetByName("PREKLASIRANJE");
     if (!sheet) {
       sheet = ss.insertSheet("PREKLASIRANJE");
-      const headers = ["DATUM", "ODJEL", "IZ_SORTIMENTA", "U_SORTIMENT", "KOLIČINA", "NAPOMENA", "KORISNIK"];
+      const headers = ["DATUM", "ODJEL", "IZ_SORTIMENTA", "U_SORTIMENT", "KOLIČINA", "NAPOMENA", "KORISNIK", "TIP"];
       sheet.appendRow(headers);
       const headerRange = sheet.getRange(1, 1, 1, headers.length);
       headerRange.setBackground("#1e3a5f");
@@ -4464,11 +4466,11 @@ function handleAddPreklasiranje(params) {
       headerRange.setFontWeight("bold");
     }
 
-    sheet.appendRow([formatDate(new Date()), odjel, iz, u, kolicina, napomena, loginResult.fullName || params.username]);
+    sheet.appendRow([formatDate(new Date()), odjel, iz, tip === 'RAZLIKA_MJERENJA' ? '' : u, kolicina, napomena, loginResult.fullName || params.username, tip]);
     invalidateAllCache();
 
-    Logger.log('Preklasiranje uneseno: ' + odjel + ' ' + iz + ' -> ' + u + ' ' + kolicina);
-    return createJsonResponse({ success: true, message: "Preklasiranje uneseno" }, true);
+    Logger.log('Preklasiranje uneseno: ' + tip + ' ' + odjel + ' ' + iz + (tip === 'PREKLASIRANJE' ? ' -> ' + u : '') + ' ' + kolicina);
+    return createJsonResponse({ success: true, message: tip === 'RAZLIKA_MJERENJA' ? "Razlika mjerenja unesena" : "Preklasiranje uneseno" }, true);
 
   } catch (error) {
     Logger.log('ERROR in handleAddPreklasiranje: ' + error.toString());
@@ -4506,7 +4508,8 @@ function handleGetPreklasiranja(username, password, odjel) {
         u:        String(row[3] || '').trim(),
         kolicina: parseFloat(row[4]) || 0,
         napomena: String(row[5] || '').trim(),
-        korisnik: String(row[6] || '').trim()
+        korisnik: String(row[6] || '').trim(),
+        tip:      String(row[7] || 'PREKLASIRANJE').trim() || 'PREKLASIRANJE'
       });
     }
 

@@ -2856,6 +2856,17 @@
             </div>
             <div class="modal-body" style="padding:20px;">
                 <div style="display:flex;flex-direction:column;gap:14px;">
+                    <!-- TIP selektor -->
+                    <div style="display:flex;gap:8px;">
+                        <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid #d1d5db;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;" id="prekl-tip-preklasiranje-label">
+                            <input type="radio" name="prekl-tip" id="prekl-tip-preklasiranje" value="PREKLASIRANJE" checked onchange="onPreklTipChange()" style="accent-color:#1e3a5f;">
+                            Preklasiranje
+                        </label>
+                        <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid #d1d5db;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;" id="prekl-tip-razlika-label">
+                            <input type="radio" name="prekl-tip" id="prekl-tip-razlika" value="RAZLIKA_MJERENJA" onchange="onPreklTipChange()" style="accent-color:#9333ea;">
+                            Razlika mjerenja
+                        </label>
+                    </div>
                     <div>
                         <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Odjel *</label>
                         <select id="prekl-odjel" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
@@ -2864,12 +2875,12 @@
                     </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                         <div>
-                            <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Iz sortimenta *</label>
+                            <label id="prekl-iz-label" style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Iz sortimenta *</label>
                             <select id="prekl-iz" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" onchange="filterPreklUSort()">
                                 <option value="">— Odaberi —</option>
                             </select>
                         </div>
-                        <div>
+                        <div id="prekl-u-container">
                             <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">U sortiment *</label>
                             <select id="prekl-u" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
                                 <option value="">— Odaberi —</option>
