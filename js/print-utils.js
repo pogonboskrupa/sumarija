@@ -1,24 +1,36 @@
 // ============================================================
 // 🖨️ PRINT UTILS — Profesionalni ispis tabela
 // printActiveView(contentId, tabLabel, accentColor)
-// printMjesecniCard(tip)       — za Sječa/otprema tab
-// printStanjeZaliha()          — za Stanje zaliha tab
+// printMjesecniCard(tip)           — za Sječa/otprema tab
+// toggleStanjeZalihaPrintMenu(e)   — dropdown izbornik za Stanje zaliha
+// printStanjeZalihaAgregatna()     — agregatna + detaljna sortabilna tabela
+// printStanjeZalihaPoOdjelima()    — po odjelu: Projekat/Sječa/Otprema/Zaliha
 // ============================================================
 
-function printStanjeZaliha() {
+// ─── Dropdown izbornik ───────────────────────────────────────
+function toggleStanjeZalihaPrintMenu(e) {
+    e.stopPropagation();
+    const menu = document.getElementById('stanje-zaliha-print-menu');
+    const isOpen = menu.style.display === 'block';
+    menu.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) {
+        const close = () => { menu.style.display = 'none'; document.removeEventListener('click', close); };
+        document.addEventListener('click', close);
+    }
+}
+
+// ─── Opcija 1: Agregatna tabela + detaljna sortabilna ────────
+function printStanjeZalihaAgregatna() {
+    document.getElementById('stanje-zaliha-print-menu').style.display = 'none';
     const accent = '#1e3a5f';
     const year = new Date().getFullYear();
     const datumStampe   = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const vrijemeStampe = new Date().toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' });
 
-    // Radilište filter kontekst
     const radilisteEl = document.getElementById('stanje-zaliha-radiliste');
     const radiliste = radilisteEl && radilisteEl.value ? radilisteEl.value : 'Sva radilišta';
 
-    // 1. Agregirana tabela
     const glavnaTabela = document.getElementById('stanje-zaliha-tabela');
-
-    // 2. Detaljna tabela po odjelima (unutar <details>)
     const detaljniThead = document.getElementById('stanje-zaliha-detalji-section-thead');
     const detaljniTabela = detaljniThead ? detaljniThead.closest('table') : null;
 
@@ -31,7 +43,6 @@ function printStanjeZaliha() {
     }
 
     let sectionsHtml = '';
-
     if (hasGlavna) {
         sectionsHtml += `
         <div class="print-section">
@@ -41,7 +52,6 @@ function printStanjeZaliha() {
             ${tableToCleanHtml(glavnaTabela)}
         </div>`;
     }
-
     if (hasDetaljna) {
         sectionsHtml += `
         <div class="print-section" style="page-break-before:always;">
@@ -55,7 +65,82 @@ function printStanjeZaliha() {
     const win = window.open('', '_blank', 'width=1200,height=900,scrollbars=yes');
     win.document.write(buildPrintDocument({
         tabLabel: 'Stanje Zaliha',
-        activeTabLabel: radiliste !== 'Sva radilišta' ? radiliste : 'Sve odjele',
+        activeTabLabel: 'Agregatna tabela',
+        accentColor: accent,
+        monthName: String(year),
+        year: '',
+        datumStampe,
+        vrijemeStampe,
+        sectionsHtml
+    }));
+    win.document.close();
+}
+
+// ─── Opcija 2: Detaljno po odjelima (Projekat/Sječa/Otprema/Zaliha) ─────
+function printStanjeZalihaPoOdjelima() {
+    document.getElementById('stanje-zaliha-print-menu').style.display = 'none';
+    const accent = '#1e3a5f';
+    const year = new Date().getFullYear();
+    const datumStampe   = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const vrijemeStampe = new Date().toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' });
+
+    const radilisteEl = document.getElementById('stanje-zaliha-radiliste');
+    const radiliste = radilisteEl && radilisteEl.value ? radilisteEl.value : 'Sva radilišta';
+
+    const cards = document.querySelectorAll('#stanje-zaliha-container .stanje-zaliha-card');
+    if (!cards.length) {
+        alert('Nema podataka za štampanje. Molimo sačekajte učitavanje.');
+        return;
+    }
+
+    let sectionsHtml = '';
+    let first = true;
+
+    cards.forEach(card => {
+        const headerEl = card.querySelector('.stanje-zaliha-card-header');
+        const nameEl   = headerEl ? headerEl.querySelector('h3') : null;
+        const metaEl   = headerEl ? headerEl.querySelector('p') : null;
+        const ukupnoEl = headerEl ? headerEl.querySelector('div[style*="font-size: 24px"]') : null;
+        const odjelName = nameEl ? nameEl.textContent.trim() : '—';
+        const meta      = metaEl ? metaEl.textContent.trim() : '';
+        const ukupno    = ukupnoEl ? ukupnoEl.textContent.trim() : '';
+
+        // Statistika (4 summary čelije: Projekat, Sječa, Otprema, Zaliha)
+        const statCells = card.querySelectorAll('[style*="grid-template-columns"] > div');
+        let statsHtml = '';
+        if (statCells.length) {
+            statsHtml = '<div style="display:flex;gap:0;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:8px;">';
+            statCells.forEach(cell => {
+                const label = cell.querySelector('div:first-child');
+                const value = cell.querySelector('div:last-child');
+                statsHtml += `<div style="flex:1;text-align:center;padding:8px;border-right:1px solid #e5e7eb;background:#f9fafb;">
+                    <div style="font-size:10px;color:#6b7280;">${label ? label.textContent.replace(/[📋🪓🚛📦]/g,'').trim() : ''}</div>
+                    <div style="font-size:13px;font-weight:700;color:#1e3a5f;">${value ? value.textContent.trim() : '—'}</div>
+                </div>`;
+            });
+            statsHtml += '</div>';
+        }
+
+        // Tabela Projekat/Sječa/Otprema/Zaliha po sortimentima
+        const detailTable = card.querySelector('.stanje-zaliha-table');
+        const tableHtml = detailTable ? tableToCleanHtml(detailTable) : '';
+
+        sectionsHtml += `
+        <div class="print-section" style="${first ? '' : 'page-break-before:always;'}">
+            <div style="background:linear-gradient(135deg,#1e3a5f 0%,#2d5a87 100%);color:white;padding:12px 16px;border-radius:6px 6px 0 0;margin-bottom:0;">
+                <div style="font-size:16px;font-weight:700;">${odjelName}</div>
+                <div style="font-size:11px;opacity:.85;margin-top:2px;">${meta}</div>
+            </div>
+            ${statsHtml}
+            ${tableHtml}
+        </div>`;
+        first = false;
+    });
+
+    const win = window.open('', '_blank', 'width=1200,height=900,scrollbars=yes');
+    win.document.write(buildPrintDocument({
+        tabLabel: 'Stanje Zaliha',
+        activeTabLabel: 'Detaljno po odjelima',
         accentColor: accent,
         monthName: String(year),
         year: '',
