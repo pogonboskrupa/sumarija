@@ -50,6 +50,7 @@
     <!-- Fixes -->
     <script src="js/week-fix.js" defer></script>
     <script src="js/izvjestaji-new.js" defer></script>
+    <script src="js/print-utils.js" defer></script>
 
     <!-- Offline-First -->
     <script src="idb-helper.js" defer></script>
@@ -451,7 +452,10 @@
         <div id="primaci-content" class="container hidden">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                 <h2>👷 SJEČA</h2>
-                <button onclick="exportVisibleTable('primaci-content', 'Sjeca')" style="background: #1e3a5f; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <button onclick="printActiveView('primaci-content', 'Sječa', '#1e3a5f')" style="background: #1e3a5f; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;">🖨️ ŠTAMPAJ</button>
+                    <button onclick="exportVisibleTable('primaci-content', 'Sjeca')" style="background: #1e3a5f; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+                </div>
             </div>
 
             <!-- Submenu -->
@@ -605,7 +609,10 @@
         <div id="otpremaci-content" class="container hidden">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                 <h2>🚛 OTPREMA</h2>
-                <button onclick="exportVisibleTable('otpremaci-content', 'Otprema')" style="background: #7c2d12; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <button onclick="printActiveView('otpremaci-content', 'Otprema', '#7c2d12')" style="background: #7c2d12; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;">🖨️ ŠTAMPAJ</button>
+                    <button onclick="exportVisibleTable('otpremaci-content', 'Otprema')" style="background: #7c2d12; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+                </div>
             </div>
 
             <!-- Submenu -->
