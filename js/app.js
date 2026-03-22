@@ -2073,7 +2073,7 @@
                     odjeliData.forEach(odjel => {
                         const zalihaData = buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel));
                         sortimentiPrikaz.forEach(sp => {
-                            zalihaSortimenti[sp.display] += Math.max(0, zalihaData[sp.apiKey] || 0);
+                            zalihaSortimenti[sp.display] += zalihaData[sp.apiKey] || 0;
                         });
                     });
                 }
@@ -2159,7 +2159,7 @@
                     odjeliData.forEach(odjel => {
                         const zalihaData = buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel));
                         sortimentiPrikaz.forEach(sp => {
-                            zalihaSortimenti[sp.display] += Math.max(0, zalihaData[sp.apiKey] || 0);
+                            zalihaSortimenti[sp.display] += zalihaData[sp.apiKey] || 0;
                         });
                     });
                 }
@@ -2724,7 +2724,7 @@
             const rows = odjeliData.map(odjel => {
                 const z = buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel));
                 const values = {};
-                cols.forEach(c => { values[c.key] = Math.max(0, z[c.key] || 0); });
+                cols.forEach(c => { values[c.key] = z[c.key] || 0; });
                 values['__ukupno'] = values['Σ ČETINARI'] + values['LIŠĆARI'];
                 values['__naziv'] = (odjel.radiliste ? odjel.radiliste + ' / ' : '') + (odjel.odjel || '');
                 return values;
@@ -2740,7 +2740,7 @@
             const tdStyle = (isSum, isUkupno, val) => {
                 const bg = isUkupno ? '#d1fae5' : isSum ? '#ede9fe' : '';
                 const fw = (isSum || isUkupno) ? '700' : '500';
-                const color = val > 0 ? (isUkupno ? '#047857' : '#374151') : '#9ca3af';
+                const color = val < 0 ? '#dc2626' : val > 0 ? (isUkupno ? '#047857' : '#374151') : '#9ca3af';
                 return `text-align:right;padding:8px 6px;font-size:12px;font-weight:${fw};color:${color};border:1px solid #e5e7eb;${bg ? 'background:' + bg + ';' : ''}`;
             };
 
@@ -2760,10 +2760,10 @@
                     let cells = `<td style="padding:8px 10px;font-size:12px;font-weight:600;color:#1e3a5f;border:1px solid #e5e7eb;white-space:nowrap;">${r['__naziv']}</td>`;
                     cols.forEach(c => {
                         const val = r[c.key];
-                        cells += `<td style="${tdStyle(c.sum, false, val)}">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                        cells += `<td style="${tdStyle(c.sum, false, val)}">${val !== 0 ? val.toFixed(2) : '-'}</td>`;
                     });
                     const u = r['__ukupno'];
-                    cells += `<td style="${tdStyle(false, true, u)}">${u > 0 ? u.toFixed(2) : '-'}</td>`;
+                    cells += `<td style="${tdStyle(false, true, u)}">${u !== 0 ? u.toFixed(2) : '-'}</td>`;
                     return `<tr style="background:white;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">${cells}</tr>`;
                 }).join('');
             }
@@ -2824,30 +2824,14 @@
 
         function buildCorrectedZaliha(z) {
             if (!z) return {};
-            // Korekcija preklasiranja: ako je jedan sortiment pozitivan a parnjak < -10m³,
-            // radi se o preklasiranju na terenu — offsetujemo ih jedan o drugi
-            const corrected = Object.assign({}, z);
-            const parovi = [["CEL.DUGA", "CEL.CIJEPANA"], ["OGR.DUGI", "OGR.CIJEPANI"]];
-            parovi.forEach(([a, b]) => {
-                const va = corrected[a] || 0;
-                const vb = corrected[b] || 0;
-                if ((va > 0 && vb < -10) || (vb > 0 && va < -10)) {
-                    const net = va + vb;
-                    if (va > 0) {
-                        corrected[a] = Math.max(0, net);
-                        corrected[b] = Math.min(0, net);
-                    } else {
-                        corrected[b] = Math.max(0, net);
-                        corrected[a] = Math.min(0, net);
-                    }
-                }
-            });
-            const pos = k => Math.max(0, corrected[k] || 0);
-            const trupciC  = pos("F/L Č") + pos("I Č") + pos("II Č") + pos("III Č") + pos("RD");
-            const cetinari = trupciC + pos("CEL.DUGA") + pos("CEL.CIJEPANA") + pos("ŠKART");
-            const trupciL  = pos("F/L L") + pos("I L") + pos("II L") + pos("III L");
-            const liscari  = trupciL + pos("OGR.DUGI") + pos("OGR.CIJEPANI") + pos("GULE");
-            return Object.assign({}, corrected, {
+            // Preklasiranja se primjenjuju PRIJE ove funkcije (applyPreklasiranja).
+            // Ovdje samo računamo agregate — bez klampanja na 0, prikazujemo stvarne vrijednosti.
+            const val = k => z[k] || 0;
+            const trupciC  = val("F/L Č") + val("I Č") + val("II Č") + val("III Č") + val("RD");
+            const cetinari = trupciC + val("CEL.DUGA") + val("CEL.CIJEPANA") + val("ŠKART");
+            const trupciL  = val("F/L L") + val("I L") + val("II L") + val("III L");
+            const liscari  = trupciL + val("OGR.DUGI") + val("OGR.CIJEPANI") + val("GULE");
+            return Object.assign({}, z, {
                 "TRUPCI Č":   trupciC,
                 "Σ ČETINARI": cetinari,
                 "TRUPCI L":   trupciL,
@@ -2917,18 +2901,19 @@
                     let statusClass = 'neutral';
                     let statusIcon = '📦';
                     const ukupnoZaliha = odjel.ukupnoZaliha || 0;
-                    // Sumarni prikaz: samo pozitivne količine po individualnim sortimentima
-                    // (izuzimaju se zbiri: Σ ČETINARI [idx9], LIŠĆARI [idx18], UKUPNO Č+L [idx19])
+                    // Neto zaliha: algebarski zbir svih individualnih sortimenta (s minusima)
                     const correctedZ = buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel));
                     const pozitivnaZaliha = correctedZ && Object.keys(correctedZ).length
                         ? sortimentiFull.reduce((s, k, i) => {
                             if (i === 5 || i === 9 || i === 14 || i === 18 || i === 19) return s;
-                            const v = correctedZ[k] || 0;
-                            return s + (v > 0 ? v : 0);
+                            return s + (correctedZ[k] || 0);
                           }, 0)
-                        : Math.max(0, ukupnoZaliha);
+                        : ukupnoZaliha;
 
-                    if (pozitivnaZaliha > 100) {
+                    if (pozitivnaZaliha < 0) {
+                        statusClass = 'danger';
+                        statusIcon = '🔴';
+                    } else if (pozitivnaZaliha > 100) {
                         statusClass = 'warning';
                         statusIcon = '⚠️';
                     } else if (pozitivnaZaliha > 0) {
@@ -8719,18 +8704,19 @@
                 let statusClass = 'neutral';
                 let statusIcon = '📦';
                 const ukupnoZaliha = odjel.ukupnoZaliha || 0;
-                // Sumarni prikaz: samo pozitivne količine po individualnim sortimentima
-                // (izuzimaju se zbiri: idx9=Σ ČETINARI, idx18=LIŠĆARI, idx19=UKUPNO Č+L)
+                // Neto zaliha: algebarski zbir svih individualnih sortimenta (s minusima)
                 const correctedZ = buildCorrectedZaliha(applyPreklasiranja(odjel.zaliha, odjel.odjel));
                 const pozitivnaZaliha = correctedZ && Object.keys(correctedZ).length
                     ? sortimentiFull.reduce((s, k, i) => {
                         if (i === 5 || i === 9 || i === 14 || i === 18 || i === 19) return s;
-                        const v = correctedZ[k] || 0;
-                        return s + (v > 0 ? v : 0);
+                        return s + (correctedZ[k] || 0);
                       }, 0)
-                    : Math.max(0, ukupnoZaliha);
+                    : ukupnoZaliha;
 
-                if (pozitivnaZaliha > 100) {
+                if (pozitivnaZaliha < 0) {
+                    statusClass = 'danger';
+                    statusIcon = '🔴';
+                } else if (pozitivnaZaliha > 100) {
                     statusClass = 'warning';
                     statusIcon = '⚠️';
                 } else if (pozitivnaZaliha > 0) {
