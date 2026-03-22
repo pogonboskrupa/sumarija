@@ -2836,7 +2836,10 @@
         function getNetZaliha(odjel) {
             const z = applyPreklasiranja(odjel.zaliha, odjel.odjel);
             const excl = getRazlikeExclusions(odjel.odjel);
-            return buildCorrectedZaliha(z, excl);
+            // Nulirati isključene sortimente i u individualnim vrijednostima (za kompaktne tabele i zaglavlje)
+            const zNet = Object.assign({}, z);
+            Object.keys(excl).forEach(k => { zNet[k] = 0; });
+            return buildCorrectedZaliha(zNet, excl);
         }
 
         // buildCorrectedZaliha(z, exclusions?)
@@ -2921,13 +2924,10 @@
                     let statusClass = 'neutral';
                     let statusIcon = '📦';
                     const ukupnoZaliha = odjel.ukupnoZaliha || 0;
-                    // Neto zaliha: algebarski zbir svih individualnih sortimenta (bez razlika mjerenja)
+                    // Neto zaliha: UKUPNO Č+L iz getNetZaliha već isključuje razlika mjerenja sortimente
                     const netZ = getNetZaliha(odjel);
-                    const pozitivnaZaliha = netZ && Object.keys(netZ).length
-                        ? sortimentiFull.reduce((s, k, i) => {
-                            if (i === 5 || i === 9 || i === 14 || i === 18 || i === 19) return s;
-                            return s + (netZ[k] || 0);
-                          }, 0)
+                    const pozitivnaZaliha = (netZ && netZ["UKUPNO Č+L"] !== undefined)
+                        ? netZ["UKUPNO Č+L"]
                         : ukupnoZaliha;
 
                     if (pozitivnaZaliha < 0) {
@@ -8767,13 +8767,10 @@
                 let statusClass = 'neutral';
                 let statusIcon = '📦';
                 const ukupnoZaliha = odjel.ukupnoZaliha || 0;
-                // Neto zaliha: algebarski zbir svih individualnih sortimenta (bez razlika mjerenja)
+                // Neto zaliha: UKUPNO Č+L iz getNetZaliha već isključuje razlika mjerenja sortimente
                 const netZ = getNetZaliha(odjel);
-                const pozitivnaZaliha = netZ && Object.keys(netZ).length
-                    ? sortimentiFull.reduce((s, k, i) => {
-                        if (i === 5 || i === 9 || i === 14 || i === 18 || i === 19) return s;
-                        return s + (netZ[k] || 0);
-                      }, 0)
+                const pozitivnaZaliha = (netZ && netZ["UKUPNO Č+L"] !== undefined)
+                    ? netZ["UKUPNO Č+L"]
                     : ukupnoZaliha;
 
                 if (pozitivnaZaliha < 0) {
