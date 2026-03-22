@@ -2821,13 +2821,13 @@
             return result;
         }
 
-        // Vraća {sortiment: totalKolicina} mapu za RAZLIKA_MJERENJA unose za dati odjel.
-        // Ove količine se prikazuju u kartici ali ne ulaze u ukupne totale.
+        // Vraća {sortiment: true} za RAZLIKA_MJERENJA unose za dati odjel.
+        // Ti sortimenti se prikazuju u kartici ali se isključuju iz ukupnih agregata.
         function getRazlikeExclusions(odjelNaziv) {
             const excl = {};
             preklasiranjaPodaci
                 .filter(p => p.odjel === odjelNaziv && p.tip === 'RAZLIKA_MJERENJA')
-                .forEach(p => { excl[p.iz] = (excl[p.iz] || 0) + p.kolicina; });
+                .forEach(p => { excl[p.iz] = true; });
             return excl;
         }
 
@@ -2836,19 +2836,17 @@
         function getNetZaliha(odjel) {
             const z = applyPreklasiranja(odjel.zaliha, odjel.odjel);
             const excl = getRazlikeExclusions(odjel.odjel);
-            const net = Object.assign({}, z);
-            Object.keys(excl).forEach(k => { net[k] = (net[k] || 0) - excl[k]; });
-            return buildCorrectedZaliha(net);
+            return buildCorrectedZaliha(z, excl);
         }
 
         // buildCorrectedZaliha(z, exclusions?)
-        // exclusions: {sortiment: amount} — oduzima od agregata (TRUPCI Č, ČETINARI, LIŠĆARI, UKUPNO)
-        //   ali NE od individualnih vrijednosti u spreadu (za prikaz razlike mjerenja u kartici).
+        // exclusions: {sortiment: true} — isključuje sortiment iz agregata (TRUPCI Č, ČETINARI, LIŠĆARI, UKUPNO)
+        //   ali NE mijenja individualnu vrijednost u spreadu (za prikaz u kartici).
         function buildCorrectedZaliha(z, exclusions) {
             if (!z) return {};
             const excl = exclusions || {};
             const val  = k => z[k] || 0;
-            const agg  = k => val(k) - (excl[k] || 0); // neto za agregate
+            const agg  = k => excl[k] ? 0 : val(k); // isključeni sortimenti ne ulaze u agregate
             const trupciC  = agg("F/L Č") + agg("I Č") + agg("II Č") + agg("III Č") + agg("RD");
             const cetinari = trupciC + agg("CEL.DUGA") + agg("CEL.CIJEPANA") + agg("ŠKART");
             const trupciL  = agg("F/L L") + agg("I L") + agg("II L") + agg("III L");
@@ -3010,11 +3008,11 @@
                                             ${sortimentiFull.map((s, i) => {
                                                 const value = sortimenti[s] || 0;
                                                 const isTotal = i === 9 || i === 18 || i === 19;
-                                                const isRazlika = vrsta === 'zaliha' && !isTotal && (razlExcl[s] || 0) > 0;
-                                                const displayValue = value === 0 ? '-' : value.toFixed(2) + (isRazlika ? '*' : '');
-                                                const cellColor = vrsta === 'zaliha' && value < 0 ? '#dc2626' : (isRazlika ? '#9333ea' : '#374151');
-                                                const cellBg = isTotal ? (vrsta === 'zaliha' ? '#e9d5ff' : '#f3e8ff') : (isRazlika ? '#faf5ff' : '');
-                                                return `<td title="${isRazlika ? 'Razlika mjerenja: ' + razlExcl[s].toFixed(2) + ' m³ isključeno iz ukupnog' : ''}" style="padding: 10px 6px; text-align: right; color: ${cellColor}; border: 1px solid #d1d5db; font-weight: ${isTotal ? '700' : '400'}; font-style: ${isRazlika ? 'italic' : 'normal'}; ${cellBg ? 'background:' + cellBg + ';' : ''}">${displayValue}</td>`;
+                                                const isRazlika = vrsta === 'zaliha' && !isTotal && !!razlExcl[s];
+                                                const displayValue = value === 0 ? '-' : value.toFixed(2);
+                                                const cellColor = isRazlika ? '#92400e' : (vrsta === 'zaliha' && value < 0 ? '#dc2626' : '#374151');
+                                                const cellBg = isTotal ? (vrsta === 'zaliha' ? '#e9d5ff' : '#f3e8ff') : (isRazlika ? '#fef9c3' : '');
+                                                return `<td title="${isRazlika ? 'Razlika mjerenja — isključeno iz ukupnog' : ''}" style="padding: 10px 6px; text-align: right; color: ${cellColor}; border: 1px solid #d1d5db; font-weight: ${isTotal ? '700' : '400'}; font-style: ${isRazlika ? 'italic' : 'normal'}; ${cellBg ? 'background:' + cellBg + ';' : ''}">${displayValue}</td>`;
                                             }).join('')}
                                         </tr>`;
                                     }).join('')}
@@ -8525,10 +8523,10 @@
             preklasiranjaPodaci.forEach(p => {
                 const isRazlika = p.tip === 'RAZLIKA_MJERENJA';
                 const tipBadge = isRazlika
-                    ? `<span style="background:#f3e8ff;color:#7e22ce;border-radius:4px;padding:2px 6px;font-size:11px;white-space:nowrap;">Razlika mj.</span>`
+                    ? `<span style="background:#fef9c3;color:#92400e;border-radius:4px;padding:2px 6px;font-size:11px;white-space:nowrap;">Razlika mj.</span>`
                     : `<span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:2px 6px;font-size:11px;white-space:nowrap;">Preklasiranje</span>`;
                 const sortimentCell = isRazlika
-                    ? `<td style="padding:7px 10px;border:1px solid #e5e7eb;font-style:italic;color:#7e22ce;">${p.iz}</td>`
+                    ? `<td style="padding:7px 10px;border:1px solid #e5e7eb;font-style:italic;color:#92400e;background:#fef9c3;">${p.iz}</td>`
                     : `<td style="padding:7px 10px;border:1px solid #e5e7eb;">${p.iz} → ${p.u}</td>`;
                 html += `<tr style="background:white;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">
                     <td style="padding:7px 10px;border:1px solid #e5e7eb;">${tipBadge}</td>
@@ -8551,13 +8549,15 @@
         function onPreklTipChange() {
             const isRazlika = document.getElementById('prekl-tip-razlika').checked;
             const uContainer = document.getElementById('prekl-u-container');
+            const kolicContainer = document.getElementById('prekl-kolicina-container');
             const izLabel = document.getElementById('prekl-iz-label');
             const tipPreklLabel = document.getElementById('prekl-tip-preklasiranje-label');
             const tipRazlikaLabel = document.getElementById('prekl-tip-razlika-label');
             uContainer.style.display = isRazlika ? 'none' : '';
+            if (kolicContainer) kolicContainer.style.display = isRazlika ? 'none' : '';
             izLabel.textContent = (isRazlika ? 'Sortiment *' : 'Iz sortimenta *');
             tipPreklLabel.style.borderColor = isRazlika ? '#d1d5db' : '#1e3a5f';
-            tipRazlikaLabel.style.borderColor = isRazlika ? '#9333ea' : '#d1d5db';
+            tipRazlikaLabel.style.borderColor = isRazlika ? '#d97706' : '#d1d5db';
         }
 
         function openPreklasiranjeModal() {
@@ -8610,29 +8610,36 @@
             const odjel    = document.getElementById('prekl-odjel').value.trim();
             const iz       = document.getElementById('prekl-iz').value.trim();
             const u        = tip === 'RAZLIKA_MJERENJA' ? '' : document.getElementById('prekl-u').value.trim();
-            const kolicina = document.getElementById('prekl-kolicina').value.trim();
+            const kolicina = tip === 'RAZLIKA_MJERENJA' ? '0' : document.getElementById('prekl-kolicina').value.trim();
             const napomena = document.getElementById('prekl-napomena').value.trim();
             const errEl    = document.getElementById('prekl-error');
 
-            if (!odjel || !iz || !kolicina) {
+            if (!odjel || !iz) {
                 errEl.textContent = 'Popunite sva obavezna polja.';
                 errEl.style.display = 'block';
                 return;
             }
-            if (tip === 'PREKLASIRANJE' && !u) {
-                errEl.textContent = 'Odaberite u sortiment.';
-                errEl.style.display = 'block';
-                return;
-            }
-            if (tip === 'PREKLASIRANJE' && iz === u) {
-                errEl.textContent = 'Iz i u sortiment moraju biti različiti.';
-                errEl.style.display = 'block';
-                return;
-            }
-            if (parseFloat(kolicina) <= 0) {
-                errEl.textContent = 'Količina mora biti pozitivna.';
-                errEl.style.display = 'block';
-                return;
+            if (tip === 'PREKLASIRANJE') {
+                if (!kolicina) {
+                    errEl.textContent = 'Unesite količinu.';
+                    errEl.style.display = 'block';
+                    return;
+                }
+                if (!u) {
+                    errEl.textContent = 'Odaberite u sortiment.';
+                    errEl.style.display = 'block';
+                    return;
+                }
+                if (iz === u) {
+                    errEl.textContent = 'Iz i u sortiment moraju biti različiti.';
+                    errEl.style.display = 'block';
+                    return;
+                }
+                if (parseFloat(kolicina) <= 0) {
+                    errEl.textContent = 'Količina mora biti pozitivna.';
+                    errEl.style.display = 'block';
+                    return;
+                }
             }
 
             const btn = document.getElementById('prekl-submit-btn');
@@ -8847,11 +8854,11 @@
                                             ${stanjeZalihaSortimenti.map((s, i) => {
                                                 const value = sortimenti[s] || 0;
                                                 const isTotal = i === 9 || i === 18 || i === 19;
-                                                const isRazlika = vrsta === 'zaliha' && !isTotal && (razlExcl[s] || 0) > 0;
-                                                const displayValue = value === 0 ? '-' : value.toFixed(2) + (isRazlika ? '*' : '');
-                                                const cellColor = vrsta === 'zaliha' && value < 0 ? '#dc2626' : (isRazlika ? '#9333ea' : '#374151');
-                                                const cellBg = isTotal ? (vrsta === 'zaliha' ? '#e9d5ff' : '#f3e8ff') : (isRazlika ? '#faf5ff' : '');
-                                                return `<td title="${isRazlika ? 'Razlika mjerenja: ' + razlExcl[s].toFixed(2) + ' m³ isključeno iz ukupnog' : ''}" style="padding: 10px 6px; text-align: right; color: ${cellColor}; border: 1px solid #d1d5db; font-weight: ${isTotal ? '700' : '400'}; font-style: ${isRazlika ? 'italic' : 'normal'}; ${cellBg ? 'background:' + cellBg + ';' : ''}">${displayValue}</td>`;
+                                                const isRazlika = vrsta === 'zaliha' && !isTotal && !!razlExcl[s];
+                                                const displayValue = value === 0 ? '-' : value.toFixed(2);
+                                                const cellColor = isRazlika ? '#92400e' : (vrsta === 'zaliha' && value < 0 ? '#dc2626' : '#374151');
+                                                const cellBg = isTotal ? (vrsta === 'zaliha' ? '#e9d5ff' : '#f3e8ff') : (isRazlika ? '#fef9c3' : '');
+                                                return `<td title="${isRazlika ? 'Razlika mjerenja — isključeno iz ukupnog' : ''}" style="padding: 10px 6px; text-align: right; color: ${cellColor}; border: 1px solid #d1d5db; font-weight: ${isTotal ? '700' : '400'}; font-style: ${isRazlika ? 'italic' : 'normal'}; ${cellBg ? 'background:' + cellBg + ';' : ''}">${displayValue}</td>`;
                                             }).join('')}
                                         </tr>`;
                                     }).join('')}

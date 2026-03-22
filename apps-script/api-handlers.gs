@@ -4450,7 +4450,7 @@ function handleAddPreklasiranje(params) {
       if (!u) return createJsonResponse({ error: "U sortiment je obavezan za preklasiranje" }, false);
       if (iz === u) return createJsonResponse({ error: "Iz i u sortiment moraju biti različiti" }, false);
     }
-    if (isNaN(kolicina) || kolicina <= 0) {
+    if (tip === 'PREKLASIRANJE' && (isNaN(kolicina) || kolicina <= 0)) {
       return createJsonResponse({ error: "Količina mora biti pozitivan broj" }, false);
     }
 
