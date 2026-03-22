@@ -1388,14 +1388,15 @@
                     const dinamika = m.dinamika || 0;
                     const monthIdx = getMonthIndex(m.mjesec);
                     const isFutureMonth = monthIdx > currentMonth;
+                    const isCurrentMonth = monthIdx === currentMonth;
 
                     // For future months, show "—" in DINAMIKA columns
                     if (isFutureMonth) {
                         return `
                             <tr>
                                 <td>${m.mjesec || '-'}</td>
-                                <td class="number green" style="min-width: 120px; font-size: 15px; font-weight: 600;">${(m.sjeca != null && !isNaN(m.sjeca)) ? m.sjeca.toFixed(2) : '0.00'}</td>
-                                <td class="number blue" style="min-width: 120px; font-size: 15px; font-weight: 600;">${(m.otprema != null && !isNaN(m.otprema)) ? m.otprema.toFixed(2) : '0.00'}</td>
+                                <td class="number green" style="min-width: 120px; font-size: 15px;">${(m.sjeca != null && !isNaN(m.sjeca)) ? m.sjeca.toFixed(2) : '0.00'}</td>
+                                <td class="number blue" style="min-width: 120px; font-size: 15px;">${(m.otprema != null && !isNaN(m.otprema)) ? m.otprema.toFixed(2) : '0.00'}</td>
                                 <td class="number">${(m.stanje != null && !isNaN(m.stanje)) ? m.stanje.toFixed(2) : '0.00'}</td>
                                 <td class="number dinamika-dash" style="text-align: center;">—</td>
                                 <td class="number dinamika-dash" style="text-align: center;">—</td>
@@ -1421,10 +1422,10 @@
                     };
 
                     return `
-                        <tr>
+                        <tr${isCurrentMonth ? ' class="current-month-row"' : ''}>
                             <td>${m.mjesec || '-'}</td>
-                            <td class="number green" style="min-width: 120px; font-size: 15px; font-weight: 600;">${(m.sjeca != null && !isNaN(m.sjeca)) ? m.sjeca.toFixed(2) : '0.00'}</td>
-                            <td class="number blue" style="min-width: 120px; font-size: 15px; font-weight: 600;">${(m.otprema != null && !isNaN(m.otprema)) ? m.otprema.toFixed(2) : '0.00'}</td>
+                            <td class="number green" style="min-width: 120px; font-size: 15px;">${(m.sjeca != null && !isNaN(m.sjeca)) ? m.sjeca.toFixed(2) : '0.00'}</td>
+                            <td class="number blue" style="min-width: 120px; font-size: 15px;">${(m.otprema != null && !isNaN(m.otprema)) ? m.otprema.toFixed(2) : '0.00'}</td>
                             <td class="number">${(m.stanje != null && !isNaN(m.stanje)) ? m.stanje.toFixed(2) : '0.00'}</td>
                             <td class="number">
                                 ${(m.dinamika != null && !isNaN(m.dinamika)) ? m.dinamika.toFixed(2) : '0.00'}

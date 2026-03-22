@@ -1723,15 +1723,24 @@
             border-bottom: 1px solid #e5e7eb;
         }
         .professional-monthly-table tbody td:first-child {
-            font-weight: 700;
+            font-weight: 400;
             color: #1f2937;
             font-size: 15px;
         }
         .professional-monthly-table tbody td.number {
             text-align: right;
             font-variant-numeric: tabular-nums;
-            font-weight: 600;
+            font-weight: 400;
             font-size: 16px;
+        }
+        .professional-monthly-table tbody tr.current-month-row {
+            background: #fef3c7 !important;
+        }
+        .professional-monthly-table tbody tr.current-month-row td {
+            font-weight: 700 !important;
+        }
+        .professional-monthly-table tbody tr.current-month-row td:first-child {
+            color: #92400e !important;
         }
         .professional-monthly-table .month-total {
             background: linear-gradient(to bottom, #d1fae5 0%, #a7f3d0 100%);
