@@ -112,10 +112,10 @@ function collectPrintSections(view, fallbackTitle, accentColor) {
 
     targets.forEach(sec => {
         // Pronaći h3/h4 naslove i tabele unutar ove sekcije
-        const nodes = sec.querySelectorAll('h3, h4, table, [id$="-container"]');
+        const nodes = sec.querySelectorAll('h2, h3, h4, table, [id$="-container"]');
 
         nodes.forEach(el => {
-            if (el.tagName === 'H3' || el.tagName === 'H4') {
+            if (el.tagName === 'H2' || el.tagName === 'H3' || el.tagName === 'H4') {
                 heading = cleanPrintText(el.textContent);
             } else if (el.tagName === 'TABLE') {
                 const tbody = el.querySelector('tbody');

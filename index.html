@@ -879,6 +879,9 @@
 
         <!-- KUPCI CONTENT (Prikaz po kupcima) -->
         <div id="kupci-content" class="container hidden">
+            <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+                <button onclick="printActiveView('kupci-content', 'Prikaz po kupcima', '#047857')" style="background:#047857; color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">🖨️ ŠTAMPAJ</button>
+            </div>
             <!-- Submenu za Kupci -->
             <div class="submenu">
                 <button class="submenu-tab active" onclick="switchKupciSubmenu('mjesecni')">📅 Mjesečni pregled</button>
