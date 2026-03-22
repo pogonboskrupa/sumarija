@@ -5,7 +5,108 @@
 // toggleStanjeZalihaPrintMenu(e)   — dropdown izbornik za Stanje zaliha
 // printStanjeZalihaAgregatna()     — agregatna + detaljna sortabilna tabela
 // printStanjeZalihaPoOdjelima()    — po odjelu: Projekat/Sječa/Otprema/Zaliha
+// printKubikator()                 — Kubikator: rekapitulacija + tabela unosa
 // ============================================================
+
+// ─── Kubikator print ─────────────────────────────────────────
+function printKubikator() {
+    const unosi = (typeof getKubikatorUnosi === 'function') ? getKubikatorUnosi() : [];
+    if (!unosi.length) { alert('Nema unosa za štampanje.'); return; }
+
+    const accent = '#047857';
+    const datumStampe   = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const vrijemeStampe = new Date().toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' });
+
+    const fmtTs = ts => new Date(ts).toLocaleString('bs-BA', {
+        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
+    // Rekapitulacija po sortimentima
+    const mapa = {};
+    unosi.forEach(u => {
+        if (!mapa[u.sortiment]) mapa[u.sortiment] = { kom: 0, m3: 0 };
+        mapa[u.sortiment].kom++;
+        mapa[u.sortiment].m3 += u.zapremina;
+    });
+    const ukupnoM3 = unosi.reduce((s, u) => s + u.zapremina, 0);
+
+    const rekapRows = Object.keys(mapa).map(s => `
+        <tr>
+            <td style="padding:7px 10px;font-weight:600;">${s}</td>
+            <td style="padding:7px 10px;text-align:center;">${mapa[s].kom}</td>
+            <td style="padding:7px 10px;text-align:right;font-weight:700;color:${accent};">${mapa[s].m3.toFixed(3)}</td>
+        </tr>`).join('');
+
+    const rekapHtml = `
+        <table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #d1d5db;">
+            <thead>
+                <tr style="background:${accent};color:white;">
+                    <th style="padding:9px 10px;text-align:left;">Sortiment</th>
+                    <th style="padding:9px 10px;text-align:center;">Komada</th>
+                    <th style="padding:9px 10px;text-align:right;">m³</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rekapRows}
+                <tr style="background:#f0fdf4;border-top:2px solid ${accent};">
+                    <td style="padding:9px 10px;font-weight:700;">UKUPNO</td>
+                    <td style="padding:9px 10px;text-align:center;font-weight:700;">${unosi.length}</td>
+                    <td style="padding:9px 10px;text-align:right;font-weight:700;color:${accent};">${ukupnoM3.toFixed(3)}</td>
+                </tr>
+            </tbody>
+        </table>`;
+
+    // Tabela svih unosa
+    const tabelaRows = [...unosi].reverse().map((u, i) => `
+        <tr style="border-bottom:1px solid #e5e7eb;">
+            <td style="padding:7px 8px;text-align:center;color:#6b7280;">${unosi.length - i}</td>
+            <td style="padding:7px 8px;font-size:11px;">${fmtTs(u.ts)}</td>
+            <td style="padding:7px 8px;font-weight:600;">${u.sortiment}</td>
+            <td style="padding:7px 8px;text-align:center;">${u.precnik}</td>
+            <td style="padding:7px 8px;text-align:center;">${u.duzina.toFixed(2)}</td>
+            <td style="padding:7px 8px;text-align:right;font-weight:700;color:${accent};">${u.zapremina.toFixed(3)}</td>
+            <td style="padding:7px 8px;font-size:11px;color:#6b7280;">${u.napomena || ''}</td>
+        </tr>`).join('');
+
+    const tabelaHtml = `
+        <table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #d1d5db;">
+            <thead>
+                <tr style="background:${accent};color:white;">
+                    <th style="padding:9px 8px;text-align:center;">#</th>
+                    <th style="padding:9px 8px;text-align:left;">Datum/Vrij.</th>
+                    <th style="padding:9px 8px;text-align:left;">Sortiment</th>
+                    <th style="padding:9px 8px;text-align:center;">Prečnik (cm)</th>
+                    <th style="padding:9px 8px;text-align:center;">Dužina (m)</th>
+                    <th style="padding:9px 8px;text-align:right;">m³</th>
+                    <th style="padding:9px 8px;text-align:left;">Napomena</th>
+                </tr>
+            </thead>
+            <tbody>${tabelaRows}</tbody>
+        </table>`;
+
+    const sectionsHtml = `
+        <div class="print-section">
+            <div class="section-header" style="border-left:4px solid ${accent};">Rekapitulacija po sortimentima</div>
+            ${rekapHtml}
+        </div>
+        <div class="print-section" style="page-break-before:always;">
+            <div class="section-header" style="border-left:4px solid ${accent};">Svi unosi (${unosi.length} komada)</div>
+            ${tabelaHtml}
+        </div>`;
+
+    const win = window.open('', '_blank', 'width=1100,height=900,scrollbars=yes');
+    win.document.write(buildPrintDocument({
+        tabLabel: 'Kubikator',
+        activeTabLabel: 'Terenski pregled',
+        accentColor: accent,
+        monthName: datumStampe,
+        year: '',
+        datumStampe,
+        vrijemeStampe,
+        sectionsHtml
+    }));
+    win.document.close();
+}
 
 // ─── Dropdown izbornik ───────────────────────────────────────
 function toggleStanjeZalihaPrintMenu(e) {

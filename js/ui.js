@@ -149,6 +149,7 @@
                 switchOtpremacIzvjestajiSubTab('sedmicni');
             } else if (tab === 'kubikator') {
                 document.getElementById('kubikator-content').classList.remove('hidden');
+                if (typeof initKubikator === 'function') initKubikator();
             } else if (tab === 'ostalo') {
                 document.getElementById('ostalo-content').classList.remove('hidden');
                 // Load kubikator by default (najbitniji podmeni)
