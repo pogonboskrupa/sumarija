@@ -2351,9 +2351,16 @@
                         </div>
 
                         <div style="grid-column:1/-1;">
-                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Sortiment</label>
+                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Odjel <span style="font-weight:400;color:#9ca3af;">(opcija)</span></label>
+                            <select id="kub-odjel" style="width:100%;padding:13px 12px;font-size:16px;border:2px solid #d1d5db;border-radius:8px;background:white;">
+                                <option value="">— opciono —</option>
+                            </select>
+                        </div>
+
+                        <div style="grid-column:1/-1;">
+                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Sortiment <span style="font-weight:400;color:#9ca3af;">(opcija)</span></label>
                             <select id="kub-sortiment" style="width:100%;padding:13px 12px;font-size:16px;border:2px solid #d1d5db;border-radius:8px;background:white;">
-                                <option value="">— odaberi sortiment —</option>
+                                <option value="">— opciono —</option>
                             </select>
                         </div>
 
@@ -2441,6 +2448,7 @@
                                 <tr style="background:#f9fafb;border-bottom:2px solid #d1d5db;">
                                     <th style="padding:10px 8px;text-align:center;color:#6b7280;font-weight:600;">#</th>
                                     <th style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Datum/Vrij.</th>
+                                    <th style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Odjel</th>
                                     <th style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Sortiment</th>
                                     <th style="padding:10px 8px;text-align:center;color:#374151;font-weight:600;">Prečnik (cm)</th>
                                     <th style="padding:10px 8px;text-align:center;color:#374151;font-weight:600;">Dužina (m)</th>
@@ -2450,7 +2458,7 @@
                                 </tr>
                             </thead>
                             <tbody id="kub-tabela-tbody">
-                                <tr><td colspan="8" style="text-align:center;color:#9ca3af;padding:30px;">Nema unosa. Dodajte prvi komad.</td></tr>
+                                <tr><td colspan="9" style="text-align:center;color:#9ca3af;padding:30px;">Nema unosa. Dodajte prvi komad.</td></tr>
                             </tbody>
                         </table>
                     </div>

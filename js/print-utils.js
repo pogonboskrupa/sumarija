@@ -61,7 +61,8 @@ function printKubikator() {
         <tr style="border-bottom:1px solid #e5e7eb;">
             <td style="padding:7px 8px;text-align:center;color:#6b7280;">${unosi.length - i}</td>
             <td style="padding:7px 8px;font-size:11px;">${fmtTs(u.ts)}</td>
-            <td style="padding:7px 8px;font-weight:600;">${u.sortiment}</td>
+            <td style="padding:7px 8px;font-size:11px;color:#374151;">${u.odjel || '—'}</td>
+            <td style="padding:7px 8px;font-weight:600;">${u.sortiment || '—'}</td>
             <td style="padding:7px 8px;text-align:center;">${u.precnik}</td>
             <td style="padding:7px 8px;text-align:center;">${u.duzina.toFixed(2)}</td>
             <td style="padding:7px 8px;text-align:right;font-weight:700;color:${accent};">${u.zapremina.toFixed(2)}</td>
@@ -74,6 +75,7 @@ function printKubikator() {
                 <tr style="background:${accent};color:white;">
                     <th style="padding:9px 8px;text-align:center;">#</th>
                     <th style="padding:9px 8px;text-align:left;">Datum/Vrij.</th>
+                    <th style="padding:9px 8px;text-align:left;">Odjel</th>
                     <th style="padding:9px 8px;text-align:left;">Sortiment</th>
                     <th style="padding:9px 8px;text-align:center;">Prečnik (cm)</th>
                     <th style="padding:9px 8px;text-align:center;">Dužina (m)</th>

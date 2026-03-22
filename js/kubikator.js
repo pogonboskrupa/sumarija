@@ -20,30 +20,50 @@ const KUB_KEY = 'kubikator_unosi';
 let _kubUnosi = [];
 let _kubEditingId = null;
 let _kubFilter = '';
-let _kubVrsta = ''; // 'cetinari' | 'liscari' | '' (nije odabrano)
+let _kubVrsta = ''; // 'cetinari' | 'liscari' | ''
 let _kubInited = false;
 
-// ─── Pristupnik za printanje (poziva print-utils.js) ─────────
+// ─── Pristupnik za printanje ──────────────────────────────────
 function getKubikatorUnosi() { return _kubUnosi; }
 
-// ─── Inicijalizacija (poziva se jednom pri otvaranju taba) ────
+// ─── Inicijalizacija ──────────────────────────────────────────
 function initKubikator() {
     if (_kubInited) { _kubRenderAll(); return; }
     _kubInited = true;
     _kubUnosi = _kubUcitaj();
+    _kubPopuniOdjeli();
     _kubRenderAll();
 
-    // Enter key na input poljima pokreće dodaj
     ['kub-precnik', 'kub-duzina', 'kub-napomena'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('keydown', function(e) {
+        if (el) el.addEventListener('keydown', e => {
             if (e.key === 'Enter') { e.preventDefault(); kubikatorDodaj(); }
         });
     });
     const sortSel = document.getElementById('kub-sortiment');
-    if (sortSel) sortSel.addEventListener('keydown', function(e) {
+    if (sortSel) sortSel.addEventListener('keydown', e => {
         if (e.key === 'Enter') { e.preventDefault(); document.getElementById('kub-precnik').focus(); }
     });
+}
+
+// ─── Popuni odjel dropdown iz cached stanje-zaliha podataka ──
+function _kubPopuniOdjeli() {
+    const sel = document.getElementById('kub-odjel');
+    if (!sel) return;
+    try {
+        const raw = localStorage.getItem('cache_stanje_zaliha');
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        const odjeli = (parsed.data || parsed).odjeli || [];
+        const names = [...new Set(odjeli.map(o => o.odjel))].filter(Boolean).sort();
+        if (!names.length) return;
+        sel.innerHTML = '<option value="">— opciono —</option>';
+        names.forEach(name => {
+            const o = document.createElement('option');
+            o.value = name; o.textContent = name;
+            sel.appendChild(o);
+        });
+    } catch(e) {}
 }
 
 // ─── Odabir vrste: četinari / lišćari ────────────────────────
@@ -61,7 +81,7 @@ function _kubPopuniSortiment() {
     const lista = _kubVrsta === 'cetinari' ? KUBIKATOR_CETINARI
                 : _kubVrsta === 'liscari'  ? KUBIKATOR_LISCARI
                 : KUBIKATOR_SORTIMENTI;
-    sel.innerHTML = '<option value="">— odaberi sortiment —</option>';
+    sel.innerHTML = '<option value="">— opciono —</option>';
     lista.forEach(s => {
         const o = document.createElement('option');
         o.value = s; o.textContent = s;
@@ -73,22 +93,26 @@ function _kubOznaciVrstaBtn() {
     const btnC = document.getElementById('kub-btn-cetinari');
     const btnL = document.getElementById('kub-btn-liscari');
     if (!btnC || !btnL) return;
-    const activeC = 'background:#047857;color:white;border-color:#047857;';
-    const activeL = 'background:#b45309;color:white;border-color:#b45309;';
-    const inactC  = 'background:white;color:#047857;border-color:#047857;';
-    const inactL  = 'background:white;color:#b45309;border-color:#b45309;';
-    btnC.style.cssText += _kubVrsta === 'cetinari' ? activeC : inactC;
-    btnL.style.cssText += _kubVrsta === 'liscari'  ? activeL : inactL;
+    if (_kubVrsta === 'cetinari') {
+        btnC.style.background = '#047857'; btnC.style.color = 'white';
+        btnL.style.background = 'white';   btnL.style.color = '#b45309';
+    } else if (_kubVrsta === 'liscari') {
+        btnL.style.background = '#b45309'; btnL.style.color = 'white';
+        btnC.style.background = 'white';   btnC.style.color = '#047857';
+    } else {
+        btnC.style.background = 'white'; btnC.style.color = '#047857';
+        btnL.style.background = 'white'; btnL.style.color = '#b45309';
+    }
 }
 
 // ─── Dodaj / spremi izmjenu ───────────────────────────────────
 function kubikatorDodaj() {
+    const odjel    = (document.getElementById('kub-odjel').value    || '').trim();
     const sortiment = (document.getElementById('kub-sortiment').value || '').trim();
     const precnik   = parseFloat(document.getElementById('kub-precnik').value);
     const duzina    = parseFloat(document.getElementById('kub-duzina').value);
     const napomena  = (document.getElementById('kub-napomena').value || '').trim();
 
-    if (!sortiment) { _kubAlert('Molimo odaberite sortiment.'); return; }
     if (!precnik || precnik <= 0) { _kubAlert('Prečnik mora biti veći od 0.'); return; }
     if (!duzina  || duzina  <= 0) { _kubAlert('Dužina mora biti veća od 0.');  return; }
 
@@ -98,12 +122,12 @@ function kubikatorDodaj() {
     if (_kubEditingId !== null) {
         const idx = _kubUnosi.findIndex(u => u.id === _kubEditingId);
         if (idx !== -1) {
-            _kubUnosi[idx] = { ..._kubUnosi[idx], sortiment, precnik, duzina, zapremina, napomena };
+            _kubUnosi[idx] = { ..._kubUnosi[idx], odjel, sortiment, precnik, duzina, zapremina, napomena };
         }
         _kubEditingId = null;
     } else {
         const ts = Date.now();
-        _kubUnosi.push({ id: ts, ts, sortiment, precnik, duzina, zapremina, napomena });
+        _kubUnosi.push({ id: ts, ts, odjel, sortiment, precnik, duzina, zapremina, napomena });
     }
 
     _kubSacuvaj();
@@ -120,18 +144,21 @@ function kubikatorObrisi(id) {
     _kubRenderAll();
 }
 
-// ─── Izmijeni red (puni formu) ────────────────────────────────
+// ─── Izmijeni red ─────────────────────────────────────────────
 function kubikatorIzmijeni(id) {
     const u = _kubUnosi.find(u => u.id === id);
     if (!u) return;
-    // Postavi vrstu prema sortimentu
-    const novaVrsta = KUBIKATOR_CETINARI.includes(u.sortiment) ? 'cetinari' : 'liscari';
-    if (novaVrsta !== _kubVrsta) {
-        _kubVrsta = novaVrsta;
-        _kubPopuniSortiment();
-        _kubOznaciVrstaBtn();
+    // Postavi vrstu prema sortimentu ako postoji
+    if (u.sortiment) {
+        const novaVrsta = KUBIKATOR_CETINARI.includes(u.sortiment) ? 'cetinari' : 'liscari';
+        if (novaVrsta !== _kubVrsta) {
+            _kubVrsta = novaVrsta;
+            _kubPopuniSortiment();
+            _kubOznaciVrstaBtn();
+        }
     }
-    document.getElementById('kub-sortiment').value = u.sortiment;
+    document.getElementById('kub-odjel').value    = u.odjel    || '';
+    document.getElementById('kub-sortiment').value = u.sortiment || '';
     document.getElementById('kub-precnik').value   = u.precnik;
     document.getElementById('kub-duzina').value    = u.duzina;
     document.getElementById('kub-napomena').value  = u.napomena || '';
@@ -158,7 +185,7 @@ function kubikatorOcistiSve() {
     _kubResetFormu();
 }
 
-// ─── Filter po sortimentu ────────────────────────────────────
+// ─── Filter po sortimentu ─────────────────────────────────────
 function kubikatorSetFilter(val) {
     _kubFilter = val;
     _kubRenderTabela();
@@ -167,11 +194,12 @@ function kubikatorSetFilter(val) {
 // ─── CSV export ───────────────────────────────────────────────
 function kubikatorExportCSV() {
     if (_kubUnosi.length === 0) { _kubAlert('Nema unosa za export.'); return; }
-    const header = ['R.B.', 'Datum/Vrijime', 'Sortiment', 'Precnik_cm', 'Duzina_m', 'Zapremina_m3', 'Napomena'];
+    const header = ['R.B.', 'Datum/Vrijime', 'Odjel', 'Sortiment', 'Precnik_cm', 'Duzina_m', 'Zapremina_m3', 'Napomena'];
     const rows = _kubUnosi.map((u, i) => [
         i + 1,
         _kubFmtTs(u.ts),
-        u.sortiment,
+        u.odjel || '',
+        u.sortiment || '',
         u.precnik,
         u.duzina.toFixed(2),
         u.zapremina.toFixed(2),
@@ -201,13 +229,13 @@ function _kubUcitaj() {
 }
 
 function _kubResetFormu() {
+    document.getElementById('kub-odjel').value     = '';
     document.getElementById('kub-sortiment').value = '';
     document.getElementById('kub-precnik').value   = '';
     document.getElementById('kub-duzina').value    = '';
     document.getElementById('kub-napomena').value  = '';
     document.getElementById('kub-dodaj-btn').textContent = '➕ DODAJ';
     document.getElementById('kub-odustani-btn').style.display = 'none';
-    // Fokus na vrsta-dugmad ako ništa odabrano, inače na sortiment
     if (!_kubVrsta) {
         const btnC = document.getElementById('kub-btn-cetinari');
         if (btnC) btnC.focus();
@@ -231,12 +259,12 @@ function _kubRenderRekapitulacija() {
     document.getElementById('kub-ukupno-kom').textContent = ukupnoKom;
     document.getElementById('kub-ukupno-m3').textContent  = ukupnoM3.toFixed(2);
 
-    // Po sortimentima
     const mapa = {};
     _kubUnosi.forEach(u => {
-        if (!mapa[u.sortiment]) mapa[u.sortiment] = { kom: 0, m3: 0 };
-        mapa[u.sortiment].kom++;
-        mapa[u.sortiment].m3 += u.zapremina;
+        const key = u.sortiment || '—';
+        if (!mapa[key]) mapa[key] = { kom: 0, m3: 0 };
+        mapa[key].kom++;
+        mapa[key].m3 += u.zapremina;
     });
 
     const tbody = document.getElementById('kub-rekap-tbody');
@@ -247,8 +275,10 @@ function _kubRenderRekapitulacija() {
         return;
     }
 
-    const sortirani = KUBIKATOR_SORTIMENTI.filter(s => mapa[s]);
-    tbody.innerHTML = sortirani.map(s => `
+    // Sortimentirani po redoslijedu konfiguracije, ostali na kraj
+    const poznati = KUBIKATOR_SORTIMENTI.filter(s => mapa[s]);
+    const ostali  = Object.keys(mapa).filter(s => !KUBIKATOR_SORTIMENTI.includes(s));
+    tbody.innerHTML = [...poznati, ...ostali].map(s => `
         <tr>
             <td style="padding:6px 10px;font-weight:600;color:#065f46;">${s}</td>
             <td style="padding:6px 10px;text-align:center;">${mapa[s].kom}</td>
@@ -265,7 +295,7 @@ function _kubRenderTabela() {
     if (!tbody) return;
 
     if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#9ca3af;padding:20px;">${_kubFilter ? 'Nema unosa za odabrani sortiment.' : 'Nema unosa. Dodajte prvi komad.'}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#9ca3af;padding:20px;">${_kubFilter ? 'Nema unosa za odabrani sortiment.' : 'Nema unosa. Dodajte prvi komad.'}</td></tr>`;
         return;
     }
 
@@ -277,7 +307,8 @@ function _kubRenderTabela() {
         return `<tr style="border-bottom:1px solid #e5e7eb;${rowBg}">
             <td style="padding:10px 8px;text-align:center;color:#9ca3af;font-size:12px;">${rb}</td>
             <td style="padding:10px 8px;font-size:12px;white-space:nowrap;">${_kubFmtTs(u.ts)}</td>
-            <td style="padding:10px 8px;font-weight:600;color:#065f46;">${u.sortiment}</td>
+            <td style="padding:10px 8px;font-size:12px;color:#374151;">${u.odjel || '<span style="color:#d1d5db;">—</span>'}</td>
+            <td style="padding:10px 8px;font-weight:600;color:#065f46;">${u.sortiment || '<span style="color:#d1d5db;">—</span>'}</td>
             <td style="padding:10px 8px;text-align:center;">${u.precnik}</td>
             <td style="padding:10px 8px;text-align:center;">${u.duzina.toFixed(2)}</td>
             <td style="padding:10px 8px;text-align:right;font-weight:700;color:#047857;">${u.zapremina.toFixed(2)}</td>
@@ -293,7 +324,7 @@ function _kubRenderTabela() {
 function _kubRenderFilterSelect() {
     const sel = document.getElementById('kub-filter-sort');
     if (!sel) return;
-    const aktivni = new Set(_kubUnosi.map(u => u.sortiment));
+    const aktivni = new Set(_kubUnosi.map(u => u.sortiment).filter(Boolean));
     const trenutni = sel.value;
     sel.innerHTML = '<option value="">Svi sortimenti</option>';
     KUBIKATOR_SORTIMENTI.filter(s => aktivni.has(s)).forEach(s => {
