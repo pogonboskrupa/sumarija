@@ -15,7 +15,7 @@
         .header { background: white; color: #1f2937; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 16px 24px; border-bottom: 1px solid #e5e7eb; }
         .header-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
         .header-left { display: flex; align-items: center; gap: 12px; }
-        .header-logo { font-size: 28px; }
+        .header-logo { height: 48px; width: auto; object-fit: contain; }
         .header-center { display: flex; align-items: center; justify-content: center; flex: 1; margin: 0 20px; }
         .company-logo { height: 60px; width: auto; object-fit: contain; transition: all 0.3s ease; }
         .company-logo:hover { transform: scale(1.05); }
@@ -1037,7 +1037,7 @@
             .header-center { margin: 10px 0; }
             .company-logo { height: 50px; }
             .header-right { width: 100%; justify-content: space-between; }
-            .header-logo { font-size: 24px; }
+            .header-logo { height: 36px; }
             .header-title h1 { font-size: 16px; }
             .header-title p { font-size: 11px; }
             .header-user-name { font-size: 13px; }
