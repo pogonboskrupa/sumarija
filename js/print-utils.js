@@ -506,6 +506,16 @@ tbody td:first-child {
     font-weight: 600;
     color: #1e293b;
 }
+/* Kupac kolona (2. kolona) — boldano */
+tbody td:nth-child(2) {
+    font-weight: 700 !important;
+    font-size: 11px !important;
+}
+/* Sortimentne vrijednosti (od 3. kolone) — blago povećan font */
+tbody td:nth-child(n+3) {
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+}
 tfoot tr td {
     background: ${dark} !important;
     color: #fff !important;
