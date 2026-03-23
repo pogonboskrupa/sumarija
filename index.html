@@ -760,7 +760,6 @@
                     </select>
                     <select id="primaci-admin-year-select" onchange="onPrimaciAdminYearChange()" style="display: none; padding: 8px 12px; border-radius: 8px; border: 2px solid #10b981; font-size: 14px; background: white;">
                     </select>
-                    <button onclick="exportVisibleTable('primaci-admin-content', 'Primac-Admin')" style="background: #047857; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
                 </div>
             </div>
 
@@ -802,7 +801,10 @@
                 <div style="margin-bottom: 20px; background: white; border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <h4 style="margin: 0; color: #374151;">Svi unosi</h4>
-                        <input type="text" id="primaci-admin-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterPrimaciAdminTable()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px; width: 200px;">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="text" id="primaci-admin-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterPrimaciAdminTable()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px; width: 200px;">
+                            <button onclick="printActiveView('primaci-admin-content', 'Pregled sječe', '#047857')" style="background: #047857; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; white-space: nowrap;">🖨️ Štampaj</button>
+                        </div>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table class="data-table worker-table" id="primaci-admin-table">
