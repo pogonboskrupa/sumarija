@@ -318,6 +318,12 @@ function printActiveView(contentId, tabLabel, accentColor) {
     const datumStampe = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const vrijemeStampe = new Date().toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' });
 
+    // Izabrani primač/otpremač iz dropdown-a (ako postoji)
+    const personSel = container.querySelector('select:not(.month-select):not(.year-select)');
+    const personLabel = (personSel && personSel.value)
+        ? personSel.options[personSel.selectedIndex].text.trim()
+        : '';
+
     // Sakupi sekcije za ispis
     const sections = collectPrintSections(activeView, activeTabLabel, accentColor);
 
@@ -338,7 +344,7 @@ function printActiveView(contentId, tabLabel, accentColor) {
     win.document.write(buildPrintDocument({
         tabLabel, activeTabLabel, accentColor,
         monthName, year, datumStampe, vrijemeStampe,
-        sectionsHtml
+        sectionsHtml, personLabel
     }));
     win.document.close();
 }
@@ -416,7 +422,7 @@ function tableToCleanHtml(tableEl) {
 }
 
 // ── Gradi finalni HTML dokument za print prozor ──
-function buildPrintDocument({ tabLabel, activeTabLabel, accentColor, monthName, year, datumStampe, vrijemeStampe, sectionsHtml }) {
+function buildPrintDocument({ tabLabel, activeTabLabel, accentColor, monthName, year, datumStampe, vrijemeStampe, sectionsHtml, personLabel }) {
     const dark = accentColor;
     return `<!DOCTYPE html>
 <html lang="bs">
@@ -455,6 +461,7 @@ body {
 .doc-header-right { text-align: right; }
 .doc-title { font-size: 15px; font-weight: 700; color: ${dark}; }
 .doc-subtitle { font-size: 11px; color: #374151; margin-top: 2px; }
+.doc-person { font-size: 13px; font-weight: 700; color: ${dark}; margin-top: 3px; }
 .doc-meta { font-size: 9px; color: #9ca3af; margin-top: 4px; }
 
 /* ── SEKCIJA ── */
@@ -632,6 +639,7 @@ td.col-sveukupno, th.col-sveukupno { background: #dcfce7; }
     <div class="doc-header-right">
         <div class="doc-title">${tabLabel}</div>
         <div class="doc-subtitle">${activeTabLabel} &mdash; ${monthName} ${year}</div>
+        ${personLabel ? `<div class="doc-person">${personLabel}</div>` : ''}
         <div class="doc-meta">Datum štampe: ${datumStampe} &nbsp;|&nbsp; ${vrijemeStampe}</div>
     </div>
 </div>
