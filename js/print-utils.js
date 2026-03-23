@@ -599,10 +599,10 @@ td.col-sveukupno, th.col-sveukupno { background: #dcfce7; }
     .screen-only { display: none !important; }
     body { padding: 0; }
     @page { size: A4 landscape; margin: 10mm 12mm; }
-    .print-section { page-break-inside: avoid; }
-    .section-header { page-break-after: avoid; }
-    table { page-break-inside: auto; }
-    tr { page-break-inside: avoid; }
+    .print-section { break-inside: auto; page-break-inside: auto; }
+    .section-header { page-break-after: avoid; break-after: avoid; }
+    table { page-break-inside: auto; break-inside: auto; }
+    tr { page-break-inside: avoid; break-inside: avoid; }
 }
 </style>
 </head>

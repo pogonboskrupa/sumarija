@@ -5496,7 +5496,8 @@
                 const arrow = isActive ? (state.direction === 'asc' ? ' ↑' : ' ↓') : '';
                 const activeClass = isActive ? 'sort-active' : '';
                 const bgStyle = sortiment === 'SVEUKUPNO' ? ` background: ${headerBgColorAlt};` : '';
-                headerHtml += `<th class="sortable-header ${activeClass}" onclick="handleKupciHeaderClick('${tabType}', '${sortKey}')" style="color: white; font-weight: 700; text-align: right; cursor: pointer;${bgStyle}">${sortiment}${arrow}</th>`;
+                const sepStyle = sortiment === 'F/L L' ? ' border-left: 3px solid rgba(255,255,255,0.6);' : '';
+                headerHtml += `<th class="sortable-header ${activeClass}" onclick="handleKupciHeaderClick('${tabType}', '${sortKey}')" style="color: white; font-weight: 700; text-align: right; cursor: pointer;${bgStyle}${sepStyle}">${sortiment}${arrow}</th>`;
             });
 
             headerHtml += '</tr>';
@@ -5582,7 +5583,8 @@
                     const color = kolicina > 0 ? '#000000' : '#9ca3af';
                     const medalClass = sortiment !== 'SVEUKUPNO' ? getMedalClass(kolicina, top3PoSortimentu[sortiment]) : '';
                     const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #d1fae5; font-weight: 700;' : '';
-                    bodyHtml += `<td class="${medalClass}" style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}">${display}</td>`;
+                    const sepStyle = sortiment === 'F/L L' ? ' border-left: 3px solid #047857;' : '';
+                    bodyHtml += `<td class="${medalClass}" style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}${sepStyle}">${display}</td>`;
                 });
 
                 bodyHtml += '</tr>';
@@ -5595,7 +5597,8 @@
             sortimentiNazivi.forEach(sortiment => {
                 const suma = ukupnoSume[sortiment] || 0;
                 const display = suma > 0 ? suma.toFixed(2) : '-';
-                bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 700; color: white; text-shadow: 0 1px 1px rgba(0,0,0,0.3);">${display}</td>`;
+                const sepStyle = sortiment === 'F/L L' ? ' border-left: 3px solid rgba(255,255,255,0.5);' : '';
+                bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 700; color: white; text-shadow: 0 1px 1px rgba(0,0,0,0.3);${sepStyle}">${display}</td>`;
             });
             bodyHtml += '</tr>';
 
@@ -5688,7 +5691,8 @@
                     const color = kolicina > 0 ? '#000000' : '#9ca3af';
                     const medalClass = sortiment !== 'SVEUKUPNO' ? getMedalClass(kolicina, top3PoSortimentu[sortiment]) : '';
                     const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #bae6fd; font-weight: 700;' : '';
-                    bodyHtml += `<td class="${medalClass}" style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}">${display}</td>`;
+                    const sepStyle = sortiment === 'F/L L' ? ' border-left: 3px solid #0369a1;' : '';
+                    bodyHtml += `<td class="${medalClass}" style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}${sepStyle}">${display}</td>`;
                 });
 
                 bodyHtml += '</tr>';
@@ -5701,7 +5705,8 @@
             sortimentiNazivi.forEach(sortiment => {
                 const suma = ukupnoSume[sortiment] || 0;
                 const display = suma > 0 ? suma.toFixed(2) : '-';
-                bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 700; color: white; text-shadow: 0 1px 1px rgba(0,0,0,0.3);">${display}</td>`;
+                const sepStyle = sortiment === 'F/L L' ? ' border-left: 3px solid rgba(255,255,255,0.5);' : '';
+                bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 700; color: white; text-shadow: 0 1px 1px rgba(0,0,0,0.3);${sepStyle}">${display}</td>`;
             });
             bodyHtml += '</tr>';
 
@@ -5876,7 +5881,8 @@
                     const color = kolicina > 0 ? '#000000' : '#9ca3af';
                     const medalClass = sortiment !== 'SVEUKUPNO' ? getMedalClass(kolicina, top3PoSortimentu[sortiment]) : '';
                     const bgStyle = sortiment === 'SVEUKUPNO' ? ' background: #ede9fe; font-weight: 700;' : '';
-                    bodyHtml += `<td class="${medalClass}" style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}">${display}</td>`;
+                    const sepStyle = sortiment === 'F/L L' ? ' border-left: 3px solid #7c3aed;' : '';
+                    bodyHtml += `<td class="${medalClass}" style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 500; color: ${color}; text-shadow: 0 0 1px rgba(255,255,255,0.8);${bgStyle}${sepStyle}">${display}</td>`;
                 });
 
                 bodyHtml += '</tr>';
@@ -5889,7 +5895,8 @@
             sortimentiNazivi.forEach(sortiment => {
                 const suma = ukupnoSume[sortiment] || 0;
                 const display = suma > 0 ? suma.toFixed(2) : '-';
-                bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 700; color: white; text-shadow: 0 1px 1px rgba(0,0,0,0.3);">${display}</td>`;
+                const sepStyle = sortiment === 'F/L L' ? ' border-left: 3px solid rgba(255,255,255,0.5);' : '';
+                bodyHtml += `<td style="text-align: right; font-family: 'Roboto Mono', ui-monospace, system-ui, monospace; font-weight: 700; color: white; text-shadow: 0 1px 1px rgba(0,0,0,0.3);${sepStyle}">${display}</td>`;
             });
             bodyHtml += '</tr>';
 
