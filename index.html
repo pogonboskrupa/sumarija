@@ -50,6 +50,8 @@
     <!-- Fixes -->
     <script src="js/week-fix.js" defer></script>
     <script src="js/izvjestaji-new.js" defer></script>
+    <script src="js/print-utils.js" defer></script>
+    <script src="js/kubikator.js" defer></script>
 
     <!-- Offline-First -->
     <script src="idb-helper.js" defer></script>
@@ -142,6 +144,7 @@
         <div class="header">
             <div class="header-content">
                 <div class="header-left">
+                    <img src="assets/IMG_20260322_182605.png" alt="Šumarija Bos. Krupa" class="header-logo">
                     <div class="header-title">
                         <p class="company-name-header">ŠPD "UNSKO-SANSKE ŠUME" D.O.O. BOS.KRUPA</p>
                         <h1>Pogon gospodarenja Bos. Krupa</h1>
@@ -269,7 +272,7 @@
             <!-- MAIN CONTENT AREA -->
             <main class="main-content">
                 <div id="loading-screen" class="loading">
-            <div class="loading-icon"><img src="1773603789726.png" alt="Šumarija Bos. Krupa" style="width: 120px; height: auto;"></div>
+            <div class="loading-icon"><img src="assets/IMG_20260322_182605.png" alt="Šumarija Bos. Krupa" style="width: 120px; height: auto;"></div>
             <div class="loading-text">Učitavam podatke...</div>
         </div>
         
@@ -291,7 +294,17 @@
 
             <!-- Sječa i Otprema zadnjih 5 radnih dana -->
             <div class="section">
-                <h2>📅 Sječa i otprema zadnjih 5 radnih dana <span id="zadnjih5-period" style="font-weight: 400; font-size: 14px; color: #6b7280;"></span></h2>
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+                    <h2 style="margin: 0;">📅 Sječa i otprema zadnjih 5 radnih dana <span id="zadnjih5-period" style="font-weight: 400; font-size: 14px; color: #6b7280;"></span></h2>
+                    <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #6b7280; flex-wrap: wrap;">
+                        <span>Izaberi period:</span>
+                        <input type="date" id="zadnjih-od" style="padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; color: #374151;">
+                        <span>—</span>
+                        <input type="date" id="zadnjih-do" style="padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; color: #374151;">
+                        <button onclick="applyZadnjihPeriod()" style="padding: 4px 12px; background: #047857; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">Primijeni</button>
+                        <button onclick="renderZadnjihPeriodTable(null,null)" title="Reset na zadnjih 5 dana" style="padding: 4px 8px; background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; cursor: pointer;">↺ Reset</button>
+                    </div>
+                </div>
                 <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                     <table class="monthly-table" id="zadnjih5-dana-table" style="width: 100%; border-collapse: collapse;">
                         <thead id="zadnjih5-dana-header"></thead>
@@ -410,9 +423,14 @@
                         </h2>
                         <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Prikaz mjesečnih podataka za tekuću godinu</p>
                     </div>
-                    <button onclick="exportTableToExcel('mjesecna-sjeca-table', 'Sjeca-po-mjesecima')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-                        <span>📥</span> Export
-                    </button>
+                    <div style="display:flex; gap:8px;">
+                        <button onclick="printMjesecniCard('sjeca')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                            🖨️ ŠTAMPAJ
+                        </button>
+                        <button onclick="exportTableToExcel('mjesecna-sjeca-table', 'Sjeca-po-mjesecima')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                            <span>📥</span> Export
+                        </button>
+                    </div>
                 </div>
                 <!-- Table Container -->
                 <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
@@ -433,9 +451,14 @@
                         </h2>
                         <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Prikaz mjesečnih podataka za tekuću godinu</p>
                     </div>
-                    <button onclick="exportTableToExcel('mjesecna-otprema-table', 'Otprema-po-mjesecima')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-                        <span>📥</span> Export
-                    </button>
+                    <div style="display:flex; gap:8px;">
+                        <button onclick="printMjesecniCard('otprema')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                            🖨️ ŠTAMPAJ
+                        </button>
+                        <button onclick="exportTableToExcel('mjesecna-otprema-table', 'Otprema-po-mjesecima')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                            <span>📥</span> Export
+                        </button>
+                    </div>
                 </div>
                 <!-- Table Container -->
                 <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
@@ -451,7 +474,10 @@
         <div id="primaci-content" class="container hidden">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                 <h2>👷 SJEČA</h2>
-                <button onclick="exportVisibleTable('primaci-content', 'Sjeca')" style="background: #1e3a5f; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <button onclick="printActiveView('primaci-content', 'Sječa', '#1e3a5f')" style="background: #1e3a5f; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;">🖨️ ŠTAMPAJ</button>
+                    <button onclick="exportVisibleTable('primaci-content', 'Sjeca')" style="background: #1e3a5f; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+                </div>
             </div>
 
             <!-- Submenu -->
@@ -605,7 +631,10 @@
         <div id="otpremaci-content" class="container hidden">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                 <h2>🚛 OTPREMA</h2>
-                <button onclick="exportVisibleTable('otpremaci-content', 'Otprema')" style="background: #7c2d12; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <button onclick="printActiveView('otpremaci-content', 'Otprema', '#7c2d12')" style="background: #7c2d12; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;">🖨️ ŠTAMPAJ</button>
+                    <button onclick="exportVisibleTable('otpremaci-content', 'Otprema')" style="background: #7c2d12; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+                </div>
             </div>
 
             <!-- Submenu -->
@@ -741,7 +770,6 @@
                     </select>
                     <select id="primaci-admin-year-select" onchange="onPrimaciAdminYearChange()" style="display: none; padding: 8px 12px; border-radius: 8px; border: 2px solid #10b981; font-size: 14px; background: white;">
                     </select>
-                    <button onclick="exportVisibleTable('primaci-admin-content', 'Primac-Admin')" style="background: #047857; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
                 </div>
             </div>
 
@@ -783,7 +811,10 @@
                 <div style="margin-bottom: 20px; background: white; border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <h4 style="margin: 0; color: #374151;">Svi unosi</h4>
-                        <input type="text" id="primaci-admin-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterPrimaciAdminTable()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px; width: 200px;">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="text" id="primaci-admin-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterPrimaciAdminTable()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px; width: 200px;">
+                            <button onclick="printActiveView('primaci-admin-content', 'Pregled sječe', '#047857')" style="background: #047857; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; white-space: nowrap;">🖨️ Štampaj</button>
+                        </div>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table class="data-table worker-table" id="primaci-admin-table">
@@ -862,6 +893,9 @@
 
         <!-- KUPCI CONTENT (Prikaz po kupcima) -->
         <div id="kupci-content" class="container hidden">
+            <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+                <button onclick="printActiveView('kupci-content', 'Prikaz po kupcima', '#047857')" style="background:#047857; color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">🖨️ ŠTAMPAJ</button>
+            </div>
             <!-- Submenu za Kupci -->
             <div class="submenu">
                 <button class="submenu-tab active" onclick="switchKupciSubmenu('mjesecni')">📅 Mjesečni pregled</button>
@@ -1979,6 +2013,9 @@
                     </div>
                 </div>
 
+                <!-- DETALJNI PRIKAZ PO ODJELIMA - Poslovođa Collapsible -->
+                <div id="poslovodja-stanje-zaliha-detalji-section" style="margin-bottom: 24px;"></div>
+
                 <!-- Info Bar -->
                 <div id="poslovodja-radilista-info" style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                     <p style="margin: 0; color: #1e40af; font-weight: 600;">👤 Poslovođa: <span id="poslovodja-radilista-list"></span></p>
@@ -2292,95 +2329,158 @@
 
         <!-- KUBIKATOR CONTENT -->
         <div id="kubikator-content" class="container hidden">
-            <div class="page-header">
-                <h1>📐 Kubikator</h1>
-                <p>Kalkulator zapremine oblog drveta - Huber metoda</p>
-            </div>
-
             <div class="section">
-                <!-- Input forma -->
-                <div class="card" style="max-width: 600px; margin: 0 auto;">
-                    <h3 style="margin-bottom: 20px;">Unos podataka</h3>
 
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Prečnik na sredini (cm)</label>
-                        <input type="number" id="kubikator-promjer" class="filter-input" placeholder="od 7 do 150 cm" style="width: 100%; font-size: 16px; padding: 12px;" min="7" max="150" step="1">
-                        <small style="color: #6b7280;">Dozvoljen raspon: 7-150 cm</small>
-                    </div>
-
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Dužina (m)</label>
-                        <input type="number" id="kubikator-duzina" class="filter-input" placeholder="od 2 do 8 metara (npr. 4.53)" style="width: 100%; font-size: 16px; padding: 12px;" min="2" max="8" step="0.01">
-                        <small style="color: #6b7280;">Dozvoljen raspon: 2-8 m (2 decimale)</small>
-                    </div>
-
-                    <button class="btn btn-primary" onclick="izracunajKubikazu()" style="width: 100%; padding: 16px; font-size: 18px; font-weight: 700;">
-                        🧮 IZRAČUNAJ
-                    </button>
-                </div>
-
-                <!-- Rezultat -->
-                <div id="kubikator-rezultat" class="card" style="max-width: 600px; margin: 30px auto; display: none;">
-                    <h3 style="margin-bottom: 16px; color: #059669;">📊 Zapremina (Oblovina bez kore)</h3>
-                    <div style="text-align: center; font-size: 48px; font-weight: 700; color: #059669; padding: 20px; background: #f0fdf4; border-radius: 12px; margin-bottom: 20px;">
-                        <span id="kubikator-obujam-display">0.00</span> m³
+                <!-- Page header -->
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <h1>📐 Kubikator</h1>
+                        <p>Terensko kubiciranje drvnih sortimenata — Huberova formula</p>
                     </div>
                 </div>
 
-                <!-- Tabela sa rekapitulacijom -->
-                <div id="kubikator-tabela-container" class="card" style="max-width: 900px; margin: 30px auto; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                    <!-- Header sa naslovom i akcijama -->
-                    <div style="background: linear-gradient(135deg, #047857 0%, #065f46 100%); color: white; padding: 24px; border-radius: 12px 12px 0 0;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-                            <div>
-                                <h3 style="margin: 0 0 8px 0; font-size: 22px;">📋 Rekapitulacija mjerenja</h3>
-                                <p style="margin: 0; opacity: 0.9; font-size: 14px;">📅 Datum: <span id="kubikator-datum"></span></p>
+                <!-- Forma za unos -->
+                <div id="kub-forma-section" class="card" style="margin-bottom:20px;">
+                    <h3 style="margin:0 0 16px 0;color:#065f46;font-size:16px;">Novi unos</h3>
+                    <div class="kub-form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+                        <div style="grid-column:1/-1;">
+                            <label style="display:block;margin-bottom:8px;font-weight:600;font-size:14px;">Vrsta drveta</label>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                                <button id="kub-btn-cetinari" onclick="kubikatorSetVrsta('cetinari')"
+                                    style="padding:13px 8px;font-size:15px;font-weight:700;border-radius:8px;border:2px solid #047857;background:white;color:#047857;cursor:pointer;">
+                                    🌲 Četinari
+                                </button>
+                                <button id="kub-btn-liscari" onclick="kubikatorSetVrsta('liscari')"
+                                    style="padding:13px 8px;font-size:15px;font-weight:700;border-radius:8px;border:2px solid #b45309;background:white;color:#b45309;cursor:pointer;">
+                                    🍃 Lišćari
+                                </button>
                             </div>
-                            <div style="display: flex; gap: 10px;">
-                                <button class="btn btn-secondary" onclick="ocistiKubikator()" style="background: rgba(255,255,255,0.2); border: 2px solid white; color: white; font-weight: 600;">🗑️ Očisti</button>
-                                <button class="btn btn-primary" onclick="isprintajKubikator()" style="background: white; color: #047857; border: none; font-weight: 700;">🖨️ Isprintaj</button>
-                            </div>
+                        </div>
+
+                        <div style="grid-column:1/-1;">
+                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Odjel <span style="font-weight:400;color:#9ca3af;">(opcija)</span></label>
+                            <select id="kub-odjel" style="width:100%;padding:13px 12px;font-size:16px;border:2px solid #d1d5db;border-radius:8px;background:white;">
+                                <option value="">— opciono —</option>
+                            </select>
+                        </div>
+
+                        <div style="grid-column:1/-1;">
+                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Sortiment <span style="font-weight:400;color:#9ca3af;">(opcija)</span></label>
+                            <select id="kub-sortiment" style="width:100%;padding:13px 12px;font-size:16px;border:2px solid #d1d5db;border-radius:8px;background:white;">
+                                <option value="">— opciono —</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Prečnik (cm)</label>
+                            <input type="number" id="kub-precnik" inputmode="decimal"
+                                placeholder="npr. 24" min="1" step="1"
+                                style="width:100%;padding:13px 12px;font-size:16px;border:2px solid #d1d5db;border-radius:8px;box-sizing:border-box;">
+                        </div>
+
+                        <div>
+                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Dužina (m)</label>
+                            <input type="number" id="kub-duzina" inputmode="decimal"
+                                placeholder="npr. 4.50" min="0.01" step="0.01"
+                                style="width:100%;padding:13px 12px;font-size:16px;border:2px solid #d1d5db;border-radius:8px;box-sizing:border-box;">
+                        </div>
+
+                        <div style="grid-column:1/-1;">
+                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Napomena <span style="font-weight:400;color:#9ca3af;">(opcija)</span></label>
+                            <input type="text" id="kub-napomena"
+                                placeholder="npr. Komad 3, oštećena kora..."
+                                style="width:100%;padding:13px 12px;font-size:15px;border:2px solid #d1d5db;border-radius:8px;box-sizing:border-box;">
+                        </div>
+
+                    </div>
+                    <div style="display:flex;gap:10px;margin-top:16px;">
+                        <button id="kub-dodaj-btn" onclick="kubikatorDodaj()"
+                            style="flex:1;padding:15px;font-size:17px;font-weight:700;background:#047857;color:white;border:none;border-radius:8px;cursor:pointer;">
+                            ➕ DODAJ
+                        </button>
+                        <button id="kub-odustani-btn" onclick="kubikatorOdustani()"
+                            style="display:none;padding:15px 18px;font-size:15px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:8px;cursor:pointer;">
+                            Odustani
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Rekapitulacija -->
+                <div class="card" style="margin-bottom:20px;">
+                    <h3 style="margin:0 0 14px 0;color:#065f46;font-size:15px;">📊 Rekapitulacija</h3>
+
+                    <!-- Ukupno -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                        <div style="text-align:center;padding:14px;background:#f0fdf4;border-radius:8px;border:2px solid #6ee7b7;">
+                            <div style="font-size:12px;color:#065f46;font-weight:600;text-transform:uppercase;margin-bottom:4px;">Ukupno komada</div>
+                            <div style="font-size:30px;font-weight:700;color:#047857;"><span id="kub-ukupno-kom">0</span></div>
+                        </div>
+                        <div style="text-align:center;padding:14px;background:#f0fdf4;border-radius:8px;border:2px solid #6ee7b7;">
+                            <div style="font-size:12px;color:#065f46;font-weight:600;text-transform:uppercase;margin-bottom:4px;">Ukupno m³</div>
+                            <div style="font-size:30px;font-weight:700;color:#047857;"><span id="kub-ukupno-m3">0.00</span></div>
                         </div>
                     </div>
 
+                    <!-- Po sortimentima -->
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                            <thead>
+                                <tr style="background:#f9fafb;border-bottom:2px solid #6ee7b7;">
+                                    <th style="padding:8px 10px;text-align:left;color:#065f46;font-weight:700;">Sortiment</th>
+                                    <th style="padding:8px 10px;text-align:center;color:#065f46;font-weight:700;">Komada</th>
+                                    <th style="padding:8px 10px;text-align:right;color:#065f46;font-weight:700;">m³</th>
+                                </tr>
+                            </thead>
+                            <tbody id="kub-rekap-tbody">
+                                <tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:10px;">Nema unosa</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tabela unosa -->
+                <div class="card" style="padding:0;overflow:hidden;">
+                    <!-- Header tabele -->
+                    <div style="padding:14px 16px;background:linear-gradient(135deg,#047857 0%,#065f46 100%);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                        <span style="color:white;font-weight:700;font-size:15px;">📋 Svi unosi</span>
+                        <select id="kub-filter-sort" onchange="kubikatorSetFilter(this.value)"
+                            style="padding:8px 12px;font-size:13px;border-radius:6px;border:none;background:rgba(255,255,255,0.9);color:#065f46;font-weight:600;min-width:150px;">
+                            <option value="">Svi sortimenti</option>
+                        </select>
+                    </div>
                     <!-- Tabela -->
-                    <div style="padding: 24px;">
-                        <div style="overflow-x: auto;">
-                            <table class="monthly-table" style="min-width: 700px; box-shadow: none;">
-                                <thead>
-                                    <tr style="background: #f9fafb; border-bottom: 2px solid #047857;">
-                                        <th style="color: #047857; font-weight: 700; padding: 16px;">R.B.</th>
-                                        <th style="color: #047857; font-weight: 700; padding: 16px;">Prečnik (cm)</th>
-                                        <th style="color: #047857; font-weight: 700; padding: 16px;">Dužina (m)</th>
-                                        <th style="color: #047857; font-weight: 700; padding: 16px;">Zapremina (m³)</th>
-                                        <th style="color: #047857; font-weight: 700; padding: 16px;">Akcija</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="kubikator-tabela-body"></tbody>
-                            </table>
-                        </div>
-
-                        <!-- Ukupno - stilizovano -->
-                        <div style="margin-top: 24px; background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-radius: 12px; padding: 24px; border: 3px solid #059669;">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                                <div style="text-align: center;">
-                                    <div style="font-size: 14px; color: #065f46; font-weight: 600; margin-bottom: 8px; text-transform: uppercase;">Ukupno komada</div>
-                                    <div style="font-size: 36px; font-weight: 700; color: #047857;">
-                                        <span id="kubikator-ukupno-kom">0</span> <span style="font-size: 20px;">kom</span>
-                                    </div>
-                                </div>
-                                <div style="text-align: center;">
-                                    <div style="font-size: 14px; color: #065f46; font-weight: 600; margin-bottom: 8px; text-transform: uppercase;">Ukupna zapremina</div>
-                                    <div style="font-size: 36px; font-weight: 700; color: #047857;">
-                                        <span id="kubikator-ukupno-m3">0.00</span> <span style="font-size: 20px;">m³</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+                        <table id="kub-tabela" style="width:100%;border-collapse:collapse;font-size:13px;min-width:600px;">
+                            <thead>
+                                <tr style="background:#f9fafb;border-bottom:2px solid #d1d5db;">
+                                    <th class="kub-col-rb"       style="padding:10px 8px;text-align:center;color:#6b7280;font-weight:600;">#</th>
+                                    <th class="kub-col-datum"    style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Datum/Vrij.</th>
+                                    <th                          style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Odjel</th>
+                                    <th                          style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Sortiment</th>
+                                    <th                          style="padding:10px 8px;text-align:center;color:#374151;font-weight:600;">Prečnik (cm)</th>
+                                    <th                          style="padding:10px 8px;text-align:center;color:#374151;font-weight:600;">Dužina (m)</th>
+                                    <th                          style="padding:10px 8px;text-align:right;color:#047857;font-weight:700;">m³</th>
+                                    <th class="kub-col-napomena" style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Napomena</th>
+                                    <th                          style="padding:10px 8px;text-align:center;color:#374151;font-weight:600;">Akcije</th>
+                                </tr>
+                            </thead>
+                            <tbody id="kub-tabela-tbody">
+                                <tr><td colspan="9" style="text-align:center;color:#9ca3af;padding:30px;">Nema unosa. Dodajte prvi komad.</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
+
+                <!-- Akcije na dnu -->
+                <div style="display:flex;gap:12px;margin-top:20px;padding-top:4px;">
+                    <button class="btn btn-primary" onclick="printKubikator()" style="font-weight:600;flex:1;padding:14px;">🖨️ ŠTAMPAJ</button>
+                    <button class="btn btn-secondary" onclick="kubikatorOcistiSve()" style="color:#dc2626;border-color:#dc2626;flex:1;padding:14px;">🗑️ Obriši sve</button>
+                </div>
+
             </div>
         </div>
+
 
         <!-- IZVJEŠTAJI CONTENT (ADMIN/OPERATIVA/POSLOVOĐA) -->
         <div id="izvjestaji-content" class="container hidden">
@@ -2408,6 +2508,7 @@
                         <p>Sječa i otprema po odjelima - radna sedmica</p>
                     </div>
                     <div class="page-header-right">
+                        <button onclick="printIzvjestaj('sedmicni')" style="background: #1e3a5f; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;">🖨️ ŠTAMPAJ</button>
                         <select id="izvjestaji-sedmicni-year" class="year-select" onchange="loadIzvjestajiSedmicni()">
                             <option value="2026" selected>2026</option>
                             <option value="2025">2025</option>
@@ -2469,6 +2570,7 @@
                         <p>Sječa i otprema po odjelima - cijeli mjesec</p>
                     </div>
                     <div class="page-header-right">
+                        <button onclick="printIzvjestaj('mjesecni')" style="background: #1e3a5f; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;">🖨️ ŠTAMPAJ</button>
                         <select id="izvjestaji-mjesecni-year" class="year-select" onchange="loadIzvjestajiMjesecni()">
                             <option value="2026" selected>2026</option>
                             <option value="2025">2025</option>
@@ -2758,6 +2860,19 @@
                         <p>Pregled zaliha po odjelima - Projekat, Sječa, Otprema, Zaliha</p>
                     </div>
                     <div class="page-header-right" style="display: flex; gap: 12px;">
+                        <div style="position:relative;">
+                            <button class="btn btn-primary" onclick="toggleStanjeZalihaPrintMenu(event)" style="font-weight:600;">🖨️ ŠTAMPAJ ▾</button>
+                            <div id="stanje-zaliha-print-menu" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid #d1d5db; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.14); z-index:1000; min-width:230px; overflow:hidden;">
+                                <button onclick="printStanjeZalihaAgregatna()" style="display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:13px 16px; border:none; border-bottom:1px solid #f3f4f6; background:none; cursor:pointer; font-size:14px; color:#1e3a5f; font-weight:600;">
+                                    <span style="font-size:18px;">📊</span>
+                                    <span>Agregatna tabela</span>
+                                </button>
+                                <button onclick="printStanjeZalihaPoOdjelima()" style="display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:13px 16px; border:none; background:none; cursor:pointer; font-size:14px; color:#1e3a5f; font-weight:600;">
+                                    <span style="font-size:18px;">🏗️</span>
+                                    <span>Detaljno po odjelima</span>
+                                </button>
+                            </div>
+                        </div>
                         <button class="btn btn-secondary" onclick="exportTableToExcel('stanje-zaliha-tabela', 'Stanje-Zaliha')" title="Exportuj u Excel">📥 Export</button>
                         <button class="btn btn-secondary" onclick="refreshStanjeZaliha()" title="Osvježi podatke sa servera">🔄 Osvježi</button>
                     </div>
@@ -2784,6 +2899,20 @@
                     </div>
                 </div>
 
+                <!-- DETALJNI PRIKAZ PO ODJELIMA - Collapsible -->
+                <div id="stanje-zaliha-detalji-section" style="margin-bottom: 24px;"></div>
+
+                <!-- PREKLASIRANJE - Admin only -->
+                <div id="preklasiranje-admin-section" style="display:none;margin-bottom:24px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                        <h3 style="margin:0;color:#1e3a5f;font-size:15px;">Preklasiranja</h3>
+                        <button class="btn btn-primary" onclick="openPreklasiranjeModal()" style="font-size:13px;padding:8px 16px;">+ Novo preklasiranje</button>
+                    </div>
+                    <div id="preklasiranje-tabela-container">
+                        <p style="color:#6b7280;font-size:13px;">Učitavanje...</p>
+                    </div>
+                </div>
+
                 <!-- Stanje Zaliha Container -->
                 <div id="stanje-zaliha-container">
                     <!-- Cards will be rendered here -->
@@ -2791,23 +2920,6 @@
             </div>
         </div>
 
-        <!-- OSTALO VIEW -->
-        <div id="ostalo-content" class="container hidden">
-            <div class="section">
-                <h2>⚙️ Ostalo</h2>
-                <p style="color: #6b7280; margin-bottom: 32px;">Dodatne funkcionalnosti i pregledi</p>
-
-                <!-- Kubikator View -->
-                <div id="ostalo-kubikator-view" class="ostalo-view">
-                    <div class="chart-card" style="padding: 32px; text-align: center;">
-                        <h3 style="margin-bottom: 16px;">📐 Kubikator</h3>
-                        <p style="color: #6b7280; margin-bottom: 24px;">Kalkulator zapremine oblog drveta - Huber metoda</p>
-                        <button class="btn btn-primary" onclick="switchTab('kubikator')" style="padding: 12px 24px; font-size: 16px;">
-                            ➡️ Idi na Kubikator
-                        </button>
-                    </div>
-                </div>
-            </div>
             </main><!-- /main-content -->
         </div><!-- /app-layout -->
     </div><!-- /app-screen -->
@@ -2824,6 +2936,66 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeConfirmModal()">Otkaži</button>
                 <button class="btn btn-danger" id="modal-confirm-btn">Obriši</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preklasiranje Modal -->
+    <div class="modal-overlay" id="preklasiranje-modal" style="display:none;" onclick="if(event.target===this)closePreklasiranjeModal()">
+        <div class="modal" style="max-width:500px;width:95vw;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#1e3a5f 0%,#2d5a87 100%);color:white;padding:16px 20px;border-radius:12px 12px 0 0;">
+                <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                    <span style="font-size:16px;font-weight:700;">Novo preklasiranje</span>
+                    <button onclick="closePreklasiranjeModal()" style="background:rgba(255,255,255,0.2);border:none;color:white;font-size:22px;cursor:pointer;padding:2px 10px;border-radius:6px;">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body" style="padding:20px;">
+                <div style="display:flex;flex-direction:column;gap:14px;">
+                    <!-- TIP selektor -->
+                    <div style="display:flex;gap:8px;">
+                        <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid #d1d5db;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;" id="prekl-tip-preklasiranje-label">
+                            <input type="radio" name="prekl-tip" id="prekl-tip-preklasiranje" value="PREKLASIRANJE" checked onchange="onPreklTipChange()" style="accent-color:#1e3a5f;">
+                            Preklasiranje
+                        </label>
+                        <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid #d1d5db;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;" id="prekl-tip-razlika-label">
+                            <input type="radio" name="prekl-tip" id="prekl-tip-razlika" value="RAZLIKA_MJERENJA" onchange="onPreklTipChange()" style="accent-color:#d97706;">
+                            Razlika mjerenja
+                        </label>
+                    </div>
+                    <div>
+                        <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Odjel *</label>
+                        <select id="prekl-odjel" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+                            <option value="">— Odaberi odjel —</option>
+                        </select>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div>
+                            <label id="prekl-iz-label" style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Iz sortimenta *</label>
+                            <select id="prekl-iz" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;" onchange="filterPreklUSort()">
+                                <option value="">— Odaberi —</option>
+                            </select>
+                        </div>
+                        <div id="prekl-u-container">
+                            <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">U sortiment *</label>
+                            <select id="prekl-u" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+                                <option value="">— Odaberi —</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="prekl-kolicina-container">
+                        <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Količina (m³) *</label>
+                        <input type="number" id="prekl-kolicina" min="0.01" step="0.01" placeholder="0.00" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Napomena</label>
+                        <input type="text" id="prekl-napomena" placeholder="Opcionalno" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">
+                    </div>
+                    <div id="prekl-error" style="color:#dc2626;font-size:13px;display:none;"></div>
+                    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
+                        <button onclick="closePreklasiranjeModal()" class="btn btn-secondary" style="font-size:13px;">Odustani</button>
+                        <button onclick="submitPreklasiranje()" id="prekl-submit-btn" class="btn btn-primary" style="font-size:13px;">Spremi</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

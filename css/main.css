@@ -15,7 +15,7 @@
         .header { background: white; color: #1f2937; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 16px 24px; border-bottom: 1px solid #e5e7eb; }
         .header-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
         .header-left { display: flex; align-items: center; gap: 12px; }
-        .header-logo { font-size: 28px; }
+        .header-logo { height: 48px; width: auto; object-fit: contain; }
         .header-center { display: flex; align-items: center; justify-content: center; flex: 1; margin: 0 20px; }
         .company-logo { height: 60px; width: auto; object-fit: contain; transition: all 0.3s ease; }
         .company-logo:hover { transform: scale(1.05); }
@@ -1037,7 +1037,7 @@
             .header-center { margin: 10px 0; }
             .company-logo { height: 50px; }
             .header-right { width: 100%; justify-content: space-between; }
-            .header-logo { font-size: 24px; }
+            .header-logo { height: 36px; }
             .header-title h1 { font-size: 16px; }
             .header-title p { font-size: 11px; }
             .header-user-name { font-size: 13px; }
@@ -2135,15 +2135,25 @@
             white-space: nowrap;
         }
         .professional-monthly-table tbody td:first-child {
-            font-weight: 700;
+            font-weight: 400;
             color: #1f2937;
             font-size: 15px;
         }
         .professional-monthly-table tbody td.number {
             text-align: right;
             font-variant-numeric: tabular-nums;
-            font-weight: 600;
+            font-weight: 400;
             font-size: 16px;
+        }
+        .professional-monthly-table tbody tr.current-month-row {
+            background: #fcd34d !important;
+        }
+        .professional-monthly-table tbody tr.current-month-row td {
+            font-weight: 700 !important;
+        }
+        .professional-monthly-table tbody tr.current-month-row td:first-child {
+            color: #92400e !important;
+            background: #fcd34d !important;
         }
         .professional-monthly-table .month-total {
             background: linear-gradient(to bottom, #d1fae5 0%, #a7f3d0 100%);
@@ -2816,3 +2826,64 @@
             grid-template-columns: 1fr !important;
         }
 
+
+        /* ──────────────────────────────────────────────────────────── */
+        /* 📱 KUBIKATOR: Android/iOS adaptacija za terenski rad        */
+        /* ──────────────────────────────────────────────────────────── */
+
+        /* Forma: jednokolonski layout — sve polja puna širina */
+        body.force-android-view .kub-form-grid {
+            grid-template-columns: 1fr !important;
+        }
+        body.force-android-view .kub-form-grid > div {
+            grid-column: 1 / -1 !important;
+        }
+
+        /* Inputi i selecti: veće touch area */
+        body.force-android-view #kub-precnik,
+        body.force-android-view #kub-duzina,
+        body.force-android-view #kub-napomena,
+        body.force-android-view #kub-odjel,
+        body.force-android-view #kub-sortiment {
+            padding: 16px 14px !important;
+            font-size: 18px !important;
+        }
+
+        /* Vrsta drveta dugmad: viša */
+        body.force-android-view #kub-btn-cetinari,
+        body.force-android-view #kub-btn-liscari {
+            padding: 18px 8px !important;
+            font-size: 18px !important;
+        }
+
+        /* DODAJ dugme: uvećan */
+        body.force-android-view #kub-dodaj-btn {
+            padding: 18px !important;
+            font-size: 20px !important;
+        }
+
+        /* Akcijska dugmad na dnu (ŠTAMPAJ / Obriši sve) */
+        body.force-android-view #kubikator-content .btn {
+            padding: 18px !important;
+            font-size: 17px !important;
+        }
+
+        /* Tabela: veći redovi i font */
+        body.force-android-view #kub-tabela th,
+        body.force-android-view #kub-tabela td {
+            padding: 14px 10px !important;
+            font-size: 15px !important;
+        }
+
+        /* Akcijska dugmad u tabeli (✏️ 🗑️): veće touch targete */
+        body.force-android-view .kub-action-btn {
+            padding: 9px 14px !important;
+            font-size: 16px !important;
+        }
+
+        /* Sakrij manje važne kolone u Android prikazu */
+        body.force-android-view .kub-col-rb,
+        body.force-android-view .kub-col-datum,
+        body.force-android-view .kub-col-napomena {
+            display: none !important;
+        }

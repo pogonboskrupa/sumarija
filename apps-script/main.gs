@@ -168,6 +168,12 @@ function doGet(e) {
     } else if (path === 'poslovodja-radilista') {
       // 🗺️ POSLOVODJA RADILISTA - Dohvati mapping poslovodja→radilišta iz INFO sheeta
       return handlePoslovodjaRadilista(e.parameter.username, e.parameter.password, e.parameter.poslovodja);
+    } else if (path === 'add-preklasiranje') {
+      return handleAddPreklasiranje(e.parameter);
+    } else if (path === 'get-preklasiranja') {
+      return handleGetPreklasiranja(e.parameter.username, e.parameter.password, e.parameter.odjel);
+    } else if (path === 'delete-preklasiranje') {
+      return handleDeletePreklasiranje(e.parameter);
     }
 
     Logger.log('Unknown path: ' + path);
