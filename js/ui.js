@@ -193,7 +193,7 @@
             // Update submenu buttons
             const submenuTabs = document.querySelectorAll('#primaci-content .submenu-tab');
             submenuTabs.forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
 
             // Hide all submenu content
             document.getElementById('primaci-monthly-view').classList.add('hidden');
@@ -273,7 +273,7 @@
             // Update submenu buttons
             const submenuTabs = document.querySelectorAll('#otpremaci-content .submenu-tab');
             submenuTabs.forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
 
             // Hide all submenu content
             document.getElementById('otpremaci-monthly-view').classList.add('hidden');
@@ -319,7 +319,7 @@
             // Update submenu buttons
             const submenuTabs = document.querySelectorAll('#kupci-content .submenu-tab');
             submenuTabs.forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
 
             // Hide all submenu content
             document.getElementById('kupci-godisnji-view').classList.add('hidden');

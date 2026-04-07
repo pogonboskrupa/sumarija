@@ -3587,7 +3587,7 @@
                     var odjel = entry.odjel || 'Nepoznato';
                     var datum = parseDatumDDMMYYYY(entry.datum);
                     if (!datum) return;
-                    var yearMonth = datum.getFullYear() + '-' + String(datum.getMonth()).padStart(2, '0');
+                    var yearMonth = datum.getFullYear() + '-' + String(datum.getMonth() + 1).padStart(2, '0');
                     if (!result[odjel]) result[odjel] = {};
                     if (!result[odjel][yearMonth]) {
                         result[odjel][yearMonth] = { sort: {}, year: datum.getFullYear(), month: datum.getMonth() };

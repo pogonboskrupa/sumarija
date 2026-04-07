@@ -323,8 +323,8 @@ async function loadIzvjestajiMjesecni() {
             return;
         }
 
-        const year = yearElem.value;
-        const month = monthElem.value;
+        const year = parseInt(yearElem.value);
+        const month = parseInt(monthElem.value);
 
         const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
 
@@ -376,7 +376,7 @@ function aggregateByOdjelIzvjestaji(data, sortimentiNazivi) {
         }
 
         sortimentiNazivi.forEach(sortiment => {
-            const value = parseFloat(row.sortimenti[sortiment]) || 0;
+            const value = parseFloat(row.sortimenti?.[sortiment]) || 0;
             odjeliMap[odjel][sortiment] += value;
         });
     });
@@ -445,7 +445,7 @@ function renderIzvjestajiTable(data, sortimentiNazivi, tablePrefix) {
         bodyHtml += `<td>${row.odjel}</td>`;
 
         sortimentiNazivi.forEach(sortiment => {
-            const value = parseFloat(row.sortimenti[sortiment]) || 0;
+            const value = parseFloat(row.sortimenti?.[sortiment]) || 0;
             totals[sortiment] += value;
 
             // Prikaži vrijednost ili crticu ako je 0
