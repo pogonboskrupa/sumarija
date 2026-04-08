@@ -748,7 +748,7 @@
                         // Godišnji prikaz
                         { name: 'Godišnji prikaz', url: buildApiUrl('primac-detail', { year }), cacheKey: 'cache_primac_godisnji_' + year, timeout: 120000 },
                         // Prikaz po odjelima
-                        { name: 'Prikaz po odjelima', url: buildApiUrl('primac-odjeli', { limit: 15 }), cacheKey: 'cache_primac_odjeli_top15', timeout: 120000 },
+                        { name: 'Prikaz po odjelima', url: buildApiUrl('primac-odjeli', { limit: 15 }), cacheKey: 'cache_primac_odjeli_' + (currentUser.username || '') + '_top15', timeout: 120000 },
                         // Moje sječe
                         { name: 'Moje sječe', url: buildApiUrl('my-pending', { tip: 'sjeca' }), cacheKey: 'cache_my_sjece_' + (currentUser.username || ''), timeout: 120000 },
                         // Izvještaji - sedmični (tekući mjesec)
@@ -764,7 +764,7 @@
                         // Godišnji prikaz
                         { name: 'Godišnji prikaz', url: buildApiUrl('otpremac-detail', { year }), cacheKey: 'cache_otpremac_godisnji_' + year, timeout: 120000 },
                         // Prikaz po odjelima
-                        { name: 'Prikaz po odjelima', url: buildApiUrl('otpremac-odjeli', { limit: 15 }), cacheKey: 'cache_otpremac_odjeli_top15', timeout: 120000 },
+                        { name: 'Prikaz po odjelima', url: buildApiUrl('otpremac-odjeli', { limit: 15 }), cacheKey: 'cache_otpremac_odjeli_' + (currentUser.username || '') + '_top15', timeout: 120000 },
                         // Moje otpreme
                         { name: 'Moje otpreme', url: buildApiUrl('my-pending', { tip: 'otprema' }), cacheKey: 'cache_my_otpreme_' + (currentUser.username || ''), timeout: 120000 },
                         // Izvještaji - sedmični (tekući mjesec)
@@ -6220,8 +6220,9 @@
         // ✅ OPTIMIZOVANO: Jedan API poziv sa limit=15 (backend procesira sve godine)
         async function loadPrimacOdjeli() {
             if (!isActiveTab('primac-odjeli')) return;
+            const po_cacheKey = 'cache_primac_odjeli_' + (currentUser ? currentUser.username : '') + '_top15';
             // Turbo: skip loading screen if cache exists
-            if (!localStorage.getItem('cache_primac_odjeli_top15')) {
+            if (!localStorage.getItem(po_cacheKey)) {
                 document.getElementById('loading-screen').classList.remove('hidden');
                 document.getElementById('primac-odjeli-content').classList.add('hidden');
             } else {
@@ -6230,7 +6231,7 @@
 
             try {
                 const url = buildApiUrl('primac-odjeli', { limit: 15 });
-                const data = await fetchWithCache(url, 'cache_primac_odjeli_top15');
+                const data = await fetchWithCache(url, po_cacheKey);
 
                 if (data.error) {
                     throw new Error(data.error);
@@ -6988,8 +6989,9 @@
         // ✅ OPTIMIZOVANO: Jedan API poziv sa limit=15 (backend procesira sve godine)
         async function loadOtpremacOdjeli() {
             if (!isActiveTab('otpremac-odjeli')) return;
+            const oo_cacheKey = 'cache_otpremac_odjeli_' + (currentUser ? currentUser.username : '') + '_top15';
             // Turbo: skip loading screen if cache exists
-            if (!localStorage.getItem('cache_otpremac_odjeli_top15')) {
+            if (!localStorage.getItem(oo_cacheKey)) {
                 document.getElementById('loading-screen').classList.remove('hidden');
                 document.getElementById('otpremac-odjeli-content').classList.add('hidden');
             } else {
@@ -6998,7 +7000,7 @@
 
             try {
                 const url = buildApiUrl('otpremac-odjeli', { limit: 15 });
-                const data = await fetchWithCache(url, 'cache_otpremac_odjeli_top15');
+                const data = await fetchWithCache(url, oo_cacheKey);
 
                 if (data.error) {
                     throw new Error(data.error);
