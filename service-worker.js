@@ -124,7 +124,7 @@ self.addEventListener('fetch', (event) => {
                         }
                         // Navigation requests (page loads) → offline.html
                         if (request.mode === 'navigate') {
-                            return caches.match('/sumarija/offline.html');
+                            return caches.match('/offline.html');
                         }
                         return new Response(JSON.stringify({
                             success: false,

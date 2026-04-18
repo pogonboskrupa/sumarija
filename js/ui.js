@@ -48,6 +48,8 @@
                 'izvjestaji-primac': 'izvjestaji-primac-content',
                 'izvjestaji-otpremac': 'izvjestaji-otpremac-content',
                 'kubikator': 'kubikator-content',
+                'primac-sihtarica': 'primac-sihtarica-content',
+                'otpremac-sihtarica': 'otpremac-sihtarica-content',
             };
             const ttl = (typeof getSmartCacheTTL === 'function') ? getSmartCacheTTL() : 60000;
             const lastRender = window._tabRenderTime[tab];
@@ -153,6 +155,10 @@
                 loadStanjeZaliha();
             } else if (tab === 'primaci-admin') {
                 loadPrimaciAdminTab();
+            } else if (tab === 'primac-sihtarica') {
+                loadSihtaricaPrimac();
+            } else if (tab === 'otpremac-sihtarica') {
+                loadSihtaricaOtpremac();
             }
         }
 
@@ -193,7 +199,7 @@
             // Update submenu buttons
             const submenuTabs = document.querySelectorAll('#primaci-content .submenu-tab');
             submenuTabs.forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
 
             // Hide all submenu content
             document.getElementById('primaci-monthly-view').classList.add('hidden');
@@ -273,7 +279,7 @@
             // Update submenu buttons
             const submenuTabs = document.querySelectorAll('#otpremaci-content .submenu-tab');
             submenuTabs.forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
 
             // Hide all submenu content
             document.getElementById('otpremaci-monthly-view').classList.add('hidden');
@@ -319,7 +325,7 @@
             // Update submenu buttons
             const submenuTabs = document.querySelectorAll('#kupci-content .submenu-tab');
             submenuTabs.forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
 
             // Hide all submenu content
             document.getElementById('kupci-godisnji-view').classList.add('hidden');

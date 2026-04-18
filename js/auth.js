@@ -89,6 +89,7 @@
                     { id: 'izvjestaji-primac', icon: '📋', label: 'Izvještaji' },
                     { id: 'add-sjeca', icon: '➕', label: 'Dodaj sječu' },
                     { id: 'my-sjece', icon: '📝', label: 'Moje sječe' },
+                    { id: 'primac-sihtarica', icon: '🗓️', label: 'Šihtarica' },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
                 ];
             } else if (userType === 'otpremac') {
@@ -99,6 +100,7 @@
                     { id: 'izvjestaji-otpremac', icon: '📋', label: 'Izvještaji' },
                     { id: 'add-otprema', icon: '➕', label: 'Dodaj otpremu' },
                     { id: 'my-otpreme', icon: '📝', label: 'Moje otpreme' },
+                    { id: 'otpremac-sihtarica', icon: '🗓️', label: 'Šihtarica' },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
                 ];
             } else if (userType === 'operativa') {
@@ -274,6 +276,10 @@
             if (dropdown) {
                 dropdown.classList.remove('show');
             }
+
+            // Clear legacy (non-user-specific) personal cache keys to prevent cross-user contamination
+            localStorage.removeItem('cache_otpremac_odjeli_top15');
+            localStorage.removeItem('cache_primac_odjeli_top15');
 
             // Log final cache stats before logout
             try { logCacheStats(); } catch(e) { console.error('logout logCacheStats:', e); }
