@@ -1614,66 +1614,15 @@
         <div id="primac-sihtarica-content" class="container hidden">
             <div class="section">
                 <div class="worker-header primac">
-                    <div class="worker-header-icon">📋</div>
+                    <div class="worker-header-icon">🗓️</div>
                     <div>
                         <h1 class="worker-header-title">Šihtarica</h1>
-                        <p class="worker-header-subtitle">Evidencija radnih dana</p>
+                        <p class="worker-header-subtitle">Evidencija radnih dana — kliknite na red i unesite podatke</p>
                     </div>
                 </div>
-
-                <form id="primac-sihtarica-form" class="worker-form" onsubmit="submitSihtaricaPrimac(event)">
-                    <div class="worker-form-grid">
-                        <div class="worker-form-group">
-                            <label class="worker-form-label">Tip radnog dana</label>
-                            <select id="primac-sihtarica-tip" required class="worker-form-select" onchange="toggleSihtaricaPolja('primac')">
-                                <option value="TEREN">TEREN</option>
-                                <option value="GODIŠNJI ODMOR">GODIŠNJI ODMOR</option>
-                                <option value="BOLOVANJE">BOLOVANJE</option>
-                            </select>
-                        </div>
-                        <div class="worker-form-group">
-                            <label class="worker-form-label">Datum</label>
-                            <input type="date" id="primac-sihtarica-datum" required class="worker-form-input">
-                        </div>
-                    </div>
-
-                    <div id="primac-sihtarica-teren-polja">
-                        <div class="worker-form-grid">
-                            <div class="worker-form-group">
-                                <label class="worker-form-label">Odjel</label>
-                                <input type="text" id="primac-sihtarica-odjel" placeholder="npr. 12a" class="worker-form-input">
-                            </div>
-                            <div class="worker-form-group">
-                                <label class="worker-form-label">G.J. (Gospodarska jedinica)</label>
-                                <select id="primac-sihtarica-gj" class="worker-form-select">
-                                    <option value="">Izaberi G.J...</option>
-                                    <option value="RISOVAC KRUPA">RISOVAC KRUPA</option>
-                                    <option value="GRMEČ JASENICA">GRMEČ JASENICA</option>
-                                    <option value="VOJSKOVA">VOJSKOVA</option>
-                                    <option value="BAŠTRA ĆORKOVAČA">BAŠTRA ĆORKOVAČA</option>
-                                    <option value="GOMILA">GOMILA</option>
-                                </select>
-                            </div>
-                            <div class="worker-form-group">
-                                <label class="worker-form-label">Broj linije</label>
-                                <input type="text" id="primac-sihtarica-broj-linije" placeholder="Broj linije" class="worker-form-input">
-                            </div>
-                            <div class="worker-form-group">
-                                <label class="worker-form-label">Sjekačka partija</label>
-                                <input type="text" id="primac-sihtarica-sjekacskapartija" placeholder="Od kojeg sjekača" class="worker-form-input">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="worker-form-actions">
-                        <button type="button" class="worker-form-btn worker-form-btn-secondary" onclick="resetSihtaricaForm('primac')">Poništi</button>
-                        <button type="submit" class="worker-form-btn worker-form-btn-primary">Unesi</button>
-                    </div>
-                    <div id="primac-sihtarica-message" class="hidden" style="margin-top: 16px; padding: 12px; border-radius: 8px;"></div>
-                </form>
-
-                <div id="primac-godisnji-status" style="margin-top: 16px;"></div>
-                <div id="primac-sihtarica-pregled" style="margin-top: 24px;"></div>
+                <div id="primac-godisnji-status" style="margin-top:12px;"></div>
+                <div id="primac-sihtarica-pregled" style="margin-top:16px;"></div>
+                <div id="primac-sihtarica-rekap" style="margin-top:12px;"></div>
             </div>
         </div>
 
@@ -1681,66 +1630,15 @@
         <div id="otpremac-sihtarica-content" class="container hidden">
             <div class="section">
                 <div class="worker-header otpremac">
-                    <div class="worker-header-icon">📋</div>
+                    <div class="worker-header-icon">🗓️</div>
                     <div>
                         <h1 class="worker-header-title">Šihtarica</h1>
-                        <p class="worker-header-subtitle">Evidencija radnih dana</p>
+                        <p class="worker-header-subtitle">Evidencija radnih dana — kliknite na red i unesite podatke</p>
                     </div>
                 </div>
-
-                <form id="otpremac-sihtarica-form" class="worker-form otpremac" onsubmit="submitSihtaricaOtpremac(event)">
-                    <div class="worker-form-grid">
-                        <div class="worker-form-group">
-                            <label class="worker-form-label">Tip radnog dana</label>
-                            <select id="otpremac-sihtarica-tip" required class="worker-form-select" onchange="toggleSihtaricaPolja('otpremac')">
-                                <option value="TEREN">TEREN</option>
-                                <option value="GODIŠNJI ODMOR">GODIŠNJI ODMOR</option>
-                                <option value="BOLOVANJE">BOLOVANJE</option>
-                            </select>
-                        </div>
-                        <div class="worker-form-group">
-                            <label class="worker-form-label">Datum</label>
-                            <input type="date" id="otpremac-sihtarica-datum" required class="worker-form-input">
-                        </div>
-                    </div>
-
-                    <div id="otpremac-sihtarica-teren-polja">
-                        <div class="worker-form-grid">
-                            <div class="worker-form-group">
-                                <label class="worker-form-label">Odjel</label>
-                                <input type="text" id="otpremac-sihtarica-odjel" placeholder="npr. 12a" class="worker-form-input">
-                            </div>
-                            <div class="worker-form-group">
-                                <label class="worker-form-label">G.J. (Gospodarska jedinica)</label>
-                                <select id="otpremac-sihtarica-gj" class="worker-form-select">
-                                    <option value="">Izaberi G.J...</option>
-                                    <option value="RISOVAC KRUPA">RISOVAC KRUPA</option>
-                                    <option value="GRMEČ JASENICA">GRMEČ JASENICA</option>
-                                    <option value="VOJSKOVA">VOJSKOVA</option>
-                                    <option value="BAŠTRA ĆORKOVAČA">BAŠTRA ĆORKOVAČA</option>
-                                    <option value="GOMILA">GOMILA</option>
-                                </select>
-                            </div>
-                            <div class="worker-form-group">
-                                <label class="worker-form-label">Broj kamiona otpreme</label>
-                                <input type="number" id="otpremac-sihtarica-broj-kamiona" placeholder="Broj kamiona" min="0" class="worker-form-input">
-                            </div>
-                            <div class="worker-form-group" style="grid-column: 1 / -1;">
-                                <label class="worker-form-label">Napomena</label>
-                                <textarea id="otpremac-sihtarica-napomena" placeholder="Napomena..." rows="2" class="worker-form-input" style="resize: vertical;"></textarea>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="worker-form-actions">
-                        <button type="button" class="worker-form-btn worker-form-btn-secondary" onclick="resetSihtaricaForm('otpremac')">Poništi</button>
-                        <button type="submit" class="worker-form-btn worker-form-btn-primary otpremac">Unesi</button>
-                    </div>
-                    <div id="otpremac-sihtarica-message" class="hidden" style="margin-top: 16px; padding: 12px; border-radius: 8px;"></div>
-                </form>
-
-                <div id="otpremac-godisnji-status" style="margin-top: 16px;"></div>
-                <div id="otpremac-sihtarica-pregled" style="margin-top: 24px;"></div>
+                <div id="otpremac-godisnji-status" style="margin-top:12px;"></div>
+                <div id="otpremac-sihtarica-pregled" style="margin-top:16px;"></div>
+                <div id="otpremac-sihtarica-rekap" style="margin-top:12px;"></div>
             </div>
         </div>
 
