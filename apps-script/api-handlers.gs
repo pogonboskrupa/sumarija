@@ -4582,7 +4582,7 @@ function handleAddSihtaricaPrimac(params) {
     if (loginResult.type !== 'primac') return createJsonResponse({ error: 'Samo primači mogu unositi šihtaricu' }, false);
 
     var ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
-    var headers = ['DATUM', 'RADNIK', 'TIP_DANA', 'ODJEL', 'GJ', 'BROJ_LINIJE', 'SJEKAĆKA_PARTIJA', 'TIMESTAMP'];
+    var headers = ['DATUM', 'RADNIK', 'TIP_DANA', 'ODJEL', 'GJ', 'BROJ_LINIJE', 'SJEKAĆKA_PARTIJA', 'NAPOMENA', 'TIMESTAMP'];
     var sheet = getOrCreateSihtaricaSheet(ss, 'ŠIHTARICA_PRIMAC', headers);
 
     var tipDana = String(params.tipDana || '').trim();
@@ -4618,6 +4618,7 @@ function handleAddSihtaricaPrimac(params) {
       jeTeren ? String(params.gj || '').trim() : '',
       jeTeren ? String(params.brojLinije || '').trim() : '',
       jeTeren ? String(params.sjekacskaPartija || '').trim() : '',
+      jeTeren ? String(params.napomena || '').trim() : '',
       new Date()
     ];
 
@@ -4721,6 +4722,7 @@ function handleGetSihtarica(tip, username, password) {
         if (tip === 'primac') {
           entry.brojLinije = String(row[5] || '');
           entry.sjekacskaPartija = String(row[6] || '');
+          entry.napomena = String(row[7] || '');
         } else {
           entry.brojKamiona = String(row[5] || '');
           entry.napomena = String(row[6] || '');
