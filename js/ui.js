@@ -48,6 +48,8 @@
                 'izvjestaji-primac': 'izvjestaji-primac-content',
                 'izvjestaji-otpremac': 'izvjestaji-otpremac-content',
                 'kubikator': 'kubikator-content',
+                'primac-sihtarica': 'primac-sihtarica-content',
+                'otpremac-sihtarica': 'otpremac-sihtarica-content',
             };
             const ttl = (typeof getSmartCacheTTL === 'function') ? getSmartCacheTTL() : 60000;
             const lastRender = window._tabRenderTime[tab];
@@ -153,6 +155,10 @@
                 loadStanjeZaliha();
             } else if (tab === 'primaci-admin') {
                 loadPrimaciAdminTab();
+            } else if (tab === 'primac-sihtarica') {
+                loadSihtaricaPrimac();
+            } else if (tab === 'otpremac-sihtarica') {
+                loadSihtaricaOtpremac();
             }
         }
 

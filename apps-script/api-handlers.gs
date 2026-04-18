@@ -4557,3 +4557,207 @@ function handleDeletePreklasiranje(params) {
     return createJsonResponse({ error: error.toString() }, false);
   }
 }
+
+// ============================================================
+// ŠIHTARICA — Evidencija radnih dana primača i otpremača
+// ============================================================
+
+function getOrCreateSihtaricaSheet(ss, sheetName, headers) {
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+    sheet.appendRow(headers);
+    var headerRange = sheet.getRange(1, 1, 1, headers.length);
+    headerRange.setBackground('#1e40af');
+    headerRange.setFontColor('white');
+    headerRange.setFontWeight('bold');
+  }
+  return sheet;
+}
+
+function handleAddSihtaricaPrimac(params) {
+  try {
+    var loginResult = JSON.parse(handleLogin(params.username, params.password).getContent());
+    if (!loginResult.success) return createJsonResponse({ error: 'Unauthorized' }, false);
+    if (loginResult.type !== 'primac') return createJsonResponse({ error: 'Samo primači mogu unositi šihtaricu' }, false);
+
+    var ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    var headers = ['DATUM', 'RADNIK', 'TIP_DANA', 'ODJEL', 'GJ', 'BROJ_LINIJE', 'SJEKAĆKA_PARTIJA', 'TIMESTAMP'];
+    var sheet = getOrCreateSihtaricaSheet(ss, 'ŠIHTARICA_PRIMAC', headers);
+
+    var tipDana = String(params.tipDana || 'TEREN').trim();
+    var jeTeren = tipDana === 'TEREN';
+
+    sheet.appendRow([
+      parseDate(params.datum),
+      loginResult.fullName,
+      tipDana,
+      jeTeren ? String(params.odjel || '').trim() : '',
+      jeTeren ? String(params.gj || '').trim() : '',
+      jeTeren ? String(params.brojLinije || '').trim() : '',
+      jeTeren ? String(params.sjekacskaPartija || '').trim() : '',
+      new Date()
+    ]);
+
+    return createJsonResponse({ success: true, message: 'Šihtarica uspješno unesena' }, true);
+  } catch (error) {
+    Logger.log('ERROR in handleAddSihtaricaPrimac: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+function handleAddSihtaricaOtpremac(params) {
+  try {
+    var loginResult = JSON.parse(handleLogin(params.username, params.password).getContent());
+    if (!loginResult.success) return createJsonResponse({ error: 'Unauthorized' }, false);
+    if (loginResult.type !== 'otpremac') return createJsonResponse({ error: 'Samo otpremači mogu unositi šihtaricu' }, false);
+
+    var ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    var headers = ['DATUM', 'OTPREMAC', 'TIP_DANA', 'ODJEL', 'GJ', 'BROJ_KAMIONA', 'NAPOMENA', 'TIMESTAMP'];
+    var sheet = getOrCreateSihtaricaSheet(ss, 'ŠIHTARICA_OTPREMAC', headers);
+
+    var tipDana = String(params.tipDana || 'TEREN').trim();
+    var jeTeren = tipDana === 'TEREN';
+
+    sheet.appendRow([
+      parseDate(params.datum),
+      loginResult.fullName,
+      tipDana,
+      jeTeren ? String(params.odjel || '').trim() : '',
+      jeTeren ? String(params.gj || '').trim() : '',
+      jeTeren ? String(params.brojKamiona || '').trim() : '',
+      String(params.napomena || '').trim(),
+      new Date()
+    ]);
+
+    return createJsonResponse({ success: true, message: 'Šihtarica uspješno unesena' }, true);
+  } catch (error) {
+    Logger.log('ERROR in handleAddSihtaricaOtpremac: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+function handleGetSihtarica(tip, username, password) {
+  try {
+    var loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) return createJsonResponse({ error: 'Unauthorized' }, false);
+
+    var ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    var sheetName = tip === 'primac' ? 'ŠIHTARICA_PRIMAC' : 'ŠIHTARICA_OTPREMAC';
+    var sheet = ss.getSheetByName(sheetName);
+
+    var unosi = [];
+    if (sheet && sheet.getLastRow() > 1) {
+      var data = sheet.getDataRange().getValues();
+      var fullName = loginResult.fullName.trim().toLowerCase();
+      for (var i = 1; i < data.length; i++) {
+        var row = data[i];
+        var radnik = String(row[1] || '').trim().toLowerCase();
+        if (radnik !== fullName) continue;
+        var datum = row[0];
+        var datumStr = datum instanceof Date ? formatDate(datum) : String(datum);
+        unosi.push({
+          datum: datumStr,
+          radnik: String(row[1] || ''),
+          tipDana: String(row[2] || 'TEREN'),
+          odjel: String(row[3] || ''),
+          gj: String(row[4] || ''),
+          polje5: String(row[5] || ''),
+          polje6: String(row[6] || '')
+        });
+      }
+      // Sortiraj po datumu — najnoviji prvo
+      unosi.sort(function(a, b) {
+        return new Date(b.datum.split('.').reverse().join('-')) - new Date(a.datum.split('.').reverse().join('-'));
+      });
+    }
+
+    // Godišnji odmor podaci
+    var godisnji = getGodisnjiStatus(ss, loginResult.fullName, sheetName, tip);
+
+    return createJsonResponse({ success: true, unosi: unosi, godisnji: godisnji }, true);
+  } catch (error) {
+    Logger.log('ERROR in handleGetSihtarica: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+function getGodisnjiStatus(ss, fullName, sihtaricaSheetName, tip) {
+  var ugovoreni = 0;
+  var tekucaGodina = new Date().getFullYear();
+
+  // Čitaj ugovorene dane iz ŠIHTARICA_GODISNJI_DANI
+  var gdSheet = ss.getSheetByName('ŠIHTARICA_GODISNJI_DANI');
+  if (gdSheet && gdSheet.getLastRow() > 1) {
+    var gdData = gdSheet.getDataRange().getValues();
+    var fn = fullName.trim().toLowerCase();
+    for (var i = 1; i < gdData.length; i++) {
+      // Kolone: USERNAME, FULLNAME, TIP (primac/otpremac), UGOVORENI_DANI, POSTAVIO, DATUM
+      if (String(gdData[i][1] || '').trim().toLowerCase() === fn &&
+          String(gdData[i][2] || '').trim() === tip) {
+        ugovoreni = parseInt(gdData[i][3]) || 0;
+        break;
+      }
+    }
+  }
+
+  // Broji iskorištene dane za tekuću godinu
+  var iskoristen = 0;
+  var sihtaricaSheet = ss.getSheetByName(sihtaricaSheetName);
+  if (sihtaricaSheet && sihtaricaSheet.getLastRow() > 1) {
+    var sData = sihtaricaSheet.getDataRange().getValues();
+    var fn2 = fullName.trim().toLowerCase();
+    for (var j = 1; j < sData.length; j++) {
+      var rowRadnik = String(sData[j][1] || '').trim().toLowerCase();
+      var rowTip = String(sData[j][2] || '');
+      var rowDatum = sData[j][0];
+      var rowGod = rowDatum instanceof Date ? rowDatum.getFullYear() : parseInt(String(rowDatum).split('.')[2]);
+      if (rowRadnik === fn2 && rowTip === 'GODIŠNJI ODMOR' && rowGod === tekucaGodina) {
+        iskoristen++;
+      }
+    }
+  }
+
+  return { ugovoreni: ugovoreni, iskoristen: iskoristen, preostalo: Math.max(0, ugovoreni - iskoristen) };
+}
+
+function handleSetGodisnjiDani(params) {
+  try {
+    var loginResult = JSON.parse(handleLogin(params.username, params.password).getContent());
+    if (!loginResult.success) return createJsonResponse({ error: 'Unauthorized' }, false);
+    if (loginResult.type !== 'admin') return createJsonResponse({ error: 'Samo admin može postaviti dane godišnjeg' }, false);
+
+    var targetUsername = String(params.targetUsername || '').trim();
+    var targetFullName = String(params.targetFullName || '').trim();
+    var tip = String(params.tip || '').trim(); // 'primac' ili 'otpremac'
+    var dani = parseInt(params.dani);
+    if (isNaN(dani) || dani < 0) return createJsonResponse({ error: 'Neispravan broj dana' }, false);
+
+    var ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    var headers = ['USERNAME', 'FULLNAME', 'TIP', 'UGOVORENI_DANI', 'POSTAVIO', 'DATUM_POSTAVLJANJA'];
+    var sheet = getOrCreateSihtaricaSheet(ss, 'ŠIHTARICA_GODISNJI_DANI', headers);
+
+    // Ažuriraj postojeći red ili dodaj novi
+    var updated = false;
+    if (sheet.getLastRow() > 1) {
+      var data = sheet.getDataRange().getValues();
+      for (var i = 1; i < data.length; i++) {
+        if (String(data[i][0]).trim() === targetUsername && String(data[i][2]).trim() === tip) {
+          sheet.getRange(i + 1, 4).setValue(dani);
+          sheet.getRange(i + 1, 5).setValue(loginResult.fullName);
+          sheet.getRange(i + 1, 6).setValue(new Date());
+          updated = true;
+          break;
+        }
+      }
+    }
+    if (!updated) {
+      sheet.appendRow([targetUsername, targetFullName, tip, dani, loginResult.fullName, new Date()]);
+    }
+
+    return createJsonResponse({ success: true, message: 'Dane godišnjeg odmora postavljeni na ' + dani }, true);
+  } catch (error) {
+    Logger.log('ERROR in handleSetGodisnjiDani: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}

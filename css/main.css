@@ -2654,6 +2654,8 @@
         #otpremac-odjeli-content,
         #my-sjece-content,
         #my-otpreme-content,
+        #primac-sihtarica-content,
+        #otpremac-sihtarica-content,
         #pending-unosi-content,
         #poslovodja-unosi-content {
             max-width: 100%;
@@ -2684,6 +2686,8 @@
             #otpremac-odjeli-content,
             #my-sjece-content,
             #my-otpreme-content,
+            #primac-sihtarica-content,
+            #otpremac-sihtarica-content,
             #pending-unosi-content,
             #poslovodja-unosi-content { padding-inline: 40px; }
         }
@@ -2836,6 +2840,8 @@
             #otpremac-odjeli-content,
             #my-sjece-content,
             #my-otpreme-content,
+            #primac-sihtarica-content,
+            #otpremac-sihtarica-content,
             #pending-unosi-content,
             #poslovodja-unosi-content { padding-inline: 12px; padding-block: 12px; }
         }
