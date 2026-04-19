@@ -53,9 +53,9 @@ ALTER TABLE sihtarica_primac          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sihtarica_otpremac        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sihtarica_godisnji_dani   ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "anon_all_primac"    ON sihtarica_primac          FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "anon_all_otpremac"  ON sihtarica_otpremac        FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "anon_all_godisnji"  ON sihtarica_godisnji_dani   FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY IF NOT EXISTS "anon_all_primac"    ON sihtarica_primac          FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY IF NOT EXISTS "anon_all_otpremac"  ON sihtarica_otpremac        FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY IF NOT EXISTS "anon_all_godisnji"  ON sihtarica_godisnji_dani   FOR ALL TO anon USING (true) WITH CHECK (true);
 
 -- 5. Auto-update updated_at
 CREATE OR REPLACE FUNCTION update_updated_at()
@@ -78,4 +78,4 @@ CREATE TABLE IF NOT EXISTS temp_images (
 );
 
 ALTER TABLE temp_images ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "anon_all_temp_images" ON temp_images FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY IF NOT EXISTS "anon_all_temp_images" ON temp_images FOR ALL TO anon USING (true) WITH CHECK (true);
