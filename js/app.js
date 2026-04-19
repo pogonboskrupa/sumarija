@@ -7145,6 +7145,7 @@
         // Sort state for pending (admin) table
         var pendingSortCol = null;
         var pendingSortDir = 'asc';
+        var _pendingImageMap = {}; // radnik_datum_tip → supabase public URL
 
         function getUnosiColGroup(sortiment) {
             var cetinariCols = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'CEL.DUGA', 'CEL.CIJEPANA', 'TRUPCI Č', 'ČETINARI'];
@@ -7232,10 +7233,13 @@
                     html += '<td>' + (unos.kupac || '-') + '</td>';
                     html += '<td>' + (unos.brojOtpremnice || '-') + '</td>';
 
-                    if (unos.imageUrl) {
+                    var _tl = unos.tip === 'SJEČA' ? 'sjeca' : 'otprema';
+                    var _sk = ((unos.radnik || '') + '_' + (unos.datum || '') + '_' + _tl).toLowerCase();
+                    var _iu = unos.imageUrl || _pendingImageMap[_sk] || null;
+                    if (_iu) {
                         html += '<td style="text-align:center;padding:4px;">';
-                        html += '<a href="' + unos.imageUrl + '" target="_blank" title="Klikni za veću sliku">';
-                        html += '<img src="' + unos.imageUrl + '" alt="Slika" style="max-width:50px;max-height:38px;border-radius:3px;cursor:pointer;border:1px solid #e5e7eb;object-fit:cover;" onerror="this.style.display=\'none\'; this.parentNode.innerHTML=\'-\'">';
+                        html += '<a href="' + _iu + '" target="_blank" title="Klikni za veću sliku">';
+                        html += '<img src="' + _iu + '" alt="Slika" style="max-width:50px;max-height:38px;border-radius:3px;cursor:pointer;border:1px solid #e5e7eb;object-fit:cover;" onerror="this.style.display=\'none\'; this.parentNode.innerHTML=\'-\'">';
                         html += '</a></td>';
                     } else {
                         html += '<td style="text-align:center;color:#ccc;">-</td>';
@@ -7322,6 +7326,29 @@
 
                 // Store unfiltered data for filtering
                 unfilteredPendingData = data.unosi || [];
+
+                // Učitaj slike iz Supabase (za otpremu + fallback za sječu)
+                _pendingImageMap = {};
+                try {
+                    var sb = _getSB();
+                    if (sb) {
+                        var imgRes = await sb.from('temp_images')
+                            .select('file_path, radnik, entry_datum, entry_type')
+                            .gt('expires_at', new Date().toISOString())
+                            .not('entry_datum', 'is', null);
+                        if (imgRes.data) {
+                            imgRes.data.forEach(function(img) {
+                                if (!img.radnik || !img.entry_datum || !img.entry_type) return;
+                                var p = img.entry_datum.split('-');
+                                var datumFmt = (p[2] || '') + '.' + (p[1] || '') + '.' + (p[0] || '');
+                                var k = (img.radnik + '_' + datumFmt + '_' + img.entry_type).toLowerCase();
+                                if (!_pendingImageMap[k]) {
+                                    _pendingImageMap[k] = sb.storage.from('sjeca-images').getPublicUrl(img.file_path).data.publicUrl;
+                                }
+                            });
+                        }
+                    }
+                } catch(e) { console.warn('Supabase image map error:', e); }
 
                 // Update badge count
                 updatePendingBadge(unfilteredPendingData.length);
@@ -7477,10 +7504,13 @@
                     html += '<td>' + (unos.kupac || '-') + '</td>';
                     html += '<td>' + (unos.brojOtpremnice || '-') + '</td>';
 
-                    if (unos.imageUrl) {
+                    var _tl = unos.tip === 'SJEČA' ? 'sjeca' : 'otprema';
+                    var _sk = ((unos.radnik || '') + '_' + (unos.datum || '') + '_' + _tl).toLowerCase();
+                    var _iu = unos.imageUrl || _pendingImageMap[_sk] || null;
+                    if (_iu) {
                         html += '<td style="text-align:center;padding:4px;">';
-                        html += '<a href="' + unos.imageUrl + '" target="_blank" title="Klikni za veću sliku">';
-                        html += '<img src="' + unos.imageUrl + '" alt="Slika" style="max-width:50px;max-height:38px;border-radius:3px;cursor:pointer;border:1px solid #e5e7eb;object-fit:cover;" onerror="this.style.display=\'none\'; this.parentNode.innerHTML=\'-\'">';
+                        html += '<a href="' + _iu + '" target="_blank" title="Klikni za veću sliku">';
+                        html += '<img src="' + _iu + '" alt="Slika" style="max-width:50px;max-height:38px;border-radius:3px;cursor:pointer;border:1px solid #e5e7eb;object-fit:cover;" onerror="this.style.display=\'none\'; this.parentNode.innerHTML=\'-\'">';
                         html += '</a></td>';
                     } else {
                         html += '<td style="text-align:center;color:#ccc;">-</td>';
@@ -9191,9 +9221,13 @@
                 }
             }
 
+            // Ako je slika priložena, odjel i kubici su opcionalni
+            const hasImage = (prefix === 'sjeca'   && typeof sjecaImageData   !== 'undefined' && !!sjecaImageData) ||
+                             (prefix === 'otprema' && typeof otpremaImageData !== 'undefined' && !!otpremaImageData);
+
             // 2. Odjel validation
             const odjel = getVal(prefix + '-odjel');
-            if (!odjel || odjel.trim() === '') {
+            if (!hasImage && (!odjel || odjel.trim() === '')) {
                 errors.push('Odaberi odjel');
             }
 
@@ -9217,7 +9251,7 @@
                 }
                 if (val > 0) hasAnyValue = true;
             }
-            if (!hasAnyValue && errors.length === 0) {
+            if (!hasImage && !hasAnyValue && errors.length === 0) {
                 errors.push('Unesite barem jedan sortiment (količina > 0)');
             }
 
@@ -9268,12 +9302,11 @@
                 let imageUrl = null;
                 if (sjecaImageData) {
                     submitBtn.textContent = 'Učitavam sliku...';
-                    console.log('Uploading image, data length:', sjecaImageData.length);
-                    imageUrl = await uploadImage(sjecaImageData, 'sjeca');
-                    console.log('Upload result:', imageUrl ? 'SUCCESS: ' + imageUrl : 'FAILED');
-                    if (!imageUrl) {
-                        console.warn('Image upload failed, continuing without image');
-                    }
+                    imageUrl = await uploadImage(sjecaImageData, 'sjeca', {
+                        radnik: currentUser ? (currentUser.fullName || currentUser.username) : '',
+                        datum: getVal('sjeca-datum'),
+                        entryType: 'sjeca'
+                    });
                 }
 
                 submitBtn.textContent = 'Dodavanje...';
@@ -9320,6 +9353,10 @@
                     messageDiv.style.background = '#d1fae5';
                     messageDiv.style.color = '#047857';
                     messageDiv.classList.remove('hidden');
+
+                    if (typeof NotificationManager !== 'undefined') {
+                        NotificationManager.sendNotification('Sječa dodana ✅', 'Unos uspješno poslan rukovodiocu na pregled', 'sjeca-add');
+                    }
 
                     // Reset form immediately so user can enter new data
                     resetSjecaForm();
@@ -9378,7 +9415,11 @@
                 let imageUrl = null;
                 if (otpremaImageData) {
                     submitBtn.textContent = 'Učitavam sliku...';
-                    imageUrl = await uploadImage(otpremaImageData, 'otprema');
+                    imageUrl = await uploadImage(otpremaImageData, 'otprema', {
+                        radnik: currentUser ? (currentUser.fullName || currentUser.username) : '',
+                        datum: document.getElementById('otprema-datum') ? document.getElementById('otprema-datum').value : '',
+                        entryType: 'otprema'
+                    });
                 }
 
                 submitBtn.textContent = 'Dodavanje...';
@@ -9427,6 +9468,10 @@
                     messageDiv.style.background = '#dbeafe';
                     messageDiv.style.color = '#1e40af';
                     messageDiv.classList.remove('hidden');
+
+                    if (typeof NotificationManager !== 'undefined') {
+                        NotificationManager.sendNotification('Otprema dodana ✅', 'Unos uspješno poslan rukovodiocu na pregled', 'otprema-add');
+                    }
 
                     // Reset form immediately so user can enter new data
                     resetOtpremaForm();
@@ -9591,7 +9636,8 @@
         }
 
         // Upload slike u Supabase Storage (vraća public URL ili null)
-        async function uploadImage(imageData, type) {
+        // meta = { radnik, datum: 'YYYY-MM-DD', entryType }
+        async function uploadImage(imageData, type, meta) {
             if (!imageData) return null;
             const sb = _getSB();
             if (!sb) { alert('Supabase nije konfigurisan za upload slika.'); return null; }
@@ -9625,9 +9671,13 @@
                 const imageUrl = urlData.publicUrl;
 
                 // Spremi metadata s rokom 5 dana
-                const expiresAt = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+                const expiresAt  = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+                const radnik     = (meta && meta.radnik)    || (currentUser ? (currentUser.fullName || currentUser.username) : '');
+                const entryDatum = (meta && meta.datum)     || '';
+                const entryType  = (meta && meta.entryType) || type;
                 await sb.from('temp_images').insert({
-                    file_path: filePath, type, username, expires_at: expiresAt
+                    file_path: filePath, type, username, expires_at: expiresAt,
+                    radnik, entry_datum: entryDatum, entry_type: entryType
                 });
 
                 return imageUrl;

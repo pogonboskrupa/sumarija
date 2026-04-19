@@ -55,6 +55,9 @@ CREATE TABLE IF NOT EXISTS temp_images (
   file_path   TEXT        NOT NULL,
   type        TEXT        NOT NULL,
   username    TEXT        NOT NULL,
+  radnik      TEXT        DEFAULT '',
+  entry_datum TEXT        DEFAULT '',
+  entry_type  TEXT        DEFAULT '',
   uploaded_at TIMESTAMPTZ DEFAULT NOW(),
   expires_at  TIMESTAMPTZ NOT NULL
 );

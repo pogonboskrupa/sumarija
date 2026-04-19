@@ -1663,10 +1663,11 @@ function handleAddOtprema(params) {
     // Dodaj UKUPNO Č+L (Z)
     newRow.push(ukupno);
 
-    // Dodaj BROJ_OTPREMNICE, STATUS i TIMESTAMP
+    // Dodaj BROJ_OTPREMNICE, STATUS, TIMESTAMP i IMAGE_URL
     newRow.push(params.brojOtpremnice || '');
     newRow.push("PENDING");
     newRow.push(new Date());
+    newRow.push(params.imageUrl || '');  // IMAGE_URL
 
     // Dodaj red na kraj sheet-a
     unosSheet.appendRow(newRow);
