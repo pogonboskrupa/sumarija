@@ -1896,7 +1896,8 @@ function handlePendingUnosi(year, username, password) {
       brojOtpremnice: u.brojOtpremnice,
       sortimenti: u.sortimenti,
       ukupno: u.ukupno,
-      timestamp: u.timestamp
+      timestamp: u.timestamp,
+      imageUrl: u.imageUrl || ''
     }));
 
     Logger.log('=== HANDLE PENDING UNOSI END ===');
