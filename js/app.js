@@ -7237,10 +7237,11 @@
                     var _sk = ((unos.radnik || '') + '_' + (unos.datum || '') + '_' + _tl).toLowerCase();
                     var _iu = unos.imageUrl || _pendingImageMap[_sk] || null;
                     if (_iu) {
+                        var _esc = _iu.replace(/'/g, '%27');
                         html += '<td style="text-align:center;padding:4px;">';
-                        html += '<a href="' + _iu + '" target="_blank" title="Klikni za veću sliku">';
-                        html += '<img src="' + _iu + '" alt="Slika" style="max-width:50px;max-height:38px;border-radius:3px;cursor:pointer;border:1px solid #e5e7eb;object-fit:cover;" onerror="this.style.display=\'none\'; this.parentNode.innerHTML=\'-\'">';
-                        html += '</a></td>';
+                        html += '<button onclick="_openImageLightbox(\'' + _esc + '\')" style="border:none;background:none;padding:2px;cursor:zoom-in;line-height:0;" title="Klikni za prikaz slike">';
+                        html += '<img src="' + _iu + '" alt="📷" style="max-width:50px;max-height:38px;border-radius:3px;border:1px solid #e5e7eb;object-fit:cover;" onerror="this.parentNode.parentNode.innerHTML=\'<span style=color:#ccc>-</span>\'">';
+                        html += '</button></td>';
                     } else {
                         html += '<td style="text-align:center;color:#ccc;">-</td>';
                     }
@@ -7508,10 +7509,11 @@
                     var _sk = ((unos.radnik || '') + '_' + (unos.datum || '') + '_' + _tl).toLowerCase();
                     var _iu = unos.imageUrl || _pendingImageMap[_sk] || null;
                     if (_iu) {
+                        var _esc = _iu.replace(/'/g, '%27');
                         html += '<td style="text-align:center;padding:4px;">';
-                        html += '<a href="' + _iu + '" target="_blank" title="Klikni za veću sliku">';
-                        html += '<img src="' + _iu + '" alt="Slika" style="max-width:50px;max-height:38px;border-radius:3px;cursor:pointer;border:1px solid #e5e7eb;object-fit:cover;" onerror="this.style.display=\'none\'; this.parentNode.innerHTML=\'-\'">';
-                        html += '</a></td>';
+                        html += '<button onclick="_openImageLightbox(\'' + _esc + '\')" style="border:none;background:none;padding:2px;cursor:zoom-in;line-height:0;" title="Klikni za prikaz slike">';
+                        html += '<img src="' + _iu + '" alt="📷" style="max-width:50px;max-height:38px;border-radius:3px;border:1px solid #e5e7eb;object-fit:cover;" onerror="this.parentNode.parentNode.innerHTML=\'<span style=color:#ccc>-</span>\'">';
+                        html += '</button></td>';
                     } else {
                         html += '<td style="text-align:center;color:#ccc;">-</td>';
                     }
@@ -9687,6 +9689,65 @@
                 return null;
             }
         }
+
+        // ── Image lightbox ───────────────────────────────────────────
+        function _openImageLightbox(imgUrl) {
+            var old = document.getElementById('_img_lightbox');
+            if (old) old.remove();
+
+            var lb = document.createElement('div');
+            lb.id = '_img_lightbox';
+            lb.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+            lb.addEventListener('click', function(e) { if (e.target === lb) lb.remove(); });
+
+            // Top bar
+            var bar = document.createElement('div');
+            bar.style.cssText = 'position:absolute;top:0;left:0;right:0;display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:10px 16px;background:rgba(0,0,0,0.6);';
+
+            var dlBtn = document.createElement('button');
+            dlBtn.innerHTML = '&#11015; Preuzmi';
+            dlBtn.style.cssText = 'background:#2563eb;color:#fff;border:none;padding:7px 16px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;';
+            dlBtn.onclick = function() { _downloadImage(imgUrl); };
+
+            var closeBtn = document.createElement('button');
+            closeBtn.innerHTML = '&#10005;';
+            closeBtn.style.cssText = 'background:rgba(255,255,255,0.15);color:#fff;border:none;padding:7px 13px;border-radius:7px;cursor:pointer;font-size:16px;font-weight:600;';
+            closeBtn.onclick = function() { lb.remove(); };
+
+            bar.appendChild(dlBtn);
+            bar.appendChild(closeBtn);
+            lb.appendChild(bar);
+
+            // Image
+            var img = document.createElement('img');
+            img.src = imgUrl;
+            img.alt = 'Slika';
+            img.style.cssText = 'max-width:94vw;max-height:88vh;object-fit:contain;border-radius:6px;margin-top:52px;box-shadow:0 8px 40px rgba(0,0,0,0.6);';
+            lb.appendChild(img);
+
+            // ESC closes
+            function _escHandler(e) { if (e.key === 'Escape') { lb.remove(); document.removeEventListener('keydown', _escHandler); } }
+            document.addEventListener('keydown', _escHandler);
+
+            document.body.appendChild(lb);
+        }
+
+        async function _downloadImage(url) {
+            try {
+                var res = await fetch(url);
+                var blob = await res.blob();
+                var ext  = (blob.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
+                var burl = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = burl;
+                a.download = 'slika_' + new Date().toISOString().slice(0,10) + '.' + ext;
+                a.click();
+                setTimeout(function() { URL.revokeObjectURL(burl); }, 2000);
+            } catch(e) {
+                window.open(url, '_blank');
+            }
+        }
+        // ─────────────────────────────────────────────────────────────
 
         // Briše slike kojima je istekao rok (poziva se pri svakom novom uploadu)
         async function _cleanupExpiredImages(sb) {
