@@ -7235,7 +7235,8 @@
 
                     var _tl = unos.tip === 'SJEČA' ? 'sjeca' : 'otprema';
                     var _sk = ((unos.radnik || '') + '_' + (unos.datum || '') + '_' + _tl).toLowerCase();
-                    var _iu = unos.imageUrl || _pendingImageMap[_sk] || null;
+                    // _pendingImageMap fallback only for OTPREMA (sječa gets imageUrl from GAS directly)
+                    var _iu = unos.imageUrl || (unos.tip === 'OTPREMA' ? (_pendingImageMap[_sk] || null) : null);
                     if (_iu) {
                         var _esc = _iu.replace(/'/g, '%27');
                         html += '<td style="text-align:center;padding:4px;">';
@@ -7512,7 +7513,8 @@
 
                     var _tl = unos.tip === 'SJEČA' ? 'sjeca' : 'otprema';
                     var _sk = ((unos.radnik || '') + '_' + (unos.datum || '') + '_' + _tl).toLowerCase();
-                    var _iu = unos.imageUrl || _pendingImageMap[_sk] || null;
+                    // _pendingImageMap fallback only for OTPREMA (sječa gets imageUrl from GAS directly)
+                    var _iu = unos.imageUrl || (unos.tip === 'OTPREMA' ? (_pendingImageMap[_sk] || null) : null);
                     if (_iu) {
                         var _esc = _iu.replace(/'/g, '%27');
                         html += '<td style="text-align:center;padding:4px;">';
@@ -8966,6 +8968,35 @@
 
                         if (result.success) {
                             showSuccess('Uspjeh', result.message);
+                            loadPendingUnosi();
+                        } else {
+                            throw new Error(result.error || 'Unknown error');
+                        }
+                    } catch (error) {
+                        showError('Greška', error.message);
+                    }
+                }
+            );
+        }
+
+        // Delete ALL pending unosi (admin/rukovodilac only)
+        function deleteAllPendingUnosi() {
+            var count = unfilteredPendingData ? unfilteredPendingData.length : 0;
+            if (count === 0) { showInfo('Nema unosa', 'Nema dodanih unosa za brisanje.'); return; }
+            showConfirmModal(
+                'Obriši sve unose',
+                'Da li ste sigurni da želite obrisati svih ' + count + ' dodanih unosa? Ova akcija se ne može poništiti.',
+                async function() {
+                    try {
+                        const formData = new URLSearchParams();
+                        formData.append('path', 'delete-all-pending');
+                        formData.append('username', currentUser.username);
+                        formData.append('password', currentPassword);
+                        const url = API_URL + '?' + formData.toString();
+                        const response = await fetch(url);
+                        const result = await response.json();
+                        if (result.success) {
+                            showSuccess('Obrisano', result.message);
                             loadPendingUnosi();
                         } else {
                             throw new Error(result.error || 'Unknown error');

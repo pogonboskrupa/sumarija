@@ -2166,6 +2166,39 @@ function handleDeletePending(params) {
   }
 }
 
+// Handler za brisanje SVIH pending unosa (admin/rukovodilac)
+function handleDeleteAllPending(params) {
+  try {
+    const user = verifyUser(params.username, params.password);
+    if (!user) return createJsonResponse({ error: 'Neispravno korisničko ime ili lozinka' }, false);
+    if (user.uloga !== 'admin' && user.uloga !== 'rukovodilac') {
+      return createJsonResponse({ error: 'Nemate pravo za ovu akciju' }, false);
+    }
+
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    var deleted = 0;
+    ['PRIMAČ_UNOS', 'OTPREMAČ_UNOS'].forEach(function(sheetName) {
+      const sheet = ss.getSheetByName(sheetName);
+      if (!sheet || sheet.getLastRow() < 2) return;
+      const data = sheet.getDataRange().getValues();
+      const headers = data[0].map(function(h) { return String(h).toUpperCase().trim(); });
+      const statusIdx = headers.indexOf('STATUS');
+      if (statusIdx < 0) return;
+      for (let i = data.length - 1; i >= 1; i--) {
+        if (data[i][statusIdx] === 'PENDING') {
+          sheet.deleteRow(i + 1);
+          deleted++;
+        }
+      }
+    });
+
+    invalidateAllCache();
+    return createJsonResponse({ success: true, message: 'Obrisano ' + deleted + ' unosa', deleted: deleted }, true);
+  } catch (error) {
+    return createJsonResponse({ error: 'Greška: ' + error.toString() }, false);
+  }
+}
+
 // Handler za dobijanje liste odjela iz foldera
 function handleGetOdjeliList() {
   try {
