@@ -87,9 +87,9 @@
                     { id: 'primac-godisnji', icon: '📅', label: 'Godišnji prikaz' },
                     { id: 'primac-odjeli', icon: '🏭', label: 'Prikaz po odjelima' },
                     { id: 'izvjestaji-primac', icon: '📋', label: 'Izvještaji' },
+                    { id: 'primac-sihtarica', icon: '🗓️', label: 'Šihtarica' },
                     { id: 'add-sjeca', icon: '➕', label: 'Dodaj sječu' },
                     { id: 'my-sjece', icon: '📝', label: 'Moje sječe' },
-                    { id: 'primac-sihtarica', icon: '🗓️', label: 'Šihtarica' },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
                 ];
             } else if (userType === 'otpremac') {
@@ -98,9 +98,9 @@
                     { id: 'otpremac-godisnji', icon: '📅', label: 'Godišnji prikaz' },
                     { id: 'otpremac-odjeli', icon: '🏭', label: 'Prikaz po odjelima' },
                     { id: 'izvjestaji-otpremac', icon: '📋', label: 'Izvještaji' },
+                    { id: 'otpremac-sihtarica', icon: '🗓️', label: 'Šihtarica' },
                     { id: 'add-otprema', icon: '➕', label: 'Dodaj otpremu' },
                     { id: 'my-otpreme', icon: '📝', label: 'Moje otpreme' },
-                    { id: 'otpremac-sihtarica', icon: '🗓️', label: 'Šihtarica' },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
                 ];
             } else if (userType === 'operativa') {

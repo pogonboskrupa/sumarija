@@ -1663,10 +1663,11 @@ function handleAddOtprema(params) {
     // Dodaj UKUPNO Č+L (Z)
     newRow.push(ukupno);
 
-    // Dodaj BROJ_OTPREMNICE, STATUS i TIMESTAMP
+    // Dodaj BROJ_OTPREMNICE, STATUS, TIMESTAMP i IMAGE_URL
     newRow.push(params.brojOtpremnice || '');
     newRow.push("PENDING");
     newRow.push(new Date());
+    newRow.push(params.imageUrl || '');  // IMAGE_URL
 
     // Dodaj red na kraj sheet-a
     unosSheet.appendRow(newRow);
@@ -1696,6 +1697,50 @@ function handleAddOtprema(params) {
 // ========================================
 
 /**
+ * Briše PENDING unose starije od 14 dana iz oba sheet-a.
+ * Poziva se automatski svaki put kad se učitaju pending unosi.
+ */
+function deleteOldPendingUnosi() {
+  try {
+    const DAYS   = 14;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - DAYS);
+
+    const ss     = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const sheets = ['PRIMAČ_UNOS', 'OTPREMAČ_UNOS'];
+    let   deleted = 0;
+
+    sheets.forEach(function(sheetName) {
+      const sheet = ss.getSheetByName(sheetName);
+      if (!sheet || sheet.getLastRow() < 2) return;
+
+      const data    = sheet.getDataRange().getValues();
+      const headers = data[0].map(function(h) { return String(h).toUpperCase().trim(); });
+      const statusIdx = headers.indexOf('STATUS');
+      const tsIdx     = headers.indexOf('TIMESTAMP');
+      if (statusIdx < 0 || tsIdx < 0) return;
+
+      // Pronađi stare PENDING redove (od dna prema vrhu da indeksi ostanu ispravni)
+      for (let i = data.length - 1; i >= 1; i--) {
+        const status = data[i][statusIdx];
+        const ts     = data[i][tsIdx];
+        if (status === 'PENDING' && ts && new Date(ts) < cutoff) {
+          sheet.deleteRow(i + 1); // Sheets su 1-indeksirani
+          deleted++;
+        }
+      }
+    });
+
+    if (deleted > 0) {
+      Logger.log('deleteOldPendingUnosi: obrisano ' + deleted + ' starih unosa');
+      invalidateAllCache();
+    }
+  } catch(e) {
+    Logger.log('deleteOldPendingUnosi ERROR: ' + e.toString());
+  }
+}
+
+/**
  * Pending Unosi endpoint - vraća sve pending unose za pregled rukovodioca
  */
 function handlePendingUnosi(year, username, password) {
@@ -1705,6 +1750,9 @@ function handlePendingUnosi(year, username, password) {
     if (!loginResult.success) {
       return createJsonResponse({ error: "Unauthorized" }, false);
     }
+
+    // Automatski obriši unose starije od 14 dana
+    deleteOldPendingUnosi();
 
     Logger.log('=== HANDLE PENDING UNOSI START ===');
     Logger.log('User: ' + loginResult.fullName);
@@ -4582,22 +4630,51 @@ function handleAddSihtaricaPrimac(params) {
     if (loginResult.type !== 'primac') return createJsonResponse({ error: 'Samo primači mogu unositi šihtaricu' }, false);
 
     var ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
-    var headers = ['DATUM', 'RADNIK', 'TIP_DANA', 'ODJEL', 'GJ', 'BROJ_LINIJE', 'SJEKAĆKA_PARTIJA', 'TIMESTAMP'];
+    var headers = ['DATUM', 'RADNIK', 'TIP_DANA', 'ODJEL', 'GJ', 'BROJ_LINIJE', 'SJEKAĆKA_PARTIJA', 'NAPOMENA', 'TIMESTAMP'];
     var sheet = getOrCreateSihtaricaSheet(ss, 'ŠIHTARICA_PRIMAC', headers);
 
-    var tipDana = String(params.tipDana || 'TEREN').trim();
+    var tipDana = String(params.tipDana || '').trim();
     var jeTeren = tipDana === 'TEREN';
+    var targetDate = parseDate(params.datum);
+    var tz = Session.getScriptTimeZone();
+    var targetDateStr = Utilities.formatDate(targetDate, tz, 'yyyy-MM-dd');
+    var fullNameLc = loginResult.fullName.trim().toLowerCase();
 
-    sheet.appendRow([
-      parseDate(params.datum),
+    var existingRowIndex = -1;
+    if (sheet.getLastRow() > 1) {
+      var existingData = sheet.getDataRange().getValues();
+      for (var i = 1; i < existingData.length; i++) {
+        var rd = existingData[i][0];
+        var rdStr = rd instanceof Date ? Utilities.formatDate(rd, tz, 'yyyy-MM-dd') : String(rd);
+        if (rdStr === targetDateStr && String(existingData[i][1] || '').trim().toLowerCase() === fullNameLc) {
+          existingRowIndex = i + 1;
+          break;
+        }
+      }
+    }
+
+    if (!tipDana) {
+      if (existingRowIndex > 0) sheet.deleteRow(existingRowIndex);
+      return createJsonResponse({ success: true, message: 'Unos obrisan' }, true);
+    }
+
+    var rowData = [
+      targetDate,
       loginResult.fullName,
       tipDana,
       jeTeren ? String(params.odjel || '').trim() : '',
       jeTeren ? String(params.gj || '').trim() : '',
       jeTeren ? String(params.brojLinije || '').trim() : '',
       jeTeren ? String(params.sjekacskaPartija || '').trim() : '',
+      jeTeren ? String(params.napomena || '').trim() : '',
       new Date()
-    ]);
+    ];
+
+    if (existingRowIndex > 0) {
+      sheet.getRange(existingRowIndex, 1, 1, rowData.length).setValues([rowData]);
+    } else {
+      sheet.appendRow(rowData);
+    }
 
     return createJsonResponse({ success: true, message: 'Šihtarica uspješno unesena' }, true);
   } catch (error) {
@@ -4616,19 +4693,47 @@ function handleAddSihtaricaOtpremac(params) {
     var headers = ['DATUM', 'OTPREMAC', 'TIP_DANA', 'ODJEL', 'GJ', 'BROJ_KAMIONA', 'NAPOMENA', 'TIMESTAMP'];
     var sheet = getOrCreateSihtaricaSheet(ss, 'ŠIHTARICA_OTPREMAC', headers);
 
-    var tipDana = String(params.tipDana || 'TEREN').trim();
+    var tipDana = String(params.tipDana || '').trim();
     var jeTeren = tipDana === 'TEREN';
+    var targetDate = parseDate(params.datum);
+    var tz = Session.getScriptTimeZone();
+    var targetDateStr = Utilities.formatDate(targetDate, tz, 'yyyy-MM-dd');
+    var fullNameLc = loginResult.fullName.trim().toLowerCase();
 
-    sheet.appendRow([
-      parseDate(params.datum),
+    var existingRowIndex = -1;
+    if (sheet.getLastRow() > 1) {
+      var existingData = sheet.getDataRange().getValues();
+      for (var i = 1; i < existingData.length; i++) {
+        var rd = existingData[i][0];
+        var rdStr = rd instanceof Date ? Utilities.formatDate(rd, tz, 'yyyy-MM-dd') : String(rd);
+        if (rdStr === targetDateStr && String(existingData[i][1] || '').trim().toLowerCase() === fullNameLc) {
+          existingRowIndex = i + 1;
+          break;
+        }
+      }
+    }
+
+    if (!tipDana) {
+      if (existingRowIndex > 0) sheet.deleteRow(existingRowIndex);
+      return createJsonResponse({ success: true, message: 'Unos obrisan' }, true);
+    }
+
+    var rowData = [
+      targetDate,
       loginResult.fullName,
       tipDana,
       jeTeren ? String(params.odjel || '').trim() : '',
       jeTeren ? String(params.gj || '').trim() : '',
       jeTeren ? String(params.brojKamiona || '').trim() : '',
-      String(params.napomena || '').trim(),
+      jeTeren ? String(params.napomena || '').trim() : '',
       new Date()
-    ]);
+    ];
+
+    if (existingRowIndex > 0) {
+      sheet.getRange(existingRowIndex, 1, 1, rowData.length).setValues([rowData]);
+    } else {
+      sheet.appendRow(rowData);
+    }
 
     return createJsonResponse({ success: true, message: 'Šihtarica uspješno unesena' }, true);
   } catch (error) {
@@ -4645,6 +4750,7 @@ function handleGetSihtarica(tip, username, password) {
     var ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
     var sheetName = tip === 'primac' ? 'ŠIHTARICA_PRIMAC' : 'ŠIHTARICA_OTPREMAC';
     var sheet = ss.getSheetByName(sheetName);
+    var tz = Session.getScriptTimeZone();
 
     var unosi = [];
     if (sheet && sheet.getLastRow() > 1) {
@@ -4652,29 +4758,28 @@ function handleGetSihtarica(tip, username, password) {
       var fullName = loginResult.fullName.trim().toLowerCase();
       for (var i = 1; i < data.length; i++) {
         var row = data[i];
-        var radnik = String(row[1] || '').trim().toLowerCase();
-        if (radnik !== fullName) continue;
+        if (String(row[1] || '').trim().toLowerCase() !== fullName) continue;
         var datum = row[0];
-        var datumStr = datum instanceof Date ? formatDate(datum) : String(datum);
-        unosi.push({
+        var datumStr = datum instanceof Date ? Utilities.formatDate(datum, tz, 'yyyy-MM-dd') : String(datum);
+        var entry = {
           datum: datumStr,
-          radnik: String(row[1] || ''),
-          tipDana: String(row[2] || 'TEREN'),
+          tipDana: String(row[2] || ''),
           odjel: String(row[3] || ''),
-          gj: String(row[4] || ''),
-          polje5: String(row[5] || ''),
-          polje6: String(row[6] || '')
-        });
+          gj: String(row[4] || '')
+        };
+        if (tip === 'primac') {
+          entry.brojLinije = String(row[5] || '');
+          entry.sjekacskaPartija = String(row[6] || '');
+          entry.napomena = String(row[7] || '');
+        } else {
+          entry.brojKamiona = String(row[5] || '');
+          entry.napomena = String(row[6] || '');
+        }
+        unosi.push(entry);
       }
-      // Sortiraj po datumu — najnoviji prvo
-      unosi.sort(function(a, b) {
-        return new Date(b.datum.split('.').reverse().join('-')) - new Date(a.datum.split('.').reverse().join('-'));
-      });
     }
 
-    // Godišnji odmor podaci
     var godisnji = getGodisnjiStatus(ss, loginResult.fullName, sheetName, tip);
-
     return createJsonResponse({ success: true, unosi: unosi, godisnji: godisnji }, true);
   } catch (error) {
     Logger.log('ERROR in handleGetSihtarica: ' + error.toString());
