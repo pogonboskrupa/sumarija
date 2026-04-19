@@ -7235,13 +7235,14 @@
 
                     var _tl = unos.tip === 'SJEČA' ? 'sjeca' : 'otprema';
                     var _sk = ((unos.radnik || '') + '_' + (unos.datum || '') + '_' + _tl).toLowerCase();
-                    // _pendingImageMap fallback only for OTPREMA (sječa gets imageUrl from GAS directly)
-                    var _iu = unos.imageUrl || (unos.tip === 'OTPREMA' ? (_pendingImageMap[_sk] || null) : null);
+                    var _iu = unos.imageUrl || _pendingImageMap[_sk] || null;
                     if (_iu) {
                         var _esc = _iu.replace(/'/g, '%27');
                         html += '<td style="text-align:center;padding:4px;">';
                         html += '<button onclick="_openImageLightbox(\'' + _esc + '\')" style="border:none;background:none;padding:2px;cursor:zoom-in;line-height:0;" title="Klikni za prikaz slike">';
-                        html += '<img src="' + _iu + '" alt="📷" style="max-width:50px;max-height:38px;border-radius:3px;border:1px solid #e5e7eb;object-fit:cover;" onerror="this.parentNode.parentNode.innerHTML=\'<span style=color:#ccc>-</span>\'">';
+                        html += '<img src="' + _iu + '" alt="📷" style="max-width:50px;max-height:38px;border-radius:3px;border:1px solid #e5e7eb;object-fit:cover;"';
+                        html += ' onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline\'">';
+                        html += '<span style="display:none;font-size:11px;color:#6b7280;cursor:zoom-in;">🖼️</span>';
                         html += '</button></td>';
                     } else {
                         html += '<td style="text-align:center;color:#ccc;">-</td>';
@@ -7328,6 +7329,8 @@
 
                 // Store unfiltered data for filtering
                 unfilteredPendingData = data.unosi || [];
+                console.log('[UNOSI] GAS vratio', unfilteredPendingData.length, 'unosa. imageUrl status:',
+                    unfilteredPendingData.map(function(u) { return u.tip + ':' + (u.imageUrl ? 'DA' : 'PRAZNO'); }));
 
                 // Učitaj slike iz Supabase — metadata je enkodirana u file_path imenu
                 _pendingImageMap = {};
@@ -7356,6 +7359,7 @@
                         }
                     }
                 } catch(e) { console.warn('Supabase image map error:', e); }
+                console.log('[SLIKE] _pendingImageMap entries:', Object.keys(_pendingImageMap).length, Object.keys(_pendingImageMap));
 
                 // Update badge count
                 updatePendingBadge(unfilteredPendingData.length);
@@ -7513,13 +7517,14 @@
 
                     var _tl = unos.tip === 'SJEČA' ? 'sjeca' : 'otprema';
                     var _sk = ((unos.radnik || '') + '_' + (unos.datum || '') + '_' + _tl).toLowerCase();
-                    // _pendingImageMap fallback only for OTPREMA (sječa gets imageUrl from GAS directly)
-                    var _iu = unos.imageUrl || (unos.tip === 'OTPREMA' ? (_pendingImageMap[_sk] || null) : null);
+                    var _iu = unos.imageUrl || _pendingImageMap[_sk] || null;
                     if (_iu) {
                         var _esc = _iu.replace(/'/g, '%27');
                         html += '<td style="text-align:center;padding:4px;">';
                         html += '<button onclick="_openImageLightbox(\'' + _esc + '\')" style="border:none;background:none;padding:2px;cursor:zoom-in;line-height:0;" title="Klikni za prikaz slike">';
-                        html += '<img src="' + _iu + '" alt="📷" style="max-width:50px;max-height:38px;border-radius:3px;border:1px solid #e5e7eb;object-fit:cover;" onerror="this.parentNode.parentNode.innerHTML=\'<span style=color:#ccc>-</span>\'">';
+                        html += '<img src="' + _iu + '" alt="📷" style="max-width:50px;max-height:38px;border-radius:3px;border:1px solid #e5e7eb;object-fit:cover;"';
+                        html += ' onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline\'">';
+                        html += '<span style="display:none;font-size:11px;color:#6b7280;cursor:zoom-in;">🖼️</span>';
                         html += '</button></td>';
                     } else {
                         html += '<td style="text-align:center;color:#ccc;">-</td>';
@@ -9739,6 +9744,7 @@
                     console.warn('temp_images tracking failed (image uploaded OK):', trackErr.message || trackErr);
                 }
 
+                console.log('[UPLOAD] imageUrl:', imageUrl);
                 return imageUrl;
             } catch (err) {
                 console.error('uploadImage error:', err);
