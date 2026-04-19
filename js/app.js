@@ -58,8 +58,8 @@
 
         // ── Supabase (šihtarica) ─────────────────────────────────────
         // TODO: Zamijeniti sa stvarnim vrijednostima iz Supabase > Settings > API
-        const SUPABASE_URL      = 'https://YOUR_PROJECT_REF.supabase.co';
-        const SUPABASE_ANON_KEY = 'YOUR_ANON_PUBLIC_KEY';
+        const SUPABASE_URL      = 'https://hgqsxmndunewttjactul.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhncXN4bW5kdW5ld3R0amFjdHVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NTA5OTMsImV4cCI6MjA5MjEyNjk5M30.yLhaROlFlnsImmTR3EZoyHz9ZR-pSYreTFTHmbLzmws';
         let _sb = null;
         function _getSB() {
             if (!_sb && typeof window.supabase !== 'undefined') {
