@@ -12004,21 +12004,27 @@
                 else if (tipVal === 'GODIŠNJI ODMOR') godisnjiBr++;
                 else if (tipVal === 'BOLOVANJE') bolovanje++;
 
-                const isSunday = dow === 0;
-                const hasData  = !!tipVal;
+                const isSunday  = dow === 0;
+                const hasData   = !!tipVal;
+                const totalCols = isPrimac ? 9 : 8;
 
                 if (isWeekend && (isSunday || !hasData)) {
-                    const colSpan = isSunday ? wkndCols : (wkndCols - 1);
-                    const btnTd   = isSunday ? '' :
-                        '<td style="padding:3px 8px;">' +
-                        '<button onclick="_aktivirajSubotu(\'' + tip + '\',\'' + dateStr + '\')" ' +
-                        'style="font-size:11px;padding:2px 9px;border:1px solid #93c5fd;border-radius:4px;' +
-                        'background:#eff6ff;color:#1d4ed8;cursor:pointer;white-space:nowrap;">+ radni dan</button></td>';
                     html += '<tr id="sr-' + dateStr + '" style="background:#f3f4f6;">' +
                         '<td style="padding:5px 10px;color:#9ca3af;font-weight:600;">' + danLabel + '</td>' +
-                        '<td style="padding:5px 8px;color:#9ca3af;">' + datumLabel + '</td>' +
-                        '<td style="padding:5px 8px;color:#9ca3af;font-style:italic;" colspan="' + colSpan + '">vikend</td>' +
-                        btnTd + '</tr>';
+                        '<td style="padding:5px 8px;color:#9ca3af;">' + datumLabel + '</td>';
+                    if (isSunday) {
+                        html += '<td colspan="' + (totalCols - 2) + '" style="padding:5px 8px;color:#9ca3af;font-style:italic;">vikend</td>';
+                    } else {
+                        // Subota: "vikend" u Tip koloni, dugme u Odjel koloni
+                        html += '<td style="padding:5px 8px;color:#9ca3af;font-style:italic;">vikend</td>' +
+                            '<td style="padding:3px 8px;">' +
+                            '<button onclick="_aktivirajSubotu(\'' + tip + '\',\'' + dateStr + '\')" ' +
+                            'style="font-size:11px;padding:2px 9px;border:1px solid #93c5fd;border-radius:4px;' +
+                            'background:#eff6ff;color:#1d4ed8;cursor:pointer;white-space:nowrap;">+ radni dan</button>' +
+                            '</td>' +
+                            '<td colspan="' + (totalCols - 4) + '"></td>';
+                    }
+                    html += '</tr>';
                     continue;
                 }
 
