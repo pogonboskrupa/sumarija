@@ -7328,24 +7328,29 @@
                 // Store unfiltered data for filtering
                 unfilteredPendingData = data.unosi || [];
 
-                // Učitaj slike iz Supabase (za otpremu + fallback za sječu)
+                // Učitaj slike iz Supabase — metadata je enkodirana u file_path imenu
                 _pendingImageMap = {};
                 try {
                     var sb = _getSB();
                     if (sb) {
                         var imgRes = await sb.from('temp_images')
-                            .select('file_path, radnik, entry_datum, entry_type')
-                            .gt('expires_at', new Date().toISOString())
-                            .not('entry_datum', 'is', null);
+                            .select('file_path')
+                            .gt('expires_at', new Date().toISOString());
                         if (imgRes.data) {
                             imgRes.data.forEach(function(img) {
-                                if (!img.radnik || !img.entry_datum || !img.entry_type) return;
-                                var p = img.entry_datum.split('-');
-                                var datumFmt = (p[2] || '') + '.' + (p[1] || '') + '.' + (p[0] || '');
-                                var k = (img.radnik + '_' + datumFmt + '_' + img.entry_type).toLowerCase();
-                                if (!_pendingImageMap[k]) {
-                                    _pendingImageMap[k] = sb.storage.from('sjeca-images').getPublicUrl(img.file_path).data.publicUrl;
-                                }
+                                try {
+                                    // file_path = "type/username/BASE64.meta.TIMESTAMP_RANDOM.ext"
+                                    var fname    = (img.file_path.split('/').pop() || '');
+                                    var b64part  = fname.split('.meta.')[0]
+                                                       .replace(/-/g, '/').replace(/_/g, '+');
+                                    while (b64part.length % 4) b64part += '=';
+                                    var metaObj  = JSON.parse(decodeURIComponent(escape(atob(b64part))));
+                                    if (!metaObj.r || !metaObj.d || !metaObj.t) return;
+                                    var k = (metaObj.r + '_' + metaObj.d + '_' + metaObj.t).toLowerCase();
+                                    if (!_pendingImageMap[k]) {
+                                        _pendingImageMap[k] = sb.storage.from('sjeca-images').getPublicUrl(img.file_path).data.publicUrl;
+                                    }
+                                } catch(pe) { /* old format or non-meta file — skip */ }
                             });
                         }
                     }
@@ -9638,48 +9643,55 @@
         }
 
         // Upload slike u Supabase Storage (vraća public URL ili null)
-        // meta = { radnik, datum: 'YYYY-MM-DD', entryType }
-        async function uploadImage(imageData, type, meta) {
+        // imgMeta = { radnik, datum: 'YYYY-MM-DD', entryType }
+        async function uploadImage(imageData, type, imgMeta) {
             if (!imageData) return null;
             const sb = _getSB();
             if (!sb) { alert('Supabase nije konfigurisan za upload slika.'); return null; }
 
             try {
-                // Lazy cleanup: obriši istekle slike prije novog uploada
                 await _cleanupExpiredImages(sb);
 
-                // base64 → Blob
-                const [meta, b64] = imageData.split(',');
-                const mime   = (meta.match(/:(.*?);/) || [])[1] || 'image/jpeg';
+                // base64 data URL → Blob
+                const [hdr, b64Data] = imageData.split(',');
+                const mime   = (hdr.match(/:(.*?);/) || [])[1] || 'image/jpeg';
                 const rawExt = mime.split('/')[1] || 'jpeg';
                 const ext    = rawExt === 'jpeg' ? 'jpg' : rawExt;
-                const binary = atob(b64);
+                const binary = atob(b64Data);
                 const bytes  = new Uint8Array(binary.length);
                 for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
                 const blob = new Blob([bytes], { type: mime });
 
-                // Putanja: type/username_timestamp.ext
-                const username = currentUser ? currentUser.username : 'unknown';
-                const filePath = type + '/' + username + '_' + Date.now() + '.' + ext;
+                const username   = currentUser ? currentUser.username : 'unknown';
+                const radnik     = (imgMeta && imgMeta.radnik)    || (currentUser ? (currentUser.fullName || currentUser.username) : '');
+                const entryDatum = (imgMeta && imgMeta.datum)     || '';  // YYYY-MM-DD
+                const entryType  = (imgMeta && imgMeta.entryType) || type;
 
-                // Upload u bucket
+                // Convert YYYY-MM-DD → DD.MM.YYYY (format used in _pendingImageMap keys)
+                var datumFmt = entryDatum;
+                if (entryDatum && entryDatum.indexOf('-') !== -1) {
+                    var dp = entryDatum.split('-');
+                    datumFmt = (dp[2] || '') + '.' + (dp[1] || '') + '.' + (dp[0] || '');
+                }
+
+                // Encode matching metadata into filename — avoids requiring extra DB columns
+                var metaJson  = JSON.stringify({ r: radnik, d: datumFmt, t: entryType });
+                var metaB64   = btoa(unescape(encodeURIComponent(metaJson)))
+                                    .replace(/\//g, '-').replace(/\+/g, '_').replace(/=/g, '');
+                var rndSuffix = Math.random().toString(36).substr(2, 8);
+                var filePath  = type + '/' + username + '/' + metaB64 + '.meta.' + Date.now() + '_' + rndSuffix + '.' + ext;
+
                 const { error: upErr } = await sb.storage
                     .from('sjeca-images')
                     .upload(filePath, blob, { contentType: mime, upsert: false });
                 if (upErr) throw upErr;
 
-                // Public URL
                 const { data: urlData } = sb.storage.from('sjeca-images').getPublicUrl(filePath);
                 const imageUrl = urlData.publicUrl;
 
-                // Spremi metadata s rokom 5 dana
-                const expiresAt  = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
-                const radnik     = (meta && meta.radnik)    || (currentUser ? (currentUser.fullName || currentUser.username) : '');
-                const entryDatum = (meta && meta.datum)     || '';
-                const entryType  = (meta && meta.entryType) || type;
+                const expiresAt = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
                 await sb.from('temp_images').insert({
-                    file_path: filePath, type, username, expires_at: expiresAt,
-                    radnik, entry_datum: entryDatum, entry_type: entryType
+                    file_path: filePath, type: type, username: username, expires_at: expiresAt
                 });
 
                 return imageUrl;

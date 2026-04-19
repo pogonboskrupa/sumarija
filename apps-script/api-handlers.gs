@@ -1817,35 +1817,46 @@ function handlePendingUnosi(year, username, password) {
     }
 
     // Pročitaj OTPREMAČ_UNOS
-    // Struktura: A=Datum, B=Otpremač, C=Kupac, D=Odjel, E=Radilište, F=Izvođač, G-Z=Sortimenti, AA=BrojOtpr, AB=STATUS, AC=TIMESTAMP
     if (otpremacUnosSheet) {
       const otpremaData = otpremacUnosSheet.getDataRange().getValues();
 
+      // Detect column indices by header (robust against column reordering)
+      const otpremaHeaders = otpremaData[0].map(function(h) { return String(h).toUpperCase().trim(); });
+      const oBrojOtpIdx  = otpremaHeaders.indexOf('BROJ_OTPREMNICE');
+      const oStatusIdx   = otpremaHeaders.indexOf('STATUS');
+      const oTimestampIdx= otpremaHeaders.indexOf('TIMESTAMP');
+      const oImageUrlIdx = otpremaHeaders.indexOf('IMAGE_URL');
+
+      // Fallback to hard-coded indices when sheet lacks header row
+      const _oBrojOtpIdx  = oBrojOtpIdx  >= 0 ? oBrojOtpIdx  : 26;
+      const _oStatusIdx   = oStatusIdx   >= 0 ? oStatusIdx   : 27;
+      const _oTimestampIdx= oTimestampIdx>= 0 ? oTimestampIdx: 28;
+
       for (let i = 1; i < otpremaData.length; i++) {
         const row = otpremaData[i];
-        const datum = row[0];          // A - DATUM
-        const otpremac = row[1];       // B - OTPREMAČ
-        const kupac = row[2];          // C - KUPAC
-        const odjel = row[3];          // D - ODJEL
-        const radiliste = row[4];      // E - RADILIŠTE
-        const izvodjac = row[5];       // F - IZVOĐAČ
-        const brojOtpremnice = row[26]; // AA - BROJ_OTPREMNICE
-        const status = row[27];        // AB - STATUS
-        const timestamp = row[28];     // AC - TIMESTAMP
+        const datum = row[0];
+        const otpremac = row[1];
+        const kupac = row[2];
+        const odjel = row[3];
+        const radiliste = row[4];
+        const izvodjac = row[5];
+        const brojOtpremnice = row[_oBrojOtpIdx];
+        const status = row[_oStatusIdx];
+        const timestamp = row[_oTimestampIdx];
+        const imageUrl = oImageUrlIdx >= 0 ? (row[oImageUrlIdx] || '') : '';
 
         if (!datum || status !== "PENDING") continue;
 
         const datumObj = parseDate(datum);
         if (year && datumObj.getFullYear() !== parseInt(year)) continue;
 
-        // Pročitaj sortimente (G-Z, indeksi 6-25)
+        // Pročitaj sortimente (počinju na indeksu 6, 20 kolona)
         const sortimenti = {};
         for (let j = 0; j < 20; j++) {
           const vrijednost = parseFloat(row[6 + j]) || 0;
           sortimenti[SORTIMENTI_NAZIVI[j]] = vrijednost;
         }
 
-        // Izračunaj ukupno kao ČETINARI + LIŠĆARI
         const cetinari = parseFloat(sortimenti['Σ ČETINARI']) || 0;
         const liscari = parseFloat(sortimenti['LIŠĆARI']) || 0;
         const ukupno = cetinari + liscari;
@@ -1863,7 +1874,8 @@ function handlePendingUnosi(year, username, password) {
           sortimenti: sortimenti,
           ukupno: ukupno,
           timestamp: formatDate(new Date(timestamp)),
-          timestampObj: new Date(timestamp)
+          timestampObj: new Date(timestamp),
+          imageUrl: imageUrl
         });
       }
     }
