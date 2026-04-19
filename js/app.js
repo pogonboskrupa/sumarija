@@ -12004,80 +12004,25 @@
                 else if (tipVal === 'GODIŠNJI ODMOR') godisnjiBr++;
                 else if (tipVal === 'BOLOVANJE') bolovanje++;
 
-                if (isWeekend) {
-                    html += '<tr style="background:#f3f4f6;">' +
+                const isSunday = dow === 0;
+                const hasData  = !!tipVal;
+
+                if (isWeekend && (isSunday || !hasData)) {
+                    const colSpan = isSunday ? wkndCols : (wkndCols - 1);
+                    const btnTd   = isSunday ? '' :
+                        '<td style="padding:3px 8px;">' +
+                        '<button onclick="_aktivirajSubotu(\'' + tip + '\',\'' + dateStr + '\')" ' +
+                        'style="font-size:11px;padding:2px 9px;border:1px solid #93c5fd;border-radius:4px;' +
+                        'background:#eff6ff;color:#1d4ed8;cursor:pointer;white-space:nowrap;">+ radni dan</button></td>';
+                    html += '<tr id="sr-' + dateStr + '" style="background:#f3f4f6;">' +
                         '<td style="padding:5px 10px;color:#9ca3af;font-weight:600;">' + danLabel + '</td>' +
                         '<td style="padding:5px 8px;color:#9ca3af;">' + datumLabel + '</td>' +
-                        '<td style="padding:5px 8px;color:#9ca3af;font-style:italic;" colspan="' + wkndCols + '">vikend</td>' +
-                        '</tr>';
+                        '<td style="padding:5px 8px;color:#9ca3af;font-style:italic;" colspan="' + colSpan + '">vikend</td>' +
+                        btnTd + '</tr>';
                     continue;
                 }
 
-                const isTeren = tipVal === 'TEREN';
-                const dis = !isTeren ? ' disabled' : '';
-                const disStyle = !isTeren ? ' style="opacity:0.3;background:#f9fafb;"' : '';
-
-                // Row background: today > tipDana colour
-                let rowStyle = 'border-bottom:1px solid #f1f5f9;';
-                if (isToday) rowStyle += 'border-left:3px solid #eab308;background:#fefce8;';
-                else if (tipVal === 'GODIŠNJI ODMOR') rowStyle += 'background:#eff6ff;';
-                else if (tipVal === 'BOLOVANJE') rowStyle += 'background:#fff1f2;';
-
-                const inpBase = 'padding:3px 6px;border:1px solid #e5e7eb;border-radius:4px;font-size:12px;box-sizing:border-box;';
-
-                html += '<tr id="sr-' + dateStr + '" style="' + rowStyle + '">';
-
-                // Dan (with today marker)
-                html += '<td style="padding:5px 10px;font-weight:600;color:' + (isToday ? '#92400e' : '#374151') + ';white-space:nowrap;">' +
-                    (isToday ? '▶ ' : '') + danLabel + '</td>';
-                html += '<td style="padding:5px 8px;white-space:nowrap;color:' + (isToday ? '#92400e' : '#374151') + ';font-weight:' + (isToday ? '700' : '400') + ';">' + datumLabel + '</td>';
-
-                // Tip dropdown
-                html += '<td style="padding:3px 5px;">' +
-                    '<select id="tip-' + dateStr + '" data-tip="' + tip + '" data-date="' + dateStr + '" ' +
-                    'onchange="_sihtaricaTipChange(this)" ' +
-                    'style="' + inpBase + 'min-width:130px;">' +
-                    _tipOptions(tipVal) + '</select></td>';
-
-                // Odjel
-                html += '<td style="padding:3px 5px;"><input type="text" id="odjel-' + dateStr + '" value="' +
-                    (entry.odjel||'') + '" placeholder="Odjel"' + dis + disStyle +
-                    ' onblur="_sihtaricaFieldBlur(\'' + tip + '\',\'' + dateStr + '\')"' +
-                    ' style="' + inpBase + 'width:60px;"></td>';
-
-                // GJ
-                html += '<td style="padding:3px 5px;"><select id="gj-' + dateStr + '"' + dis +
-                    (!isTeren ? ' style="opacity:0.3;"' : '') +
-                    ' onchange="_sihtaricaFieldBlur(\'' + tip + '\',\'' + dateStr + '\')"' +
-                    ' style="' + inpBase + 'min-width:120px;">' + _gjOptions(entry.gj||'') + '</select></td>';
-
-                if (isPrimac) {
-                    html += '<td style="padding:3px 5px;"><input type="text" id="blinije-' + dateStr + '" value="' +
-                        (entry.brojLinije||'') + '" placeholder="Linija"' + dis + disStyle +
-                        ' onblur="_sihtaricaFieldBlur(\'' + tip + '\',\'' + dateStr + '\')"' +
-                        ' style="' + inpBase + 'width:60px;"></td>';
-                    html += '<td style="padding:3px 5px;"><input type="text" id="sjekac-' + dateStr + '" value="' +
-                        (entry.sjekacskaPartija||'') + '" placeholder="Sjekač"' + dis + disStyle +
-                        ' onblur="_sihtaricaFieldBlur(\'' + tip + '\',\'' + dateStr + '\')"' +
-                        ' style="' + inpBase + 'width:80px;"></td>';
-                } else {
-                    html += '<td style="padding:3px 5px;"><input type="number" id="bkamiona-' + dateStr + '" value="' +
-                        (entry.brojKamiona||'') + '" placeholder="0" min="0"' + dis + disStyle +
-                        ' onblur="_sihtaricaFieldBlur(\'' + tip + '\',\'' + dateStr + '\')"' +
-                        ' style="' + inpBase + 'width:60px;"></td>';
-                }
-
-                // Napomena
-                html += '<td style="padding:3px 5px;"><input type="text" id="napomena-' + dateStr + '" value="' +
-                    (entry.napomena||'') + '" placeholder="Napomena"' + dis + disStyle +
-                    ' onblur="_sihtaricaFieldBlur(\'' + tip + '\',\'' + dateStr + '\')"' +
-                    ' style="' + inpBase + 'width:110px;"></td>';
-
-                // Status indicator
-                html += '<td style="padding:3px 6px;text-align:center;" id="st-' + dateStr + '">' +
-                    (tipVal ? '<span style="color:#16a34a;font-size:13px;">✓</span>' : '') + '</td>';
-
-                html += '</tr>';
+                html += _buildSihtaricaRow(tip, dateStr, entry, isToday, isPrimac, danLabel, datumLabel);
             }
 
             html += '</tbody></table></div>';
@@ -12087,6 +12032,61 @@
             // Scroll to today if in current month
             const todayRow = el.querySelector('#sr-' + todayStr);
             if (todayRow) { setTimeout(function() { todayRow.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 80); }
+        }
+
+        function _buildSihtaricaRow(tip, dateStr, entry, isToday, isPrimac, danLabel, datumLabel) {
+            const tipVal   = entry.tipDana || '';
+            const isTeren  = tipVal === 'TEREN';
+            const dis      = !isTeren ? ' disabled' : '';
+            const disStyle = !isTeren ? ' style="opacity:0.3;background:#f9fafb;"' : '';
+            const inpBase  = 'padding:3px 6px;border:1px solid #e5e7eb;border-radius:4px;font-size:12px;box-sizing:border-box;';
+
+            let rowStyle = 'border-bottom:1px solid #f1f5f9;';
+            if (isToday) rowStyle += 'border-left:3px solid #eab308;background:#fefce8;';
+            else if (tipVal === 'GODIŠNJI ODMOR') rowStyle += 'background:#eff6ff;';
+            else if (tipVal === 'BOLOVANJE') rowStyle += 'background:#fff1f2;';
+
+            let h = '<tr id="sr-' + dateStr + '" style="' + rowStyle + '">';
+            h += '<td style="padding:5px 10px;font-weight:600;color:' + (isToday ? '#92400e' : '#374151') + ';white-space:nowrap;">' +
+                (isToday ? '▶ ' : '') + danLabel + '</td>';
+            h += '<td style="padding:5px 8px;white-space:nowrap;color:' + (isToday ? '#92400e' : '#374151') + ';font-weight:' + (isToday ? '700' : '400') + ';">' + datumLabel + '</td>';
+            h += '<td style="padding:3px 5px;"><select id="tip-' + dateStr + '" data-tip="' + tip + '" data-date="' + dateStr + '" ' +
+                'onchange="_sihtaricaTipChange(this)" style="' + inpBase + 'min-width:130px;">' + _tipOptions(tipVal) + '</select></td>';
+            h += '<td style="padding:3px 5px;"><input type="text" id="odjel-' + dateStr + '" value="' + (entry.odjel||'') + '" placeholder="Odjel"' + dis + disStyle +
+                ' onblur="_sihtaricaFieldBlur(\'' + tip + '\',\'' + dateStr + '\')" style="' + inpBase + 'width:60px;"></td>';
+            h += '<td style="padding:3px 5px;"><select id="gj-' + dateStr + '"' + dis + (!isTeren ? ' style="opacity:0.3;"' : '') +
+                ' onchange="_sihtaricaFieldBlur(\'' + tip + '\',\'' + dateStr + '\')" style="' + inpBase + 'min-width:120px;">' + _gjOptions(entry.gj||'') + '</select></td>';
+            if (isPrimac) {
+                h += '<td style="padding:3px 5px;"><input type="text" id="blinije-' + dateStr + '" value="' + (entry.brojLinije||'') + '" placeholder="Linija"' + dis + disStyle +
+                    ' onblur="_sihtaricaFieldBlur(\'' + tip + '\',\'' + dateStr + '\')" style="' + inpBase + 'width:60px;"></td>';
+                h += '<td style="padding:3px 5px;"><input type="text" id="sjekac-' + dateStr + '" value="' + (entry.sjekacskaPartija||'') + '" placeholder="Sjekač"' + dis + disStyle +
+                    ' onblur="_sihtaricaFieldBlur(\'' + tip + '\',\'' + dateStr + '\')" style="' + inpBase + 'width:80px;"></td>';
+            } else {
+                h += '<td style="padding:3px 5px;"><input type="number" id="bkamiona-' + dateStr + '" value="' + (entry.brojKamiona||'') + '" placeholder="0" min="0"' + dis + disStyle +
+                    ' onblur="_sihtaricaFieldBlur(\'' + tip + '\',\'' + dateStr + '\')" style="' + inpBase + 'width:60px;"></td>';
+            }
+            h += '<td style="padding:3px 5px;"><input type="text" id="napomena-' + dateStr + '" value="' + (entry.napomena||'') + '" placeholder="Napomena"' + dis + disStyle +
+                ' onblur="_sihtaricaFieldBlur(\'' + tip + '\',\'' + dateStr + '\')" style="' + inpBase + 'width:110px;"></td>';
+            h += '<td style="padding:3px 6px;text-align:center;" id="st-' + dateStr + '">' +
+                (tipVal ? '<span style="color:#16a34a;font-size:13px;">✓</span>' : '') + '</td>';
+            h += '</tr>';
+            return h;
+        }
+
+        function _aktivirajSubotu(tip, dateStr) {
+            const rowEl = document.getElementById('sr-' + dateStr);
+            if (!rowEl) return;
+            const s          = _sihtarica[tip];
+            const entry      = s.dataMap[dateStr] || {};
+            const isPrimac   = tip === 'primac';
+            const date       = new Date(dateStr + 'T00:00:00');
+            const danLabel   = _DANI_BS[date.getDay()];
+            const datumLabel = String(date.getDate()).padStart(2,'0') + '.' + String(date.getMonth()+1).padStart(2,'0') + '.';
+            const isToday    = dateStr === new Date().toISOString().split('T')[0];
+
+            const temp = document.createElement('tbody');
+            temp.innerHTML = _buildSihtaricaRow(tip, dateStr, entry, isToday, isPrimac, danLabel, datumLabel);
+            rowEl.parentNode.replaceChild(temp.firstChild, rowEl);
         }
 
         function _sihtaricaTipChange(sel) {
