@@ -1697,6 +1697,50 @@ function handleAddOtprema(params) {
 // ========================================
 
 /**
+ * Briše PENDING unose starije od 14 dana iz oba sheet-a.
+ * Poziva se automatski svaki put kad se učitaju pending unosi.
+ */
+function deleteOldPendingUnosi() {
+  try {
+    const DAYS   = 14;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - DAYS);
+
+    const ss     = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const sheets = ['PRIMAČ_UNOS', 'OTPREMAČ_UNOS'];
+    let   deleted = 0;
+
+    sheets.forEach(function(sheetName) {
+      const sheet = ss.getSheetByName(sheetName);
+      if (!sheet || sheet.getLastRow() < 2) return;
+
+      const data    = sheet.getDataRange().getValues();
+      const headers = data[0].map(function(h) { return String(h).toUpperCase().trim(); });
+      const statusIdx = headers.indexOf('STATUS');
+      const tsIdx     = headers.indexOf('TIMESTAMP');
+      if (statusIdx < 0 || tsIdx < 0) return;
+
+      // Pronađi stare PENDING redove (od dna prema vrhu da indeksi ostanu ispravni)
+      for (let i = data.length - 1; i >= 1; i--) {
+        const status = data[i][statusIdx];
+        const ts     = data[i][tsIdx];
+        if (status === 'PENDING' && ts && new Date(ts) < cutoff) {
+          sheet.deleteRow(i + 1); // Sheets su 1-indeksirani
+          deleted++;
+        }
+      }
+    });
+
+    if (deleted > 0) {
+      Logger.log('deleteOldPendingUnosi: obrisano ' + deleted + ' starih unosa');
+      invalidateAllCache();
+    }
+  } catch(e) {
+    Logger.log('deleteOldPendingUnosi ERROR: ' + e.toString());
+  }
+}
+
+/**
  * Pending Unosi endpoint - vraća sve pending unose za pregled rukovodioca
  */
 function handlePendingUnosi(year, username, password) {
@@ -1706,6 +1750,9 @@ function handlePendingUnosi(year, username, password) {
     if (!loginResult.success) {
       return createJsonResponse({ error: "Unauthorized" }, false);
     }
+
+    // Automatski obriši unose starije od 14 dana
+    deleteOldPendingUnosi();
 
     Logger.log('=== HANDLE PENDING UNOSI START ===');
     Logger.log('User: ' + loginResult.fullName);
