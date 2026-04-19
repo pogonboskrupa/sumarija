@@ -7235,7 +7235,9 @@
 
                     var _tl = unos.tip === 'SJEČA' ? 'sjeca' : 'otprema';
                     var _sk = ((unos.radnik || '') + '_' + (unos.datum || '') + '_' + _tl).toLowerCase();
-                    var _iu = unos.imageUrl || _pendingImageMap[_sk] || null;
+                    // Sječa: use unos.imageUrl only (GAS stores it per-row — unique, no false positives)
+                    // Otprema: fall back to _pendingImageMap (GAS never stored imageUrl for otprema)
+                    var _iu = unos.imageUrl || (unos.tip === 'OTPREMA' ? _pendingImageMap[_sk] : null) || null;
                     if (_iu) {
                         var _esc = _iu.replace(/'/g, '%27');
                         html += '<td style="text-align:center;padding:4px;">';
@@ -7517,7 +7519,9 @@
 
                     var _tl = unos.tip === 'SJEČA' ? 'sjeca' : 'otprema';
                     var _sk = ((unos.radnik || '') + '_' + (unos.datum || '') + '_' + _tl).toLowerCase();
-                    var _iu = unos.imageUrl || _pendingImageMap[_sk] || null;
+                    // Sječa: use unos.imageUrl only (GAS stores it per-row — unique, no false positives)
+                    // Otprema: fall back to _pendingImageMap (GAS never stored imageUrl for otprema)
+                    var _iu = unos.imageUrl || (unos.tip === 'OTPREMA' ? _pendingImageMap[_sk] : null) || null;
                     if (_iu) {
                         var _esc = _iu.replace(/'/g, '%27');
                         html += '<td style="text-align:center;padding:4px;">';
