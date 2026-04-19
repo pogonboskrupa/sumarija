@@ -11884,22 +11884,54 @@
         function _renderGodisnjiHeader(tip) {
             const el = document.getElementById(tip + '-godisnji-status');
             if (!el) return;
-            const g = _sihtarica[tip].godisnji;
-            if (!g || g.ugovoreni === 0) { el.innerHTML = ''; return; }
+            const g          = _sihtarica[tip].godisnji || { ugovoreni: 0 };
             const iskoristen = _countGodisnjiFromMap(tip);
             const preostalo  = Math.max(0, g.ugovoreni - iskoristen);
-            const badgeBg    = preostalo > 0 ? '#d1fae5' : '#fee2e2';
-            const badgeClr   = preostalo > 0 ? '#065f46'  : '#991b1b';
+            const hasContract = g.ugovoreni > 0;
+            const badgeBg    = !hasContract ? '#f3f4f6' : (preostalo > 0 ? '#d1fae5' : '#fee2e2');
+            const badgeClr   = !hasContract ? '#6b7280'  : (preostalo > 0 ? '#065f46'  : '#991b1b');
+            const badgeTxt   = !hasContract ? 'Unesite ugovorene dane' : ('Preostalo: ' + preostalo + ' dana');
+
             el.innerHTML =
-                '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:10px 16px;margin-bottom:4px;' +
+                '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:10px 16px;margin-bottom:4px;' +
                 'background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #bfdbfe;border-radius:8px;">' +
                 '<span style="font-size:18px;">📅</span>' +
-                '<span style="font-weight:700;font-size:14px;color:#1e40af;">Broj dana godišnjeg odmora</span>' +
-                '<span style="font-size:13px;color:#374151;">iskorišteno <strong style="color:#dc2626;">' + iskoristen +
-                '</strong> od <strong>' + g.ugovoreni + '</strong> ugovorenih</span>' +
-                '<span style="padding:3px 12px;border-radius:9999px;font-weight:700;font-size:12px;' +
-                'background:' + badgeBg + ';color:' + badgeClr + ';">Preostalo: ' + preostalo + ' dana</span>' +
+                '<span style="font-weight:700;font-size:14px;color:#1e40af;">Godišnji odmor</span>' +
+                '<label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#374151;white-space:nowrap;">' +
+                'Po ugovoru:&nbsp;' +
+                '<input type="number" id="godisnji-ugovoreni-' + tip + '" value="' + g.ugovoreni + '" ' +
+                'min="0" max="365" ' +
+                'style="width:56px;padding:3px 6px;border:1px solid #93c5fd;border-radius:6px;font-size:14px;font-weight:700;text-align:center;background:#fff;" ' +
+                'onchange="_saveGodisnjiUgovoreni(\'' + tip + '\',this.value)">' +
+                '&nbsp;dana</label>' +
+                (hasContract
+                    ? '<span style="font-size:13px;color:#374151;">Iskorišteno:&nbsp;<strong style="color:#dc2626;">' + iskoristen + '</strong></span>'
+                    : '') +
+                '<span style="padding:3px 12px;border-radius:9999px;font-weight:700;font-size:12px;background:' +
+                badgeBg + ';color:' + badgeClr + ';">' + badgeTxt + '</span>' +
                 '</div>';
+        }
+
+        async function _saveGodisnjiUgovoreni(tip, val) {
+            const sb = _getSB();
+            if (!sb) return;
+            const n        = Math.max(0, parseInt(val) || 0);
+            const username = currentUser ? currentUser.username : '';
+            const fullName = currentUser ? (currentUser.fullName || currentUser.username) : '';
+            const inp      = document.getElementById('godisnji-ugovoreni-' + tip);
+            if (inp) inp.disabled = true;
+
+            const { error } = await sb.from('sihtarica_godisnji_dani').upsert(
+                { username, fullname: fullName, tip, ugovoreni_dani: n, postavio: username },
+                { onConflict: 'username,tip' }
+            );
+
+            if (!error) {
+                _sihtarica[tip].godisnji = { ugovoreni: n };
+                _renderGodisnjiHeader(tip);
+            } else {
+                if (inp) { inp.disabled = false; inp.style.borderColor = '#dc2626'; }
+            }
         }
 
         function _gjOptions(selected) {
