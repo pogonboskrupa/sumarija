@@ -66,3 +66,16 @@ $$;
 CREATE TRIGGER trg_primac_updated_at   BEFORE UPDATE ON sihtarica_primac        FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_otpremac_updated_at BEFORE UPDATE ON sihtarica_otpremac      FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_godisnji_updated_at BEFORE UPDATE ON sihtarica_godisnji_dani FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- 6. Privremene slike (upload sječa/otprema, brišu se automatski nakon 5 dana)
+CREATE TABLE IF NOT EXISTS temp_images (
+  id          UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
+  file_path   TEXT        NOT NULL,
+  type        TEXT        NOT NULL,
+  username    TEXT        NOT NULL,
+  uploaded_at TIMESTAMPTZ DEFAULT NOW(),
+  expires_at  TIMESTAMPTZ NOT NULL
+);
+
+ALTER TABLE temp_images ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "anon_all_temp_images" ON temp_images FOR ALL TO anon USING (true) WITH CHECK (true);

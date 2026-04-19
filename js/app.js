@@ -9590,42 +9590,65 @@
             setTimeout(() => input.removeAttribute('capture'), 100);
         }
 
-        // Upload Image to Server (returns image URL or null)
-        // Uses POST because base64 image data is too large for GET URL query string
+        // Upload slike u Supabase Storage (vraća public URL ili null)
         async function uploadImage(imageData, type) {
             if (!imageData) return null;
+            const sb = _getSB();
+            if (!sb) { alert('Supabase nije konfigurisan za upload slika.'); return null; }
 
             try {
-                console.log('uploadImage: Starting POST request to', API_URL);
-                // POST request with JSON body (base64 data too large for GET URL)
-                const response = await fetch(`${API_URL}?path=upload-image`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8',
-                    },
-                    body: JSON.stringify({
-                        username: currentUser.username,
-                        password: currentPassword,
-                        type: type,
-                        imageData: imageData
-                    })
-                });
-                console.log('uploadImage: Response status:', response.status);
-                const result = await response.json();
-                console.log('uploadImage: Response data:', JSON.stringify(result).substring(0, 200));
+                // Lazy cleanup: obriši istekle slike prije novog uploada
+                await _cleanupExpiredImages(sb);
 
-                if (result.success && result.imageUrl) {
-                    console.log('Image uploaded successfully:', result.imageUrl);
-                    return result.imageUrl;
-                } else {
-                    console.error('Image upload failed:', result.error || 'Unknown error');
-                    alert('Greška pri uploadu slike: ' + (result.error || 'Nepoznata greška'));
-                    return null;
-                }
-            } catch (error) {
-                console.error('Error uploading image:', error);
-                alert('Greška pri uploadu slike: ' + error.message);
+                // base64 → Blob
+                const [meta, b64] = imageData.split(',');
+                const mime   = (meta.match(/:(.*?);/) || [])[1] || 'image/jpeg';
+                const rawExt = mime.split('/')[1] || 'jpeg';
+                const ext    = rawExt === 'jpeg' ? 'jpg' : rawExt;
+                const binary = atob(b64);
+                const bytes  = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                const blob = new Blob([bytes], { type: mime });
+
+                // Putanja: type/username_timestamp.ext
+                const username = currentUser ? currentUser.username : 'unknown';
+                const filePath = type + '/' + username + '_' + Date.now() + '.' + ext;
+
+                // Upload u bucket
+                const { error: upErr } = await sb.storage
+                    .from('sjeca-images')
+                    .upload(filePath, blob, { contentType: mime, upsert: false });
+                if (upErr) throw upErr;
+
+                // Public URL
+                const { data: urlData } = sb.storage.from('sjeca-images').getPublicUrl(filePath);
+                const imageUrl = urlData.publicUrl;
+
+                // Spremi metadata s rokom 5 dana
+                const expiresAt = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+                await sb.from('temp_images').insert({
+                    file_path: filePath, type, username, expires_at: expiresAt
+                });
+
+                return imageUrl;
+            } catch (err) {
+                console.error('uploadImage error:', err);
+                alert('Greška pri uploadu slike: ' + (err.message || err));
                 return null;
+            }
+        }
+
+        // Briše slike kojima je istekao rok (poziva se pri svakom novom uploadu)
+        async function _cleanupExpiredImages(sb) {
+            try {
+                const { data: expired } = await sb.from('temp_images')
+                    .select('id, file_path')
+                    .lt('expires_at', new Date().toISOString());
+                if (!expired || expired.length === 0) return;
+                await sb.storage.from('sjeca-images').remove(expired.map(function(r) { return r.file_path; }));
+                await sb.from('temp_images').delete().in('id', expired.map(function(r) { return r.id; }));
+            } catch (e) {
+                console.error('_cleanupExpiredImages error:', e);
             }
         }
 
