@@ -11836,7 +11836,7 @@
                 s.dataMap = {};
                 (rows || []).forEach(function(row) {
                     const e = { datum: row.datum, tipDana: row.tip_dana, odjel: row.odjel||'', gj: row.gj||'', napomena: row.napomena||'' };
-                    if (tip === 'primac') { e.brojLinije = row.br_linije||''; e.sjekacskaPartija = row.sjekacskaPartija||''; }
+                    if (tip === 'primac') { e.brojLinije = row.br_linije||''; e.sjekacskaPartija = row.sjekacska_partija||''; }
                     else { e.brojKamiona = row.br_kamiona||''; }
                     s.dataMap[row.datum] = e;
                 });
@@ -12124,8 +12124,8 @@
                         napomena: isTeren ? ((document.getElementById('napomena-'+dateStr)||{}).value||'').trim() : ''
                     };
                     if (tip === 'primac') {
-                        record.br_linije        = isTeren ? ((document.getElementById('blinije-'+dateStr)||{}).value||'').trim() : '';
-                        record.sjekacskaPartija = isTeren ? ((document.getElementById('sjekac-'+dateStr)||{}).value||'').trim() : '';
+                        record.br_linije          = isTeren ? ((document.getElementById('blinije-'+dateStr)||{}).value||'').trim() : '';
+                        record.sjekacska_partija  = isTeren ? ((document.getElementById('sjekac-'+dateStr)||{}).value||'').trim() : '';
                     } else {
                         record.br_kamiona = isTeren ? ((document.getElementById('bkamiona-'+dateStr)||{}).value||'').trim() : '';
                     }
@@ -12137,7 +12137,7 @@
                     s.dataMap[dateStr] = {
                         datum: dateStr, tipDana, odjel: record.odjel, gj: record.gj, napomena: record.napomena,
                         ...(tip === 'primac'
-                            ? { brojLinije: record.br_linije, sjekacskaPartija: record.sjekacskaPartija }
+                            ? { brojLinije: record.br_linije, sjekacskaPartija: record.sjekacska_partija }
                             : { brojKamiona: record.br_kamiona })
                     };
 

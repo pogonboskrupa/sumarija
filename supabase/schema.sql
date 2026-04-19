@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS sihtarica_primac (
   odjel           TEXT        DEFAULT '',
   gj              TEXT        DEFAULT '',
   br_linije       TEXT        DEFAULT '',
-  sjekacskaPartija TEXT       DEFAULT '',
+  sjekacska_partija TEXT      DEFAULT '',
   napomena        TEXT        DEFAULT '',
   created_at      TIMESTAMPTZ DEFAULT NOW(),
   updated_at      TIMESTAMPTZ DEFAULT NOW(),
