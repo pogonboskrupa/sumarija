@@ -8979,7 +8979,8 @@
             );
         }
 
-        // Delete ALL pending unosi (admin/rukovodilac only)
+        // Delete ALL pending unosi — loops through unfilteredPendingData and calls
+        // delete-pending for each (highest row index first to avoid index shifting within each sheet)
         function deleteAllPendingUnosi() {
             var count = unfilteredPendingData ? unfilteredPendingData.length : 0;
             if (count === 0) { showInfo('Nema unosa', 'Nema dodanih unosa za brisanje.'); return; }
@@ -8988,19 +8989,27 @@
                 'Da li ste sigurni da želite obrisati svih ' + count + ' dodanih unosa? Ova akcija se ne može poništiti.',
                 async function() {
                     try {
-                        const formData = new URLSearchParams();
-                        formData.append('path', 'delete-all-pending');
-                        formData.append('username', currentUser.username);
-                        formData.append('password', currentPassword);
-                        const url = API_URL + '?' + formData.toString();
-                        const response = await fetch(url);
-                        const result = await response.json();
-                        if (result.success) {
-                            showSuccess('Obrisano', result.message);
-                            loadPendingUnosi();
-                        } else {
-                            throw new Error(result.error || 'Unknown error');
+                        // Sort descending by id — deleting from highest row index first prevents
+                        // index shifting within each sheet (different tips use different sheets)
+                        var toDelete = (unfilteredPendingData || []).slice()
+                            .sort(function(a, b) { return b.id - a.id; });
+                        var deleted = 0;
+                        for (var i = 0; i < toDelete.length; i++) {
+                            var entry = toDelete[i];
+                            var fd = new URLSearchParams();
+                            fd.append('path', 'delete-pending');
+                            fd.append('rowIndex', entry.id);
+                            fd.append('tip', entry.tip === 'SJEČA' ? 'sjeca' : 'otprema');
+                            fd.append('username', currentUser.username);
+                            fd.append('password', currentPassword);
+                            try {
+                                var res = await fetch(API_URL + '?' + fd.toString());
+                                var r = await res.json();
+                                if (r.success) deleted++;
+                            } catch(e) { /* continue deleting rest */ }
                         }
+                        showSuccess('Obrisano', 'Obrisano ' + deleted + ' od ' + count + ' unosa.');
+                        loadPendingUnosi();
                     } catch (error) {
                         showError('Greška', error.message);
                     }
@@ -9720,10 +9729,15 @@
                 const { data: urlData } = sb.storage.from('sjeca-images').getPublicUrl(filePath);
                 const imageUrl = urlData.publicUrl;
 
-                const expiresAt = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
-                await sb.from('temp_images').insert({
-                    file_path: filePath, type: type, username: username, expires_at: expiresAt
-                });
+                // Track in temp_images for cleanup — non-fatal if this fails
+                try {
+                    const expiresAt = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+                    await sb.from('temp_images').insert({
+                        file_path: filePath, type: type, username: username, expires_at: expiresAt
+                    });
+                } catch (trackErr) {
+                    console.warn('temp_images tracking failed (image uploaded OK):', trackErr.message || trackErr);
+                }
 
                 return imageUrl;
             } catch (err) {
