@@ -1,5 +1,5 @@
         // VERSION INFO - Monthly report by departments
-        const APP_VERSION = '2026-01-12-v18-MONTHLY-BY-ODJELI';
+        const APP_VERSION = '2026-04-20-v19-SUPABASE-MIGRATION';
         const BUILD_COMMIT = 'pending';
 
         // Helper: provjeri da li je tab još uvijek aktivan (sprečava bleeding async sadržaja)
@@ -11949,7 +11949,8 @@
             const now = new Date();
             _sihtarica.primac.year  = now.getFullYear();
             _sihtarica.primac.month = now.getMonth() + 1;
-            document.getElementById('primac-sihtarica-content').classList.remove('hidden');
+            const el = document.getElementById('primac-sihtarica-content');
+            if (el) el.classList.remove('hidden');
             fetchSihtaricaData('primac');
         }
 
@@ -11957,7 +11958,8 @@
             const now = new Date();
             _sihtarica.otpremac.year  = now.getFullYear();
             _sihtarica.otpremac.month = now.getMonth() + 1;
-            document.getElementById('otpremac-sihtarica-content').classList.remove('hidden');
+            const el = document.getElementById('otpremac-sihtarica-content');
+            if (el) el.classList.remove('hidden');
             fetchSihtaricaData('otpremac');
         }
 
