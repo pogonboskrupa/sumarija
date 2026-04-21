@@ -102,8 +102,9 @@
 
         /* Tabs navigation */
         .tabs-container { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-bottom: 1px solid #e5e7eb; }
-        .tabs { max-width: 1200px; margin: 0 auto; display: flex; gap: 4px; padding: 0 24px; overflow-x: auto; }
-        .tab { background: transparent; border: none; padding: 14px 20px; font-size: 14px; font-weight: 600; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
+        .tabs { width: 100%; display: flex; gap: 0; padding: 0 8px; overflow-x: auto; scrollbar-width: none; }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab { background: transparent; border: none; padding: 14px 16px; font-size: 13px; font-weight: 600; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; }
         .tab:hover { color: #374151; background: #f9fafb; }
         .tab.active { color: #047857; border-bottom-color: #047857; background: #f0fdf4; }
 
