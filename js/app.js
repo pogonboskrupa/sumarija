@@ -121,6 +121,26 @@
                     napomena:r.napomena, korisnik:r.korisnik, tip:r.tip };
             });
         }
+
+        async function _getLastSjecaMap() {
+            var sb = _getSB();
+            if (!sb) return {};
+            var res = await sb.from('primac_unos').select('odjel,datum').order('datum',{ascending:false});
+            var map = {};
+            (res.data || []).forEach(function(r) {
+                if (r.odjel && !map[r.odjel]) map[r.odjel] = r.datum; // ISO YYYY-MM-DD
+            });
+            return map;
+        }
+
+        function _applySortBySjeca(odjeli, lastSjecaMap) {
+            odjeli.forEach(function(o) { o._lastSjeca = lastSjecaMap[o.odjel] || ''; });
+            odjeli.sort(function(a, b) {
+                var ta = a._lastSjeca ? new Date(a._lastSjeca).getTime() : 0;
+                var tb = b._lastSjeca ? new Date(b._lastSjeca).getTime() : 0;
+                return tb - ta;
+            });
+        }
         // ─────────────────────────────────────────────────────────────
 
         // ========== PERFORMANCE METRICS ==========
@@ -2242,9 +2262,10 @@
                 document.getElementById('poslovodja-radilista-list').textContent = poslovodjaName || 'Svi odjeli';
 
                 const url = buildApiUrl('stanje-zaliha', { poslovodja: poslovodjaName });
-                const [data, loadedPrekl] = await Promise.all([
+                const [data, loadedPrekl, lastSjecaMap] = await Promise.all([
                     fetchWithCache(url, cacheKey, false, 60000),
-                    _loadPreklasiranjaSB()
+                    _loadPreklasiranjaSB(),
+                    _getLastSjecaMap()
                 ]);
 
                 if (data.error || !data.odjeli) {
@@ -2254,6 +2275,7 @@
 
                 // Backend već filtrira po POSLOVOĐA polju iz STANJE_ZALIHA
                 poslovodjaStanjeOdjeliAll = data.odjeli;
+                _applySortBySjeca(poslovodjaStanjeOdjeliAll, lastSjecaMap);
                 populatePoslovodjaRadilisteDropdown(data.odjeli);
                 renderPoslovodjaStanjeZalihaTabela(data.odjeli);
                 renderPoslovodjaStanjeCards(data.odjeli);
@@ -2686,7 +2708,8 @@
                 const values = {};
                 cols.forEach(c => { values[c.key] = z[c.key] || 0; });
                 values['__ukupno'] = values['Σ ČETINARI'] + values['LIŠĆARI'];
-                values['__naziv'] = (odjel.radiliste ? odjel.radiliste + ' / ' : '') + (odjel.odjel || '');
+                const sjecaDate = odjel._lastSjeca ? ' <span style="color:#6b7280;font-size:10px;">🪚 ' + _isoToDMY(odjel._lastSjeca) + '</span>' : '';
+                values['__naziv'] = (odjel.radiliste ? odjel.radiliste + ' / ' : '') + (odjel.odjel || '') + sjecaDate;
                 // Sortimenti koji su bili preklasirani za ovaj odjel
                 const preklSet = new Set();
                 preklasiranjaPodaci
@@ -2869,15 +2892,7 @@
             });
 
             Object.keys(grouped).forEach(function(radiliste) {
-                var odjeli = grouped[radiliste].sort((a, b) => {
-                    const parse = d => {
-                        if (!d) return 0;
-                        const p = d.split('.');
-                        if (p.length !== 3) return 0;
-                        return new Date(p[2], p[1] - 1, p[0]).getTime();
-                    };
-                    return parse(b.zadnjaOtprema) - parse(a.zadnjaOtprema);
-                });
+                var odjeli = grouped[radiliste]; // already sorted by _applySortBySjeca
 
                 // Section header za radilište
                 html += `
@@ -2914,7 +2929,7 @@
                     <div class="stanje-zaliha-card-header" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <h3 style="margin: 0; font-size: 18px; font-weight: 700;">${odjel.odjel}</h3>
-                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.85;">📍 ${odjel.radiliste || 'N/A'}${odjel.zadnjaOtprema ? ' &nbsp;|&nbsp; 🚛 ' + odjel.zadnjaOtprema : ''}</p>
+                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.85;">📍 ${odjel.radiliste || 'N/A'}${odjel._lastSjeca ? ' &nbsp;|&nbsp; 🪚 ' + _isoToDMY(odjel._lastSjeca) : ''}${odjel.zadnjaOtprema ? ' &nbsp;|&nbsp; 🚛 ' + odjel.zadnjaOtprema : ''}</p>
                         </div>
                         <div style="text-align: right;">
                             <div style="font-size: 24px; font-weight: 700;">${pozitivnaZaliha.toFixed(2)} m³</div>
@@ -8444,15 +8459,17 @@
 
             try {
                 const url = buildApiUrl('stanje-zaliha');
-                const [data, loadedPrekl] = await Promise.all([
+                const [data, loadedPrekl, lastSjecaMap] = await Promise.all([
                     fetchWithCache(url, 'cache_stanje_zaliha', false, 180000),
-                    _loadPreklasiranjaSB()
+                    _loadPreklasiranjaSB(),
+                    _getLastSjecaMap()
                 ]);
 
                 if (data.error) throw new Error(data.error);
                 preklasiranjaPodaci = loadedPrekl;
 
                 stanjeZalihaData = data.odjeli || [];
+                _applySortBySjeca(stanjeZalihaData, lastSjecaMap);
                 stanjeZalihaRadilista = data.radilista || [];
                 stanjeZalihaSortimenti = data.sortimentiHeader || [];
 
@@ -8746,16 +8763,7 @@
                 return;
             }
 
-            // Sortiramo od najsvježije otpreme prema najstarijoj (DD.MM.YYYY)
-            const parseDatum = d => {
-                if (!d) return 0;
-                const [day, month, year] = d.split('.');
-                return new Date(year, month - 1, day).getTime();
-            };
-            const sorted = [...data].sort((a, b) =>
-                parseDatum(b.zadnjaOtprema) - parseDatum(a.zadnjaOtprema)
-            );
-
+            const sorted = data;
             countEl.textContent = `Prikazano: ${sorted.length} odjela`;
 
             // Sortimenti names for display (shortened for table headers)
@@ -8803,7 +8811,7 @@
                     <div class="stanje-zaliha-card-header" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <h3 style="margin: 0; font-size: 18px; font-weight: 700;">${odjel.odjel}</h3>
-                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.85;">📍 ${odjel.radiliste || 'N/A'}${odjel.zadnjaOtprema ? ' &nbsp;|&nbsp; 🚛 ' + odjel.zadnjaOtprema : ''}</p>
+                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.85;">📍 ${odjel.radiliste || 'N/A'}${odjel._lastSjeca ? ' &nbsp;|&nbsp; 🪚 ' + _isoToDMY(odjel._lastSjeca) : ''}${odjel.zadnjaOtprema ? ' &nbsp;|&nbsp; 🚛 ' + odjel.zadnjaOtprema : ''}</p>
                         </div>
                         <div style="text-align: right;">
                             <div style="font-size: 24px; font-weight: 700;">${pozitivnaZaliha.toFixed(2)} m³</div>
