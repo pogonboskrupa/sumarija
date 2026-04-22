@@ -101,3 +101,103 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
   CREATE TRIGGER trg_godisnji_updated_at BEFORE UPDATE ON sihtarica_godisnji_dani FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- =========================================================
+-- PRIMAC_UNOS, OTPREMAC_UNOS, PREKLASIRANJE
+-- Zamjenjuju Google Sheets tabele istih naziva
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS primac_unos (
+  id              UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
+  username        TEXT        NOT NULL,
+  radnik          TEXT        NOT NULL,
+  datum           DATE        NOT NULL,
+  odjel           TEXT        DEFAULT '',
+  radiliste       TEXT        DEFAULT '',
+  izvodjac        TEXT        DEFAULT '',
+  poslovodja      TEXT        DEFAULT '',
+  s_fl_c          NUMERIC     DEFAULT 0,
+  s_i_c           NUMERIC     DEFAULT 0,
+  s_ii_c          NUMERIC     DEFAULT 0,
+  s_iii_c         NUMERIC     DEFAULT 0,
+  s_rd            NUMERIC     DEFAULT 0,
+  s_trupci_c      NUMERIC     DEFAULT 0,
+  s_cel_duga      NUMERIC     DEFAULT 0,
+  s_cel_cijepana  NUMERIC     DEFAULT 0,
+  s_skart         NUMERIC     DEFAULT 0,
+  s_cetinari      NUMERIC     DEFAULT 0,
+  s_fl_l          NUMERIC     DEFAULT 0,
+  s_i_l           NUMERIC     DEFAULT 0,
+  s_ii_l          NUMERIC     DEFAULT 0,
+  s_iii_l         NUMERIC     DEFAULT 0,
+  s_trupci_l      NUMERIC     DEFAULT 0,
+  s_ogr_dugi      NUMERIC     DEFAULT 0,
+  s_ogr_cijepani  NUMERIC     DEFAULT 0,
+  s_gule          NUMERIC     DEFAULT 0,
+  s_liscari       NUMERIC     DEFAULT 0,
+  s_ukupno        NUMERIC     DEFAULT 0,
+  status          TEXT        DEFAULT 'PENDING',
+  image_url       TEXT        DEFAULT '',
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE primac_unos ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY "anon_all_primac_unos" ON primac_unos FOR ALL TO anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE TABLE IF NOT EXISTS otpremac_unos (
+  id              UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
+  username        TEXT        NOT NULL,
+  otpremac        TEXT        NOT NULL,
+  datum           DATE        NOT NULL,
+  kupac           TEXT        DEFAULT '',
+  odjel           TEXT        DEFAULT '',
+  radiliste       TEXT        DEFAULT '',
+  izvodjac        TEXT        DEFAULT '',
+  poslovodja      TEXT        DEFAULT '',
+  s_fl_c          NUMERIC     DEFAULT 0,
+  s_i_c           NUMERIC     DEFAULT 0,
+  s_ii_c          NUMERIC     DEFAULT 0,
+  s_iii_c         NUMERIC     DEFAULT 0,
+  s_rd            NUMERIC     DEFAULT 0,
+  s_trupci_c      NUMERIC     DEFAULT 0,
+  s_cel_duga      NUMERIC     DEFAULT 0,
+  s_cel_cijepana  NUMERIC     DEFAULT 0,
+  s_skart         NUMERIC     DEFAULT 0,
+  s_cetinari      NUMERIC     DEFAULT 0,
+  s_fl_l          NUMERIC     DEFAULT 0,
+  s_i_l           NUMERIC     DEFAULT 0,
+  s_ii_l          NUMERIC     DEFAULT 0,
+  s_iii_l         NUMERIC     DEFAULT 0,
+  s_trupci_l      NUMERIC     DEFAULT 0,
+  s_ogr_dugi      NUMERIC     DEFAULT 0,
+  s_ogr_cijepani  NUMERIC     DEFAULT 0,
+  s_gule          NUMERIC     DEFAULT 0,
+  s_liscari       NUMERIC     DEFAULT 0,
+  s_ukupno        NUMERIC     DEFAULT 0,
+  broj_otpremnice TEXT        DEFAULT '',
+  status          TEXT        DEFAULT 'PENDING',
+  image_url       TEXT        DEFAULT '',
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE otpremac_unos ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY "anon_all_otpremac_unos" ON otpremac_unos FOR ALL TO anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE TABLE IF NOT EXISTS preklasiranje (
+  id              UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
+  datum           DATE        NOT NULL DEFAULT CURRENT_DATE,
+  odjel           TEXT        NOT NULL,
+  iz_sortimenta   TEXT        NOT NULL,
+  u_sortiment     TEXT        DEFAULT '',
+  kolicina        NUMERIC     DEFAULT 0,
+  napomena        TEXT        DEFAULT '',
+  korisnik        TEXT        DEFAULT '',
+  tip             TEXT        DEFAULT 'PREKLASIRANJE',
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE preklasiranje ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY "anon_all_preklasiranje" ON preklasiranje FOR ALL TO anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;

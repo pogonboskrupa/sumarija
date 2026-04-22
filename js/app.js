@@ -1,5 +1,5 @@
         // VERSION INFO - Monthly report by departments
-        const APP_VERSION = '2026-01-12-v18-MONTHLY-BY-ODJELI';
+        const APP_VERSION = '2026-04-20-v19-SUPABASE-MIGRATION';
         const BUILD_COMMIT = 'pending';
 
         // Helper: provjeri da li je tab još uvijek aktivan (sprečava bleeding async sadržaja)
@@ -66,6 +66,80 @@
                 _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             }
             return _sb;
+        }
+        // ─────────────────────────────────────────────────────────────
+
+        // ── Supabase helpers: primac_unos / otpremac_unos / preklasiranje ──
+        const _SORT_COLS = {
+            'F/L Č':'s_fl_c','I Č':'s_i_c','II Č':'s_ii_c','III Č':'s_iii_c',
+            'RD':'s_rd','TRUPCI Č':'s_trupci_c','CEL.DUGA':'s_cel_duga',
+            'CEL.CIJEPANA':'s_cel_cijepana','ŠKART':'s_skart','Σ ČETINARI':'s_cetinari',
+            'F/L L':'s_fl_l','I L':'s_i_l','II L':'s_ii_l','III L':'s_iii_l',
+            'TRUPCI L':'s_trupci_l','OGR.DUGI':'s_ogr_dugi','OGR.CIJEPANI':'s_ogr_cijepani',
+            'GULE':'s_gule','LIŠĆARI':'s_liscari','UKUPNO Č+L':'s_ukupno'
+        };
+
+        function _isoToDMY(iso) {
+            if (!iso) return '';
+            var p = (iso+'').split('T')[0].split('-');
+            return (p[2]||'') + '.' + (p[1]||'') + '.' + (p[0]||'');
+        }
+
+        function _rowToSortimenti(row) {
+            var m = {};
+            Object.keys(_SORT_COLS).forEach(function(k){ m[k] = parseFloat(row[_SORT_COLS[k]])||0; });
+            return m;
+        }
+
+        function _sbRowToUnos(row, tip) {
+            var isSjeca = tip === 'sjeca';
+            var ts = new Date(row.created_at);
+            var tsStr = ('0'+ts.getDate()).slice(-2)+'.'+('0'+(ts.getMonth()+1)).slice(-2)+'.'+ts.getFullYear();
+            return {
+                id: row.id, rowIndex: row.id,
+                tip: isSjeca ? 'SJEČA' : 'OTPREMA',
+                datum: _isoToDMY(row.datum),
+                odjel: row.odjel||'', radiliste: row.radiliste||'',
+                izvodjac: row.izvodjac||'',
+                radnik: isSjeca ? (row.radnik||'') : (row.otpremac||''),
+                kupac: row.kupac||'', brojOtpremnice: row.broj_otpremnice||'',
+                sortimenti: _rowToSortimenti(row),
+                ukupno: parseFloat(row.s_ukupno)||0,
+                timestamp: tsStr, _createdAt: row.created_at,
+                imageUrl: row.image_url||''
+            };
+        }
+
+        async function _loadPreklasiranjaSB() {
+            var sb = _getSB();
+            if (!sb) return [];
+            var res = await sb.from('preklasiranje').select('*').order('created_at',{ascending:false});
+            if (res.error || !res.data) return [];
+            return res.data.map(function(r){
+                return { id:r.id, rowIndex:r.id, datum:_isoToDMY(r.datum), odjel:r.odjel,
+                    iz:r.iz_sortimenta, u:r.u_sortiment, kolicina:r.kolicina,
+                    napomena:r.napomena, korisnik:r.korisnik, tip:r.tip };
+            });
+        }
+
+        async function _getLastSjecaMap() {
+            var sb = _getSB();
+            if (!sb) return {};
+            var res = await sb.from('primac_unos').select('odjel,datum').order('datum',{ascending:false});
+            var map = {};
+            (res.data || []).forEach(function(r) {
+                if (r.odjel && !map[r.odjel]) map[r.odjel] = r.datum; // ISO YYYY-MM-DD
+            });
+            return map;
+        }
+
+        function _applySortBySjeca(odjeli, lastSjecaMap) {
+            odjeli.forEach(function(o) { o._lastSjeca = lastSjecaMap[o.odjel] || ''; });
+            odjeli.sort(function(a, b) {
+                var ta = a._lastSjeca ? new Date(a._lastSjeca).getTime() : 0;
+                var tb = b._lastSjeca ? new Date(b._lastSjeca).getTime() : 0;
+                return tb - ta;
+            });
         }
         // ─────────────────────────────────────────────────────────────
 
@@ -762,8 +836,6 @@
                         { name: 'Godišnji prikaz', url: buildApiUrl('primac-detail', { year }), cacheKey: 'cache_primac_godisnji_' + year, timeout: 120000 },
                         // Prikaz po odjelima
                         { name: 'Prikaz po odjelima', url: buildApiUrl('primac-odjeli', { limit: 15 }), cacheKey: 'cache_primac_odjeli_' + (currentUser.username || '') + '_top15', timeout: 120000 },
-                        // Moje sječe
-                        { name: 'Moje sječe', url: buildApiUrl('my-pending', { tip: 'sjeca' }), cacheKey: 'cache_my_sjece_' + (currentUser.username || ''), timeout: 120000 },
                         // Izvještaji - sedmični (tekući mjesec)
                         { name: 'Izvještaji (sedmični)', url: buildApiUrl('primac-detail', { year }), cacheKey: 'cache_primac_sedmicni_' + year + '_' + currentMonth, timeout: 120000 },
                         // Izvještaji - mjesečni (tekući mjesec)
@@ -778,8 +850,6 @@
                         { name: 'Godišnji prikaz', url: buildApiUrl('otpremac-detail', { year }), cacheKey: 'cache_otpremac_godisnji_' + year, timeout: 120000 },
                         // Prikaz po odjelima
                         { name: 'Prikaz po odjelima', url: buildApiUrl('otpremac-odjeli', { limit: 15 }), cacheKey: 'cache_otpremac_odjeli_' + (currentUser.username || '') + '_top15', timeout: 120000 },
-                        // Moje otpreme
-                        { name: 'Moje otpreme', url: buildApiUrl('my-pending', { tip: 'otprema' }), cacheKey: 'cache_my_otpreme_' + (currentUser.username || ''), timeout: 120000 },
                         // Izvještaji - sedmični (tekući mjesec)
                         { name: 'Izvještaji (sedmični)', url: buildApiUrl('otpremac-detail', { year }), cacheKey: 'cache_otpremac_sedmicni_' + year + '_' + currentMonth, timeout: 120000 },
                         // Izvještaji - mjesečni (tekući mjesec)
@@ -2192,19 +2262,20 @@
                 document.getElementById('poslovodja-radilista-list').textContent = poslovodjaName || 'Svi odjeli';
 
                 const url = buildApiUrl('stanje-zaliha', { poslovodja: poslovodjaName });
-                const urlPrekl = buildApiUrl('get-preklasiranja');
-                const [data, preklData] = await Promise.all([
+                const [data, loadedPrekl, lastSjecaMap] = await Promise.all([
                     fetchWithCache(url, cacheKey, false, 60000),
-                    fetch(urlPrekl).then(r => r.json()).catch(() => ({ preklasiranja: [] }))
+                    _loadPreklasiranjaSB(),
+                    _getLastSjecaMap()
                 ]);
 
                 if (data.error || !data.odjeli) {
                     throw new Error(data.error || 'Nema podataka o odjelima');
                 }
-                preklasiranjaPodaci = (preklData && preklData.preklasiranja) || [];
+                preklasiranjaPodaci = loadedPrekl;
 
                 // Backend već filtrira po POSLOVOĐA polju iz STANJE_ZALIHA
                 poslovodjaStanjeOdjeliAll = data.odjeli;
+                _applySortBySjeca(poslovodjaStanjeOdjeliAll, lastSjecaMap);
                 populatePoslovodjaRadilisteDropdown(data.odjeli);
                 renderPoslovodjaStanjeZalihaTabela(data.odjeli);
                 renderPoslovodjaStanjeCards(data.odjeli);
@@ -2637,7 +2708,8 @@
                 const values = {};
                 cols.forEach(c => { values[c.key] = z[c.key] || 0; });
                 values['__ukupno'] = values['Σ ČETINARI'] + values['LIŠĆARI'];
-                values['__naziv'] = (odjel.radiliste ? odjel.radiliste + ' / ' : '') + (odjel.odjel || '');
+                const sjecaDate = odjel._lastSjeca ? ' <span style="color:#6b7280;font-size:10px;">🪚 ' + _isoToDMY(odjel._lastSjeca) + '</span>' : '';
+                values['__naziv'] = (odjel.radiliste ? odjel.radiliste + ' / ' : '') + (odjel.odjel || '') + sjecaDate;
                 // Sortimenti koji su bili preklasirani za ovaj odjel
                 const preklSet = new Set();
                 preklasiranjaPodaci
@@ -2820,15 +2892,7 @@
             });
 
             Object.keys(grouped).forEach(function(radiliste) {
-                var odjeli = grouped[radiliste].sort((a, b) => {
-                    const parse = d => {
-                        if (!d) return 0;
-                        const p = d.split('.');
-                        if (p.length !== 3) return 0;
-                        return new Date(p[2], p[1] - 1, p[0]).getTime();
-                    };
-                    return parse(b.zadnjaOtprema) - parse(a.zadnjaOtprema);
-                });
+                var odjeli = grouped[radiliste]; // already sorted by _applySortBySjeca
 
                 // Section header za radilište
                 html += `
@@ -2865,7 +2929,7 @@
                     <div class="stanje-zaliha-card-header" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <h3 style="margin: 0; font-size: 18px; font-weight: 700;">${odjel.odjel}</h3>
-                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.85;">📍 ${odjel.radiliste || 'N/A'}${odjel.zadnjaOtprema ? ' &nbsp;|&nbsp; 🚛 ' + odjel.zadnjaOtprema : ''}</p>
+                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.85;">📍 ${odjel.radiliste || 'N/A'}${odjel._lastSjeca ? ' &nbsp;|&nbsp; 🪚 ' + _isoToDMY(odjel._lastSjeca) : ''}${odjel.zadnjaOtprema ? ' &nbsp;|&nbsp; 🚛 ' + odjel.zadnjaOtprema : ''}</p>
                         </div>
                         <div style="text-align: right;">
                             <div style="font-size: 24px; font-weight: 700;">${pozitivnaZaliha.toFixed(2)} m³</div>
@@ -7235,12 +7299,16 @@
 
                     var _tl = unos.tip === 'SJEČA' ? 'sjeca' : 'otprema';
                     var _sk = ((unos.radnik || '') + '_' + (unos.datum || '') + '_' + _tl).toLowerCase();
-                    var _iu = unos.imageUrl || _pendingImageMap[_sk] || null;
+                    // Sječa: use unos.imageUrl only (GAS stores it per-row — unique, no false positives)
+                    // Otprema: fall back to _pendingImageMap (GAS never stored imageUrl for otprema)
+                    var _iu = unos.imageUrl || (unos.tip === 'OTPREMA' ? _pendingImageMap[_sk] : null) || null;
                     if (_iu) {
                         var _esc = _iu.replace(/'/g, '%27');
                         html += '<td style="text-align:center;padding:4px;">';
                         html += '<button onclick="_openImageLightbox(\'' + _esc + '\')" style="border:none;background:none;padding:2px;cursor:zoom-in;line-height:0;" title="Klikni za prikaz slike">';
-                        html += '<img src="' + _iu + '" alt="📷" style="max-width:50px;max-height:38px;border-radius:3px;border:1px solid #e5e7eb;object-fit:cover;" onerror="this.parentNode.parentNode.innerHTML=\'<span style=color:#ccc>-</span>\'">';
+                        html += '<img src="' + _iu + '" alt="📷" style="max-width:50px;max-height:38px;border-radius:3px;border:1px solid #e5e7eb;object-fit:cover;"';
+                        html += ' onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline\'">';
+                        html += '<span style="display:none;font-size:11px;color:#6b7280;cursor:zoom-in;">🖼️</span>';
                         html += '</button></td>';
                     } else {
                         html += '<td style="text-align:center;color:#ccc;">-</td>';
@@ -7314,47 +7382,24 @@
 
             try {
                 const year = new Date().getFullYear();
-                const url = buildApiUrl('pending-unosi', { year });
+                const fromDate = year + '-01-01', toDate = year + '-12-31';
+                const sb = _getSB();
+                if (!sb) throw new Error('Supabase nije dostupan');
 
-                // Don't cache pending entries - always fetch fresh
-                const response = await fetch(url);
-                const data = await response.json();
+                const [sjRes, otRes] = await Promise.all([
+                    sb.from('primac_unos').select('*').eq('status','PENDING')
+                      .gte('datum',fromDate).lte('datum',toDate).order('created_at',{ascending:false}),
+                    sb.from('otpremac_unos').select('*').eq('status','PENDING')
+                      .gte('datum',fromDate).lte('datum',toDate).order('created_at',{ascending:false})
+                ]);
 
+                var sjeca   = (sjRes.data  ||[]).map(function(r){ return _sbRowToUnos(r,'sjeca'); });
+                var otprema = (otRes.data  ||[]).map(function(r){ return _sbRowToUnos(r,'otprema'); });
 
-                if (data.error) {
-                    throw new Error(data.error);
-                }
+                unfilteredPendingData = sjeca.concat(otprema)
+                    .sort(function(a,b){ return (b._createdAt||'') > (a._createdAt||'') ? 1 : -1; });
 
-                // Store unfiltered data for filtering
-                unfilteredPendingData = data.unosi || [];
-
-                // Učitaj slike iz Supabase (za otpremu + fallback za sječu)
-                _pendingImageMap = {};
-                try {
-                    var sb = _getSB();
-                    if (sb) {
-                        var imgRes = await sb.from('temp_images')
-                            .select('file_path, radnik, entry_datum, entry_type')
-                            .gt('expires_at', new Date().toISOString())
-                            .not('entry_datum', 'is', null);
-                        if (imgRes.data) {
-                            imgRes.data.forEach(function(img) {
-                                if (!img.radnik || !img.entry_datum || !img.entry_type) return;
-                                var p = img.entry_datum.split('-');
-                                var datumFmt = (p[2] || '') + '.' + (p[1] || '') + '.' + (p[0] || '');
-                                var k = (img.radnik + '_' + datumFmt + '_' + img.entry_type).toLowerCase();
-                                if (!_pendingImageMap[k]) {
-                                    _pendingImageMap[k] = sb.storage.from('sjeca-images').getPublicUrl(img.file_path).data.publicUrl;
-                                }
-                            });
-                        }
-                    }
-                } catch(e) { console.warn('Supabase image map error:', e); }
-
-                // Update badge count
                 updatePendingBadge(unfilteredPendingData.length);
-
-                // Render table
                 renderPendingTable(unfilteredPendingData);
 
                 document.getElementById('loading-screen').classList.add('hidden');
@@ -7387,25 +7432,24 @@
                 document.getElementById('poslovodja-radilista-list-unosi').textContent = radilista.join(', ');
                 var userFullName = currentUser.fullName.toUpperCase().trim();
 
-                // Dohvati pending-unosi, primke i otpreme paralelno
                 var year = new Date().getFullYear();
-                var pendingUrl = buildApiUrl('pending-unosi', { year: year });
+                var fromDate = year + '-01-01', toDate = year + '-12-31';
                 var primkeUrl = buildApiUrl('primke');
                 var otpremeUrl = buildApiUrl('otpreme');
+                var sb = _getSB();
+                if (!sb) throw new Error('Supabase nije dostupan');
 
                 var results = await Promise.all([
-                    fetch(pendingUrl).then(function(r) { return r.json(); }),
+                    sb.from('primac_unos').select('*').eq('status','PENDING').gte('datum',fromDate).lte('datum',toDate),
+                    sb.from('otpremac_unos').select('*').eq('status','PENDING').gte('datum',fromDate).lte('datum',toDate),
                     fetchWithCache(primkeUrl, 'cache_primke_sjeca'),
                     fetchWithCache(otpremeUrl, 'cache_otpreme_tab')
                 ]);
 
-                var pendingData = results[0];
-                var primkeData = results[1];
-                var otpremeData = results[2];
-
-                if (pendingData.error) {
-                    throw new Error(pendingData.error);
-                }
+                var allUnosi = (results[0].data||[]).map(function(r){return _sbRowToUnos(r,'sjeca');})
+                    .concat((results[1].data||[]).map(function(r){return _sbRowToUnos(r,'otprema');}));
+                var primkeData = results[2];
+                var otpremeData = results[3];
 
                 // Izgradi odjel → radilište mapu iz primki i otprema
                 var odjelRadilisteMap = {};
@@ -7441,7 +7485,6 @@
                 });
 
                 // Filtriraj unose — samo odjeli koji pripadaju poslovođi
-                var allUnosi = pendingData.unosi || [];
                 var filtered = allUnosi.filter(function(unos) {
                     var unosOdjel = (unos.odjel || '').trim();
                     return mojiOdjeli.has(unosOdjel);
@@ -7507,12 +7550,16 @@
 
                     var _tl = unos.tip === 'SJEČA' ? 'sjeca' : 'otprema';
                     var _sk = ((unos.radnik || '') + '_' + (unos.datum || '') + '_' + _tl).toLowerCase();
-                    var _iu = unos.imageUrl || _pendingImageMap[_sk] || null;
+                    // Sječa: use unos.imageUrl only (GAS stores it per-row — unique, no false positives)
+                    // Otprema: fall back to _pendingImageMap (GAS never stored imageUrl for otprema)
+                    var _iu = unos.imageUrl || (unos.tip === 'OTPREMA' ? _pendingImageMap[_sk] : null) || null;
                     if (_iu) {
                         var _esc = _iu.replace(/'/g, '%27');
                         html += '<td style="text-align:center;padding:4px;">';
                         html += '<button onclick="_openImageLightbox(\'' + _esc + '\')" style="border:none;background:none;padding:2px;cursor:zoom-in;line-height:0;" title="Klikni za prikaz slike">';
-                        html += '<img src="' + _iu + '" alt="📷" style="max-width:50px;max-height:38px;border-radius:3px;border:1px solid #e5e7eb;object-fit:cover;" onerror="this.parentNode.parentNode.innerHTML=\'<span style=color:#ccc>-</span>\'">';
+                        html += '<img src="' + _iu + '" alt="📷" style="max-width:50px;max-height:38px;border-radius:3px;border:1px solid #e5e7eb;object-fit:cover;"';
+                        html += ' onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline\'">';
+                        html += '<span style="display:none;font-size:11px;color:#6b7280;cursor:zoom-in;">🖼️</span>';
                         html += '</button></td>';
                     } else {
                         html += '<td style="text-align:center;color:#ccc;">-</td>';
@@ -8412,16 +8459,17 @@
 
             try {
                 const url = buildApiUrl('stanje-zaliha');
-                const urlPrekl = buildApiUrl('get-preklasiranja');
-                const [data, preklData] = await Promise.all([
+                const [data, loadedPrekl, lastSjecaMap] = await Promise.all([
                     fetchWithCache(url, 'cache_stanje_zaliha', false, 180000),
-                    fetch(urlPrekl).then(r => r.json()).catch(() => ({ preklasiranja: [] }))
+                    _loadPreklasiranjaSB(),
+                    _getLastSjecaMap()
                 ]);
 
                 if (data.error) throw new Error(data.error);
-                preklasiranjaPodaci = (preklData && preklData.preklasiranja) || [];
+                preklasiranjaPodaci = loadedPrekl;
 
                 stanjeZalihaData = data.odjeli || [];
+                _applySortBySjeca(stanjeZalihaData, lastSjecaMap);
                 stanjeZalihaRadilista = data.radilista || [];
                 stanjeZalihaSortimenti = data.sortimentiHeader || [];
 
@@ -8593,7 +8641,7 @@
             const odjel    = document.getElementById('prekl-odjel').value.trim();
             const iz       = document.getElementById('prekl-iz').value.trim();
             const u        = tip === 'RAZLIKA_MJERENJA' ? '' : document.getElementById('prekl-u').value.trim();
-            const kolicina = tip === 'RAZLIKA_MJERENJA' ? '0' : document.getElementById('prekl-kolicina').value.trim();
+            const kolicina = tip === 'RAZLIKA_MJERENJA' ? 0 : (parseFloat(document.getElementById('prekl-kolicina').value)||0);
             const napomena = document.getElementById('prekl-napomena').value.trim();
             const errEl    = document.getElementById('prekl-error');
 
@@ -8618,7 +8666,7 @@
                     errEl.style.display = 'block';
                     return;
                 }
-                if (parseFloat(kolicina) <= 0) {
+                if (kolicina <= 0) {
                     errEl.textContent = 'Količina mora biti pozitivna.';
                     errEl.style.display = 'block';
                     return;
@@ -8631,18 +8679,17 @@
             errEl.style.display = 'none';
 
             try {
-                const url = buildApiUrl('add-preklasiranje', {
-                    tip, odjel, iz, u, kolicina, napomena
+                const sb = _getSB();
+                if (!sb) throw new Error('Supabase nije dostupan');
+                const { error } = await sb.from('preklasiranje').insert({
+                    odjel, iz_sortimenta: iz, u_sortiment: u, kolicina,
+                    napomena, korisnik: currentUser ? (currentUser.fullName||currentUser.username) : '', tip
                 });
-                const resp = await fetch(url).then(r => r.json());
-                if (!resp.success) throw new Error(resp.error || 'Nepoznata greška');
+                if (error) throw new Error(error.message);
 
                 closePreklasiranjeModal();
-                // Refresh preklasiranja and re-render
-                const preklData = await fetch(buildApiUrl('get-preklasiranja')).then(r => r.json()).catch(() => ({ preklasiranja: [] }));
-                preklasiranjaPodaci = (preklData && preklData.preklasiranja) || [];
+                preklasiranjaPodaci = await _loadPreklasiranjaSB();
                 renderPreklasiranjaTabelaAdmin();
-                // Re-render zaliha tables with new corrections
                 renderStanjeZalihaTabela(stanjeZalihaData);
                 renderStanjeZalihaCards(stanjeZalihaData);
             } catch (err) {
@@ -8653,15 +8700,15 @@
             }
         }
 
-        async function deletePreklasiranje(rowIndex) {
+        async function deletePreklasiranje(id) {
             if (!confirm('Obrisati ovo preklasiranje?')) return;
             try {
-                const url = buildApiUrl('delete-preklasiranje', { rowIndex });
-                const resp = await fetch(url).then(r => r.json());
-                if (!resp.success) throw new Error(resp.error || 'Greška pri brisanju');
+                const sb = _getSB();
+                if (!sb) throw new Error('Supabase nije dostupan');
+                const { error } = await sb.from('preklasiranje').delete().eq('id', id);
+                if (error) throw new Error(error.message);
 
-                const preklData = await fetch(buildApiUrl('get-preklasiranja')).then(r => r.json()).catch(() => ({ preklasiranja: [] }));
-                preklasiranjaPodaci = (preklData && preklData.preklasiranja) || [];
+                preklasiranjaPodaci = await _loadPreklasiranjaSB();
                 renderPreklasiranjaTabelaAdmin();
                 renderStanjeZalihaTabela(stanjeZalihaData);
                 renderStanjeZalihaCards(stanjeZalihaData);
@@ -8716,16 +8763,7 @@
                 return;
             }
 
-            // Sortiramo od najsvježije otpreme prema najstarijoj (DD.MM.YYYY)
-            const parseDatum = d => {
-                if (!d) return 0;
-                const [day, month, year] = d.split('.');
-                return new Date(year, month - 1, day).getTime();
-            };
-            const sorted = [...data].sort((a, b) =>
-                parseDatum(b.zadnjaOtprema) - parseDatum(a.zadnjaOtprema)
-            );
-
+            const sorted = data;
             countEl.textContent = `Prikazano: ${sorted.length} odjela`;
 
             // Sortimenti names for display (shortened for table headers)
@@ -8773,7 +8811,7 @@
                     <div class="stanje-zaliha-card-header" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <h3 style="margin: 0; font-size: 18px; font-weight: 700;">${odjel.odjel}</h3>
-                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.85;">📍 ${odjel.radiliste || 'N/A'}${odjel.zadnjaOtprema ? ' &nbsp;|&nbsp; 🚛 ' + odjel.zadnjaOtprema : ''}</p>
+                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.85;">📍 ${odjel.radiliste || 'N/A'}${odjel._lastSjeca ? ' &nbsp;|&nbsp; 🪚 ' + _isoToDMY(odjel._lastSjeca) : ''}${odjel.zadnjaOtprema ? ' &nbsp;|&nbsp; 🚛 ' + odjel.zadnjaOtprema : ''}</p>
                         </div>
                         <div style="text-align: right;">
                             <div style="font-size: 24px; font-weight: 700;">${pozitivnaZaliha.toFixed(2)} m³</div>
@@ -8936,35 +8974,44 @@
 
         // Delete pending unos with modal confirmation
         function deletePendingUnos(id, tip) {
-            // Close dropdown first
             const dropdown = document.getElementById('row-actions-' + id);
             if (dropdown) dropdown.classList.remove('show');
 
-            // Show confirmation modal
             showConfirmModal(
                 'Potvrda brisanja',
-                'Da li ste sigurni da želite obrisati ovaj unos? (ID: ' + id + ', Tip: ' + tip + ')',
+                'Da li ste sigurni da želite obrisati ovaj unos?',
                 async function() {
                     try {
-                        const formData = new URLSearchParams();
-                        formData.append('path', 'delete-pending');
-                        formData.append('rowIndex', id);
-                        // Convert tip to lowercase: SJEČA -> sjeca, OTPREMA -> otprema
-                        const tipLower = tip === 'SJEČA' ? 'sjeca' : 'otprema';
-                        formData.append('tip', tipLower);
-                        formData.append('username', currentUser.username);
-                        formData.append('password', currentPassword);
+                        const sb = _getSB();
+                        if (!sb) throw new Error('Supabase nije dostupan');
+                        const table = tip === 'SJEČA' ? 'primac_unos' : 'otpremac_unos';
+                        const { error } = await sb.from(table).delete().eq('id', id);
+                        if (error) throw new Error(error.message);
+                        showSuccess('Uspjeh', 'Unos uspješno obrisan');
+                        loadPendingUnosi();
+                    } catch (error) {
+                        showError('Greška', error.message);
+                    }
+                }
+            );
+        }
 
-                        const url = API_URL + '?' + formData.toString();
-                        const response = await fetch(url);
-                        const result = await response.json();
-
-                        if (result.success) {
-                            showSuccess('Uspjeh', result.message);
-                            loadPendingUnosi();
-                        } else {
-                            throw new Error(result.error || 'Unknown error');
-                        }
+        function deleteAllPendingUnosi() {
+            var count = unfilteredPendingData ? unfilteredPendingData.length : 0;
+            if (count === 0) { showInfo('Nema unosa', 'Nema dodanih unosa za brisanje.'); return; }
+            showConfirmModal(
+                'Obriši sve unose',
+                'Da li ste sigurni da želite obrisati svih ' + count + ' dodanih unosa? Ova akcija se ne može poništiti.',
+                async function() {
+                    try {
+                        const sb = _getSB();
+                        if (!sb) throw new Error('Supabase nije dostupan');
+                        await Promise.all([
+                            sb.from('primac_unos').delete().eq('status','PENDING'),
+                            sb.from('otpremac_unos').delete().eq('status','PENDING')
+                        ]);
+                        showSuccess('Obrisano', 'Svi pending unosi su obrisani.');
+                        loadPendingUnosi();
                     } catch (error) {
                         showError('Greška', error.message);
                     }
@@ -9313,72 +9360,54 @@
 
                 submitBtn.textContent = 'Dodavanje...';
 
-                // Collect form data with safe getters (quantities default to 0)
-                const formData = new URLSearchParams();
-                formData.append('path', 'add-sjeca');
-                formData.append('username', currentUser.username);
-                formData.append('password', currentPassword);
-                formData.append('datum', getVal('sjeca-datum'));
-                formData.append('odjel', odjel);
-                formData.append('F/L Č', getNum('sjeca-FL-C'));
-                formData.append('I Č', getNum('sjeca-I-C'));
-                formData.append('II Č', getNum('sjeca-II-C'));
-                formData.append('III Č', getNum('sjeca-III-C'));
-                formData.append('RD', getNum('sjeca-RD'));
-                formData.append('TRUPCI Č', getNum('sjeca-TRUPCI-C'));
-                formData.append('CEL.DUGA', getNum('sjeca-CEL-DUGA'));
-                formData.append('CEL.CIJEPANA', getNum('sjeca-CEL-CIJEPANA'));
-                formData.append('ŠKART', getNum('sjeca-SKART'));
-                formData.append('Σ ČETINARI', getNum('sjeca-CETINARI'));
-                formData.append('F/L L', getNum('sjeca-FL-L'));
-                formData.append('I L', getNum('sjeca-I-L'));
-                formData.append('II L', getNum('sjeca-II-L'));
-                formData.append('III L', getNum('sjeca-III-L'));
-                formData.append('TRUPCI L', getNum('sjeca-TRUPCI-L'));
-                formData.append('OGR.DUGI', getNum('sjeca-OGR-DUGI'));
-                formData.append('OGR.CIJEPANI', getNum('sjeca-OGR-CIJEPANI'));
-                formData.append('GULE', getNum('sjeca-GULE'));
-                formData.append('LIŠĆARI', getNum('sjeca-LISCARI'));
+                const sb = _getSB();
+                if (!sb) throw new Error('Supabase nije dostupan');
 
-                // Add image URL if uploaded
-                if (imageUrl) {
-                    formData.append('imageUrl', imageUrl);
+                const sSort = {
+                    s_fl_c: getNum('sjeca-FL-C'), s_i_c: getNum('sjeca-I-C'),
+                    s_ii_c: getNum('sjeca-II-C'), s_iii_c: getNum('sjeca-III-C'),
+                    s_rd: getNum('sjeca-RD'), s_trupci_c: getNum('sjeca-TRUPCI-C'),
+                    s_cel_duga: getNum('sjeca-CEL-DUGA'), s_cel_cijepana: getNum('sjeca-CEL-CIJEPANA'),
+                    s_skart: getNum('sjeca-SKART'), s_cetinari: getNum('sjeca-CETINARI'),
+                    s_fl_l: getNum('sjeca-FL-L'), s_i_l: getNum('sjeca-I-L'),
+                    s_ii_l: getNum('sjeca-II-L'), s_iii_l: getNum('sjeca-III-L'),
+                    s_trupci_l: getNum('sjeca-TRUPCI-L'), s_ogr_dugi: getNum('sjeca-OGR-DUGI'),
+                    s_ogr_cijepani: getNum('sjeca-OGR-CIJEPANI'), s_gule: getNum('sjeca-GULE'),
+                    s_liscari: getNum('sjeca-LISCARI')
+                };
+                sSort.s_ukupno = sSort.s_cetinari + sSort.s_liscari;
+
+                const { error: sbErr } = await sb.from('primac_unos').insert(Object.assign({
+                    username: currentUser.username,
+                    radnik: currentUser.fullName || currentUser.username,
+                    datum: getVal('sjeca-datum'),
+                    odjel: odjel,
+                    image_url: imageUrl || ''
+                }, sSort));
+                if (sbErr) throw new Error(sbErr.message);
+
+                messageDiv.innerHTML = `✅ Sječa poslana rukovodiocu na pregled<br>Ukupno: ${sSort.s_ukupno.toFixed(2)} m³`;
+                messageDiv.style.background = '#d1fae5';
+                messageDiv.style.color = '#047857';
+                messageDiv.classList.remove('hidden');
+
+                if (typeof NotificationManager !== 'undefined') {
+                    NotificationManager.sendNotification('Sječa dodana ✅', 'Unos uspješno poslan rukovodiocu na pregled', 'sjeca-add');
                 }
 
-                // Send request (don't cache this)
-                const url = `${API_URL}?${formData.toString()}`;
-                const response = await fetch(url);
-                const result = await response.json();
+                resetSjecaForm();
 
-                if (result.success) {
-                    messageDiv.innerHTML = `✅ ${result.message}<br>Ukupno: ${result.ukupno.toFixed(2)} m³`;
-                    messageDiv.style.background = '#d1fae5';
-                    messageDiv.style.color = '#047857';
-                    messageDiv.classList.remove('hidden');
+                setTimeout(() => {
+                    messageDiv.classList.add('hidden');
+                }, 3000);
 
-                    if (typeof NotificationManager !== 'undefined') {
-                        NotificationManager.sendNotification('Sječa dodana ✅', 'Unos uspješno poslan rukovodiocu na pregled', 'sjeca-add');
-                    }
-
-                    // Reset form immediately so user can enter new data
-                    resetSjecaForm();
-
-                    // Hide message after delay
-                    setTimeout(() => {
-                        messageDiv.classList.add('hidden');
-                    }, 3000);
-
-                    // Clear all sječa-related cache entries so new data shows up
-                    clearCacheByPattern('primac');
-                    clearCacheByPattern('primaci');
-                    clearCacheByPattern('dashboard');
-                    clearCacheByPattern('izvjestaji');
-                    clearCacheByPattern('sedmicni_sjeca');
-                    clearCacheByPattern('stanje_odjela');
-                    clearCacheByPattern('my_sjece');
-                } else {
-                    throw new Error(result.error || 'Unknown error');
-                }
+                clearCacheByPattern('primac');
+                clearCacheByPattern('primaci');
+                clearCacheByPattern('dashboard');
+                clearCacheByPattern('izvjestaji');
+                clearCacheByPattern('sedmicni_sjeca');
+                clearCacheByPattern('stanje_odjela');
+                clearCacheByPattern('my_sjece');
 
             } catch (error) {
                 messageDiv.innerHTML = `❌ Greška: ${error.message}`;
@@ -9426,75 +9455,63 @@
 
                 submitBtn.textContent = 'Dodavanje...';
 
-                // Collect form data
-                const formData = new URLSearchParams();
-                formData.append('path', 'add-otprema');
-                formData.append('username', currentUser.username);
-                formData.append('password', currentPassword);
-                formData.append('datum', document.getElementById('otprema-datum').value);
-                formData.append('odjel', document.getElementById('otprema-odjel').value);
-                formData.append('kupac', document.getElementById('otprema-kupac').value);
-                formData.append('brojOtpremnice', document.getElementById('otprema-broj-otpremnice').value);
-                formData.append('F/L Č', document.getElementById('otprema-FL-C').value);
-                formData.append('I Č', document.getElementById('otprema-I-C').value);
-                formData.append('II Č', document.getElementById('otprema-II-C').value);
-                formData.append('III Č', document.getElementById('otprema-III-C').value);
-                formData.append('RD', document.getElementById('otprema-RD').value);
-                formData.append('TRUPCI Č', document.getElementById('otprema-TRUPCI-C').value);
-                formData.append('CEL.DUGA', document.getElementById('otprema-CEL-DUGA').value);
-                formData.append('CEL.CIJEPANA', document.getElementById('otprema-CEL-CIJEPANA').value);
-                formData.append('ŠKART', document.getElementById('otprema-SKART').value);
-                formData.append('Σ ČETINARI', document.getElementById('otprema-CETINARI').value);
-                formData.append('F/L L', document.getElementById('otprema-FL-L').value);
-                formData.append('I L', document.getElementById('otprema-I-L').value);
-                formData.append('II L', document.getElementById('otprema-II-L').value);
-                formData.append('III L', document.getElementById('otprema-III-L').value);
-                formData.append('TRUPCI L', document.getElementById('otprema-TRUPCI-L').value);
-                formData.append('OGR.DUGI', document.getElementById('otprema-OGR-DUGI').value);
-                formData.append('OGR.CIJEPANI', document.getElementById('otprema-OGR-CIJEPANI').value);
-                formData.append('GULE', document.getElementById('otprema-GULE').value);
-                formData.append('LIŠĆARI', document.getElementById('otprema-LISCARI').value);
+                const sb = _getSB();
+                if (!sb) throw new Error('Supabase nije dostupan');
+                const getNum = (id) => { const el = document.getElementById(id); return el ? (Number(el.value)||0) : 0; };
+                const getVal = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
 
-                // Add image URL if uploaded
-                if (imageUrl) {
-                    formData.append('imageUrl', imageUrl);
+                const oSort = {
+                    s_fl_c: getNum('otprema-FL-C'), s_i_c: getNum('otprema-I-C'),
+                    s_ii_c: getNum('otprema-II-C'), s_iii_c: getNum('otprema-III-C'),
+                    s_rd: getNum('otprema-RD'), s_trupci_c: getNum('otprema-TRUPCI-C'),
+                    s_cel_duga: getNum('otprema-CEL-DUGA'), s_cel_cijepana: getNum('otprema-CEL-CIJEPANA'),
+                    s_skart: getNum('otprema-SKART'), s_cetinari: getNum('otprema-CETINARI'),
+                    s_fl_l: getNum('otprema-FL-L'), s_i_l: getNum('otprema-I-L'),
+                    s_ii_l: getNum('otprema-II-L'), s_iii_l: getNum('otprema-III-L'),
+                    s_trupci_l: getNum('otprema-TRUPCI-L'), s_ogr_dugi: getNum('otprema-OGR-DUGI'),
+                    s_ogr_cijepani: getNum('otprema-OGR-CIJEPANI'), s_gule: getNum('otprema-GULE'),
+                    s_liscari: getNum('otprema-LISCARI')
+                };
+                oSort.s_ukupno = oSort.s_cetinari + oSort.s_liscari;
+
+                const { error: sbErr } = await sb.from('otpremac_unos').insert(Object.assign({
+                    username: currentUser.username,
+                    otpremac: currentUser.fullName || currentUser.username,
+                    datum: getVal('otprema-datum'),
+                    odjel: getVal('otprema-odjel'),
+                    kupac: getVal('otprema-kupac'),
+                    broj_otpremnice: getVal('otprema-broj-otpremnice'),
+                    image_url: imageUrl || ''
+                }, oSort));
+
+                if (sbErr) throw new Error(sbErr.message);
+
+                messageDiv.innerHTML = `✅ Otprema dodana<br>Ukupno: ${oSort.s_ukupno.toFixed(2)} m³`;
+                messageDiv.style.background = '#dbeafe';
+                messageDiv.style.color = '#1e40af';
+                messageDiv.classList.remove('hidden');
+
+                if (typeof NotificationManager !== 'undefined') {
+                    NotificationManager.sendNotification('Otprema dodana ✅', 'Unos uspješno poslan rukovodiocu na pregled', 'otprema-add');
                 }
 
-                // Send request (don't cache this)
-                const url = `${API_URL}?${formData.toString()}`;
-                const response = await fetch(url);
-                const result = await response.json();
+                // Reset form immediately so user can enter new data
+                resetOtpremaForm();
 
-                if (result.success) {
-                    messageDiv.innerHTML = `✅ ${result.message}<br>Ukupno: ${result.ukupno.toFixed(2)} m³`;
-                    messageDiv.style.background = '#dbeafe';
-                    messageDiv.style.color = '#1e40af';
-                    messageDiv.classList.remove('hidden');
+                // Hide message after delay
+                setTimeout(() => {
+                    messageDiv.classList.add('hidden');
+                }, 3000);
 
-                    if (typeof NotificationManager !== 'undefined') {
-                        NotificationManager.sendNotification('Otprema dodana ✅', 'Unos uspješno poslan rukovodiocu na pregled', 'otprema-add');
-                    }
-
-                    // Reset form immediately so user can enter new data
-                    resetOtpremaForm();
-
-                    // Hide message after delay
-                    setTimeout(() => {
-                        messageDiv.classList.add('hidden');
-                    }, 3000);
-
-                    // Clear all otprema-related cache entries so new data shows up
-                    clearCacheByPattern('otpremac');
-                    clearCacheByPattern('otpremaci');
-                    clearCacheByPattern('dashboard');
-                    clearCacheByPattern('kupci');
-                    clearCacheByPattern('izvjestaji');
-                    clearCacheByPattern('sedmicni_otprema');
-                    clearCacheByPattern('stanje_odjela');
-                    clearCacheByPattern('my_otpreme');
-                } else {
-                    throw new Error(result.error || 'Unknown error');
-                }
+                // Clear all otprema-related cache entries so new data shows up
+                clearCacheByPattern('otpremac');
+                clearCacheByPattern('otpremaci');
+                clearCacheByPattern('dashboard');
+                clearCacheByPattern('kupci');
+                clearCacheByPattern('izvjestaji');
+                clearCacheByPattern('sedmicni_otprema');
+                clearCacheByPattern('stanje_odjela');
+                clearCacheByPattern('my_otpreme');
 
             } catch (error) {
                 messageDiv.innerHTML = `❌ Greška: ${error.message}`;
@@ -9638,50 +9655,63 @@
         }
 
         // Upload slike u Supabase Storage (vraća public URL ili null)
-        // meta = { radnik, datum: 'YYYY-MM-DD', entryType }
-        async function uploadImage(imageData, type, meta) {
+        // imgMeta = { radnik, datum: 'YYYY-MM-DD', entryType }
+        async function uploadImage(imageData, type, imgMeta) {
             if (!imageData) return null;
             const sb = _getSB();
             if (!sb) { alert('Supabase nije konfigurisan za upload slika.'); return null; }
 
             try {
-                // Lazy cleanup: obriši istekle slike prije novog uploada
                 await _cleanupExpiredImages(sb);
 
-                // base64 → Blob
-                const [meta, b64] = imageData.split(',');
-                const mime   = (meta.match(/:(.*?);/) || [])[1] || 'image/jpeg';
+                // base64 data URL → Blob
+                const [hdr, b64Data] = imageData.split(',');
+                const mime   = (hdr.match(/:(.*?);/) || [])[1] || 'image/jpeg';
                 const rawExt = mime.split('/')[1] || 'jpeg';
                 const ext    = rawExt === 'jpeg' ? 'jpg' : rawExt;
-                const binary = atob(b64);
+                const binary = atob(b64Data);
                 const bytes  = new Uint8Array(binary.length);
                 for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
                 const blob = new Blob([bytes], { type: mime });
 
-                // Putanja: type/username_timestamp.ext
-                const username = currentUser ? currentUser.username : 'unknown';
-                const filePath = type + '/' + username + '_' + Date.now() + '.' + ext;
+                const username   = currentUser ? currentUser.username : 'unknown';
+                const radnik     = (imgMeta && imgMeta.radnik)    || (currentUser ? (currentUser.fullName || currentUser.username) : '');
+                const entryDatum = (imgMeta && imgMeta.datum)     || '';  // YYYY-MM-DD
+                const entryType  = (imgMeta && imgMeta.entryType) || type;
 
-                // Upload u bucket
+                // Convert YYYY-MM-DD → DD.MM.YYYY (format used in _pendingImageMap keys)
+                var datumFmt = entryDatum;
+                if (entryDatum && entryDatum.indexOf('-') !== -1) {
+                    var dp = entryDatum.split('-');
+                    datumFmt = (dp[2] || '') + '.' + (dp[1] || '') + '.' + (dp[0] || '');
+                }
+
+                // Encode matching metadata into filename — avoids requiring extra DB columns
+                var metaJson  = JSON.stringify({ r: radnik, d: datumFmt, t: entryType });
+                var metaB64   = btoa(unescape(encodeURIComponent(metaJson)))
+                                    .replace(/\//g, '-').replace(/\+/g, '_').replace(/=/g, '');
+                var rndSuffix = Math.random().toString(36).substr(2, 8);
+                var filePath  = type + '/' + username + '/' + metaB64 + '.meta.' + Date.now() + '_' + rndSuffix + '.' + ext;
+
                 const { error: upErr } = await sb.storage
                     .from('sjeca-images')
                     .upload(filePath, blob, { contentType: mime, upsert: false });
                 if (upErr) throw upErr;
 
-                // Public URL
                 const { data: urlData } = sb.storage.from('sjeca-images').getPublicUrl(filePath);
                 const imageUrl = urlData.publicUrl;
 
-                // Spremi metadata s rokom 5 dana
-                const expiresAt  = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
-                const radnik     = (meta && meta.radnik)    || (currentUser ? (currentUser.fullName || currentUser.username) : '');
-                const entryDatum = (meta && meta.datum)     || '';
-                const entryType  = (meta && meta.entryType) || type;
-                await sb.from('temp_images').insert({
-                    file_path: filePath, type, username, expires_at: expiresAt,
-                    radnik, entry_datum: entryDatum, entry_type: entryType
-                });
+                // Track in temp_images for cleanup — non-fatal if this fails
+                try {
+                    const expiresAt = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+                    await sb.from('temp_images').insert({
+                        file_path: filePath, type: type, username: username, expires_at: expiresAt
+                    });
+                } catch (trackErr) {
+                    console.warn('temp_images tracking failed (image uploaded OK):', trackErr.message || trackErr);
+                }
 
+                console.log('[UPLOAD] imageUrl:', imageUrl);
                 return imageUrl;
             } catch (err) {
                 console.error('uploadImage error:', err);
@@ -9778,16 +9808,19 @@
             }
 
             try {
-                const url = buildApiUrl('my-pending', { tip: 'sjeca' });
-                const data = await fetchWithCache(url, msCacheKey);
-
-                if (data.error) {
-                    throw new Error(data.error);
-                }
+                const sb = _getSB();
+                if (!sb) throw new Error('Supabase nije dostupan');
+                const { data: rows, error: sbErr } = await sb.from('primac_unos')
+                    .select('*')
+                    .eq('username', currentUser.username)
+                    .eq('status', 'PENDING')
+                    .order('created_at', { ascending: false });
+                if (sbErr) throw new Error(sbErr.message);
+                const unosi = (rows || []).map(function(r){ return _sbRowToUnos(r, 'sjeca'); });
 
                 var html = '<div style="overflow-x: auto;">';
 
-                if (data.unosi && data.unosi.length > 0) {
+                if (unosi.length > 0) {
                     html += '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;">';
                     html += '<thead><tr style="background: #047857; color: white;">';
                     html += '<th style="padding: 12px; border: 1px solid #ddd;">Datum</th>';
@@ -9799,9 +9832,9 @@
                     html += '<th style="padding: 12px; border: 1px solid #ddd;">Akcije</th>';
                     html += '</tr></thead><tbody>';
 
-                    for (var i = 0; i < data.unosi.length; i++) {
-                        var unos = data.unosi[i];
-                        var cetinari = parseFloat(unos.sortimenti['ČETINARI'] || 0);
+                    for (var i = 0; i < unosi.length; i++) {
+                        var unos = unosi[i];
+                        var cetinari = parseFloat(unos.sortimenti['Σ ČETINARI'] || 0);
                         var liscari = parseFloat(unos.sortimenti['LIŠĆARI'] || 0);
                         var ukupno = cetinari + liscari;
 
@@ -9811,10 +9844,10 @@
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + cetinari.toFixed(2) + ' m³</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + liscari.toFixed(2) + ' m³</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">' + ukupno.toFixed(2) + ' m³</td>';
-                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + new Date(unos.timestamp).toLocaleString('hr-HR') + '</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + unos.timestamp + '</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd; text-align: center;">';
-                        html += '<button class="btn btn-primary" style="margin-right: 8px;" onclick=\'editMySjeca(' + JSON.stringify(unos).replace(/'/g, "\\'") + ')\'><✏️ Uredi</button>';
-                        html += '<button class="btn btn-secondary" onclick="deleteMySjeca(' + unos.rowIndex + ')">🗑️ Obriši</button>';
+                        html += '<button class="btn btn-primary" style="margin-right: 8px;" onclick=\'editMySjeca(' + JSON.stringify(unos).replace(/'/g, "\\'") + ')\'>✏️ Uredi</button>';
+                        html += '<button class="btn btn-secondary" onclick="deleteMySjeca(\'' + unos.id + '\')">🗑️ Obriši</button>';
                         html += '</td>';
                         html += '</tr>';
                     }
@@ -9851,16 +9884,19 @@
             }
 
             try {
-                const url = buildApiUrl('my-pending', { tip: 'otprema' });
-                const data = await fetchWithCache(url, moCacheKey);
-
-                if (data.error) {
-                    throw new Error(data.error);
-                }
+                const sb = _getSB();
+                if (!sb) throw new Error('Supabase nije dostupan');
+                const { data: rows, error: sbErr } = await sb.from('otpremac_unos')
+                    .select('*')
+                    .eq('username', currentUser.username)
+                    .eq('status', 'PENDING')
+                    .order('created_at', { ascending: false });
+                if (sbErr) throw new Error(sbErr.message);
+                const unosi = (rows || []).map(function(r){ return _sbRowToUnos(r, 'otprema'); });
 
                 var html = '<div style="overflow-x: auto;">';
 
-                if (data.unosi && data.unosi.length > 0) {
+                if (unosi.length > 0) {
                     html += '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;">';
                     html += '<thead><tr style="background: #2563eb; color: white;">';
                     html += '<th style="padding: 12px; border: 1px solid #ddd;">Datum</th>';
@@ -9874,9 +9910,9 @@
                     html += '<th style="padding: 12px; border: 1px solid #ddd;">Akcije</th>';
                     html += '</tr></thead><tbody>';
 
-                    for (var i = 0; i < data.unosi.length; i++) {
-                        var unos = data.unosi[i];
-                        var cetinari = parseFloat(unos.sortimenti['ČETINARI'] || 0);
+                    for (var i = 0; i < unosi.length; i++) {
+                        var unos = unosi[i];
+                        var cetinari = parseFloat(unos.sortimenti['Σ ČETINARI'] || 0);
                         var liscari = parseFloat(unos.sortimenti['LIŠĆARI'] || 0);
                         var ukupno = cetinari + liscari;
 
@@ -9888,10 +9924,10 @@
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + cetinari.toFixed(2) + ' m³</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + liscari.toFixed(2) + ' m³</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">' + ukupno.toFixed(2) + ' m³</td>';
-                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + new Date(unos.timestamp).toLocaleString('hr-HR') + '</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + unos.timestamp + '</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd; text-align: center;">';
                         html += '<button class="btn btn-primary" style="margin-right: 8px;" onclick=\'editMyOtprema(' + JSON.stringify(unos).replace(/'/g, "\\'") + ')\'>✏️ Uredi</button>';
-                        html += '<button class="btn btn-secondary" onclick="deleteMyOtprema(' + unos.rowIndex + ')">🗑️ Obriši</button>';
+                        html += '<button class="btn btn-secondary" onclick="deleteMyOtprema(\'' + unos.id + '\')">🗑️ Obriši</button>';
                         html += '</td>';
                         html += '</tr>';
                     }
@@ -10016,41 +10052,45 @@
             messageDiv.classList.add('hidden');
 
             try {
-                var formData = new URLSearchParams();
-                formData.append('path', 'update-pending');
-                formData.append('username', currentUser.username);
-                formData.append('password', currentPassword);
-                formData.append('tip', 'sjeca');
-                formData.append('rowIndex', document.getElementById('edit-sjeca-rowIndex').value);
-                formData.append('datum', document.getElementById('edit-sjeca-datum').value);
-                formData.append('odjel', document.getElementById('edit-sjeca-odjel').value);
+                const sb = _getSB();
+                if (!sb) throw new Error('Supabase nije dostupan');
+                const rowId = document.getElementById('edit-sjeca-rowIndex').value;
+                const rawDatum = document.getElementById('edit-sjeca-datum').value;
+                // Convert DD.MM.YYYY → YYYY-MM-DD if needed
+                var isoDate = rawDatum;
+                if (/^\d{2}\.\d{2}\.\d{4}$/.test(rawDatum)) {
+                    var dp = rawDatum.split('.');
+                    isoDate = dp[2] + '-' + dp[1] + '-' + dp[0];
+                }
 
-                // Add all sortimenti
-                var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ČETINARI',
-                                     'F/L L', 'I L', 'II L', 'III L', 'TRUPCI', 'OGR.DUGI', 'OGR.CIJEPANI', 'LIŠĆARI'];
-
+                const editKeyMap = {
+                    'F/L Č':'s_fl_c','I Č':'s_i_c','II Č':'s_ii_c','III Č':'s_iii_c',
+                    'RUDNO':'s_rd','TRUPCI Č':'s_trupci_c','CEL.DUGA':'s_cel_duga',
+                    'CEL.CIJEPANA':'s_cel_cijepana','ČETINARI':'s_cetinari',
+                    'F/L L':'s_fl_l','I L':'s_i_l','II L':'s_ii_l','III L':'s_iii_l',
+                    'TRUPCI':'s_trupci_l','OGR.DUGI':'s_ogr_dugi','OGR.CIJEPANI':'s_ogr_cijepani',
+                    'LIŠĆARI':'s_liscari'
+                };
+                var updates = { datum: isoDate, odjel: document.getElementById('edit-sjeca-odjel').value };
+                var sortimentiKeys = Object.keys(editKeyMap);
                 sortimentiKeys.forEach(function(key) {
                     var fieldId = 'edit-sjeca-' + key.replace(/\//g, '').replace(/ /g, '-');
-                    var value = document.getElementById(fieldId).value;
-                    formData.append(key, value);
+                    var el = document.getElementById(fieldId);
+                    if (el) updates[editKeyMap[key]] = Number(el.value) || 0;
                 });
+                updates.s_ukupno = (updates.s_cetinari || 0) + (updates.s_liscari || 0);
 
-                var url = API_URL + '?' + formData.toString();
-                var response = await fetch(url);
-                var result = await response.json();
+                const { error: sbErr } = await sb.from('primac_unos').update(updates).eq('id', rowId);
+                if (sbErr) throw new Error(sbErr.message);
 
-                if (result.success) {
-                    messageDiv.innerHTML = '✅ ' + result.message + '<br>Ukupno: ' + result.ukupno.toFixed(2) + ' m³';
-                    messageDiv.style.background = '#d1fae5';
-                    messageDiv.style.color = '#047857';
-                    messageDiv.classList.remove('hidden');
+                messageDiv.innerHTML = '✅ Sječa ažurirana<br>Ukupno: ' + updates.s_ukupno.toFixed(2) + ' m³';
+                messageDiv.style.background = '#d1fae5';
+                messageDiv.style.color = '#047857';
+                messageDiv.classList.remove('hidden');
 
-                    setTimeout(function() {
-                        switchTab('my-sjece');
-                    }, 2000);
-                } else {
-                    throw new Error(result.error || 'Unknown error');
-                }
+                setTimeout(function() {
+                    switchTab('my-sjece');
+                }, 2000);
 
             } catch (error) {
                 messageDiv.innerHTML = '❌ Greška: ' + error.message;
@@ -10162,42 +10202,48 @@
             messageDiv.classList.add('hidden');
 
             try {
-                var formData = new URLSearchParams();
-                formData.append('path', 'update-pending');
-                formData.append('username', currentUser.username);
-                formData.append('password', currentPassword);
-                formData.append('tip', 'otprema');
-                formData.append('rowIndex', document.getElementById('edit-otprema-rowIndex').value);
-                formData.append('datum', document.getElementById('edit-otprema-datum').value);
-                formData.append('odjel', document.getElementById('edit-otprema-odjel').value);
-                formData.append('kupac', document.getElementById('edit-otprema-kupac').value);
-                formData.append('brojOtpremnice', document.getElementById('edit-otprema-broj-otpremnice').value);
-
-                var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ČETINARI',
-                                     'F/L L', 'I L', 'II L', 'III L', 'TRUPCI', 'OGR.DUGI', 'OGR.CIJEPANI', 'LIŠĆARI'];
-
-                sortimentiKeys.forEach(function(key) {
-                    var fieldId = 'edit-otprema-' + key.replace(/\//g, '').replace(/ /g, '-');
-                    var value = document.getElementById(fieldId).value;
-                    formData.append(key, value);
-                });
-
-                var url = API_URL + '?' + formData.toString();
-                var response = await fetch(url);
-                var result = await response.json();
-
-                if (result.success) {
-                    messageDiv.innerHTML = '✅ ' + result.message + '<br>Ukupno: ' + result.ukupno.toFixed(2) + ' m³';
-                    messageDiv.style.background = '#dbeafe';
-                    messageDiv.style.color = '#1e40af';
-                    messageDiv.classList.remove('hidden');
-
-                    setTimeout(function() {
-                        switchTab('my-otpreme');
-                    }, 2000);
-                } else {
-                    throw new Error(result.error || 'Unknown error');
+                const sb = _getSB();
+                if (!sb) throw new Error('Supabase nije dostupan');
+                const rowId = document.getElementById('edit-otprema-rowIndex').value;
+                const rawDatum = document.getElementById('edit-otprema-datum').value;
+                var isoDate = rawDatum;
+                if (/^\d{2}\.\d{2}\.\d{4}$/.test(rawDatum)) {
+                    var dp = rawDatum.split('.');
+                    isoDate = dp[2] + '-' + dp[1] + '-' + dp[0];
                 }
+
+                const editKeyMap = {
+                    'F/L Č':'s_fl_c','I Č':'s_i_c','II Č':'s_ii_c','III Č':'s_iii_c',
+                    'RUDNO':'s_rd','TRUPCI Č':'s_trupci_c','CEL.DUGA':'s_cel_duga',
+                    'CEL.CIJEPANA':'s_cel_cijepana','ČETINARI':'s_cetinari',
+                    'F/L L':'s_fl_l','I L':'s_i_l','II L':'s_ii_l','III L':'s_iii_l',
+                    'TRUPCI':'s_trupci_l','OGR.DUGI':'s_ogr_dugi','OGR.CIJEPANI':'s_ogr_cijepani',
+                    'LIŠĆARI':'s_liscari'
+                };
+                var updates = {
+                    datum: isoDate,
+                    odjel: document.getElementById('edit-otprema-odjel').value,
+                    kupac: document.getElementById('edit-otprema-kupac').value,
+                    broj_otpremnice: document.getElementById('edit-otprema-broj-otpremnice').value
+                };
+                Object.keys(editKeyMap).forEach(function(key) {
+                    var fieldId = 'edit-otprema-' + key.replace(/\//g, '').replace(/ /g, '-');
+                    var el = document.getElementById(fieldId);
+                    if (el) updates[editKeyMap[key]] = Number(el.value) || 0;
+                });
+                updates.s_ukupno = (updates.s_cetinari || 0) + (updates.s_liscari || 0);
+
+                const { error: sbErr } = await sb.from('otpremac_unos').update(updates).eq('id', rowId);
+                if (sbErr) throw new Error(sbErr.message);
+
+                messageDiv.innerHTML = '✅ Otprema ažurirana<br>Ukupno: ' + updates.s_ukupno.toFixed(2) + ' m³';
+                messageDiv.style.background = '#dbeafe';
+                messageDiv.style.color = '#1e40af';
+                messageDiv.classList.remove('hidden');
+
+                setTimeout(function() {
+                    switchTab('my-otpreme');
+                }, 2000);
 
             } catch (error) {
                 messageDiv.innerHTML = '❌ Greška: ' + error.message;
@@ -10215,29 +10261,18 @@
         }
 
         // Delete functions
-        async function deleteMySjeca(rowIndex) {
+        async function deleteMySjeca(id) {
             showConfirmModal(
                 'Potvrda brisanja',
                 'Da li ste sigurni da želite obrisati ovaj unos sječe?',
                 async function() {
                     try {
-                        var formData = new URLSearchParams();
-                        formData.append('path', 'delete-pending');
-                        formData.append('username', currentUser.username);
-                        formData.append('password', currentPassword);
-                        formData.append('tip', 'sjeca');
-                        formData.append('rowIndex', rowIndex);
-
-                        var url = API_URL + '?' + formData.toString();
-                        var response = await fetch(url);
-                        var result = await response.json();
-
-                        if (result.success) {
-                            showSuccess('Uspjeh', result.message);
-                            loadMySjece();
-                        } else {
-                            throw new Error(result.error || 'Unknown error');
-                        }
+                        const sb = _getSB();
+                        if (!sb) throw new Error('Supabase nije dostupan');
+                        const { error: sbErr } = await sb.from('primac_unos').delete().eq('id', id);
+                        if (sbErr) throw new Error(sbErr.message);
+                        showSuccess('Uspjeh', 'Unos obrisan');
+                        loadMySjece();
                     } catch (error) {
                         showError('Greška', error.message);
                     }
@@ -10245,29 +10280,18 @@
             );
         }
 
-        async function deleteMyOtprema(rowIndex) {
+        async function deleteMyOtprema(id) {
             showConfirmModal(
                 'Potvrda brisanja',
                 'Da li ste sigurni da želite obrisati ovaj unos otpreme?',
                 async function() {
                     try {
-                        var formData = new URLSearchParams();
-                        formData.append('path', 'delete-pending');
-                        formData.append('username', currentUser.username);
-                        formData.append('password', currentPassword);
-                        formData.append('tip', 'otprema');
-                        formData.append('rowIndex', rowIndex);
-
-                        var url = API_URL + '?' + formData.toString();
-                        var response = await fetch(url);
-                        var result = await response.json();
-
-                        if (result.success) {
-                            showSuccess('Uspjeh', result.message);
-                            loadMyOtpreme();
-                        } else {
-                            throw new Error(result.error || 'Unknown error');
-                        }
+                        const sb = _getSB();
+                        if (!sb) throw new Error('Supabase nije dostupan');
+                        const { error: sbErr } = await sb.from('otpremac_unos').delete().eq('id', id);
+                        if (sbErr) throw new Error(sbErr.message);
+                        showSuccess('Uspjeh', 'Unos obrisan');
+                        loadMyOtpreme();
                     } catch (error) {
                         showError('Greška', error.message);
                     }
@@ -11933,7 +11957,8 @@
             const now = new Date();
             _sihtarica.primac.year  = now.getFullYear();
             _sihtarica.primac.month = now.getMonth() + 1;
-            document.getElementById('primac-sihtarica-content').classList.remove('hidden');
+            const el = document.getElementById('primac-sihtarica-content');
+            if (el) el.classList.remove('hidden');
             fetchSihtaricaData('primac');
         }
 
@@ -11941,7 +11966,8 @@
             const now = new Date();
             _sihtarica.otpremac.year  = now.getFullYear();
             _sihtarica.otpremac.month = now.getMonth() + 1;
-            document.getElementById('otpremac-sihtarica-content').classList.remove('hidden');
+            const el = document.getElementById('otpremac-sihtarica-content');
+            if (el) el.classList.remove('hidden');
             fetchSihtaricaData('otpremac');
         }
 
