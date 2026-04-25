@@ -1,9 +1,11 @@
         // VERSION INFO - Monthly report by departments
-        const APP_VERSION = '2026-04-22-v20-PRELOAD-UPDATE';
+        const APP_VERSION = '2026-04-25-v21-PRELOAD-RENDER';
         const BUILD_COMMIT = 'pending';
+        window._preloadRenderMode = false;
 
         // Helper: provjeri da li je tab još uvijek aktivan (sprečava bleeding async sadržaja)
         function isActiveTab(tabName) {
+            if (window._preloadRenderMode) return true;
             return window.currentTab === tabName;
         }
 
@@ -749,6 +751,79 @@
             return Promise.all(results);
         }
 
+        // Sakrij sve content divove osim aktivnog taba (restore nakon preload rendera)
+        function _restoreTabVisibility() {
+            document.querySelectorAll('.container').forEach(function(el) {
+                if (el.id && el.id.endsWith('-content')) el.classList.add('hidden');
+            });
+            const el = window.currentTab && document.getElementById(window.currentTab + '-content');
+            if (el) el.classList.remove('hidden');
+        }
+
+        // Pre-renderuj sve tabove i subtabove pozivanjem load funkcija u preload modu
+        async function _preloadRenderAllTabs(userType) {
+            const now = new Date();
+            const yr = String(now.getFullYear()), mo = String(now.getMonth());
+            const _s = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
+            const callSafe = async function(fn) {
+                try { if (typeof fn === 'function') await fn(); }
+                catch(e) { console.warn('[PRELOAD RENDER]', fn && fn.name, e); }
+            };
+
+            if (userType === 'admin') {
+                await callSafe(loadDashboard);
+                await callSafe(loadKupci);
+                await callSafe(loadStanjeZaliha);
+                await callSafe(loadMjesecniSortimenti);
+                await callSafe(loadPrimaci); await callSafe(loadPrimaciDaily);
+                await callSafe(loadPrimaciByRadiliste); await callSafe(loadPrimaciByIzvodjac);
+                await callSafe(loadPrimaciSortimentiByPrimac);
+                await callSafe(loadOtpremaci); await callSafe(loadOtremaciDaily);
+                await callSafe(loadOtremaciByRadiliste); await callSafe(loadOtremaciPoKupcima);
+                await callSafe(loadOtremaciSortimentiByOtpremac);
+                await callSafe(loadPrimaciAdminTab);
+                await callSafe(loadPendingUnosi);
+                _s('izvjestaji-sedmicni-year', yr); _s('izvjestaji-sedmicni-month', mo);
+                _s('izvjestaji-miesecni-year', yr);  _s('izvjestaji-miesecni-month', mo);
+                await callSafe(loadIzvjestajiSedmicni); await callSafe(loadIzvjestajiMjesecni);
+
+            } else if (userType === 'poslovođa' || userType === 'poslovodja') {
+                await callSafe(loadPoslovodjaStanje);
+                await callSafe(loadPoslovodjaSjeca);
+                await callSafe(loadPoslovodjaOtprema);
+                await callSafe(loadPoslovodjaPregled);
+                _s('izvjestaji-sedmicni-year', yr); _s('izvjestaji-sedmicni-month', mo);
+                _s('izvjestaji-miesecni-year', yr);  _s('izvjestaji-miesecni-month', mo);
+                await callSafe(loadIzvjestajiSedmicni); await callSafe(loadIzvjestajiMjesecni);
+
+            } else if (userType === 'operativa') {
+                await callSafe(loadDashboard);
+                await callSafe(loadOperativa);
+                await callSafe(loadKupci);
+                await callSafe(loadMjesecniSortimenti);
+                await callSafe(loadStanjeZaliha);
+                _s('izvjestaji-sedmicni-year', yr); _s('izvjestaji-sedmicni-month', mo);
+                _s('izvjestaji-miesecni-year', yr);  _s('izvjestaji-miesecni-month', mo);
+                await callSafe(loadIzvjestajiSedmicni); await callSafe(loadIzvjestajiMjesecni);
+
+            } else if (userType === 'primac') {
+                await callSafe(loadPrimacPersonal);
+                await callSafe(loadPrimacGodisnji);
+                await callSafe(loadPrimacOdjeli);
+                _s('primac-sedmicni-year', yr); _s('primac-sedmicni-month', mo);
+                _s('primac-mjesecni-year', yr);  _s('primac-mjesecni-month', mo);
+                await callSafe(loadPrimacSedmicni); await callSafe(loadPrimacMjesecni);
+
+            } else if (userType === 'otpremac') {
+                await callSafe(loadOtpremacPersonal);
+                await callSafe(loadOtpremacGodisnji);
+                await callSafe(loadOtpremacOdjeli);
+                _s('otpremac-sedmicni-year', yr); _s('otpremac-sedmicni-month', mo);
+                _s('otpremac-miesecni-year', yr);  _s('otpremac-miesecni-month', mo);
+                await callSafe(loadOtpremacSedmicni); await callSafe(loadOtpremacMjesecni);
+            }
+        }
+
         // Preload all views function
         // silent = ne prikazuje notifikacije (za auto-preload pri loginu)
         // forceRefresh = brisuje cache i fetchuje svježe podatke (za ručni klik)
@@ -923,6 +998,19 @@
                 }, 8); // Max 8 paralelnih poziva
 
                 console.log(`[PRELOAD] Finished! Loaded: ${totalLoaded}/${totalViews}, Failed: ${totalFailed}`);
+
+                // === RENDER FAZA: pre-popula DOM svih tabova i subtabova ===
+                console.log('[PRELOAD] Pokretanje render faze...');
+                window._preloadRenderMode = true;
+                try {
+                    await _preloadRenderAllTabs(userType);
+                    console.log('[PRELOAD] Render faza završena.');
+                } catch (renderErr) {
+                    console.warn('[PRELOAD] Render faza greška:', renderErr);
+                } finally {
+                    window._preloadRenderMode = false;
+                    _restoreTabVisibility();
+                }
 
                 // Ukloni progress toast i prikaži rezultat
                 if (!silent) {
