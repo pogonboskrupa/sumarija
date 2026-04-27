@@ -11594,6 +11594,24 @@
                 // Render table
                 renderPrimacOtpremacSedmicni(weeklyData, sortimentiNazivi, 'primac-sedmicni', year, month);
 
+                // Compute week→odjel rekapitulacija from original filteredData (odjel info intact)
+                const weekOdjeliMap = {};
+                filteredData.forEach(function(unos) {
+                    const dateParts = (unos.datum || '').split(/[\/\.\-]/);
+                    if (dateParts.length < 3) return;
+                    const d = new Date(parseInt(year), parseInt(month), parseInt(dateParts[0]));
+                    const wi = getWeekWithinMonth(d, parseInt(year), parseInt(month));
+                    const wk = wi.weekNumber;
+                    if (!weekOdjeliMap[wk]) weekOdjeliMap[wk] = { weekNumber: wk, weekStart: wi.weekStart, weekEnd: wi.weekEnd, odjeli: {} };
+                    const odjel = String(unos.odjel || 'Nepoznat');
+                    if (!weekOdjeliMap[wk].odjeli[odjel]) weekOdjeliMap[wk].odjeli[odjel] = { cetinari: 0, liscari: 0 };
+                    const s = unos.sortimenti || {};
+                    weekOdjeliMap[wk].odjeli[odjel].cetinari += parseFloat(s['Σ ČETINARI'] || s['ČETINARI'] || 0);
+                    weekOdjeliMap[wk].odjeli[odjel].liscari  += parseFloat(s['LIŠĆARI'] || 0);
+                });
+                const weekOdjeliData = Object.values(weekOdjeliMap).sort(function(a, b) { return a.weekNumber - b.weekNumber; });
+                renderPrimacSedmicniOdjeliRekapitulacija(weekOdjeliData, 'primac-sedmicni-rekapitulacija');
+
                 document.getElementById('loading-screen').classList.add('hidden');
 
             } catch (error) {
@@ -11930,6 +11948,71 @@
             });
             footerHtml += '</tr>';
             footer.innerHTML = footerHtml;
+        }
+
+        // ============================================
+        // 📊 SEDMIČNI IZVJEŠTAJ - Rekapitulacija po odjelima
+        // ============================================
+        function renderPrimacSedmicniOdjeliRekapitulacija(weekOdjeliData, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const weeksWithData = weekOdjeliData.filter(function(w) { return Object.keys(w.odjeli).length > 0; });
+
+            if (weeksWithData.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = '<div class="section" style="margin-top: 12px;">';
+            html += '<h3 style="font-size: 14px; font-weight: 600; color: #374151; margin: 0 0 12px 0; padding: 0;">📋 Rekapitulacija po odjelima</h3>';
+
+            weeksWithData.forEach(function(week) {
+                const odjeliArr = Object.entries(week.odjeli).sort(function(a, b) { return String(a[0]).localeCompare(String(b[0])); });
+                if (odjeliArr.length === 0) return;
+
+                const weekTot = odjeliArr.reduce(function(acc, entry) {
+                    acc.cetinari += entry[1].cetinari;
+                    acc.liscari  += entry[1].liscari;
+                    return acc;
+                }, { cetinari: 0, liscari: 0 });
+
+                html += '<div style="margin-bottom: 16px; border-radius: 6px; overflow: hidden; border: 1px solid #e5e7eb;">';
+                html += '<div style="font-size: 13px; font-weight: 600; color: #1f2937; padding: 7px 12px; background: #f3f4f6; border-bottom: 2px solid #d1d5db;">';
+                html += 'Sedmica ' + week.weekNumber + ' <span style="font-weight:400;color:#6b7280;">(' + week.weekStart + ' – ' + week.weekEnd + ')</span>';
+                html += '</div>';
+                html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+                html += '<thead><tr style="background:#374151;color:#fff;">';
+                html += '<th style="text-align:left;padding:6px 12px;">Odjel</th>';
+                html += '<th style="text-align:right;padding:6px 12px;">Σ ČETINARI</th>';
+                html += '<th style="text-align:right;padding:6px 12px;">LIŠĆARI</th>';
+                html += '<th style="text-align:right;padding:6px 12px;font-weight:700;">UKUPNO</th>';
+                html += '</tr></thead><tbody>';
+
+                odjeliArr.forEach(function(entry, idx) {
+                    const odjel = entry[0], vals = entry[1];
+                    const ukupno = vals.cetinari + vals.liscari;
+                    const bg = idx % 2 === 0 ? '#fff' : '#f9fafb';
+                    html += '<tr style="background:' + bg + ';border-bottom:1px solid #e5e7eb;">';
+                    html += '<td style="padding:5px 12px;font-weight:500;">' + odjel + '</td>';
+                    html += '<td style="text-align:right;padding:5px 12px;">' + (vals.cetinari > 0 ? vals.cetinari.toFixed(2) : '-') + '</td>';
+                    html += '<td style="text-align:right;padding:5px 12px;">' + (vals.liscari  > 0 ? vals.liscari.toFixed(2)  : '-') + '</td>';
+                    html += '<td style="text-align:right;padding:5px 12px;font-weight:600;">' + (ukupno > 0 ? ukupno.toFixed(2) : '-') + '</td>';
+                    html += '</tr>';
+                });
+
+                const totUkupno = weekTot.cetinari + weekTot.liscari;
+                html += '<tr style="background:#059669;color:#fff;font-weight:700;">';
+                html += '<td style="padding:5px 12px;">SEDMICA ' + week.weekNumber + '</td>';
+                html += '<td style="text-align:right;padding:5px 12px;">' + (weekTot.cetinari > 0 ? weekTot.cetinari.toFixed(2) : '-') + '</td>';
+                html += '<td style="text-align:right;padding:5px 12px;">' + (weekTot.liscari  > 0 ? weekTot.liscari.toFixed(2)  : '-') + '</td>';
+                html += '<td style="text-align:right;padding:5px 12px;">' + (totUkupno > 0 ? totUkupno.toFixed(2) : '-') + '</td>';
+                html += '</tr>';
+                html += '</tbody></table></div>';
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
         }
 
         // ============================================
