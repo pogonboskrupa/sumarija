@@ -2532,6 +2532,7 @@
             <!-- SUB-MENU TABS -->
             <div class="sub-tabs" style="margin-bottom: 30px;">
                 <button class="sub-tab active" onclick="switchIzvjestajiSubTab('sedmicni')">📊 Sedmični izvještaj</button>
+                <button class="sub-tab" onclick="switchIzvjestajiSubTab('sedmicni-radnik')">👷 Sedmični po radniku</button>
                 <button class="sub-tab" onclick="switchIzvjestajiSubTab('mjesecni')">📅 Mjesečni izvještaj</button>
             </div>
 
@@ -2592,6 +2593,67 @@
                         <table id="izvjestaji-sedmicni-otprema-table" class="izvjestaj-week-table">
                             <thead id="izvjestaji-sedmicni-otprema-header"></thead>
                             <tbody id="izvjestaji-sedmicni-otprema-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEDMIČNI IZVJEŠTAJ PO RADNIKU -->
+            <div id="izvjestaji-sedmicni-radnik" class="sub-content hidden">
+                <div class="page-header" style="margin-top: 0;">
+                    <div class="page-header-left">
+                        <h2>👷 Sedmični izvještaj po radniku</h2>
+                        <p>Sječa i otprema po radnicima za radilište - radna sedmica</p>
+                    </div>
+                    <div class="page-header-right">
+                        <select id="izvjestaji-sedmicni-radnik-year" class="year-select" onchange="loadIzvjestajiSedmicniRadnik()">
+                            <option value="2026" selected>2026</option>
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                        </select>
+                        <select id="izvjestaji-sedmicni-radnik-month" class="month-select" onchange="loadIzvjestajiSedmicniRadnik()">
+                            <option value="0">Januar</option>
+                            <option value="1">Februar</option>
+                            <option value="2">Mart</option>
+                            <option value="3">April</option>
+                            <option value="4">Maj</option>
+                            <option value="5">Juni</option>
+                            <option value="6">Juli</option>
+                            <option value="7">August</option>
+                            <option value="8">Septembar</option>
+                            <option value="9">Oktobar</option>
+                            <option value="10">Novembar</option>
+                            <option value="11">Decembar</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- SJEČA PO RADNIKU -->
+                <div class="section">
+                    <h2>🌲 Sječa po radniku - <span id="izvjestaji-sedmicni-radnik-primka-title"></span></h2>
+                    <p style="color: #6b7280; margin-bottom: 20px;">Sortirano po radniku (primac)</p>
+                    <div class="controls-bar">
+                        <input type="text" class="search-input" id="izvjestaji-sedmicni-radnik-primka-search" placeholder="🔍 Pretraži po radniku..." onkeyup="filterIzvjestajiTable('sedmicni-radnik-primka')">
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table id="izvjestaji-sedmicni-radnik-primka-table" class="izvjestaj-week-table">
+                            <thead id="izvjestaji-sedmicni-radnik-primka-header"></thead>
+                            <tbody id="izvjestaji-sedmicni-radnik-primka-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- OTPREMA PO RADNIKU -->
+                <div class="section">
+                    <h2>🚛 Otprema po radniku - <span id="izvjestaji-sedmicni-radnik-otprema-title"></span></h2>
+                    <p style="color: #6b7280; margin-bottom: 20px;">Sortirano po radniku (otpremac)</p>
+                    <div class="controls-bar">
+                        <input type="text" class="search-input" id="izvjestaji-sedmicni-radnik-otprema-search" placeholder="🔍 Pretraži po radniku..." onkeyup="filterIzvjestajiTable('sedmicni-radnik-otprema')">
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table id="izvjestaji-sedmicni-radnik-otprema-table" class="izvjestaj-week-table">
+                            <thead id="izvjestaji-sedmicni-radnik-otprema-header"></thead>
+                            <tbody id="izvjestaji-sedmicni-radnik-otprema-body"></tbody>
                         </table>
                     </div>
                 </div>

@@ -1,5 +1,5 @@
         // VERSION INFO - Monthly report by departments
-        const APP_VERSION = '2026-04-25-v21-PRELOAD-RENDER';
+        const APP_VERSION = '2026-04-28-v22-SEDMICNI-PO-RADNIKU';
         const BUILD_COMMIT = 'pending';
         window._preloadRenderMode = false;
 
@@ -794,7 +794,9 @@
                 await callSafe(loadPoslovodjaPregled);
                 _s('izvjestaji-sedmicni-year', yr); _s('izvjestaji-sedmicni-month', mo);
                 _s('izvjestaji-miesecni-year', yr);  _s('izvjestaji-miesecni-month', mo);
+                _s('izvjestaji-sedmicni-radnik-year', yr); _s('izvjestaji-sedmicni-radnik-month', mo);
                 await callSafe(loadIzvjestajiSedmicni); await callSafe(loadIzvjestajiMjesecni);
+                await callSafe(loadIzvjestajiSedmicniRadnik);
 
             } else if (userType === 'operativa') {
                 await callSafe(loadDashboard);
