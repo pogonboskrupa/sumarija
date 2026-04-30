@@ -60,8 +60,10 @@ class AuthRepository @Inject constructor(
             .build()
 
         client.newCall(request).execute().use { response ->
-            val body = response.body?.string() ?: return null
-            if (!response.isSuccessful) return null
+            val body = response.body?.string() ?: ""
+            if (!response.isSuccessful) {
+                throw Exception("Server greška ${response.code}: $body")
+            }
             val list = gson.fromJson(body, Array<MobileKorisnik>::class.java)
             return list.firstOrNull()
         }
