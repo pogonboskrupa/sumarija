@@ -3,6 +3,7 @@ package ba.pogon.sumarija
 import android.annotation.SuppressLint
 import android.net.http.SslError
 import android.os.Bundle
+import android.webkit.JavascriptInterface
 import android.webkit.SslErrorHandler
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
@@ -11,13 +12,28 @@ import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
@@ -28,10 +44,19 @@ import ba.pogon.sumarija.ui.theme.SumarijTheme
 import dagger.hilt.android.AndroidEntryPoint
 import org.json.JSONObject
 
+@OptIn(ExperimentalMaterial3Api::class)
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private var webView: WebView? = null
+    private var menuVisible by mutableStateOf(false)
+
+    inner class AndroidBridge {
+        @JavascriptInterface
+        fun showNativeMenu() {
+            runOnUiThread { menuVisible = true }
+        }
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,6 +66,10 @@ class MainActivity : ComponentActivity() {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                if (menuVisible) {
+                    menuVisible = false
+                    return
+                }
                 val wv = webView
                 if (wv != null && wv.canGoBack()) {
                     wv.goBack()
@@ -90,6 +119,7 @@ class MainActivity : ComponentActivity() {
                                     mediaPlaybackRequiresUserGesture = false
                                 }
                                 wv.setInitialScale(50)
+                                wv.addJavascriptInterface(AndroidBridge(), "Android")
                                 wv.webViewClient = object : WebViewClient() {
                                     override fun shouldOverrideUrlLoading(
                                         view: WebView,
@@ -112,6 +142,10 @@ class MainActivity : ComponentActivity() {
                                                     localStorage.setItem('sumarija_pass', $passwordForJs);
                                                     location.reload();
                                                 }
+                                                window.toggleUserMenu = function(e) {
+                                                    if (e) e.stopPropagation();
+                                                    if (typeof Android !== 'undefined') Android.showNativeMenu();
+                                                };
                                             })();
                                         """.trimIndent(), null)
                                     }
@@ -126,6 +160,71 @@ class MainActivity : ComponentActivity() {
                             onLoginSuccess = {},
                             viewModel = loginViewModel
                         )
+                    }
+                }
+
+                if (menuVisible) {
+                    ModalBottomSheet(
+                        onDismissRequest = { menuVisible = false },
+                        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                        containerColor = Color(0xFF1E3A5F),
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = "Meni",
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+                            )
+                            HorizontalDivider(color = Color.White.copy(alpha = 0.3f))
+                            Text(
+                                text = "Učitaj prikaze",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        menuVisible = false
+                                        webView?.evaluateJavascript("preloadAllViews(false, true)", null)
+                                    }
+                                    .padding(horizontal = 24.dp, vertical = 18.dp)
+                            )
+                            HorizontalDivider(color = Color.White.copy(alpha = 0.15f))
+                            Text(
+                                text = "Obriši keš",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        menuVisible = false
+                                        webView?.evaluateJavascript(
+                                            "if(typeof _doClearAllCache==='function') _doClearAllCache(); else if(typeof clearAllCache==='function') clearAllCache();",
+                                            null
+                                        )
+                                    }
+                                    .padding(horizontal = 24.dp, vertical = 18.dp)
+                            )
+                            HorizontalDivider(color = Color.White.copy(alpha = 0.15f))
+                            Text(
+                                text = "Odjava",
+                                color = Color(0xFFFF6B6B),
+                                fontSize = 16.sp,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        menuVisible = false
+                                        webView?.evaluateJavascript(
+                                            "if(typeof logout==='function') logout()",
+                                            null
+                                        )
+                                        loginViewModel.logout()
+                                    }
+                                    .padding(horizontal = 24.dp, vertical = 18.dp)
+                            )
+                            HorizontalDivider(color = Color.White.copy(alpha = 0.3f))
+                        }
                     }
                 }
             }
