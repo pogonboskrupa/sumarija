@@ -12,10 +12,19 @@ import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
+import androidx.hilt.navigation.compose.hiltViewModel
+import ba.pogon.sumarija.ui.login.LoginScreen
+import ba.pogon.sumarija.ui.login.LoginViewModel
+import ba.pogon.sumarija.ui.theme.SumarijTheme
 import dagger.hilt.android.AndroidEntryPoint
+import org.json.JSONObject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -24,6 +33,7 @@ class MainActivity : ComponentActivity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, true)
 
@@ -40,43 +50,80 @@ class MainActivity : ComponentActivity() {
         })
 
         setContent {
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = { context ->
-                    WebView(context).also { wv ->
-                        webView = wv
-                        wv.settings.apply {
-                            javaScriptEnabled = true
-                            domStorageEnabled = true
-                            databaseEnabled = true
-                            loadWithOverviewMode = true
-                            useWideViewPort = true
-                            setSupportZoom(true)
-                            builtInZoomControls = true
-                            displayZoomControls = false
-                            cacheMode = WebSettings.LOAD_DEFAULT
-                            mediaPlaybackRequiresUserGesture = false
-                        }
-                        wv.setInitialScale(1)
-                        wv.webViewClient = object : WebViewClient() {
-                            override fun shouldOverrideUrlLoading(
-                                view: WebView,
-                                request: WebResourceRequest
-                            ): Boolean = false
+            val loginViewModel: LoginViewModel = hiltViewModel()
+            splashScreen.setKeepOnScreenCondition { loginViewModel.isCheckingAuth }
 
-                            override fun onReceivedSslError(
-                                view: WebView,
-                                handler: SslErrorHandler,
-                                error: SslError
-                            ) {
-                                handler.proceed()
+            val uiState by loginViewModel.uiState.collectAsState()
+
+            SumarijTheme {
+                if (uiState.loggedInUser != null) {
+                    val user = uiState.loggedInUser!!
+                    val userJsonForJs = JSONObject().apply {
+                        put("success", true)
+                        put("username", user.username)
+                        put("fullName", user.fullName)
+                        put("type", user.type)
+                        put("role", user.role)
+                    }.toString()
+                    val passwordForJs = JSONObject.quote(user.password)
+
+                    AndroidView(
+                        modifier = Modifier.fillMaxSize(),
+                        factory = { context ->
+                            WebView(context).also { wv ->
+                                webView = wv
+                                wv.settings.apply {
+                                    javaScriptEnabled = true
+                                    domStorageEnabled = true
+                                    databaseEnabled = true
+                                    loadWithOverviewMode = true
+                                    useWideViewPort = true
+                                    setSupportZoom(true)
+                                    builtInZoomControls = true
+                                    displayZoomControls = false
+                                    cacheMode = WebSettings.LOAD_DEFAULT
+                                    mediaPlaybackRequiresUserGesture = false
+                                }
+                                wv.setInitialScale(1)
+                                wv.webViewClient = object : WebViewClient() {
+                                    override fun shouldOverrideUrlLoading(
+                                        view: WebView,
+                                        request: WebResourceRequest
+                                    ): Boolean = false
+
+                                    override fun onReceivedSslError(
+                                        view: WebView,
+                                        handler: SslErrorHandler,
+                                        error: SslError
+                                    ) {
+                                        handler.proceed()
+                                    }
+
+                                    override fun onPageFinished(view: WebView, url: String) {
+                                        view.evaluateJavascript("""
+                                            (function() {
+                                                if (!localStorage.getItem('sumarija_user') || !localStorage.getItem('sumarija_pass')) {
+                                                    localStorage.setItem('sumarija_user', JSON.stringify($userJsonForJs));
+                                                    localStorage.setItem('sumarija_pass', $passwordForJs);
+                                                    location.reload();
+                                                }
+                                            })();
+                                        """.trimIndent(), null)
+                                    }
+                                }
+                                wv.loadUrl("https://sumarijaboskrupa.work")
                             }
                         }
-                        wv.loadUrl("https://sumarijaboskrupa.work")
+                    )
+                } else {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        LoginScreen(
+                            onLoginSuccess = {},
+                            viewModel = loginViewModel
+                        )
                     }
                 }
-            )
+            }
         }
     }
 }
-
