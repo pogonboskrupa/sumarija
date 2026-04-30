@@ -7,6 +7,7 @@
         <item name="android:navigationBarColor">#1E3A5F</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
     </style>
+    <style name="Theme.SumarijaNative.NoSplash" parent="Theme.SumarijaNative" />
     <style name="Theme.SumarijaNative.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">#1E3A5F</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash</item>
