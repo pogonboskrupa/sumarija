@@ -39,8 +39,8 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideAuthRepository(prefs: PrefsManager, supabase: SupabaseClient): AuthRepository =
-        AuthRepository(prefs, supabase)
+    fun provideAuthRepository(prefs: PrefsManager): AuthRepository =
+        AuthRepository(prefs)
 
     @Provides
     @Singleton
