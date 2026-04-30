@@ -81,7 +81,7 @@ class MainActivity : ComponentActivity() {
                                     javaScriptEnabled = true
                                     domStorageEnabled = true
                                     databaseEnabled = true
-                                    loadWithOverviewMode = true
+                                    loadWithOverviewMode = false
                                     useWideViewPort = true
                                     setSupportZoom(true)
                                     builtInZoomControls = true
@@ -89,7 +89,7 @@ class MainActivity : ComponentActivity() {
                                     cacheMode = WebSettings.LOAD_DEFAULT
                                     mediaPlaybackRequiresUserGesture = false
                                 }
-                                wv.setInitialScale(1)
+                                wv.setInitialScale(50)
                                 wv.webViewClient = object : WebViewClient() {
                                     override fun shouldOverrideUrlLoading(
                                         view: WebView,
