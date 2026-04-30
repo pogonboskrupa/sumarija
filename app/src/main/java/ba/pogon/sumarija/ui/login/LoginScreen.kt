@@ -130,8 +130,12 @@ fun LoginScreen(
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = NavyBlue,
+                            unfocusedBorderColor = Color.Gray,
                             focusedLabelColor = NavyBlue,
-                            cursorColor = NavyBlue
+                            unfocusedLabelColor = Color.Gray,
+                            cursorColor = NavyBlue,
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black
                         )
                     )
 
@@ -168,8 +172,12 @@ fun LoginScreen(
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = NavyBlue,
+                            unfocusedBorderColor = Color.Gray,
                             focusedLabelColor = NavyBlue,
-                            cursorColor = NavyBlue
+                            unfocusedLabelColor = Color.Gray,
+                            cursorColor = NavyBlue,
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black
                         )
                     )
 
@@ -222,14 +230,6 @@ fun LoginScreen(
             }
 
             Spacer(modifier = Modifier.height(40.dp))
-
-            Text(
-                text = "Pogon Bošnjačka Krupa d.o.o.",
-                color = Color.White.copy(alpha = 0.4f),
-                fontSize = 11.sp
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
