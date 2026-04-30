@@ -49,7 +49,7 @@ class AuthRepository @Inject constructor(
                 val result = supabase.postgrest["mobile_korisnici"]
                     .select(Columns.ALL) {
                         filter {
-                            eq("username", username.trim().lowercase())
+                            eq("username", username.trim())
                             eq("password_hash", hash)
                             eq("active", true)
                         }
@@ -88,7 +88,7 @@ class AuthRepository @Inject constructor(
                 val result = supabase.postgrest["mobile_korisnici"]
                     .select(Columns.ALL) {
                         filter {
-                            eq("username", user.username.lowercase())
+                            eq("username", user.username.trim())
                             eq("password_hash", hash)
                             eq("active", true)
                         }
