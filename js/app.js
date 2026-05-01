@@ -1,5 +1,5 @@
         // VERSION INFO - Monthly report by departments
-        const APP_VERSION = '2026-05-01-v25-KUPCI-RANKING';
+        const APP_VERSION = '2026-05-01-v26-KUPCI-STAT-FIX';
         const BUILD_COMMIT = 'pending';
         window._preloadRenderMode = false;
 
@@ -5988,11 +5988,277 @@
             const contentEl = document.getElementById('kupci-statistika-content');
             if (!contentEl) return;
 
+            const isCurrentYear = year === new Date().getFullYear();
+
+            // Pokušaj koristiti već učitane kupci podatke (iz loadKupci)
+            if (isCurrentYear && kupciGodisnjiData.length > 0) {
+                window._kupciStatData = {
+                    godisnji: kupciGodisnjiData,
+                    miesecni: kupciMjesecniRawData || [],
+                    sortimentiNazivi: kupciSortimentiNazivi || [],
+                    year
+                };
+                _renderKupciStatShell(true);
+                selectStatPeriod('m' + new Date().getMonth());
+                return;
+            }
+
+            // Za prošle godine ili ako data nije učitana — fetch kupci endpoint
             contentEl.innerHTML = `
-                <div style="text-align:center; padding:40px; color:#6b7280;">
-                    <div style="font-size:28px; margin-bottom:10px;">⏳</div>
+                <div style="text-align:center; padding:32px; color:#6b7280;">
+                    <div style="font-size:24px; margin-bottom:8px;">⏳</div>
                     <div>Učitavanje podataka za ${year}. godinu...</div>
                 </div>`;
+
+            try {
+                const url = buildApiUrl('kupci', { year });
+                const data = await fetchWithCache(url, `cache_kupci_${year}`, false, 180000);
+
+                if (!data?.godisnji || data.godisnji.length === 0) {
+                    contentEl.innerHTML = `<div style="text-align:center; padding:40px; color:#9ca3af;">Nema podataka za ${year}. godinu</div>`;
+                    return;
+                }
+
+                window._kupciStatData = {
+                    godisnji: data.godisnji,
+                    miesecni: data.miesecni || [],
+                    sortimentiNazivi: data.sortimentiNazivi || [],
+                    year
+                };
+
+                _renderKupciStatShell(isCurrentYear);
+                selectStatPeriod(isCurrentYear ? 'm' + new Date().getMonth() : 'god');
+
+            } catch (e) {
+                contentEl.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Greška: ${e.message}</div>`;
+            }
+        }
+
+        function _renderKupciStatShell(isCurrentYear) {
+            const contentEl = document.getElementById('kupci-statistika-content');
+            if (!contentEl) return;
+
+            const MJ = ['Jan','Feb','Mar','Apr','Maj','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+            const btnBase = 'padding:5px 11px;font-size:12px;border-radius:6px;border:1.5px solid #d1d5db;background:#fff;cursor:pointer;white-space:nowrap;transition:all 0.15s;color:#374151;';
+
+            let html = `<div id="kupci-stat-periods" style="margin-bottom:16px; display:flex; flex-direction:column; gap:8px;">`;
+
+            if (isCurrentYear) {
+                html += `<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                    <span style="font-size:11px;font-weight:600;color:#6b7280;white-space:nowrap;min-width:88px;">Kratkoročno</span>`;
+                [['10d','Zad. 10 dana'],['20d','Zad. 20 dana'],['30d','Zad. 30 dana']].forEach(([k,l]) => {
+                    html += `<button id="statbtn-${k}" onclick="selectStatPeriod('${k}')" style="${btnBase}">${l}</button>`;
+                });
+                html += `</div>`;
+            }
+
+            html += `<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                <span style="font-size:11px;font-weight:600;color:#6b7280;white-space:nowrap;min-width:88px;">Miesec</span>`;
+            MJ.forEach((name, i) => {
+                html += `<button id="statbtn-m${i}" onclick="selectStatPeriod('m${i}')" style="${btnBase}">${name}</button>`;
+            });
+            html += `</div>`;
+
+            html += `<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                <span style="font-size:11px;font-weight:600;color:#6b7280;white-space:nowrap;min-width:88px;">Kvartal/God.</span>`;
+            [['q1','Q1'],['q2','Q2'],['q3','Q3'],['q4','Q4'],['god','Cijela godina']].forEach(([k,l]) => {
+                html += `<button id="statbtn-${k}" onclick="selectStatPeriod('${k}')" style="${btnBase}">${l}</button>`;
+            });
+            html += `</div></div><div id="kupci-stat-table"></div>`;
+
+            contentEl.innerHTML = html;
+        }
+
+        function selectStatPeriod(periodKey) {
+            document.querySelectorAll('#kupci-stat-periods button').forEach(btn => {
+                btn.style.background = '#fff';
+                btn.style.borderColor = '#d1d5db';
+                btn.style.color = '#374151';
+                btn.style.fontWeight = 'normal';
+            });
+            const activeBtn = document.getElementById('statbtn-' + periodKey);
+            if (activeBtn) {
+                activeBtn.style.background = '#0369a1';
+                activeBtn.style.borderColor = '#0369a1';
+                activeBtn.style.color = '#fff';
+                activeBtn.style.fontWeight = '700';
+            }
+
+            if (!window._kupciStatData) { loadKupciStatistika(); return; }
+
+            if (['10d','20d','30d'].includes(periodKey)) {
+                _loadShortTermStat(parseInt(periodKey));
+                return;
+            }
+
+            const { godisnji, miesecni, sortimentiNazivi, year } = window._kupciStatData;
+            const MJ_NAMES = ['Januar','Februar','Mart','April','Maj','Juni','Juli','August','Septembar','Oktobar','Novembar','Decembar'];
+
+            let rows, label;
+
+            if (periodKey === 'god') {
+                rows = godisnji;
+                label = `Cijela ${year}. godina`;
+            } else if (periodKey.startsWith('m')) {
+                const m = parseInt(periodKey.slice(1));
+                rows = (miesecni || []).filter(r => r.miesec === MJ_NAMES[m]);
+                label = `${MJ_NAMES[m]} ${year}`;
+            } else if (periodKey.startsWith('q')) {
+                const q = parseInt(periodKey[1]) - 1;
+                const qMonths = MJ_NAMES.slice(q * 3, q * 3 + 3);
+                const agg = {};
+                (miesecni || []).forEach(r => {
+                    if (!r.kupac || !qMonths.includes(r.miesec)) return;
+                    if (!agg[r.kupac]) agg[r.kupac] = { kupac: r.kupac, sortimenti: {}, ukupno: 0 };
+                    if (r.sortimenti) {
+                        Object.entries(r.sortimenti).forEach(([s, v]) => {
+                            if (v > 0) agg[r.kupac].sortimenti[s] = (agg[r.kupac].sortimenti[s] || 0) + v;
+                        });
+                    }
+                    agg[r.kupac].ukupno += (r.ukupno || 0);
+                });
+                rows = Object.values(agg);
+                const QLAB = ['Jan–Mar','Apr–Jun','Jul–Sep','Okt–Dec'];
+                label = `Q${q + 1} (${QLAB[q]}) ${year}`;
+            } else {
+                rows = godisnji;
+                label = String(year);
+            }
+
+            const tableEl = document.getElementById('kupci-stat-table');
+            if (tableEl) tableEl.innerHTML = _buildKupciRankingTable(rows, label, sortimentiNazivi);
+        }
+
+        async function _loadShortTermStat(days) {
+            const tableEl = document.getElementById('kupci-stat-table');
+            if (!tableEl || !window._kupciStatData) return;
+            const { year, sortimentiNazivi } = window._kupciStatData;
+
+            tableEl.innerHTML = `<div style="text-align:center; padding:28px; color:#6b7280;"><div style="font-size:20px;margin-bottom:8px;">⏳</div>Učitavanje dnevnih podataka...</div>`;
+
+            const now = new Date();
+            const monthsToLoad = [now.getMonth()];
+            if (now.getDate() <= days) monthsToLoad.push(now.getMonth() === 0 ? 11 : now.getMonth() - 1);
+
+            const results = await Promise.all(
+                monthsToLoad.map(month => {
+                    const url = buildApiUrl('otpremaci-daily', { year, month });
+                    const cacheKey = `cache_otpremaci_daily_${year}_${month}`;
+                    return fetchWithCache(url, cacheKey).catch(() => null);
+                })
+            );
+
+            const allRows = [];
+            const sortSet = new Set(sortimentiNazivi || []);
+            results.forEach(data => {
+                if (data?.data) { allRows.push(...data.data); }
+                if (data?.sortimentiNazivi) data.sortimentiNazivi.forEach(s => sortSet.add(s));
+            });
+
+            const today = new Date(); today.setHours(23, 59, 59, 999);
+            const from = new Date(); from.setDate(from.getDate() - days + 1); from.setHours(0, 0, 0, 0);
+
+            function parseDatum(d) {
+                if (!d) return null;
+                const p = d.split('.');
+                return p.length < 3 ? null : new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));
+            }
+
+            const agg = {};
+            allRows.filter(r => { const d = parseDatum(r.datum); return d && d >= from && d <= today; })
+                .forEach(row => {
+                    if (!row.kupac) return;
+                    if (!agg[row.kupac]) agg[row.kupac] = { kupac: row.kupac, sortimenti: {}, ukupno: 0 };
+                    if (row.sortimenti) {
+                        Object.entries(row.sortimenti).forEach(([s, v]) => {
+                            if (v > 0) {
+                                agg[row.kupac].sortimenti[s] = (agg[row.kupac].sortimenti[s] || 0) + v;
+                                agg[row.kupac].ukupno += v;
+                            }
+                        });
+                    }
+                });
+
+            tableEl.innerHTML = _buildKupciRankingTable(Object.values(agg), `Zadnjih ${days} dana`, [...sortSet]);
+        }
+
+        function _buildKupciRankingTable(rows, periodLabel, sortimentiNazivi) {
+            if (!rows || rows.length === 0) {
+                return `<div style="text-align:center; padding:40px; color:#9ca3af; font-size:14px;">Nema podataka za odabrani period</div>`;
+            }
+
+            const COLS = ['TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'TRUPCI L', 'OGR.DUGI', 'OGR.CIJEPANI'];
+
+            function normS(s) {
+                return (s || '').toLowerCase()
+                    .replace(/č|ć/g, 'c').replace(/š/g, 's').replace(/ž/g, 'z').replace(/đ/g, 'd')
+                    .replace(/[.\s_\-\/]/g, '');
+            }
+
+            const colKeys = COLS.map(col => {
+                const n = normS(col);
+                return (sortimentiNazivi || []).find(s => normS(s) === n) ||
+                       (sortimentiNazivi || []).find(s => normS(s).startsWith(n) || n.startsWith(normS(s))) || null;
+            });
+
+            const kupciList = [...rows]
+                .filter(r => r.kupac && (r.ukupno || 0) > 0)
+                .sort((a, b) => (b.ukupno || 0) - (a.ukupno || 0));
+
+            if (kupciList.length === 0) {
+                return `<div style="text-align:center; padding:40px; color:#9ca3af; font-size:14px;">Nema podataka za odabrani period</div>`;
+            }
+
+            const gTotals = new Array(COLS.length).fill(0);
+            let gTotal = 0;
+
+            let html = `<div style="margin-bottom:10px; color:#6b7280; font-size:13px;">
+                Period: <strong style="color:#0369a1;">${periodLabel}</strong>
+                &nbsp;·&nbsp; <strong style="color:#0369a1;">${kupciList.length}</strong> kupac${kupciList.length !== 1 ? 'a' : ''}
+            </div>
+            <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:480px;">
+            <thead>
+            <tr style="background:linear-gradient(135deg,#0369a1,#075985); color:white; text-align:right;">
+                <th style="padding:10px 10px; text-align:center; width:34px;">#</th>
+                <th style="padding:10px 14px; text-align:left; white-space:nowrap;">Kupac</th>`;
+            COLS.forEach(col => {
+                html += `<th style="padding:10px 10px; white-space:nowrap; font-size:11px;">${col}</th>`;
+            });
+            html += `<th style="padding:10px 12px; background:rgba(0,0,0,0.2); white-space:nowrap;">UKUPNO</th>
+            </tr></thead><tbody>`;
+
+            kupciList.forEach((k, idx) => {
+                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
+                const rowBg = idx % 2 === 0 ? '#f0f9ff' : '#fff';
+                html += `<tr style="background:${rowBg};" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='${rowBg}'">
+                    <td style="padding:8px 10px; text-align:center;">${medal}</td>
+                    <td style="padding:8px 14px; font-weight:600; color:#0369a1; white-space:nowrap;">${k.kupac}</td>`;
+                colKeys.forEach((key, i) => {
+                    const v = key ? (k.sortimenti?.[key] || 0) : 0;
+                    gTotals[i] += v;
+                    html += `<td style="padding:8px 10px; text-align:right; font-family:'Courier New',monospace; font-size:12px; ${v > 0 ? 'color:#155e75; font-weight:700;' : 'color:#d1d5db;'}">
+                        ${v > 0 ? v.toFixed(2) : '—'}</td>`;
+                });
+                gTotal += (k.ukupno || 0);
+                html += `<td style="padding:8px 12px; text-align:right; font-weight:700; font-family:'Courier New',monospace; font-size:13px; color:#1e3a8a; background:#eff6ff;">
+                    ${(k.ukupno || 0).toFixed(2)}</td></tr>`;
+            });
+
+            html += `<tr style="background:linear-gradient(135deg,#0369a1,#075985); color:white; font-weight:700;">
+                <td colspan="2" style="padding:9px 14px; text-align:left;">UKUPNO</td>`;
+            gTotals.forEach(v => {
+                html += `<td style="padding:9px 10px; text-align:right; font-family:'Courier New',monospace; font-size:12px;">${v > 0 ? v.toFixed(2) : '—'}</td>`;
+            });
+            html += `<td style="padding:9px 12px; text-align:right; font-family:'Courier New',monospace; font-size:14px; font-weight:900; background:rgba(0,0,0,0.2);">${gTotal.toFixed(2)}</td>
+            </tr></tbody></table></div>`;
+
+            return html;
+        }
+
+        // ============================================
+        // 🏢 KUPAC DETAILS MODAL - PRIKAZ DETALJA KUPCA
+        // ============================================
 
             try {
                 const monthResults = await Promise.all(
