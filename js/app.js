@@ -1,9 +1,11 @@
         // VERSION INFO - Monthly report by departments
-        const APP_VERSION = '2026-04-20-v19-SUPABASE-MIGRATION';
+        const APP_VERSION = '2026-05-01-v23-STATISTIKA-PO-KUPCU';
         const BUILD_COMMIT = 'pending';
+        window._preloadRenderMode = false;
 
         // Helper: provjeri da li je tab još uvijek aktivan (sprečava bleeding async sadržaja)
         function isActiveTab(tabName) {
+            if (window._preloadRenderMode) return true;
             return window.currentTab === tabName;
         }
 
@@ -749,6 +751,81 @@
             return Promise.all(results);
         }
 
+        // Sakrij sve content divove osim aktivnog taba (restore nakon preload rendera)
+        function _restoreTabVisibility() {
+            document.querySelectorAll('.container').forEach(function(el) {
+                if (el.id && el.id.endsWith('-content')) el.classList.add('hidden');
+            });
+            const el = window.currentTab && document.getElementById(window.currentTab + '-content');
+            if (el) el.classList.remove('hidden');
+        }
+
+        // Pre-renderuj sve tabove i subtabove pozivanjem load funkcija u preload modu
+        async function _preloadRenderAllTabs(userType) {
+            const now = new Date();
+            const yr = String(now.getFullYear()), mo = String(now.getMonth());
+            const _s = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
+            const callSafe = async function(fn) {
+                try { if (typeof fn === 'function') await fn(); }
+                catch(e) { console.warn('[PRELOAD RENDER]', fn && fn.name, e); }
+            };
+
+            if (userType === 'admin') {
+                await callSafe(loadDashboard);
+                await callSafe(loadKupci);
+                await callSafe(loadStanjeZaliha);
+                await callSafe(loadMjesecniSortimenti);
+                await callSafe(loadPrimaci); await callSafe(loadPrimaciDaily);
+                await callSafe(loadPrimaciByRadiliste); await callSafe(loadPrimaciByIzvodjac);
+                await callSafe(loadPrimaciSortimentiByPrimac);
+                await callSafe(loadOtpremaci); await callSafe(loadOtremaciDaily);
+                await callSafe(loadOtremaciByRadiliste); await callSafe(loadOtremaciPoKupcima);
+                await callSafe(loadOtremaciSortimentiByOtpremac);
+                await callSafe(loadPrimaciAdminTab);
+                await callSafe(loadPendingUnosi);
+                _s('izvjestaji-sedmicni-year', yr); _s('izvjestaji-sedmicni-month', mo);
+                _s('izvjestaji-miesecni-year', yr);  _s('izvjestaji-miesecni-month', mo);
+                await callSafe(loadIzvjestajiSedmicni); await callSafe(loadIzvjestajiMjesecni);
+
+            } else if (userType === 'poslovođa' || userType === 'poslovodja') {
+                await callSafe(loadPoslovodjaStanje);
+                await callSafe(loadPoslovodjaSjeca);
+                await callSafe(loadPoslovodjaOtprema);
+                await callSafe(loadPoslovodjaPregled);
+                _s('izvjestaji-sedmicni-year', yr); _s('izvjestaji-sedmicni-month', mo);
+                _s('izvjestaji-miesecni-year', yr);  _s('izvjestaji-miesecni-month', mo);
+                _s('izvjestaji-sedmicni-radnik-year', yr); _s('izvjestaji-sedmicni-radnik-month', mo);
+                await callSafe(loadIzvjestajiSedmicni); await callSafe(loadIzvjestajiMjesecni);
+                await callSafe(loadIzvjestajiSedmicniRadnik);
+
+            } else if (userType === 'operativa') {
+                await callSafe(loadDashboard);
+                await callSafe(loadOperativa);
+                await callSafe(loadKupci);
+                await callSafe(loadMjesecniSortimenti);
+                await callSafe(loadStanjeZaliha);
+                _s('izvjestaji-sedmicni-year', yr); _s('izvjestaji-sedmicni-month', mo);
+                _s('izvjestaji-miesecni-year', yr);  _s('izvjestaji-miesecni-month', mo);
+                await callSafe(loadIzvjestajiSedmicni); await callSafe(loadIzvjestajiMjesecni);
+
+            } else if (userType === 'primac') {
+                await callSafe(loadPrimacPersonal);
+                await callSafe(loadPrimacGodisnji);
+                await callSafe(loadPrimacOdjeli);
+                _s('primac-sedmicni-year', yr); _s('primac-sedmicni-month', mo);
+                _s('primac-mjesecni-year', yr);  _s('primac-mjesecni-month', mo);
+                await callSafe(loadPrimacSedmicni); await callSafe(loadPrimacMjesecni);
+
+            } else if (userType === 'otpremac') {
+                await callSafe(loadOtpremacPersonal);
+                await callSafe(loadOtpremacGodisnji);
+                await callSafe(loadOtpremacOdjeli);
+                _s('otpremac-sedmicni-year', yr); _s('otpremac-sedmicni-month', mo);
+                _s('otpremac-miesecni-year', yr);  _s('otpremac-miesecni-month', mo);
+                await callSafe(loadOtpremacSedmicni); await callSafe(loadOtpremacMjesecni);
+            }
+        }
+
         // Preload all views function
         // silent = ne prikazuje notifikacije (za auto-preload pri loginu)
         // forceRefresh = brisuje cache i fetchuje svježe podatke (za ručni klik)
@@ -777,45 +854,44 @@
                         { name: 'Operativa - Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year, timeout: 60000 },
                         { name: 'Operativa (Stats)', url: buildApiUrl('stats', { year }), cacheKey: 'cache_stats_' + year, timeout: 180000 },
                         { name: 'Stanje Odjela', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_odjeli_' + year, timeout: 180000 },
-                        // SKIP: Stanje Odjela Admin se učitava lazy (kad korisnik klikne na tab) jer može trajati dugo
-                        // { name: 'Stanje Odjela Admin', url: buildApiUrl('stanje-odjela'), cacheKey: 'cache_stanje_odjela_admin', timeout: 180000 },
                         { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
-                        { name: 'Pending Unosi', url: buildApiUrl('pending-unosi'), cacheKey: 'cache_pending_unosi', timeout: 120000 },
                         { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni-sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year, timeout: 120000 },
-                        { name: 'Dinamika', url: buildApiUrl('get_dinamika', { year }), cacheKey: 'cache_dinamika_' + year, timeout: 120000 },
 
                         // PRIMACI meni + SVA 4 PODMENIJA
                         { name: 'Primaci - Monthly', url: buildApiUrl('primaci', { year }), cacheKey: 'cache_primaci_' + year, timeout: 180000 },
                         { name: 'Primaci - Daily', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_primaci_daily_' + year + '_' + currentMonth, timeout: 180000 },
                         { name: 'Primaci - Po radilištu', url: buildApiUrl('primaci-by-radiliste', { year }), cacheKey: 'cache_primaci_radiliste_' + year, timeout: 180000 },
                         { name: 'Primaci - Po izvođaču', url: buildApiUrl('primaci-by-izvodjac', { year }), cacheKey: 'cache_primaci_izvodjac_' + year, timeout: 180000 },
+                        { name: 'Primaci - Sortimenti po primaču', url: buildApiUrl('primaci-sortimenti-by-primac', { year, month: currentMonth }), cacheKey: 'cache_primaci_sort_primac_' + year + '_' + currentMonth, timeout: 180000 },
 
                         // OTPREMACI meni + SVA 3 PODMENIJA
                         { name: 'Otpremaci - Monthly', url: buildApiUrl('otpremaci', { year }), cacheKey: 'cache_otpremaci_' + year, timeout: 180000 },
                         { name: 'Otpremaci - Daily', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_daily_' + year + '_' + currentMonth, timeout: 180000 },
                         { name: 'Otpremaci - Po radilištu', url: buildApiUrl('otpremaci-by-radiliste', { year }), cacheKey: 'cache_otpremaci_radiliste_' + year, timeout: 180000 },
+                        { name: 'Otpremaci - Sortimenti po otpremaču', url: buildApiUrl('otpremaci-sortimenti-by-otpremac', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_sort_otpremac_' + year + '_' + currentMonth, timeout: 180000 },
 
                         // STANJE ZALIHA
                         { name: 'Stanje Zaliha', url: buildApiUrl('stanje-zaliha'), cacheKey: 'cache_stanje_zaliha', timeout: 180000 },
-
-                        // PRIMACI ADMIN (koristi isti endpoint kao primaci monthly)
-                        { name: 'Primaci Admin', url: buildApiUrl('primaci', { year }), cacheKey: 'cache_primaci_' + year, timeout: 180000 },
-
-                        // SORTIMENTI PO PRIMAC/OTPREMAC (tekući mjesec)
-                        { name: 'Primaci - Sortimenti po primaču', url: buildApiUrl('primaci-sortimenti-by-primac', { year, month: currentMonth }), cacheKey: 'cache_primaci_sort_primac_' + year + '_' + currentMonth, timeout: 180000 },
-                        { name: 'Otpremaci - Sortimenti po otpremaču', url: buildApiUrl('otpremaci-sortimenti-by-otpremac', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_sort_otpremac_' + year + '_' + currentMonth, timeout: 180000 },
-
-                        // OTPREMACI PO KUPCIMA (koristi isti endpoint kao kupci)
-                        { name: 'Otpremaci - Po kupcima', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
+                        // IZVJEŠTAJI tab (sedmični + mjesečni, primka + otprema)
+                        { name: 'Izvještaji - Sedmični primka', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_sedmicni_primka_' + year + '_' + currentMonth, timeout: 180000 },
+                        { name: 'Izvještaji - Sedmični otprema', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_sedmicni_otprema_' + year + '_' + currentMonth, timeout: 180000 },
+                        { name: 'Izvještaji - Mjesečni primka', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_miesecni_primka_' + year + '_' + currentMonth, timeout: 180000 },
+                        { name: 'Izvještaji - Mjesečni otprema', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_miesecni_otprema_' + year + '_' + currentMonth, timeout: 180000 },
                     ];
 
                 } else if (userType === 'poslovođa' || userType === 'poslovodja') {
+                    const currentMonth = new Date().getMonth(); // 0-11
                     var pName = currentUser ? currentUser.fullName : '';
                     var pCK = 'cache_stanje_zaliha_' + (pName || 'all').replace(/\s+/g, '_');
                     allViews = [
                         { name: 'Stanje Zaliha', url: buildApiUrl('stanje-zaliha', { poslovodja: pName }), cacheKey: pCK, timeout: 60000 },
                         { name: 'Primke (Sječa)', url: buildApiUrl('primke'), cacheKey: 'cache_primke_sjeca', timeout: 120000 },
-                        { name: 'Otpreme', url: buildApiUrl('otpreme'), cacheKey: 'cache_otpreme_tab', timeout: 120000 }
+                        { name: 'Otpreme', url: buildApiUrl('otpreme'), cacheKey: 'cache_otpreme_tab', timeout: 120000 },
+                        // IZVJEŠTAJI tab (sedmični + mjesečni, primka + otprema)
+                        { name: 'Izvještaji - Sedmični primka', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_sedmicni_primka_' + year + '_' + currentMonth, timeout: 180000 },
+                        { name: 'Izvještaji - Sedmični otprema', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_sedmicni_otprema_' + year + '_' + currentMonth, timeout: 180000 },
+                        { name: 'Izvještaji - Mjesečni primka', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_miesecni_primka_' + year + '_' + currentMonth, timeout: 180000 },
+                        { name: 'Izvještaji - Mjesečni otprema', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_miesecni_otprema_' + year + '_' + currentMonth, timeout: 180000 },
                     ];
 
                 } else if (userType === 'operativa') {
@@ -824,7 +900,12 @@
                         { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year, timeout: 180000 },
                         { name: 'Operativa (Stats)', url: buildApiUrl('stats', { year }), cacheKey: 'cache_stats_' + year, timeout: 180000 },
                         { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
-                        { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni-sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year, timeout: 120000 }
+                        { name: 'Mjesеčni Sortimenti', url: buildApiUrl('mjesecni-sortimenti', { year }), cacheKey: 'cache_miesecni_sortimenti_' + year, timeout: 120000 },
+                        // IZVJEŠTAJI tab (sedmični + mjesečni, primka + otprema)
+                        { name: 'Izvještaji - Sedmični primka', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_sedmicni_primka_' + year + '_' + currentMonth, timeout: 180000 },
+                        { name: 'Izvještaji - Sedmični otprema', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_sedmicni_otprema_' + year + '_' + currentMonth, timeout: 180000 },
+                        { name: 'Izvještaji - Mjesečni primka', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_miesecni_primka_' + year + '_' + currentMonth, timeout: 180000 },
+                        { name: 'Izvještaji - Mjesečni otprema', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_miesecni_otprema_' + year + '_' + currentMonth, timeout: 180000 },
                     ];
 
                 } else if (userType === 'primac') {
@@ -919,6 +1000,19 @@
                 }, 8); // Max 8 paralelnih poziva
 
                 console.log(`[PRELOAD] Finished! Loaded: ${totalLoaded}/${totalViews}, Failed: ${totalFailed}`);
+
+                // === RENDER FAZA: pre-popula DOM svih tabova i subtabova ===
+                console.log('[PRELOAD] Pokretanje render faze...');
+                window._preloadRenderMode = true;
+                try {
+                    await _preloadRenderAllTabs(userType);
+                    console.log('[PRELOAD] Render faza završena.');
+                } catch (renderErr) {
+                    console.warn('[PRELOAD] Render faza greška:', renderErr);
+                } finally {
+                    window._preloadRenderMode = false;
+                    _restoreTabVisibility();
+                }
 
                 // Ukloni progress toast i prikaži rezultat
                 if (!silent) {
@@ -5900,6 +5994,198 @@
         }
 
         // ============================================
+        // 📈 STATISTIKA PO KUPCU — broj otpremnica
+        // ============================================
+
+        async function loadKupciStatistika() {
+            const yearEl = document.getElementById('kupci-statistika-year');
+            const year = parseInt(yearEl?.value || new Date().getFullYear());
+            const contentEl = document.getElementById('kupci-statistika-content');
+            if (!contentEl) return;
+
+            contentEl.innerHTML = `
+                <div style="text-align:center; padding:40px; color:#6b7280;">
+                    <div style="font-size:28px; margin-bottom:10px;">⏳</div>
+                    <div>Učitavanje podataka za ${year}. godinu...</div>
+                </div>`;
+
+            try {
+                const monthResults = await Promise.all(
+                    Array.from({ length: 12 }, (_, month) => {
+                        const url = buildApiUrl('otpremaci-daily', { year, month });
+                        const cacheKey = `cache_otpremaci_daily_${year}_${month}`;
+                        return fetchWithCache(url, cacheKey).catch(() => null);
+                    })
+                );
+
+                const allData = [];
+                const sortimentiSet = new Set();
+                monthResults.forEach(data => {
+                    if (data?.data && Array.isArray(data.data)) {
+                        allData.push(...data.data);
+                        if (data.sortimentiNazivi) data.sortimentiNazivi.forEach(s => sortimentiSet.add(s));
+                    }
+                });
+
+                const kupciSet = new Set(allData.map(r => r.kupac).filter(Boolean));
+                const kupacSel = document.getElementById('kupci-statistika-kupac');
+                const prevVal = kupacSel?.value || '';
+                if (kupacSel) {
+                    kupacSel.innerHTML = '<option value="">-- Odaberi kupca --</option>' +
+                        [...kupciSet].sort().map(k =>
+                            `<option value="${k}"${k === prevVal ? ' selected' : ''}>${k}</option>`
+                        ).join('');
+                }
+
+                window._kupciStatData = { allData, sortimentiNazivi: [...sortimentiSet], year };
+
+                const selectedKupac = kupacSel?.value;
+                if (selectedKupac) {
+                    renderKupciStatistikaForKupac(selectedKupac, allData, [...sortimentiSet], year);
+                } else {
+                    contentEl.innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af; font-size:14px;">Odaberi kupca za prikaz statistike</div>';
+                }
+            } catch (e) {
+                contentEl.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Greška: ${e.message}</div>`;
+            }
+        }
+
+        function onKupciStatistikaKupacChange() {
+            const kupacSel = document.getElementById('kupci-statistika-kupac');
+            const kupacName = kupacSel?.value;
+            const contentEl = document.getElementById('kupci-statistika-content');
+            if (!kupacName) {
+                if (contentEl) contentEl.innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af; font-size:14px;">Odaberi kupca za prikaz statistike</div>';
+                return;
+            }
+            if (!window._kupciStatData) { loadKupciStatistika(); return; }
+            const { allData, sortimentiNazivi, year } = window._kupciStatData;
+            renderKupciStatistikaForKupac(kupacName, allData, sortimentiNazivi, year);
+        }
+
+        function renderKupciStatistikaForKupac(kupacName, allData, sortimentiNazivi, year) {
+            const contentEl = document.getElementById('kupci-statistika-content');
+            if (!contentEl) return;
+
+            const rows = allData.filter(r => r.kupac?.toLowerCase() === kupacName.toLowerCase());
+
+            function parseDatum(datum) {
+                if (!datum) return null;
+                const parts = datum.split('.');
+                if (parts.length < 3) return null;
+                return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+            }
+
+            function countPerSort(filteredRows) {
+                const counts = {};
+                sortimentiNazivi.forEach(s => { counts[s] = 0; });
+                filteredRows.forEach(row => {
+                    if (row.sortimenti) {
+                        sortimentiNazivi.forEach(s => {
+                            if ((row.sortimenti[s] || 0) > 0) counts[s]++;
+                        });
+                    }
+                });
+                return counts;
+            }
+
+            const today = new Date();
+            today.setHours(23, 59, 59, 999);
+
+            function filterLastN(n) {
+                const from = new Date();
+                from.setDate(from.getDate() - n + 1);
+                from.setHours(0, 0, 0, 0);
+                return rows.filter(r => { const d = parseDatum(r.datum); return d && d >= from && d <= today; });
+            }
+
+            function filterMonth(m) {
+                return rows.filter(r => { const d = parseDatum(r.datum); return d && d.getMonth() === m; });
+            }
+
+            function filterMonths(arr) {
+                return rows.filter(r => { const d = parseDatum(r.datum); return d && arr.includes(d.getMonth()); });
+            }
+
+            const MONTHS = ['Januar','Februar','Mart','April','Maj','Juni','Juli','August','Septembar','Oktobar','Novembar','Decembar'];
+
+            const kratkorocni = [
+                { label: 'Zadnjih 10 dana', rows: filterLastN(10) },
+                { label: 'Zadnjih 20 dana', rows: filterLastN(20) },
+                { label: 'Zadnjih 30 dana', rows: filterLastN(30) },
+            ];
+
+            const mjesecniData = MONTHS.map((name, i) => ({ label: name, rows: filterMonth(i) }));
+
+            const kvartalniData = [
+                { label: 'Q1 — Jan, Feb, Mar', rows: filterMonths([0,1,2]) },
+                { label: 'Q2 — Apr, Maj, Jun', rows: filterMonths([3,4,5]) },
+                { label: 'Q3 — Jul, Aug, Sep', rows: filterMonths([6,7,8]) },
+                { label: 'Q4 — Okt, Nov, Dec', rows: filterMonths([9,10,11]) },
+            ];
+
+            function buildStatTable(items, title, color, showTotals) {
+                let html = `<div style="margin-bottom:28px;">
+                    <div style="font-size:14px; font-weight:700; color:${color}; margin-bottom:10px; padding-bottom:6px; border-bottom:2px solid ${color}33;">${title}</div>
+                    <div style="overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:300px;">
+                    <thead><tr style="background:${color}; color:white; text-align:left;">
+                        <th style="padding:9px 14px; white-space:nowrap;">Period</th>`;
+                sortimentiNazivi.forEach(s => {
+                    html += `<th style="padding:9px 14px; text-align:center; white-space:nowrap;">${s}</th>`;
+                });
+                html += `<th style="padding:9px 14px; text-align:center; font-weight:700;">Ukupno</th>
+                    </tr></thead><tbody>`;
+
+                const totalBySort = {};
+                sortimentiNazivi.forEach(s => { totalBySort[s] = 0; });
+                let grandTotal = 0;
+
+                items.forEach((item, idx) => {
+                    const counts = countPerSort(item.rows);
+                    const rowTotal = item.rows.length;
+                    const bg = idx % 2 === 0 ? '#f9fafb' : '#ffffff';
+                    html += `<tr style="background:${bg};">
+                        <td style="padding:8px 14px; font-weight:600; white-space:nowrap;">${item.label}</td>`;
+                    sortimentiNazivi.forEach(s => {
+                        const v = counts[s] || 0;
+                        totalBySort[s] += v;
+                        html += `<td style="padding:8px 14px; text-align:center;">${v > 0 ? `<strong>${v}</strong>` : '<span style="color:#d1d5db;">—</span>'}</td>`;
+                    });
+                    html += `<td style="padding:8px 14px; text-align:center; font-weight:700; color:${color};">${rowTotal > 0 ? rowTotal : '<span style="color:#d1d5db;">—</span>'}</td></tr>`;
+                    grandTotal += rowTotal;
+                });
+
+                if (showTotals) {
+                    html += `<tr style="background:${color}15; font-weight:700; border-top:2px solid ${color}44;">
+                        <td style="padding:9px 14px; color:${color};">Ukupno</td>`;
+                    sortimentiNazivi.forEach(s => {
+                        html += `<td style="padding:9px 14px; text-align:center; color:${color};">${totalBySort[s] || '—'}</td>`;
+                    });
+                    html += `<td style="padding:9px 14px; text-align:center; color:${color};">${grandTotal}</td></tr>`;
+                }
+
+                html += `</tbody></table></div></div>`;
+                return html;
+            }
+
+            const isCurrentYear = parseInt(year) === new Date().getFullYear();
+            let html = `<div style="margin-bottom:20px; padding:12px 16px; background:#f0f9ff; border-radius:8px; border-left:4px solid #0891b2; display:flex; gap:24px; flex-wrap:wrap; align-items:center;">
+                <strong style="color:#0891b2; font-size:15px;">🏢 ${kupacName}</strong>
+                <span style="color:#6b7280; font-size:13px;">Godina: <strong>${year}</strong></span>
+                <span style="color:#6b7280; font-size:13px;">Ukupno otprema: <strong style="color:#0369a1;">${rows.length}</strong></span>
+            </div>`;
+
+            if (isCurrentYear) {
+                html += buildStatTable(kratkorocni, '⏱️ Kratkoročni prikaz (broj otpremnica)', '#0891b2', false);
+            }
+            html += buildStatTable(mjesecniData, '📅 Miesečni prikaz (broj otpremnica)', '#0369a1', true);
+            html += buildStatTable(kvartalniData, '🗓️ Kvartalni prikaz (broj otpremnica)', '#7c3aed', true);
+
+            contentEl.innerHTML = html;
+        }
+
+        // ============================================
         // 🏢 KUPAC DETAILS MODAL - PRIKAZ DETALJA KUPCA
         // ============================================
 
@@ -5931,30 +6217,26 @@
                 const allData = [];
                 const sortimentiSet = new Set();
 
-                // Učitaj podatke za sve mjesece (0-11)
-                for (let month = 0; month < 12; month++) {
-                    const url = buildApiUrl('otpremaci-daily', { year, month });
-                    const cacheKey = `cache_otpremaci_daily_${year}_${month}`;
+                // Učitaj sve mjesece paralelno (Promise.all umjesto sekvencijalnog await)
+                const monthResults = await Promise.all(
+                    Array.from({ length: 12 }, (_, month) => {
+                        const url = buildApiUrl('otpremaci-daily', { year, month });
+                        const cacheKey = `cache_otpremaci_daily_${year}_${month}`;
+                        return fetchWithCache(url, cacheKey).catch(() => null);
+                    })
+                );
 
-                    try {
-                        const data = await fetchWithCache(url, cacheKey);
-                        if (data && data.data && Array.isArray(data.data)) {
-                            // Filtriraj samo za ovog kupca
-                            const kupacData = data.data.filter(row =>
-                                row.kupac && row.kupac.toLowerCase() === kupacName.toLowerCase()
-                            );
-                            allData.push(...kupacData);
-
-                            // Skupi sve sortimente
-                            if (data.sortimentiNazivi) {
-                                data.sortimentiNazivi.forEach(s => sortimentiSet.add(s));
-                            }
+                monthResults.forEach(data => {
+                    if (data && data.data && Array.isArray(data.data)) {
+                        const kupacData = data.data.filter(row =>
+                            row.kupac && row.kupac.toLowerCase() === kupacName.toLowerCase()
+                        );
+                        allData.push(...kupacData);
+                        if (data.sortimentiNazivi) {
+                            data.sortimentiNazivi.forEach(s => sortimentiSet.add(s));
                         }
-                    } catch (e) {
-                        // Ignoriši greške za pojedinačne mjesece
-                        console.log(`Nema podataka za mjesec ${month}`);
                     }
-                }
+                });
 
                 if (allData.length === 0) {
                     bodyElem.innerHTML = `
@@ -11502,6 +11784,24 @@
                 // Render table
                 renderPrimacOtpremacSedmicni(weeklyData, sortimentiNazivi, 'primac-sedmicni', year, month);
 
+                // Compute week→odjel rekapitulacija from original filteredData (odjel info intact)
+                const weekOdjeliMap = {};
+                filteredData.forEach(function(unos) {
+                    const dateParts = (unos.datum || '').split(/[\/\.\-]/);
+                    if (dateParts.length < 3) return;
+                    const d = new Date(parseInt(year), parseInt(month), parseInt(dateParts[0]));
+                    const wi = getWeekWithinMonth(d, parseInt(year), parseInt(month));
+                    const wk = wi.weekNumber;
+                    if (!weekOdjeliMap[wk]) weekOdjeliMap[wk] = { weekNumber: wk, weekStart: wi.weekStart, weekEnd: wi.weekEnd, odjeli: {} };
+                    const odjel = String(unos.odjel || 'Nepoznat');
+                    if (!weekOdjeliMap[wk].odjeli[odjel]) weekOdjeliMap[wk].odjeli[odjel] = { cetinari: 0, liscari: 0 };
+                    const s = unos.sortimenti || {};
+                    weekOdjeliMap[wk].odjeli[odjel].cetinari += parseFloat(s['Σ ČETINARI'] || s['ČETINARI'] || 0);
+                    weekOdjeliMap[wk].odjeli[odjel].liscari  += parseFloat(s['LIŠĆARI'] || 0);
+                });
+                const weekOdjeliData = Object.values(weekOdjeliMap).sort(function(a, b) { return a.weekNumber - b.weekNumber; });
+                renderPrimacSedmicniOdjeliRekapitulacija(weekOdjeliData, 'primac-sedmicni-rekapitulacija');
+
                 document.getElementById('loading-screen').classList.add('hidden');
 
             } catch (error) {
@@ -11838,6 +12138,71 @@
             });
             footerHtml += '</tr>';
             footer.innerHTML = footerHtml;
+        }
+
+        // ============================================
+        // 📊 SEDMIČNI IZVJEŠTAJ - Rekapitulacija po odjelima
+        // ============================================
+        function renderPrimacSedmicniOdjeliRekapitulacija(weekOdjeliData, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const weeksWithData = weekOdjeliData.filter(function(w) { return Object.keys(w.odjeli).length > 0; });
+
+            if (weeksWithData.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = '<div class="section" style="margin-top: 12px;">';
+            html += '<h3 style="font-size: 14px; font-weight: 600; color: #374151; margin: 0 0 12px 0; padding: 0;">📋 Rekapitulacija po odjelima</h3>';
+
+            weeksWithData.forEach(function(week) {
+                const odjeliArr = Object.entries(week.odjeli).sort(function(a, b) { return String(a[0]).localeCompare(String(b[0])); });
+                if (odjeliArr.length === 0) return;
+
+                const weekTot = odjeliArr.reduce(function(acc, entry) {
+                    acc.cetinari += entry[1].cetinari;
+                    acc.liscari  += entry[1].liscari;
+                    return acc;
+                }, { cetinari: 0, liscari: 0 });
+
+                html += '<div style="margin-bottom: 16px; border-radius: 6px; overflow: hidden; border: 1px solid #e5e7eb;">';
+                html += '<div style="font-size: 13px; font-weight: 600; color: #1f2937; padding: 7px 12px; background: #f3f4f6; border-bottom: 2px solid #d1d5db;">';
+                html += 'Sedmica ' + week.weekNumber + ' <span style="font-weight:400;color:#6b7280;">(' + week.weekStart + ' – ' + week.weekEnd + ')</span>';
+                html += '</div>';
+                html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+                html += '<thead><tr style="background:#374151;color:#fff;">';
+                html += '<th style="text-align:left;padding:6px 12px;">Odjel</th>';
+                html += '<th style="text-align:right;padding:6px 12px;">Σ ČETINARI</th>';
+                html += '<th style="text-align:right;padding:6px 12px;">LIŠĆARI</th>';
+                html += '<th style="text-align:right;padding:6px 12px;font-weight:700;">UKUPNO</th>';
+                html += '</tr></thead><tbody>';
+
+                odjeliArr.forEach(function(entry, idx) {
+                    const odjel = entry[0], vals = entry[1];
+                    const ukupno = vals.cetinari + vals.liscari;
+                    const bg = idx % 2 === 0 ? '#fff' : '#f9fafb';
+                    html += '<tr style="background:' + bg + ';border-bottom:1px solid #e5e7eb;">';
+                    html += '<td style="padding:5px 12px;font-weight:500;">' + odjel + '</td>';
+                    html += '<td style="text-align:right;padding:5px 12px;">' + (vals.cetinari > 0 ? vals.cetinari.toFixed(2) : '-') + '</td>';
+                    html += '<td style="text-align:right;padding:5px 12px;">' + (vals.liscari  > 0 ? vals.liscari.toFixed(2)  : '-') + '</td>';
+                    html += '<td style="text-align:right;padding:5px 12px;font-weight:600;">' + (ukupno > 0 ? ukupno.toFixed(2) : '-') + '</td>';
+                    html += '</tr>';
+                });
+
+                const totUkupno = weekTot.cetinari + weekTot.liscari;
+                html += '<tr style="background:#059669;color:#fff;font-weight:700;">';
+                html += '<td style="padding:5px 12px;">SEDMICA ' + week.weekNumber + '</td>';
+                html += '<td style="text-align:right;padding:5px 12px;">' + (weekTot.cetinari > 0 ? weekTot.cetinari.toFixed(2) : '-') + '</td>';
+                html += '<td style="text-align:right;padding:5px 12px;">' + (weekTot.liscari  > 0 ? weekTot.liscari.toFixed(2)  : '-') + '</td>';
+                html += '<td style="text-align:right;padding:5px 12px;">' + (totUkupno > 0 ? totUkupno.toFixed(2) : '-') + '</td>';
+                html += '</tr>';
+                html += '</tbody></table></div>';
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
         }
 
         // ============================================

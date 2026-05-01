@@ -331,6 +331,7 @@
             document.getElementById('kupci-godisnji-view').classList.add('hidden');
             document.getElementById('kupci-mjesecni-view').classList.add('hidden');
             document.getElementById('kupci-kvartalni-view').classList.add('hidden');
+            document.getElementById('kupci-statistika-view').classList.add('hidden');
 
             // Show selected view
             if (view === 'godisnji') {
@@ -343,6 +344,9 @@
                 const currentQuarter = Math.floor(new Date().getMonth() / 3) + 1;
                 document.getElementById('kupci-kvartalni-select').value = currentQuarter;
                 renderKupciKvartalniTable();
+            } else if (view === 'statistika') {
+                document.getElementById('kupci-statistika-view').classList.remove('hidden');
+                if (!window._kupciStatData) loadKupciStatistika();
             }
         }
 
