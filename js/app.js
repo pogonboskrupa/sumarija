@@ -1,5 +1,5 @@
         // VERSION INFO - Monthly report by departments
-        const APP_VERSION = '2026-04-28-v22-SEDMICNI-PO-RADNIKU';
+        const APP_VERSION = '2026-05-01-v23-STATISTIKA-PO-KUPCU';
         const BUILD_COMMIT = 'pending';
         window._preloadRenderMode = false;
 
@@ -5991,6 +5991,198 @@
                     row.style.display = 'none';
                 }
             });
+        }
+
+        // ============================================
+        // 📈 STATISTIKA PO KUPCU — broj otpremnica
+        // ============================================
+
+        async function loadKupciStatistika() {
+            const yearEl = document.getElementById('kupci-statistika-year');
+            const year = parseInt(yearEl?.value || new Date().getFullYear());
+            const contentEl = document.getElementById('kupci-statistika-content');
+            if (!contentEl) return;
+
+            contentEl.innerHTML = `
+                <div style="text-align:center; padding:40px; color:#6b7280;">
+                    <div style="font-size:28px; margin-bottom:10px;">⏳</div>
+                    <div>Učitavanje podataka za ${year}. godinu...</div>
+                </div>`;
+
+            try {
+                const monthResults = await Promise.all(
+                    Array.from({ length: 12 }, (_, month) => {
+                        const url = buildApiUrl('otpremaci-daily', { year, month });
+                        const cacheKey = `cache_otpremaci_daily_${year}_${month}`;
+                        return fetchWithCache(url, cacheKey).catch(() => null);
+                    })
+                );
+
+                const allData = [];
+                const sortimentiSet = new Set();
+                monthResults.forEach(data => {
+                    if (data?.data && Array.isArray(data.data)) {
+                        allData.push(...data.data);
+                        if (data.sortimentiNazivi) data.sortimentiNazivi.forEach(s => sortimentiSet.add(s));
+                    }
+                });
+
+                const kupciSet = new Set(allData.map(r => r.kupac).filter(Boolean));
+                const kupacSel = document.getElementById('kupci-statistika-kupac');
+                const prevVal = kupacSel?.value || '';
+                if (kupacSel) {
+                    kupacSel.innerHTML = '<option value="">-- Odaberi kupca --</option>' +
+                        [...kupciSet].sort().map(k =>
+                            `<option value="${k}"${k === prevVal ? ' selected' : ''}>${k}</option>`
+                        ).join('');
+                }
+
+                window._kupciStatData = { allData, sortimentiNazivi: [...sortimentiSet], year };
+
+                const selectedKupac = kupacSel?.value;
+                if (selectedKupac) {
+                    renderKupciStatistikaForKupac(selectedKupac, allData, [...sortimentiSet], year);
+                } else {
+                    contentEl.innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af; font-size:14px;">Odaberi kupca za prikaz statistike</div>';
+                }
+            } catch (e) {
+                contentEl.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Greška: ${e.message}</div>`;
+            }
+        }
+
+        function onKupciStatistikaKupacChange() {
+            const kupacSel = document.getElementById('kupci-statistika-kupac');
+            const kupacName = kupacSel?.value;
+            const contentEl = document.getElementById('kupci-statistika-content');
+            if (!kupacName) {
+                if (contentEl) contentEl.innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af; font-size:14px;">Odaberi kupca za prikaz statistike</div>';
+                return;
+            }
+            if (!window._kupciStatData) { loadKupciStatistika(); return; }
+            const { allData, sortimentiNazivi, year } = window._kupciStatData;
+            renderKupciStatistikaForKupac(kupacName, allData, sortimentiNazivi, year);
+        }
+
+        function renderKupciStatistikaForKupac(kupacName, allData, sortimentiNazivi, year) {
+            const contentEl = document.getElementById('kupci-statistika-content');
+            if (!contentEl) return;
+
+            const rows = allData.filter(r => r.kupac?.toLowerCase() === kupacName.toLowerCase());
+
+            function parseDatum(datum) {
+                if (!datum) return null;
+                const parts = datum.split('.');
+                if (parts.length < 3) return null;
+                return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+            }
+
+            function countPerSort(filteredRows) {
+                const counts = {};
+                sortimentiNazivi.forEach(s => { counts[s] = 0; });
+                filteredRows.forEach(row => {
+                    if (row.sortimenti) {
+                        sortimentiNazivi.forEach(s => {
+                            if ((row.sortimenti[s] || 0) > 0) counts[s]++;
+                        });
+                    }
+                });
+                return counts;
+            }
+
+            const today = new Date();
+            today.setHours(23, 59, 59, 999);
+
+            function filterLastN(n) {
+                const from = new Date();
+                from.setDate(from.getDate() - n + 1);
+                from.setHours(0, 0, 0, 0);
+                return rows.filter(r => { const d = parseDatum(r.datum); return d && d >= from && d <= today; });
+            }
+
+            function filterMonth(m) {
+                return rows.filter(r => { const d = parseDatum(r.datum); return d && d.getMonth() === m; });
+            }
+
+            function filterMonths(arr) {
+                return rows.filter(r => { const d = parseDatum(r.datum); return d && arr.includes(d.getMonth()); });
+            }
+
+            const MONTHS = ['Januar','Februar','Mart','April','Maj','Juni','Juli','August','Septembar','Oktobar','Novembar','Decembar'];
+
+            const kratkorocni = [
+                { label: 'Zadnjih 10 dana', rows: filterLastN(10) },
+                { label: 'Zadnjih 20 dana', rows: filterLastN(20) },
+                { label: 'Zadnjih 30 dana', rows: filterLastN(30) },
+            ];
+
+            const mjesecniData = MONTHS.map((name, i) => ({ label: name, rows: filterMonth(i) }));
+
+            const kvartalniData = [
+                { label: 'Q1 — Jan, Feb, Mar', rows: filterMonths([0,1,2]) },
+                { label: 'Q2 — Apr, Maj, Jun', rows: filterMonths([3,4,5]) },
+                { label: 'Q3 — Jul, Aug, Sep', rows: filterMonths([6,7,8]) },
+                { label: 'Q4 — Okt, Nov, Dec', rows: filterMonths([9,10,11]) },
+            ];
+
+            function buildStatTable(items, title, color, showTotals) {
+                let html = `<div style="margin-bottom:28px;">
+                    <div style="font-size:14px; font-weight:700; color:${color}; margin-bottom:10px; padding-bottom:6px; border-bottom:2px solid ${color}33;">${title}</div>
+                    <div style="overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:300px;">
+                    <thead><tr style="background:${color}; color:white; text-align:left;">
+                        <th style="padding:9px 14px; white-space:nowrap;">Period</th>`;
+                sortimentiNazivi.forEach(s => {
+                    html += `<th style="padding:9px 14px; text-align:center; white-space:nowrap;">${s}</th>`;
+                });
+                html += `<th style="padding:9px 14px; text-align:center; font-weight:700;">Ukupno</th>
+                    </tr></thead><tbody>`;
+
+                const totalBySort = {};
+                sortimentiNazivi.forEach(s => { totalBySort[s] = 0; });
+                let grandTotal = 0;
+
+                items.forEach((item, idx) => {
+                    const counts = countPerSort(item.rows);
+                    const rowTotal = item.rows.length;
+                    const bg = idx % 2 === 0 ? '#f9fafb' : '#ffffff';
+                    html += `<tr style="background:${bg};">
+                        <td style="padding:8px 14px; font-weight:600; white-space:nowrap;">${item.label}</td>`;
+                    sortimentiNazivi.forEach(s => {
+                        const v = counts[s] || 0;
+                        totalBySort[s] += v;
+                        html += `<td style="padding:8px 14px; text-align:center;">${v > 0 ? `<strong>${v}</strong>` : '<span style="color:#d1d5db;">—</span>'}</td>`;
+                    });
+                    html += `<td style="padding:8px 14px; text-align:center; font-weight:700; color:${color};">${rowTotal > 0 ? rowTotal : '<span style="color:#d1d5db;">—</span>'}</td></tr>`;
+                    grandTotal += rowTotal;
+                });
+
+                if (showTotals) {
+                    html += `<tr style="background:${color}15; font-weight:700; border-top:2px solid ${color}44;">
+                        <td style="padding:9px 14px; color:${color};">Ukupno</td>`;
+                    sortimentiNazivi.forEach(s => {
+                        html += `<td style="padding:9px 14px; text-align:center; color:${color};">${totalBySort[s] || '—'}</td>`;
+                    });
+                    html += `<td style="padding:9px 14px; text-align:center; color:${color};">${grandTotal}</td></tr>`;
+                }
+
+                html += `</tbody></table></div></div>`;
+                return html;
+            }
+
+            const isCurrentYear = parseInt(year) === new Date().getFullYear();
+            let html = `<div style="margin-bottom:20px; padding:12px 16px; background:#f0f9ff; border-radius:8px; border-left:4px solid #0891b2; display:flex; gap:24px; flex-wrap:wrap; align-items:center;">
+                <strong style="color:#0891b2; font-size:15px;">🏢 ${kupacName}</strong>
+                <span style="color:#6b7280; font-size:13px;">Godina: <strong>${year}</strong></span>
+                <span style="color:#6b7280; font-size:13px;">Ukupno otprema: <strong style="color:#0369a1;">${rows.length}</strong></span>
+            </div>`;
+
+            if (isCurrentYear) {
+                html += buildStatTable(kratkorocni, '⏱️ Kratkoročni prikaz (broj otpremnica)', '#0891b2', false);
+            }
+            html += buildStatTable(mjesecniData, '📅 Miesečni prikaz (broj otpremnica)', '#0369a1', true);
+            html += buildStatTable(kvartalniData, '🗓️ Kvartalni prikaz (broj otpremnica)', '#7c3aed', true);
+
+            contentEl.innerHTML = html;
         }
 
         // ============================================
