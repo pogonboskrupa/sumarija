@@ -6025,30 +6025,26 @@
                 const allData = [];
                 const sortimentiSet = new Set();
 
-                // Učitaj podatke za sve mjesece (0-11)
-                for (let month = 0; month < 12; month++) {
-                    const url = buildApiUrl('otpremaci-daily', { year, month });
-                    const cacheKey = `cache_otpremaci_daily_${year}_${month}`;
+                // Učitaj sve mjesece paralelno (Promise.all umjesto sekvencijalnog await)
+                const monthResults = await Promise.all(
+                    Array.from({ length: 12 }, (_, month) => {
+                        const url = buildApiUrl('otpremaci-daily', { year, month });
+                        const cacheKey = `cache_otpremaci_daily_${year}_${month}`;
+                        return fetchWithCache(url, cacheKey).catch(() => null);
+                    })
+                );
 
-                    try {
-                        const data = await fetchWithCache(url, cacheKey);
-                        if (data && data.data && Array.isArray(data.data)) {
-                            // Filtriraj samo za ovog kupca
-                            const kupacData = data.data.filter(row =>
-                                row.kupac && row.kupac.toLowerCase() === kupacName.toLowerCase()
-                            );
-                            allData.push(...kupacData);
-
-                            // Skupi sve sortimente
-                            if (data.sortimentiNazivi) {
-                                data.sortimentiNazivi.forEach(s => sortimentiSet.add(s));
-                            }
+                monthResults.forEach(data => {
+                    if (data && data.data && Array.isArray(data.data)) {
+                        const kupacData = data.data.filter(row =>
+                            row.kupac && row.kupac.toLowerCase() === kupacName.toLowerCase()
+                        );
+                        allData.push(...kupacData);
+                        if (data.sortimentiNazivi) {
+                            data.sortimentiNazivi.forEach(s => sortimentiSet.add(s));
                         }
-                    } catch (e) {
-                        // Ignoriši greške za pojedinačne mjesece
-                        console.log(`Nema podataka za mjesec ${month}`);
                     }
-                }
+                });
 
                 if (allData.length === 0) {
                     bodyElem.innerHTML = `
