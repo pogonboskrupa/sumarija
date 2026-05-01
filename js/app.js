@@ -1,5 +1,5 @@
         // VERSION INFO - Monthly report by departments
-        const APP_VERSION = '2026-05-01-v23-STATISTIKA-PO-KUPCU';
+        const APP_VERSION = '2026-05-01-v24-STATISTIKA-CARD-UI';
         const BUILD_COMMIT = 'pending';
         window._preloadRenderMode = false;
 
@@ -5274,127 +5274,112 @@
             container.innerHTML = html;
         }
 
-        // Load otpremaci by radiliste
+        // Load otpremaci by radiliste — grade se iz otpremaci-daily (grupiranje po odjelu)
         async function loadOtremaciByRadiliste() {
             try {
                 const year = new Date().getFullYear();
-                const url = buildApiUrl('otpremaci-by-radiliste', { year });
 
-                const data = await fetchWithCache(url, `cache_otpremaci_radiliste_${year}`);
+                const monthResults = await Promise.all(
+                    Array.from({ length: 12 }, (_, month) => {
+                        const url = buildApiUrl('otpremaci-daily', { year, month });
+                        const cacheKey = `cache_otpremaci_daily_${year}_${month}`;
+                        return fetchWithCache(url, cacheKey).catch(() => null);
+                    })
+                );
 
+                const radilistaMap = {};
+                const sortimentiSet = new Set();
 
-                if (data.error) {
-                    console.error('Error loading otpremaci by radiliste:', data.error);
-                    document.getElementById('otpremaci-radilista-body').innerHTML = `
-                        <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
-                            Greška: ${data.error}
-                        </td></tr>
-                    `;
-                    return;
-                }
+                monthResults.forEach((res, monthIdx) => {
+                    if (!res?.data || !Array.isArray(res.data)) return;
+                    if (res.sortimentiNazivi) res.sortimentiNazivi.forEach(s => sortimentiSet.add(s));
 
-                if (!data.radilista || data.radilista.length === 0) {
+                    res.data.forEach(row => {
+                        const naziv = row.odjel || '—';
+                        if (!radilistaMap[naziv]) {
+                            radilistaMap[naziv] = { naziv, mjeseci: new Array(12).fill(0), sortimentiUkupno: {} };
+                        }
+                        if (row.sortimenti) {
+                            const rowTotal = Object.values(row.sortimenti).reduce((s, v) => s + (v || 0), 0);
+                            radilistaMap[naziv].mjeseci[monthIdx] += rowTotal;
+                            Object.entries(row.sortimenti).forEach(([s, v]) => {
+                                if (v > 0) radilistaMap[naziv].sortimentiUkupno[s] = (radilistaMap[naziv].sortimentiUkupno[s] || 0) + v;
+                            });
+                        }
+                    });
+                });
+
+                const radilista = Object.values(radilistaMap)
+                    .map(r => ({ ...r, ukupno: r.mjeseci.reduce((s, v) => s + v, 0) }))
+                    .sort((a, b) => b.ukupno - a.ukupno);
+
+                const sortimentiNazivi = [...sortimentiSet];
+
+                if (radilista.length === 0) {
                     document.getElementById('otpremaci-radilista-header').innerHTML = `
-                        <tr><th style="background: #0891b2; color: white; padding: 12px;">
-                            🏗️ Prikaz po radilištima - ${year}
-                        </th></tr>
-                    `;
+                        <tr><th style="background: #0891b2; color: white; padding: 12px;">🏗️ Prikaz po radilištima - ${year}</th></tr>`;
                     document.getElementById('otpremaci-radilista-body').innerHTML = `
-                        <tr><td style="text-align: center; padding: 40px; color: #6b7280;">
-                            Nema podataka o radilištima
-                        </td></tr>
-                    `;
+                        <tr><td style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka o radilištima</td></tr>`;
                     return;
                 }
 
                 // Render mjesečnu tabelu
                 const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
 
-                let headerHTML = `
-                    <tr>
-                        <th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
-                            🏗️ Radilište
-                        </th>
-                `;
+                let headerHTML = `<tr>
+                    <th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">🏗️ Radilište</th>`;
                 mjeseci.forEach(mj => {
                     headerHTML += `<th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 12px;">${mj}</th>`;
                 });
-                headerHTML += `
-                    <th style="background: linear-gradient(135deg, #155e75, #164e63); color: white; padding: 12px; font-weight: 900; position: sticky; top: 0; z-index: 20;">
-                        UKUPNO
-                    </th>
-                </tr>
-                `;
+                headerHTML += `<th style="background: linear-gradient(135deg, #155e75, #164e63); color: white; padding: 12px; font-weight: 900; position: sticky; top: 0; z-index: 20;">UKUPNO</th></tr>`;
                 document.getElementById('otpremaci-radilista-header').innerHTML = headerHTML;
 
                 let bodyHTML = '';
-                data.radilista.forEach((radiliste, idx) => {
+                radilista.forEach((r, idx) => {
                     const rowBg = idx % 2 === 0 ? '#cffafe' : '#ffffff';
                     const hoverBg = '#a5f3fc';
-
-                    const mjeseciCells = radiliste.mjeseci.map(val => {
-                        const displayVal = val > 0 ? val.toFixed(2) : '-';
-                        const fontWeight = val > 0 ? 'font-weight: 700; color: #155e75;' : 'color: #d1d5db;';
-                        return `<td style="${fontWeight} border: 1px solid #a5f3fc; font-family: 'Courier New', monospace; font-size: 11px; text-align: right; padding: 8px;">${displayVal}</td>`;
+                    const mjCells = r.mjeseci.map(val => {
+                        const d = val > 0 ? val.toFixed(2) : '-';
+                        const s = val > 0 ? 'font-weight:700;color:#155e75;' : 'color:#d1d5db;';
+                        return `<td style="${s}border:1px solid #a5f3fc;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:8px;">${d}</td>`;
                     }).join('');
-
-                    bodyHTML += `
-                        <tr style="background: ${rowBg}; transition: all 0.15s ease;" onmouseover="this.style.background='${hoverBg}';" onmouseout="this.style.background='${rowBg}';">
-                            <td style="font-weight: 700; font-size: 12px; border: 1px solid #a5f3fc; padding: 10px; color: #155e75;">
-                                ${radiliste.naziv}
-                            </td>
-                            ${mjeseciCells}
-                            <td style="background: #bfdbfe; border: 2px solid #3b82f6; font-family: 'Courier New', monospace; text-align: right; padding: 10px; font-weight: 900; font-size: 13px; color: #1e3a8a;">
-                                ${radiliste.ukupno.toFixed(2)}
-                            </td>
-                        </tr>
-                    `;
+                    bodyHTML += `<tr style="background:${rowBg};transition:all 0.15s ease;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
+                        <td style="font-weight:700;font-size:12px;border:1px solid #a5f3fc;padding:10px;color:#155e75;">${r.naziv}</td>
+                        ${mjCells}
+                        <td style="background:#bfdbfe;border:2px solid #3b82f6;font-family:'Courier New',monospace;text-align:right;padding:10px;font-weight:900;font-size:13px;color:#1e3a8a;">${r.ukupno.toFixed(2)}</td>
+                    </tr>`;
                 });
                 document.getElementById('otpremaci-radilista-body').innerHTML = bodyHTML;
 
                 // Render godišnju rekapitulaciju po sortimentima
-                let recapHeaderHTML = `
-                    <tr>
-                        <th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
-                            🏗️ Radilište
-                        </th>
-                `;
-                data.sortimentiNazivi.forEach(s => {
-                    recapHeaderHTML += `<th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 10px;">${s}</th>`;
+                let recapHeaderHTML = `<tr>
+                    <th style="background:linear-gradient(135deg,#0891b2,#0e7490);color:white;padding:12px;position:sticky;top:0;z-index:20;">🏗️ Radilište</th>`;
+                sortimentiNazivi.forEach(s => {
+                    recapHeaderHTML += `<th style="background:linear-gradient(135deg,#0891b2,#0e7490);color:white;padding:12px;position:sticky;top:0;z-index:20;font-size:10px;">${s}</th>`;
                 });
                 recapHeaderHTML += `</tr>`;
                 document.getElementById('otpremaci-radilista-recap-header').innerHTML = recapHeaderHTML;
 
                 let recapBodyHTML = '';
-                data.radilista.forEach((radiliste, idx) => {
+                radilista.forEach((r, idx) => {
                     const rowBg = idx % 2 === 0 ? '#cffafe' : '#ffffff';
-
-                    const sortimentiCells = data.sortimentiNazivi.map(s => {
-                        const val = radiliste.sortimentiUkupno[s] || 0;
-                        const displayVal = val > 0 ? val.toFixed(2) : '-';
-                        const fontWeight = val > 0 ? 'font-weight: 700; color: #155e75;' : 'color: #d1d5db;';
-                        return `<td style="${fontWeight} border: 1px solid #a5f3fc; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 8px;">${displayVal}</td>`;
+                    const sortCells = sortimentiNazivi.map(s => {
+                        const val = r.sortimentiUkupno[s] || 0;
+                        const d = val > 0 ? val.toFixed(2) : '-';
+                        const st = val > 0 ? 'font-weight:700;color:#155e75;' : 'color:#d1d5db;';
+                        return `<td style="${st}border:1px solid #a5f3fc;font-family:'Courier New',monospace;font-size:10px;text-align:right;padding:8px;">${d}</td>`;
                     }).join('');
-
-                    recapBodyHTML += `
-                        <tr style="background: ${rowBg};">
-                            <td style="font-weight: 700; font-size: 12px; border: 1px solid #a5f3fc; padding: 10px; color: #155e75;">
-                                ${radiliste.naziv}
-                            </td>
-                            ${sortimentiCells}
-                        </tr>
-                    `;
+                    recapBodyHTML += `<tr style="background:${rowBg};">
+                        <td style="font-weight:700;font-size:12px;border:1px solid #a5f3fc;padding:10px;color:#155e75;">${r.naziv}</td>
+                        ${sortCells}
+                    </tr>`;
                 });
                 document.getElementById('otpremaci-radilista-recap-body').innerHTML = recapBodyHTML;
-
 
             } catch (error) {
                 console.error('Error in loadOtremaciByRadiliste:', error);
                 document.getElementById('otpremaci-radilista-body').innerHTML = `
-                    <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
-                        Greška pri učitavanju: ${error.message}
-                    </td></tr>
-                `;
+                    <tr><td colspan="100" style="text-align:center;padding:40px;color:#dc2626;">Greška pri učitavanju: ${error.message}</td></tr>`;
             }
         }
 
@@ -6027,45 +6012,65 @@
                     }
                 });
 
-                const kupciSet = new Set(allData.map(r => r.kupac).filter(Boolean));
-                const kupacSel = document.getElementById('kupci-statistika-kupac');
-                const prevVal = kupacSel?.value || '';
-                if (kupacSel) {
-                    kupacSel.innerHTML = '<option value="">-- Odaberi kupca --</option>' +
-                        [...kupciSet].sort().map(k =>
-                            `<option value="${k}"${k === prevVal ? ' selected' : ''}>${k}</option>`
-                        ).join('');
-                }
-
                 window._kupciStatData = { allData, sortimentiNazivi: [...sortimentiSet], year };
 
-                const selectedKupac = kupacSel?.value;
-                if (selectedKupac) {
-                    renderKupciStatistikaForKupac(selectedKupac, allData, [...sortimentiSet], year);
-                } else {
-                    contentEl.innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af; font-size:14px;">Odaberi kupca za prikaz statistike</div>';
+                // Aggregate per-kupac totals for card display
+                const kupciMap = {};
+                allData.forEach(r => {
+                    if (!r.kupac) return;
+                    kupciMap[r.kupac] = (kupciMap[r.kupac] || 0) + 1;
+                });
+                const kupciList = Object.entries(kupciMap).sort((a, b) => b[1] - a[1]);
+
+                if (kupciList.length === 0) {
+                    contentEl.innerHTML = `<div style="text-align:center; padding:40px; color:#9ca3af;">Nema podataka za ${year}. godinu</div>`;
+                    return;
                 }
+
+                let gridHtml = `<div id="kupci-stat-lista" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:10px; margin-bottom:24px;">`;
+                kupciList.forEach(([name, total]) => {
+                    const cardId = 'kscard-' + name.replace(/[^a-zA-Z0-9]/g, '_');
+                    const suffix = total === 1 ? 'a' : total < 5 ? 'e' : 'a';
+                    gridHtml += `<div id="${cardId}"
+                        onclick="selectKupacStat('${name.replace(/'/g, "\\'")}','${cardId}')"
+                        style="cursor:pointer;border-radius:10px;border:2px solid #e5e7eb;padding:14px 12px;
+                               background:#fff;transition:border-color 0.15s,background 0.15s;user-select:none;"
+                        onmouseover="if(!this.dataset.sel){this.style.borderColor='#93c5fd';this.style.background='#eff6ff'}"
+                        onmouseout="if(!this.dataset.sel){this.style.borderColor='#e5e7eb';this.style.background='#fff'}">
+                        <div style="font-weight:700;color:#0369a1;font-size:13px;margin-bottom:5px;line-height:1.3;">${name}</div>
+                        <div style="color:#6b7280;font-size:11px;">${total} otpremnic${suffix}</div>
+                    </div>`;
+                });
+                gridHtml += `</div><div id="kupci-stat-detalji"></div>`;
+                contentEl.innerHTML = gridHtml;
+
             } catch (e) {
                 contentEl.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Greška: ${e.message}</div>`;
             }
         }
 
-        function onKupciStatistikaKupacChange() {
-            const kupacSel = document.getElementById('kupci-statistika-kupac');
-            const kupacName = kupacSel?.value;
-            const contentEl = document.getElementById('kupci-statistika-content');
-            if (!kupacName) {
-                if (contentEl) contentEl.innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af; font-size:14px;">Odaberi kupca za prikaz statistike</div>';
-                return;
+        function selectKupacStat(kupacName, cardId) {
+            document.querySelectorAll('#kupci-stat-lista > div').forEach(c => {
+                c.style.borderColor = '#e5e7eb';
+                c.style.background = '#fff';
+                delete c.dataset.sel;
+            });
+            const card = document.getElementById(cardId);
+            if (card) {
+                card.style.borderColor = '#2563eb';
+                card.style.background = '#eff6ff';
+                card.dataset.sel = '1';
             }
             if (!window._kupciStatData) { loadKupciStatistika(); return; }
             const { allData, sortimentiNazivi, year } = window._kupciStatData;
             renderKupciStatistikaForKupac(kupacName, allData, sortimentiNazivi, year);
+            const detalji = document.getElementById('kupci-stat-detalji');
+            if (detalji) detalji.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function renderKupciStatistikaForKupac(kupacName, allData, sortimentiNazivi, year) {
-            const contentEl = document.getElementById('kupci-statistika-content');
-            if (!contentEl) return;
+            const detaljiEl = document.getElementById('kupci-stat-detalji');
+            if (!detaljiEl) return;
 
             const rows = allData.filter(r => r.kupac?.toLowerCase() === kupacName.toLowerCase());
 
@@ -6182,7 +6187,7 @@
             html += buildStatTable(mjesecniData, '📅 Miesečni prikaz (broj otpremnica)', '#0369a1', true);
             html += buildStatTable(kvartalniData, '🗓️ Kvartalni prikaz (broj otpremnica)', '#7c3aed', true);
 
-            contentEl.innerHTML = html;
+            detaljiEl.innerHTML = html;
         }
 
         // ============================================
