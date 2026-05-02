@@ -1,427 +1,258 @@
-/* ============================================ */
-/* 🎨 OPTIMIZED LOGIN SCREEN */
-/* Desktop & Mobile Responsive Design */
-/* ============================================ */
+/* ============================================================ */
+/* ŠUMARIJA — LOGIN SCREEN                                     */
+/* Claude Design: čist, elegantan, profesionalan login         */
+/* ============================================================ */
 
-/* Body background sa gradientom */
+/* ── Login body state ─────────────────────────────────────── */
 body.login-active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    background-attachment: fixed;
-    overflow-x: hidden;
-    min-height: 100vh;
-    min-height: 100dvh; /* Dynamic viewport height for mobile */
+  background: #F0EDE5;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
 }
 
-/* 🔧 KRITIČNO: Osiguraj da login screen nestane kada je hidden */
-#login-screen.hidden {
-    display: none !important;
+/* Animated background pattern */
+body.login-active::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(30,122,71,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 80% 80%, rgba(209,123,47,0.06) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-.login-container.hidden {
-    display: none !important;
-}
+/* ── Visibility ────────────────────────────────────────────── */
+#login-screen.hidden    { display: none !important; }
+.login-container.hidden { display: none !important; }
 
-/* Login container - savršeno centrirano */
+/* ── Login Container ──────────────────────────────────────── */
 .login-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    min-height: 100dvh; /* Dynamic viewport height for mobile */
-    padding: 20px;
-    position: relative;
-    overflow: hidden; /* Spriječi horizontalno skrolanje od dekorativnih krugova */
-    box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px;
+  box-sizing: border-box;
 }
 
-/* Decorative background circles */
-.login-container::before {
-    content: '';
-    position: absolute;
-    top: -100px;
-    right: -100px;
-    width: 300px;
-    height: 300px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-    z-index: 0;
-}
-
-.login-container::after {
-    content: '';
-    position: absolute;
-    bottom: -100px;
-    left: -100px;
-    width: 400px;
-    height: 400px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 50%;
-    z-index: 0;
-}
-
-/* Login box - desktop optimized */
+/* ── Login Box ────────────────────────────────────────────── */
 .login-box {
-    background: white;
-    border-radius: 20px;
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
-    padding: 40px 32px;
-    max-width: 380px;
-    width: calc(100% - 40px);
-    position: relative;
-    z-index: 1;
-    animation: fadeInUp 0.6s ease;
-    box-sizing: border-box;
-    margin: auto;
+  background: #FFFFFF;
+  border: 1px solid #E6E2D8;
+  border-radius: 20px;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.06),
+    0 16px 48px rgba(0,0,0,0.1);
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+  z-index: 1;
+  animation: loginSlideUp 0.5s cubic-bezier(0.22,1,0.36,1);
+  box-sizing: border-box;
 }
 
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+@keyframes loginSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-/* Logo container */
+/* ── Logo / Branding ──────────────────────────────────────── */
 .login-box .logo-container {
-    text-align: center;
-    margin-bottom: 20px;
+  text-align: center;
+  margin-bottom: 28px;
 }
 
 .login-box .logo-container img {
-    width: 100px;
-    height: auto;
-    margin-bottom: 12px;
-    transition: transform 0.3s ease;
-}
-
-.login-box .logo-container img:hover {
-    transform: scale(1.05);
+  width: 80px;
+  height: auto;
+  margin: 0 auto 12px;
+  display: block;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.1));
 }
 
 .login-box .text-outline-firma {
-    font-size: 11px;
-    margin-bottom: 2px;
-    letter-spacing: 1px;
-    color: #9ca3af;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-/* Override main.css !important green color + yellow text-shadow */
-.login-box .logo-container .text-outline-firma {
-    color: #9ca3af !important;
-    text-shadow: none !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase;
+  color: #7A766C !important;
+  text-shadow: none !important;
+  margin-bottom: 2px;
+  display: block;
 }
 
 .login-box .company-subtitle {
-    font-size: 10px;
-    font-weight: 500;
-    color: #9ca3af;
-    margin-bottom: 0;
-    letter-spacing: 0.5px;
+  font-size: 9.5px;
+  font-weight: 500;
+  color: #A8A49A;
+  letter-spacing: 0.06em;
+  display: block;
 }
 
-/* Vizuelni separator između brandinga i forme */
+/* Divider */
 .login-box .logo-container::after {
-    content: '';
-    display: block;
-    width: 40px;
-    height: 3px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 2px;
-    margin: 16px auto 0;
+  content: '';
+  display: block;
+  width: 32px;
+  height: 2px;
+  background: #1E7A47;
+  border-radius: 2px;
+  margin: 16px auto 0;
+  opacity: 0.6;
 }
 
-/* Headings */
+/* ── Headings ─────────────────────────────────────────────── */
 .login-box h2 {
-    text-align: center;
-    font-size: 26px;
-    font-weight: 700;
-    color: #1f2937;
-    margin-bottom: 6px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 800;
+  color: #1A1A14;
+  margin-bottom: 4px;
+  letter-spacing: -0.02em;
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  -webkit-text-fill-color: unset !important;
+  background-clip: unset !important;
 }
 
 .login-box > p {
-    text-align: center;
-    color: #9ca3af;
-    margin-bottom: 24px;
-    font-size: 13px;
+  text-align: center;
+  color: #7A766C;
+  margin-bottom: 28px;
+  font-size: 13.5px;
+  font-weight: 400;
 }
 
-/* Form groups */
+/* ── Form ─────────────────────────────────────────────────── */
 .form-group {
-    margin-bottom: 24px;
+  margin-bottom: 18px;
 }
 
 .form-group label {
-    display: block;
-    font-size: 14px;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 8px;
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4A4740;
+  margin-bottom: 6px;
 }
 
 .form-group input {
-    width: 100%;
-    padding: 14px 18px;
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
-    font-size: 16px;
-    transition: all 0.3s ease;
-    background: #f9fafb;
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid #D5D1C4;
+  border-radius: 9px;
+  font-size: 15px;
+  color: #1A1A14;
+  background: #FDFCF9;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  box-sizing: border-box;
+  outline: none;
 }
 
 .form-group input:focus {
-    outline: none;
-    border-color: #667eea;
-    background: white;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #1E7A47;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(30,122,71,0.12);
 }
 
 .form-group input::placeholder {
-    color: #9ca3af;
+  color: #A8A49A;
+  font-size: 14px;
 }
 
-/* Submit button */
+/* ── Submit Button ────────────────────────────────────────── */
 .login-box .btn {
-    width: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 16px;
-    border-radius: 12px;
-    border: none;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  width: 100%;
+  background: #1E7A47;
+  color: #FFFFFF;
+  padding: 13px 20px;
+  border-radius: 10px;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.01em;
+  box-shadow: 0 2px 8px rgba(30,122,71,0.2);
+  margin-top: 4px;
 }
 
 .login-box .btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 25px rgba(102, 126, 234, 0.5);
+  background: #165E37;
+  box-shadow: 0 4px 16px rgba(30,122,71,0.3);
+  transform: translateY(-1px);
 }
 
 .login-box .btn:active {
-    transform: translateY(0);
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(30,122,71,0.2);
 }
 
 .login-box .btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
-/* Error message */
+/* ── Error ────────────────────────────────────────────────── */
 .login-box .error {
-    background: #fee2e2;
-    border: 2px solid #fecaca;
-    color: #991b1b;
-    padding: 14px 16px;
-    border-radius: 12px;
-    font-size: 14px;
-    margin-bottom: 20px;
-    font-weight: 500;
-    animation: shake 0.5s ease;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #991B1B;
+  padding: 11px 14px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 500;
+  margin-bottom: 18px;
+  animation: shake 0.4s ease;
 }
 
 @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-    20%, 40%, 60%, 80% { transform: translateX(5px); }
+  0%,100% { transform: translateX(0); }
+  20%,60%  { transform: translateX(-5px); }
+  40%,80%  { transform: translateX(5px); }
 }
 
-/* ============================================ */
-/* TABLET RESPONSIVE (768px - 1024px) */
-/* ============================================ */
-@media (min-width: 768px) and (max-width: 1024px) {
-    .login-box {
-        max-width: 400px;
-        padding: 44px 36px;
-    }
-
-    .login-box .logo-container img {
-        width: 90px;
-    }
-
-    .login-box h2 {
-        font-size: 26px;
-    }
-}
-
-/* ============================================ */
-/* DESKTOP LARGE (> 1024px) */
-/* ============================================ */
+/* ── Responsive ───────────────────────────────────────────── */
 @media (min-width: 1025px) {
-    .login-container {
-        padding: 40px;
-    }
-
-    .login-box {
-        max-width: 420px;
-        padding: 48px 40px;
-    }
-
-    .login-box .logo-container img {
-        width: 100px;
-    }
-
-    .login-box h2 {
-        font-size: 28px;
-    }
-
-    .login-box > p {
-        font-size: 13px;
-    }
-
-    .form-group input {
-        font-size: 16px;
-        padding: 14px 18px;
-    }
-
-    .login-box .btn {
-        padding: 16px;
-        font-size: 16px;
-        margin-top: 4px;
-    }
+  .login-box {
+    padding: 44px 40px;
+    max-width: 420px;
+  }
 }
 
-/* ============================================ */
-/* MOBILE RESPONSIVE (< 768px) */
-/* ============================================ */
 @media (max-width: 767px) {
-    .login-container {
-        padding: 16px;
-        min-height: 100vh;
-        min-height: 100dvh;
-        align-items: center;
-    }
+  .login-container { padding: 16px; }
 
-    .login-box {
-        padding: 32px 24px;
-        border-radius: 16px;
-        max-width: 340px;
-        width: calc(100% - 32px);
-    }
+  .login-box {
+    padding: 32px 24px;
+    border-radius: 16px;
+    max-width: 360px;
+    width: calc(100% - 32px);
+  }
 
-    .login-box .logo-container img {
-        width: 72px;
-    }
-
-    .login-box .text-outline-firma {
-        font-size: 10px;
-    }
-
-    .login-box .company-subtitle {
-        font-size: 9px;
-    }
-
-    .login-box h2 {
-        font-size: 22px;
-        margin-bottom: 4px;
-    }
-
-    .login-box > p {
-        font-size: 12px;
-        margin-bottom: 18px;
-    }
-
-    .form-group {
-        margin-bottom: 18px;
-    }
-
-    .form-group label {
-        font-size: 13px;
-        margin-bottom: 6px;
-    }
-
-    .form-group input {
-        padding: 12px 14px;
-        font-size: 16px; /* 16px sprječava zoom na iOS */
-    }
-
-    .login-box .btn {
-        padding: 14px;
-        font-size: 15px;
-    }
-
-    /* Hide decorative circles on mobile */
-    .login-container::before,
-    .login-container::after {
-        display: none;
-    }
-
-    .login-box .logo-container::after {
-        width: 36px;
-        height: 2px;
-        margin: 12px auto 0;
-    }
+  .login-box .logo-container img { width: 68px; }
+  .login-box h2 { font-size: 22px; }
+  .login-box > p { font-size: 13px; margin-bottom: 22px; }
+  .form-group input { font-size: 16px; /* prevent iOS zoom */ }
+  .login-box .btn { font-size: 15px; padding: 12px; }
 }
 
-/* Extra small devices (< 480px) */
 @media (max-width: 480px) {
-    .login-container {
-        padding: 12px;
-    }
-
-    .login-box {
-        padding: 28px 20px;
-        width: calc(100% - 24px);
-        max-width: 320px;
-    }
-
-    .login-box .logo-container {
-        margin-bottom: 16px;
-    }
-
-    .login-box .logo-container img {
-        width: 60px;
-        margin-bottom: 8px;
-    }
-
-    .login-box .logo-container::after {
-        width: 32px;
-        height: 2px;
-        margin: 10px auto 0;
-    }
-
-    .login-box .text-outline-firma {
-        font-size: 10px;
-    }
-
-    .login-box .company-subtitle {
-        font-size: 9px;
-    }
-
-    .login-box h2 {
-        font-size: 20px;
-    }
-
-    .login-box > p {
-        font-size: 11px;
-        margin-bottom: 14px;
-    }
-
-    .form-group {
-        margin-bottom: 16px;
-    }
-
-    .login-box .btn {
-        padding: 12px;
-        font-size: 14px;
-    }
+  .login-box { padding: 28px 20px; }
+  .login-box .logo-container img { width: 60px; }
+  .login-box h2 { font-size: 20px; }
 }
-
-/* ============================================ */
-/* DARK MODE SUPPORT (optional) */
-/* ============================================ */
