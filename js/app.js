@@ -5986,6 +5986,7 @@
             const yearEl = document.getElementById('kupci-statistika-year');
             const year = parseInt(yearEl?.value || new Date().getFullYear());
             const contentEl = document.getElementById('kupci-statistika-content');
+            console.log('[KupciStat] start year=' + year + ' contentEl=' + !!contentEl + ' godisnjiLen=' + kupciGodisnjiData.length);
             if (!contentEl) return;
 
             const isCurrentYear = year === new Date().getFullYear();
@@ -5998,6 +5999,7 @@
                     sortimentiNazivi: kupciSortimentiNazivi || [],
                     year
                 };
+                console.log('[KupciStat] fast path rows=' + kupciGodisnjiData.length + ' sample ukupno=' + (kupciGodisnjiData[0]?.ukupno));
                 _renderKupciStatShell(isCurrentYear);
                 selectStatPeriod('god');
                 return;
@@ -6013,31 +6015,9 @@
             try {
                 const url = buildApiUrl('kupci', { year });
                 const data = await fetchWithCache(url, `cache_kupci_${year}`, false, 180000);
+                console.log('[KupciStat] api result godisnjiLen=' + data?.godisnji?.length + ' sample=' + JSON.stringify(data?.godisnji?.[0])?.slice(0, 120));
 
                 if (!data?.godisnji || data.godisnji.length === 0) {
-                    // Ako tekuća godina nema podataka, automatski pokušaj prethodnu godinu
-                    if (isCurrentYear) {
-                        const prevYear = year - 1;
-                        contentEl.innerHTML = `
-                            <div style="text-align:center; padding:32px; color:#6b7280;">
-                                <div style="font-size:24px; margin-bottom:8px;">⏳</div>
-                                <div>Nema podataka za ${year}. — Učitavanje ${prevYear}. godinu...</div>
-                            </div>`;
-                        const prevUrl = buildApiUrl('kupci', { year: prevYear });
-                        const prevData = await fetchWithCache(prevUrl, `cache_kupci_${prevYear}`, false, 180000);
-                        if (prevData?.godisnji?.length > 0) {
-                            if (yearEl) yearEl.value = String(prevYear);
-                            window._kupciStatData = {
-                                godisnji: prevData.godisnji,
-                                miesecni: prevData.mjesecni || [],
-                                sortimentiNazivi: prevData.sortimentiNazivi || [],
-                                year: prevYear
-                            };
-                            _renderKupciStatShell(false);
-                            selectStatPeriod('god');
-                            return;
-                        }
-                    }
                     contentEl.innerHTML = `<div style="text-align:center; padding:40px; color:#9ca3af;">Nema podataka za ${year}. godinu</div>`;
                     return;
                 }
@@ -6053,6 +6033,7 @@
                 selectStatPeriod('god');
 
             } catch (e) {
+                console.error('[KupciStat] error:', e);
                 contentEl.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Greška: ${e.message}</div>`;
             }
         }
@@ -6227,6 +6208,8 @@
             const kupciList = [...rows]
                 .filter(r => r.kupac && (r.ukupno || 0) > 0)
                 .sort((a, b) => (b.ukupno || 0) - (a.ukupno || 0));
+
+            console.log('[KupciRanking] rows=' + rows.length + ' filtered=' + kupciList.length + ' period=' + periodLabel + ' sample=' + JSON.stringify(rows[0])?.slice(0, 120));
 
             if (kupciList.length === 0) {
                 return `<div style="text-align:center; padding:40px; color:#9ca3af; font-size:14px;">Nema podataka za odabrani period</div>`;
