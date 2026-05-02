@@ -5998,8 +5998,8 @@
                     sortimentiNazivi: kupciSortimentiNazivi || [],
                     year
                 };
-                _renderKupciStatShell(true);
-                selectStatPeriod('m' + new Date().getMonth());
+                _renderKupciStatShell(isCurrentYear);
+                selectStatPeriod('god');
                 return;
             }
 
@@ -6015,6 +6015,29 @@
                 const data = await fetchWithCache(url, `cache_kupci_${year}`, false, 180000);
 
                 if (!data?.godisnji || data.godisnji.length === 0) {
+                    // Ako tekuća godina nema podataka, automatski pokušaj prethodnu godinu
+                    if (isCurrentYear) {
+                        const prevYear = year - 1;
+                        contentEl.innerHTML = `
+                            <div style="text-align:center; padding:32px; color:#6b7280;">
+                                <div style="font-size:24px; margin-bottom:8px;">⏳</div>
+                                <div>Nema podataka za ${year}. — Učitavanje ${prevYear}. godinu...</div>
+                            </div>`;
+                        const prevUrl = buildApiUrl('kupci', { year: prevYear });
+                        const prevData = await fetchWithCache(prevUrl, `cache_kupci_${prevYear}`, false, 180000);
+                        if (prevData?.godisnji?.length > 0) {
+                            if (yearEl) yearEl.value = String(prevYear);
+                            window._kupciStatData = {
+                                godisnji: prevData.godisnji,
+                                miesecni: prevData.mjesecni || [],
+                                sortimentiNazivi: prevData.sortimentiNazivi || [],
+                                year: prevYear
+                            };
+                            _renderKupciStatShell(false);
+                            selectStatPeriod('god');
+                            return;
+                        }
+                    }
                     contentEl.innerHTML = `<div style="text-align:center; padding:40px; color:#9ca3af;">Nema podataka za ${year}. godinu</div>`;
                     return;
                 }
@@ -6027,7 +6050,7 @@
                 };
 
                 _renderKupciStatShell(isCurrentYear);
-                selectStatPeriod(isCurrentYear ? 'm' + new Date().getMonth() : 'god');
+                selectStatPeriod('god');
 
             } catch (e) {
                 contentEl.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Greška: ${e.message}</div>`;
