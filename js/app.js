@@ -5973,11 +5973,15 @@
         window._kupciStatCurrentPeriod = window._kupciStatCurrentPeriod || 'god';
 
         async function loadKupciStatistika() {
+            if (window._kupciStatLoading) return;
+            window._kupciStatLoading = true;
             const yearEl = document.getElementById('kupci-statistika-year');
             const year = parseInt(yearEl?.value || new Date().getFullYear());
             const contentEl = document.getElementById('kupci-statistika-content');
             console.log('[KupciStat] start year=' + year + ' contentEl=' + !!contentEl + ' godisnjiLen=' + kupciGodisnjiData.length);
-            if (!contentEl) return;
+            if (!contentEl) { window._kupciStatLoading = false; return; }
+            // switchToTab may have added hidden to this inner div — always ensure it's visible
+            contentEl.classList.remove('hidden');
 
             const isCurrentYear = year === new Date().getFullYear();
 
@@ -5998,6 +6002,8 @@
                     console.error('[KupciStat] render error:', renderErr);
                     window._kupciStatData = null;
                     contentEl.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Greška pri renderovanju: ${renderErr.message}</div>`;
+                } finally {
+                    window._kupciStatLoading = false;
                 }
                 return;
             }
@@ -6032,6 +6038,8 @@
             } catch (e) {
                 console.error('[KupciStat] error:', e);
                 contentEl.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Greška: ${e.message}</div>`;
+            } finally {
+                window._kupciStatLoading = false;
             }
         }
 

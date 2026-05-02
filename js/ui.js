@@ -348,6 +348,8 @@
                 document.getElementById('kupci-statistika-view').classList.remove('hidden');
                 const statYear = parseInt(document.getElementById('kupci-statistika-year')?.value || new Date().getFullYear());
                 const statContent = document.getElementById('kupci-statistika-content');
+                // switchToTab hides all [id$="-content"] elements — explicitly un-hide this inner div
+                if (statContent) statContent.classList.remove('hidden');
                 const needsRender = !window._kupciStatData || window._kupciStatData.year !== statYear || !statContent || statContent.children.length === 0;
                 if (needsRender) loadKupciStatistika();
             }
