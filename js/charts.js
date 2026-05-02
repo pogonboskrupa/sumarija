@@ -15,14 +15,7 @@
             if (!canvas) return;
 
             try {
-                // Show loading state on canvas
                 const ctx = canvas.getContext('2d');
-                if (dashboardDailyChart) {
-                    dashboardDailyChart.destroy();
-                    dashboardDailyChart = null;
-                }
-                const existingChart = Chart.getChart(canvas);
-                if (existingChart) existingChart.destroy();
 
                 // Ensure Chart.js is loaded
                 await window.loadChartJs();
@@ -53,6 +46,14 @@
                 // Month names for title
                 const monthNames = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni',
                                    'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+
+                // Destroy right before creating — handles race conditions between concurrent calls
+                if (dashboardDailyChart) {
+                    dashboardDailyChart.destroy();
+                    dashboardDailyChart = null;
+                }
+                const existingChart = Chart.getChart(canvas);
+                if (existingChart) existingChart.destroy();
 
                 // Create smooth line chart
                 dashboardDailyChart = new Chart(ctx, {
