@@ -6021,7 +6021,7 @@
 
                 window._kupciStatData = {
                     godisnji: data.godisnji,
-                    miesecni: data.miesecni || [],
+                    miesecni: data.mjesecni || [],
                     sortimentiNazivi: data.sortimentiNazivi || [],
                     year
                 };
@@ -6101,14 +6101,14 @@
                 label = `Cijela ${year}. godina`;
             } else if (periodKey.startsWith('m')) {
                 const m = parseInt(periodKey.slice(1));
-                rows = (miesecni || []).filter(r => r.miesec === MJ_NAMES[m]);
+                rows = (miesecni || []).filter(r => r.mjesec === MJ_NAMES[m]);
                 label = `${MJ_NAMES[m]} ${year}`;
             } else if (periodKey.startsWith('q')) {
                 const q = parseInt(periodKey[1]) - 1;
                 const qMonths = MJ_NAMES.slice(q * 3, q * 3 + 3);
                 const agg = {};
                 (miesecni || []).forEach(r => {
-                    if (!r.kupac || !qMonths.includes(r.miesec)) return;
+                    if (!r.kupac || !qMonths.includes(r.mjesec)) return;
                     if (!agg[r.kupac]) agg[r.kupac] = { kupac: r.kupac, sortimenti: {}, ukupno: 0 };
                     if (r.sortimenti) {
                         Object.entries(r.sortimenti).forEach(([s, v]) => {
