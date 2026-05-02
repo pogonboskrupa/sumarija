@@ -1001,19 +1001,6 @@
 
                 console.log(`[PRELOAD] Finished! Loaded: ${totalLoaded}/${totalViews}, Failed: ${totalFailed}`);
 
-                // === RENDER FAZA: pre-popula DOM svih tabova i subtabova ===
-                console.log('[PRELOAD] Pokretanje render faze...');
-                window._preloadRenderMode = true;
-                try {
-                    await _preloadRenderAllTabs(userType);
-                    console.log('[PRELOAD] Render faza završena.');
-                } catch (renderErr) {
-                    console.warn('[PRELOAD] Render faza greška:', renderErr);
-                } finally {
-                    window._preloadRenderMode = false;
-                    _restoreTabVisibility();
-                }
-
                 // Ukloni progress toast i prikaži rezultat
                 if (!silent) {
                     if (progressToast) {
