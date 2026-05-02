@@ -19,7 +19,10 @@
                 const ctx = canvas.getContext('2d');
                 if (dashboardDailyChart) {
                     dashboardDailyChart.destroy();
+                    dashboardDailyChart = null;
                 }
+                const existingChart = Chart.getChart(canvas);
+                if (existingChart) existingChart.destroy();
 
                 // Ensure Chart.js is loaded
                 await window.loadChartJs();
