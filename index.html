@@ -181,7 +181,7 @@
                                 🔔 Notifikacije
                                 <span id="notif-status-badge" style="font-size: 11px; margin-left: 6px; padding: 2px 6px; border-radius: 10px; background: #e5e7eb; color: #6b7280;">OFF</span>
                             </div>
-                            <div class="user-menu-item" onclick="event.stopPropagation(); clearAllCache()">🗑️ Obriši keš</div>
+                            <div class="user-menu-item" onclick="event.stopPropagation(); clearAllCache()">🔄 Ažuriraj podatke</div>
                             <div class="user-menu-item danger" onclick="event.stopPropagation(); logout()">🚪 Odjavi se</div>
                         </div>
                     </div>
@@ -988,18 +988,13 @@
                     <div class="enterprise-card-header">
                         <div>
                             <h2>📈 Statistika otprema po kupcu</h2>
-                            <span class="card-subtitle">Broj otpremnica po sortimentu — kratkoročni, miesečni i kvartalni prikaz</span>
+                            <span class="card-subtitle">Broj otpremnica po sortimentu — kratkoročni, mjesečni i kvartalni prikaz</span>
                         </div>
                     </div>
                     <div class="enterprise-card-body">
                         <div class="controls-bar" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                             <select id="kupci-statistika-year" onchange="loadKupciStatistika()" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white; min-width: 100px; cursor: pointer;">
                                 <option value="2026">2026</option>
-                                <option value="2025">2025</option>
-                                <option value="2024">2024</option>
-                            </select>
-                            <select id="kupci-statistika-kupac" onchange="onKupciStatistikaKupacChange()" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white; min-width: 240px; cursor: pointer;">
-                                <option value="">-- Odaberi kupca --</option>
                             </select>
                         </div>
                         <div id="kupci-statistika-content" style="margin-top: 16px;">

@@ -513,11 +513,14 @@ function handleKupci(year, username, password) {
     if (!kupciGodisnji[kupacNormalized]) {
       kupciGodisnji[kupacNormalized] = {
         sortimenti: {},
-        ukupno: 0
+        ukupno: 0,
+        brOtpremnica: 0,
+        sortimentiCount: {}
       };
       // Inicijalizuj sve sortimente na 0
       for (let s = 0; s < SORTIMENTI_NAZIVI.length; s++) {
         kupciGodisnji[kupacNormalized].sortimenti[SORTIMENTI_NAZIVI[s]] = 0;
+        kupciGodisnji[kupacNormalized].sortimentiCount[SORTIMENTI_NAZIVI[s]] = 0;
       }
     }
 
@@ -527,11 +530,14 @@ function handleKupci(year, username, password) {
       for (let m = 0; m < 12; m++) {
         kupciMjesecni[kupacNormalized][m] = {
           sortimenti: {},
-          ukupno: 0
+          ukupno: 0,
+          brOtpremnica: 0,
+          sortimentiCount: {}
         };
         // Inicijalizuj sve sortimente na 0
         for (let s = 0; s < SORTIMENTI_NAZIVI.length; s++) {
           kupciMjesecni[kupacNormalized][m].sortimenti[SORTIMENTI_NAZIVI[s]] = 0;
+          kupciMjesecni[kupacNormalized][m].sortimentiCount[SORTIMENTI_NAZIVI[s]] = 0;
         }
       }
     }
@@ -551,6 +557,17 @@ function handleKupci(year, username, password) {
     const ukupno = parseFloat(row[OTPREMA_COL.UKUPNO]) || 0;
     kupciGodisnji[kupacNormalized].ukupno += ukupno;
     kupciMjesecni[kupacNormalized][mjesec].ukupno += ukupno;
+
+    // Broj otpremnica (svaki red = jedna isporuka)
+    kupciGodisnji[kupacNormalized].brOtpremnica += 1;
+    kupciMjesecni[kupacNormalized][mjesec].brOtpremnica += 1;
+    for (let s = 0; s < SORTIMENTI_NAZIVI.length; s++) {
+      const v = parseFloat(row[OTPREMA_COL.SORT_START + s]) || 0;
+      if (v > 0) {
+        kupciGodisnji[kupacNormalized].sortimentiCount[SORTIMENTI_NAZIVI[s]] += 1;
+        kupciMjesecni[kupacNormalized][mjesec].sortimentiCount[SORTIMENTI_NAZIVI[s]] += 1;
+      }
+    }
   }
 
   // Generiši godišnji prikaz
@@ -560,7 +577,9 @@ function handleKupci(year, username, password) {
     const red = {
       kupac: kupacIme,
       sortimenti: kupac.sortimenti,
-      ukupno: kupac.ukupno
+      ukupno: kupac.ukupno,
+      brOtpremnica: kupac.brOtpremnica,
+      sortimentiCount: kupac.sortimentiCount
     };
     godisnji.push(red);
   }
@@ -573,12 +592,14 @@ function handleKupci(year, username, password) {
   for (const kupacIme in kupciMjesecni) {
     for (let m = 0; m < 12; m++) {
       const mjesecData = kupciMjesecni[kupacIme][m];
-      if (mjesecData.ukupno > 0) { // Samo mjeseci sa podacima
+      if (mjesecData.ukupno > 0 || mjesecData.brOtpremnica > 0) {
         mjesecni.push({
           kupac: kupacIme,
           mjesec: mjeseci[m],
           sortimenti: mjesecData.sortimenti,
-          ukupno: mjesecData.ukupno
+          ukupno: mjesecData.ukupno,
+          brOtpremnica: mjesecData.brOtpremnica,
+          sortimentiCount: mjesecData.sortimentiCount
         });
       }
     }

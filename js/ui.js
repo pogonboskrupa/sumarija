@@ -346,7 +346,8 @@
                 renderKupciKvartalniTable();
             } else if (view === 'statistika') {
                 document.getElementById('kupci-statistika-view').classList.remove('hidden');
-                if (!window._kupciStatData) loadKupciStatistika();
+                const statYear = parseInt(document.getElementById('kupci-statistika-year')?.value || new Date().getFullYear());
+                if (!window._kupciStatData || window._kupciStatData.year !== statYear) loadKupciStatistika();
             }
         }
 
