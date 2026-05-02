@@ -347,7 +347,9 @@
             } else if (view === 'statistika') {
                 document.getElementById('kupci-statistika-view').classList.remove('hidden');
                 const statYear = parseInt(document.getElementById('kupci-statistika-year')?.value || new Date().getFullYear());
-                if (!window._kupciStatData || window._kupciStatData.year !== statYear) loadKupciStatistika();
+                const statContent = document.getElementById('kupci-statistika-content');
+                const needsRender = !window._kupciStatData || window._kupciStatData.year !== statYear || !statContent || statContent.children.length === 0;
+                if (needsRender) loadKupciStatistika();
             }
         }
 

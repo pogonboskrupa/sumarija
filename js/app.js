@@ -5983,15 +5983,22 @@
 
             // Pokušaj koristiti već učitane kupci podatke (iz loadKupci)
             if (isCurrentYear && kupciGodisnjiData.length > 0) {
-                window._kupciStatData = {
+                const statData = {
                     godisnji: kupciGodisnjiData,
                     miesecni: kupciMjesecniRawData || [],
                     sortimentiNazivi: kupciSortimentiNazivi || [],
                     year
                 };
                 console.log('[KupciStat] fast path rows=' + kupciGodisnjiData.length + ' sample ukupno=' + (kupciGodisnjiData[0]?.ukupno));
-                _renderKupciStatShell(isCurrentYear);
-                selectStatPeriod('god');
+                try {
+                    window._kupciStatData = statData;
+                    _renderKupciStatShell(isCurrentYear);
+                    selectStatPeriod('god');
+                } catch (renderErr) {
+                    console.error('[KupciStat] render error:', renderErr);
+                    window._kupciStatData = null;
+                    contentEl.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Greška pri renderovanju: ${renderErr.message}</div>`;
+                }
                 return;
             }
 
