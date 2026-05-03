@@ -6259,46 +6259,50 @@
             const gTotals = new Array(COLS.length).fill(0);
             let gTotal = 0;
 
-            let html = `<div style="margin-bottom:10px; color:#6b7280; font-size:13px;">
-                Period: <strong style="color:#0369a1;">${periodLabel}</strong>
-                &nbsp;·&nbsp; <strong style="color:#0369a1;">${kupciList.length}</strong> kupac${kupciList.length !== 1 ? 'a' : ''}
+            const thStyle = 'padding:11px 12px; text-align:right; font-size:11px; font-weight:800; letter-spacing:0.6px; white-space:nowrap; border-left:1px solid rgba(255,255,255,0.15); color:#bfdbfe;';
+            const tdColStyle = (v) => v > 0
+                ? 'padding:9px 12px; text-align:right; font-family:"Courier New",monospace; font-size:13px; font-weight:700; color:#0e7490; border-left:1px solid #e2e8f0;'
+                : 'padding:9px 12px; text-align:right; font-family:"Courier New",monospace; font-size:13px; color:#d1d5db; border-left:1px solid #e2e8f0;';
+
+            let html = `<div style="border-radius:10px; overflow:hidden; border:1px solid #bfdbfe; box-shadow:0 2px 8px rgba(3,105,161,0.1);">
+            <div style="background:#1e3a8a; padding:10px 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <span style="color:#93c5fd; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1.2px;">📊 Kubici (m³)</span>
+                <span style="color:#ffffff; font-size:15px; font-weight:700;">${periodLabel}</span>
+                <span style="background:rgba(255,255,255,0.12); color:#e0f2fe; font-size:12px; padding:2px 10px; border-radius:20px; border:1px solid rgba(255,255,255,0.2);">${kupciList.length} kupac${kupciList.length !== 1 ? 'a' : ''}</span>
             </div>
             <div style="overflow-x:auto;">
-            <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:480px;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:500px;">
             <thead>
-            <tr style="background:linear-gradient(135deg,#0369a1,#075985); color:white; text-align:right;">
-                <th style="padding:10px 10px; text-align:center; width:34px;">#</th>
-                <th style="padding:10px 14px; text-align:left; white-space:nowrap;">Kupac</th>`;
-            COLS.forEach(col => {
-                html += `<th style="padding:10px 10px; white-space:nowrap; font-size:11px;">${col}</th>`;
-            });
-            html += `<th style="padding:10px 12px; background:rgba(0,0,0,0.2); white-space:nowrap;">UKUPNO</th>
+            <tr style="background:#1e3a8a;">
+                <th style="padding:11px 12px; text-align:center; width:42px; font-size:11px; font-weight:800; letter-spacing:0.6px; color:#bfdbfe;">#</th>
+                <th style="padding:11px 16px; text-align:left; font-size:12px; font-weight:800; letter-spacing:0.3px; white-space:nowrap; color:#e0f2fe;">KUPAC</th>`;
+            COLS.forEach(col => { html += `<th style="${thStyle}">${col}</th>`; });
+            html += `<th style="padding:11px 14px; text-align:right; font-size:11px; font-weight:800; letter-spacing:0.6px; white-space:nowrap; background:#1d4ed8; color:#ffffff; border-left:2px solid rgba(255,255,255,0.3);">UKUPNO m³</th>
             </tr></thead><tbody>`;
 
             kupciList.forEach((k, idx) => {
-                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
-                const rowBg = idx % 2 === 0 ? '#f0f9ff' : '#fff';
-                html += `<tr style="background:${rowBg};" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='${rowBg}'">
-                    <td style="padding:8px 10px; text-align:center;">${medal}</td>
-                    <td style="padding:8px 14px; font-weight:600; color:#0369a1; white-space:nowrap;">${k.kupac}</td>`;
+                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : null;
+                const rank = medal || `<span style="font-size:12px; color:#94a3b8; font-weight:600;">${idx + 1}</span>`;
+                const rowBg = idx % 2 === 0 ? '#f0f9ff' : '#ffffff';
+                html += `<tr style="background:${rowBg}; border-bottom:1px solid #e2e8f0;" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='${rowBg}'">
+                    <td style="padding:9px 12px; text-align:center;">${rank}</td>
+                    <td style="padding:9px 16px; font-weight:700; color:#1e293b; white-space:nowrap; font-size:13px;">${k.kupac}</td>`;
                 colKeys.forEach((key, i) => {
                     const v = key ? (k.sortimenti?.[key] || 0) : 0;
                     gTotals[i] += v;
-                    html += `<td style="padding:8px 10px; text-align:right; font-family:'Courier New',monospace; font-size:12px; ${v > 0 ? 'color:#155e75; font-weight:700;' : 'color:#d1d5db;'}">
-                        ${v > 0 ? v.toFixed(2) : '—'}</td>`;
+                    html += `<td style="${tdColStyle(v)}">${v > 0 ? v.toFixed(2) : '—'}</td>`;
                 });
                 gTotal += (k.ukupno || 0);
-                html += `<td style="padding:8px 12px; text-align:right; font-weight:700; font-family:'Courier New',monospace; font-size:13px; color:#1e3a8a; background:#eff6ff;">
-                    ${(k.ukupno || 0).toFixed(2)}</td></tr>`;
+                html += `<td style="padding:9px 14px; text-align:right; font-weight:800; font-family:'Courier New',monospace; font-size:14px; color:#1e40af; background:#dbeafe; border-left:2px solid #93c5fd;">${(k.ukupno || 0).toFixed(2)}</td></tr>`;
             });
 
-            html += `<tr style="background:linear-gradient(135deg,#0369a1,#075985); color:white; font-weight:700;">
-                <td colspan="2" style="padding:9px 14px; text-align:left;">UKUPNO</td>`;
+            html += `<tr style="background:#0f172a;">
+                <td colspan="2" style="padding:10px 16px; text-align:left; font-size:12px; font-weight:800; letter-spacing:0.5px; color:#7dd3fc;">∑ UKUPNO</td>`;
             gTotals.forEach(v => {
-                html += `<td style="padding:9px 10px; text-align:right; font-family:'Courier New',monospace; font-size:12px;">${v > 0 ? v.toFixed(2) : '—'}</td>`;
+                html += `<td style="padding:10px 12px; text-align:right; font-family:'Courier New',monospace; font-size:13px; font-weight:700; color:${v > 0 ? '#e2e8f0' : '#475569'}; border-left:1px solid rgba(255,255,255,0.08);">${v > 0 ? v.toFixed(2) : '—'}</td>`;
             });
-            html += `<td style="padding:9px 12px; text-align:right; font-family:'Courier New',monospace; font-size:14px; font-weight:900; background:rgba(0,0,0,0.2);">${gTotal.toFixed(2)}</td>
-            </tr></tbody></table></div>`;
+            html += `<td style="padding:10px 14px; text-align:right; font-family:'Courier New',monospace; font-size:15px; font-weight:900; color:#bfdbfe; background:#1d4ed8; border-left:2px solid rgba(255,255,255,0.3);">${gTotal.toFixed(2)}</td>
+            </tr></tbody></table></div></div>`;
 
             return html;
         }
@@ -6326,48 +6330,52 @@
             const gColTotals = new Array(COLS.length).fill(0);
             let gTotalCount = 0;
 
-            let html = `<div style="margin-bottom:10px; color:#6b7280; font-size:13px;">
-                Period: <strong style="color:#7c3aed;">${periodLabel}</strong>
-                &nbsp;·&nbsp; <strong style="color:#7c3aed;">${kupciList.length}</strong> kupac${kupciList.length !== 1 ? 'a' : ''}
-                &nbsp;·&nbsp; <span style="color:#7c3aed; font-size:11px;">📦 broj otpremnica</span>
+            const thStyle = 'padding:11px 12px; text-align:right; font-size:11px; font-weight:800; letter-spacing:0.6px; white-space:nowrap; border-left:1px solid rgba(255,255,255,0.15); color:#ddd6fe;';
+            const tdColStyle = (cnt) => cnt > 0
+                ? 'padding:9px 12px; text-align:right; font-family:"Courier New",monospace; font-size:13px; font-weight:700; color:#6d28d9; border-left:1px solid #e2e8f0;'
+                : 'padding:9px 12px; text-align:right; font-family:"Courier New",monospace; font-size:13px; color:#d1d5db; border-left:1px solid #e2e8f0;';
+
+            let html = `<div style="border-radius:10px; overflow:hidden; border:1px solid #c4b5fd; box-shadow:0 2px 8px rgba(124,58,237,0.1);">
+            <div style="background:#4c1d95; padding:10px 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <span style="color:#c4b5fd; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1.2px;">📦 Broj otpremnica</span>
+                <span style="color:#ffffff; font-size:15px; font-weight:700;">${periodLabel}</span>
+                <span style="background:rgba(255,255,255,0.12); color:#ede9fe; font-size:12px; padding:2px 10px; border-radius:20px; border:1px solid rgba(255,255,255,0.2);">${kupciList.length} kupac${kupciList.length !== 1 ? 'a' : ''}</span>
             </div>
             <div style="overflow-x:auto;">
-            <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:480px;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:500px;">
             <thead>
-            <tr style="background:linear-gradient(135deg,#7c3aed,#6d28d9); color:white; text-align:right;">
-                <th style="padding:10px 10px; text-align:center; width:34px;">#</th>
-                <th style="padding:10px 14px; text-align:left; white-space:nowrap;">Kupac</th>`;
-            COLS.forEach(col => {
-                html += `<th style="padding:10px 10px; white-space:nowrap; font-size:11px;">${col}</th>`;
-            });
-            html += `<th style="padding:10px 12px; background:rgba(0,0,0,0.2); white-space:nowrap;">BR. OTP.</th>
+            <tr style="background:#4c1d95;">
+                <th style="padding:11px 12px; text-align:center; width:42px; font-size:11px; font-weight:800; letter-spacing:0.6px; color:#ddd6fe;">#</th>
+                <th style="padding:11px 16px; text-align:left; font-size:12px; font-weight:800; letter-spacing:0.3px; white-space:nowrap; color:#ede9fe;">KUPAC</th>`;
+            COLS.forEach(col => { html += `<th style="${thStyle}">${col}</th>`; });
+            html += `<th style="padding:11px 14px; text-align:right; font-size:11px; font-weight:800; letter-spacing:0.6px; white-space:nowrap; background:#6d28d9; color:#ffffff; border-left:2px solid rgba(255,255,255,0.3);">BR. OTP.</th>
             </tr></thead><tbody>`;
 
             kupciList.forEach((k, idx) => {
-                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
-                const rowBg = idx % 2 === 0 ? '#f5f3ff' : '#fff';
+                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : null;
+                const rank = medal || `<span style="font-size:12px; color:#94a3b8; font-weight:600;">${idx + 1}</span>`;
+                const rowBg = idx % 2 === 0 ? '#f5f3ff' : '#ffffff';
                 const nonZeroCols = COLS.filter(col => (k.sortimentiCount?.[col] || 0) > 0).length;
                 const isSingleSortiment = nonZeroCols <= 1;
-                html += `<tr style="background:${rowBg};" onmouseover="this.style.background='#ede9fe'" onmouseout="this.style.background='${rowBg}'">
-                    <td style="padding:8px 10px; text-align:center;">${medal}</td>
-                    <td style="padding:8px 14px; font-weight:600; color:#7c3aed; white-space:nowrap;">${k.kupac}${isSingleSortiment ? ' <span style="font-size:10px;color:#9ca3af;font-weight:400;">(1 sort.)</span>' : ''}</td>`;
+                html += `<tr style="background:${rowBg}; border-bottom:1px solid #e2e8f0;" onmouseover="this.style.background='#ede9fe'" onmouseout="this.style.background='${rowBg}'">
+                    <td style="padding:9px 12px; text-align:center;">${rank}</td>
+                    <td style="padding:9px 16px; font-weight:700; color:#1e293b; white-space:nowrap; font-size:13px;">${k.kupac}${isSingleSortiment ? ' <span style="font-size:10px; color:#a78bfa; font-weight:500; background:#ede9fe; padding:1px 5px; border-radius:3px; margin-left:4px;">1 sort.</span>' : ''}</td>`;
                 COLS.forEach((col, i) => {
                     const cnt = k.sortimentiCount?.[col] || 0;
                     gColTotals[i] += cnt;
-                    html += `<td style="padding:8px 10px; text-align:right; font-family:'Courier New',monospace; font-size:12px; ${cnt > 0 ? 'color:#5b21b6; font-weight:700;' : 'color:#d1d5db;'}">
-                        ${cnt > 0 ? cnt : '—'}</td>`;
+                    html += `<td style="${tdColStyle(cnt)}">${cnt > 0 ? cnt : '—'}</td>`;
                 });
                 gTotalCount += (k.brOtpremnica || 0);
-                html += `<td style="padding:8px 12px; text-align:right; font-weight:700; font-family:'Courier New',monospace; font-size:13px; color:#4c1d95; background:#ede9fe;">${k.brOtpremnica}</td></tr>`;
+                html += `<td style="padding:9px 14px; text-align:right; font-weight:800; font-family:'Courier New',monospace; font-size:14px; color:#4c1d95; background:#ede9fe; border-left:2px solid #c4b5fd;">${k.brOtpremnica}</td></tr>`;
             });
 
-            html += `<tr style="background:linear-gradient(135deg,#7c3aed,#6d28d9); color:white; font-weight:700;">
-                <td colspan="2" style="padding:9px 14px; text-align:left;">UKUPNO</td>`;
+            html += `<tr style="background:#0f172a;">
+                <td colspan="2" style="padding:10px 16px; text-align:left; font-size:12px; font-weight:800; letter-spacing:0.5px; color:#a78bfa;">∑ UKUPNO</td>`;
             gColTotals.forEach(v => {
-                html += `<td style="padding:9px 10px; text-align:right; font-family:'Courier New',monospace; font-size:12px;">${v > 0 ? v : '—'}</td>`;
+                html += `<td style="padding:10px 12px; text-align:right; font-family:'Courier New',monospace; font-size:13px; font-weight:700; color:${v > 0 ? '#e2e8f0' : '#475569'}; border-left:1px solid rgba(255,255,255,0.08);">${v > 0 ? v : '—'}</td>`;
             });
-            html += `<td style="padding:9px 12px; text-align:right; font-family:'Courier New',monospace; font-size:14px; font-weight:900; background:rgba(0,0,0,0.2);">${gTotalCount}</td>
-            </tr></tbody></table></div>`;
+            html += `<td style="padding:10px 14px; text-align:right; font-family:'Courier New',monospace; font-size:15px; font-weight:900; color:#ddd6fe; background:#6d28d9; border-left:2px solid rgba(255,255,255,0.3);">${gTotalCount}</td>
+            </tr></tbody></table></div></div>`;
 
             return html;
         }
