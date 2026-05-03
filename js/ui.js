@@ -351,7 +351,12 @@
                 // switchToTab hides all [id$="-content"] elements — explicitly un-hide this inner div
                 if (statContent) statContent.classList.remove('hidden');
                 const needsRender = !window._kupciStatData || window._kupciStatData.year !== statYear || !statContent || statContent.children.length === 0;
-                if (needsRender) loadKupciStatistika();
+                if (needsRender) {
+                    loadKupciStatistika();
+                } else {
+                    // Data already loaded — re-render table so latest JS styles apply
+                    selectStatPeriod(window._kupciStatCurrentPeriod || 'god');
+                }
             }
         }
 
