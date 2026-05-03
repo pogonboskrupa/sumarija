@@ -355,7 +355,7 @@
                         <h2>🏭 Pregled po odjelima</h2>
                         <span class="card-subtitle">Sječa, otprema, zaliha i realizacija po odjelima</span>
                     </div>
-                    <button onclick="exportTableToExcel('odjeli-table', 'Odjeli')" style="background: rgba(5,150,105,0.1); color: #059669; border: 1px solid #059669; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export</button>
+                    <button onclick="exportTableToExcel('odjeli-table', 'Odjeli')" class="btn btn-outline btn-sm">📥 Export</button>
                 </div>
                 <div class="enterprise-card-body">
                     <div class="controls-bar">
@@ -385,7 +385,7 @@
             <div class="section">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
                     <h2 style="margin: 0;">📅 Dnevna sječa i otprema - Tekući mjesec</h2>
-                    <select id="dashboard-daily-month-select" onchange="loadDashboardDailyChart()" style="padding: 10px 16px; font-size: 14px; border-radius: 8px; border: 2px solid #059669; min-width: 150px; font-family: 'Inter', sans-serif;">
+                    <select id="dashboard-daily-month-select" onchange="loadDashboardDailyChart()">
                         <option value="0">Januar</option>
                         <option value="1">Februar</option>
                         <option value="2">Mart</option>
@@ -417,27 +417,19 @@
         <!-- MJESEČNI SORTIMENTI CONTENT -->
         <div id="mjesecni-sortimenti-content" class="container hidden">
             <!-- SJEČA PO MJESECIMA - Pro Card -->
-            <div class="mjesecni-card" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 32px; overflow: hidden;">
-                <!-- Card Header -->
-                <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+            <div class="mjesecni-card">
+                <div class="mjesecni-card-header">
                     <div>
-                        <h2 style="margin: 0; color: white; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 24px;">📊</span> Sječa po mjesecima i sortimentima
-                        </h2>
-                        <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Prikaz mjesečnih podataka za tekuću godinu</p>
+                        <h2>📊 Sječa po mjesecima i sortimentima</h2>
+                        <p>Prikaz mjesečnih podataka za tekuću godinu</p>
                     </div>
-                    <div style="display:flex; gap:8px;">
-                        <button onclick="printMjesecniCard('sjeca')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-                            🖨️ ŠTAMPAJ
-                        </button>
-                        <button onclick="exportTableToExcel('mjesecna-sjeca-table', 'Sjeca-po-mjesecima')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-                            <span>📥</span> Export
-                        </button>
+                    <div class="header-actions">
+                        <button onclick="printMjesecniCard('sjeca')" class="btn btn-secondary btn-sm">🖨️ Štampaj</button>
+                        <button onclick="exportTableToExcel('mjesecna-sjeca-table', 'Sjeca-po-mjesecima')" class="btn btn-outline btn-sm">📥 Export</button>
                     </div>
                 </div>
-                <!-- Table Container -->
-                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="pro-mjesecna-table" id="mjesecna-sjeca-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <div class="mjesecni-card-body">
+                    <table class="pro-mjesecna-table" id="mjesecna-sjeca-table">
                         <thead id="mjesecna-sjeca-header"></thead>
                         <tbody id="mjesecna-sjeca-body"></tbody>
                     </table>
@@ -445,27 +437,19 @@
             </div>
 
             <!-- OTPREMA PO MJESECIMA - Pro Card -->
-            <div class="mjesecni-card" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 32px; overflow: hidden;">
-                <!-- Card Header -->
-                <div style="background: linear-gradient(135deg, #7c2d12 0%, #b45309 100%); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+            <div class="mjesecni-card">
+                <div class="mjesecni-card-header">
                     <div>
-                        <h2 style="margin: 0; color: white; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 24px;">🚛</span> Otprema po mjesecima i sortimentima
-                        </h2>
-                        <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Prikaz mjesečnih podataka za tekuću godinu</p>
+                        <h2>🚛 Otprema po mjesecima i sortimentima</h2>
+                        <p>Prikaz mjesečnih podataka za tekuću godinu</p>
                     </div>
-                    <div style="display:flex; gap:8px;">
-                        <button onclick="printMjesecniCard('otprema')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-                            🖨️ ŠTAMPAJ
-                        </button>
-                        <button onclick="exportTableToExcel('mjesecna-otprema-table', 'Otprema-po-mjesecima')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-                            <span>📥</span> Export
-                        </button>
+                    <div class="header-actions">
+                        <button onclick="printMjesecniCard('otprema')" class="btn btn-secondary btn-sm">🖨️ Štampaj</button>
+                        <button onclick="exportTableToExcel('mjesecna-otprema-table', 'Otprema-po-mjesecima')" class="btn btn-outline btn-sm">📥 Export</button>
                     </div>
                 </div>
-                <!-- Table Container -->
-                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="pro-mjesecna-table" id="mjesecna-otprema-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <div class="mjesecni-card-body">
+                    <table class="pro-mjesecna-table" id="mjesecna-otprema-table">
                         <thead id="mjesecna-otprema-header"></thead>
                         <tbody id="mjesecna-otprema-body"></tbody>
                     </table>
@@ -475,11 +459,11 @@
 
         <!-- PRIMACI CONTENT (Prikaz po primačima) -->
         <div id="primaci-content" class="container hidden">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div class="page-actions">
                 <h2>👷 SJEČA</h2>
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <button onclick="printActiveView('primaci-content', 'Sječa', '#1e3a5f')" style="background: #1e3a5f; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;">🖨️ ŠTAMPAJ</button>
-                    <button onclick="exportVisibleTable('primaci-content', 'Sjeca')" style="background: #1e3a5f; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+                <div class="actions">
+                    <button onclick="printActiveView('primaci-content', 'Sječa', '#1e3a5f')" class="btn btn-secondary btn-sm">🖨️ Štampaj</button>
+                    <button onclick="exportVisibleTable('primaci-content', 'Sjeca')" class="btn btn-outline btn-sm">📥 Export Excel</button>
                 </div>
             </div>
 
@@ -632,11 +616,11 @@
 
         <!-- OTPREMACI CONTENT (Prikaz po otpremačima) -->
         <div id="otpremaci-content" class="container hidden">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div class="page-actions">
                 <h2>🚛 OTPREMA</h2>
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <button onclick="printActiveView('otpremaci-content', 'Otprema', '#7c2d12')" style="background: #7c2d12; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;">🖨️ ŠTAMPAJ</button>
-                    <button onclick="exportVisibleTable('otpremaci-content', 'Otprema')" style="background: #7c2d12; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+                <div class="actions">
+                    <button onclick="printActiveView('otpremaci-content', 'Otprema', '#7c2d12')" class="btn btn-secondary btn-sm">🖨️ Štampaj</button>
+                    <button onclick="exportVisibleTable('otpremaci-content', 'Otprema')" class="btn btn-outline btn-sm">📥 Export Excel</button>
                 </div>
             </div>
 
@@ -765,13 +749,13 @@
 
         <!-- PRIMACI ADMIN CONTENT (Primači na šuma panju - admin panel) -->
         <div id="primaci-admin-content" class="container hidden" style="max-width: 100%;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
-                <h2 style="margin: 0;">🌲 Primači na šuma panju</h2>
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <select id="primaci-admin-select" onchange="onPrimaciAdminSelectChange()" style="padding: 8px 12px; border-radius: 8px; border: 2px solid #10b981; font-size: 14px; min-width: 200px; background: white;">
+            <div class="page-actions" style="margin-bottom: 16px;">
+                <h2>🌲 Primači na šuma panju</h2>
+                <div class="actions">
+                    <select id="primaci-admin-select" onchange="onPrimaciAdminSelectChange()">
                         <option value="">-- Izaberi primača --</option>
                     </select>
-                    <select id="primaci-admin-year-select" onchange="onPrimaciAdminYearChange()" style="display: none; padding: 8px 12px; border-radius: 8px; border: 2px solid #10b981; font-size: 14px; background: white;">
+                    <select id="primaci-admin-year-select" onchange="onPrimaciAdminYearChange()" style="display: none;">
                     </select>
                 </div>
             </div>

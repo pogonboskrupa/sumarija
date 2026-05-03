@@ -1007,3 +1007,958 @@ tr.highlight-total:hover td { background: var(--primary-light) !important; }
   text-transform: uppercase;
   color: var(--sidebar-text-muted);
 }
+
+/* ── Submenu (tab subnavigation inside pages) ─────────────── */
+.submenu {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-bottom: 20px;
+  padding: 0 4px;
+  flex-wrap: nowrap;
+}
+.submenu::-webkit-scrollbar { display: none; }
+
+.submenu-tab {
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-3);
+  cursor: pointer;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  white-space: nowrap;
+  transition: all var(--t-fast);
+  outline: none;
+  font-family: var(--font-sans);
+}
+.submenu-tab:hover { color: var(--text-1); background: var(--surface-2); }
+.submenu-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  font-weight: 600;
+}
+
+.submenu-content { display: none; }
+.submenu-content:not(.hidden) { display: block; animation: fadeIn 0.2s ease; }
+
+/* Sub-tabs (nested submenus) */
+.sub-tabs, .tabs-submenu {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.sub-tabs::-webkit-scrollbar, .tabs-submenu::-webkit-scrollbar { display: none; }
+
+.sub-tab, .tab-sub {
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-3);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  background: var(--surface);
+  white-space: nowrap;
+  transition: all var(--t-fast);
+  font-family: var(--font-sans);
+  outline: none;
+}
+.sub-tab:hover, .tab-sub:hover {
+  background: var(--surface-3);
+  color: var(--text-1);
+}
+.sub-tab.active, .tab-sub.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  font-weight: 600;
+}
+
+/* ── Month Selector ───────────────────────────────────────── */
+.month-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--text-2);
+  flex-wrap: wrap;
+}
+
+.month-selector label {
+  font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.month-select,
+.year-select {
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-sm);
+  font-size: 13.5px;
+  color: var(--text-1);
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--t-fast);
+  font-family: var(--font-sans);
+  min-width: 140px;
+}
+
+.month-select:focus, .year-select:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(30,122,71,0.1);
+}
+
+.month-selector--neutral .month-select {
+  border-color: var(--border-2);
+}
+
+/* ── Kupci Table ──────────────────────────────────────────── */
+.kupci-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  margin-top: 8px;
+}
+
+.kupci-table, .expert-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.kupci-table th, .expert-table th {
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.kupci-table td, .expert-table td {
+  padding: 11px 14px;
+  font-size: 13.5px;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.kupci-table tbody tr:hover td,
+.expert-table tbody tr:hover td {
+  background: var(--primary-light) !important;
+}
+
+/* ── Pro Mjesecna Table ───────────────────────────────────── */
+.pro-mjesecna-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.pro-mjesecna-table th {
+  padding: 10px 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.pro-mjesecna-table td {
+  padding: 10px 12px;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+
+.pro-mjesecna-table tbody tr:hover td { background: var(--primary-light) !important; }
+.pro-mjesecna-table tbody tr:nth-child(even) { background: var(--surface-2); }
+
+/* ── Mjesecni Card header (replaces gradient headers) ─────── */
+.mjesecni-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  margin-bottom: 24px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.mjesecni-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.mjesecni-card-header h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-1);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mjesecni-card-header p {
+  font-size: 12.5px;
+  color: var(--text-3);
+  margin: 3px 0 0;
+}
+
+.mjesecni-card-header .header-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.mjesecni-card-body {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Worker Form (Add Sječa / Add Otprema) ────────────────── */
+.worker-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  max-width: 900px;
+  margin: 0 auto 24px;
+}
+
+.worker-form-header {
+  padding: 20px 24px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.worker-form-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-1);
+  margin-bottom: 3px;
+  letter-spacing: -0.01em;
+}
+
+.worker-form-subtitle {
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.worker-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.worker-header-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r-lg);
+  background: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.worker-header-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 2px;
+}
+
+.worker-header-subtitle {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.worker-form-image-section {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.worker-form-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  margin-bottom: 16px;
+}
+
+.worker-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 20px 24px;
+}
+
+.worker-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.worker-form-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.worker-form-input,
+.worker-form-select {
+  padding: 9px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-sm);
+  font-size: 13.5px;
+  color: var(--text-1);
+  outline: none;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+  font-family: var(--font-sans);
+  width: 100%;
+}
+
+.worker-form-input:focus,
+.worker-form-select:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(30,122,71,0.1);
+}
+
+.worker-form-total-box {
+  background: var(--primary-light);
+  border: 1px solid #A7F3D0;
+  border-radius: var(--r-lg);
+  padding: 16px 20px;
+  margin: 0 24px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.worker-form-total-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-dark);
+}
+
+.worker-form-total-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.worker-form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  flex-wrap: wrap;
+}
+
+.worker-form-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: var(--r-sm);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all var(--t-base);
+  font-family: var(--font-sans);
+}
+
+.worker-form-btn-primary {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+.worker-form-btn-primary:hover {
+  background: var(--primary-hover);
+  box-shadow: 0 2px 8px rgba(30,122,71,0.25);
+}
+
+.worker-form-btn-secondary {
+  background: var(--surface);
+  color: var(--text-2);
+  border-color: var(--border-2);
+}
+.worker-form-btn-secondary:hover { background: var(--surface-3); }
+
+/* ── Worker Table Card ────────────────────────────────────── */
+.worker-table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+}
+
+.worker-table-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.worker-table-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+.worker-table-card-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  border: 1px solid #A7F3D0;
+  border-radius: var(--r-full);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.worker-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.worker-table th {
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.worker-table td {
+  padding: 11px 14px;
+  font-size: 13.5px;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.worker-table tbody tr:hover td { background: var(--primary-light) !important; }
+
+/* ── Worker Chart ─────────────────────────────────────────── */
+.worker-chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+  padding: 20px;
+}
+
+.worker-chart-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.worker-chart-canvas {
+  max-height: 300px;
+}
+
+/* ── Analytics Grid ───────────────────────────────────────── */
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* ── Ranking ──────────────────────────────────────────────── */
+.ranking-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--t-fast);
+}
+
+.ranking-item:hover { background: var(--surface-2); }
+.ranking-item:last-child { border-bottom: none; }
+
+.ranking-number {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-full);
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.ranking-name {
+  flex: 1;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-1);
+}
+
+.ranking-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.ranking-info {
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+/* ── KPI small cards ──────────────────────────────────────── */
+.kpi-card-small {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px 16px;
+  box-shadow: var(--shadow-xs);
+}
+
+.kpi-label-small {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-3);
+  margin-bottom: 5px;
+}
+
+.kpi-value-small {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* ── Section Unosi ────────────────────────────────────────── */
+.section-unosi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Stanje view ──────────────────────────────────────────── */
+.stanje-view {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+}
+
+/* ── Filter bar extras ────────────────────────────────────── */
+.filter-bar-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-3);
+  margin-bottom: 12px;
+}
+
+.filter-input, .filter-select {
+  padding: 8px 11px;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  color: var(--text-1);
+  outline: none;
+  transition: border-color var(--t-fast);
+  font-family: var(--font-sans);
+  width: 100%;
+}
+
+.filter-input:focus, .filter-select:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px rgba(30,122,71,0.1);
+}
+
+.filter-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+/* ── Form Control ─────────────────────────────────────────── */
+.form-control {
+  padding: 9px 13px;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-sm);
+  font-size: 14px;
+  color: var(--text-1);
+  outline: none;
+  width: 100%;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+  font-family: var(--font-sans);
+}
+
+.form-control:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(30,122,71,0.12);
+}
+
+/* ── Colour helpers ───────────────────────────────────────── */
+.purple { color: #7C3AED; }
+.yellow { color: var(--yellow); }
+.otpremac { color: var(--blue); }
+.primac   { color: var(--primary); }
+
+/* ── Otpremac/Primac Godišnji table ───────────────────────── */
+.otpremac-godisnji-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.otpremac-godisnji-table th {
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.otpremac-godisnji-table td {
+  padding: 11px 12px;
+  font-size: 13.5px;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.otpremac-godisnji-table tbody tr:hover td { background: var(--primary-light) !important; }
+
+/* ── Izvjestaj week table ─────────────────────────────────── */
+.izvjestaj-week-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.izvjestaj-week-table th {
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.izvjestaj-week-table td {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.izvjestaj-week-table tbody tr:hover td { background: var(--primary-light) !important; }
+
+/* ── Kubikator form ───────────────────────────────────────── */
+.kub-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+  padding: 20px 24px;
+}
+
+.kub-col-rb, .kub-col-datum, .kub-col-napomena {
+  padding: 10px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+}
+
+/* ── Section heading helpers ──────────────────────────────── */
+h3.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Mute coloured inline h3 headings — override legacy hardcoded colors */
+.section h3[style*="color"],
+.section h4[style*="color"],
+.section-unosi h3[style*="color"] {
+  color: var(--text-2) !important;
+}
+
+/* ── Odjeli table wrapper ─────────────────────────────────── */
+.odjeli-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Primaci admin badge ──────────────────────────────────── */
+#primaci-admin-total-badge {
+  background: var(--primary) !important;
+  color: white !important;
+  padding: 4px 12px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ── Action header rows (print/export buttons) ────────────── */
+.page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.page-actions h2 {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-1);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.page-actions .actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Override inline hardcoded action buttons */
+button[style*="#1e3a5f"],
+button[style*="#7c2d12"],
+button[style*="#047857"] {
+  background: var(--primary) !important;
+  color: white !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: var(--r-sm) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: background var(--t-fast) !important;
+}
+
+button[style*="#1e3a5f"]:hover,
+button[style*="#7c2d12"]:hover,
+button[style*="#047857"]:hover {
+  background: var(--primary-hover) !important;
+}
+
+/* ── Gradient card header override ───────────────────────── */
+div[style*="linear-gradient(135deg, #1e3a5f"],
+div[style*="linear-gradient(135deg, #7c2d12"],
+div[style*="background: linear-gradient"] {
+  background: var(--surface-2) !important;
+}
+
+div[style*="linear-gradient(135deg, #1e3a5f"] h2,
+div[style*="linear-gradient(135deg, #7c2d12"] h2,
+div[style*="background: linear-gradient"] h2 {
+  color: var(--text-1) !important;
+}
+
+div[style*="linear-gradient(135deg, #1e3a5f"] p,
+div[style*="linear-gradient(135deg, #7c2d12"] p,
+div[style*="background: linear-gradient"] p {
+  color: var(--text-3) !important;
+}
+
+/* Buttons inside gradient headers */
+div[style*="linear-gradient"] button[style*="rgba(255,255,255,0.2)"] {
+  background: var(--surface) !important;
+  color: var(--text-2) !important;
+  border: 1px solid var(--border-2) !important;
+  border-radius: var(--r-sm) !important;
+}
+
+div[style*="linear-gradient"] button[style*="rgba(255,255,255,0.2)"]:hover {
+  background: var(--surface-3) !important;
+  color: var(--text-1) !important;
+}
+
+/* ── Dashboard select override ────────────────────────────── */
+#dashboard-daily-month-select {
+  padding: 8px 14px !important;
+  font-size: 13.5px !important;
+  border-radius: var(--r-sm) !important;
+  border: 1px solid var(--border-2) !important;
+  background: var(--surface) !important;
+  color: var(--text-1) !important;
+  outline: none;
+  font-family: var(--font-sans) !important;
+  min-width: 140px;
+  cursor: pointer;
+  transition: border-color var(--t-fast);
+}
+
+#dashboard-daily-month-select:focus {
+  border-color: var(--border-focus) !important;
+  box-shadow: 0 0 0 3px rgba(30,122,71,0.1) !important;
+}
+
+/* ── Primaci/Otpremaci admin select overrides ─────────────── */
+#primaci-admin-select,
+#primaci-admin-year-select {
+  padding: 8px 12px !important;
+  border-radius: var(--r-sm) !important;
+  border: 1px solid var(--border-2) !important;
+  font-size: 13.5px !important;
+  background: var(--surface) !important;
+  color: var(--text-1) !important;
+  min-width: 180px;
+  outline: none;
+  font-family: var(--font-sans) !important;
+  cursor: pointer;
+}
+
+#primaci-admin-select:focus,
+#primaci-admin-year-select:focus {
+  border-color: var(--border-focus) !important;
+  box-shadow: 0 0 0 3px rgba(30,122,71,0.1) !important;
+}
+
+/* ── Pagination buttons ───────────────────────────────────── */
+#primaci-admin-odjeli-default-prev,
+#primaci-admin-odjeli-default-next {
+  background: var(--surface) !important;
+  border: 1px solid var(--border-2) !important;
+  color: var(--text-2) !important;
+  padding: 7px 16px !important;
+  border-radius: var(--r-sm) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all var(--t-fast) !important;
+}
+
+#primaci-admin-odjeli-default-prev:hover,
+#primaci-admin-odjeli-default-next:hover {
+  background: var(--surface-3) !important;
+  color: var(--text-1) !important;
+}
+
+/* ── Section period span ──────────────────────────────────── */
+#tekuci-mjesec-period,
+#zadnjih5-period {
+  font-weight: 400 !important;
+  font-size: 13px !important;
+  color: var(--text-3) !important;
+}
+
+/* ── Inline filter row in dashboard ──────────────────────── */
+#zadnjih-od, #zadnjih-do {
+  padding: 6px 10px !important;
+  border: 1px solid var(--border-2) !important;
+  border-radius: var(--r-sm) !important;
+  font-size: 13px !important;
+  color: var(--text-1) !important;
+  background: var(--surface) !important;
+  outline: none;
+  font-family: var(--font-sans) !important;
+}
+
+#zadnjih-od:focus, #zadnjih-do:focus {
+  border-color: var(--border-focus) !important;
+}
+
+/* ── Notif status badge ───────────────────────────────────── */
+#notif-status-badge {
+  font-size: 10.5px !important;
+  padding: 2px 7px !important;
+  border-radius: var(--r-full) !important;
+  background: var(--surface-3) !important;
+  color: var(--text-3) !important;
+  font-weight: 600 !important;
+  margin-left: 6px;
+}
+
