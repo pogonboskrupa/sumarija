@@ -6303,11 +6303,11 @@
             });
 
             html += `<tr style="background:#1e3a8a; border-top:2px solid #2563eb;">
-                <td colspan="2" style="padding:10px 16px; text-align:left; font-size:12px; font-weight:800; letter-spacing:0.5px; color:#bfdbfe;">∑ UKUPNO</td>`;
+                <td colspan="2" style="padding:10px 16px; text-align:left; font-size:12px; font-weight:800; letter-spacing:0.5px; color:#ffffff;">∑ UKUPNO</td>`;
             gTotals.forEach(v => {
-                html += `<td style="padding:10px 12px; text-align:right; font-family:'Courier New',monospace; font-size:13px; font-weight:700; color:${v > 0 ? '#e2e8f0' : '#475569'}; border-left:1px solid rgba(255,255,255,0.08);">${v > 0 ? v.toFixed(2) : '—'}</td>`;
+                html += `<td style="padding:10px 12px; text-align:right; font-family:'Courier New',monospace; font-size:13px; font-weight:700; color:${v > 0 ? '#ffffff' : '#64748b'}; border-left:1px solid rgba(255,255,255,0.12);">${v > 0 ? v.toFixed(2) : '—'}</td>`;
             });
-            html += `<td style="padding:10px 14px; text-align:right; font-family:'Courier New',monospace; font-size:15px; font-weight:900; color:#bfdbfe; background:#1d4ed8; border-left:2px solid rgba(255,255,255,0.3);">${gTotal.toFixed(2)}</td>
+            html += `<td style="padding:10px 14px; text-align:right; font-family:'Courier New',monospace; font-size:15px; font-weight:900; color:#ffffff; background:#1d4ed8; border-left:2px solid rgba(255,255,255,0.3);">${gTotal.toFixed(2)}</td>
             </tr></tbody></table></div></div>`;
 
             return html;
@@ -6376,11 +6376,11 @@
             });
 
             html += `<tr style="background:#4c1d95; border-top:2px solid #7c3aed;">
-                <td colspan="2" style="padding:10px 16px; text-align:left; font-size:12px; font-weight:800; letter-spacing:0.5px; color:#ddd6fe;">∑ UKUPNO</td>`;
+                <td colspan="2" style="padding:10px 16px; text-align:left; font-size:12px; font-weight:800; letter-spacing:0.5px; color:#ffffff;">∑ UKUPNO</td>`;
             gColTotals.forEach(v => {
-                html += `<td style="padding:10px 12px; text-align:right; font-family:'Courier New',monospace; font-size:13px; font-weight:700; color:${v > 0 ? '#e2e8f0' : '#475569'}; border-left:1px solid rgba(255,255,255,0.08);">${v > 0 ? v : '—'}</td>`;
+                html += `<td style="padding:10px 12px; text-align:right; font-family:'Courier New',monospace; font-size:13px; font-weight:700; color:${v > 0 ? '#ffffff' : '#64748b'}; border-left:1px solid rgba(255,255,255,0.12);">${v > 0 ? v : '—'}</td>`;
             });
-            html += `<td style="padding:10px 14px; text-align:right; font-family:'Courier New',monospace; font-size:15px; font-weight:900; color:#ddd6fe; background:#6d28d9; border-left:2px solid rgba(255,255,255,0.3);">${gTotalCount}</td>
+            html += `<td style="padding:10px 14px; text-align:right; font-family:'Courier New',monospace; font-size:15px; font-weight:900; color:#ffffff; background:#6d28d9; border-left:2px solid rgba(255,255,255,0.3);">${gTotalCount}</td>
             </tr></tbody></table></div></div>`;
 
             return html;
