@@ -6289,8 +6289,8 @@
             kupciList.forEach((k, idx) => {
                 const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : null;
                 const rank = medal || `<span style="font-size:12px; color:#94a3b8; font-weight:600;">${idx + 1}</span>`;
-                const rowBg = idx % 2 === 0 ? '#f0f9ff' : '#ffffff';
-                html += `<tr style="background:${rowBg}; border-bottom:1px solid #e2e8f0;" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='${rowBg}'">
+                const rowBg = idx % 2 === 0 ? '#f1f5f9' : '#ffffff';
+                html += `<tr style="background:${rowBg}; border-bottom:1px solid #e2e8f0;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='${rowBg}'">
                     <td style="padding:9px 12px; text-align:center;">${rank}</td>
                     <td style="padding:9px 16px; font-weight:700; color:#1e293b; white-space:nowrap; font-size:13px;">${k.kupac}</td>`;
                 colKeys.forEach((key, i) => {
@@ -6360,7 +6360,7 @@
             kupciList.forEach((k, idx) => {
                 const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : null;
                 const rank = medal || `<span style="font-size:12px; color:#94a3b8; font-weight:600;">${idx + 1}</span>`;
-                const rowBg = idx % 2 === 0 ? '#f5f3ff' : '#ffffff';
+                const rowBg = idx % 2 === 0 ? '#f8f7ff' : '#ffffff';
                 const nonZeroCols = COLS.filter(col => (k.sortimentiCount?.[col] || 0) > 0).length;
                 const isSingleSortiment = nonZeroCols <= 1;
                 html += `<tr style="background:${rowBg}; border-bottom:1px solid #e2e8f0;" onmouseover="this.style.background='#ede9fe'" onmouseout="this.style.background='${rowBg}'">
