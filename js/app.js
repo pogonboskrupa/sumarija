@@ -6100,7 +6100,7 @@
         function selectStatPeriod(periodKey) {
             window._kupciStatCurrentPeriod = periodKey;
 
-            document.querySelectorAll('#kupci-stat-periods button').forEach(btn => {
+            document.querySelectorAll('#kupci-stat-periods button[id^="statbtn-"]').forEach(btn => {
                 btn.style.background = '#fff';
                 btn.style.borderColor = '#d1d5db';
                 btn.style.color = '#374151';
