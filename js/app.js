@@ -6296,8 +6296,8 @@
                 html += `<td style="padding:9px 14px; text-align:right; font-weight:800; font-family:'Courier New',monospace; font-size:14px; color:#1e40af; background:#dbeafe; border-left:2px solid #93c5fd;">${(k.ukupno || 0).toFixed(2)}</td></tr>`;
             });
 
-            html += `<tr style="background:#0f172a;">
-                <td colspan="2" style="padding:10px 16px; text-align:left; font-size:12px; font-weight:800; letter-spacing:0.5px; color:#7dd3fc;">∑ UKUPNO</td>`;
+            html += `<tr style="background:#1e3a8a; border-top:2px solid #2563eb;">
+                <td colspan="2" style="padding:10px 16px; text-align:left; font-size:12px; font-weight:800; letter-spacing:0.5px; color:#bfdbfe;">∑ UKUPNO</td>`;
             gTotals.forEach(v => {
                 html += `<td style="padding:10px 12px; text-align:right; font-family:'Courier New',monospace; font-size:13px; font-weight:700; color:${v > 0 ? '#e2e8f0' : '#475569'}; border-left:1px solid rgba(255,255,255,0.08);">${v > 0 ? v.toFixed(2) : '—'}</td>`;
             });
@@ -6369,8 +6369,8 @@
                 html += `<td style="padding:9px 14px; text-align:right; font-weight:800; font-family:'Courier New',monospace; font-size:14px; color:#4c1d95; background:#ede9fe; border-left:2px solid #c4b5fd;">${k.brOtpremnica}</td></tr>`;
             });
 
-            html += `<tr style="background:#0f172a;">
-                <td colspan="2" style="padding:10px 16px; text-align:left; font-size:12px; font-weight:800; letter-spacing:0.5px; color:#a78bfa;">∑ UKUPNO</td>`;
+            html += `<tr style="background:#4c1d95; border-top:2px solid #7c3aed;">
+                <td colspan="2" style="padding:10px 16px; text-align:left; font-size:12px; font-weight:800; letter-spacing:0.5px; color:#ddd6fe;">∑ UKUPNO</td>`;
             gColTotals.forEach(v => {
                 html += `<td style="padding:10px 12px; text-align:right; font-family:'Courier New',monospace; font-size:13px; font-weight:700; color:${v > 0 ? '#e2e8f0' : '#475569'}; border-left:1px solid rgba(255,255,255,0.08);">${v > 0 ? v : '—'}</td>`;
             });
