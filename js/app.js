@@ -6205,6 +6205,9 @@
             }
 
             const agg = {};
+            // "Σ ČETINARI" i "UKUPNO Č+L" su međuzbrojevi — ne smiju se dodavati u ukupno ni sortimentiCount
+            const UKUPNO_KEY = 'UKUPNO Č+L';
+            const SKIP_AGG = new Set(['UKUPNO Č+L', 'Σ ČETINARI']);
             allRows.filter(r => { const d = parseDatum(r.datum); return d && d >= from && d <= today; })
                 .forEach(row => {
                     if (!row.kupac) return;
@@ -6213,10 +6216,13 @@
                         Object.entries(row.sortimenti).forEach(([s, v]) => {
                             if (v > 0) {
                                 agg[row.kupac].sortimenti[s] = (agg[row.kupac].sortimenti[s] || 0) + v;
-                                agg[row.kupac].ukupno += v;
-                                agg[row.kupac].sortimentiCount[s] = (agg[row.kupac].sortimentiCount[s] || 0) + 1;
+                                if (!SKIP_AGG.has(s)) {
+                                    agg[row.kupac].sortimentiCount[s] = (agg[row.kupac].sortimentiCount[s] || 0) + 1;
+                                }
                             }
                         });
+                        // ukupno = vrijednost iz kolone "UKUPNO Č+L", identično handleKupci GAS-u
+                        agg[row.kupac].ukupno += (row.sortimenti[UKUPNO_KEY] || 0);
                     }
                     agg[row.kupac].brOtpremnica += 1;
                 });
@@ -6293,7 +6299,7 @@
                     html += `<td style="${tdColStyle(v)}">${v > 0 ? v.toFixed(2) : '—'}</td>`;
                 });
                 gTotal += (k.ukupno || 0);
-                html += `<td style="padding:9px 14px; text-align:right; font-weight:800; font-family:'Courier New',monospace; font-size:14px; color:#1e40af; background:#dbeafe; border-left:2px solid #93c5fd;">${(k.ukupno || 0).toFixed(2)}</td></tr>`;
+                html += `<td style="padding:9px 14px; text-align:right; font-weight:800; font-family:'Courier New',monospace; font-size:14px; color:#ffffff; background:#1d4ed8; border-left:2px solid #93c5fd;">${(k.ukupno || 0).toFixed(2)}</td></tr>`;
             });
 
             html += `<tr style="background:#1e3a8a; border-top:2px solid #2563eb;">
@@ -6366,7 +6372,7 @@
                     html += `<td style="${tdColStyle(cnt)}">${cnt > 0 ? cnt : '—'}</td>`;
                 });
                 gTotalCount += (k.brOtpremnica || 0);
-                html += `<td style="padding:9px 14px; text-align:right; font-weight:800; font-family:'Courier New',monospace; font-size:14px; color:#4c1d95; background:#ede9fe; border-left:2px solid #c4b5fd;">${k.brOtpremnica}</td></tr>`;
+                html += `<td style="padding:9px 14px; text-align:right; font-weight:800; font-family:'Courier New',monospace; font-size:14px; color:#ffffff; background:#6d28d9; border-left:2px solid #c4b5fd;">${k.brOtpremnica}</td></tr>`;
             });
 
             html += `<tr style="background:#4c1d95; border-top:2px solid #7c3aed;">
