@@ -1413,3 +1413,33 @@ th[style*="color: white"] {
     margin-left: 4px;
     font-size: 12px;
 }
+
+/* ============================================ */
+/* 🎯 KUPCI STATISTIKA - bijeli tekst na tamnim ćelijama */
+/* JS generira background:#COLORCODE (bez razmaka) pa stari */
+/* selektori s razmakom ne udaraju. Ovaj blok to popravlja. */
+/* ============================================ */
+
+/* UKUPNO kolona - plava pozadina (ranking tabela) */
+#kupci-statistika-content td[style*="background:#1d4ed8"] {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+/* BR.OTP. kolona - ljubičasta pozadina (count tabela) */
+#kupci-statistika-content td[style*="background:#6d28d9"] {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+/* ∑ UKUPNO red - tamnoplava pozadina */
+#kupci-statistika-content tr[style*="background:#1e3a8a"] td {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+/* ∑ UKUPNO red - tamnolijubičasta pozadina */
+#kupci-statistika-content tr[style*="background:#4c1d95"] td {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
