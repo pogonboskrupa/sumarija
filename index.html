@@ -175,14 +175,23 @@
                             <span>Meni</span>
                         </button>
                         <div class="user-menu-dropdown" id="user-menu-dropdown">
-                            <div class="user-menu-item" id="pwa-install-btn" style="display:none;" onclick="event.stopPropagation(); closeUserMenu(); installPwa();">📲 Instaliraj aplikaciju</div>
-                            <div class="user-menu-item" onclick="event.stopPropagation(); closeUserMenu(); preloadAllViews(false, true);">⚡ Učitaj sve prikaze</div>
-                            <div class="user-menu-item" id="notif-menu-item" onclick="event.stopPropagation(); toggleNotifPanel();" style="display:none;">
-                                🔔 Notifikacije
-                                <span id="notif-status-badge" style="font-size: 11px; margin-left: 6px; padding: 2px 6px; border-radius: 10px; background: #e5e7eb; color: #6b7280;">OFF</span>
+                            <div class="user-menu-header">⚙️ &nbsp;Opcije</div>
+                            <div class="user-menu-item" id="pwa-install-btn" style="display:none;" onclick="event.stopPropagation(); closeUserMenu(); installPwa();">
+                                <span style="font-size:20px;">📲</span><span>Instaliraj aplikaciju</span>
                             </div>
-                            <div class="user-menu-item" onclick="event.stopPropagation(); clearAllCache()">🔄 Ažuriraj podatke</div>
-                            <div class="user-menu-item danger" onclick="event.stopPropagation(); logout()">🚪 Odjavi se</div>
+                            <div class="user-menu-item" onclick="event.stopPropagation(); closeUserMenu(); preloadAllViews(false, true);">
+                                <span style="font-size:20px;">⚡</span><span>Učitaj sve prikaze</span>
+                            </div>
+                            <div class="user-menu-item" id="notif-menu-item" onclick="event.stopPropagation(); toggleNotifPanel();" style="display:none;">
+                                <span style="font-size:20px;">🔔</span>
+                                <span>Notifikacije <span id="notif-status-badge" style="font-size:11px; margin-left:6px; padding:2px 8px; border-radius:10px; background:#e5e7eb; color:#6b7280;">OFF</span></span>
+                            </div>
+                            <div class="user-menu-item" onclick="event.stopPropagation(); clearAllCache()">
+                                <span style="font-size:20px;">🔄</span><span>Ažuriraj podatke</span>
+                            </div>
+                            <div class="user-menu-item danger" onclick="event.stopPropagation(); logout()">
+                                <span style="font-size:20px;">🚪</span><span>Odjavi se</span>
+                            </div>
                         </div>
                     </div>
                 </div>
