@@ -5277,20 +5277,28 @@
                 const radilistaMap = {};
                 const sortimentiSet = new Set();
 
+                const UKUPNO_KEY = 'UKUPNO Č+L';
+                const SKIP_AGG  = new Set(['UKUPNO Č+L', 'Σ ČETINARI']);
+
                 monthResults.forEach((res, monthIdx) => {
                     if (!res?.data || !Array.isArray(res.data)) return;
                     if (res.sortimentiNazivi) res.sortimentiNazivi.forEach(s => sortimentiSet.add(s));
 
                     res.data.forEach(row => {
-                        const naziv = row.odjel || '—';
+                        // Grupiraj po radilištu (kolona E); ako nema, koristi odjel (kolona D)
+                        const naziv = (row.radiliste && row.radiliste.trim()) ? row.radiliste.trim() : (row.odjel || '—');
                         if (!radilistaMap[naziv]) {
                             radilistaMap[naziv] = { naziv, mjeseci: new Array(12).fill(0), sortimentiUkupno: {} };
                         }
                         if (row.sortimenti) {
-                            const rowTotal = Object.values(row.sortimenti).reduce((s, v) => s + (v || 0), 0);
+                            // Koristi UKUPNO Č+L kao izvor istine — izbjegava trojno računanje agregatnih kolona
+                            const rowTotal = parseFloat(row.sortimenti[UKUPNO_KEY]) || 0;
                             radilistaMap[naziv].mjeseci[monthIdx] += rowTotal;
                             Object.entries(row.sortimenti).forEach(([s, v]) => {
-                                if (v > 0) radilistaMap[naziv].sortimentiUkupno[s] = (radilistaMap[naziv].sortimentiUkupno[s] || 0) + v;
+                                // Preskoči agregatne kolone u detaljnoj rekapitulaciji
+                                if (v > 0 && !SKIP_AGG.has(s)) {
+                                    radilistaMap[naziv].sortimentiUkupno[s] = (radilistaMap[naziv].sortimentiUkupno[s] || 0) + v;
+                                }
                             });
                         }
                     });
@@ -5300,7 +5308,8 @@
                     .map(r => ({ ...r, ukupno: r.mjeseci.reduce((s, v) => s + v, 0) }))
                     .sort((a, b) => b.ukupno - a.ukupno);
 
-                const sortimentiNazivi = [...sortimentiSet];
+                // Izbaci agregatne kolone iz rekapitulacije sortimenta
+                const sortimentiNazivi = [...sortimentiSet].filter(s => !SKIP_AGG.has(s));
 
                 if (radilista.length === 0) {
                     document.getElementById('otpremaci-radilista-header').innerHTML = `
