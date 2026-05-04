@@ -7537,6 +7537,10 @@
                 // Zadnji datum
                 var zadnjiDatumStr = odjel.zadnjiDatum ? ' \u2022 Zadnja sje\u010Da: ' + odjel.zadnjiDatum : '';
 
+                var panelId = 'odjel-stanje-panel-' + (start + idx);
+                window._odjelPanelMap = window._odjelPanelMap || {};
+                window._odjelPanelMap[panelId] = odjel.odjel;
+
                 html += '<div style="margin-bottom: 28px; border: 2px solid ' + boja.border + '; border-radius: 12px; overflow: hidden;">' +
                     // Header odjela
                     '<div style="background: ' + boja.border + '; color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">' +
@@ -7544,7 +7548,9 @@
                     '<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">' +
                     '<span style="font-size: 13px; opacity: 0.9;">' + zadnjiDatumStr + '</span>' +
                     '<span style="background: rgba(255,255,255,0.25); padding: 4px 14px; border-radius: 6px; font-size: 14px; font-weight: 700;">' + odjel.ukupno.toFixed(2) + ' m\u00B3</span>' +
+                    '<button onclick="toggleOdjelStanjeZaliha(\'' + panelId + '\')" id="' + panelId + '-btn" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.5);color:white;padding:4px 12px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600;">&#x1F4CA; Stanje zaliha</button>' +
                     '</div></div>' +
+                    '<div id="' + panelId + '" style="display:none; border-top: 1px solid rgba(0,0,0,0.15);"></div>' +
                     '<div style="background: ' + boja.bg + '; padding: 12px;">' +
                     // Tabela 1: Apsolutne vrijednosti sa primačima kao redovima
                     '<h4 style="font-size: 14px; margin: 0 0 8px 0; color: ' + boja.header + ';">Apsolutne vrijednosti (m\u00B3)</h4>' +
@@ -7591,6 +7597,109 @@
                 odjeliDefaultPage++;
                 renderOdjeliDefaultPage();
             }
+        }
+
+        function _closeOdjelPanel(el) {
+            var panel = el;
+            while (panel && !(panel.id && panel.id.indexOf('odjel-stanje-panel-') === 0)) {
+                panel = panel.parentElement;
+            }
+            if (!panel) return;
+            panel.style.display = 'none';
+            var btn = document.getElementById(panel.id + '-btn');
+            if (btn) btn.style.background = 'rgba(255,255,255,0.2)';
+        }
+
+        function toggleOdjelStanjeZaliha(panelId) {
+            var panel = document.getElementById(panelId);
+            if (!panel) return;
+            var btn = document.getElementById(panelId + '-btn');
+            if (panel.style.display !== 'none') {
+                panel.style.display = 'none';
+                if (btn) btn.style.background = 'rgba(255,255,255,0.2)';
+                return;
+            }
+            // Show panel
+            if (btn) btn.style.background = 'rgba(255,255,255,0.4)';
+            var odjelNaziv = window._odjelPanelMap && window._odjelPanelMap[panelId];
+            if (!odjelNaziv) { panel.style.display = 'block'; panel.innerHTML = '<div style="padding:16px;color:#6b7280;">Greška: odjel nije pronađen.</div>'; return; }
+
+            // Find odjel in stanjeZalihaData
+            var odjelObj = null;
+            if (stanjeZalihaData && stanjeZalihaData.length) {
+                for (var i = 0; i < stanjeZalihaData.length; i++) {
+                    if (stanjeZalihaData[i].odjel === odjelNaziv) { odjelObj = stanjeZalihaData[i]; break; }
+                }
+            }
+            // Fallback: try localStorage cache
+            if (!odjelObj) {
+                try {
+                    var cached = localStorage.getItem('cache_stanje_zaliha');
+                    if (cached) {
+                        var cacheData = JSON.parse(cached);
+                        var arr = (cacheData && cacheData.data && cacheData.data.odjeli) ? cacheData.data.odjeli : (cacheData && cacheData.odjeli ? cacheData.odjeli : null);
+                        if (arr) {
+                            for (var j = 0; j < arr.length; j++) {
+                                if (arr[j].odjel === odjelNaziv) { odjelObj = arr[j]; break; }
+                            }
+                        }
+                    }
+                } catch(e) {}
+            }
+            panel.style.display = 'block';
+            if (!odjelObj) {
+                panel.innerHTML = '<div style="padding:16px;color:#6b7280;font-size:13px;">Podaci o stanju zaliha nisu učitani. Otvorite Stanje Zaliha tab ili kliknite Ažuriraj podatke.</div>';
+                return;
+            }
+            panel.innerHTML = _buildOdjelStanjeTable(odjelObj);
+        }
+
+        function _buildOdjelStanjeTable(odjelObj) {
+            var cols = [
+                { label: 'TRUPCI Č',  key: 'TRUPCI Č',     isAgg: false },
+                { label: 'CEL.DUGA',  key: 'CEL.DUGA',      isAgg: false },
+                { label: 'CEL.CIJ.', key: 'CEL.CIJEPANA',  isAgg: false },
+                { label: 'ČETINARI',  key: 'Σ ČETINARI',    isAgg: true  },
+                { label: 'TRUPCI L',  key: 'TRUPCI L',      isAgg: false },
+                { label: 'OGR.DUGI',  key: 'OGR.DUGI',      isAgg: false },
+                { label: 'OGR.CIJ.', key: 'OGR.CIJEPANI',  isAgg: false },
+                { label: 'LIŠĆARI',   key: 'LIŠĆARI',       isAgg: true  },
+                { label: 'UKUPNO',    key: 'UKUPNO Č+L',    isAgg: true  }
+            ];
+            var netZ = getNetZaliha(odjelObj);
+            var rows = [
+                { label: 'PROJEKAT', data: odjelObj.projekat || {}, rowBg: '#eff6ff', labelColor: '#1d4ed8' },
+                { label: 'SJEČA',    data: odjelObj.sjeca    || {}, rowBg: '#f0fdf4', labelColor: '#15803d' },
+                { label: 'OTPREMA',  data: odjelObj.otprema  || {}, rowBg: '#fff7ed', labelColor: '#c2410c' },
+                { label: 'ZALIHA',   data: netZ,                    rowBg: '#f5f3ff', labelColor: '#6d28d9', isZaliha: true }
+            ];
+            var thBase = 'color:white;font-weight:700;text-align:center;padding:8px 6px;font-size:11px;border:1px solid #374151;white-space:nowrap;';
+            var headerCells = cols.map(function(c) {
+                return '<th style="' + thBase + 'background:' + (c.isAgg ? '#2d5a87' : '#1e3a5f') + ';">' + c.label + '</th>';
+            }).join('');
+            var bodyRows = rows.map(function(row) {
+                var labelTd = '<td style="font-weight:700;padding:7px 12px;font-size:12px;border:1px solid #e5e7eb;white-space:nowrap;background:' + row.rowBg + ';color:' + row.labelColor + ';min-width:76px;">' + row.label + '</td>';
+                var cells = cols.map(function(c) {
+                    var val = parseFloat(row.data[c.key]) || 0;
+                    var txtColor = val < 0 ? '#dc2626' : val > 0 ? (c.isAgg ? (row.isZaliha ? '#5b21b6' : '#1d4ed8') : '#374151') : '#9ca3af';
+                    var cellBg = (c.isAgg && row.isZaliha) ? 'background:#ede9fe;' : '';
+                    return '<td style="text-align:right;padding:7px 6px;font-size:12px;border:1px solid #e5e7eb;color:' + txtColor + ';' + cellBg + '">' + (val !== 0 ? val.toFixed(2) : '-') + '</td>';
+                }).join('');
+                return '<tr>' + labelTd + cells + '</tr>';
+            }).join('');
+            return '<div style="padding:12px;background:#f8fafc;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+                '<span style="font-weight:700;font-size:13px;color:#1e3a5f;">📊 Stanje zaliha — ' + (odjelObj.odjel || '') + '</span>' +
+                '<button onclick="_closeOdjelPanel(this)" style="background:#e5e7eb;border:none;border-radius:6px;padding:2px 10px;cursor:pointer;font-size:14px;font-weight:700;color:#374151;">&#x2715;</button>' +
+                '</div>' +
+                '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">' +
+                '<table style="width:100%;border-collapse:collapse;">' +
+                '<thead><tr>' +
+                '<th style="' + thBase + 'background:#1e3a5f;text-align:left;padding:8px 12px;">RED</th>' +
+                headerCells +
+                '</tr></thead>' +
+                '<tbody>' + bodyRows + '</tbody>' +
+                '</table></div></div>';
         }
 
         // Load otpremac odjeli data (ZADNJIH 15 ODJELA IZ SVIH GODINA)
