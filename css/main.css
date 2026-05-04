@@ -2953,25 +2953,18 @@
 /* 🏢 KUPAC DETAILS MODAL — Responsive          */
 /* ============================================ */
 
-/* Base — desktop */
+/* Base — sve veličine ekrana, bez max-width limita */
 .kupac-details-inner {
     background: white;
-    border-radius: 16px;
+    border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 24px 70px rgba(0,0,0,0.3);
-    width: 95vw;
-    max-width: 1400px;
-    max-height: 90vh;
+    width: calc(100vw - 24px);
+    max-width: none;
+    height: calc(100vh - 24px);
+    max-height: none;
     display: flex;
     flex-direction: column;
-}
-
-/* Tablet */
-@media (max-width: 1024px) {
-    .kupac-details-inner {
-        width: 98vw;
-        max-width: 100vw;
-    }
 }
 
 /* Mobile — full screen, no rounded corners */
