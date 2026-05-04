@@ -1741,8 +1741,9 @@
                             const izvodjacBg = izvodjacColorMap[o.izvođač] || '';
                             const izvodjacStyle = izvodjacBg ? `background-color: ${izvodjacBg};` : '';
                             const sjecaDateStyle = getSjecaMonthStyle(o.datumZadnjeSjece);
+                            const safeOdjel = (o.odjel || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                             return `
-                                <tr>
+                                <tr onclick="showOdjelStanjeZaliha('${safeOdjel}')" style="cursor:pointer;" onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background=''">
                                     <td class="${radilisteClass}" style="font-weight: 500;">${o.odjel || '-'}</td>
                                     <td class="right ${radilisteClass}">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
                                     <td class="right ${radilisteClass}">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
@@ -7700,6 +7701,40 @@
                 '</tr></thead>' +
                 '<tbody>' + bodyRows + '</tbody>' +
                 '</table></div></div>';
+        }
+
+        function showOdjelStanjeZaliha(odjelNaziv) {
+            var panel = document.getElementById('odjel-stanje-panel-dashboard');
+            if (!panel) return;
+            if (panel.dataset.odjelNaziv === odjelNaziv && panel.style.display !== 'none') {
+                panel.style.display = 'none';
+                panel.dataset.odjelNaziv = '';
+                return;
+            }
+            var odjelObj = null;
+            if (stanjeZalihaData && stanjeZalihaData.length) {
+                for (var i = 0; i < stanjeZalihaData.length; i++) {
+                    if (stanjeZalihaData[i].odjel === odjelNaziv) { odjelObj = stanjeZalihaData[i]; break; }
+                }
+            }
+            if (!odjelObj) {
+                try {
+                    var cached = localStorage.getItem('cache_stanje_zaliha');
+                    if (cached) {
+                        var cacheData = JSON.parse(cached);
+                        var arr = (cacheData && cacheData.data && cacheData.data.odjeli) ? cacheData.data.odjeli : (cacheData && cacheData.odjeli ? cacheData.odjeli : null);
+                        if (arr) { for (var j = 0; j < arr.length; j++) { if (arr[j].odjel === odjelNaziv) { odjelObj = arr[j]; break; } } }
+                    }
+                } catch(e) {}
+            }
+            panel.dataset.odjelNaziv = odjelNaziv;
+            panel.style.display = 'block';
+            if (!odjelObj) {
+                panel.innerHTML = '<div style="background:white;border-radius:12px;padding:16px;border:2px solid #e5e7eb;color:#6b7280;font-size:13px;">Podaci o stanju zaliha nisu učitani. Otvorite <b>Stanje Zaliha</b> tab ili kliknite <b>Ažuriraj podatke</b>.</div>';
+            } else {
+                panel.innerHTML = _buildOdjelStanjeTable(odjelObj);
+            }
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         // Load otpremac odjeli data (ZADNJIH 15 ODJELA IZ SVIH GODINA)
