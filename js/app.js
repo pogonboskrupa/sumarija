@@ -5330,6 +5330,14 @@
                 headerHTML += `<th style="background: linear-gradient(135deg, #155e75, #164e63); color: white; padding: 12px; font-weight: 900; position: sticky; top: 0; z-index: 20;">UKUPNO</th></tr>`;
                 document.getElementById('otpremaci-radilista-header').innerHTML = headerHTML;
 
+                // Izračunaj sumu po mjesecima i grand total
+                const mjSume = new Array(12).fill(0);
+                let grandTotal = 0;
+                radilista.forEach(r => {
+                    r.mjeseci.forEach((v, i) => { mjSume[i] += v; });
+                    grandTotal += r.ukupno;
+                });
+
                 let bodyHTML = '';
                 radilista.forEach((r, idx) => {
                     const rowBg = idx % 2 === 0 ? '#cffafe' : '#ffffff';
@@ -5345,6 +5353,18 @@
                         <td style="background:#bfdbfe;border:2px solid #3b82f6;font-family:'Courier New',monospace;text-align:right;padding:10px;font-weight:900;font-size:13px;color:#1e3a8a;">${r.ukupno.toFixed(2)}</td>
                     </tr>`;
                 });
+
+                // Suma red na dnu
+                const mjSumaCells = mjSume.map(v => {
+                    const d = v > 0 ? v.toFixed(2) : '-';
+                    return `<td style="color:#ffffff;border:1px solid #0e7490;font-family:'Courier New',monospace;font-size:11px;font-weight:800;text-align:right;padding:8px;">${d}</td>`;
+                }).join('');
+                bodyHTML += `<tr style="background:linear-gradient(135deg,#0e7490,#155e75);border-top:3px solid #164e63;">
+                    <td style="color:#ffffff;font-weight:900;font-size:12px;border:1px solid #0e7490;padding:10px;letter-spacing:0.5px;">∑ UKUPNO</td>
+                    ${mjSumaCells}
+                    <td style="background:#1e3a8a;border:2px solid #3b82f6;font-family:'Courier New',monospace;text-align:right;padding:10px;font-weight:900;font-size:13px;color:#ffffff;">${grandTotal.toFixed(2)}</td>
+                </tr>`;
+
                 document.getElementById('otpremaci-radilista-body').innerHTML = bodyHTML;
 
                 // Render godišnju rekapitulaciju po sortimentima
@@ -5355,6 +5375,13 @@
                 });
                 recapHeaderHTML += `</tr>`;
                 document.getElementById('otpremaci-radilista-recap-header').innerHTML = recapHeaderHTML;
+
+                // Sume po sortimentima
+                const sortSume = {};
+                sortimentiNazivi.forEach(s => { sortSume[s] = 0; });
+                radilista.forEach(r => {
+                    sortimentiNazivi.forEach(s => { sortSume[s] += (r.sortimentiUkupno[s] || 0); });
+                });
 
                 let recapBodyHTML = '';
                 radilista.forEach((r, idx) => {
@@ -5370,6 +5397,18 @@
                         ${sortCells}
                     </tr>`;
                 });
+
+                // Suma red za rekapitulaciju
+                const recapSumaCells = sortimentiNazivi.map(s => {
+                    const v = sortSume[s] || 0;
+                    const d = v > 0 ? v.toFixed(2) : '-';
+                    return `<td style="color:#ffffff;border:1px solid #0e7490;font-family:'Courier New',monospace;font-size:10px;font-weight:800;text-align:right;padding:8px;">${d}</td>`;
+                }).join('');
+                recapBodyHTML += `<tr style="background:linear-gradient(135deg,#0e7490,#155e75);border-top:3px solid #164e63;">
+                    <td style="color:#ffffff;font-weight:900;font-size:12px;border:1px solid #0e7490;padding:10px;letter-spacing:0.5px;">∑ UKUPNO</td>
+                    ${recapSumaCells}
+                </tr>`;
+
                 document.getElementById('otpremaci-radilista-recap-body').innerHTML = recapBodyHTML;
 
             } catch (error) {
