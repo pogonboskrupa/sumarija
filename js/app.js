@@ -2789,7 +2789,7 @@
                 const z = getNetZaliha(odjel);
                 const values = {};
                 cols.forEach(c => { values[c.key] = z[c.key] || 0; });
-                values['__ukupno'] = values['Σ ČETINARI'] + values['LIŠĆARI'];
+                values['__ukupno'] = z['UKUPNO Č+L'] || 0;
                 const sjecaDate = odjel._lastSjeca ? ' <span style="color:#6b7280;font-size:10px;">🪚 ' + _isoToDMY(odjel._lastSjeca) + '</span>' : '';
                 values['__naziv'] = (odjel.radiliste ? odjel.radiliste + ' / ' : '') + (odjel.odjel || '') + sjecaDate;
                 // Sortimenti koji su bili preklasirani za ovaj odjel
