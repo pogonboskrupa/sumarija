@@ -7704,7 +7704,7 @@
             var headerCells = cols.map(function(c) {
                 return '<th style="' + thBase + 'background:' + (c.isAgg ? '#2d5a87' : '#1e3a5f') + ';">' + c.label + '</th>';
             }).join('');
-            var bodyRows = rows.map(function(row) {
+            var bodyRowsArr = rows.map(function(row) {
                 var labelTd = '<td style="font-weight:700;padding:7px 12px;font-size:12px;border:1px solid #e5e7eb;white-space:nowrap;background:' + row.rowBg + ';color:' + row.labelColor + ';min-width:76px;">' + row.label + '</td>';
                 var cells = cols.map(function(c) {
                     var val = parseFloat(row.data[c.key]) || 0;
@@ -7713,7 +7713,20 @@
                     return '<td style="text-align:right;padding:7px 6px;font-size:12px;border:1px solid #e5e7eb;color:' + txtColor + ';' + cellBg + '">' + (val !== 0 ? val.toFixed(2) : '-') + '</td>';
                 }).join('');
                 return '<tr>' + labelTd + cells + '</tr>';
+            });
+            // REALIZACIJA red: SJEČA / PROJEKAT × 100, zaokruženo na cijeli broj
+            var realizacijaCells = cols.map(function(c) {
+                var p = parseFloat((odjelObj.projekat || {})[c.key]) || 0;
+                var s = parseFloat((odjelObj.sjeca || {})[c.key]) || 0;
+                if (p === 0) return '<td style="text-align:right;padding:7px 6px;font-size:12px;border:1px solid #fbbf24;background:#fef9c3;color:#9ca3af;">-</td>';
+                var pct = Math.round(s / p * 100);
+                var color = pct >= 100 ? '#15803d' : pct >= 75 ? '#b45309' : '#dc2626';
+                var fw = c.isAgg ? '900' : '700';
+                return '<td style="text-align:right;padding:7px 6px;font-size:12px;border:1px solid #fbbf24;background:#fef9c3;color:' + color + ';font-weight:' + fw + ';">' + pct + '%</td>';
             }).join('');
+            var realizacijaLabelTd = '<td style="font-weight:700;padding:7px 12px;font-size:12px;border:1px solid #fbbf24;white-space:nowrap;background:#fef3c7;color:#92400e;min-width:76px;">REALIZACIJA</td>';
+            bodyRowsArr.splice(2, 0, '<tr>' + realizacijaLabelTd + realizacijaCells + '</tr>');
+            var bodyRows = bodyRowsArr.join('');
             return '<div style="padding:12px;background:#f8fafc;">' +
                 '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
                 '<span style="font-weight:700;font-size:13px;color:#1e3a5f;">📊 Stanje zaliha — ' + (odjelObj.odjel || '') + '</span>' +
@@ -9567,7 +9580,7 @@
                                             : (odjel[vrsta] || {});
 
                                         const razlExcl = vrsta === 'zaliha' ? getRazlikeExclusions(odjel.odjel) : {};
-                                        return `
+                                        const rowHtml = `
                                         <tr style="background: ${rowColors[vrsta]};">
                                             <td style="padding: 10px 12px; font-weight: 700; color: ${textColors[vrsta]}; white-space: nowrap; border: 1px solid #d1d5db;">${labels[vrsta]}</td>
                                             ${stanjeZalihaSortimenti.map((s, i) => {
@@ -9580,6 +9593,24 @@
                                                 return `<td title="${isRazlika ? 'Razlika mjerenja — isključeno iz ukupnog' : ''}" style="padding: 10px 6px; text-align: right; color: ${cellColor}; border: 1px solid #d1d5db; font-weight: ${isTotal ? '700' : '400'}; font-style: ${isRazlika ? 'italic' : 'normal'}; ${cellBg ? 'background:' + cellBg + ';' : ''}">${displayValue}</td>`;
                                             }).join('')}
                                         </tr>`;
+                                        if (vrsta !== 'sjeca') return rowHtml;
+                                        // REALIZACIJA red: SJEČA / PROJEKAT × 100, cijeli broj
+                                        const projData = odjel.projekat || {};
+                                        const sjecaData = odjel.sjeca || {};
+                                        const realizacijaRow = `
+                                        <tr style="background: #fef9c3;">
+                                            <td style="padding: 10px 12px; font-weight: 700; color: #92400e; white-space: nowrap; border: 1px solid #fbbf24;">REALIZACIJA</td>
+                                            ${stanjeZalihaSortimenti.map((s, i) => {
+                                                const p = parseFloat(projData[s]) || 0;
+                                                const sc = parseFloat(sjecaData[s]) || 0;
+                                                const isTotal = i === 9 || i === 18 || i === 19;
+                                                if (p === 0) return `<td style="padding: 10px 6px; text-align: right; color: #9ca3af; border: 1px solid #fbbf24; ${isTotal ? 'background:#fef3c7;font-weight:700;' : ''}">-</td>`;
+                                                const pct = Math.round(sc / p * 100);
+                                                const color = pct >= 100 ? '#15803d' : pct >= 75 ? '#b45309' : '#dc2626';
+                                                return `<td style="padding: 10px 6px; text-align: right; color: ${color}; border: 1px solid #fbbf24; font-weight: ${isTotal ? '900' : '700'}; ${isTotal ? 'background:#fef3c7;' : ''}">${pct}%</td>`;
+                                            }).join('')}
+                                        </tr>`;
+                                        return rowHtml + realizacijaRow;
                                     }).join('')}
                                 </tbody>
                             </table>
