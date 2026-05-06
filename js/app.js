@@ -5059,27 +5059,38 @@
                 document.getElementById('primaci-izvodjaci-body').innerHTML = bodyHTML;
 
                 // Render godišnju rekapitulaciju po sortimentima
+                const RECAP_COLS = ['TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'Σ ČETINARI',
+                                    'TRUPCI L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI', 'UKUPNO Č+L'];
                 let recapHeaderHTML = `
                     <tr>
                         <th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
                             👷 Izvođač radova
                         </th>
                 `;
-                data.sortimentiNazivi.forEach(s => {
-                    recapHeaderHTML += `<th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 10px;">${s}</th>`;
+                RECAP_COLS.forEach(s => {
+                    const isAggregate = s === 'Σ ČETINARI' || s === 'LIŠĆARI' || s === 'UKUPNO Č+L';
+                    const bg = isAggregate ? 'background: linear-gradient(135deg, #7c2d12, #991b1b);' : 'background: linear-gradient(135deg, #ea580c, #dc2626);';
+                    recapHeaderHTML += `<th style="${bg} color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 10px;">${s}</th>`;
                 });
                 recapHeaderHTML += `</tr>`;
                 document.getElementById('primaci-izvodjaci-recap-header').innerHTML = recapHeaderHTML;
+
+                const recapFooterTotals = {};
+                RECAP_COLS.forEach(s => { recapFooterTotals[s] = 0; });
 
                 let recapBodyHTML = '';
                 data.izvodjaci.forEach((izvodjac, idx) => {
                     const rowBg = idx % 2 === 0 ? '#fff7ed' : '#ffffff';
 
-                    const sortimentiCells = data.sortimentiNazivi.map(s => {
+                    const sortimentiCells = RECAP_COLS.map(s => {
                         const val = izvodjac.sortimentiUkupno[s] || 0;
+                        recapFooterTotals[s] += val;
                         const displayVal = val > 0 ? val.toFixed(2) : '-';
-                        const fontWeight = val > 0 ? 'font-weight: 700; color: #7c2d12;' : 'color: #d1d5db;';
-                        return `<td style="${fontWeight} border: 1px solid #fed7aa; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 8px;">${displayVal}</td>`;
+                        const isAggregate = s === 'Σ ČETINARI' || s === 'LIŠĆARI' || s === 'UKUPNO Č+L';
+                        const cellStyle = isAggregate
+                            ? (val > 0 ? 'font-weight: 900; color: #7c2d12; background: #fef3c7;' : 'color: #d1d5db; background: #fef3c7;')
+                            : (val > 0 ? 'font-weight: 700; color: #7c2d12;' : 'color: #d1d5db;');
+                        return `<td style="${cellStyle} border: 1px solid #fed7aa; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 8px;">${displayVal}</td>`;
                     }).join('');
 
                     recapBodyHTML += `
@@ -5091,6 +5102,21 @@
                         </tr>
                     `;
                 });
+
+                const footerCells = RECAP_COLS.map(s => {
+                    const val = recapFooterTotals[s];
+                    const displayVal = val > 0 ? val.toFixed(2) : '-';
+                    return `<td style="font-weight: 900; color: #1e3a5f; background: #dbeafe; border: 2px solid #3b82f6; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 8px;">${displayVal}</td>`;
+                }).join('');
+                recapBodyHTML += `
+                    <tr style="background: #eff6ff;">
+                        <td style="font-weight: 900; font-size: 12px; border: 2px solid #3b82f6; padding: 10px; color: #1e3a5f; background: #dbeafe;">
+                            UKUPNO
+                        </td>
+                        ${footerCells}
+                    </tr>
+                `;
+
                 document.getElementById('primaci-izvodjaci-recap-body').innerHTML = recapBodyHTML;
 
 
