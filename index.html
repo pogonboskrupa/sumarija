@@ -67,7 +67,18 @@
     <script src="js/ui.js" defer></script>
     <script src="js/drag-scroll.js" defer></script>
     <script src="js/charts.js" defer></script>
+    <script src="js/godisnji-plan.js" defer></script>
     <script src="js/notifications.js" defer></script>
+
+    <style>
+        @media print {
+            body > *:not(#gp-print-modal) { display: none !important; }
+            #gp-print-modal { display: block !important; position: static !important; padding: 0 !important; overflow: visible !important; }
+            #gp-print-toolbar { display: none !important; }
+            #gp-print-paper { padding: 10mm 12mm !important; }
+            @page { size: A4 portrait; margin: 5mm; }
+        }
+    </style>
 
     <script>
         let chartJsLoaded = false;
@@ -3119,6 +3130,113 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- GODIŠNJI PLAN CONTENT -->
+    <div id="godisnji-plan-content" class="container hidden">
+        <div class="page-header">
+            <div class="page-header-left">
+                <h1>📋 Godišnji plan sječe 2026</h1>
+                <p>Praćenje realizacije godišnjeg plana — Pogon Bosanska Krupa</p>
+            </div>
+            <div class="page-header-right">
+                <button class="btn btn-secondary" onclick="openGpPrintModal()">🖨️ Štampaj</button>
+                <button class="btn btn-primary" onclick="loadGodisnjiPlan(true)">🔄 Osvježi</button>
+            </div>
+        </div>
+
+        <!-- Submenu tabs -->
+        <div class="submenu" id="gp-submenu" style="margin-bottom:16px;flex-wrap:wrap;">
+            <button class="submenu-tab active" data-tab="grupe"      onclick="switchGpTab('grupe')">📊 Po grupama</button>
+            <button class="submenu-tab"         data-tab="sortimenti" onclick="switchGpTab('sortimenti')">📦 Po sortimentima</button>
+            <button class="submenu-tab"         data-tab="pregled"   onclick="switchGpTab('pregled')">📋 Pregled plana</button>
+            <button class="submenu-tab"         data-tab="projekat"  onclick="switchGpTab('projekat')">📐 Plan po projektu</button>
+        </div>
+
+        <!-- Filters -->
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+            <!-- GJ filter -->
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                <span style="font-size:12px;color:#6b7280;font-weight:600;">GJ:</span>
+                <button data-gj-btn="sve" onclick="filterGpGj('sve')" style="padding:4px 12px;border-radius:99px;border:2px solid #6b7280;background:white;color:#374151;font-size:12px;cursor:pointer;font-weight:700;">Sve GJ</button>
+                <button data-gj-btn="Risovac Krupa" onclick="filterGpGj('Risovac Krupa')" style="padding:4px 12px;border-radius:99px;border:2px solid #1d4ed8;background:white;color:#1d4ed8;font-size:12px;cursor:pointer;opacity:0.5;">Risovac Krupa</button>
+                <button data-gj-btn="Grmeč Jasenica" onclick="filterGpGj('Grmeč Jasenica')" style="padding:4px 12px;border-radius:99px;border:2px solid #15803d;background:white;color:#15803d;font-size:12px;cursor:pointer;opacity:0.5;">Grmeč Jasenica</button>
+                <button data-gj-btn="Vojskova" onclick="filterGpGj('Vojskova')" style="padding:4px 12px;border-radius:99px;border:2px solid #b45309;background:white;color:#b45309;font-size:12px;cursor:pointer;opacity:0.5;">Vojskova</button>
+            </div>
+            <div style="width:1px;height:24px;background:#e5e7eb;"></div>
+            <!-- Status filter -->
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                <span style="font-size:12px;color:#6b7280;font-weight:600;">Status:</span>
+                <button data-st-btn="sve" onclick="filterGpStatus('sve')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#374151;font-weight:700;">Sve</button>
+                <button data-st-btn="posjeceno" onclick="filterGpStatus('posjeceno')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#166534;">Posječeno</button>
+                <button data-st-btn="u-sjeci" onclick="filterGpStatus('u-sjeci')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#92400e;">U sječi</button>
+                <button data-st-btn="planirano" onclick="filterGpStatus('planirano')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#6b7280;">Planirano</button>
+            </div>
+            <div style="flex:1;min-width:160px;">
+                <input type="text" placeholder="🔍 Pretraži odjel..." oninput="filterGpSearch(this.value)" style="width:100%;padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;box-sizing:border-box;">
+            </div>
+        </div>
+
+        <!-- Sub-views -->
+        <div id="gp-grupe-view"></div>
+        <div id="gp-sortimenti-view" class="hidden"></div>
+        <div id="gp-pregled-view" class="hidden"></div>
+        <div id="gp-projekat-view" class="hidden"></div>
+    </div>
+
+    <!-- GP Odjel Detail Modal -->
+    <div id="gp-odjel-modal" class="modal-overlay" style="display:none;align-items:flex-start;justify-content:center;padding:24px;">
+        <div class="modal" style="width:95vw;max-width:1100px;max-height:90vh;display:flex;flex-direction:column;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#1e3a5f 0%,#2d5a87 100%);color:white;padding:16px 20px;border-radius:12px 12px 0 0;">
+                <div style="display:flex;justify-content:space-between;align-items:center;width:100%;flex-wrap:wrap;gap:8px;">
+                    <div>
+                        <div id="gp-modal-title" style="font-size:16px;font-weight:700;margin-bottom:2px;">Detalji odjela</div>
+                        <div id="gp-modal-ukupno" style="font-size:12px;opacity:0.8;"></div>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <button onclick="gpExportModalCsv()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;">📥 CSV</button>
+                        <button onclick="closeGpOdjelModal()" style="background:rgba(255,255,255,0.15);border:none;color:white;font-size:22px;cursor:pointer;padding:4px 10px;border-radius:6px;">&times;</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body" style="overflow:auto;flex:1;padding:0;">
+                <div style="overflow-x:auto;">
+                    <table class="monthly-table" style="width:100%;font-size:11px;min-width:800px;">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left;min-width:140px;">Datum</th>
+                                <th style="text-align:left;">Primac</th>
+                                <th style="text-align:left;">Radilište</th>
+                                <th class="right" style="color:#1e40af;">Trupci Č</th>
+                                <th class="right" style="color:#5b21b6;">Cel.D.</th>
+                                <th class="right" style="color:#7c3aed;">Cel.C.</th>
+                                <th class="right" style="color:#9ca3af;">Škart</th>
+                                <th class="right" style="color:#15803d;">Trupci L</th>
+                                <th class="right" style="color:#92400e;">Ogr.D.</th>
+                                <th class="right" style="color:#b45309;">Ogr.C.</th>
+                                <th class="right" style="color:#d97706;">Gule</th>
+                                <th class="right">Ukupno</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gp-modal-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GP Print Modal -->
+    <div id="gp-print-modal" class="modal-overlay" style="display:none;align-items:flex-start;justify-content:center;overflow:auto;">
+        <div style="width:100%;max-width:900px;">
+            <div id="gp-print-toolbar" style="position:sticky;top:0;z-index:10;background:#1e293b;color:white;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:700;font-size:15px;">📋 Godišnji plan sječe 2026</span>
+                <div style="display:flex;gap:8px;">
+                    <button onclick="gpDoPrint()" style="background:#059669;color:white;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">🖨️ Štampaj</button>
+                    <button onclick="closeGpPrintModal()" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px;">✕ Zatvori</button>
+                </div>
+            </div>
+            <div id="gp-print-paper" style="background:white;padding:20mm 18mm;min-height:297mm;"></div>
         </div>
     </div>
 

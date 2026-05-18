@@ -130,6 +130,7 @@
                     { id: 'primaci', icon: '👷', label: 'SJEČA' },
                     { id: 'otpremaci', icon: '🚛', label: 'OTPREMA' },
                     { id: 'primaci-admin', icon: '🌲', label: 'Primači na šuma panju' },
+                    { id: 'godisnji-plan', icon: '📋', label: 'Godišnji plan' },
                     { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
                     { id: 'pending-unosi', icon: '📋', label: 'Dodani unosi', hasBadge: true },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
@@ -329,7 +330,8 @@
                 'poslovodja-pregled-content', 'poslovodja-unosi-content',
                 'izvjestaji-content', 'izvjestaji-primac-content', 'izvjestaji-otpremac-content',
                 'mjesecni-sortimenti-content', 'stanje-odjela-admin-content',
-                'dinamika-content', 'kubikator-content', 'stanje-zaliha-content'
+                'dinamika-content', 'kubikator-content', 'stanje-zaliha-content',
+                'godisnji-plan-content'
             ];
             panelIds.forEach(function(id) {
                 var el = document.getElementById(id);

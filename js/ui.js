@@ -50,6 +50,7 @@
                 'kubikator': 'kubikator-content',
                 'primac-sihtarica': 'primac-sihtarica-content',
                 'otpremac-sihtarica': 'otpremac-sihtarica-content',
+                'godisnji-plan': 'godisnji-plan-content',
             };
             const ttl = (typeof getSmartCacheTTL === 'function') ? getSmartCacheTTL() : 60000;
             const lastRender = window._tabRenderTime[tab];
@@ -159,6 +160,8 @@
                 loadSihtaricaPrimac();
             } else if (tab === 'otpremac-sihtarica') {
                 loadSihtaricaOtpremac();
+            } else if (tab === 'godisnji-plan') {
+                if (typeof loadGodisnjiPlan === 'function') loadGodisnjiPlan(false);
             }
         }
 
