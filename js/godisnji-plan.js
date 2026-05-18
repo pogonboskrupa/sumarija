@@ -140,6 +140,32 @@
     return `<span style="background:${GJ_BG[gj]};color:${GJ_COLOR[gj]};padding:2px 7px;border-radius:99px;font-size:11px;font-weight:700;">${gj}</span>`;
   }
 
+  // Styled odjel number chip — no prefix, just the number
+  function odjelLink(gj, odjel) {
+    const eg = gj.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const eo = odjel.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<span onclick="gpOpenOdjelModal('${eg}','${eo}')" style="cursor:pointer;display:inline-block;font-family:'Roboto Mono',monospace;font-weight:700;font-size:12px;background:#eff6ff;color:#1d4ed8;padding:3px 9px;border-radius:5px;border:1px solid #bfdbfe;min-width:28px;text-align:center;letter-spacing:0.3px;" onmouseover="this.style.background='#dbeafe';this.style.borderColor='#93c5fd'" onmouseout="this.style.background='#eff6ff';this.style.borderColor='#bfdbfe'">${odjel}</span>`;
+  }
+
+  // GJ section header row
+  function gjHeaderRow(gj, cols) {
+    const col = GJ_COLOR[gj];
+    return `<tr style="background:linear-gradient(90deg,${col}1c 0%,${col}09 55%,transparent 100%);">
+      <td colspan="${cols}" style="border-left:4px solid ${col};padding:9px 14px;">
+        <div style="display:inline-flex;align-items:center;gap:8px;">
+          <span style="display:inline-block;width:7px;height:7px;background:${col};border-radius:2px;flex-shrink:0;"></span>
+          <span style="font-size:12px;font-weight:800;color:${col};text-transform:uppercase;letter-spacing:0.5px;">${gj}</span>
+        </div>
+      </td>
+    </tr>`;
+  }
+
+  // Subtotal row wrapper style
+  function subTotalStyle(gj) {
+    const col = GJ_COLOR[gj];
+    return `background:${GJ_BG[gj]};border-top:2px solid ${col}50;font-weight:700;font-size:11px;`;
+  }
+
   // ---- AGGREGATION ----
   function sumRows(rs) {
     const s  = k => rs.reduce((acc,r)=>acc+(r[k]||0),0);
@@ -310,8 +336,18 @@
 
   // ---- RENDER: GRUPE ----
   function thSort(tab, col, label) {
-    return `<th onclick="gpSort('${tab}','${col}')" style="cursor:pointer;white-space:nowrap;">${label} ${sortArrow(tab,col)}</th>`;
+    const active = _sort[tab] && _sort[tab].col === col;
+    return `<th onclick="gpSort('${tab}','${col}')" style="cursor:pointer;white-space:nowrap;${active?'background:rgba(255,255,255,0.12);':''}">${label} ${sortArrow(tab,col)}</th>`;
   }
+
+  // Border-left separators between sortiment groups (used on both th and td)
+  const BL = {
+    ct:  `border-left:2px solid rgba(30,64,175,0.35);`,
+    dz:  `border-left:2px solid rgba(91,33,182,0.35);`,
+    lt:  `border-left:2px solid rgba(21,128,61,0.35);`,
+    cij: `border-left:2px solid rgba(180,83,9,0.35);`,
+    tot: `border-left:2px solid rgba(71,85,105,0.4);`,
+  };
 
   function renderGrupe(rows) {
     const view = document.getElementById('gp-grupe-view');
@@ -326,34 +362,34 @@
       </div>
       <div class="enterprise-card-body">
       <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-      <table class="monthly-table" style="width:100%;min-width:1100px;font-size:12px;">
+      <table class="monthly-table" style="width:100%;min-width:1100px;font-size:12px;border-collapse:collapse;">
       <thead>
         <tr style="background:#1e3a5f;color:white;">
-          <th rowspan="2" style="min-width:28px;">#</th>
-          <th rowspan="2" style="min-width:60px;text-align:left;">Odjel</th>
-          <th rowspan="2" style="min-width:80px;">Status</th>
-          <th rowspan="2" onclick="gpSort('grupe','koef')" style="cursor:pointer;min-width:50px;">Koef. ${sortArrow('grupe','koef')}</th>
-          <th colspan="2" style="background:#1e3399;text-align:center;">Trupci Č</th>
-          <th colspan="4" style="background:#4c1d95;text-align:center;">Cjepano Č</th>
-          <th colspan="2" style="background:#14532d;text-align:center;">Trupci L</th>
-          <th colspan="4" style="background:#78350f;text-align:center;">Cjepano L</th>
-          <th rowspan="2" onclick="gpSort('grupe','neto')" style="cursor:pointer;min-width:70px;">Plan m³ ${sortArrow('grupe','neto')}</th>
+          <th rowspan="2" style="width:32px;text-align:center;">#</th>
+          <th rowspan="2" style="min-width:72px;text-align:left;padding-left:10px;">Odjel</th>
+          <th rowspan="2" style="min-width:90px;">Status</th>
+          <th rowspan="2" onclick="gpSort('grupe','koef')" style="cursor:pointer;min-width:52px;">Koef. ${sortArrow('grupe','koef')}</th>
+          <th colspan="2" style="background:#1e3399;text-align:center;${BL.ct}">Trupci Č</th>
+          <th colspan="4" style="background:#3b1080;text-align:center;${BL.dz}">Cjepano Č</th>
+          <th colspan="2" style="background:#14532d;text-align:center;${BL.lt}">Trupci L</th>
+          <th colspan="4" style="background:#7c2d12;text-align:center;${BL.cij}">Cjepano L</th>
+          <th rowspan="2" onclick="gpSort('grupe','neto')" style="cursor:pointer;min-width:70px;${BL.tot}">Plan m³ ${sortArrow('grupe','neto')}</th>
           <th rowspan="2" onclick="gpSort('grupe','ukupno')" style="cursor:pointer;min-width:70px;">Ostvr. m³ ${sortArrow('grupe','ukupno')}</th>
-          <th rowspan="2" onclick="gpSort('grupe','stepen')" style="cursor:pointer;min-width:70px;">Stepen ${sortArrow('grupe','stepen')}</th>
+          <th rowspan="2" onclick="gpSort('grupe','stepen')" style="cursor:pointer;min-width:72px;">Stepen ${sortArrow('grupe','stepen')}</th>
         </tr>
-        <tr style="background:#2d4a7a;color:white;font-size:11px;">
-          <th style="color:${C.cTrupci};background:#eff6ff;color:#1e40af;">Plan</th>
-          <th style="background:#eff6ff;color:#1e40af;">Ostvr.</th>
-          <th style="background:#f5f3ff;color:#5b21b6;">Plan</th>
-          <th style="background:#f5f3ff;color:#5b21b6;">Cel.d.</th>
-          <th style="background:#f5f3ff;color:#5b21b6;">Cel.c.</th>
-          <th style="background:#f5f3ff;color:#6b7280;">Škart</th>
-          <th style="background:#f0fdf4;color:#15803d;">Plan</th>
-          <th style="background:#f0fdf4;color:#15803d;">Ostvr.</th>
-          <th style="background:#fff7ed;color:#92400e;">Plan</th>
-          <th style="background:#fff7ed;color:#92400e;">Ogr.d.</th>
-          <th style="background:#fff7ed;color:#b45309;">Ogr.c.</th>
-          <th style="background:#fff7ed;color:#d97706;">Gule</th>
+        <tr style="background:#243b6e;color:white;font-size:11px;">
+          <th style="background:#dbeafe;color:#1e40af;${BL.ct}">Plan</th>
+          <th style="background:#dbeafe;color:#1e40af;">Ostvr.</th>
+          <th style="background:#ede9fe;color:#5b21b6;${BL.dz}">Plan</th>
+          <th style="background:#ede9fe;color:#5b21b6;">Cel.d.</th>
+          <th style="background:#ede9fe;color:#6d28d9;">Cel.c.</th>
+          <th style="background:#f1f5f9;color:#64748b;">Škart</th>
+          <th style="background:#dcfce7;color:#166534;${BL.lt}">Plan</th>
+          <th style="background:#dcfce7;color:#166534;">Ostvr.</th>
+          <th style="background:#ffedd5;color:#9a3412;${BL.cij}">Plan</th>
+          <th style="background:#ffedd5;color:#9a3412;">Ogr.d.</th>
+          <th style="background:#ffedd5;color:#c2410c;">Ogr.c.</th>
+          <th style="background:#fef9c3;color:#a16207;">Gule</th>
         </tr>
       </thead>
       <tbody>`;
@@ -362,56 +398,58 @@
       if (!gr.length) return;
       const sub = sumRows(gr);
       const gjColor = GJ_COLOR[gj];
-      const gjBg    = GJ_BG[gj];
-      html += `<tr style="background:${gjBg};"><td colspan="19" style="font-weight:700;color:${gjColor};padding:8px 10px;font-size:13px;">🏞 ${gj}</td></tr>`;
+      html += gjHeaderRow(gj, 19);
 
       gr.forEach((r,i)=>{
-        const kc = koefColor(r.koef);
-        const dzA = dzgoAct(r.actual);
-        const cjA = cijAct(r.actual);
-        html += `<tr>
-          <td style="color:#9ca3af;font-size:11px;text-align:center;">${i+1}</td>
-          <td style="font-weight:600;cursor:pointer;color:#1d4ed8;" onclick="gpOpenOdjelModal('${r.gj.replace(/'/g,"\\'")}','${r.odjel.replace(/'/g,"\\'")}')">Odj.${r.odjel}</td>
-          <td style="white-space:nowrap;">${statusBadge(r.status)}${statusSelectHtml(r.gj,r.odjel,r.override)}</td>
-          <td style="font-weight:600;color:${kc};text-align:right;">${r.koef.toFixed(1)}%</td>
-          <td class="right">${fmt(r.cTrupci)}</td>
-          <td class="right" style="color:${C.cTrupci};font-weight:600;">${fmt(r.actual.cTrupci)}</td>
-          <td class="right">${fmt(r.dzgo)}</td>
+        const kc  = koefColor(r.koef);
+        const stripe = i%2===1 ? 'background:#fafbfc;' : '';
+        html += `<tr style="${stripe}border-bottom:1px solid #f1f5f9;">
+          <td style="color:#cbd5e1;font-size:11px;text-align:center;padding:7px 4px;">${i+1}</td>
+          <td style="padding:7px 8px;">${odjelLink(r.gj,r.odjel)}</td>
+          <td style="padding:7px 8px;white-space:nowrap;">${statusBadge(r.status)}${statusSelectHtml(r.gj,r.odjel,r.override)}</td>
+          <td style="font-weight:700;color:${kc};text-align:right;padding:7px 8px;">${r.koef.toFixed(1)}%</td>
+          <td class="right" style="${BL.ct}color:#94a3b8;">${fmt(r.cTrupci)}</td>
+          <td class="right" style="color:${C.cTrupci};font-weight:700;">${fmt(r.actual.cTrupci)}</td>
+          <td class="right" style="${BL.dz}color:#94a3b8;">${fmt(r.dzgo)}</td>
           <td class="right" style="color:${C.celDuga};">${fmt(r.actual.celDuga)}</td>
           <td class="right" style="color:${C.celCijepana};">${fmt(r.actual.celCijepana)}</td>
           <td class="right" style="color:${C.skart};">${fmt(r.actual.skart)}</td>
-          <td class="right">${fmt(r.lTrupci)}</td>
-          <td class="right" style="color:${C.lTrupci};font-weight:600;">${fmt(r.actual.lTrupci)}</td>
-          <td class="right">${fmt(r.cijepano)}</td>
+          <td class="right" style="${BL.lt}color:#94a3b8;">${fmt(r.lTrupci)}</td>
+          <td class="right" style="color:${C.lTrupci};font-weight:700;">${fmt(r.actual.lTrupci)}</td>
+          <td class="right" style="${BL.cij}color:#94a3b8;">${fmt(r.cijepano)}</td>
           <td class="right" style="color:${C.ogrDugi};">${fmt(r.actual.ogrDugi)}</td>
           <td class="right" style="color:${C.ogrCijepani};">${fmt(r.actual.ogrCijepani)}</td>
           <td class="right" style="color:${C.gule};">${fmt(r.actual.gule)}</td>
-          <td class="right">${fmt(r.neto)}</td>
-          <td class="right" style="font-weight:600;">${fmt(r.actual.ukupno)}</td>
+          <td class="right" style="${BL.tot}font-weight:600;">${fmt(r.neto)}</td>
+          <td class="right" style="font-weight:700;color:#0f172a;">${fmt(r.actual.ukupno)}</td>
           <td class="right">${realizacijaBadge(r.stepen)}</td>
         </tr>`;
       });
 
-      html += `<tr style="background:${gjBg};font-weight:700;font-size:11px;">
-        <td></td><td style="color:${gjColor};">Σ ${gj.split(' ')[0]}</td><td></td><td></td>
-        <td class="right">${fmt(sub.planCT)}</td><td class="right">${fmt(sub.actCT)}</td>
-        <td class="right">${fmt(sub.planDz)}</td><td class="right">${fmt(sub.celDuga)}</td><td class="right">${fmt(sub.celCij)}</td><td class="right">${fmt(sub.skart)}</td>
-        <td class="right">${fmt(sub.planLT)}</td><td class="right">${fmt(sub.actLT)}</td>
-        <td class="right">${fmt(sub.planCij)}</td><td class="right">${fmt(sub.ogrDugi)}</td><td class="right">${fmt(sub.ogrCij)}</td><td class="right">${fmt(sub.gule)}</td>
-        <td class="right">${fmt(sub.neto)}</td><td class="right">${fmt(sub.ukupno)}</td><td class="right">${realizacijaBadge(sub.stepen)}</td>
+      html += `<tr style="${subTotalStyle(gj)}">
+        <td style="padding:6px 4px;"></td>
+        <td style="padding:6px 8px;color:${gjColor};font-size:11px;white-space:nowrap;">Σ ${gj.split(' ')[0]}</td>
+        <td></td><td></td>
+        <td class="right" style="${BL.ct}">${fmt(sub.planCT)}</td><td class="right" style="color:${C.cTrupci};">${fmt(sub.actCT)}</td>
+        <td class="right" style="${BL.dz}">${fmt(sub.planDz)}</td><td class="right">${fmt(sub.celDuga)}</td><td class="right">${fmt(sub.celCij)}</td><td class="right">${fmt(sub.skart)}</td>
+        <td class="right" style="${BL.lt}">${fmt(sub.planLT)}</td><td class="right" style="color:${C.lTrupci};">${fmt(sub.actLT)}</td>
+        <td class="right" style="${BL.cij}">${fmt(sub.planCij)}</td><td class="right">${fmt(sub.ogrDugi)}</td><td class="right">${fmt(sub.ogrCij)}</td><td class="right">${fmt(sub.gule)}</td>
+        <td class="right" style="${BL.tot}">${fmt(sub.neto)}</td>
+        <td class="right" style="color:${gjColor};">${fmt(sub.ukupno)}</td>
+        <td class="right">${realizacijaBadge(sub.stepen)}</td>
       </tr>`;
     });
 
-    html += `<tr style="background:#1e293b;color:white;font-weight:700;">
-      <td colspan="2">UKUPNO</td><td></td><td></td>
-      <td class="right">${fmtN(grand.planCT)}</td><td class="right">${fmtN(grand.actCT)}</td>
-      <td class="right">${fmtN(grand.planDz)}</td><td class="right">${fmtN(grand.celDuga)}</td><td class="right">${fmtN(grand.celCij)}</td><td class="right">${fmtN(grand.skart)}</td>
-      <td class="right">${fmtN(grand.planLT)}</td><td class="right">${fmtN(grand.actLT)}</td>
-      <td class="right">${fmtN(grand.planCij)}</td><td class="right">${fmtN(grand.ogrDugi)}</td><td class="right">${fmtN(grand.ogrCij)}</td><td class="right">${fmtN(grand.gule)}</td>
-      <td class="right">${fmtN(grand.neto)}</td><td class="right">${fmtN(grand.ukupno)}</td><td class="right">${realizacijaBadge(grand.stepen)}</td>
+    html += `<tr style="background:#1e293b;color:white;font-weight:700;border-top:3px solid #334155;">
+      <td colspan="2" style="padding:8px 12px;">UKUPNO</td><td></td><td></td>
+      <td class="right" style="${BL.ct}">${fmtN(grand.planCT)}</td><td class="right">${fmtN(grand.actCT)}</td>
+      <td class="right" style="${BL.dz}">${fmtN(grand.planDz)}</td><td class="right">${fmtN(grand.celDuga)}</td><td class="right">${fmtN(grand.celCij)}</td><td class="right">${fmtN(grand.skart)}</td>
+      <td class="right" style="${BL.lt}">${fmtN(grand.planLT)}</td><td class="right">${fmtN(grand.actLT)}</td>
+      <td class="right" style="${BL.cij}">${fmtN(grand.planCij)}</td><td class="right">${fmtN(grand.ogrDugi)}</td><td class="right">${fmtN(grand.ogrCij)}</td><td class="right">${fmtN(grand.gule)}</td>
+      <td class="right" style="${BL.tot}">${fmtN(grand.neto)}</td><td class="right">${fmtN(grand.ukupno)}</td><td class="right">${realizacijaBadge(grand.stepen)}</td>
     </tr>
     </tbody></table></div>
-    <p style="margin-top:12px;font-size:11px;color:#6b7280;">
+    <p style="margin-top:10px;font-size:11px;color:#94a3b8;padding:0 4px;">
       Cjepano Č plan = Cel.duga + Cel.cijepana + Škart &nbsp;·&nbsp; Cjepano L plan = Ogr.dugo + Ogr.cijepano + Gule
     </p>
     </div></div>`;
@@ -498,37 +536,40 @@
     grouped.forEach(({gj, rows:gr})=>{
       if (!gr.length) return;
       const sub = sumRows(gr);
-      const gjColor = GJ_COLOR[gj];
-      const gjBg    = GJ_BG[gj];
-      html += `<tr style="background:${gjBg};"><td colspan="13" style="font-weight:700;color:${gjColor};padding:8px 10px;font-size:13px;">🏞 ${gj}</td></tr>`;
+      html += gjHeaderRow(gj, 13);
       gr.forEach((r,i)=>{
         rowNum++;
         const pctCT  = r.cTrupci>0?r.actual.cTrupci/r.cTrupci*100:null;
         const pctDz  = r.dzgo>0?dzgoAct(r.actual)/r.dzgo*100:null;
         const pctLT  = r.lTrupci>0?r.actual.lTrupci/r.lTrupci*100:null;
         const pctCij = r.cijepano>0?cijAct(r.actual)/r.cijepano*100:null;
-        html += `<tr>
-          <td style="color:#9ca3af;font-size:11px;text-align:center;">${rowNum}</td>
-          <td>${gjBadge(gj)}</td>
-          <td style="cursor:pointer;color:#1d4ed8;font-weight:600;" onclick="gpOpenOdjelModal('${r.gj.replace(/'/g,"\\'")}','${r.odjel.replace(/'/g,"\\'")}')">Odj.${r.odjel}</td>
-          <td>${statusBadge(r.status)}</td>
-          <td class="right" style="color:${koefColor(r.koef)};font-weight:600;">${r.koef.toFixed(1)}%</td>
-          <td class="right">${fmt(r.neto)}</td>
-          <td class="right" style="font-weight:600;">${fmt(r.actual.ukupno)}</td>
-          <td class="right">${realizacijaBadge(r.stepen)}</td>
-          <td class="right">${pctCT!=null?realizacijaBadge(pctCT):'<span style="color:#9ca3af">—</span>'}</td>
-          <td class="right">${pctDz!=null?realizacijaBadge(pctDz):'<span style="color:#9ca3af">—</span>'}</td>
-          <td class="right">${pctLT!=null?realizacijaBadge(pctLT):'<span style="color:#9ca3af">—</span>'}</td>
-          <td class="right">${pctCij!=null?realizacijaBadge(pctCij):'<span style="color:#9ca3af">—</span>'}</td>
-          <td>${bar2(r.stepen,'#059669')}</td>
+        const stripe = i%2===1 ? 'background:#fafbfc;' : '';
+        html += `<tr style="${stripe}border-bottom:1px solid #f1f5f9;">
+          <td style="color:#cbd5e1;font-size:11px;text-align:center;padding:7px 4px;">${rowNum}</td>
+          <td style="padding:7px 8px;">${gjBadge(gj)}</td>
+          <td style="padding:7px 8px;">${odjelLink(r.gj,r.odjel)}</td>
+          <td style="padding:7px 8px;">${statusBadge(r.status)}</td>
+          <td class="right" style="color:${koefColor(r.koef)};font-weight:600;padding:7px 8px;">${r.koef.toFixed(1)}%</td>
+          <td class="right" style="padding:7px 8px;">${fmt(r.neto)}</td>
+          <td class="right" style="font-weight:600;padding:7px 8px;">${fmt(r.actual.ukupno)}</td>
+          <td class="right" style="padding:7px 8px;">${realizacijaBadge(r.stepen)}</td>
+          <td class="right" style="padding:7px 8px;">${pctCT!=null?realizacijaBadge(pctCT):'<span style="color:#9ca3af">—</span>'}</td>
+          <td class="right" style="padding:7px 8px;">${pctDz!=null?realizacijaBadge(pctDz):'<span style="color:#9ca3af">—</span>'}</td>
+          <td class="right" style="padding:7px 8px;">${pctLT!=null?realizacijaBadge(pctLT):'<span style="color:#9ca3af">—</span>'}</td>
+          <td class="right" style="padding:7px 8px;">${pctCij!=null?realizacijaBadge(pctCij):'<span style="color:#9ca3af">—</span>'}</td>
+          <td style="padding:7px 8px;">${bar2(r.stepen,'#059669')}</td>
         </tr>`;
       });
-      html += `<tr style="background:${gjBg};font-weight:700;font-size:11px;">
-        <td></td><td>${gjBadge(gj)}</td><td style="color:${gjColor};">Σ Subtotal</td><td></td><td></td>
-        <td class="right">${fmt(sub.neto)}</td><td class="right">${fmt(sub.ukupno)}</td>
-        <td class="right">${realizacijaBadge(sub.stepen)}</td>
-        <td class="right">${realizacijaBadge(sub.pctCT)}</td><td class="right">${realizacijaBadge(sub.pctDz)}</td>
-        <td class="right">${realizacijaBadge(sub.pctLT)}</td><td class="right">${realizacijaBadge(sub.pctCij)}</td>
+      html += `<tr style="${subTotalStyle(gj)}">
+        <td style="padding:6px 4px;"></td><td style="padding:6px 8px;">${gjBadge(gj)}</td>
+        <td style="padding:6px 8px;color:${GJ_COLOR[gj]};font-size:11px;">Σ ${gj.split(' ')[0]}</td><td></td><td></td>
+        <td class="right" style="padding:6px 8px;">${fmt(sub.neto)}</td>
+        <td class="right" style="padding:6px 8px;color:${GJ_COLOR[gj]};">${fmt(sub.ukupno)}</td>
+        <td class="right" style="padding:6px 8px;">${realizacijaBadge(sub.stepen)}</td>
+        <td class="right" style="padding:6px 8px;">${realizacijaBadge(sub.pctCT)}</td>
+        <td class="right" style="padding:6px 8px;">${realizacijaBadge(sub.pctDz)}</td>
+        <td class="right" style="padding:6px 8px;">${realizacijaBadge(sub.pctLT)}</td>
+        <td class="right" style="padding:6px 8px;">${realizacijaBadge(sub.pctCij)}</td>
         <td></td>
       </tr>`;
     });
@@ -556,7 +597,7 @@
       if (_gpChart) { _gpChart.destroy(); _gpChart=null; }
 
       const top20 = [...rows].sort((a,b)=>a.stepen-b.stepen).slice(0,20);
-      const labels = top20.map(r=>'Odj.'+r.odjel+' ('+r.gj.split(' ')[0]+')');
+      const labels = top20.map(r=>r.odjel+' ('+r.gj.split(' ')[0]+')');
       const pctCT  = top20.map(r=>r.cTrupci>0?+(r.actual.cTrupci/r.cTrupci*100).toFixed(1):0);
       const pctDz  = top20.map(r=>r.dzgo>0?+(dzgoAct(r.actual)/r.dzgo*100).toFixed(1):0);
       const pctLT  = top20.map(r=>r.lTrupci>0?+(r.actual.lTrupci/r.lTrupci*100).toFixed(1):0);
@@ -638,28 +679,31 @@
     grouped.forEach(({gj, rows:gr})=>{
       if (!gr.length) return;
       const sub = sumRows(gr);
-      const gjColor=GJ_COLOR[gj], gjBg=GJ_BG[gj];
-      html += `<tr style="background:${gjBg};"><td colspan="9" style="font-weight:700;color:${gjColor};padding:8px 10px;font-size:13px;">🏞 ${gj}</td></tr>`;
-      gr.forEach(r=>{
+      html += gjHeaderRow(gj, 9);
+      gr.forEach((r,i)=>{
         rowNum++;
-        const rowBg = r.status==='posjeceno'?'#f0fdf4':r.status==='u-sjeci'?'#fffbeb':'';
-        html += `<tr style="background:${rowBg};">
-          <td style="color:#9ca3af;font-size:11px;text-align:center;">${rowNum}</td>
-          <td style="cursor:pointer;color:#1d4ed8;font-weight:600;" onclick="gpOpenOdjelModal('${r.gj.replace(/'/g,"\\'")}','${r.odjel.replace(/'/g,"\\'")}')">Odj.${r.odjel}</td>
-          <td class="right">${fmt(r.bruto)}</td>
-          <td class="right">${fmt(r.neto)}</td>
-          <td class="right">${r.cTrupci?fmt(r.cTrupci):'—'}</td>
-          <td class="right">${r.dzgo?fmt(r.dzgo):'—'}</td>
-          <td class="right">${r.lTrupci?fmt(r.lTrupci):'—'}</td>
-          <td class="right">${r.cijepano?fmt(r.cijepano):'—'}</td>
-          <td>${statusBadge(r.status)}</td>
+        const rowBg = r.status==='posjeceno'?'background:#f0fdf4;':r.status==='u-sjeci'?'background:#fffbeb;':i%2===1?'background:#fafbfc;':'';
+        html += `<tr style="${rowBg}border-bottom:1px solid #f1f5f9;">
+          <td style="color:#cbd5e1;font-size:11px;text-align:center;padding:7px 4px;">${rowNum}</td>
+          <td style="padding:7px 8px;">${odjelLink(r.gj,r.odjel)}</td>
+          <td class="right" style="padding:7px 8px;">${fmt(r.bruto)}</td>
+          <td class="right" style="padding:7px 8px;">${fmt(r.neto)}</td>
+          <td class="right" style="padding:7px 8px;color:${C.cTrupci};">${r.cTrupci?fmt(r.cTrupci):'—'}</td>
+          <td class="right" style="padding:7px 8px;color:${C.celDuga};">${r.dzgo?fmt(r.dzgo):'—'}</td>
+          <td class="right" style="padding:7px 8px;color:${C.lTrupci};">${r.lTrupci?fmt(r.lTrupci):'—'}</td>
+          <td class="right" style="padding:7px 8px;color:${C.ogrCijepani};">${r.cijepano?fmt(r.cijepano):'—'}</td>
+          <td style="padding:7px 8px;">${statusBadge(r.status)}</td>
         </tr>`;
       });
-      html += `<tr style="background:${gjBg};font-weight:700;font-size:11px;">
-        <td></td><td style="color:${gjColor};">Σ ${gj.split(' ')[0]}</td>
-        <td class="right">${fmt(sub.bruto)}</td><td class="right">${fmt(sub.neto)}</td>
-        <td class="right">${fmt(sub.planCT)}</td><td class="right">${fmt(sub.planDz)}</td>
-        <td class="right">${fmt(sub.planLT)}</td><td class="right">${fmt(sub.planCij)}</td>
+      html += `<tr style="${subTotalStyle(gj)}">
+        <td style="padding:6px 4px;"></td>
+        <td style="padding:6px 8px;color:${GJ_COLOR[gj]};font-size:11px;">Σ ${gj.split(' ')[0]}</td>
+        <td class="right" style="padding:6px 8px;">${fmt(sub.bruto)}</td>
+        <td class="right" style="padding:6px 8px;">${fmt(sub.neto)}</td>
+        <td class="right" style="padding:6px 8px;color:${C.cTrupci};">${fmt(sub.planCT)}</td>
+        <td class="right" style="padding:6px 8px;color:${C.celDuga};">${fmt(sub.planDz)}</td>
+        <td class="right" style="padding:6px 8px;color:${C.lTrupci};">${fmt(sub.planLT)}</td>
+        <td class="right" style="padding:6px 8px;color:${C.ogrCijepani};">${fmt(sub.planCij)}</td>
         <td></td>
       </tr>`;
     });
@@ -702,48 +746,53 @@
     grouped.forEach(({gj, rows:gr})=>{
       if (!gr.length) return;
       const sub = sumRows(gr);
-      const gjColor=GJ_COLOR[gj], gjBg=GJ_BG[gj];
-      html += `<tr style="background:${gjBg};"><td colspan="9" style="font-weight:700;color:${gjColor};padding:8px 10px;font-size:13px;">🏞 ${gj}</td></tr>`;
-      gr.forEach(r=>{
+      const gjCol = GJ_COLOR[gj];
+      html += gjHeaderRow(gj, 9);
+      gr.forEach((r,i)=>{
         odjelNum++;
         const dzA=dzgoAct(r.actual), cjA=cijAct(r.actual);
+        const stripe = i%2===1 ? '#fafbfc' : 'white';
         html += `
-        <tr>
-          <td rowspan="2" style="color:#9ca3af;font-size:11px;text-align:center;vertical-align:middle;">${odjelNum}</td>
-          <td rowspan="2" style="cursor:pointer;color:#1d4ed8;font-weight:600;vertical-align:middle;" onclick="gpOpenOdjelModal('${r.gj.replace(/'/g,"\\'")}','${r.odjel.replace(/'/g,"\\'")}')">Odj.${r.odjel}</td>
-          <td style="color:#1d4ed8;font-weight:700;white-space:nowrap;">1. Projekat</td>
-          <td class="right">${fmt(r.cTrupci)}</td><td class="right">${fmt(r.dzgo)}</td>
-          <td class="right">${fmt(r.lTrupci)}</td><td class="right">${fmt(r.cijepano)}</td>
-          <td class="right" style="font-weight:600;">${fmt(r.neto)}</td>
-          <td></td>
+        <tr style="background:${stripe};border-bottom:1px solid #f1f5f9;">
+          <td rowspan="2" style="color:#cbd5e1;font-size:11px;text-align:center;vertical-align:middle;padding:7px 4px;">${odjelNum}</td>
+          <td rowspan="2" style="vertical-align:middle;padding:7px 8px;">${odjelLink(r.gj,r.odjel)}</td>
+          <td style="color:#1d4ed8;font-weight:700;white-space:nowrap;padding:7px 8px;border-left:3px solid #bfdbfe;">1. Projekat</td>
+          <td class="right" style="color:${C.cTrupci};padding:7px 8px;">${fmt(r.cTrupci)}</td>
+          <td class="right" style="color:${C.celDuga};padding:7px 8px;">${fmt(r.dzgo)}</td>
+          <td class="right" style="color:${C.lTrupci};padding:7px 8px;">${fmt(r.lTrupci)}</td>
+          <td class="right" style="color:${C.ogrCijepani};padding:7px 8px;">${fmt(r.cijepano)}</td>
+          <td class="right" style="font-weight:600;padding:7px 8px;">${fmt(r.neto)}</td>
+          <td style="padding:7px 8px;"></td>
         </tr>
-        <tr style="background:#fafafa;">
-          <td style="color:#166534;font-weight:700;white-space:nowrap;">2. Sječa</td>
-          <td class="right" style="color:${C.cTrupci};">${fmt(r.actual.cTrupci)}</td>
-          <td class="right" style="color:${C.celDuga};">${fmt(dzA)}</td>
-          <td class="right" style="color:${C.lTrupci};">${fmt(r.actual.lTrupci)}</td>
-          <td class="right" style="color:${C.ogrCijepani};">${fmt(cjA)}</td>
-          <td class="right" style="font-weight:600;color:#059669;">${fmt(r.actual.ukupno)}</td>
-          <td>${realizacijaBadge(r.stepen)}</td>
+        <tr style="background:${stripe};">
+          <td style="color:#166534;font-weight:700;white-space:nowrap;padding:7px 8px;border-left:3px solid #bbf7d0;">2. Sječa</td>
+          <td class="right" style="color:${C.cTrupci};font-weight:600;padding:7px 8px;">${fmt(r.actual.cTrupci)}</td>
+          <td class="right" style="color:${C.celDuga};font-weight:600;padding:7px 8px;">${fmt(dzA)}</td>
+          <td class="right" style="color:${C.lTrupci};font-weight:600;padding:7px 8px;">${fmt(r.actual.lTrupci)}</td>
+          <td class="right" style="color:${C.ogrCijepani};font-weight:600;padding:7px 8px;">${fmt(cjA)}</td>
+          <td class="right" style="font-weight:700;color:#059669;padding:7px 8px;">${fmt(r.actual.ukupno)}</td>
+          <td style="padding:7px 8px;">${realizacijaBadge(r.stepen)}</td>
         </tr>`;
       });
 
-      // GJ subtotal 2 rows
       const dzSub=sub.celDuga+sub.celCij+sub.skart, cjSub=sub.ogrDugi+sub.ogrCij+sub.gule;
       html += `
-      <tr style="background:${gjBg};font-weight:700;font-size:11px;">
-        <td rowspan="2" style="color:${gjColor};vertical-align:middle;">Σ</td>
-        <td rowspan="2" style="color:${gjColor};font-weight:700;vertical-align:middle;">${gj.split(' ')[0]}</td>
-        <td style="color:#1d4ed8;">Projekat</td>
-        <td class="right">${fmt(sub.planCT)}</td><td class="right">${fmt(sub.planDz)}</td>
-        <td class="right">${fmt(sub.planLT)}</td><td class="right">${fmt(sub.planCij)}</td>
-        <td class="right">${fmt(sub.neto)}</td><td></td>
+      <tr style="${subTotalStyle(gj)}">
+        <td rowspan="2" style="color:${gjCol};vertical-align:middle;padding:6px 4px;text-align:center;">Σ</td>
+        <td rowspan="2" style="color:${gjCol};font-weight:700;vertical-align:middle;padding:6px 8px;">${gj.split(' ')[0]}</td>
+        <td style="color:#1d4ed8;padding:6px 8px;border-left:3px solid #bfdbfe;">Projekat</td>
+        <td class="right" style="padding:6px 8px;">${fmt(sub.planCT)}</td><td class="right" style="padding:6px 8px;">${fmt(sub.planDz)}</td>
+        <td class="right" style="padding:6px 8px;">${fmt(sub.planLT)}</td><td class="right" style="padding:6px 8px;">${fmt(sub.planCij)}</td>
+        <td class="right" style="padding:6px 8px;">${fmt(sub.neto)}</td><td></td>
       </tr>
-      <tr style="background:${gjBg};font-weight:700;font-size:11px;">
-        <td style="color:#166534;">Sječa</td>
-        <td class="right">${fmt(sub.actCT)}</td><td class="right">${fmt(dzSub)}</td>
-        <td class="right">${fmt(sub.actLT)}</td><td class="right">${fmt(cjSub)}</td>
-        <td class="right">${fmt(sub.ukupno)}</td><td>${realizacijaBadge(sub.stepen)}</td>
+      <tr style="${subTotalStyle(gj)}">
+        <td style="color:#166534;padding:6px 8px;border-left:3px solid #bbf7d0;">Sječa</td>
+        <td class="right" style="color:${C.cTrupci};padding:6px 8px;">${fmt(sub.actCT)}</td>
+        <td class="right" style="color:${C.celDuga};padding:6px 8px;">${fmt(dzSub)}</td>
+        <td class="right" style="color:${C.lTrupci};padding:6px 8px;">${fmt(sub.actLT)}</td>
+        <td class="right" style="color:${C.ogrCijepani};padding:6px 8px;">${fmt(cjSub)}</td>
+        <td class="right" style="color:${gjCol};padding:6px 8px;">${fmt(sub.ukupno)}</td>
+        <td style="padding:6px 8px;">${realizacijaBadge(sub.stepen)}</td>
       </tr>`;
     });
 
@@ -906,7 +955,7 @@
       gr.forEach((r,i)=>{
         paperHtml += `<tr style="border-bottom:1px solid #e5e7eb;${i%2?'background:#f9fafb':''}">
           <td style="padding:4px 5px;">${i+1}</td>
-          <td style="padding:4px 5px;font-weight:600;">Odj.${r.odjel}</td>
+          <td style="padding:4px 5px;font-weight:600;">${r.odjel}</td>
           <td style="padding:4px 5px;text-align:right;">${fmtN(r.bruto)}</td>
           <td style="padding:4px 5px;text-align:right;">${fmtN(r.neto)}</td>
           <td style="padding:4px 5px;text-align:right;">${r.cTrupci?fmtN(r.cTrupci):'—'}</td>
