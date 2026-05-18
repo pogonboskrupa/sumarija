@@ -37,8 +37,8 @@
   ];
 
   const GJ_LIST = ['Risovac Krupa', 'Grmeč Jasenica', 'Vojskova'];
-  const GJ_COLOR = { 'Risovac Krupa':'#1d4ed8', 'Grmeč Jasenica':'#15803d', 'Vojskova':'#b45309' };
-  const GJ_BG   = { 'Risovac Krupa':'#eff6ff',  'Grmeč Jasenica':'#f0fdf4',  'Vojskova':'#fff7ed' };
+  const GJ_COLOR = { 'Risovac Krupa':'#1d4ed8', 'Grmeč Jasenica':'#15803d', 'Vojskova':'#b45309', 'Slučajni užici':'#7c3aed' };
+  const GJ_BG   = { 'Risovac Krupa':'#eff6ff',  'Grmeč Jasenica':'#f0fdf4',  'Vojskova':'#fff7ed', 'Slučajni užici':'#f5f3ff'  };
   const C = {
     cTrupci:'#1e40af', celDuga:'#5b21b6', celCijepana:'#7c3aed', skart:'#9ca3af',
     lTrupci:'#15803d', ogrDugi:'#92400e', ogrCijepani:'#b45309', gule:'#d97706',
@@ -140,11 +140,28 @@
     return `<span style="background:${GJ_BG[gj]};color:${GJ_COLOR[gj]};padding:2px 7px;border-radius:99px;font-size:11px;font-weight:700;">${gj}</span>`;
   }
 
-  // Styled odjel number chip — no prefix, just the number
-  function odjelLink(gj, odjel) {
+  // Styled odjel number chip — optional display overrides the label
+  function odjelLink(gj, odjel, display) {
     const eg = gj.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const eo = odjel.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    return `<span onclick="gpOpenOdjelModal('${eg}','${eo}')" style="cursor:pointer;display:inline-block;font-family:'Roboto Mono',monospace;font-weight:700;font-size:12px;background:#eff6ff;color:#1d4ed8;padding:3px 9px;border-radius:5px;border:1px solid #bfdbfe;min-width:28px;text-align:center;letter-spacing:0.3px;" onmouseover="this.style.background='#dbeafe';this.style.borderColor='#93c5fd'" onmouseout="this.style.background='#eff6ff';this.style.borderColor='#bfdbfe'">${odjel}</span>`;
+    const label = display !== undefined ? display : odjel;
+    const isSluc = gj === 'Slučajni užici';
+    const bg = isSluc ? '#f5f3ff' : '#eff6ff';
+    const col = isSluc ? '#7c3aed' : '#1d4ed8';
+    const border = isSluc ? '#ddd6fe' : '#bfdbfe';
+    const hoverBg = isSluc ? '#ede9fe' : '#dbeafe';
+    const hoverBorder = isSluc ? '#c4b5fd' : '#93c5fd';
+    return `<span onclick="gpOpenOdjelModal('${eg}','${eo}')" style="cursor:pointer;display:inline-block;font-family:'Roboto Mono',monospace;font-weight:700;font-size:12px;background:${bg};color:${col};padding:3px 9px;border-radius:5px;border:1px solid ${border};min-width:28px;text-align:center;letter-spacing:0.3px;" onmouseover="this.style.background='${hoverBg}';this.style.borderColor='${hoverBorder}'" onmouseout="this.style.background='${bg}';this.style.borderColor='${border}'">${label}</span>`;
+  }
+
+  // Strip GJ prefix from a full odjel string (for slučajni display)
+  function shortOdjel(fullOdjel) {
+    for (const gj of GJ_LIST) {
+      if (fullOdjel.toLowerCase().startsWith(gj.toLowerCase() + ' ')) {
+        return fullOdjel.substring(gj.length + 1).trim();
+      }
+    }
+    return fullOdjel;
   }
 
   // GJ section header row
@@ -210,10 +227,40 @@
     });
   }
 
-  function getModalRows(gj, odjel) {
-    const planKey = normKey(gj+' '+odjel);
+  function buildSlucajniRows(primke) {
+    const planKeys = new Set(PLAN_ENTRIES.map(e => normKey(e.gj+' '+e.odjel)));
+    const unmatched = primke.filter(p => !planKeys.has(normKey(p.odjel)));
+    if (!unmatched.length) return [];
     const map = new Map();
-    _rawPrimke.filter(p=>normKey(p.odjel)===planKey).forEach(p=>{
+    unmatched.forEach(p => {
+      if (!map.has(p.odjel)) map.set(p.odjel, { odjel:p.odjel, actual:{ cTrupci:0, celDuga:0, celCijepana:0, skart:0, lTrupci:0, ogrDugi:0, ogrCijepani:0, gule:0, ukupno:0 } });
+      const r = map.get(p.odjel);
+      switch(p.sortiment){
+        case 'TRUPCI Č':    r.actual.cTrupci    += p.kolicina; break;
+        case 'CEL.DUGA':    r.actual.celDuga    += p.kolicina; break;
+        case 'CEL.CIJEPANA':r.actual.celCijepana+= p.kolicina; break;
+        case 'ŠKART':       r.actual.skart      += p.kolicina; break;
+        case 'TRUPCI L':    r.actual.lTrupci    += p.kolicina; break;
+        case 'OGR.DUGI':    r.actual.ogrDugi    += p.kolicina; break;
+        case 'OGR.CIJEPANI':r.actual.ogrCijepani+= p.kolicina; break;
+        case 'GULE':        r.actual.gule       += p.kolicina; break;
+      }
+      r.actual.ukupno = r.actual.cTrupci+r.actual.celDuga+r.actual.celCijepana+r.actual.skart+r.actual.lTrupci+r.actual.ogrDugi+r.actual.ogrCijepani+r.actual.gule;
+    });
+    return Array.from(map.values()).map(r => ({
+      gj: 'Slučajni užici', odjel: r.odjel, odjelLabel: shortOdjel(r.odjel),
+      slucajni: true,
+      bruto:0, neto:0, cTrupci:0, dzgo:0, lTrupci:0, cijepano:0,
+      actual: r.actual, stepen:0, koef:0, status:'u-sjeci', override:'auto',
+    }));
+  }
+
+  function getModalRows(gj, odjel) {
+    const primkeForOdjel = gj === 'Slučajni užici'
+      ? _rawPrimke.filter(p => p.odjel === odjel)
+      : _rawPrimke.filter(p => normKey(p.odjel) === normKey(gj+' '+odjel));
+    const map = new Map();
+    primkeForOdjel.forEach(p=>{
       const key = p.datum+'|'+(p.primac||'')+'|'+(p.radiliste||'');
       if (!map.has(key)) map.set(key, { datum:p.datum, primac:p.primac||'', radiliste:p.radiliste||'', izvodjac:p.izvodjac||'', cTrupci:0, celDuga:0, celCijepana:0, skart:0, lTrupci:0, ogrDugi:0, ogrCijepani:0, gule:0, ukupno:0 });
       const r = map.get(key);
@@ -251,16 +298,18 @@
   function sortedWithinGj(rows, tab) {
     const { col, asc } = _sort[tab]||{ col:'odjel', asc:true };
     const dir = asc ? 1 : -1;
-    const grouped = GJ_LIST.map(gj=>({gj, rows:rows.filter(r=>r.gj===gj)}));
+    const planned   = rows.filter(r => !r.slucajni);
+    const slucajni  = rows.filter(r =>  r.slucajni);
+    const grouped = GJ_LIST.map(gj=>({gj, rows:planned.filter(r=>r.gj===gj)}));
+    if (slucajni.length) grouped.push({ gj:'Slučajni užici', rows:slucajni });
     grouped.forEach(g=>{
       g.rows.sort((a,b)=>{
         let av, bv;
-        if (col==='odjel')   { av=a.odjel;   bv=b.odjel; }
+        if (col==='odjel')       { av=a.odjelLabel||a.odjel; bv=b.odjelLabel||b.odjel; }
         else if (col==='neto')   { av=a.neto;    bv=b.neto; }
         else if (col==='ukupno') { av=a.actual.ukupno; bv=b.actual.ukupno; }
         else if (col==='stepen') { av=a.stepen;  bv=b.stepen; }
-        else if (col==='koef')   { av=a.koef;    bv=b.koef; }
-        else { av=a.odjel; bv=b.odjel; }
+        else { av=a.odjelLabel||a.odjel; bv=b.odjelLabel||b.odjel; }
         if (typeof av==='string') return av.localeCompare(bv,'bs')*dir;
         return ((av||0)-(bv||0))*dir;
       });
@@ -292,7 +341,7 @@
         return parts.length>=3 && parseInt(parts[2])===PLAN_YEAR;
       });
       _rawPrimke = primke;
-      _rows = buildRows(primke);
+      _rows = [...buildRows(primke), ...buildSlucajniRows(primke)];
       _loaded = true;
       renderActiveTab();
       if (typeof markTabRendered==='function') markTabRendered('godisnji-plan');
@@ -405,7 +454,7 @@
         const stripe = i%2===1 ? 'background:#fafbfc;' : '';
         html += `<tr style="${stripe}border-bottom:1px solid #f1f5f9;">
           <td style="color:#cbd5e1;font-size:11px;text-align:center;padding:7px 4px;">${i+1}</td>
-          <td style="padding:7px 8px;">${odjelLink(r.gj,r.odjel)}</td>
+          <td style="padding:7px 8px;">${odjelLink(r.gj,r.odjel,r.odjelLabel)}</td>
           <td style="padding:7px 8px;white-space:nowrap;">${statusBadge(r.status)}${statusSelectHtml(r.gj,r.odjel,r.override)}</td>
           <td class="right" style="${BL.ct}color:#94a3b8;">${fmt(r.cTrupci)}</td>
           <td class="right" style="color:${C.cTrupci};font-weight:700;">${fmt(r.actual.cTrupci)}</td>
@@ -546,7 +595,7 @@
         html += `<tr style="${stripe}border-bottom:1px solid #f1f5f9;">
           <td style="color:#cbd5e1;font-size:11px;text-align:center;padding:7px 4px;">${rowNum}</td>
           <td style="padding:7px 8px;">${gjBadge(gj)}</td>
-          <td style="padding:7px 8px;">${odjelLink(r.gj,r.odjel)}</td>
+          <td style="padding:7px 8px;">${odjelLink(r.gj,r.odjel,r.odjelLabel)}</td>
           <td style="padding:7px 8px;">${statusBadge(r.status)}</td>
           <td class="right" style="color:${koefColor(r.koef)};font-weight:600;padding:7px 8px;">${r.koef.toFixed(1)}%</td>
           <td class="right" style="padding:7px 8px;">${fmt(r.neto)}</td>
@@ -686,7 +735,7 @@
         const rowBg = r.status==='posjeceno'?'background:#f0fdf4;':r.status==='u-sjeci'?'background:#fffbeb;':i%2===1?'background:#fafbfc;':'';
         html += `<tr style="${rowBg}border-bottom:1px solid #f1f5f9;">
           <td style="color:#cbd5e1;font-size:11px;text-align:center;padding:7px 4px;">${rowNum}</td>
-          <td style="padding:7px 8px;">${odjelLink(r.gj,r.odjel)}</td>
+          <td style="padding:7px 8px;">${odjelLink(r.gj,r.odjel,r.odjelLabel)}</td>
           <td class="right" style="padding:7px 8px;">${fmt(r.bruto)}</td>
           <td class="right" style="padding:7px 8px;">${fmt(r.neto)}</td>
           <td class="right" style="padding:7px 8px;color:${C.cTrupci};">${r.cTrupci?fmt(r.cTrupci):'—'}</td>
@@ -759,7 +808,7 @@
         html += `
         <tr style="background:#eff6ff;">
           <td rowspan="2" style="color:#94a3b8;font-size:11px;text-align:center;vertical-align:middle;padding:8px 4px;border-left:3px solid ${gjCol}44;">${odjelNum}</td>
-          <td rowspan="2" style="vertical-align:middle;padding:8px 10px;background:#f0f4ff;">${odjelLink(r.gj,r.odjel)}</td>
+          <td rowspan="2" style="vertical-align:middle;padding:8px 10px;background:#f0f4ff;">${odjelLink(r.gj,r.odjel,r.odjelLabel)}</td>
           <td style="color:#1d4ed8;font-size:11px;font-weight:700;white-space:nowrap;padding:8px 10px;border-left:3px solid #93c5fd;background:#dbeafe44;">📐 Plan</td>
           <td style="${R}color:#475569;">${fmt(r.cTrupci)}</td>
           <td style="${R}color:#475569;">${fmt(r.dzgo)}</td>
