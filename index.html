@@ -3053,6 +3053,56 @@
             </div>
         </div>
 
+            <!-- GODIŠNJI PLAN CONTENT -->
+            <div id="godisnji-plan-content" class="container hidden">
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <h1>📋 Godišnji plan sječe 2026</h1>
+                        <p>Praćenje realizacije godišnjeg plana — Pogon Bosanska Krupa</p>
+                    </div>
+                    <div class="page-header-right">
+                        <button class="btn btn-secondary" onclick="openGpPrintModal()">🖨️ Štampaj</button>
+                        <button class="btn btn-primary" onclick="loadGodisnjiPlan(true)">🔄 Osvježi</button>
+                    </div>
+                </div>
+
+                <!-- Submenu tabs -->
+                <div class="submenu" id="gp-submenu" style="margin-bottom:16px;flex-wrap:wrap;">
+                    <button class="submenu-tab active" data-tab="grupe"      onclick="switchGpTab('grupe')">📊 Po grupama</button>
+                    <button class="submenu-tab"         data-tab="sortimenti" onclick="switchGpTab('sortimenti')">📦 Po sortimentima</button>
+                    <button class="submenu-tab"         data-tab="pregled"   onclick="switchGpTab('pregled')">📋 Pregled plana</button>
+                    <button class="submenu-tab"         data-tab="projekat"  onclick="switchGpTab('projekat')">📐 Plan po projektu</button>
+                </div>
+
+                <!-- Filters -->
+                <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                        <span style="font-size:12px;color:#6b7280;font-weight:600;">GJ:</span>
+                        <button data-gj-btn="sve" onclick="filterGpGj('sve')" style="padding:4px 12px;border-radius:99px;border:2px solid #6b7280;background:white;color:#374151;font-size:12px;cursor:pointer;font-weight:700;">Sve GJ</button>
+                        <button data-gj-btn="Risovac Krupa" onclick="filterGpGj('Risovac Krupa')" style="padding:4px 12px;border-radius:99px;border:2px solid #1d4ed8;background:white;color:#1d4ed8;font-size:12px;cursor:pointer;opacity:0.5;">Risovac Krupa</button>
+                        <button data-gj-btn="Grmeč Jasenica" onclick="filterGpGj('Grmeč Jasenica')" style="padding:4px 12px;border-radius:99px;border:2px solid #15803d;background:white;color:#15803d;font-size:12px;cursor:pointer;opacity:0.5;">Grmeč Jasenica</button>
+                        <button data-gj-btn="Vojskova" onclick="filterGpGj('Vojskova')" style="padding:4px 12px;border-radius:99px;border:2px solid #b45309;background:white;color:#b45309;font-size:12px;cursor:pointer;opacity:0.5;">Vojskova</button>
+                    </div>
+                    <div style="width:1px;height:24px;background:#e5e7eb;"></div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                        <span style="font-size:12px;color:#6b7280;font-weight:600;">Status:</span>
+                        <button data-st-btn="sve" onclick="filterGpStatus('sve')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#374151;font-weight:700;">Sve</button>
+                        <button data-st-btn="posjeceno" onclick="filterGpStatus('posjeceno')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#166534;">Posječeno</button>
+                        <button data-st-btn="u-sjeci" onclick="filterGpStatus('u-sjeci')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#92400e;">U sječi</button>
+                        <button data-st-btn="planirano" onclick="filterGpStatus('planirano')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#6b7280;">Planirano</button>
+                    </div>
+                    <div style="flex:1;min-width:160px;">
+                        <input type="text" placeholder="🔍 Pretraži odjel..." oninput="filterGpSearch(this.value)" style="width:100%;padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;box-sizing:border-box;">
+                    </div>
+                </div>
+
+                <!-- Sub-views -->
+                <div id="gp-grupe-view"></div>
+                <div id="gp-sortimenti-view" class="hidden"></div>
+                <div id="gp-pregled-view" class="hidden"></div>
+                <div id="gp-projekat-view" class="hidden"></div>
+            </div>
+
             </main><!-- /main-content -->
         </div><!-- /app-layout -->
     </div><!-- /app-screen -->
@@ -3131,58 +3181,6 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- GODIŠNJI PLAN CONTENT -->
-    <div id="godisnji-plan-content" class="container hidden">
-        <div class="page-header">
-            <div class="page-header-left">
-                <h1>📋 Godišnji plan sječe 2026</h1>
-                <p>Praćenje realizacije godišnjeg plana — Pogon Bosanska Krupa</p>
-            </div>
-            <div class="page-header-right">
-                <button class="btn btn-secondary" onclick="openGpPrintModal()">🖨️ Štampaj</button>
-                <button class="btn btn-primary" onclick="loadGodisnjiPlan(true)">🔄 Osvježi</button>
-            </div>
-        </div>
-
-        <!-- Submenu tabs -->
-        <div class="submenu" id="gp-submenu" style="margin-bottom:16px;flex-wrap:wrap;">
-            <button class="submenu-tab active" data-tab="grupe"      onclick="switchGpTab('grupe')">📊 Po grupama</button>
-            <button class="submenu-tab"         data-tab="sortimenti" onclick="switchGpTab('sortimenti')">📦 Po sortimentima</button>
-            <button class="submenu-tab"         data-tab="pregled"   onclick="switchGpTab('pregled')">📋 Pregled plana</button>
-            <button class="submenu-tab"         data-tab="projekat"  onclick="switchGpTab('projekat')">📐 Plan po projektu</button>
-        </div>
-
-        <!-- Filters -->
-        <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
-            <!-- GJ filter -->
-            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-                <span style="font-size:12px;color:#6b7280;font-weight:600;">GJ:</span>
-                <button data-gj-btn="sve" onclick="filterGpGj('sve')" style="padding:4px 12px;border-radius:99px;border:2px solid #6b7280;background:white;color:#374151;font-size:12px;cursor:pointer;font-weight:700;">Sve GJ</button>
-                <button data-gj-btn="Risovac Krupa" onclick="filterGpGj('Risovac Krupa')" style="padding:4px 12px;border-radius:99px;border:2px solid #1d4ed8;background:white;color:#1d4ed8;font-size:12px;cursor:pointer;opacity:0.5;">Risovac Krupa</button>
-                <button data-gj-btn="Grmeč Jasenica" onclick="filterGpGj('Grmeč Jasenica')" style="padding:4px 12px;border-radius:99px;border:2px solid #15803d;background:white;color:#15803d;font-size:12px;cursor:pointer;opacity:0.5;">Grmeč Jasenica</button>
-                <button data-gj-btn="Vojskova" onclick="filterGpGj('Vojskova')" style="padding:4px 12px;border-radius:99px;border:2px solid #b45309;background:white;color:#b45309;font-size:12px;cursor:pointer;opacity:0.5;">Vojskova</button>
-            </div>
-            <div style="width:1px;height:24px;background:#e5e7eb;"></div>
-            <!-- Status filter -->
-            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-                <span style="font-size:12px;color:#6b7280;font-weight:600;">Status:</span>
-                <button data-st-btn="sve" onclick="filterGpStatus('sve')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#374151;font-weight:700;">Sve</button>
-                <button data-st-btn="posjeceno" onclick="filterGpStatus('posjeceno')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#166534;">Posječeno</button>
-                <button data-st-btn="u-sjeci" onclick="filterGpStatus('u-sjeci')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#92400e;">U sječi</button>
-                <button data-st-btn="planirano" onclick="filterGpStatus('planirano')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#6b7280;">Planirano</button>
-            </div>
-            <div style="flex:1;min-width:160px;">
-                <input type="text" placeholder="🔍 Pretraži odjel..." oninput="filterGpSearch(this.value)" style="width:100%;padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;box-sizing:border-box;">
-            </div>
-        </div>
-
-        <!-- Sub-views -->
-        <div id="gp-grupe-view"></div>
-        <div id="gp-sortimenti-view" class="hidden"></div>
-        <div id="gp-pregled-view" class="hidden"></div>
-        <div id="gp-projekat-view" class="hidden"></div>
     </div>
 
     <!-- GP Odjel Detail Modal -->
