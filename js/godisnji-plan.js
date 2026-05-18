@@ -753,52 +753,56 @@
       if (!gr.length) return;
       const sub = sumRows(gr);
       const gjCol = GJ_COLOR[gj];
+      const gjBg  = GJ_BG[gj];
       html += gjHeaderRow(gj, 9);
       gr.forEach((r,i)=>{
         odjelNum++;
         const dzA=dzgoAct(r.actual), cjA=cijAct(r.actual);
-        const stripe = i%2===1 ? '#fafbfc' : 'white';
+        const R = 'text-align:right;padding:7px 10px;';
         html += `
-        <tr style="background:${stripe};border-bottom:1px solid #f1f5f9;">
-          <td rowspan="2" style="color:#cbd5e1;font-size:11px;text-align:center;vertical-align:middle;padding:7px 4px;">${odjelNum}</td>
-          <td rowspan="2" style="vertical-align:middle;padding:7px 8px;">${odjelLink(r.gj,r.odjel)}</td>
-          <td style="color:#1d4ed8;font-weight:700;white-space:nowrap;padding:7px 8px;border-left:3px solid #bfdbfe;">1. Projekat</td>
-          <td class="right" style="color:${C.cTrupci};padding:7px 8px;">${fmt(r.cTrupci)}</td>
-          <td class="right" style="color:${C.celDuga};padding:7px 8px;">${fmt(r.dzgo)}</td>
-          <td class="right" style="color:${C.lTrupci};padding:7px 8px;">${fmt(r.lTrupci)}</td>
-          <td class="right" style="color:${C.ogrCijepani};padding:7px 8px;">${fmt(r.cijepano)}</td>
-          <td class="right" style="font-weight:600;padding:7px 8px;">${fmt(r.neto)}</td>
-          <td style="padding:7px 8px;"></td>
+        <tr style="background:#eff6ff;">
+          <td rowspan="2" style="color:#94a3b8;font-size:11px;text-align:center;vertical-align:middle;padding:8px 4px;border-left:3px solid ${gjCol}44;">${odjelNum}</td>
+          <td rowspan="2" style="vertical-align:middle;padding:8px 10px;background:#f0f4ff;">${odjelLink(r.gj,r.odjel)}</td>
+          <td style="color:#1d4ed8;font-size:11px;font-weight:700;white-space:nowrap;padding:8px 10px;border-left:3px solid #93c5fd;background:#dbeafe44;">📐 Plan</td>
+          <td style="${R}color:#475569;">${fmt(r.cTrupci)}</td>
+          <td style="${R}color:#475569;">${fmt(r.dzgo)}</td>
+          <td style="${R}color:#475569;">${fmt(r.lTrupci)}</td>
+          <td style="${R}color:#475569;">${fmt(r.cijepano)}</td>
+          <td style="${R}color:#1e40af;font-weight:700;">${fmt(r.neto)}</td>
+          <td style="padding:8px 6px;"></td>
         </tr>
-        <tr style="background:${stripe};">
-          <td style="color:#166534;font-weight:700;white-space:nowrap;padding:7px 8px;border-left:3px solid #bbf7d0;">2. Sječa</td>
-          <td class="right" style="color:${C.cTrupci};font-weight:600;padding:7px 8px;">${fmt(r.actual.cTrupci)}</td>
-          <td class="right" style="color:${C.celDuga};font-weight:600;padding:7px 8px;">${fmt(dzA)}</td>
-          <td class="right" style="color:${C.lTrupci};font-weight:600;padding:7px 8px;">${fmt(r.actual.lTrupci)}</td>
-          <td class="right" style="color:${C.ogrCijepani};font-weight:600;padding:7px 8px;">${fmt(cjA)}</td>
-          <td class="right" style="font-weight:700;color:#059669;padding:7px 8px;">${fmt(r.actual.ukupno)}</td>
-          <td style="padding:7px 8px;">${realizacijaBadge(r.stepen)}</td>
+        <tr style="background:#f0fdf4;border-bottom:2px solid #e2e8f0;">
+          <td style="color:#166534;font-size:11px;font-weight:700;white-space:nowrap;padding:8px 10px;border-left:3px solid #86efac;background:#bbf7d044;">🪓 Sječa</td>
+          <td style="${R}color:${C.cTrupci};font-weight:700;">${fmt(r.actual.cTrupci)}</td>
+          <td style="${R}color:${C.celDuga};font-weight:700;">${fmt(dzA)}</td>
+          <td style="${R}color:${C.lTrupci};font-weight:700;">${fmt(r.actual.lTrupci)}</td>
+          <td style="${R}color:${C.ogrCijepani};font-weight:700;">${fmt(cjA)}</td>
+          <td style="${R}color:#059669;font-weight:800;">${fmt(r.actual.ukupno)}</td>
+          <td style="padding:8px 6px;">${realizacijaBadge(r.stepen)}</td>
         </tr>`;
       });
 
       const dzSub=sub.celDuga+sub.celCij+sub.skart, cjSub=sub.ogrDugi+sub.ogrCij+sub.gule;
+      const SR = `text-align:right;padding:6px 10px;`;
       html += `
-      <tr style="${subTotalStyle(gj)}">
+      <tr style="background:${gjBg};border-top:2px solid ${gjCol}40;font-weight:700;font-size:11px;">
         <td rowspan="2" style="color:${gjCol};vertical-align:middle;padding:6px 4px;text-align:center;">Σ</td>
-        <td rowspan="2" style="color:${gjCol};font-weight:700;vertical-align:middle;padding:6px 8px;">${gj.split(' ')[0]}</td>
-        <td style="color:#1d4ed8;padding:6px 8px;border-left:3px solid #bfdbfe;">Projekat</td>
-        <td class="right" style="padding:6px 8px;">${fmt(sub.planCT)}</td><td class="right" style="padding:6px 8px;">${fmt(sub.planDz)}</td>
-        <td class="right" style="padding:6px 8px;">${fmt(sub.planLT)}</td><td class="right" style="padding:6px 8px;">${fmt(sub.planCij)}</td>
-        <td class="right" style="padding:6px 8px;">${fmt(sub.neto)}</td><td></td>
+        <td rowspan="2" style="color:${gjCol};font-weight:700;vertical-align:middle;padding:6px 10px;">${gj.split(' ')[0]}</td>
+        <td style="color:#1d4ed8;padding:6px 10px;border-left:3px solid #93c5fd;">Projekat</td>
+        <td style="${SR}color:#475569;">${fmt(sub.planCT)}</td>
+        <td style="${SR}color:#475569;">${fmt(sub.planDz)}</td>
+        <td style="${SR}color:#475569;">${fmt(sub.planLT)}</td>
+        <td style="${SR}color:#475569;">${fmt(sub.planCij)}</td>
+        <td style="${SR}color:#1e40af;">${fmt(sub.neto)}</td><td></td>
       </tr>
-      <tr style="${subTotalStyle(gj)}">
-        <td style="color:#166534;padding:6px 8px;border-left:3px solid #bbf7d0;">Sječa</td>
-        <td class="right" style="color:${C.cTrupci};padding:6px 8px;">${fmt(sub.actCT)}</td>
-        <td class="right" style="color:${C.celDuga};padding:6px 8px;">${fmt(dzSub)}</td>
-        <td class="right" style="color:${C.lTrupci};padding:6px 8px;">${fmt(sub.actLT)}</td>
-        <td class="right" style="color:${C.ogrCijepani};padding:6px 8px;">${fmt(cjSub)}</td>
-        <td class="right" style="color:${gjCol};padding:6px 8px;">${fmt(sub.ukupno)}</td>
-        <td style="padding:6px 8px;">${realizacijaBadge(sub.stepen)}</td>
+      <tr style="background:${gjBg};border-bottom:3px solid ${gjCol}60;font-weight:700;font-size:11px;">
+        <td style="color:#166534;padding:6px 10px;border-left:3px solid #86efac;">Sječa</td>
+        <td style="${SR}color:${C.cTrupci};">${fmt(sub.actCT)}</td>
+        <td style="${SR}color:${C.celDuga};">${fmt(dzSub)}</td>
+        <td style="${SR}color:${C.lTrupci};">${fmt(sub.actLT)}</td>
+        <td style="${SR}color:${C.ogrCijepani};">${fmt(cjSub)}</td>
+        <td style="${SR}color:${gjCol};font-weight:800;">${fmt(sub.ukupno)}</td>
+        <td style="padding:6px 6px;">${realizacijaBadge(sub.stepen)}</td>
       </tr>`;
     });
 
