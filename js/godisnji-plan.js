@@ -370,7 +370,6 @@
           <th rowspan="2" style="width:32px;text-align:center;">#</th>
           <th rowspan="2" style="min-width:72px;text-align:left;padding-left:10px;">Odjel</th>
           <th rowspan="2" style="min-width:90px;">Status</th>
-          <th rowspan="2" onclick="gpSort('grupe','koef')" style="cursor:pointer;min-width:52px;">Koef. ${sortArrow('grupe','koef')}</th>
           <th colspan="2" style="background:#1e3399;text-align:center;${BL.ct}">Trupci Č</th>
           <th colspan="4" style="background:#3b1080;text-align:center;${BL.dz}">Cjepano Č</th>
           <th colspan="2" style="background:#14532d;text-align:center;${BL.lt}">Trupci L</th>
@@ -400,16 +399,14 @@
       if (!gr.length) return;
       const sub = sumRows(gr);
       const gjColor = GJ_COLOR[gj];
-      html += gjHeaderRow(gj, 19);
+      html += gjHeaderRow(gj, 18);
 
       gr.forEach((r,i)=>{
-        const kc  = koefColor(r.koef);
         const stripe = i%2===1 ? 'background:#fafbfc;' : '';
         html += `<tr style="${stripe}border-bottom:1px solid #f1f5f9;">
           <td style="color:#cbd5e1;font-size:11px;text-align:center;padding:7px 4px;">${i+1}</td>
           <td style="padding:7px 8px;">${odjelLink(r.gj,r.odjel)}</td>
           <td style="padding:7px 8px;white-space:nowrap;">${statusBadge(r.status)}${statusSelectHtml(r.gj,r.odjel,r.override)}</td>
-          <td style="font-weight:700;color:${kc};text-align:right;padding:7px 8px;">${r.koef.toFixed(1)}%</td>
           <td class="right" style="${BL.ct}color:#94a3b8;">${fmt(r.cTrupci)}</td>
           <td class="right" style="color:${C.cTrupci};font-weight:700;">${fmt(r.actual.cTrupci)}</td>
           <td class="right" style="${BL.dz}color:#94a3b8;">${fmt(r.dzgo)}</td>
@@ -431,7 +428,7 @@
       html += `<tr style="${subTotalStyle(gj)}">
         <td style="padding:6px 4px;"></td>
         <td style="padding:6px 8px;color:${gjColor};font-size:11px;white-space:nowrap;">Σ ${gj.split(' ')[0]}</td>
-        <td></td><td></td>
+        <td></td>
         <td class="right" style="${BL.ct}">${fmt(sub.planCT)}</td><td class="right" style="color:${C.cTrupci};">${fmt(sub.actCT)}</td>
         <td class="right" style="${BL.dz}">${fmt(sub.planDz)}</td><td class="right">${fmt(sub.celDuga)}</td><td class="right">${fmt(sub.celCij)}</td><td class="right">${fmt(sub.skart)}</td>
         <td class="right" style="${BL.lt}">${fmt(sub.planLT)}</td><td class="right" style="color:${C.lTrupci};">${fmt(sub.actLT)}</td>
@@ -443,7 +440,7 @@
     });
 
     html += `<tr style="background:#1e293b;color:white;font-weight:700;border-top:3px solid #334155;">
-      <td colspan="2" style="padding:8px 12px;color:white;">UKUPNO</td><td></td><td></td>
+      <td colspan="2" style="padding:8px 12px;color:white;">UKUPNO</td><td></td>
       <td style="${WR}${BL.ct}">${fmtN(grand.planCT)}</td><td style="${WR}">${fmtN(grand.actCT)}</td>
       <td style="${WR}${BL.dz}">${fmtN(grand.planDz)}</td><td style="${WR}">${fmtN(grand.celDuga)}</td><td style="${WR}">${fmtN(grand.celCij)}</td><td style="${WR}">${fmtN(grand.skart)}</td>
       <td style="${WR}${BL.lt}">${fmtN(grand.planLT)}</td><td style="${WR}">${fmtN(grand.actLT)}</td>
