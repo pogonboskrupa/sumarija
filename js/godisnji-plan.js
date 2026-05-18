@@ -348,6 +348,8 @@
     cij: `border-left:2px solid rgba(180,83,9,0.35);`,
     tot: `border-left:2px solid rgba(71,85,105,0.4);`,
   };
+  // Inline style for td cells inside dark total rows — overrides any CSS class color
+  const WR = 'text-align:right;color:white;padding:6px 8px;';
 
   function renderGrupe(rows) {
     const view = document.getElementById('gp-grupe-view');
@@ -441,12 +443,12 @@
     });
 
     html += `<tr style="background:#1e293b;color:white;font-weight:700;border-top:3px solid #334155;">
-      <td colspan="2" style="padding:8px 12px;">UKUPNO</td><td></td><td></td>
-      <td class="right" style="${BL.ct}">${fmtN(grand.planCT)}</td><td class="right">${fmtN(grand.actCT)}</td>
-      <td class="right" style="${BL.dz}">${fmtN(grand.planDz)}</td><td class="right">${fmtN(grand.celDuga)}</td><td class="right">${fmtN(grand.celCij)}</td><td class="right">${fmtN(grand.skart)}</td>
-      <td class="right" style="${BL.lt}">${fmtN(grand.planLT)}</td><td class="right">${fmtN(grand.actLT)}</td>
-      <td class="right" style="${BL.cij}">${fmtN(grand.planCij)}</td><td class="right">${fmtN(grand.ogrDugi)}</td><td class="right">${fmtN(grand.ogrCij)}</td><td class="right">${fmtN(grand.gule)}</td>
-      <td class="right" style="${BL.tot}">${fmtN(grand.neto)}</td><td class="right">${fmtN(grand.ukupno)}</td><td class="right">${realizacijaBadge(grand.stepen)}</td>
+      <td colspan="2" style="padding:8px 12px;color:white;">UKUPNO</td><td></td><td></td>
+      <td style="${WR}${BL.ct}">${fmtN(grand.planCT)}</td><td style="${WR}">${fmtN(grand.actCT)}</td>
+      <td style="${WR}${BL.dz}">${fmtN(grand.planDz)}</td><td style="${WR}">${fmtN(grand.celDuga)}</td><td style="${WR}">${fmtN(grand.celCij)}</td><td style="${WR}">${fmtN(grand.skart)}</td>
+      <td style="${WR}${BL.lt}">${fmtN(grand.planLT)}</td><td style="${WR}">${fmtN(grand.actLT)}</td>
+      <td style="${WR}${BL.cij}">${fmtN(grand.planCij)}</td><td style="${WR}">${fmtN(grand.ogrDugi)}</td><td style="${WR}">${fmtN(grand.ogrCij)}</td><td style="${WR}">${fmtN(grand.gule)}</td>
+      <td style="${WR}${BL.tot}">${fmtN(grand.neto)}</td><td style="${WR}">${fmtN(grand.ukupno)}</td><td style="text-align:right;padding:6px 8px;">${realizacijaBadge(grand.stepen)}</td>
     </tr>
     </tbody></table></div>
     <p style="margin-top:10px;font-size:11px;color:#94a3b8;padding:0 4px;">
@@ -575,11 +577,13 @@
     });
 
     html += `<tr style="background:#1e293b;color:white;font-weight:700;">
-      <td colspan="2">UKUPNO</td><td></td><td></td><td></td>
-      <td class="right">${fmtN(grand.neto)}</td><td class="right">${fmtN(grand.ukupno)}</td>
-      <td class="right">${realizacijaBadge(grand.stepen)}</td>
-      <td class="right">${realizacijaBadge(grand.pctCT)}</td><td class="right">${realizacijaBadge(grand.pctDz)}</td>
-      <td class="right">${realizacijaBadge(grand.pctLT)}</td><td class="right">${realizacijaBadge(grand.pctCij)}</td>
+      <td colspan="2" style="color:white;padding:6px 8px;">UKUPNO</td><td></td><td></td><td></td>
+      <td style="${WR}">${fmtN(grand.neto)}</td><td style="${WR}">${fmtN(grand.ukupno)}</td>
+      <td style="text-align:right;padding:6px 8px;">${realizacijaBadge(grand.stepen)}</td>
+      <td style="text-align:right;padding:6px 8px;">${realizacijaBadge(grand.pctCT)}</td>
+      <td style="text-align:right;padding:6px 8px;">${realizacijaBadge(grand.pctDz)}</td>
+      <td style="text-align:right;padding:6px 8px;">${realizacijaBadge(grand.pctLT)}</td>
+      <td style="text-align:right;padding:6px 8px;">${realizacijaBadge(grand.pctCij)}</td>
       <td></td>
     </tr></tbody></table></div></div></div>`;
 
@@ -709,10 +713,12 @@
     });
 
     html += `<tr style="background:#1e293b;color:white;font-weight:700;">
-      <td colspan="2">UKUPNO</td>
-      <td class="right">${fmtN(grand.bruto)}</td><td class="right">${fmtN(grand.neto)}</td>
-      <td class="right">${fmtN(grand.planCT)}</td><td class="right">${fmtN(grand.planDz)}</td>
-      <td class="right">${fmtN(grand.planLT)}</td><td class="right">${fmtN(grand.planCij)}</td>
+      <td colspan="2" style="color:white;padding:6px 8px;">UKUPNO</td>
+      <td style="${WR}">${fmtN(grand.bruto)}</td><td style="${WR}">${fmtN(grand.neto)}</td>
+      <td style="${WR}">${fmtN(grand.planCT)}</td>
+      <td style="${WR}">${fmtN(grand.planDz)}</td>
+      <td style="${WR}">${fmtN(grand.planLT)}</td>
+      <td style="${WR}">${fmtN(grand.planCij)}</td>
       <td></td>
     </tr></tbody></table></div></div></div>`;
 
@@ -799,17 +805,19 @@
     const grandDz=grand.celDuga+grand.celCij+grand.skart, grandCj=grand.ogrDugi+grand.ogrCij+grand.gule;
     html += `
     <tr style="background:#1e293b;color:white;font-weight:700;">
-      <td rowspan="2">Σ</td><td rowspan="2">UKUPNO</td>
-      <td>Projekat</td>
-      <td class="right">${fmtN(grand.planCT)}</td><td class="right">${fmtN(grand.planDz)}</td>
-      <td class="right">${fmtN(grand.planLT)}</td><td class="right">${fmtN(grand.planCij)}</td>
-      <td class="right">${fmtN(grand.neto)}</td><td></td>
+      <td rowspan="2" style="color:white;padding:6px 8px;text-align:center;vertical-align:middle;">Σ</td>
+      <td rowspan="2" style="color:white;padding:6px 8px;vertical-align:middle;">UKUPNO</td>
+      <td style="color:#93c5fd;padding:6px 8px;border-left:3px solid #60a5fa;">Projekat</td>
+      <td style="${WR}">${fmtN(grand.planCT)}</td><td style="${WR}">${fmtN(grand.planDz)}</td>
+      <td style="${WR}">${fmtN(grand.planLT)}</td><td style="${WR}">${fmtN(grand.planCij)}</td>
+      <td style="${WR}">${fmtN(grand.neto)}</td><td></td>
     </tr>
     <tr style="background:#1e293b;color:white;font-weight:700;">
-      <td>Sječa</td>
-      <td class="right">${fmtN(grand.actCT)}</td><td class="right">${fmtN(grandDz)}</td>
-      <td class="right">${fmtN(grand.actLT)}</td><td class="right">${fmtN(grandCj)}</td>
-      <td class="right">${fmtN(grand.ukupno)}</td><td>${realizacijaBadge(grand.stepen)}</td>
+      <td style="color:#86efac;padding:6px 8px;border-left:3px solid #4ade80;">Sječa</td>
+      <td style="${WR}">${fmtN(grand.actCT)}</td><td style="${WR}">${fmtN(grandDz)}</td>
+      <td style="${WR}">${fmtN(grand.actLT)}</td><td style="${WR}">${fmtN(grandCj)}</td>
+      <td style="${WR}color:#86efac;">${fmtN(grand.ukupno)}</td>
+      <td style="padding:6px 8px;">${realizacijaBadge(grand.stepen)}</td>
     </tr>
     </tbody></table></div></div></div>`;
 
@@ -840,10 +848,11 @@
     });
 
     html += `<tr style="background:#1e293b;color:white;font-weight:700;">
-      <td>UKUPNO</td>
-      <td class="right">${fmtN(grand.neto)}</td><td class="right">${fmtN(grand.ukupno)}</td>
-      <td class="right">${realizacijaBadge(grand.stepen)}</td>
-      <td class="right">${fmtN(Math.max(0,grand.neto-grand.ukupno))}</td><td></td>
+      <td style="color:white;padding:6px 8px;">UKUPNO</td>
+      <td style="${WR}">${fmtN(grand.neto)}</td>
+      <td style="${WR}color:#86efac;">${fmtN(grand.ukupno)}</td>
+      <td style="text-align:right;padding:6px 8px;">${realizacijaBadge(grand.stepen)}</td>
+      <td style="${WR}color:#94a3b8;">${fmtN(Math.max(0,grand.neto-grand.ukupno))}</td><td></td>
     </tr>
     </tbody></table></div></div>`;
 
