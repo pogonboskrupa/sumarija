@@ -324,31 +324,63 @@
   }
 
   // ---- MAIN LOAD ----
+  // Filtrira raw primke array po PLAN_YEAR i renderira UI
+  function _processPrimke(raw) {
+    const primke = (raw||[]).filter(p=>{
+      const parts=(p.datum||'').split('.');
+      return parts.length>=3 && parseInt(parts[2])===PLAN_YEAR;
+    });
+    _rawPrimke = primke;
+    _rows = [...buildRows(primke), ...buildSlucajniRows(primke)];
+    _loaded = true;
+    renderActiveTab();
+    if (typeof markTabRendered==='function') markTabRendered('godisnji-plan');
+  }
+
+  // Vraća parsed cache iz localStorage ili null
+  function _readCache(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      return (obj && obj.data) ? obj.data : null;
+    } catch(e) { return null; }
+  }
+
   async function loadGodisnjiPlan(force) {
     if (_loading) return;
     _loading = true;
     const el = document.getElementById('godisnji-plan-content');
     if (!el) { _loading=false; return; }
     el.classList.remove('hidden');
-    showLoading();
+
+    // 🚀 TURBO: instant render iz keša (dijeli ga sa "Primke (Sječa)" preload-om)
+    // Prioritet: shared key (cache_primke_sjeca) → GP-specific key (legacy)
+    const sharedKey = 'cache_primke_sjeca';
+    const legacyKey = 'cache_gp_primke_'+PLAN_YEAR;
+    let instant = !force && (_readCache(sharedKey) || _readCache(legacyKey));
+    if (instant && instant.primke) {
+      try { _processPrimke(instant.primke); } catch(e) { instant = null; }
+    }
+    if (!instant) showLoading();
+
     try {
       const url = buildApiUrl('primke');
-      const ck  = 'cache_gp_primke_'+PLAN_YEAR;
-      const data = await fetchWithCache(url, ck, force||false, 120000);
+      // Fetch sa kraćim timeoutom (30s); fetchWithCache će keširati pod sharedKey-om
+      const data = await fetchWithCache(url, sharedKey, force||false, 30000);
       if (data.error) throw new Error(data.error);
-      const primke = (data.primke||[]).filter(p=>{
-        const parts=(p.datum||'').split('.');
-        return parts.length>=3 && parseInt(parts[2])===PLAN_YEAR;
-      });
-      _rawPrimke = primke;
-      _rows = [...buildRows(primke), ...buildSlucajniRows(primke)];
-      _loaded = true;
-      renderActiveTab();
-      if (typeof markTabRendered==='function') markTabRendered('godisnji-plan');
+      _processPrimke(data.primke);
+      // Cleanup legacy cache key (jednom uspješno učitano → više ne treba)
+      try { localStorage.removeItem(legacyKey); } catch(e) {}
     } catch(err) {
-      console.error('[GP]', err);
-      const v = document.getElementById('gp-'+_activeTab+'-view');
-      if (v) v.innerHTML = `<div style="text-align:center;padding:60px;color:#dc2626;"><div style="font-size:32px;margin-bottom:12px;">❌</div>Greška: ${err.message}<br><br><button class="btn btn-primary" onclick="loadGodisnjiPlan(true)">Pokušaj ponovo</button></div>`;
+      // Ako imamo instant render, samo logiraj — UI je već pokazan iz keša
+      if (instant) {
+        console.warn('[GP] refresh failed, koristim stale cache:', err.message);
+      } else {
+        console.error('[GP]', err);
+        const v = document.getElementById('gp-'+_activeTab+'-view');
+        if (v) v.innerHTML = `<div style="text-align:center;padding:60px;color:#dc2626;"><div style="font-size:32px;margin-bottom:12px;">❌</div>Greška: ${err.message}<br><br><button class="btn btn-primary" onclick="loadGodisnjiPlan(true)">Pokušaj ponovo</button></div>`;
+      }
     } finally {
       _loading = false;
     }
