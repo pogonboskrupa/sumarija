@@ -1741,8 +1741,9 @@
                             const izvodjacBg = izvodjacColorMap[o.izvođač] || '';
                             const izvodjacStyle = izvodjacBg ? `background-color: ${izvodjacBg};` : '';
                             const sjecaDateStyle = getSjecaMonthStyle(o.datumZadnjeSjece);
+                            const safeOdjel = (o.odjel || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                             return `
-                                <tr>
+                                <tr onclick="showOdjelStanjeZaliha('${safeOdjel}')" style="cursor:pointer;" onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background=''">
                                     <td class="${radilisteClass}" style="font-weight: 500;">${o.odjel || '-'}</td>
                                     <td class="right ${radilisteClass}">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
                                     <td class="right ${radilisteClass}">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
@@ -2788,7 +2789,7 @@
                 const z = getNetZaliha(odjel);
                 const values = {};
                 cols.forEach(c => { values[c.key] = z[c.key] || 0; });
-                values['__ukupno'] = values['Σ ČETINARI'] + values['LIŠĆARI'];
+                values['__ukupno'] = z['UKUPNO Č+L'] || 0;
                 const sjecaDate = odjel._lastSjeca ? ' <span style="color:#6b7280;font-size:10px;">🪚 ' + _isoToDMY(odjel._lastSjeca) + '</span>' : '';
                 values['__naziv'] = (odjel.radiliste ? odjel.radiliste + ' / ' : '') + (odjel.odjel || '') + sjecaDate;
                 // Sortimenti koji su bili preklasirani za ovaj odjel
@@ -5058,27 +5059,38 @@
                 document.getElementById('primaci-izvodjaci-body').innerHTML = bodyHTML;
 
                 // Render godišnju rekapitulaciju po sortimentima
+                const RECAP_COLS = ['TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'Σ ČETINARI',
+                                    'TRUPCI L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI', 'UKUPNO Č+L'];
                 let recapHeaderHTML = `
                     <tr>
                         <th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
                             👷 Izvođač radova
                         </th>
                 `;
-                data.sortimentiNazivi.forEach(s => {
-                    recapHeaderHTML += `<th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 10px;">${s}</th>`;
+                RECAP_COLS.forEach(s => {
+                    const isAggregate = s === 'Σ ČETINARI' || s === 'LIŠĆARI' || s === 'UKUPNO Č+L';
+                    const bg = isAggregate ? 'background: linear-gradient(135deg, #7c2d12, #991b1b);' : 'background: linear-gradient(135deg, #ea580c, #dc2626);';
+                    recapHeaderHTML += `<th style="${bg} color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 10px;">${s}</th>`;
                 });
                 recapHeaderHTML += `</tr>`;
                 document.getElementById('primaci-izvodjaci-recap-header').innerHTML = recapHeaderHTML;
+
+                const recapFooterTotals = {};
+                RECAP_COLS.forEach(s => { recapFooterTotals[s] = 0; });
 
                 let recapBodyHTML = '';
                 data.izvodjaci.forEach((izvodjac, idx) => {
                     const rowBg = idx % 2 === 0 ? '#fff7ed' : '#ffffff';
 
-                    const sortimentiCells = data.sortimentiNazivi.map(s => {
+                    const sortimentiCells = RECAP_COLS.map(s => {
                         const val = izvodjac.sortimentiUkupno[s] || 0;
+                        recapFooterTotals[s] += val;
                         const displayVal = val > 0 ? val.toFixed(2) : '-';
-                        const fontWeight = val > 0 ? 'font-weight: 700; color: #7c2d12;' : 'color: #d1d5db;';
-                        return `<td style="${fontWeight} border: 1px solid #fed7aa; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 8px;">${displayVal}</td>`;
+                        const isAggregate = s === 'Σ ČETINARI' || s === 'LIŠĆARI' || s === 'UKUPNO Č+L';
+                        const cellStyle = isAggregate
+                            ? (val > 0 ? 'font-weight: 900; color: #7c2d12; background: #fef3c7;' : 'color: #d1d5db; background: #fef3c7;')
+                            : (val > 0 ? 'font-weight: 700; color: #7c2d12;' : 'color: #d1d5db;');
+                        return `<td style="${cellStyle} border: 1px solid #fed7aa; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 8px;">${displayVal}</td>`;
                     }).join('');
 
                     recapBodyHTML += `
@@ -5090,6 +5102,21 @@
                         </tr>
                     `;
                 });
+
+                const footerCells = RECAP_COLS.map(s => {
+                    const val = recapFooterTotals[s];
+                    const displayVal = val > 0 ? val.toFixed(2) : '-';
+                    return `<td style="font-weight: 900; color: #1e3a5f; background: #dbeafe; border: 2px solid #3b82f6; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 8px;">${displayVal}</td>`;
+                }).join('');
+                recapBodyHTML += `
+                    <tr style="background: #eff6ff;">
+                        <td style="font-weight: 900; font-size: 12px; border: 2px solid #3b82f6; padding: 10px; color: #1e3a5f; background: #dbeafe;">
+                            UKUPNO
+                        </td>
+                        ${footerCells}
+                    </tr>
+                `;
+
                 document.getElementById('primaci-izvodjaci-recap-body').innerHTML = recapBodyHTML;
 
 
@@ -5277,20 +5304,28 @@
                 const radilistaMap = {};
                 const sortimentiSet = new Set();
 
+                const UKUPNO_KEY = 'UKUPNO Č+L';
+                const SKIP_AGG  = new Set(['UKUPNO Č+L', 'Σ ČETINARI']);
+
                 monthResults.forEach((res, monthIdx) => {
                     if (!res?.data || !Array.isArray(res.data)) return;
                     if (res.sortimentiNazivi) res.sortimentiNazivi.forEach(s => sortimentiSet.add(s));
 
                     res.data.forEach(row => {
-                        const naziv = row.odjel || '—';
+                        // Grupiraj po radilištu (kolona E); ako nema, koristi odjel (kolona D)
+                        const naziv = (row.radiliste && row.radiliste.trim()) ? row.radiliste.trim() : (row.odjel || '—');
                         if (!radilistaMap[naziv]) {
                             radilistaMap[naziv] = { naziv, mjeseci: new Array(12).fill(0), sortimentiUkupno: {} };
                         }
                         if (row.sortimenti) {
-                            const rowTotal = Object.values(row.sortimenti).reduce((s, v) => s + (v || 0), 0);
+                            // Koristi UKUPNO Č+L kao izvor istine — izbjegava trojno računanje agregatnih kolona
+                            const rowTotal = parseFloat(row.sortimenti[UKUPNO_KEY]) || 0;
                             radilistaMap[naziv].mjeseci[monthIdx] += rowTotal;
                             Object.entries(row.sortimenti).forEach(([s, v]) => {
-                                if (v > 0) radilistaMap[naziv].sortimentiUkupno[s] = (radilistaMap[naziv].sortimentiUkupno[s] || 0) + v;
+                                // Preskoči agregatne kolone u detaljnoj rekapitulaciji
+                                if (v > 0 && !SKIP_AGG.has(s)) {
+                                    radilistaMap[naziv].sortimentiUkupno[s] = (radilistaMap[naziv].sortimentiUkupno[s] || 0) + v;
+                                }
                             });
                         }
                     });
@@ -5300,7 +5335,8 @@
                     .map(r => ({ ...r, ukupno: r.mjeseci.reduce((s, v) => s + v, 0) }))
                     .sort((a, b) => b.ukupno - a.ukupno);
 
-                const sortimentiNazivi = [...sortimentiSet];
+                // Izbaci agregatne kolone iz rekapitulacije sortimenta
+                const sortimentiNazivi = [...sortimentiSet].filter(s => !SKIP_AGG.has(s));
 
                 if (radilista.length === 0) {
                     document.getElementById('otpremaci-radilista-header').innerHTML = `
@@ -5321,6 +5357,14 @@
                 headerHTML += `<th style="background: linear-gradient(135deg, #155e75, #164e63); color: white; padding: 12px; font-weight: 900; position: sticky; top: 0; z-index: 20;">UKUPNO</th></tr>`;
                 document.getElementById('otpremaci-radilista-header').innerHTML = headerHTML;
 
+                // Izračunaj sumu po mjesecima i grand total
+                const mjSume = new Array(12).fill(0);
+                let grandTotal = 0;
+                radilista.forEach(r => {
+                    r.mjeseci.forEach((v, i) => { mjSume[i] += v; });
+                    grandTotal += r.ukupno;
+                });
+
                 let bodyHTML = '';
                 radilista.forEach((r, idx) => {
                     const rowBg = idx % 2 === 0 ? '#cffafe' : '#ffffff';
@@ -5336,6 +5380,18 @@
                         <td style="background:#bfdbfe;border:2px solid #3b82f6;font-family:'Courier New',monospace;text-align:right;padding:10px;font-weight:900;font-size:13px;color:#1e3a8a;">${r.ukupno.toFixed(2)}</td>
                     </tr>`;
                 });
+
+                // Suma red na dnu
+                const mjSumaCells = mjSume.map(v => {
+                    const d = v > 0 ? v.toFixed(2) : '-';
+                    return `<td style="color:#ffffff;border:1px solid #0e7490;font-family:'Courier New',monospace;font-size:11px;font-weight:800;text-align:right;padding:8px;">${d}</td>`;
+                }).join('');
+                bodyHTML += `<tr style="background:linear-gradient(135deg,#0e7490,#155e75);border-top:3px solid #164e63;">
+                    <td style="color:#ffffff;font-weight:900;font-size:12px;border:1px solid #0e7490;padding:10px;letter-spacing:0.5px;">∑ UKUPNO</td>
+                    ${mjSumaCells}
+                    <td style="background:#1e3a8a;border:2px solid #3b82f6;font-family:'Courier New',monospace;text-align:right;padding:10px;font-weight:900;font-size:13px;color:#ffffff;">${grandTotal.toFixed(2)}</td>
+                </tr>`;
+
                 document.getElementById('otpremaci-radilista-body').innerHTML = bodyHTML;
 
                 // Render godišnju rekapitulaciju po sortimentima
@@ -5346,6 +5402,13 @@
                 });
                 recapHeaderHTML += `</tr>`;
                 document.getElementById('otpremaci-radilista-recap-header').innerHTML = recapHeaderHTML;
+
+                // Sume po sortimentima
+                const sortSume = {};
+                sortimentiNazivi.forEach(s => { sortSume[s] = 0; });
+                radilista.forEach(r => {
+                    sortimentiNazivi.forEach(s => { sortSume[s] += (r.sortimentiUkupno[s] || 0); });
+                });
 
                 let recapBodyHTML = '';
                 radilista.forEach((r, idx) => {
@@ -5361,6 +5424,18 @@
                         ${sortCells}
                     </tr>`;
                 });
+
+                // Suma red za rekapitulaciju
+                const recapSumaCells = sortimentiNazivi.map(s => {
+                    const v = sortSume[s] || 0;
+                    const d = v > 0 ? v.toFixed(2) : '-';
+                    return `<td style="color:#ffffff;border:1px solid #0e7490;font-family:'Courier New',monospace;font-size:10px;font-weight:800;text-align:right;padding:8px;">${d}</td>`;
+                }).join('');
+                recapBodyHTML += `<tr style="background:linear-gradient(135deg,#0e7490,#155e75);border-top:3px solid #164e63;">
+                    <td style="color:#ffffff;font-weight:900;font-size:12px;border:1px solid #0e7490;padding:10px;letter-spacing:0.5px;">∑ UKUPNO</td>
+                    ${recapSumaCells}
+                </tr>`;
+
                 document.getElementById('otpremaci-radilista-recap-body').innerHTML = recapBodyHTML;
 
             } catch (error) {
@@ -5973,25 +6048,38 @@
         window._kupciStatCurrentPeriod = window._kupciStatCurrentPeriod || 'god';
 
         async function loadKupciStatistika() {
+            if (window._kupciStatLoading) return;
+            window._kupciStatLoading = true;
             const yearEl = document.getElementById('kupci-statistika-year');
             const year = parseInt(yearEl?.value || new Date().getFullYear());
             const contentEl = document.getElementById('kupci-statistika-content');
             console.log('[KupciStat] start year=' + year + ' contentEl=' + !!contentEl + ' godisnjiLen=' + kupciGodisnjiData.length);
-            if (!contentEl) return;
+            if (!contentEl) { window._kupciStatLoading = false; return; }
+            // switchToTab may have added hidden to this inner div — always ensure it's visible
+            contentEl.classList.remove('hidden');
 
             const isCurrentYear = year === new Date().getFullYear();
 
             // Pokušaj koristiti već učitane kupci podatke (iz loadKupci)
             if (isCurrentYear && kupciGodisnjiData.length > 0) {
-                window._kupciStatData = {
+                const statData = {
                     godisnji: kupciGodisnjiData,
                     miesecni: kupciMjesecniRawData || [],
                     sortimentiNazivi: kupciSortimentiNazivi || [],
                     year
                 };
                 console.log('[KupciStat] fast path rows=' + kupciGodisnjiData.length + ' sample ukupno=' + (kupciGodisnjiData[0]?.ukupno));
-                _renderKupciStatShell(isCurrentYear);
-                selectStatPeriod('god');
+                try {
+                    window._kupciStatData = statData;
+                    _renderKupciStatShell(isCurrentYear);
+                    selectStatPeriod('god');
+                } catch (renderErr) {
+                    console.error('[KupciStat] render error:', renderErr);
+                    window._kupciStatData = null;
+                    contentEl.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Greška pri renderovanju: ${renderErr.message}</div>`;
+                } finally {
+                    window._kupciStatLoading = false;
+                }
                 return;
             }
 
@@ -6025,6 +6113,8 @@
             } catch (e) {
                 console.error('[KupciStat] error:', e);
                 contentEl.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Greška: ${e.message}</div>`;
+            } finally {
+                window._kupciStatLoading = false;
             }
         }
 
@@ -6085,7 +6175,7 @@
         function selectStatPeriod(periodKey) {
             window._kupciStatCurrentPeriod = periodKey;
 
-            document.querySelectorAll('#kupci-stat-periods button').forEach(btn => {
+            document.querySelectorAll('#kupci-stat-periods button[id^="statbtn-"]').forEach(btn => {
                 btn.style.background = '#fff';
                 btn.style.borderColor = '#d1d5db';
                 btn.style.color = '#374151';
@@ -6190,6 +6280,9 @@
             }
 
             const agg = {};
+            // "Σ ČETINARI" i "UKUPNO Č+L" su međuzbrojevi — ne smiju se dodavati u ukupno ni sortimentiCount
+            const UKUPNO_KEY = 'UKUPNO Č+L';
+            const SKIP_AGG = new Set(['UKUPNO Č+L', 'Σ ČETINARI']);
             allRows.filter(r => { const d = parseDatum(r.datum); return d && d >= from && d <= today; })
                 .forEach(row => {
                     if (!row.kupac) return;
@@ -6198,10 +6291,13 @@
                         Object.entries(row.sortimenti).forEach(([s, v]) => {
                             if (v > 0) {
                                 agg[row.kupac].sortimenti[s] = (agg[row.kupac].sortimenti[s] || 0) + v;
-                                agg[row.kupac].ukupno += v;
-                                agg[row.kupac].sortimentiCount[s] = (agg[row.kupac].sortimentiCount[s] || 0) + 1;
+                                if (!SKIP_AGG.has(s)) {
+                                    agg[row.kupac].sortimentiCount[s] = (agg[row.kupac].sortimentiCount[s] || 0) + 1;
+                                }
                             }
                         });
+                        // ukupno = vrijednost iz kolone "UKUPNO Č+L", identično handleKupci GAS-u
+                        agg[row.kupac].ukupno += (row.sortimenti[UKUPNO_KEY] || 0);
                     }
                     agg[row.kupac].brOtpremnica += 1;
                 });
@@ -6244,46 +6340,50 @@
             const gTotals = new Array(COLS.length).fill(0);
             let gTotal = 0;
 
-            let html = `<div style="margin-bottom:10px; color:#6b7280; font-size:13px;">
-                Period: <strong style="color:#0369a1;">${periodLabel}</strong>
-                &nbsp;·&nbsp; <strong style="color:#0369a1;">${kupciList.length}</strong> kupac${kupciList.length !== 1 ? 'a' : ''}
+            const thStyle = 'padding:11px 12px; text-align:right; font-size:11px; font-weight:800; letter-spacing:0.6px; white-space:nowrap; border-left:1px solid rgba(255,255,255,0.15); color:#bfdbfe;';
+            const tdColStyle = (v) => v > 0
+                ? 'padding:9px 12px; text-align:right; font-family:"Courier New",monospace; font-size:13px; font-weight:700; color:#0e7490; border-left:1px solid #e2e8f0;'
+                : 'padding:9px 12px; text-align:right; font-family:"Courier New",monospace; font-size:13px; color:#d1d5db; border-left:1px solid #e2e8f0;';
+
+            let html = `<div style="border-radius:10px; overflow:hidden; border:1px solid #bfdbfe; box-shadow:0 2px 8px rgba(3,105,161,0.1);">
+            <div style="background:#1e3a8a; padding:10px 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <span style="color:#93c5fd; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1.2px;">📊 Kubici (m³)</span>
+                <span style="color:#ffffff; font-size:15px; font-weight:700;">${periodLabel}</span>
+                <span style="background:rgba(255,255,255,0.12); color:#e0f2fe; font-size:12px; padding:2px 10px; border-radius:20px; border:1px solid rgba(255,255,255,0.2);">${kupciList.length} kupac${kupciList.length !== 1 ? 'a' : ''}</span>
             </div>
             <div style="overflow-x:auto;">
-            <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:480px;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:500px;">
             <thead>
-            <tr style="background:linear-gradient(135deg,#0369a1,#075985); color:white; text-align:right;">
-                <th style="padding:10px 10px; text-align:center; width:34px;">#</th>
-                <th style="padding:10px 14px; text-align:left; white-space:nowrap;">Kupac</th>`;
-            COLS.forEach(col => {
-                html += `<th style="padding:10px 10px; white-space:nowrap; font-size:11px;">${col}</th>`;
-            });
-            html += `<th style="padding:10px 12px; background:rgba(0,0,0,0.2); white-space:nowrap;">UKUPNO</th>
+            <tr style="background:#1e3a8a;">
+                <th style="padding:11px 12px; text-align:center; width:42px; font-size:11px; font-weight:800; letter-spacing:0.6px; color:#bfdbfe;">#</th>
+                <th style="padding:11px 16px; text-align:left; font-size:12px; font-weight:800; letter-spacing:0.3px; white-space:nowrap; color:#e0f2fe;">KUPAC</th>`;
+            COLS.forEach(col => { html += `<th style="${thStyle}">${col}</th>`; });
+            html += `<th style="padding:11px 14px; text-align:right; font-size:11px; font-weight:800; letter-spacing:0.6px; white-space:nowrap; background:#1d4ed8; color:#ffffff; border-left:2px solid rgba(255,255,255,0.3);">UKUPNO m³</th>
             </tr></thead><tbody>`;
 
             kupciList.forEach((k, idx) => {
-                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
-                const rowBg = idx % 2 === 0 ? '#f0f9ff' : '#fff';
-                html += `<tr style="background:${rowBg};" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='${rowBg}'">
-                    <td style="padding:8px 10px; text-align:center;">${medal}</td>
-                    <td style="padding:8px 14px; font-weight:600; color:#0369a1; white-space:nowrap;">${k.kupac}</td>`;
+                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : null;
+                const rank = medal || `<span style="font-size:12px; color:#94a3b8; font-weight:600;">${idx + 1}</span>`;
+                const rowBg = idx % 2 === 0 ? '#f1f5f9' : '#ffffff';
+                html += `<tr style="background:${rowBg}; border-bottom:1px solid #e2e8f0;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='${rowBg}'">
+                    <td style="padding:9px 12px; text-align:center;">${rank}</td>
+                    <td style="padding:9px 16px; font-weight:700; color:#1e293b; white-space:nowrap; font-size:13px;">${k.kupac}</td>`;
                 colKeys.forEach((key, i) => {
                     const v = key ? (k.sortimenti?.[key] || 0) : 0;
                     gTotals[i] += v;
-                    html += `<td style="padding:8px 10px; text-align:right; font-family:'Courier New',monospace; font-size:12px; ${v > 0 ? 'color:#155e75; font-weight:700;' : 'color:#d1d5db;'}">
-                        ${v > 0 ? v.toFixed(2) : '—'}</td>`;
+                    html += `<td style="${tdColStyle(v)}">${v > 0 ? v.toFixed(2) : '—'}</td>`;
                 });
                 gTotal += (k.ukupno || 0);
-                html += `<td style="padding:8px 12px; text-align:right; font-weight:700; font-family:'Courier New',monospace; font-size:13px; color:#1e3a8a; background:#eff6ff;">
-                    ${(k.ukupno || 0).toFixed(2)}</td></tr>`;
+                html += `<td style="padding:9px 14px; text-align:right; font-weight:800; font-family:'Courier New',monospace; font-size:14px; color:#ffffff; background:#1d4ed8; border-left:2px solid #93c5fd;">${(k.ukupno || 0).toFixed(2)}</td></tr>`;
             });
 
-            html += `<tr style="background:linear-gradient(135deg,#0369a1,#075985); color:white; font-weight:700;">
-                <td colspan="2" style="padding:9px 14px; text-align:left;">UKUPNO</td>`;
+            html += `<tr style="background:#1e3a8a; border-top:2px solid #2563eb;">
+                <td colspan="2" style="padding:10px 16px; text-align:left; font-size:12px; font-weight:800; letter-spacing:0.5px; color:#ffffff;">∑ UKUPNO</td>`;
             gTotals.forEach(v => {
-                html += `<td style="padding:9px 10px; text-align:right; font-family:'Courier New',monospace; font-size:12px;">${v > 0 ? v.toFixed(2) : '—'}</td>`;
+                html += `<td style="padding:10px 12px; text-align:right; font-family:'Courier New',monospace; font-size:13px; font-weight:700; color:#ffffff; border-left:1px solid rgba(255,255,255,0.12);">${v > 0 ? v.toFixed(2) : '—'}</td>`;
             });
-            html += `<td style="padding:9px 12px; text-align:right; font-family:'Courier New',monospace; font-size:14px; font-weight:900; background:rgba(0,0,0,0.2);">${gTotal.toFixed(2)}</td>
-            </tr></tbody></table></div>`;
+            html += `<td style="padding:10px 14px; text-align:right; font-family:'Courier New',monospace; font-size:15px; font-weight:900; color:#ffffff; background:#1d4ed8; border-left:2px solid rgba(255,255,255,0.3);">${gTotal.toFixed(2)}</td>
+            </tr></tbody></table></div></div>`;
 
             return html;
         }
@@ -6311,48 +6411,52 @@
             const gColTotals = new Array(COLS.length).fill(0);
             let gTotalCount = 0;
 
-            let html = `<div style="margin-bottom:10px; color:#6b7280; font-size:13px;">
-                Period: <strong style="color:#7c3aed;">${periodLabel}</strong>
-                &nbsp;·&nbsp; <strong style="color:#7c3aed;">${kupciList.length}</strong> kupac${kupciList.length !== 1 ? 'a' : ''}
-                &nbsp;·&nbsp; <span style="color:#7c3aed; font-size:11px;">📦 broj otpremnica</span>
+            const thStyle = 'padding:11px 12px; text-align:right; font-size:11px; font-weight:800; letter-spacing:0.6px; white-space:nowrap; border-left:1px solid rgba(255,255,255,0.15); color:#ddd6fe;';
+            const tdColStyle = (cnt) => cnt > 0
+                ? 'padding:9px 12px; text-align:right; font-family:"Courier New",monospace; font-size:13px; font-weight:700; color:#6d28d9; border-left:1px solid #e2e8f0;'
+                : 'padding:9px 12px; text-align:right; font-family:"Courier New",monospace; font-size:13px; color:#d1d5db; border-left:1px solid #e2e8f0;';
+
+            let html = `<div style="border-radius:10px; overflow:hidden; border:1px solid #c4b5fd; box-shadow:0 2px 8px rgba(124,58,237,0.1);">
+            <div style="background:#4c1d95; padding:10px 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <span style="color:#c4b5fd; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1.2px;">📦 Broj otpremnica</span>
+                <span style="color:#ffffff; font-size:15px; font-weight:700;">${periodLabel}</span>
+                <span style="background:rgba(255,255,255,0.12); color:#ede9fe; font-size:12px; padding:2px 10px; border-radius:20px; border:1px solid rgba(255,255,255,0.2);">${kupciList.length} kupac${kupciList.length !== 1 ? 'a' : ''}</span>
             </div>
             <div style="overflow-x:auto;">
-            <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:480px;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:500px;">
             <thead>
-            <tr style="background:linear-gradient(135deg,#7c3aed,#6d28d9); color:white; text-align:right;">
-                <th style="padding:10px 10px; text-align:center; width:34px;">#</th>
-                <th style="padding:10px 14px; text-align:left; white-space:nowrap;">Kupac</th>`;
-            COLS.forEach(col => {
-                html += `<th style="padding:10px 10px; white-space:nowrap; font-size:11px;">${col}</th>`;
-            });
-            html += `<th style="padding:10px 12px; background:rgba(0,0,0,0.2); white-space:nowrap;">BR. OTP.</th>
+            <tr style="background:#4c1d95;">
+                <th style="padding:11px 12px; text-align:center; width:42px; font-size:11px; font-weight:800; letter-spacing:0.6px; color:#ddd6fe;">#</th>
+                <th style="padding:11px 16px; text-align:left; font-size:12px; font-weight:800; letter-spacing:0.3px; white-space:nowrap; color:#ede9fe;">KUPAC</th>`;
+            COLS.forEach(col => { html += `<th style="${thStyle}">${col}</th>`; });
+            html += `<th style="padding:11px 14px; text-align:right; font-size:11px; font-weight:800; letter-spacing:0.6px; white-space:nowrap; background:#6d28d9; color:#ffffff; border-left:2px solid rgba(255,255,255,0.3);">BR. OTP.</th>
             </tr></thead><tbody>`;
 
             kupciList.forEach((k, idx) => {
-                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
-                const rowBg = idx % 2 === 0 ? '#f5f3ff' : '#fff';
+                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : null;
+                const rank = medal || `<span style="font-size:12px; color:#94a3b8; font-weight:600;">${idx + 1}</span>`;
+                const rowBg = idx % 2 === 0 ? '#f8f7ff' : '#ffffff';
                 const nonZeroCols = COLS.filter(col => (k.sortimentiCount?.[col] || 0) > 0).length;
                 const isSingleSortiment = nonZeroCols <= 1;
-                html += `<tr style="background:${rowBg};" onmouseover="this.style.background='#ede9fe'" onmouseout="this.style.background='${rowBg}'">
-                    <td style="padding:8px 10px; text-align:center;">${medal}</td>
-                    <td style="padding:8px 14px; font-weight:600; color:#7c3aed; white-space:nowrap;">${k.kupac}${isSingleSortiment ? ' <span style="font-size:10px;color:#9ca3af;font-weight:400;">(1 sort.)</span>' : ''}</td>`;
+                html += `<tr style="background:${rowBg}; border-bottom:1px solid #e2e8f0;" onmouseover="this.style.background='#ede9fe'" onmouseout="this.style.background='${rowBg}'">
+                    <td style="padding:9px 12px; text-align:center;">${rank}</td>
+                    <td style="padding:9px 16px; font-weight:700; color:#1e293b; white-space:nowrap; font-size:13px;">${k.kupac}${isSingleSortiment ? ' <span style="font-size:10px; color:#a78bfa; font-weight:500; background:#ede9fe; padding:1px 5px; border-radius:3px; margin-left:4px;">1 sort.</span>' : ''}</td>`;
                 COLS.forEach((col, i) => {
                     const cnt = k.sortimentiCount?.[col] || 0;
                     gColTotals[i] += cnt;
-                    html += `<td style="padding:8px 10px; text-align:right; font-family:'Courier New',monospace; font-size:12px; ${cnt > 0 ? 'color:#5b21b6; font-weight:700;' : 'color:#d1d5db;'}">
-                        ${cnt > 0 ? cnt : '—'}</td>`;
+                    html += `<td style="${tdColStyle(cnt)}">${cnt > 0 ? cnt : '—'}</td>`;
                 });
                 gTotalCount += (k.brOtpremnica || 0);
-                html += `<td style="padding:8px 12px; text-align:right; font-weight:700; font-family:'Courier New',monospace; font-size:13px; color:#4c1d95; background:#ede9fe;">${k.brOtpremnica}</td></tr>`;
+                html += `<td style="padding:9px 14px; text-align:right; font-weight:800; font-family:'Courier New',monospace; font-size:14px; color:#ffffff; background:#6d28d9; border-left:2px solid #c4b5fd;">${k.brOtpremnica}</td></tr>`;
             });
 
-            html += `<tr style="background:linear-gradient(135deg,#7c3aed,#6d28d9); color:white; font-weight:700;">
-                <td colspan="2" style="padding:9px 14px; text-align:left;">UKUPNO</td>`;
+            html += `<tr style="background:#4c1d95; border-top:2px solid #7c3aed;">
+                <td colspan="2" style="padding:10px 16px; text-align:left; font-size:12px; font-weight:800; letter-spacing:0.5px; color:#ffffff;">∑ UKUPNO</td>`;
             gColTotals.forEach(v => {
-                html += `<td style="padding:9px 10px; text-align:right; font-family:'Courier New',monospace; font-size:12px;">${v > 0 ? v : '—'}</td>`;
+                html += `<td style="padding:10px 12px; text-align:right; font-family:'Courier New',monospace; font-size:13px; font-weight:700; color:#ffffff; border-left:1px solid rgba(255,255,255,0.12);">${v > 0 ? v : '—'}</td>`;
             });
-            html += `<td style="padding:9px 12px; text-align:right; font-family:'Courier New',monospace; font-size:14px; font-weight:900; background:rgba(0,0,0,0.2);">${gTotalCount}</td>
-            </tr></tbody></table></div>`;
+            html += `<td style="padding:10px 14px; text-align:right; font-family:'Courier New',monospace; font-size:15px; font-weight:900; color:#ffffff; background:#6d28d9; border-left:2px solid rgba(255,255,255,0.3);">${gTotalCount}</td>
+            </tr></tbody></table></div></div>`;
 
             return html;
         }
@@ -7460,6 +7564,10 @@
                 // Zadnji datum
                 var zadnjiDatumStr = odjel.zadnjiDatum ? ' \u2022 Zadnja sje\u010Da: ' + odjel.zadnjiDatum : '';
 
+                var panelId = 'odjel-stanje-panel-' + (start + idx);
+                window._odjelPanelMap = window._odjelPanelMap || {};
+                window._odjelPanelMap[panelId] = odjel.odjel;
+
                 html += '<div style="margin-bottom: 28px; border: 2px solid ' + boja.border + '; border-radius: 12px; overflow: hidden;">' +
                     // Header odjela
                     '<div style="background: ' + boja.border + '; color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">' +
@@ -7467,7 +7575,9 @@
                     '<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">' +
                     '<span style="font-size: 13px; opacity: 0.9;">' + zadnjiDatumStr + '</span>' +
                     '<span style="background: rgba(255,255,255,0.25); padding: 4px 14px; border-radius: 6px; font-size: 14px; font-weight: 700;">' + odjel.ukupno.toFixed(2) + ' m\u00B3</span>' +
+                    '<button onclick="toggleOdjelStanjeZaliha(\'' + panelId + '\')" id="' + panelId + '-btn" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.5);color:white;padding:4px 12px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600;">&#x1F4CA; Stanje zaliha</button>' +
                     '</div></div>' +
+                    '<div id="' + panelId + '" style="display:none; border-top: 1px solid rgba(0,0,0,0.15);"></div>' +
                     '<div style="background: ' + boja.bg + '; padding: 12px;">' +
                     // Tabela 1: Apsolutne vrijednosti sa primačima kao redovima
                     '<h4 style="font-size: 14px; margin: 0 0 8px 0; color: ' + boja.header + ';">Apsolutne vrijednosti (m\u00B3)</h4>' +
@@ -7514,6 +7624,156 @@
                 odjeliDefaultPage++;
                 renderOdjeliDefaultPage();
             }
+        }
+
+        function _closeOdjelPanel(el) {
+            var panel = el;
+            while (panel && !(panel.id && panel.id.indexOf('odjel-stanje-panel-') === 0)) {
+                panel = panel.parentElement;
+            }
+            if (!panel) return;
+            panel.style.display = 'none';
+            var btn = document.getElementById(panel.id + '-btn');
+            if (btn) btn.style.background = 'rgba(255,255,255,0.2)';
+        }
+
+        function toggleOdjelStanjeZaliha(panelId) {
+            var panel = document.getElementById(panelId);
+            if (!panel) return;
+            var btn = document.getElementById(panelId + '-btn');
+            if (panel.style.display !== 'none') {
+                panel.style.display = 'none';
+                if (btn) btn.style.background = 'rgba(255,255,255,0.2)';
+                return;
+            }
+            // Show panel
+            if (btn) btn.style.background = 'rgba(255,255,255,0.4)';
+            var odjelNaziv = window._odjelPanelMap && window._odjelPanelMap[panelId];
+            if (!odjelNaziv) { panel.style.display = 'block'; panel.innerHTML = '<div style="padding:16px;color:#6b7280;">Greška: odjel nije pronađen.</div>'; return; }
+
+            // Find odjel in stanjeZalihaData
+            var odjelObj = null;
+            if (stanjeZalihaData && stanjeZalihaData.length) {
+                for (var i = 0; i < stanjeZalihaData.length; i++) {
+                    if (stanjeZalihaData[i].odjel === odjelNaziv) { odjelObj = stanjeZalihaData[i]; break; }
+                }
+            }
+            // Fallback: try localStorage cache
+            if (!odjelObj) {
+                try {
+                    var cached = localStorage.getItem('cache_stanje_zaliha');
+                    if (cached) {
+                        var cacheData = JSON.parse(cached);
+                        var arr = (cacheData && cacheData.data && cacheData.data.odjeli) ? cacheData.data.odjeli : (cacheData && cacheData.odjeli ? cacheData.odjeli : null);
+                        if (arr) {
+                            for (var j = 0; j < arr.length; j++) {
+                                if (arr[j].odjel === odjelNaziv) { odjelObj = arr[j]; break; }
+                            }
+                        }
+                    }
+                } catch(e) {}
+            }
+            panel.style.display = 'block';
+            if (!odjelObj) {
+                panel.innerHTML = '<div style="padding:16px;color:#6b7280;font-size:13px;">Podaci o stanju zaliha nisu učitani. Otvorite Stanje Zaliha tab ili kliknite Ažuriraj podatke.</div>';
+                return;
+            }
+            panel.innerHTML = _buildOdjelStanjeTable(odjelObj);
+        }
+
+        function _buildOdjelStanjeTable(odjelObj) {
+            var cols = [
+                { label: 'TRUPCI Č',  key: 'TRUPCI Č',     isAgg: false },
+                { label: 'CEL.DUGA',  key: 'CEL.DUGA',      isAgg: false },
+                { label: 'CEL.CIJ.', key: 'CEL.CIJEPANA',  isAgg: false },
+                { label: 'ČETINARI',  key: 'Σ ČETINARI',    isAgg: true  },
+                { label: 'TRUPCI L',  key: 'TRUPCI L',      isAgg: false },
+                { label: 'OGR.DUGI',  key: 'OGR.DUGI',      isAgg: false },
+                { label: 'OGR.CIJ.', key: 'OGR.CIJEPANI',  isAgg: false },
+                { label: 'LIŠĆARI',   key: 'LIŠĆARI',       isAgg: true  },
+                { label: 'UKUPNO',    key: 'UKUPNO Č+L',    isAgg: true  }
+            ];
+            var netZ = getNetZaliha(odjelObj);
+            var rows = [
+                { label: 'PROJEKAT', data: odjelObj.projekat || {}, rowBg: '#eff6ff', labelColor: '#1d4ed8' },
+                { label: 'SJEČA',    data: odjelObj.sjeca    || {}, rowBg: '#f0fdf4', labelColor: '#15803d' },
+                { label: 'OTPREMA',  data: odjelObj.otprema  || {}, rowBg: '#fff7ed', labelColor: '#c2410c' },
+                { label: 'ZALIHA',   data: netZ,                    rowBg: '#f5f3ff', labelColor: '#6d28d9', isZaliha: true }
+            ];
+            var thBase = 'color:white;font-weight:700;text-align:center;padding:8px 6px;font-size:11px;border:1px solid #374151;white-space:nowrap;';
+            var headerCells = cols.map(function(c) {
+                return '<th style="' + thBase + 'background:' + (c.isAgg ? '#2d5a87' : '#1e3a5f') + ';">' + c.label + '</th>';
+            }).join('');
+            var bodyRowsArr = rows.map(function(row) {
+                var labelTd = '<td style="font-weight:700;padding:7px 12px;font-size:12px;border:1px solid #e5e7eb;white-space:nowrap;background:' + row.rowBg + ';color:' + row.labelColor + ';min-width:76px;">' + row.label + '</td>';
+                var cells = cols.map(function(c) {
+                    var val = parseFloat(row.data[c.key]) || 0;
+                    var txtColor = val < 0 ? '#dc2626' : val > 0 ? (c.isAgg ? (row.isZaliha ? '#5b21b6' : '#1d4ed8') : '#374151') : '#9ca3af';
+                    var cellBg = (c.isAgg && row.isZaliha) ? 'background:#ede9fe;' : '';
+                    return '<td style="text-align:right;padding:7px 6px;font-size:12px;border:1px solid #e5e7eb;color:' + txtColor + ';' + cellBg + '">' + (val !== 0 ? val.toFixed(2) : '-') + '</td>';
+                }).join('');
+                return '<tr>' + labelTd + cells + '</tr>';
+            });
+            // REALIZACIJA red: SJEČA / PROJEKAT × 100, zaokruženo na cijeli broj
+            var realizacijaCells = cols.map(function(c) {
+                var p = parseFloat((odjelObj.projekat || {})[c.key]) || 0;
+                var s = parseFloat((odjelObj.sjeca || {})[c.key]) || 0;
+                if (p === 0) return '<td style="text-align:right;padding:7px 6px;font-size:12px;border:1px solid #fbbf24;background:#fef9c3;color:#9ca3af;">-</td>';
+                var pct = Math.round(s / p * 100);
+                var color = pct >= 100 ? '#15803d' : pct >= 75 ? '#b45309' : '#dc2626';
+                var fw = c.isAgg ? '900' : '700';
+                return '<td style="text-align:right;padding:7px 6px;font-size:12px;border:1px solid #fbbf24;background:#fef9c3;color:' + color + ';font-weight:' + fw + ';">' + pct + '%</td>';
+            }).join('');
+            var realizacijaLabelTd = '<td style="font-weight:700;padding:7px 12px;font-size:12px;border:1px solid #fbbf24;white-space:nowrap;background:#fef3c7;color:#92400e;min-width:76px;">REALIZACIJA</td>';
+            bodyRowsArr.splice(2, 0, '<tr>' + realizacijaLabelTd + realizacijaCells + '</tr>');
+            var bodyRows = bodyRowsArr.join('');
+            return '<div style="padding:12px;background:#f8fafc;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+                '<span style="font-weight:700;font-size:13px;color:#1e3a5f;">📊 Stanje zaliha — ' + (odjelObj.odjel || '') + '</span>' +
+                '<button onclick="_closeOdjelPanel(this)" style="background:#e5e7eb;border:none;border-radius:6px;padding:2px 10px;cursor:pointer;font-size:14px;font-weight:700;color:#374151;">&#x2715;</button>' +
+                '</div>' +
+                '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">' +
+                '<table style="width:100%;border-collapse:collapse;">' +
+                '<thead><tr>' +
+                '<th style="' + thBase + 'background:#1e3a5f;text-align:left;padding:8px 12px;">RED</th>' +
+                headerCells +
+                '</tr></thead>' +
+                '<tbody>' + bodyRows + '</tbody>' +
+                '</table></div></div>';
+        }
+
+        function showOdjelStanjeZaliha(odjelNaziv) {
+            var panel = document.getElementById('odjel-stanje-panel-dashboard');
+            if (!panel) return;
+            if (panel.dataset.odjelNaziv === odjelNaziv && panel.style.display !== 'none') {
+                panel.style.display = 'none';
+                panel.dataset.odjelNaziv = '';
+                return;
+            }
+            var odjelObj = null;
+            if (stanjeZalihaData && stanjeZalihaData.length) {
+                for (var i = 0; i < stanjeZalihaData.length; i++) {
+                    if (stanjeZalihaData[i].odjel === odjelNaziv) { odjelObj = stanjeZalihaData[i]; break; }
+                }
+            }
+            if (!odjelObj) {
+                try {
+                    var cached = localStorage.getItem('cache_stanje_zaliha');
+                    if (cached) {
+                        var cacheData = JSON.parse(cached);
+                        var arr = (cacheData && cacheData.data && cacheData.data.odjeli) ? cacheData.data.odjeli : (cacheData && cacheData.odjeli ? cacheData.odjeli : null);
+                        if (arr) { for (var j = 0; j < arr.length; j++) { if (arr[j].odjel === odjelNaziv) { odjelObj = arr[j]; break; } } }
+                    }
+                } catch(e) {}
+            }
+            panel.dataset.odjelNaziv = odjelNaziv;
+            panel.style.display = 'block';
+            if (!odjelObj) {
+                panel.innerHTML = '<div style="background:white;border-radius:12px;padding:16px;border:2px solid #e5e7eb;color:#6b7280;font-size:13px;">Podaci o stanju zaliha nisu učitani. Otvorite <b>Stanje Zaliha</b> tab ili kliknite <b>Ažuriraj podatke</b>.</div>';
+            } else {
+                panel.innerHTML = _buildOdjelStanjeTable(odjelObj);
+            }
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         // Load otpremac odjeli data (ZADNJIH 15 ODJELA IZ SVIH GODINA)
@@ -9320,7 +9580,7 @@
                                             : (odjel[vrsta] || {});
 
                                         const razlExcl = vrsta === 'zaliha' ? getRazlikeExclusions(odjel.odjel) : {};
-                                        return `
+                                        const rowHtml = `
                                         <tr style="background: ${rowColors[vrsta]};">
                                             <td style="padding: 10px 12px; font-weight: 700; color: ${textColors[vrsta]}; white-space: nowrap; border: 1px solid #d1d5db;">${labels[vrsta]}</td>
                                             ${stanjeZalihaSortimenti.map((s, i) => {
@@ -9333,6 +9593,24 @@
                                                 return `<td title="${isRazlika ? 'Razlika mjerenja — isključeno iz ukupnog' : ''}" style="padding: 10px 6px; text-align: right; color: ${cellColor}; border: 1px solid #d1d5db; font-weight: ${isTotal ? '700' : '400'}; font-style: ${isRazlika ? 'italic' : 'normal'}; ${cellBg ? 'background:' + cellBg + ';' : ''}">${displayValue}</td>`;
                                             }).join('')}
                                         </tr>`;
+                                        if (vrsta !== 'sjeca') return rowHtml;
+                                        // REALIZACIJA red: SJEČA / PROJEKAT × 100, cijeli broj
+                                        const projData = odjel.projekat || {};
+                                        const sjecaData = odjel.sjeca || {};
+                                        const realizacijaRow = `
+                                        <tr style="background: #fef9c3;">
+                                            <td style="padding: 10px 12px; font-weight: 700; color: #92400e; white-space: nowrap; border: 1px solid #fbbf24;">REALIZACIJA</td>
+                                            ${stanjeZalihaSortimenti.map((s, i) => {
+                                                const p = parseFloat(projData[s]) || 0;
+                                                const sc = parseFloat(sjecaData[s]) || 0;
+                                                const isTotal = i === 9 || i === 18 || i === 19;
+                                                if (p === 0) return `<td style="padding: 10px 6px; text-align: right; color: #9ca3af; border: 1px solid #fbbf24; ${isTotal ? 'background:#fef3c7;font-weight:700;' : ''}">-</td>`;
+                                                const pct = Math.round(sc / p * 100);
+                                                const color = pct >= 100 ? '#15803d' : pct >= 75 ? '#b45309' : '#dc2626';
+                                                return `<td style="padding: 10px 6px; text-align: right; color: ${color}; border: 1px solid #fbbf24; font-weight: ${isTotal ? '900' : '700'}; ${isTotal ? 'background:#fef3c7;' : ''}">${pct}%</td>`;
+                                            }).join('')}
+                                        </tr>`;
+                                        return rowHtml + realizacijaRow;
                                     }).join('')}
                                 </tbody>
                             </table>

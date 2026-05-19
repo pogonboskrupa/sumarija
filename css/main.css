@@ -28,13 +28,14 @@
         .user-menu { position: relative; }
         .user-menu-button { background: #f3f4f6; color: #374151; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .user-menu-button:hover { background: #e5e7eb; }
-        .user-menu-dropdown { display: none; position: absolute; right: 0; top: 100%; margin-top: 8px; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); min-width: 200px; z-index: 1000; }
+        .user-menu-dropdown { display: none; position: absolute; right: 0; top: 100%; margin-top: 8px; background: white; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.22); min-width: 364px; z-index: 1000; overflow: hidden; border: 1px solid #e5e7eb; }
         .user-menu-dropdown.show { display: block; }
-        .user-menu-item { padding: 12px 16px; cursor: pointer; font-size: 14px; color: #374151; border-bottom: 1px solid #f3f4f6; }
-        .user-menu-item:hover { background: #f9fafb; }
+        .user-menu-header { padding: 18px 26px 16px; background: #1e3a8a; color: white; font-size: 13px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; }
+        .user-menu-item { padding: 20px 26px; cursor: pointer; font-size: 19px; font-weight: 600; color: #1e293b; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 16px; transition: background 0.12s; }
+        .user-menu-item:hover { background: #f0f9ff; color: #0369a1; }
         .user-menu-item:last-child { border-bottom: none; }
         .user-menu-item.danger { color: #dc2626; }
-        .user-menu-item.danger:hover { background: #fee2e2; }
+        .user-menu-item.danger:hover { background: #fee2e2; color: #b91c1c; }
         .btn-logout { background: #dc2626; color: white; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; }
         .btn-logout:hover { background: #b91c1c; }
         .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
@@ -382,12 +383,12 @@
         /* Confirm Modal */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center; }
         .modal-overlay.show { display: flex; }
-        .modal { background: white; border-radius: 16px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-        .modal-header { margin-bottom: 16px; }
-        .modal-title { font-size: 18px; font-weight: 700; color: #1f2937; }
-        .modal-body { margin-bottom: 24px; font-size: 14px; color: #6b7280; line-height: 1.6; }
-        .modal-footer { display: flex; gap: 12px; justify-content: flex-end; }
-        .modal-footer .btn { padding: 10px 20px; }
+        .modal { background: white; border-radius: 20px; padding: 32px; max-width: 520px; width: 90%; box-shadow: 0 24px 70px rgba(0,0,0,0.3); }
+        .modal-header { margin-bottom: 20px; }
+        .modal-title { font-size: 24px; font-weight: 700; color: #1f2937; }
+        .modal-body { margin-bottom: 32px; font-size: 18px; color: #6b7280; line-height: 1.6; }
+        .modal-footer { display: flex; gap: 16px; justify-content: flex-end; }
+        .modal-footer .btn { padding: 13px 26px; font-size: 16px; }
         .btn-danger { background: #dc2626; color: white; }
         .btn-danger:hover { background: #b91c1c; }
 
@@ -1160,13 +1161,15 @@
             .filter-input, .filter-select { font-size: 13px; padding: 8px; }
 
             /* Modal */
-            .modal { width: 95%; padding: 16px; }
-            .modal-title { font-size: 16px; }
-            .modal-body { font-size: 13px; }
+            .modal { width: 95%; padding: 22px; }
+            .modal-title { font-size: 20px; }
+            .modal-body { font-size: 17px; }
+            .modal-footer .btn { padding: 12px 22px; font-size: 15px; }
 
             /* User menu */
             .user-menu-button { padding: 6px 12px; font-size: 12px; }
-            .user-menu-dropdown { min-width: 180px; }
+            .user-menu-dropdown { min-width: 320px; right: -4px; }
+            .user-menu-item { font-size: 17px; padding: 18px 22px; gap: 14px; }
 
             /* Hide or adjust specific elements on mobile */
             .badge { padding: 4px 8px; font-size: 10px; }
@@ -1248,17 +1251,17 @@
 
         .toast {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            padding: 16px 20px;
-            min-width: 300px;
-            max-width: 400px;
+            border-radius: 16px;
+            box-shadow: 0 12px 50px rgba(0,0,0,0.22);
+            padding: 20px 26px;
+            min-width: 390px;
+            max-width: 520px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
             pointer-events: auto;
             opacity: 0;
-            transform: translateX(400px);
+            transform: translateX(520px);
             transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
 
@@ -1269,11 +1272,11 @@
 
         .toast.hide {
             opacity: 0;
-            transform: translateX(400px);
+            transform: translateX(520px);
         }
 
         .toast-icon {
-            font-size: 24px;
+            font-size: 32px;
             flex-shrink: 0;
         }
 
@@ -1282,13 +1285,13 @@
         }
 
         .toast-title {
-            font-weight: 600;
-            font-size: 14px;
+            font-weight: 700;
+            font-size: 18px;
             margin-bottom: 4px;
         }
 
         .toast-message {
-            font-size: 13px;
+            font-size: 17px;
             color: #6b7280;
             line-height: 1.4;
         }
@@ -1296,16 +1299,16 @@
         .toast-close {
             background: none;
             border: none;
-            font-size: 20px;
+            font-size: 26px;
             color: #9ca3af;
             cursor: pointer;
             padding: 0;
-            width: 24px;
-            height: 24px;
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 4px;
+            border-radius: 6px;
             flex-shrink: 0;
         }
 
@@ -1357,15 +1360,15 @@
             .toast {
                 min-width: auto;
                 max-width: none;
-                padding: 12px 16px;
+                padding: 16px 20px;
             }
 
             .toast-title {
-                font-size: 13px;
+                font-size: 17px;
             }
 
             .toast-message {
-                font-size: 12px;
+                font-size: 15px;
             }
         }
 
@@ -2945,3 +2948,61 @@
         body.force-android-view .kub-col-napomena {
             display: none !important;
         }
+
+/* ============================================ */
+/* 🏢 KUPAC DETAILS MODAL — Responsive          */
+/* ============================================ */
+
+/* Base — sve veličine ekrana, bez max-width limita */
+.kupac-details-inner {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 24px 70px rgba(0,0,0,0.3);
+    width: calc(100vw - 24px);
+    max-width: none;
+    height: calc(100vh - 24px);
+    max-height: none;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Mobile — full screen, no rounded corners */
+@media (max-width: 768px) {
+    #kupac-details-modal {
+        padding: 0 !important;
+        align-items: stretch !important;
+    }
+    .kupac-details-inner {
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        height: 100%;
+        border-radius: 0 !important;
+        box-shadow: none;
+    }
+    #kupac-details-modal .modal-header {
+        border-radius: 0 !important;
+    }
+}
+
+/* Compact table on small screens */
+@media (max-width: 576px) {
+    #kupac-details-table th,
+    #kupac-details-table td {
+        padding: 8px 5px !important;
+        font-size: 11px !important;
+        min-width: 52px !important;
+    }
+    /* Sticky Datum column stays readable */
+    #kupac-details-table th:first-child,
+    #kupac-details-table td:first-child {
+        min-width: 78px !important;
+        font-size: 12px !important;
+    }
+    /* Hide Odjel column (least important on mobile) */
+    #kupac-details-table th:nth-child(2),
+    #kupac-details-table td:nth-child(2) {
+        display: none !important;
+    }
+}
