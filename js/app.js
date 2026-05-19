@@ -1741,9 +1741,15 @@
                             const izvodjacBg = izvodjacColorMap[o.izvođač] || '';
                             const izvodjacStyle = izvodjacBg ? `background-color: ${izvodjacBg};` : '';
                             const sjecaDateStyle = getSjecaMonthStyle(o.datumZadnjeSjece);
+                            const escOdjel = (o.odjel||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
                             return `
-                                <tr>
-                                    <td class="${radilisteClass}" style="font-weight: 500;">${o.odjel || '-'}</td>
+                                <tr data-odjel-row="${o.odjel||''}" style="cursor:pointer;" onclick="toggleOdjelZaliha(this,'${escOdjel}')">
+                                    <td class="${radilisteClass}" style="font-weight:500;">
+                                        <span style="display:inline-flex;align-items:center;gap:5px;">
+                                            <span class="odjel-expand-icon" style="font-size:10px;color:#9ca3af;transition:transform 0.15s;">▶</span>
+                                            ${o.odjel || '-'}
+                                        </span>
+                                    </td>
                                     <td class="right ${radilisteClass}">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
                                     <td class="right ${radilisteClass}">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
                                     <td class="right ${radilisteClass}">${(o.sumaPanj != null && !isNaN(o.sumaPanj)) ? o.sumaPanj.toFixed(2) : '0.00'}</td>
@@ -1777,6 +1783,96 @@
                     monthSelect.value = currentMonth;
                     loadDashboardDailyChart();
                 }
+        }
+
+        // ========================================
+        // ODJEL STANJE ZALIHA EXPAND (klik na red u Pregled po odjelima)
+        // ========================================
+        window.toggleOdjelZaliha = function(tr, odjelName) {
+            const icon = tr.querySelector('.odjel-expand-icon');
+            const detailId = 'szd-' + odjelName.replace(/[^a-zA-Z0-9]/g, '_');
+            const existing = document.getElementById(detailId);
+            if (existing) {
+                existing.remove();
+                if (icon) { icon.textContent = '▶'; icon.style.transform = ''; }
+                return;
+            }
+            if (icon) { icon.textContent = '▼'; icon.style.transform = 'rotate(0deg)'; }
+
+            // Čitaj cache
+            let szOdjel = null;
+            try {
+                const raw = localStorage.getItem('cache_stanje_zaliha');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    const data = parsed.data || parsed;
+                    szOdjel = (data.odjeli || []).find(o => o && o.odjel === odjelName);
+                }
+            } catch(e) {}
+
+            const detailTr = document.createElement('tr');
+            detailTr.id = detailId;
+            if (!szOdjel) {
+                detailTr.innerHTML = `<td colspan="8" style="padding:14px 20px;background:#fef9f0;border-bottom:2px solid #fde68a;">
+                    <span style="color:#92400e;font-size:13px;">⚠️ Nema podataka u kešu — posjetite <strong>Stanje Zaliha</strong> tab i osvježite.</span></td>`;
+            } else {
+                detailTr.innerHTML = `<td colspan="8" style="padding:0;border-bottom:2px solid #e0e7ff;">${_renderSzOdjelMini(szOdjel)}</td>`;
+            }
+            tr.after(detailTr);
+        };
+
+        function _renderSzOdjelMini(odjel) {
+            const sum = (d, keys) => keys.reduce((t, k) => t + (d[k] || 0), 0);
+            const tC  = d => sum(d, ['F/L Č','I Č','II Č','III Č','RD']);
+            const cetC= d => tC(d) + sum(d, ['CEL.DUGA','CEL.CIJEPANA','ŠKART']);
+            const tL  = d => sum(d, ['F/L L','I L','II L','III L']);
+            const lisC= d => tL(d) + sum(d, ['OGR.DUGI','OGR.CIJEPANI','GULE']);
+            const ukC = d => cetC(d) + lisC(d);
+
+            const cols = [
+                { lbl:'TRUPCI Č',  fn:tC,   sum:false, col:'#1e40af' },
+                { lbl:'Σ ČETINARI',fn:cetC, sum:true,  col:'#5b21b6' },
+                { lbl:'TRUPCI L',  fn:tL,   sum:false, col:'#15803d' },
+                { lbl:'LIŠĆARI',   fn:lisC, sum:true,  col:'#92400e' },
+                { lbl:'UKUPNO',    fn:ukC,  sum:true,  col:'#0f172a' },
+            ];
+            const vrste = [
+                { lbl:'📋 Projekat', d:odjel.projekat||{}, bg:'#eff6ff', col:'#1e40af' },
+                { lbl:'🪓 Sječa',    d:odjel.sjeca   ||{}, bg:'#f0fdf4', col:'#15803d' },
+                { lbl:'🚛 Otprema',  d:odjel.otprema ||{}, bg:'#fffbeb', col:'#b45309' },
+                { lbl:'📦 Zaliha',   d:odjel.zaliha  ||{}, bg:'#f5f3ff', col:'#7c3aed' },
+            ];
+            const fmtV = v => {
+                if (!v && v !== 0) return '<span style="color:#cbd5e1">—</span>';
+                const n = parseFloat(v) || 0;
+                if (n === 0) return '<span style="color:#cbd5e1">—</span>';
+                const c = n < 0 ? 'color:#dc2626;' : '';
+                return `<span style="${c}font-weight:600;">${n.toFixed(2)}</span>`;
+            };
+
+            let h = `<div style="padding:12px 16px 14px;background:#f8f9ff;border-top:1px solid #e0e7ff;">
+                <div style="font-size:11px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">
+                    📦 Stanje zaliha — ${odjel.odjel}${odjel.radiliste ? ' &nbsp;·&nbsp; <span style="color:#6b7280;font-weight:500;">'+odjel.radiliste+'</span>' : ''}
+                </div>
+                <div style="overflow-x:auto;">
+                <table style="font-size:12px;border-collapse:collapse;min-width:380px;width:auto;">
+                <thead><tr style="background:#1e3a5f;">
+                    <th style="padding:6px 14px;text-align:left;color:white;font-weight:600;white-space:nowrap;">Stavka</th>`;
+            cols.forEach(c => {
+                h += `<th style="padding:6px 12px;text-align:right;color:white;font-weight:600;white-space:nowrap;${c.sum?'background:#243b6e;':''}">${c.lbl}</th>`;
+            });
+            h += `</tr></thead><tbody>`;
+            vrste.forEach(v => {
+                h += `<tr style="background:${v.bg};">
+                    <td style="padding:7px 14px;font-weight:700;color:${v.col};white-space:nowrap;">${v.lbl}</td>`;
+                cols.forEach(c => {
+                    const val = c.fn(v.d);
+                    h += `<td style="padding:7px 12px;text-align:right;font-family:'Roboto Mono',monospace;${c.sum?'font-weight:700;background:'+v.bg+'ee;':''}">${fmtV(val)}</td>`;
+                });
+                h += `</tr>`;
+            });
+            h += `</tbody></table></div></div>`;
+            return h;
         }
 
         // ========================================
