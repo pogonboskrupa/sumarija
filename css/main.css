@@ -2945,3 +2945,114 @@
         body.force-android-view .kub-col-napomena {
             display: none !important;
         }
+
+        /* ================================================
+           GODIŠNJI PLAN — responsive tabele
+           ================================================ */
+
+        /* Submenu tabovi na manjim ekranima */
+        #gp-submenu {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        /* Filter bar */
+        #godisnji-plan-content .controls-bar,
+        #godisnji-plan-content [id$="-filters"] {
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        @media (max-width: 768px) {
+            /* Tabela font i padding */
+            #godisnji-plan-content .monthly-table th,
+            #godisnji-plan-content .monthly-table td {
+                font-size: 10px !important;
+                padding: 5px 4px !important;
+                white-space: nowrap;
+            }
+
+            /* Page header */
+            #godisnji-plan-content .page-header {
+                flex-direction: column;
+                gap: 8px;
+                align-items: flex-start !important;
+            }
+            #godisnji-plan-content .page-header h1 {
+                font-size: 16px;
+            }
+
+            /* Enterprise card header stacks */
+            #godisnji-plan-content .enterprise-card-header {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 8px;
+            }
+            #godisnji-plan-content .enterprise-card-header h2 {
+                font-size: 13px;
+            }
+
+            /* Submenu tabovi */
+            #godisnji-plan-content .submenu-tab {
+                font-size: 11px !important;
+                padding: 6px 10px !important;
+            }
+
+            /* GJ i Status filter dugmad */
+            #godisnji-plan-content [data-gj-btn],
+            #godisnji-plan-content [data-st-btn] {
+                font-size: 11px !important;
+                padding: 5px 10px !important;
+            }
+
+            /* Sortimenti KPI kartice — 2 u redu */
+            #gp-sortimenti-view > div:first-child {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 10px !important;
+            }
+
+            /* Projekat redovi — manje vertikalne razmake */
+            #gp-projekat-view table tr td,
+            #gp-projekat-view table tr th {
+                padding: 5px 5px !important;
+                font-size: 10px !important;
+            }
+
+            /* Stepen badge manji */
+            #godisnji-plan-content span[style*="border-radius:99px"] {
+                font-size: 10px !important;
+                padding: 2px 5px !important;
+            }
+
+            /* Export dugme manji */
+            #godisnji-plan-content button[onclick*="gpExportCsv"],
+            #godisnji-plan-content button[onclick*="openGpPrint"] {
+                font-size: 11px !important;
+                padding: 6px 10px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #godisnji-plan-content .monthly-table th,
+            #godisnji-plan-content .monthly-table td {
+                font-size: 9px !important;
+                padding: 4px 3px !important;
+            }
+
+            #godisnji-plan-content .submenu-tab {
+                font-size: 10px !important;
+                padding: 5px 8px !important;
+            }
+
+            /* Sortimenti kartice — 1 u redu na very small */
+            #gp-sortimenti-view > div:first-child {
+                grid-template-columns: 1fr !important;
+            }
+
+            /* Legenda u Pregled tabu */
+            #gp-pregled-view > div:first-child {
+                flex-direction: column;
+                gap: 4px;
+            }
+        }

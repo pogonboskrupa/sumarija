@@ -413,7 +413,7 @@
       </div>
       <div class="enterprise-card-body">
       <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-      <table class="monthly-table" style="width:100%;min-width:1100px;font-size:12px;border-collapse:collapse;">
+      <table class="monthly-table" style="width:100%;min-width:900px;font-size:12px;border-collapse:collapse;">
       <thead>
         <tr style="background:#1e3a5f;color:white;">
           <th rowspan="2" style="width:32px;text-align:center;">#</th>
@@ -786,7 +786,7 @@
       </div>
       <div class="enterprise-card-body">
       <div style="overflow-x:auto;">
-      <table class="monthly-table" style="width:100%;font-size:12px;min-width:820px;">
+      <table class="monthly-table" style="width:100%;font-size:12px;min-width:640px;">
       <thead><tr>
         <th>Rb.</th><th style="text-align:left;">Odjel</th><th>Stavka</th>
         <th class="right">Trupci Č</th><th class="right">Cjepano Č</th>
