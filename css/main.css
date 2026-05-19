@@ -2659,7 +2659,8 @@
         #primac-sihtarica-content,
         #otpremac-sihtarica-content,
         #pending-unosi-content,
-        #poslovodja-unosi-content {
+        #poslovodja-unosi-content,
+        #godisnji-plan-content {
             max-width: 100%;
             padding-inline: 24px;
             padding-block: 24px;
@@ -2691,7 +2692,8 @@
             #primac-sihtarica-content,
             #otpremac-sihtarica-content,
             #pending-unosi-content,
-            #poslovodja-unosi-content { padding-inline: 40px; }
+            #poslovodja-unosi-content,
+            #godisnji-plan-content { padding-inline: 40px; }
         }
 
         /* 2. Grid layout za desktop (umjesto flex) */
@@ -2952,6 +2954,15 @@
            ================================================ */
 
         /* Submenu tabovi na manjim ekranima */
+        /* GP table full-width fix */
+        #godisnji-plan-content .monthly-table {
+            width: 100%;
+        }
+        #godisnji-plan-content .enterprise-card-body > div[style*="overflow-x"] {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }
+
         #gp-submenu {
             display: flex;
             flex-wrap: wrap;
