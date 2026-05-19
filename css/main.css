@@ -26,12 +26,12 @@
         .header-user-name { font-size: 13px; font-weight: 600; color: #1f2937; }
         .header-user-role { font-size: 11px; color: #6b7280; }
         .user-menu { position: relative; }
-        .user-menu-button { background: #f3f4f6; color: #374151; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .user-menu-button { background: #f3f4f6; color: #374151; padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .user-menu-button:hover { background: #e5e7eb; }
-        .user-menu-dropdown { display: none; position: absolute; right: 0; top: 100%; margin-top: 8px; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); min-width: 200px; z-index: 1000; }
+        .user-menu-dropdown { display: none; position: absolute; right: 0; top: 100%; margin-top: 8px; background: white; border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.18); min-width: 240px; z-index: 1000; overflow: hidden; }
         .user-menu-dropdown.show { display: block; }
-        .user-menu-item { padding: 12px 16px; cursor: pointer; font-size: 14px; color: #374151; border-bottom: 1px solid #f3f4f6; }
-        .user-menu-item:hover { background: #f9fafb; }
+        .user-menu-item { padding: 16px 20px; cursor: pointer; font-size: 16px; color: #374151; border-bottom: 1px solid #f3f4f6; min-height: 52px; display: flex; align-items: center; gap: 8px; }
+        .user-menu-item:hover { background: #f0f4ff; }
         .user-menu-item:last-child { border-bottom: none; }
         .user-menu-item.danger { color: #dc2626; }
         .user-menu-item.danger:hover { background: #fee2e2; }
@@ -1164,9 +1164,10 @@
             .modal-title { font-size: 16px; }
             .modal-body { font-size: 13px; }
 
-            /* User menu */
-            .user-menu-button { padding: 6px 12px; font-size: 12px; }
-            .user-menu-dropdown { min-width: 180px; }
+            /* User menu — keep large for easy tap */
+            .user-menu-button { padding: 10px 16px; font-size: 14px; }
+            .user-menu-dropdown { min-width: 220px; }
+            .user-menu-item { font-size: 15px; padding: 16px 18px; min-height: 52px; }
 
             /* Hide or adjust specific elements on mobile */
             .badge { padding: 4px 8px; font-size: 10px; }
