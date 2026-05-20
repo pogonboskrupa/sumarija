@@ -874,8 +874,10 @@
         const dzA=dzgoAct(r.actual), cjA=cijAct(r.actual);
         const R = 'text-align:right;padding:7px 10px;';
 
-        // Stanje zaliha projekat: probaj po punom odjelu, pa po skraćenom odjelu broju
-        const sz = szMap[normKey(r.odjel)] || null;
+        // Stanje zaliha projekat: r.odjel je samo broj (npr. "50"), SZ ima puni naziv ("Risovac Krupa 50")
+        // Koristimo r.gj + ' ' + r.odjel da bi se poklopio sa normKey(o.odjel) iz SZ
+        const szKey = r.slucajni ? normKey(r.odjel) : normKey(r.gj + ' ' + r.odjel);
+        const sz = szMap[szKey] || null;
         const pCT  = sz ? sz.cTrupci  : r.cTrupci;
         const pDz  = sz ? sz.dzgo     : r.dzgo;
         const pLT  = sz ? sz.lTrupci  : r.lTrupci;
@@ -977,7 +979,8 @@
       const sub = sumRows(gjRows);
       // Projekat iz SZ za ovu GJ
       const gjSzNeto = gjRows.reduce((t,r)=>{
-        const sz = szMap[normKey(r.odjel)];
+        const szk = r.slucajni ? normKey(r.odjel) : normKey(r.gj+' '+r.odjel);
+        const sz = szMap[szk];
         return t + (sz ? sz.neto : r.neto);
       }, 0);
       const szStep = gjSzNeto>0 ? sub.ukupno/gjSzNeto*100 : sub.stepen;
