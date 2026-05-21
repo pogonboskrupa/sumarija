@@ -248,30 +248,40 @@
 
         function startManifestChecker() {
             const now = new Date();
-            const dayOfWeek = now.getDay(); // 0=Sunday, 6=Saturday
+            const dayOfWeek = now.getDay();
             const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
-            // Vikend: ISKLJUČI manifest checker (nema unosa)
             if (isWeekend) {
-                console.log(`🔄 [MANIFEST] Checker SKIPPED (weekend - no data entry expected)`);
+                console.log(`🔄 [MANIFEST] Checker SKIPPED (weekend)`);
                 return;
             }
 
-            // Provjeri odmah
+            // Provjeri odmah pri pokretanju
             checkManifest();
 
-            // Zatim provjeri periodično
-            const hour = now.getHours();
+            // Raspored prema unosu podataka:
+            // 07:00-08:00  sječa se unosi → svake 5 min
+            // 08:00-12:00  otprema se unosi → svake 10 min
+            // 12:00-18:00  rijetki ispravci → svake 20 min
+            // van radnog vremena → ne provjera (briše interval)
+            function scheduleNext() {
+                if (manifestCheckInterval) clearInterval(manifestCheckInterval);
 
-            // Češće između 07:00-09:00 (svake 2 min), rijetko van toga (svaki 10 min)
-            const interval = (hour >= 7 && hour < 9) ? 2 * 60 * 1000 : 10 * 60 * 1000;
+                const h = new Date().getHours();
+                let interval;
+                if (h >= 7 && h < 8)        interval = 5  * 60 * 1000;
+                else if (h >= 8 && h < 12)  interval = 10 * 60 * 1000;
+                else if (h >= 12 && h < 18) interval = 20 * 60 * 1000;
+                else return; // van radnog vremena – ne registruj interval
 
-            if (manifestCheckInterval) {
-                clearInterval(manifestCheckInterval);
+                manifestCheckInterval = setInterval(() => {
+                    checkManifest();
+                    scheduleNext(); // Ponovo procijeni interval pri svakom okidanju
+                }, interval);
+                console.log(`🔄 [MANIFEST] interval: ${interval/60000} min`);
             }
 
-            manifestCheckInterval = setInterval(checkManifest, interval);
-            console.log(`🔄 [MANIFEST] Checker started (interval: ${interval/1000/60} min)`);
+            scheduleNext();
         }
 
         function stopManifestChecker() {
