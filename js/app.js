@@ -246,49 +246,37 @@
             if (el._fadeTimer) { clearTimeout(el._fadeTimer); el._fadeTimer = null; }
         }
 
+        // Fiksna vremena provjere (ms od ponoći)
+        const MANIFEST_CHECK_TIMES = [7, 8, 9].map(h => h * 3600 * 1000);
+
         function startManifestChecker() {
             const now = new Date();
-            const dayOfWeek = now.getDay();
-            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-
+            const isWeekend = now.getDay() === 0 || now.getDay() === 6;
             if (isWeekend) {
-                console.log(`🔄 [MANIFEST] Checker SKIPPED (weekend)`);
+                console.log(`🔄 [MANIFEST] SKIPPED (weekend)`);
                 return;
             }
 
-            // Provjeri odmah pri pokretanju
+            // Provjeri odmah pri pokretanju (jednom, da inicijalizuje cachedManifest)
             checkManifest();
 
-            // Raspored prema unosu podataka:
-            // 06:30-08:30  glavni unos (sječa + otprema) → svake 5 min
-            // 08:30-11:00  kasni unosi → svake 10 min
-            // 11:00-18:00  rijetki ispravci → svake 30 min
-            // van radnog vremena → ne provjerava
-            function scheduleNext() {
-                if (manifestCheckInterval) clearInterval(manifestCheckInterval);
-
-                const now = new Date();
-                const h = now.getHours(), m = now.getMinutes();
-                const mins = h * 60 + m;
-                let interval;
-                if      (mins >= 6*60+30 && mins < 8*60+30)  interval = 5  * 60 * 1000;
-                else if (mins >= 8*60+30 && mins < 11*60)    interval = 10 * 60 * 1000;
-                else if (mins >= 11*60   && mins < 18*60)    interval = 30 * 60 * 1000;
-                else return; // van radnog vremena – ne registruj interval
-
-                manifestCheckInterval = setInterval(() => {
+            // Zakaži timeout do svakog fiksnog termina koji još nije prošao danas
+            const msFromMidnight = now.getHours() * 3600000 + now.getMinutes() * 60000 + now.getSeconds() * 1000;
+            MANIFEST_CHECK_TIMES.forEach(targetMs => {
+                const delay = targetMs - msFromMidnight;
+                if (delay <= 0) return; // Termin je već prošao danas
+                const t = setTimeout(() => {
+                    if (new Date().getDay() === 0 || new Date().getDay() === 6) return;
                     checkManifest();
-                    scheduleNext(); // Ponovo procijeni interval pri svakom okidanju
-                }, interval);
-                console.log(`🔄 [MANIFEST] interval: ${interval/60000} min`);
-            }
-
-            scheduleNext();
+                }, delay);
+                manifestCheckInterval = t; // Čuva zadnji timer (za stopManifestChecker)
+                console.log(`🔄 [MANIFEST] Zakazano za ${Math.round(delay/60000)} min`);
+            });
         }
 
         function stopManifestChecker() {
             if (manifestCheckInterval) {
-                clearInterval(manifestCheckInterval);
+                clearTimeout(manifestCheckInterval);
                 manifestCheckInterval = null;
             }
         }
@@ -760,9 +748,10 @@
                 closeUserMenu(); // Close menu
                 showSuccess('✅ Keš obrisan', 'Učitavam sve prikaze...');
 
-                // Step 8: Učitaj sve prikaze bez reload-a (forceRefresh = true)
+                // Step 8: Provjeri manifest + učitaj sve prikaze bez reload-a (forceRefresh = true)
                 console.log('[CACHE CLEAR] Step 8: Loading all views (force refresh)...');
                 setTimeout(() => {
+                    checkManifest();
                     preloadAllViews(false, true);
                 }, 800);
 
