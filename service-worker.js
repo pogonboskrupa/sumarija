@@ -1,6 +1,6 @@
 // ========== Service Worker - Offline Support ==========
 
-const CACHE_VERSION = 'v10';
+const CACHE_VERSION = 'v11';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
 // Svi statički fajlovi koji se pre-kešuju pri instalaciji

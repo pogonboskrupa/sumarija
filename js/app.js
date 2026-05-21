@@ -383,6 +383,7 @@
                 // Instant show: hide loading, show content
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById(contentId).classList.remove('hidden');
+                if (parsed.timestamp) showCacheIndicator(Date.now() - parsed.timestamp, true);
                 return parsed.data;
             } catch (e) {
                 return null;
@@ -567,11 +568,54 @@
             throw lastError || new Error('Network request failed');
         }
 
-        // Show cache indicator - disabled
-        function showCacheIndicator(age, isStale = false) {}
+        function showCacheIndicator(age, isStale = false) {
+            const el = document.getElementById('cache-indicator');
+            if (!el) return;
+            const ts = new Date(Date.now() - age);
+            const pad = n => String(n).padStart(2, '0');
+            const label = `${pad(ts.getHours())}:${pad(ts.getMinutes())} · ${pad(ts.getDate())}.${pad(ts.getMonth() + 1)}.`;
+            el.textContent = (isStale ? '📅 Keš: ' : '📅 Keš: ') + label;
+            el.style.cssText = [
+                'display:inline-block',
+                'font-size:11px',
+                'padding:3px 8px',
+                'border-radius:12px',
+                'background:' + (isStale ? '#78350f' : '#1e3a5f'),
+                'color:' + (isStale ? '#fcd34d' : '#93c5fd'),
+                'border:1px solid ' + (isStale ? '#d97706' : '#3b82f6'),
+                'cursor:default',
+                'white-space:nowrap',
+                'transition:opacity 0.5s',
+                'opacity:1'
+            ].join(';');
+            if (el._fadeTimer) { clearTimeout(el._fadeTimer); el._fadeTimer = null; }
+        }
 
-        // Hide cache indicator - disabled
-        function hideCacheIndicator() {}
+        function hideCacheIndicator() {
+            const el = document.getElementById('cache-indicator');
+            if (!el) return;
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            el.textContent = `✅ Ažurirano: ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            el.style.cssText = [
+                'display:inline-block',
+                'font-size:11px',
+                'padding:3px 8px',
+                'border-radius:12px',
+                'background:#064e3b',
+                'color:#6ee7b7',
+                'border:1px solid #10b981',
+                'cursor:default',
+                'white-space:nowrap',
+                'transition:opacity 0.5s',
+                'opacity:1'
+            ].join(';');
+            if (el._fadeTimer) clearTimeout(el._fadeTimer);
+            el._fadeTimer = setTimeout(() => {
+                el.style.opacity = '0';
+                setTimeout(() => { el.style.display = 'none'; el._fadeTimer = null; }, 500);
+            }, 5000);
+        }
 
         // Clear cache by pattern
         function clearCacheByPattern(pattern) {
@@ -3258,26 +3302,75 @@
             }
         }
 
+        // Render helper: filter + render both tables, show content panel
+        function _renderPoslovodjaZadnjih5(primkeData, otpremeData) {
+            const radilista = getPoslovodjaRadilista();
+            document.getElementById('poslovodja-radilista-list-3').textContent = radilista.join(', ');
+
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            const fiveDaysAgo = new Date(yesterday);
+            fiveDaysAgo.setDate(yesterday.getDate() - 5);
+
+            const userFullName = currentUser.fullName.toUpperCase().trim();
+
+            const filteredPrimke = (primkeData.primke || []).filter(primka => {
+                const primkaDatum = new Date(primka.datum);
+                if (primkaDatum < fiveDaysAgo) return false;
+                const primkaPoslovodja = (primka.poslovodja || '').toUpperCase().trim();
+                if (primkaPoslovodja && primkaPoslovodja === userFullName) return true;
+                if (radilista.length > 0) {
+                    const primkaRadiliste = (primka.radiliste || '').toUpperCase().trim();
+                    return radilista.some(r => primkaRadiliste === r.toUpperCase());
+                }
+                return false;
+            });
+
+            const filteredOtpreme = (otpremeData.otpreme || []).filter(otprema => {
+                const otpremaDatum = new Date(otprema.datum);
+                if (otpremaDatum < fiveDaysAgo) return false;
+                const otpremaPoslovodja = (otprema.poslovodja || '').toUpperCase().trim();
+                if (otpremaPoslovodja && otpremaPoslovodja === userFullName) return true;
+                if (radilista.length > 0) {
+                    const otpremaRadiliste = (otprema.radiliste || '').toUpperCase().trim();
+                    return radilista.some(r => otpremaRadiliste === r.toUpperCase());
+                }
+                return false;
+            });
+
+            filteredPrimke.sort((a, b) => new Date(b.datum) - new Date(a.datum));
+            filteredOtpreme.sort((a, b) => new Date(b.datum) - new Date(a.datum));
+
+            renderPoslovodjaPrimkaTable(filteredPrimke);
+            renderPoslovodjaOtpremaZ5Table(filteredOtpreme);
+
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('poslovodja-zadnjih5-content').classList.remove('hidden');
+        }
+
         // Load ZADNJIH 5 DANA (Primka i Otprema) za poslovođu
         async function loadPoslovodjaZadnjih5() {
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('poslovodja-zadnjih5-content').classList.add('hidden');
+            // Stale-first: render cached data instantly if available
+            const rawP = localStorage.getItem('cache_primke_zadnjih5');
+            const rawO = localStorage.getItem('cache_otpreme_zadnjih5');
+            let hasStale = false;
+            if (rawP && rawO) {
+                try {
+                    const sp = JSON.parse(rawP), so = JSON.parse(rawO);
+                    if (sp.data && !sp.data.error && so.data && !so.data.error) {
+                        hasStale = true;
+                        _renderPoslovodjaZadnjih5(sp.data, so.data);
+                        showCacheIndicator(Date.now() - Math.min(sp.timestamp, so.timestamp), true);
+                    }
+                } catch(e) {}
+            }
+            if (!hasStale) {
+                document.getElementById('loading-screen').classList.remove('hidden');
+                document.getElementById('poslovodja-zadnjih5-content').classList.add('hidden');
+            }
 
             try {
-                const radilista = getPoslovodjaRadilista();
-
-                // Display radilišta
-                document.getElementById('poslovodja-radilista-list-3').textContent = radilista.join(', ');
-
-                // Izračunaj zadnjih 5 dana ne računajući danas
-                // (podaci od današnje sječe/otpreme se unose tek sutradan)
-                const today = new Date();
-                const yesterday = new Date(today);
-                yesterday.setDate(today.getDate() - 1);
-                const fiveDaysAgo = new Date(yesterday);
-                fiveDaysAgo.setDate(yesterday.getDate() - 5);
-
-                // Load primke i otpreme
                 const primkeUrl = buildApiUrl('primke');
                 const otpremeUrl = buildApiUrl('otpreme');
 
@@ -3286,75 +3379,18 @@
                     fetchWithCache(otpremeUrl, 'cache_otpreme_zadnjih5')
                 ]);
 
+                if (primkeData.error) throw new Error('Greška pri učitavanju primki: ' + primkeData.error);
+                if (otpremeData.error) throw new Error('Greška pri učitavanju otprema: ' + otpremeData.error);
 
-                if (primkeData.error) {
-                    throw new Error('Greška pri učitavanju primki: ' + primkeData.error);
-                }
-                if (otpremeData.error) {
-                    throw new Error('Greška pri učitavanju otprema: ' + otpremeData.error);
-                }
-
-                // Filter primke by poslovodja/radilišta i datum (zadnjih 5 dana)
-                const userFullName = currentUser.fullName.toUpperCase().trim();
-                const filteredPrimke = (primkeData.primke || []).filter(primka => {
-                    // Parse datum
-                    const primkaDatum = new Date(primka.datum);
-                    const withinLast5Days = primkaDatum >= fiveDaysAgo;
-                    if (!withinLast5Days) return false;
-
-                    // Prvo pokušaj filtrirati po poslovodja polju
-                    const primkaPoslovodja = (primka.poslovodja || '').toUpperCase().trim();
-                    if (primkaPoslovodja && primkaPoslovodja === userFullName) {
-                        return true;
-                    }
-
-                    // Fallback: filter po radilištima ako postoje u mapiranju
-                    if (radilista.length > 0) {
-                        const primkaRadiliste = (primka.radiliste || '').toUpperCase().trim();
-                        return radilista.some(r => primkaRadiliste === r.toUpperCase());
-                    }
-
-                    return false;
-                });
-
-                // Filter otpreme by poslovodja/radilišta i datum (zadnjih 5 dana)
-                const filteredOtpreme = (otpremeData.otpreme || []).filter(otprema => {
-                    // Parse datum
-                    const otpremaDatum = new Date(otprema.datum);
-                    const withinLast5Days = otpremaDatum >= fiveDaysAgo;
-                    if (!withinLast5Days) return false;
-
-                    // Prvo pokušaj filtrirati po poslovodja polju
-                    const otpremaPoslovodja = (otprema.poslovodja || '').toUpperCase().trim();
-                    if (otpremaPoslovodja && otpremaPoslovodja === userFullName) {
-                        return true;
-                    }
-
-                    // Fallback: filter po radilištima ako postoje u mapiranju
-                    if (radilista.length > 0) {
-                        const otpremaRadiliste = (otprema.radiliste || '').toUpperCase().trim();
-                        return radilista.some(r => otpremaRadiliste === r.toUpperCase());
-                    }
-
-                    return false;
-                });
-
-                // Sortiraj po datumu (najnoviji prvi)
-                filteredPrimke.sort((a, b) => new Date(b.datum) - new Date(a.datum));
-                filteredOtpreme.sort((a, b) => new Date(b.datum) - new Date(a.datum));
-
-
-                // Render tables
-                renderPoslovodjaPrimkaTable(filteredPrimke);
-                renderPoslovodjaOtpremaZ5Table(filteredOtpreme);
-
-                document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('poslovodja-zadnjih5-content').classList.remove('hidden');
+                _renderPoslovodjaZadnjih5(primkeData, otpremeData);
+                hideCacheIndicator();
 
             } catch (error) {
                 console.error('Error loading poslovođa zadnjih 5:', error);
-                showError('Greška', 'Greška pri učitavanju zadnjih 5 dana: ' + error.message);
-                document.getElementById('loading-screen').classList.add('hidden');
+                if (!hasStale) {
+                    showError('Greška', 'Greška pri učitavanju zadnjih 5 dana: ' + error.message);
+                    document.getElementById('loading-screen').classList.add('hidden');
+                }
             }
         }
 
