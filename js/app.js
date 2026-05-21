@@ -254,6 +254,31 @@
         // ========== MOVED TO js/utils.js ==========
         // SORTIMENTI_ORDER, performance utils (debounce, throttle, etc.), toast notifications
 
+        // ========== OFFLINE BANNER ==========
+        (function() {
+            function createOfflineBanner() {
+                if (document.getElementById('offline-banner')) return;
+                const b = document.createElement('div');
+                b.id = 'offline-banner';
+                b.innerHTML = '📡 Offline — prikazuju se posljednji keširani podaci';
+                b.style.cssText = [
+                    'position:fixed','bottom:0','left:0','right:0','z-index:99999',
+                    'background:#1e293b','color:#f8fafc','text-align:center',
+                    'padding:10px 16px','font-size:13px','font-weight:600',
+                    'letter-spacing:0.3px','border-top:2px solid #f59e0b',
+                    'box-shadow:0 -4px 16px rgba(0,0,0,0.3)'
+                ].join(';');
+                document.body.appendChild(b);
+            }
+            function removeOfflineBanner() {
+                const b = document.getElementById('offline-banner');
+                if (b) b.remove();
+            }
+            if (!navigator.onLine) createOfflineBanner();
+            window.addEventListener('offline', createOfflineBanner);
+            window.addEventListener('online',  removeOfflineBanner);
+        })();
+
         // ========== CACHING & OFFLINE SUPPORT ==========
 
         // Register Service Worker for offline support

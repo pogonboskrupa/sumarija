@@ -1,163 +1,124 @@
 // ========== Service Worker - Offline Support ==========
-// Cache static assets, fallback za offline
 
-const CACHE_VERSION = 'v8';
+const CACHE_VERSION = 'v10';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
+// Svi statički fajlovi koji se pre-kešuju pri instalaciji
 const STATIC_ASSETS = [
     '/',
     '/index.html',
     '/offline.html',
+    '/manifest.webmanifest',
+    '/favicon.png',
+    '/favicon.svg',
+    '/logo-zuti.png',
     '/idb-helper.js',
     '/data-sync.js',
-    '/js/notifications.js'
+    '/css/main.css',
+    '/css/styles.css',
+    '/css/login-optimized.css',
+    '/css/table-contrast-fix.css',
+    '/js/app.js',
+    '/js/auth.js',
+    '/js/ui.js',
+    '/js/charts.js',
+    '/js/godisnji-plan.js',
+    '/js/izvjestaji-new.js',
+    '/js/kubikator.js',
+    '/js/utils.js',
+    '/js/notifications.js',
+    '/js/drag-scroll.js',
+    '/js/week-fix.js',
+    '/js/print-utils.js',
+    '/js/cache-helper.js',
 ];
 
-// Install event - cache static assets
-self.addEventListener('install', (event) => {
-    console.log('[SW] Installing service worker...');
-
+// Install — pre-keširaj sve statičke fajlove
+self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('[SW] Caching static assets');
-                return cache.addAll(STATIC_ASSETS);
-            })
-            .then(() => {
-                console.log('[SW] Service worker installed');
-                return self.skipWaiting();
-            })
-            .catch((error) => {
-                console.error('[SW] Failed to cache assets:', error);
-            })
+            .then(cache => cache.addAll(STATIC_ASSETS))
+            .then(() => self.skipWaiting())
+            .catch(err => console.error('[SW] Install error:', err))
     );
 });
 
-// Activate event - cleanup old caches
-self.addEventListener('activate', (event) => {
-    console.log('[SW] Activating service worker...');
-
+// Activate — obriši stare cacheove
+self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys()
-            .then((cacheNames) => {
-                return Promise.all(
-                    cacheNames
-                        .filter((name) => name !== CACHE_NAME)
-                        .map((name) => {
-                            console.log('[SW] Deleting old cache:', name);
-                            return caches.delete(name);
-                        })
-                );
-            })
-            .then(() => {
-                console.log('[SW] Service worker activated');
-                return self.clients.claim();
-            })
+            .then(names => Promise.all(
+                names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n))
+            ))
+            .then(() => self.clients.claim())
     );
 });
 
-// Fetch event - network-first with cache fallback
-self.addEventListener('fetch', (event) => {
+// Poruka SKIP_WAITING od app.js
+self.addEventListener('message', event => {
+    if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
+// Fetch — strategija po tipu zahtjeva
+self.addEventListener('fetch', event => {
     const { request } = event;
+    if (request.method !== 'GET') return;
+
     const url = new URL(request.url);
 
-    if (request.method !== 'GET') {
-        return;
-    }
+    // Google Apps Script API — ne keširamo u SW (radi localStorage)
+    if (url.hostname === 'script.google.com') return;
 
-    // 🚨 BYPASS: Don't intercept Google Apps Script requests
-    // This allows CORS errors to surface properly in the browser console
-    // Remove this bypass after deploying Apps Script with CORS headers
-    if (url.hostname === 'script.google.com') {
-        console.log('[SW] BYPASS: Not intercepting Apps Script request:', url.pathname);
-        return; // Let browser handle it directly
-    }
-
-    // Handle manifest requests
-    if (url.searchParams.has('path') && url.searchParams.get('path').includes('manifest')) {
+    // Navigacija (učitavanje stranice) — network-first, fallback na keširani index.html
+    if (request.mode === 'navigate') {
         event.respondWith(
-            fetch(request, { timeout: 10000 })
-                .catch(() => {
-                    return new Response(JSON.stringify({
-                        error: 'offline',
-                        primkaRowCount: 0,
-                        otpremaRowCount: 0
-                    }), {
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                })
-        );
-        return;
-    }
-
-    // Handle static assets - cache-first
-    if (STATIC_ASSETS.includes(url.pathname)) {
-        event.respondWith(
-            caches.match(request)
-                .then((cachedResponse) => {
-                    if (cachedResponse) {
-                        return cachedResponse;
+            fetch(request)
+                .then(res => {
+                    // Keširaj svježi index.html
+                    if (res.status === 200) {
+                        const clone = res.clone();
+                        caches.open(CACHE_NAME).then(c => c.put(request, clone));
                     }
-                    return fetch(request);
+                    return res;
                 })
+                .catch(() =>
+                    caches.match('/index.html').then(r => r || caches.match('/offline.html'))
+                )
         );
         return;
     }
 
-    // Network-first for everything else
+    // Statički fajlovi (JS, CSS, slike) — cache-first, mreža kao fallback
+    if (
+        url.pathname.startsWith('/js/') ||
+        url.pathname.startsWith('/css/') ||
+        url.pathname.match(/\.(png|svg|ico|webmanifest|js|css)$/)
+    ) {
+        event.respondWith(
+            caches.match(request).then(cached => {
+                if (cached) return cached;
+                return fetch(request).then(res => {
+                    if (res.status === 200) {
+                        const clone = res.clone();
+                        caches.open(CACHE_NAME).then(c => c.put(request, clone));
+                    }
+                    return res;
+                });
+            })
+        );
+        return;
+    }
+
+    // Ostalo — network-first s cache fallbackom
     event.respondWith(
         fetch(request)
-            .then((response) => {
-                if (response.status === 200) {
-                    const responseClone = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(request, responseClone);
-                    });
+            .then(res => {
+                if (res.status === 200) {
+                    const clone = res.clone();
+                    caches.open(CACHE_NAME).then(c => c.put(request, clone));
                 }
-                return response;
+                return res;
             })
-            .catch(() => {
-                return caches.match(request)
-                    .then((cachedResponse) => {
-                        if (cachedResponse) {
-                            return cachedResponse;
-                        }
-                        // Navigation requests (page loads) → offline.html
-                        if (request.mode === 'navigate') {
-                            return caches.match('/offline.html');
-                        }
-                        return new Response(JSON.stringify({
-                            success: false,
-                            error: 'Offline - no cached data available',
-                            offline: true
-                        }), {
-                            status: 503,
-                            headers: { 'Content-Type': 'application/json' }
-                        });
-                    });
-            })
+            .catch(() => caches.match(request))
     );
 });
-
-// Handle notification click - open/focus the app
-self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
-
-    const urlToOpen = event.notification.data?.url || '/';
-
-    event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true })
-            .then((clientList) => {
-                // Focus existing window if found
-                for (const client of clientList) {
-                    if (client.url.includes(self.location.origin) && 'focus' in client) {
-                        return client.focus();
-                    }
-                }
-                // Otherwise open new window
-                return clients.openWindow(urlToOpen);
-            })
-    );
-});
-
-console.log('[SW] Service worker loaded');
