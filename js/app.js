@@ -5038,6 +5038,27 @@
                         </tr>
                     `;
                 });
+                // UKUPNO red — suma po kolonama
+                const totMjeseciR = mjeseci.map((_, mi) =>
+                    data.radilista.reduce((s, r) => s + (r.mjeseci[mi] || 0), 0)
+                );
+                const totUkupnoR = data.radilista.reduce((s, r) => s + r.ukupno, 0);
+                const totMjeseciCellsR = totMjeseciR.map(val => {
+                    const display = val > 0 ? val.toFixed(2) : '-';
+                    const style = val > 0 ? 'font-weight:800;color:#7c2d12;' : 'color:#d1d5db;';
+                    return `<td style="${style}border:1px solid #f97316;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:8px;background:#fff7ed;">${display}</td>`;
+                }).join('');
+                bodyHTML += `
+                    <tr style="background:#fed7aa;border-top:3px solid #ea580c;">
+                        <td style="font-weight:900;font-size:12px;border:1px solid #f97316;padding:10px;color:#7c2d12;letter-spacing:0.5px;">
+                            Σ UKUPNO
+                        </td>
+                        ${totMjeseciCellsR}
+                        <td style="background:#f97316;border:2px solid #ea580c;font-family:'Courier New',monospace;text-align:right;padding:10px;font-weight:900;font-size:13px;color:#fff;">
+                            ${totUkupnoR.toFixed(2)}
+                        </td>
+                    </tr>
+                `;
                 document.getElementById('primaci-radilista-body').innerHTML = bodyHTML;
 
                 // Render godišnju rekapitulaciju po sortimentima
@@ -5073,6 +5094,23 @@
                         </tr>
                     `;
                 });
+                // UKUPNO red za rekapitulaciju
+                const totSortimentiR = data.sortimentiNazivi.map(s =>
+                    data.radilista.reduce((sum, r) => sum + (r.sortimentiUkupno[s] || 0), 0)
+                );
+                const totSortimentiCellsR = totSortimentiR.map(val => {
+                    const display = val > 0 ? val.toFixed(2) : '-';
+                    const style = val > 0 ? 'font-weight:800;color:#7c2d12;' : 'color:#d1d5db;';
+                    return `<td style="${style}border:1px solid #f97316;font-family:'Courier New',monospace;font-size:10px;text-align:right;padding:8px;background:#fff7ed;">${display}</td>`;
+                }).join('');
+                recapBodyHTML += `
+                    <tr style="background:#fed7aa;border-top:3px solid #ea580c;">
+                        <td style="font-weight:900;font-size:12px;border:1px solid #f97316;padding:10px;color:#7c2d12;letter-spacing:0.5px;">
+                            Σ UKUPNO
+                        </td>
+                        ${totSortimentiCellsR}
+                    </tr>
+                `;
                 document.getElementById('primaci-radilista-recap-body').innerHTML = recapBodyHTML;
 
 
