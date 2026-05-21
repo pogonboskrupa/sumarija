@@ -260,18 +260,20 @@
             checkManifest();
 
             // Raspored prema unosu podataka:
-            // 07:00-08:00  sječa se unosi → svake 5 min
-            // 08:00-12:00  otprema se unosi → svake 10 min
-            // 12:00-18:00  rijetki ispravci → svake 20 min
-            // van radnog vremena → ne provjera (briše interval)
+            // 06:30-08:30  glavni unos (sječa + otprema) → svake 5 min
+            // 08:30-11:00  kasni unosi → svake 10 min
+            // 11:00-18:00  rijetki ispravci → svake 30 min
+            // van radnog vremena → ne provjerava
             function scheduleNext() {
                 if (manifestCheckInterval) clearInterval(manifestCheckInterval);
 
-                const h = new Date().getHours();
+                const now = new Date();
+                const h = now.getHours(), m = now.getMinutes();
+                const mins = h * 60 + m;
                 let interval;
-                if (h >= 7 && h < 8)        interval = 5  * 60 * 1000;
-                else if (h >= 8 && h < 12)  interval = 10 * 60 * 1000;
-                else if (h >= 12 && h < 18) interval = 20 * 60 * 1000;
+                if      (mins >= 6*60+30 && mins < 8*60+30)  interval = 5  * 60 * 1000;
+                else if (mins >= 8*60+30 && mins < 11*60)    interval = 10 * 60 * 1000;
+                else if (mins >= 11*60   && mins < 18*60)    interval = 30 * 60 * 1000;
                 else return; // van radnog vremena – ne registruj interval
 
                 manifestCheckInterval = setInterval(() => {
