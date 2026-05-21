@@ -843,6 +843,7 @@
                 document.getElementById('loading-screen').classList.remove('hidden');
                 document.getElementById('primac-personal-content').classList.add('hidden');
             } else {
+                document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('primac-personal-content').classList.remove('hidden');
             }
 
@@ -952,6 +953,7 @@
                 document.getElementById('loading-screen').classList.remove('hidden');
                 document.getElementById('otpremac-personal-content').classList.add('hidden');
             } else {
+                document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('otpremac-personal-content').classList.remove('hidden');
             }
 

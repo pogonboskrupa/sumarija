@@ -345,10 +345,17 @@
         function loadData() {
             const userType = (currentUser.type || '').toLowerCase();
 
-            // Show loading screen with progress
-            const loadingText = document.querySelector('.loading-text');
-            if (loadingText) {
-                loadingText.textContent = 'Učitavam početni prikaz...';
+            // Only show loading text if no relevant cache exists (otherwise content appears instantly)
+            const cacheMap = {
+                'primac': 'cache_primac_detail_' + new Date().getFullYear(),
+                'otpremac': 'cache_otpremac_detail_' + new Date().getFullYear(),
+                'poslovođa': 'cache_primke_sjeca',
+                'poslovodja': 'cache_primke_sjeca',
+            };
+            const relevantKey = cacheMap[userType] || ('cache_dashboard_' + new Date().getFullYear() + '_m' + (new Date().getMonth() + 1));
+            if (!localStorage.getItem(relevantKey)) {
+                const loadingText = document.querySelector('.loading-text');
+                if (loadingText) loadingText.textContent = 'Učitavam početni prikaz...';
             }
 
             if (userType === 'primac') {
