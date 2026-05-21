@@ -366,20 +366,27 @@
 
     try {
       const url = buildApiUrl('primke');
-      // Fetch sa kraćim timeoutom (30s); fetchWithCache će keširati pod sharedKey-om
-      const data = await fetchWithCache(url, sharedKey, force||false, 30000);
+      // Backend za primke može biti spor (60-120s) — dajemo dovoljno vremena
+      const data = await fetchWithCache(url, sharedKey, force||false, 150000);
       if (data.error) throw new Error(data.error);
       _processPrimke(data.primke);
       // Cleanup legacy cache key (jednom uspješno učitano → više ne treba)
       try { localStorage.removeItem(legacyKey); } catch(e) {}
     } catch(err) {
-      // Ako imamo instant render, samo logiraj — UI je već pokazan iz keša
       if (instant) {
+        // Imamo stale render u UI — samo tiho loguj
         console.warn('[GP] refresh failed, koristim stale cache:', err.message);
       } else {
-        console.error('[GP]', err);
-        const v = document.getElementById('gp-'+_activeTab+'-view');
-        if (v) v.innerHTML = `<div style="text-align:center;padding:60px;color:#dc2626;"><div style="font-size:32px;margin-bottom:12px;">❌</div>Greška: ${err.message}<br><br><button class="btn btn-primary" onclick="loadGodisnjiPlan(true)">Pokušaj ponovo</button></div>`;
+        // Nema ni keša ni mreže — pokušaj jednom više sa stale kešom ako postoji
+        const stale = _readCache(sharedKey) || _readCache(legacyKey);
+        if (stale && stale.primke) {
+          console.warn('[GP] mreža pala, prikazujem stale keš:', err.message);
+          try { _processPrimke(stale.primke); } catch(e2) {}
+        } else {
+          console.error('[GP]', err);
+          const v = document.getElementById('gp-'+_activeTab+'-view');
+          if (v) v.innerHTML = `<div style="text-align:center;padding:60px;color:#dc2626;"><div style="font-size:32px;margin-bottom:12px;">❌</div>Server je spor ili nedostupan.<br><small style="color:#6b7280;">${err.message}</small><br><br><button class="btn btn-primary" onclick="loadGodisnjiPlan(true)">Pokušaj ponovo</button></div>`;
+        }
       }
     } finally {
       _loading = false;
