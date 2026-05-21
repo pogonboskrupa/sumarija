@@ -1832,13 +1832,16 @@
                 { k:'UKUPNO',       grp:'X', sum:true, fn: d => s(d,['F/L Č','I Č','II Č','III Č','RD','CEL.DUGA','CEL.CIJEPANA','ŠKART','F/L L','I L','II L','III L','OGR.DUGI','OGR.CIJEPANI','GULE']) },
             ];
             const getVal = (col, d) => col.fn ? col.fn(d) : p(d, col.k);
-            const thBg = col => col.sum ? (col.grp==='C'?'#243b6e':col.grp==='L'?'#14532d':'#1e293b') : '#1e3a5f';
+            // Header bg: sum columns darker; left border marks group starts
+            const thBg  = c => c.sum ? (c.grp==='C'?'#1e3799':c.grp==='L'?'#1a6b3c':'#1e293b') : (c.grp==='C'?'#2c4a8a':'#1e4d30');
+            const grpBorderL = c => (c.k==='F/L Č'||c.k==='F/L L'||c.k==='UKUPNO') ? 'border-left:2px solid rgba(255,255,255,0.4);' : '';
+            const cellBorderL = c => (c.k==='F/L Č'||c.k==='F/L L'||c.k==='UKUPNO') ? 'border-left:2px solid #cbd5e1;' : '';
 
             const vrste = [
-                { lbl:'📋 Projekat', d:odjel.projekat||{}, bg:'#eff6ff', col:'#1e40af' },
-                { lbl:'🪓 Sječa',    d:odjel.sjeca   ||{}, bg:'#f0fdf4', col:'#15803d' },
-                { lbl:'🚛 Otprema',  d:odjel.otprema ||{}, bg:'#fffbeb', col:'#b45309' },
-                { lbl:'📦 Zaliha',   d:odjel.zaliha  ||{}, bg:'#f5f3ff', col:'#7c3aed' },
+                { lbl:'📋 Projekat', d:odjel.projekat||{}, bg:'#eff6ff', col:'#1e40af', border:'#bfdbfe' },
+                { lbl:'🪓 Sječa',    d:odjel.sjeca   ||{}, bg:'#f0fdf4', col:'#15803d', border:'#bbf7d0' },
+                { lbl:'🚛 Otprema',  d:odjel.otprema ||{}, bg:'#fffbeb', col:'#b45309', border:'#fde68a' },
+                { lbl:'📦 Zaliha',   d:odjel.zaliha  ||{}, bg:'#f5f3ff', col:'#7c3aed', border:'#ddd6fe' },
             ];
             const fmtV = n => {
                 if (!n && n !== 0) return '<span style="color:#cbd5e1">—</span>';
@@ -1847,25 +1850,36 @@
                 return `<span style="${v<0?'color:#dc2626;':''}font-weight:600;">${v.toFixed(2)}</span>`;
             };
 
-            let h = `<div style="padding:12px 16px 14px;background:#f8f9ff;border-top:1px solid #e0e7ff;">
-                <div style="font-size:11px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">
+            // Group header row: Četinari / Lišćari / Ukupno
+            const groupHeaderCells = COLS.map(c => {
+                const lbl = c.grp==='C' ? (c.k==='F/L Č'?'— ČETINARI —':'') : c.grp==='L' ? (c.k==='F/L L'?'— LIŠĆARI —':'') : (c.k==='UKUPNO'?'UKUPNO':'');
+                const bg  = c.grp==='C' ? '#dbeafe' : c.grp==='L' ? '#dcfce7' : '#e0e7ff';
+                const col = c.grp==='C' ? '#1e40af' : c.grp==='L' ? '#15803d' : '#4338ca';
+                const bl  = (c.k==='F/L Č'||c.k==='F/L L'||c.k==='UKUPNO') ? 'border-left:2px solid #94a3b8;' : '';
+                return `<th style="padding:3px 7px;text-align:center;font-size:9px;font-weight:700;color:${col};background:${bg};white-space:nowrap;${bl}">${lbl}</th>`;
+            }).join('');
+
+            let h = `<div style="padding:12px 16px 14px;background:#f1f5f9;border-top:2px solid #c7d2fe;">
+                <div style="font-size:12px;font-weight:800;color:#4338ca;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;">
                     📦 Stanje zaliha — ${odjel.odjel}${odjel.radiliste?' &nbsp;·&nbsp; <span style="color:#6b7280;font-weight:500;">'+odjel.radiliste+'</span>':''}
                 </div>
                 <div style="overflow-x:auto;">
-                <table style="font-size:11px;border-collapse:collapse;width:auto;">
-                <thead><tr>
-                    <th style="padding:5px 12px;text-align:left;color:white;font-weight:600;white-space:nowrap;background:#1e3a5f;position:sticky;left:0;z-index:2;">Stavka</th>`;
+                <table style="font-size:12px;border-collapse:collapse;width:auto;border:1px solid #cbd5e1;">
+                <thead>
+                  <tr>
+                    <th rowspan="2" style="padding:6px 14px;text-align:left;color:white;font-weight:700;white-space:nowrap;background:#1e3a5f;border:1px solid #334155;position:sticky;left:0;z-index:2;">Stavka</th>`;
             COLS.forEach(c => {
-                h += `<th style="padding:5px 7px;text-align:right;color:white;font-weight:${c.sum?'700':'500'};white-space:nowrap;font-size:10px;background:${thBg(c)};">${c.k}</th>`;
+                h += `<th style="padding:5px 9px;text-align:right;color:white;font-weight:${c.sum?'800':'500'};white-space:nowrap;font-size:11px;background:${thBg(c)};border:1px solid rgba(255,255,255,0.15);${grpBorderL(c)}">${c.k}</th>`;
             });
-            h += `</tr></thead><tbody>`;
-            vrste.forEach(v => {
+            h += `</tr><tr>${groupHeaderCells}</tr></thead><tbody>`;
+            vrste.forEach((v, vi) => {
+                const btStyle = vi===0 ? '' : `border-top:1px solid ${v.border};`;
                 h += `<tr style="background:${v.bg};">
-                    <td style="padding:6px 12px;font-weight:700;color:${v.col};white-space:nowrap;position:sticky;left:0;background:${v.bg};z-index:1;">${v.lbl}</td>`;
+                    <td style="padding:7px 14px;font-weight:700;color:${v.col};white-space:nowrap;border:1px solid ${v.border};position:sticky;left:0;background:${v.bg};z-index:1;">${v.lbl}</td>`;
                 COLS.forEach(c => {
                     const val = getVal(c, v.d);
-                    const sumSt = c.sum ? `font-weight:700;` : '';
-                    h += `<td style="padding:5px 7px;text-align:right;font-family:'Roboto Mono',monospace;${sumSt}">${fmtV(val)}</td>`;
+                    const sumBg = c.sum ? `background:${v.bg};` : '';
+                    h += `<td style="padding:6px 9px;text-align:right;font-family:'Roboto Mono',monospace;font-size:11px;border:1px solid ${v.border};${c.sum?'font-weight:700;'+sumBg:''}${cellBorderL(c)}">${fmtV(val)}</td>`;
                 });
                 h += `</tr>`;
             });
