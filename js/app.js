@@ -440,6 +440,20 @@
                 perfMetrics.cacheMisses++;
             }
 
+            // Offline: vrati stale cache odmah bez retry čekanja
+            if (!navigator.onLine) {
+                if (cached) {
+                    try {
+                        const cachedData = JSON.parse(cached);
+                        if (cachedData.data && !cachedData.data.error) {
+                            console.log('[OFFLINE] Keš odmah:', cacheKey);
+                            return cachedData.data;
+                        }
+                    } catch(e) {}
+                }
+                throw new Error('Nema internet veze i nema keširanih podataka za: ' + (new URL(url).searchParams.get('path') || url));
+            }
+
             // Cache miss or stale - fetch from network with retry for transient errors
             const MAX_RETRIES = 3;
             let lastError = null;
