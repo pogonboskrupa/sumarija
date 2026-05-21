@@ -930,7 +930,7 @@
       <div style="overflow-x:auto;">
       <table class="monthly-table" style="width:100%;font-size:12px;min-width:640px;">
       <thead><tr>
-        <th>Rb.</th><th style="text-align:left;">Odjel</th><th>Stavka</th>
+        <th style="text-align:left;">Odjel</th><th>Stavka</th>
         <th class="right">Trupci Č</th><th class="right">Cjepano Č</th>
         <th class="right">Trupci L</th><th class="right">Cjepano L</th>
         <th class="right">Ukupno m³</th><th>Stepen</th>
@@ -939,19 +939,17 @@
     // Grandtotals za SZ projekat vrijednosti (računamo ih ručno jer row.neto ostaje plan)
     let gCT=0,gDz=0,gLT=0,gCj=0,gNeto=0;
 
-    let odjelNum=0;
     grouped.forEach(({gj, rows:gr})=>{
       if (!gr.length) return;
       const sub = sumRows(gr);
       const gjCol = GJ_COLOR[gj];
       const gjBg  = GJ_BG[gj];
-      html += gjHeaderRow(gj, 9);
+      html += gjHeaderRow(gj, 8);
 
       // GJ subtotali za SZ projekat
       let sCT=0,sDz=0,sLT=0,sCj=0,sNeto=0;
 
       gr.forEach((r,i)=>{
-        odjelNum++;
         const dzA=dzgoAct(r.actual), cjA=cijAct(r.actual);
         const R = 'text-align:right;padding:7px 10px;';
 
@@ -977,8 +975,7 @@
 
         html += `
         <tr style="background:#eff6ff;">
-          <td rowspan="2" style="color:#94a3b8;font-size:11px;text-align:center;vertical-align:middle;padding:8px 4px;border-left:3px solid ${gjCol}44;">${odjelNum}</td>
-          <td rowspan="2" style="vertical-align:middle;padding:8px 10px;background:#f0f4ff;">${odjelLink(r.gj,r.odjel,r.odjelLabel)}</td>
+          <td rowspan="2" style="vertical-align:middle;padding:8px 10px;background:#f0f4ff;border-left:3px solid ${gjCol}44;">${odjelLink(r.gj,r.odjel,r.odjelLabel)}</td>
           <td style="color:#1d4ed8;font-size:11px;font-weight:700;white-space:nowrap;padding:8px 10px;border-left:3px solid #93c5fd;background:#dbeafe44;">${projLabel}</td>
           <td style="${R}color:#475569;">${fmt(pCT)}</td>
           <td style="${R}color:#475569;">${fmt(pDz)}</td>
@@ -1003,8 +1000,7 @@
       const SR = `text-align:right;padding:6px 10px;`;
       html += `
       <tr style="background:${gjBg};border-top:2px solid ${gjCol}40;font-weight:700;font-size:11px;">
-        <td rowspan="2" style="color:${gjCol};vertical-align:middle;padding:6px 4px;text-align:center;">Σ</td>
-        <td rowspan="2" style="color:${gjCol};font-weight:700;vertical-align:middle;padding:6px 10px;">${gj.split(' ')[0]}</td>
+        <td rowspan="2" style="color:${gjCol};font-weight:700;vertical-align:middle;padding:6px 10px;border-left:3px solid ${gjCol}44;">Σ ${gj.split(' ')[0]}</td>
         <td style="color:#1d4ed8;padding:6px 10px;border-left:3px solid #93c5fd;">Projekat</td>
         <td style="${SR}color:#475569;">${fmt(sCT)}</td>
         <td style="${SR}color:#475569;">${fmt(sDz)}</td>
@@ -1027,8 +1023,7 @@
     const grandSzStepen = gNeto>0 ? grand.ukupno/gNeto*100 : grand.stepen;
     html += `
     <tr style="background:#1e293b;color:white;font-weight:700;">
-      <td rowspan="2" style="color:white;padding:6px 8px;text-align:center;vertical-align:middle;">Σ</td>
-      <td rowspan="2" style="color:white;padding:6px 8px;vertical-align:middle;">UKUPNO</td>
+      <td rowspan="2" style="color:white;padding:6px 8px;vertical-align:middle;font-weight:800;">Σ UKUPNO</td>
       <td style="color:#93c5fd;padding:6px 8px;border-left:3px solid #60a5fa;">Projekat</td>
       <td style="${WR}">${fmtN(gCT)}</td><td style="${WR}">${fmtN(gDz)}</td>
       <td style="${WR}">${fmtN(gLT)}</td><td style="${WR}">${fmtN(gCj)}</td>
