@@ -1159,6 +1159,27 @@
             }
         }
 
+        // Confirm dialog za meni opcije
+        function menuConfirm(question, onYes) {
+            closeUserMenu();
+            const overlay = document.createElement('div');
+            overlay.className = 'menu-confirm-overlay';
+            overlay.innerHTML = `
+                <div class="menu-confirm-box">
+                    <p>${question}</p>
+                    <div class="menu-confirm-actions">
+                        <button class="menu-confirm-yes">Da</button>
+                        <button class="menu-confirm-no">Ne</button>
+                    </div>
+                </div>`;
+            const remove = () => overlay.remove();
+            overlay.querySelector('.menu-confirm-yes').onclick = () => { remove(); onYes(); };
+            overlay.querySelector('.menu-confirm-no').onclick = remove;
+            overlay.onclick = e => { if (e.target === overlay) remove(); };
+            document.body.appendChild(overlay);
+            overlay.querySelector('.menu-confirm-yes').focus();
+        }
+
         // Toggle user menu dropdown
         function toggleUserMenu(event) {
             if (event) {
