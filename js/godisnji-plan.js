@@ -817,20 +817,41 @@
     const map = {};
     try {
       const raw = localStorage.getItem('cache_stanje_zaliha');
-      if (!raw) return map;
+      if (!raw) { console.warn('[GP SZ] cache_stanje_zaliha nije u localStorage'); return map; }
       const parsed = JSON.parse(raw);
-      const odjeli = (parsed.data && parsed.data.odjeli) || [];
+      // Podrška za oba formata: {data:{odjeli:[]}} i direktno {odjeli:[]}
+      const inner = (parsed.data && parsed.data.odjeli) ? parsed.data : parsed;
+      const odjeli = inner.odjeli || [];
+      if (!odjeli.length) {
+        console.warn('[GP SZ] odjeli niz je prazan. Struktura keš objekta:', Object.keys(parsed));
+        return map;
+      }
       const sumK = (d, keys) => keys.reduce((t,k) => t+(parseFloat(d[k])||0), 0);
       odjeli.forEach(o => {
         const proj = o.projekat || {};
-        const cT = sumK(proj, ['F/L Č','I Č','II Č','III Č','RD']);
-        const dz = sumK(proj, ['CEL.DUGA','CEL.CIJEPANA','ŠKART']);
+        const cT = sumK(proj, ['F/L C','I C','II C','III C','RD',
+                               'F/L Č','I Č','II Č','III Č']);
+        const dz = sumK(proj, ['CEL.DUGA','CEL.CIJEPANA','ŠKART','SKART']);
         const lT = sumK(proj, ['F/L L','I L','II L','III L']);
         const cj = sumK(proj, ['OGR.DUGI','OGR.CIJEPANI','GULE']);
-        map[normKey(o.odjel)] = { cTrupci:cT, dzgo:dz, lTrupci:lT, cijepano:cj, neto:cT+dz+lT+cj };
+        const neto = cT+dz+lT+cj;
+        const k = normKey(o.odjel);
+        map[k] = { cTrupci:cT, dzgo:dz, lTrupci:lT, cijepano:cj, neto };
       });
-    } catch(e) {}
+      console.log('[GP SZ] Učitano', odjeli.length, 'odjela. Prvih 3 ključa:', Object.keys(map).slice(0,3));
+    } catch(e) { console.error('[GP SZ] greška pri čitanju keša:', e); }
     return map;
+  }
+
+  // Učitava stanje-zaliha ako nije u kešu, pa re-renderuje projekat tab
+  async function _ensureSzAndRerender() {
+    try {
+      const url = buildApiUrl('stanje-zaliha');
+      await fetchWithCache(url, 'cache_stanje_zaliha', false, 180000);
+    } catch(e) {
+      console.warn('[GP SZ] ne mogu učitati SZ:', e.message);
+    }
+    if (_activeTab === 'projekat') renderActiveTab();
   }
 
   function renderProjekat(rows) {
@@ -842,9 +863,24 @@
     // Stanje zaliha projekat mapa (red 1 iz SZ)
     const szMap = buildSzProjekatMap();
     const hasSz = Object.keys(szMap).length > 0;
+
+    if (!hasSz) {
+      // Kešom nema — učitaj u pozadini i re-renduj
+      _ensureSzAndRerender();
+    } else {
+      // Debug: provjeri koji PLAN_ENTRIES odjeli nemaju match u SZ
+      PLAN_ENTRIES.forEach(e => {
+        const k = normKey(e.gj + ' ' + e.odjel);
+        if (!szMap[k]) {
+          const candidates = Object.keys(szMap).filter(mk => mk.includes(normKey(e.odjel)));
+          console.warn('[GP SZ] nema match za:', e.gj, e.odjel, '→ tražim:', k, '| Kandidati:', candidates);
+        }
+      });
+    }
+
     const szNote = hasSz
       ? '<span style="font-size:11px;background:#eff6ff;color:#1d4ed8;padding:2px 8px;border-radius:10px;border:1px solid #bfdbfe;margin-left:8px;">📋 iz Stanja zaliha</span>'
-      : '<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;border:1px solid #fcd34d;margin-left:8px;">⚠️ SZ keš nije učitan</span>';
+      : '<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;border:1px solid #fcd34d;margin-left:8px;">⚠️ SZ keš se učitava...</span>';
 
     let html = `
     <div class="enterprise-card">
