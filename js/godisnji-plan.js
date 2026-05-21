@@ -812,47 +812,88 @@
 
   // ---- RENDER: PROJEKAT ----
 
-  // Čita stanje-zaliha cache i vraća mapu normKey(odjel) → projekat količine
-  function buildSzProjekatMap() {
+  const GP_PROJ_KEY = 'gp_projekat_map_' + PLAN_YEAR;
+
+  // Izvlači projekat količine iz SZ odjeli niza i vraća mapu normKey(odjel) → {cTrupci,...}
+  function _extractProjMap(odjeli) {
     const map = {};
-    try {
-      const raw = localStorage.getItem('cache_stanje_zaliha');
-      if (!raw) { console.warn('[GP SZ] cache_stanje_zaliha nije u localStorage'); return map; }
-      const parsed = JSON.parse(raw);
-      // Podrška za oba formata: {data:{odjeli:[]}} i direktno {odjeli:[]}
-      const inner = (parsed.data && parsed.data.odjeli) ? parsed.data : parsed;
-      const odjeli = inner.odjeli || [];
-      if (!odjeli.length) {
-        console.warn('[GP SZ] odjeli niz je prazan. Struktura keš objekta:', Object.keys(parsed));
-        return map;
-      }
-      const sumK = (d, keys) => keys.reduce((t,k) => t+(parseFloat(d[k])||0), 0);
-      odjeli.forEach(o => {
-        const proj = o.projekat || {};
-        const cT = sumK(proj, ['F/L C','I C','II C','III C','RD',
-                               'F/L Č','I Č','II Č','III Č']);
-        const dz = sumK(proj, ['CEL.DUGA','CEL.CIJEPANA','ŠKART','SKART']);
-        const lT = sumK(proj, ['F/L L','I L','II L','III L']);
-        const cj = sumK(proj, ['OGR.DUGI','OGR.CIJEPANI','GULE']);
-        const neto = cT+dz+lT+cj;
-        const k = normKey(o.odjel);
-        map[k] = { cTrupci:cT, dzgo:dz, lTrupci:lT, cijepano:cj, neto };
-      });
-      console.log('[GP SZ] Učitano', odjeli.length, 'odjela. Prvih 3 ključa:', Object.keys(map).slice(0,3));
-    } catch(e) { console.error('[GP SZ] greška pri čitanju keša:', e); }
+    const sumK = (d, keys) => keys.reduce((t,k) => t+(parseFloat(d[k])||0), 0);
+    odjeli.forEach(o => {
+      const proj = o.projekat || {};
+      const cT = sumK(proj, ['F/L Č','I Č','II Č','III Č','RD']);
+      const dz = sumK(proj, ['CEL.DUGA','CEL.CIJEPANA','ŠKART']);
+      const lT = sumK(proj, ['F/L L','I L','II L','III L']);
+      const cj = sumK(proj, ['OGR.DUGI','OGR.CIJEPANI','GULE']);
+      const neto = cT+dz+lT+cj;
+      map[normKey(o.odjel)] = { cTrupci:cT, dzgo:dz, lTrupci:lT, cijepano:cj, neto,
+                                 odjelNaziv: o.odjel };
+    });
     return map;
   }
 
-  // Učitava stanje-zaliha ako nije u kešu, pa re-renderuje projekat tab
-  async function _ensureSzAndRerender() {
+  // Vraća permanentno sačuvanu GP projekat mapu (null ako nije sačuvana)
+  function _loadSavedProjMap() {
+    try {
+      const raw = localStorage.getItem(GP_PROJ_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch(e) { return null; }
+  }
+
+  // Sprema GP projekat mapu permanentno (bez TTL-a)
+  function _saveProjMap(map) {
+    try { localStorage.setItem(GP_PROJ_KEY, JSON.stringify(map)); } catch(e) {}
+  }
+
+  // Pokušava izvući mapu iz SZ keša (cache_stanje_zaliha) i permanentno je sačuvati
+  function _tryExtractFromSzCache() {
+    try {
+      const raw = localStorage.getItem('cache_stanje_zaliha');
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      const inner = (parsed.data && parsed.data.odjeli) ? parsed.data : parsed;
+      const odjeli = inner.odjeli || [];
+      if (!odjeli.length) return null;
+      const map = _extractProjMap(odjeli);
+      if (Object.keys(map).length) {
+        _saveProjMap(map);
+        console.log('[GP SZ] Projekat mapa izvučena iz SZ i permanentno sačuvana:', Object.keys(map).length, 'odjela');
+      }
+      return Object.keys(map).length ? map : null;
+    } catch(e) { return null; }
+  }
+
+  // Glavna funkcija: čita permanentni keš, ili izvlači iz SZ keša, ili vraća {}
+  function buildSzProjekatMap() {
+    // 1. Permanentni GP projekat keš (jednom sačuvan, uvijek dostupan)
+    const saved = _loadSavedProjMap();
+    if (saved && Object.keys(saved).length) return saved;
+    // 2. Pokušaj izvuči iz SZ keša koji možda postoji
+    const fromSz = _tryExtractFromSzCache();
+    if (fromSz) return fromSz;
+    return {};
+  }
+
+  // Fetchuje SZ, izvlači projekat mapu, permanentno sprema, re-renderuje projekat tab
+  async function gpUcitajProjekatIzSz() {
+    const btn = document.getElementById('gp-proj-load-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Učitavam...'; }
     try {
       const url = buildApiUrl('stanje-zaliha');
-      await fetchWithCache(url, 'cache_stanje_zaliha', false, 180000);
+      const data = await fetchWithCache(url, 'cache_stanje_zaliha', false, 180000);
+      const odjeli = (data && data.odjeli) || [];
+      if (!odjeli.length) throw new Error('SZ je vratio prazan niz odjela');
+      const map = _extractProjMap(odjeli);
+      _saveProjMap(map);
+      console.log('[GP SZ] Projekat učitan i sačuvan:', Object.keys(map).length, 'odjela');
     } catch(e) {
-      console.warn('[GP SZ] ne mogu učitati SZ:', e.message);
+      console.error('[GP SZ] greška pri učitavanju:', e.message);
+      if (btn) { btn.disabled = false; btn.textContent = 'Pokušaj ponovo'; }
+      return;
     }
     if (_activeTab === 'projekat') renderActiveTab();
   }
+  window.gpUcitajProjekatIzSz = gpUcitajProjekatIzSz;
 
   function renderProjekat(rows) {
     const view = document.getElementById('gp-projekat-view');
@@ -860,27 +901,24 @@
     const grouped = sortedWithinGj(rows, 'projekat');
     const grand   = sumRows(rows);
 
-    // Stanje zaliha projekat mapa (red 1 iz SZ)
+    // Stanje zaliha projekat mapa — jednom sačuvana, uvijek dostupna
     const szMap = buildSzProjekatMap();
     const hasSz = Object.keys(szMap).length > 0;
 
-    if (!hasSz) {
-      // Kešom nema — učitaj u pozadini i re-renduj
-      _ensureSzAndRerender();
-    } else {
-      // Debug: provjeri koji PLAN_ENTRIES odjeli nemaju match u SZ
+    if (hasSz) {
+      // Debug: provjeri neusklađene ključeve (samo u konzoli)
       PLAN_ENTRIES.forEach(e => {
         const k = normKey(e.gj + ' ' + e.odjel);
         if (!szMap[k]) {
-          const candidates = Object.keys(szMap).filter(mk => mk.includes(normKey(e.odjel)));
-          console.warn('[GP SZ] nema match za:', e.gj, e.odjel, '→ tražim:', k, '| Kandidati:', candidates);
+          const cands = Object.keys(szMap).filter(mk => mk.includes(normKey(e.odjel)));
+          console.warn('[GP SZ] nema match za', e.gj, e.odjel, '→', k, '| Kandidati:', cands);
         }
       });
     }
 
     const szNote = hasSz
       ? '<span style="font-size:11px;background:#eff6ff;color:#1d4ed8;padding:2px 8px;border-radius:10px;border:1px solid #bfdbfe;margin-left:8px;">📋 iz Stanja zaliha</span>'
-      : '<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;border:1px solid #fcd34d;margin-left:8px;">⚠️ SZ keš se učitava...</span>';
+      : '<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;border:1px solid #fcd34d;margin-left:8px;cursor:pointer;" onclick="gpUcitajProjekatIzSz()">⚠️ Projekat nije učitan — klikni da učitaš</span>';
 
     let html = `
     <div class="enterprise-card">
