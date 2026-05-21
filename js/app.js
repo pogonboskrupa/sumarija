@@ -1670,115 +1670,18 @@
                 // Load "Zadnjih 5 dana" table
                 await loadZadnjih5DanaTable();
 
-                // Fetch and populate odjeli table with caching
+                // Odjeli tabela — turbo: renderuj iz stale keša odmah, osvježi u pozadini
                 const odjeliUrl = buildApiUrl('odjeli', { year });
-                const odjeliData = await fetchWithCache(odjeliUrl, 'cache_odjeli_' + year);
-
-
-                if (odjeliData.error) {
-                    console.error('Odjeli API error:', odjeliData.error);
-                    document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri učitavanju podataka o odjelima</td></tr>';
-                } else if (odjeliData.odjeli && odjeliData.odjeli.length > 0) {
-                    try {
-                        // Build radilište to color class mapping
-                        const radilisteSet = [...new Set(odjeliData.odjeli.map(o => (o && o.radiliste) || '').filter(r => r))];
-                        const radilisteColorMap = {};
-                        radilisteSet.forEach((r, idx) => {
-                            radilisteColorMap[r] = 'radiliste-' + ((idx % 10) + 1);
-                        });
-
-                        // Helper function for realizacija heatmap class
-                        const getRealizacijaClass = (val) => {
-                            if (val == null || val <= 0) return '';
-                            if (val >= 116) return 'real-over-115';
-                            if (val >= 106) return 'real-106-115';
-                            if (val >= 76) return 'real-76-105';
-                            if (val >= 51) return 'real-51-75';
-                            return 'real-0-50';
-                        };
-
-                        // Deterministic hash function for izvođač colors
-                        const hashString = (str) => {
-                            let hash = 0;
-                            for (let i = 0; i < str.length; i++) {
-                                const char = str.charCodeAt(i);
-                                hash = ((hash << 5) - hash) + char;
-                                hash = hash & hash;
-                            }
-                            return Math.abs(hash);
-                        };
-
-                        // Build izvođač to color mapping (deterministic via hash)
-                        const izvodjacSet = [...new Set(odjeliData.odjeli.map(o => (o && o.izvođač) || '').filter(i => i))];
-                        const izvodjacColorMap = {};
-                        izvodjacSet.forEach(izv => {
-                            const hash = hashString(izv);
-                            const hue = hash % 360;
-                            const saturation = 35 + (hash % 25); // 35-60%
-                            const lightness = 75 + (hash % 15); // 75-90%
-                            izvodjacColorMap[izv] = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-                        });
-
-                        // Month color palette for "Zadnja Sječa" column
-                        const mjesecBoje = {
-                            1:  { bg: '#dbeafe', color: '#1e40af' },  // Jan - plava
-                            2:  { bg: '#e0e7ff', color: '#3730a3' },  // Feb - indigo
-                            3:  { bg: '#d1fae5', color: '#065f46' },  // Mar - zelena
-                            4:  { bg: '#ccfbf1', color: '#0f766e' },  // Apr - teal
-                            5:  { bg: '#fef9c3', color: '#854d0e' },  // Maj - žuta
-                            6:  { bg: '#ffedd5', color: '#9a3412' },  // Jun - narandžasta
-                            7:  { bg: '#fee2e2', color: '#991b1b' },  // Jul - crvena
-                            8:  { bg: '#fce7f3', color: '#9d174d' },  // Aug - roza
-                            9:  { bg: '#f3e8ff', color: '#6b21a8' },  // Sep - ljubičasta
-                            10: { bg: '#fef3c7', color: '#92400e' },  // Okt - amber
-                            11: { bg: '#ecfccb', color: '#3f6212' },  // Nov - lime
-                            12: { bg: '#e0f2fe', color: '#075985' }   // Dec - sky
-                        };
-
-                        const getSjecaMonthStyle = (datumStr) => {
-                            if (!datumStr || datumStr === '-') return '';
-                            const parts = datumStr.split('.');
-                            if (parts.length < 2) return '';
-                            const month = parseInt(parts[1], 10);
-                            const m = mjesecBoje[month];
-                            if (!m) return '';
-                            return `background-color: ${m.bg}; color: ${m.color}; font-weight: 600; border-radius: 4px; padding: 4px 8px;`;
-                        };
-
-                        const odjeliHTML = odjeliData.odjeli.map(o => {
-                            if (!o) return '';
-                            const radilisteClass = radilisteColorMap[o.radiliste] || '';
-                            const realizacijaClass = getRealizacijaClass(o.realizacija);
-                            const izvodjacBg = izvodjacColorMap[o.izvođač] || '';
-                            const izvodjacStyle = izvodjacBg ? `background-color: ${izvodjacBg};` : '';
-                            const sjecaDateStyle = getSjecaMonthStyle(o.datumZadnjeSjece);
-                            const escOdjel = (o.odjel||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-                            return `
-                                <tr data-odjel-row="${o.odjel||''}" style="cursor:pointer;" onclick="toggleOdjelZaliha(this,'${escOdjel}')">
-                                    <td class="${radilisteClass}" style="font-weight:500;">
-                                        <span style="display:inline-flex;align-items:center;gap:5px;">
-                                            <span class="odjel-expand-icon" style="font-size:10px;color:#9ca3af;transition:transform 0.15s;">▶</span>
-                                            ${o.odjel || '-'}
-                                        </span>
-                                    </td>
-                                    <td class="right ${radilisteClass}">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
-                                    <td class="right ${radilisteClass}">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
-                                    <td class="right ${radilisteClass}">${(o.sumaPanj != null && !isNaN(o.sumaPanj)) ? o.sumaPanj.toFixed(2) : '0.00'}</td>
-                                    <td class="${radilisteClass}">${o.radiliste || '-'}</td>
-                                    <td style="${izvodjacStyle}">${o.izvođač || '-'}</td>
-                                    <td><span style="${sjecaDateStyle}">${o.datumZadnjeSjece || '-'}</span></td>
-                                    <td class="right ${realizacijaClass}">${(o.realizacija != null && o.realizacija > 0) ? o.realizacija.toFixed(1) + '%' : '-'}</td>
-                                </tr>
-                            `;
-                        }).join('');
-                        document.getElementById('odjeli-table-body').innerHTML = odjeliHTML;
-                    } catch (e) {
-                        console.error('Error rendering odjeli table:', e);
-                        document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri prikazu tabele</td></tr>';
+                const odjeliCacheKey = 'cache_odjeli_' + year;
+                try {
+                    const staleRaw = localStorage.getItem(odjeliCacheKey);
+                    if (staleRaw) {
+                        const stale = JSON.parse(staleRaw).data;
+                        if (stale && stale.odjeli && stale.odjeli.length) _renderOdjeliTableBody(stale);
                     }
-                } else {
-                    document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #6b7280;">Nema podataka o odjelima</td></tr>';
-                }
+                } catch(e) {}
+                const odjeliData = await fetchWithCache(odjeliUrl, odjeliCacheKey);
+                _renderOdjeliTableBody(odjeliData);
 
                 // Load pending count for badge (admin only)
                 loadPendingCount();
@@ -1797,6 +1700,75 @@
         }
 
         // ========================================
+        // ========================================
+        // ODJELI TABLE RENDER HELPER
+        // ========================================
+        function _renderOdjeliTableBody(odjeliData) {
+            const tbody = document.getElementById('odjeli-table-body');
+            if (!tbody) return;
+            if (!odjeliData || odjeliData.error) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#dc2626;">Greška pri učitavanju podataka o odjelima</td></tr>';
+                return;
+            }
+            if (!odjeliData.odjeli || !odjeliData.odjeli.length) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#6b7280;">Nema podataka o odjelima</td></tr>';
+                return;
+            }
+            try {
+                const radilisteSet = [...new Set(odjeliData.odjeli.map(o => (o && o.radiliste) || '').filter(r => r))];
+                const radilisteColorMap = {};
+                radilisteSet.forEach((r, idx) => { radilisteColorMap[r] = 'radiliste-' + ((idx % 10) + 1); });
+
+                const getRealizacijaClass = v => {
+                    if (v == null || v <= 0) return '';
+                    if (v >= 116) return 'real-over-115';
+                    if (v >= 106) return 'real-106-115';
+                    if (v >= 76)  return 'real-76-105';
+                    if (v >= 51)  return 'real-51-75';
+                    return 'real-0-50';
+                };
+
+                const hashStr = s => { let h = 0; for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h = h & h; } return Math.abs(h); };
+                const izvodjacSet = [...new Set(odjeliData.odjeli.map(o => (o && o.izvođač) || '').filter(i => i))];
+                const izvodjacColorMap = {};
+                izvodjacSet.forEach(izv => {
+                    const h = hashStr(izv);
+                    izvodjacColorMap[izv] = `hsl(${h % 360},${35 + h % 25}%,${75 + h % 15}%)`;
+                });
+
+                const mBoje = {1:'#dbeafe',2:'#e0e7ff',3:'#d1fae5',4:'#ccfbf1',5:'#fef9c3',6:'#ffedd5',7:'#fee2e2',8:'#fce7f3',9:'#f3e8ff',10:'#fef3c7',11:'#ecfccb',12:'#e0f2fe'};
+                const mCol  = {1:'#1e40af',2:'#3730a3',3:'#065f46',4:'#0f766e',5:'#854d0e',6:'#9a3412',7:'#991b1b',8:'#9d174d',9:'#6b21a8',10:'#92400e',11:'#3f6212',12:'#075985'};
+                const getSjecaStyle = d => {
+                    if (!d || d === '-') return '';
+                    const m = parseInt((d.split('.')[1]), 10);
+                    return m && mBoje[m] ? `background-color:${mBoje[m]};color:${mCol[m]};font-weight:600;border-radius:4px;padding:4px 8px;` : '';
+                };
+
+                tbody.innerHTML = odjeliData.odjeli.map(o => {
+                    if (!o) return '';
+                    const rc = radilisteColorMap[o.radiliste] || '';
+                    const rlz = getRealizacijaClass(o.realizacija);
+                    const izvBg = izvodjacColorMap[o.izvođač] ? `background-color:${izvodjacColorMap[o.izvođač]};` : '';
+                    const dStyle = getSjecaStyle(o.datumZadnjeSjece);
+                    const esc = (o.odjel||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+                    return `<tr data-odjel-row="${o.odjel||''}" style="cursor:pointer;" onclick="toggleOdjelZaliha(this,'${esc}')">
+                        <td class="${rc}" style="font-weight:500;"><span style="display:inline-flex;align-items:center;gap:5px;">
+                            <span class="odjel-expand-icon" style="font-size:10px;color:#9ca3af;transition:transform 0.15s;">▶</span>${o.odjel||'-'}</span></td>
+                        <td class="right ${rc}">${(o.sjeca!=null&&!isNaN(o.sjeca))?o.sjeca.toFixed(2):'0.00'}</td>
+                        <td class="right ${rc}">${(o.otprema!=null&&!isNaN(o.otprema))?o.otprema.toFixed(2):'0.00'}</td>
+                        <td class="right ${rc}">${(o.sumaPanj!=null&&!isNaN(o.sumaPanj))?o.sumaPanj.toFixed(2):'0.00'}</td>
+                        <td class="${rc}">${o.radiliste||'-'}</td>
+                        <td style="${izvBg}">${o.izvođač||'-'}</td>
+                        <td><span style="${dStyle}">${o.datumZadnjeSjece||'-'}</span></td>
+                        <td class="right ${rlz}">${(o.realizacija!=null&&o.realizacija>0)?o.realizacija.toFixed(1)+'%':'-'}</td>
+                    </tr>`;
+                }).join('');
+            } catch(e) {
+                console.error('Error rendering odjeli table:', e);
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#dc2626;">Greška pri prikazu tabele</td></tr>';
+            }
+        }
+
         // ODJEL STANJE ZALIHA EXPAND (klik na red u Pregled po odjelima)
         // ========================================
         window.toggleOdjelZaliha = function(tr, odjelName) {
@@ -1833,52 +1805,67 @@
         };
 
         function _renderSzOdjelMini(odjel) {
-            const sum = (d, keys) => keys.reduce((t, k) => t + (d[k] || 0), 0);
-            const tC  = d => sum(d, ['F/L Č','I Č','II Č','III Č','RD']);
-            const cetC= d => tC(d) + sum(d, ['CEL.DUGA','CEL.CIJEPANA','ŠKART']);
-            const tL  = d => sum(d, ['F/L L','I L','II L','III L']);
-            const lisC= d => tL(d) + sum(d, ['OGR.DUGI','OGR.CIJEPANI','GULE']);
-            const ukC = d => cetC(d) + lisC(d);
+            const p = (d, k) => parseFloat(d[k]) || 0;
+            const s = (d, ks) => ks.reduce((t, k) => t + p(d, k), 0);
 
-            const cols = [
-                { lbl:'TRUPCI Č',  fn:tC,   sum:false, col:'#1e40af' },
-                { lbl:'Σ ČETINARI',fn:cetC, sum:true,  col:'#5b21b6' },
-                { lbl:'TRUPCI L',  fn:tL,   sum:false, col:'#15803d' },
-                { lbl:'LIŠĆARI',   fn:lisC, sum:true,  col:'#92400e' },
-                { lbl:'UKUPNO',    fn:ukC,  sum:true,  col:'#0f172a' },
+            // Sve sortirane kolone — computed vrijednosti se izračunavaju, ne čitaju iz objekta
+            const COLS = [
+                { k:'F/L Č',        grp:'C' },
+                { k:'I Č',          grp:'C' },
+                { k:'II Č',         grp:'C' },
+                { k:'III Č',        grp:'C' },
+                { k:'RD',           grp:'C' },
+                { k:'TRUPCI Č',     grp:'C', sum:true, fn: d => s(d,['F/L Č','I Č','II Č','III Č','RD']) },
+                { k:'CEL.DUGA',     grp:'C' },
+                { k:'CEL.CIJEPANA', grp:'C' },
+                { k:'ŠKART',        grp:'C' },
+                { k:'Σ ČETINARI',   grp:'C', sum:true, fn: d => s(d,['F/L Č','I Č','II Č','III Č','RD','CEL.DUGA','CEL.CIJEPANA','ŠKART']) },
+                { k:'F/L L',        grp:'L' },
+                { k:'I L',          grp:'L' },
+                { k:'II L',         grp:'L' },
+                { k:'III L',        grp:'L' },
+                { k:'TRUPCI L',     grp:'L', sum:true, fn: d => s(d,['F/L L','I L','II L','III L']) },
+                { k:'OGR.DUGI',     grp:'L' },
+                { k:'OGR.CIJEPANI', grp:'L' },
+                { k:'GULE',         grp:'L' },
+                { k:'LIŠĆARI',      grp:'L', sum:true, fn: d => s(d,['F/L L','I L','II L','III L','OGR.DUGI','OGR.CIJEPANI','GULE']) },
+                { k:'UKUPNO',       grp:'X', sum:true, fn: d => s(d,['F/L Č','I Č','II Č','III Č','RD','CEL.DUGA','CEL.CIJEPANA','ŠKART','F/L L','I L','II L','III L','OGR.DUGI','OGR.CIJEPANI','GULE']) },
             ];
+            const getVal = (col, d) => col.fn ? col.fn(d) : p(d, col.k);
+            const thBg = col => col.sum ? (col.grp==='C'?'#243b6e':col.grp==='L'?'#14532d':'#1e293b') : '#1e3a5f';
+
             const vrste = [
                 { lbl:'📋 Projekat', d:odjel.projekat||{}, bg:'#eff6ff', col:'#1e40af' },
                 { lbl:'🪓 Sječa',    d:odjel.sjeca   ||{}, bg:'#f0fdf4', col:'#15803d' },
                 { lbl:'🚛 Otprema',  d:odjel.otprema ||{}, bg:'#fffbeb', col:'#b45309' },
                 { lbl:'📦 Zaliha',   d:odjel.zaliha  ||{}, bg:'#f5f3ff', col:'#7c3aed' },
             ];
-            const fmtV = v => {
-                if (!v && v !== 0) return '<span style="color:#cbd5e1">—</span>';
-                const n = parseFloat(v) || 0;
-                if (n === 0) return '<span style="color:#cbd5e1">—</span>';
-                const c = n < 0 ? 'color:#dc2626;' : '';
-                return `<span style="${c}font-weight:600;">${n.toFixed(2)}</span>`;
+            const fmtV = n => {
+                if (!n && n !== 0) return '<span style="color:#cbd5e1">—</span>';
+                const v = parseFloat(n) || 0;
+                if (v === 0) return '<span style="color:#cbd5e1">—</span>';
+                return `<span style="${v<0?'color:#dc2626;':''}font-weight:600;">${v.toFixed(2)}</span>`;
             };
 
             let h = `<div style="padding:12px 16px 14px;background:#f8f9ff;border-top:1px solid #e0e7ff;">
                 <div style="font-size:11px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">
-                    📦 Stanje zaliha — ${odjel.odjel}${odjel.radiliste ? ' &nbsp;·&nbsp; <span style="color:#6b7280;font-weight:500;">'+odjel.radiliste+'</span>' : ''}
+                    📦 Stanje zaliha — ${odjel.odjel}${odjel.radiliste?' &nbsp;·&nbsp; <span style="color:#6b7280;font-weight:500;">'+odjel.radiliste+'</span>':''}
                 </div>
                 <div style="overflow-x:auto;">
-                <table style="font-size:12px;border-collapse:collapse;min-width:380px;width:auto;">
-                <thead><tr style="background:#1e3a5f;">
-                    <th style="padding:6px 14px;text-align:left;color:white;font-weight:600;white-space:nowrap;">Stavka</th>`;
-            cols.forEach(c => {
-                h += `<th style="padding:6px 12px;text-align:right;color:white;font-weight:600;white-space:nowrap;${c.sum?'background:#243b6e;':''}">${c.lbl}</th>`;
+                <table style="font-size:11px;border-collapse:collapse;width:auto;">
+                <thead><tr>
+                    <th style="padding:5px 12px;text-align:left;color:white;font-weight:600;white-space:nowrap;background:#1e3a5f;position:sticky;left:0;z-index:2;">Stavka</th>`;
+            COLS.forEach(c => {
+                h += `<th style="padding:5px 7px;text-align:right;color:white;font-weight:${c.sum?'700':'500'};white-space:nowrap;font-size:10px;background:${thBg(c)};">${c.k}</th>`;
             });
             h += `</tr></thead><tbody>`;
             vrste.forEach(v => {
                 h += `<tr style="background:${v.bg};">
-                    <td style="padding:7px 14px;font-weight:700;color:${v.col};white-space:nowrap;">${v.lbl}</td>`;
-                cols.forEach(c => {
-                    const val = c.fn(v.d);
-                    h += `<td style="padding:7px 12px;text-align:right;font-family:'Roboto Mono',monospace;${c.sum?'font-weight:700;background:'+v.bg+'ee;':''}">${fmtV(val)}</td>`;
+                    <td style="padding:6px 12px;font-weight:700;color:${v.col};white-space:nowrap;position:sticky;left:0;background:${v.bg};z-index:1;">${v.lbl}</td>`;
+                COLS.forEach(c => {
+                    const val = getVal(c, v.d);
+                    const sumSt = c.sum ? `font-weight:700;` : '';
+                    h += `<td style="padding:5px 7px;text-align:right;font-family:'Roboto Mono',monospace;${sumSt}">${fmtV(val)}</td>`;
                 });
                 h += `</tr>`;
             });
