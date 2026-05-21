@@ -843,36 +843,45 @@
                 let allViews = [];
 
                 if (userType === 'admin') {
-                    // 🚀 KOMPLETNI PRELOAD - SVE UČITAJ (svi meniji + PODMENIJI)!
+                    // 🚀 KOMPLETNI PRELOAD — svi tabovi i podtabovi za admin
                     const currentMonth = new Date().getMonth(); // 0-11
-                    const currentMonthNum = currentMonth + 1; // 1-12 (za cache key koji koristi loadDashboard)
+                    const currentMonthNum = currentMonth + 1;   // 1-12
+                    const prevYear = year - 1;
 
                     allViews = [
-                        // Glavni meniji
+                        // DASHBOARD (dva cache keya — sa i bez sufiks-a)
                         { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year + '_m' + currentMonthNum, timeout: 180000 },
-                        // Operativa tab koristi cache_dashboard_${year} (bez sufiks-a mjeseca)
                         { name: 'Operativa - Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year, timeout: 60000 },
                         { name: 'Operativa (Stats)', url: buildApiUrl('stats', { year }), cacheKey: 'cache_stats_' + year, timeout: 180000 },
+
+                        // STANJE ODJELA (tekuća + prošla god. za year-over-year poređenje)
                         { name: 'Stanje Odjela', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_odjeli_' + year, timeout: 180000 },
+                        { name: 'Stanje Odjela (prošla god.)', url: buildApiUrl('odjeli', { year: prevYear }), cacheKey: 'cache_odjeli_' + prevYear, timeout: 300000 },
+
+                        // KUPCI + DINAMIKA + SORTIMENTI
                         { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
+                        { name: 'Dinamika', url: buildApiUrl('get_dinamika', { year }), cacheKey: 'cache_dinamika_' + year, timeout: 120000 },
                         { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni-sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year, timeout: 120000 },
 
-                        // PRIMACI meni + SVA 4 PODMENIJA
+                        // PRIMACI meni + sva 4 podmenija
                         { name: 'Primaci - Monthly', url: buildApiUrl('primaci', { year }), cacheKey: 'cache_primaci_' + year, timeout: 180000 },
                         { name: 'Primaci - Daily', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_primaci_daily_' + year + '_' + currentMonth, timeout: 180000 },
                         { name: 'Primaci - Po radilištu', url: buildApiUrl('primaci-by-radiliste', { year }), cacheKey: 'cache_primaci_radiliste_' + year, timeout: 180000 },
                         { name: 'Primaci - Po izvođaču', url: buildApiUrl('primaci-by-izvodjac', { year }), cacheKey: 'cache_primaci_izvodjac_' + year, timeout: 180000 },
                         { name: 'Primaci - Sortimenti po primaču', url: buildApiUrl('primaci-sortimenti-by-primac', { year, month: currentMonth }), cacheKey: 'cache_primaci_sort_primac_' + year + '_' + currentMonth, timeout: 180000 },
 
-                        // OTPREMACI meni + SVA 3 PODMENIJA
+                        // OTPREMACI meni + sva 3 podmenija
                         { name: 'Otpremaci - Monthly', url: buildApiUrl('otpremaci', { year }), cacheKey: 'cache_otpremaci_' + year, timeout: 180000 },
                         { name: 'Otpremaci - Daily', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_daily_' + year + '_' + currentMonth, timeout: 180000 },
                         { name: 'Otpremaci - Po radilištu', url: buildApiUrl('otpremaci-by-radiliste', { year }), cacheKey: 'cache_otpremaci_radiliste_' + year, timeout: 180000 },
                         { name: 'Otpremaci - Sortimenti po otpremaču', url: buildApiUrl('otpremaci-sortimenti-by-otpremac', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_sort_otpremac_' + year + '_' + currentMonth, timeout: 180000 },
 
-                        // STANJE ZALIHA
+                        // STANJE ZALIHA + PRIMKE + OTPREME (dijele se sa poslovodja tabovima)
                         { name: 'Stanje Zaliha', url: buildApiUrl('stanje-zaliha'), cacheKey: 'cache_stanje_zaliha', timeout: 180000 },
-                        // IZVJEŠTAJI tab (sedmični + mjesečni, primka + otprema)
+                        { name: 'Primke (Sječa)', url: buildApiUrl('primke'), cacheKey: 'cache_primke_sjeca', timeout: 120000 },
+                        { name: 'Otpreme', url: buildApiUrl('otpreme'), cacheKey: 'cache_otpreme_tab', timeout: 120000 },
+
+                        // IZVJEŠTAJI (sedmični + mjesečni, primka + otprema)
                         { name: 'Izvještaji - Sedmični primka', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_sedmicni_primka_' + year + '_' + currentMonth, timeout: 180000 },
                         { name: 'Izvještaji - Sedmični otprema', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_sedmicni_otprema_' + year + '_' + currentMonth, timeout: 180000 },
                         { name: 'Izvještaji - Mjesečni primka', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_miesecni_primka_' + year + '_' + currentMonth, timeout: 180000 },
@@ -900,8 +909,10 @@
                         { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year, timeout: 180000 },
                         { name: 'Operativa (Stats)', url: buildApiUrl('stats', { year }), cacheKey: 'cache_stats_' + year, timeout: 180000 },
                         { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
-                        { name: 'Mjesеčni Sortimenti', url: buildApiUrl('mjesecni-sortimenti', { year }), cacheKey: 'cache_miesecni_sortimenti_' + year, timeout: 120000 },
-                        // IZVJEŠTAJI tab (sedmični + mjesečni, primka + otprema)
+                        { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni-sortimenti', { year }), cacheKey: 'cache_miesecni_sortimenti_' + year, timeout: 120000 },
+                        // STANJE ZALIHA (tab postoji za operativa)
+                        { name: 'Stanje Zaliha', url: buildApiUrl('stanje-zaliha'), cacheKey: 'cache_stanje_zaliha', timeout: 180000 },
+                        // IZVJEŠTAJI (sedmični + mjesečni, primka + otprema)
                         { name: 'Izvještaji - Sedmični primka', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_sedmicni_primka_' + year + '_' + currentMonth, timeout: 180000 },
                         { name: 'Izvještaji - Sedmični otprema', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_sedmicni_otprema_' + year + '_' + currentMonth, timeout: 180000 },
                         { name: 'Izvještaji - Mjesečni primka', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_miesecni_primka_' + year + '_' + currentMonth, timeout: 180000 },
@@ -1741,9 +1752,15 @@
                             const izvodjacBg = izvodjacColorMap[o.izvođač] || '';
                             const izvodjacStyle = izvodjacBg ? `background-color: ${izvodjacBg};` : '';
                             const sjecaDateStyle = getSjecaMonthStyle(o.datumZadnjeSjece);
+                            const escOdjel = (o.odjel||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
                             return `
-                                <tr>
-                                    <td class="${radilisteClass}" style="font-weight: 500;">${o.odjel || '-'}</td>
+                                <tr data-odjel-row="${o.odjel||''}" style="cursor:pointer;" onclick="toggleOdjelZaliha(this,'${escOdjel}')">
+                                    <td class="${radilisteClass}" style="font-weight:500;">
+                                        <span style="display:inline-flex;align-items:center;gap:5px;">
+                                            <span class="odjel-expand-icon" style="font-size:10px;color:#9ca3af;transition:transform 0.15s;">▶</span>
+                                            ${o.odjel || '-'}
+                                        </span>
+                                    </td>
                                     <td class="right ${radilisteClass}">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
                                     <td class="right ${radilisteClass}">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
                                     <td class="right ${radilisteClass}">${(o.sumaPanj != null && !isNaN(o.sumaPanj)) ? o.sumaPanj.toFixed(2) : '0.00'}</td>
@@ -1777,6 +1794,96 @@
                     monthSelect.value = currentMonth;
                     loadDashboardDailyChart();
                 }
+        }
+
+        // ========================================
+        // ODJEL STANJE ZALIHA EXPAND (klik na red u Pregled po odjelima)
+        // ========================================
+        window.toggleOdjelZaliha = function(tr, odjelName) {
+            const icon = tr.querySelector('.odjel-expand-icon');
+            const detailId = 'szd-' + odjelName.replace(/[^a-zA-Z0-9]/g, '_');
+            const existing = document.getElementById(detailId);
+            if (existing) {
+                existing.remove();
+                if (icon) { icon.textContent = '▶'; icon.style.transform = ''; }
+                return;
+            }
+            if (icon) { icon.textContent = '▼'; icon.style.transform = 'rotate(0deg)'; }
+
+            // Čitaj cache
+            let szOdjel = null;
+            try {
+                const raw = localStorage.getItem('cache_stanje_zaliha');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    const data = parsed.data || parsed;
+                    szOdjel = (data.odjeli || []).find(o => o && o.odjel === odjelName);
+                }
+            } catch(e) {}
+
+            const detailTr = document.createElement('tr');
+            detailTr.id = detailId;
+            if (!szOdjel) {
+                detailTr.innerHTML = `<td colspan="8" style="padding:14px 20px;background:#fef9f0;border-bottom:2px solid #fde68a;">
+                    <span style="color:#92400e;font-size:13px;">⚠️ Nema podataka u kešu — posjetite <strong>Stanje Zaliha</strong> tab i osvježite.</span></td>`;
+            } else {
+                detailTr.innerHTML = `<td colspan="8" style="padding:0;border-bottom:2px solid #e0e7ff;">${_renderSzOdjelMini(szOdjel)}</td>`;
+            }
+            tr.after(detailTr);
+        };
+
+        function _renderSzOdjelMini(odjel) {
+            const sum = (d, keys) => keys.reduce((t, k) => t + (d[k] || 0), 0);
+            const tC  = d => sum(d, ['F/L Č','I Č','II Č','III Č','RD']);
+            const cetC= d => tC(d) + sum(d, ['CEL.DUGA','CEL.CIJEPANA','ŠKART']);
+            const tL  = d => sum(d, ['F/L L','I L','II L','III L']);
+            const lisC= d => tL(d) + sum(d, ['OGR.DUGI','OGR.CIJEPANI','GULE']);
+            const ukC = d => cetC(d) + lisC(d);
+
+            const cols = [
+                { lbl:'TRUPCI Č',  fn:tC,   sum:false, col:'#1e40af' },
+                { lbl:'Σ ČETINARI',fn:cetC, sum:true,  col:'#5b21b6' },
+                { lbl:'TRUPCI L',  fn:tL,   sum:false, col:'#15803d' },
+                { lbl:'LIŠĆARI',   fn:lisC, sum:true,  col:'#92400e' },
+                { lbl:'UKUPNO',    fn:ukC,  sum:true,  col:'#0f172a' },
+            ];
+            const vrste = [
+                { lbl:'📋 Projekat', d:odjel.projekat||{}, bg:'#eff6ff', col:'#1e40af' },
+                { lbl:'🪓 Sječa',    d:odjel.sjeca   ||{}, bg:'#f0fdf4', col:'#15803d' },
+                { lbl:'🚛 Otprema',  d:odjel.otprema ||{}, bg:'#fffbeb', col:'#b45309' },
+                { lbl:'📦 Zaliha',   d:odjel.zaliha  ||{}, bg:'#f5f3ff', col:'#7c3aed' },
+            ];
+            const fmtV = v => {
+                if (!v && v !== 0) return '<span style="color:#cbd5e1">—</span>';
+                const n = parseFloat(v) || 0;
+                if (n === 0) return '<span style="color:#cbd5e1">—</span>';
+                const c = n < 0 ? 'color:#dc2626;' : '';
+                return `<span style="${c}font-weight:600;">${n.toFixed(2)}</span>`;
+            };
+
+            let h = `<div style="padding:12px 16px 14px;background:#f8f9ff;border-top:1px solid #e0e7ff;">
+                <div style="font-size:11px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">
+                    📦 Stanje zaliha — ${odjel.odjel}${odjel.radiliste ? ' &nbsp;·&nbsp; <span style="color:#6b7280;font-weight:500;">'+odjel.radiliste+'</span>' : ''}
+                </div>
+                <div style="overflow-x:auto;">
+                <table style="font-size:12px;border-collapse:collapse;min-width:380px;width:auto;">
+                <thead><tr style="background:#1e3a5f;">
+                    <th style="padding:6px 14px;text-align:left;color:white;font-weight:600;white-space:nowrap;">Stavka</th>`;
+            cols.forEach(c => {
+                h += `<th style="padding:6px 12px;text-align:right;color:white;font-weight:600;white-space:nowrap;${c.sum?'background:#243b6e;':''}">${c.lbl}</th>`;
+            });
+            h += `</tr></thead><tbody>`;
+            vrste.forEach(v => {
+                h += `<tr style="background:${v.bg};">
+                    <td style="padding:7px 14px;font-weight:700;color:${v.col};white-space:nowrap;">${v.lbl}</td>`;
+                cols.forEach(c => {
+                    const val = c.fn(v.d);
+                    h += `<td style="padding:7px 12px;text-align:right;font-family:'Roboto Mono',monospace;${c.sum?'font-weight:700;background:'+v.bg+'ee;':''}">${fmtV(val)}</td>`;
+                });
+                h += `</tr>`;
+            });
+            h += `</tbody></table></div></div>`;
+            return h;
         }
 
         // ========================================

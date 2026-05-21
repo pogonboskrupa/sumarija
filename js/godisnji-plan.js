@@ -324,31 +324,70 @@
   }
 
   // ---- MAIN LOAD ----
+  // Filtrira raw primke array po PLAN_YEAR i renderira UI
+  function _processPrimke(raw) {
+    const primke = (raw||[]).filter(p=>{
+      const parts=(p.datum||'').split('.');
+      return parts.length>=3 && parseInt(parts[2])===PLAN_YEAR;
+    });
+    _rawPrimke = primke;
+    _rows = [...buildRows(primke), ...buildSlucajniRows(primke)];
+    _loaded = true;
+    renderActiveTab();
+    if (typeof markTabRendered==='function') markTabRendered('godisnji-plan');
+  }
+
+  // Vraća parsed cache iz localStorage ili null
+  function _readCache(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      return (obj && obj.data) ? obj.data : null;
+    } catch(e) { return null; }
+  }
+
   async function loadGodisnjiPlan(force) {
     if (_loading) return;
     _loading = true;
     const el = document.getElementById('godisnji-plan-content');
     if (!el) { _loading=false; return; }
     el.classList.remove('hidden');
-    showLoading();
+
+    // 🚀 TURBO: instant render iz keša (dijeli ga sa "Primke (Sječa)" preload-om)
+    // Prioritet: shared key (cache_primke_sjeca) → GP-specific key (legacy)
+    const sharedKey = 'cache_primke_sjeca';
+    const legacyKey = 'cache_gp_primke_'+PLAN_YEAR;
+    let instant = !force && (_readCache(sharedKey) || _readCache(legacyKey));
+    if (instant && instant.primke) {
+      try { _processPrimke(instant.primke); } catch(e) { instant = null; }
+    }
+    if (!instant) showLoading();
+
     try {
       const url = buildApiUrl('primke');
-      const ck  = 'cache_gp_primke_'+PLAN_YEAR;
-      const data = await fetchWithCache(url, ck, force||false, 120000);
+      // Backend za primke može biti spor (60-120s) — dajemo dovoljno vremena
+      const data = await fetchWithCache(url, sharedKey, force||false, 150000);
       if (data.error) throw new Error(data.error);
-      const primke = (data.primke||[]).filter(p=>{
-        const parts=(p.datum||'').split('.');
-        return parts.length>=3 && parseInt(parts[2])===PLAN_YEAR;
-      });
-      _rawPrimke = primke;
-      _rows = [...buildRows(primke), ...buildSlucajniRows(primke)];
-      _loaded = true;
-      renderActiveTab();
-      if (typeof markTabRendered==='function') markTabRendered('godisnji-plan');
+      _processPrimke(data.primke);
+      // Cleanup legacy cache key (jednom uspješno učitano → više ne treba)
+      try { localStorage.removeItem(legacyKey); } catch(e) {}
     } catch(err) {
-      console.error('[GP]', err);
-      const v = document.getElementById('gp-'+_activeTab+'-view');
-      if (v) v.innerHTML = `<div style="text-align:center;padding:60px;color:#dc2626;"><div style="font-size:32px;margin-bottom:12px;">❌</div>Greška: ${err.message}<br><br><button class="btn btn-primary" onclick="loadGodisnjiPlan(true)">Pokušaj ponovo</button></div>`;
+      if (instant) {
+        // Imamo stale render u UI — samo tiho loguj
+        console.warn('[GP] refresh failed, koristim stale cache:', err.message);
+      } else {
+        // Nema ni keša ni mreže — pokušaj jednom više sa stale kešom ako postoji
+        const stale = _readCache(sharedKey) || _readCache(legacyKey);
+        if (stale && stale.primke) {
+          console.warn('[GP] mreža pala, prikazujem stale keš:', err.message);
+          try { _processPrimke(stale.primke); } catch(e2) {}
+        } else {
+          console.error('[GP]', err);
+          const v = document.getElementById('gp-'+_activeTab+'-view');
+          if (v) v.innerHTML = `<div style="text-align:center;padding:60px;color:#dc2626;"><div style="font-size:32px;margin-bottom:12px;">❌</div>Server je spor ili nedostupan.<br><small style="color:#6b7280;">${err.message}</small><br><br><button class="btn btn-primary" onclick="loadGodisnjiPlan(true)">Pokušaj ponovo</button></div>`;
+        }
+      }
     } finally {
       _loading = false;
     }
@@ -413,7 +452,7 @@
       </div>
       <div class="enterprise-card-body">
       <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-      <table class="monthly-table" style="width:100%;min-width:1100px;font-size:12px;border-collapse:collapse;">
+      <table class="monthly-table" style="width:100%;min-width:900px;font-size:12px;border-collapse:collapse;">
       <thead>
         <tr style="background:#1e3a5f;color:white;">
           <th rowspan="2" style="width:32px;text-align:center;">#</th>
@@ -772,27 +811,59 @@
   }
 
   // ---- RENDER: PROJEKAT ----
+
+  // Čita stanje-zaliha cache i vraća mapu normKey(odjel) → projekat količine
+  function buildSzProjekatMap() {
+    const map = {};
+    try {
+      const raw = localStorage.getItem('cache_stanje_zaliha');
+      if (!raw) return map;
+      const parsed = JSON.parse(raw);
+      const odjeli = (parsed.data && parsed.data.odjeli) || [];
+      const sumK = (d, keys) => keys.reduce((t,k) => t+(parseFloat(d[k])||0), 0);
+      odjeli.forEach(o => {
+        const proj = o.projekat || {};
+        const cT = sumK(proj, ['F/L Č','I Č','II Č','III Č','RD']);
+        const dz = sumK(proj, ['CEL.DUGA','CEL.CIJEPANA','ŠKART']);
+        const lT = sumK(proj, ['F/L L','I L','II L','III L']);
+        const cj = sumK(proj, ['OGR.DUGI','OGR.CIJEPANI','GULE']);
+        map[normKey(o.odjel)] = { cTrupci:cT, dzgo:dz, lTrupci:lT, cijepano:cj, neto:cT+dz+lT+cj };
+      });
+    } catch(e) {}
+    return map;
+  }
+
   function renderProjekat(rows) {
     const view = document.getElementById('gp-projekat-view');
     if (!view) return;
     const grouped = sortedWithinGj(rows, 'projekat');
     const grand   = sumRows(rows);
 
+    // Stanje zaliha projekat mapa (red 1 iz SZ)
+    const szMap = buildSzProjekatMap();
+    const hasSz = Object.keys(szMap).length > 0;
+    const szNote = hasSz
+      ? '<span style="font-size:11px;background:#eff6ff;color:#1d4ed8;padding:2px 8px;border-radius:10px;border:1px solid #bfdbfe;margin-left:8px;">📋 iz Stanja zaliha</span>'
+      : '<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;border:1px solid #fcd34d;margin-left:8px;">⚠️ SZ keš nije učitan</span>';
+
     let html = `
     <div class="enterprise-card">
       <div class="enterprise-card-header">
-        <div><h2>📐 Plan po projektu ${PLAN_YEAR}</h2><span class="card-subtitle">Projekat vs. Sječa po odjelima</span></div>
+        <div><h2>📐 Plan po projektu ${PLAN_YEAR} ${szNote}</h2><span class="card-subtitle">Projekat (iz Stanja zaliha) vs. Sječa po odjelima</span></div>
         <button onclick="gpExportCsv('projekat')" style="background:rgba(5,150,105,0.1);color:#059669;border:1px solid #059669;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:13px;">📥 Export CSV</button>
       </div>
       <div class="enterprise-card-body">
       <div style="overflow-x:auto;">
-      <table class="monthly-table" style="width:100%;font-size:12px;min-width:820px;">
+      <table class="monthly-table" style="width:100%;font-size:12px;min-width:640px;">
       <thead><tr>
         <th>Rb.</th><th style="text-align:left;">Odjel</th><th>Stavka</th>
         <th class="right">Trupci Č</th><th class="right">Cjepano Č</th>
         <th class="right">Trupci L</th><th class="right">Cjepano L</th>
         <th class="right">Ukupno m³</th><th>Stepen</th>
       </tr></thead><tbody>`;
+
+    // Grandtotals za SZ projekat vrijednosti (računamo ih ručno jer row.neto ostaje plan)
+    let gCT=0,gDz=0,gLT=0,gCj=0,gNeto=0;
 
     let odjelNum=0;
     grouped.forEach(({gj, rows:gr})=>{
@@ -801,20 +872,45 @@
       const gjCol = GJ_COLOR[gj];
       const gjBg  = GJ_BG[gj];
       html += gjHeaderRow(gj, 9);
+
+      // GJ subtotali za SZ projekat
+      let sCT=0,sDz=0,sLT=0,sCj=0,sNeto=0;
+
       gr.forEach((r,i)=>{
         odjelNum++;
         const dzA=dzgoAct(r.actual), cjA=cijAct(r.actual);
         const R = 'text-align:right;padding:7px 10px;';
+
+        // Stanje zaliha projekat: r.odjel je samo broj (npr. "50"), SZ ima puni naziv ("Risovac Krupa 50")
+        // Koristimo r.gj + ' ' + r.odjel da bi se poklopio sa normKey(o.odjel) iz SZ
+        const szKey = r.slucajni ? normKey(r.odjel) : normKey(r.gj + ' ' + r.odjel);
+        const sz = szMap[szKey] || null;
+        const pCT  = sz ? sz.cTrupci  : r.cTrupci;
+        const pDz  = sz ? sz.dzgo     : r.dzgo;
+        const pLT  = sz ? sz.lTrupci  : r.lTrupci;
+        const pCj  = sz ? sz.cijepano : r.cijepano;
+        const pNet = sz ? sz.neto     : r.neto;
+        const fallback = !sz;
+        const projLabel = fallback
+          ? '📐 Plan <span style="font-size:9px;color:#9ca3af;">(nema SZ)</span>'
+          : '📐 Projekat';
+
+        sCT+=pCT; sDz+=pDz; sLT+=pLT; sCj+=pCj; sNeto+=pNet;
+        gCT+=pCT; gDz+=pDz; gLT+=pLT; gCj+=pCj; gNeto+=pNet;
+
+        // Stepen: sječa / projekat
+        const szStepen = pNet > 0 ? r.actual.ukupno / pNet * 100 : r.stepen;
+
         html += `
         <tr style="background:#eff6ff;">
           <td rowspan="2" style="color:#94a3b8;font-size:11px;text-align:center;vertical-align:middle;padding:8px 4px;border-left:3px solid ${gjCol}44;">${odjelNum}</td>
           <td rowspan="2" style="vertical-align:middle;padding:8px 10px;background:#f0f4ff;">${odjelLink(r.gj,r.odjel,r.odjelLabel)}</td>
-          <td style="color:#1d4ed8;font-size:11px;font-weight:700;white-space:nowrap;padding:8px 10px;border-left:3px solid #93c5fd;background:#dbeafe44;">📐 Plan</td>
-          <td style="${R}color:#475569;">${fmt(r.cTrupci)}</td>
-          <td style="${R}color:#475569;">${fmt(r.dzgo)}</td>
-          <td style="${R}color:#475569;">${fmt(r.lTrupci)}</td>
-          <td style="${R}color:#475569;">${fmt(r.cijepano)}</td>
-          <td style="${R}color:#1e40af;font-weight:700;">${fmt(r.neto)}</td>
+          <td style="color:#1d4ed8;font-size:11px;font-weight:700;white-space:nowrap;padding:8px 10px;border-left:3px solid #93c5fd;background:#dbeafe44;">${projLabel}</td>
+          <td style="${R}color:#475569;">${fmt(pCT)}</td>
+          <td style="${R}color:#475569;">${fmt(pDz)}</td>
+          <td style="${R}color:#475569;">${fmt(pLT)}</td>
+          <td style="${R}color:#475569;">${fmt(pCj)}</td>
+          <td style="${R}color:#1e40af;font-weight:700;">${fmt(pNet)}</td>
           <td style="padding:8px 6px;"></td>
         </tr>
         <tr style="background:#f0fdf4;border-bottom:2px solid #e2e8f0;">
@@ -824,22 +920,23 @@
           <td style="${R}color:${C.lTrupci};font-weight:700;">${fmt(r.actual.lTrupci)}</td>
           <td style="${R}color:${C.ogrCijepani};font-weight:700;">${fmt(cjA)}</td>
           <td style="${R}color:#059669;font-weight:800;">${fmt(r.actual.ukupno)}</td>
-          <td style="padding:8px 6px;">${realizacijaBadge(r.stepen)}</td>
+          <td style="padding:8px 6px;">${realizacijaBadge(szStepen)}</td>
         </tr>`;
       });
 
       const dzSub=sub.celDuga+sub.celCij+sub.skart, cjSub=sub.ogrDugi+sub.ogrCij+sub.gule;
+      const szSubStepen = sNeto>0 ? sub.ukupno/sNeto*100 : sub.stepen;
       const SR = `text-align:right;padding:6px 10px;`;
       html += `
       <tr style="background:${gjBg};border-top:2px solid ${gjCol}40;font-weight:700;font-size:11px;">
         <td rowspan="2" style="color:${gjCol};vertical-align:middle;padding:6px 4px;text-align:center;">Σ</td>
         <td rowspan="2" style="color:${gjCol};font-weight:700;vertical-align:middle;padding:6px 10px;">${gj.split(' ')[0]}</td>
         <td style="color:#1d4ed8;padding:6px 10px;border-left:3px solid #93c5fd;">Projekat</td>
-        <td style="${SR}color:#475569;">${fmt(sub.planCT)}</td>
-        <td style="${SR}color:#475569;">${fmt(sub.planDz)}</td>
-        <td style="${SR}color:#475569;">${fmt(sub.planLT)}</td>
-        <td style="${SR}color:#475569;">${fmt(sub.planCij)}</td>
-        <td style="${SR}color:#1e40af;">${fmt(sub.neto)}</td><td></td>
+        <td style="${SR}color:#475569;">${fmt(sCT)}</td>
+        <td style="${SR}color:#475569;">${fmt(sDz)}</td>
+        <td style="${SR}color:#475569;">${fmt(sLT)}</td>
+        <td style="${SR}color:#475569;">${fmt(sCj)}</td>
+        <td style="${SR}color:#1e40af;">${fmt(sNeto)}</td><td></td>
       </tr>
       <tr style="background:${gjBg};border-bottom:3px solid ${gjCol}60;font-weight:700;font-size:11px;">
         <td style="color:#166534;padding:6px 10px;border-left:3px solid #86efac;">Sječa</td>
@@ -848,26 +945,27 @@
         <td style="${SR}color:${C.lTrupci};">${fmt(sub.actLT)}</td>
         <td style="${SR}color:${C.ogrCijepani};">${fmt(cjSub)}</td>
         <td style="${SR}color:${gjCol};font-weight:800;">${fmt(sub.ukupno)}</td>
-        <td style="padding:6px 6px;">${realizacijaBadge(sub.stepen)}</td>
+        <td style="padding:6px 6px;">${realizacijaBadge(szSubStepen)}</td>
       </tr>`;
     });
 
     const grandDz=grand.celDuga+grand.celCij+grand.skart, grandCj=grand.ogrDugi+grand.ogrCij+grand.gule;
+    const grandSzStepen = gNeto>0 ? grand.ukupno/gNeto*100 : grand.stepen;
     html += `
     <tr style="background:#1e293b;color:white;font-weight:700;">
       <td rowspan="2" style="color:white;padding:6px 8px;text-align:center;vertical-align:middle;">Σ</td>
       <td rowspan="2" style="color:white;padding:6px 8px;vertical-align:middle;">UKUPNO</td>
       <td style="color:#93c5fd;padding:6px 8px;border-left:3px solid #60a5fa;">Projekat</td>
-      <td style="${WR}">${fmtN(grand.planCT)}</td><td style="${WR}">${fmtN(grand.planDz)}</td>
-      <td style="${WR}">${fmtN(grand.planLT)}</td><td style="${WR}">${fmtN(grand.planCij)}</td>
-      <td style="${WR}">${fmtN(grand.neto)}</td><td></td>
+      <td style="${WR}">${fmtN(gCT)}</td><td style="${WR}">${fmtN(gDz)}</td>
+      <td style="${WR}">${fmtN(gLT)}</td><td style="${WR}">${fmtN(gCj)}</td>
+      <td style="${WR}">${fmtN(gNeto)}</td><td></td>
     </tr>
     <tr style="background:#1e293b;color:white;font-weight:700;">
       <td style="color:#86efac;padding:6px 8px;border-left:3px solid #4ade80;">Sječa</td>
       <td style="${WR}">${fmtN(grand.actCT)}</td><td style="${WR}">${fmtN(grandDz)}</td>
       <td style="${WR}">${fmtN(grand.actLT)}</td><td style="${WR}">${fmtN(grandCj)}</td>
       <td style="${WR}color:#86efac;">${fmtN(grand.ukupno)}</td>
-      <td style="padding:6px 8px;">${realizacijaBadge(grand.stepen)}</td>
+      <td style="padding:6px 8px;">${realizacijaBadge(grandSzStepen)}</td>
     </tr>
     </tbody></table></div></div></div>`;
 
@@ -886,23 +984,30 @@
       const gjRows = rows.filter(r=>r.gj===gj);
       if (!gjRows.length) return;
       const sub = sumRows(gjRows);
-      const ost = Math.max(0, sub.neto - sub.ukupno);
+      // Projekat iz SZ za ovu GJ
+      const gjSzNeto = gjRows.reduce((t,r)=>{
+        const szk = r.slucajni ? normKey(r.odjel) : normKey(r.gj+' '+r.odjel);
+        const sz = szMap[szk];
+        return t + (sz ? sz.neto : r.neto);
+      }, 0);
+      const szStep = gjSzNeto>0 ? sub.ukupno/gjSzNeto*100 : sub.stepen;
+      const ost = Math.max(0, gjSzNeto - sub.ukupno);
       html += `<tr>
         <td><span style="display:inline-block;width:12px;height:12px;background:${GJ_COLOR[gj]};border-radius:2px;margin-right:6px;vertical-align:middle;"></span><strong>${gj}</strong></td>
-        <td class="right">${fmt(sub.neto)}</td>
+        <td class="right">${fmt(gjSzNeto)}</td>
         <td class="right" style="color:#059669;font-weight:600;">${fmt(sub.ukupno)}</td>
-        <td class="right">${realizacijaBadge(sub.stepen)}</td>
+        <td class="right">${realizacijaBadge(szStep)}</td>
         <td class="right" style="color:#9ca3af;">${fmt(ost)}</td>
-        <td style="min-width:120px;">${bar2(sub.stepen, GJ_COLOR[gj])}</td>
+        <td style="min-width:120px;">${bar2(szStep, GJ_COLOR[gj])}</td>
       </tr>`;
     });
 
     html += `<tr style="background:#1e293b;color:white;font-weight:700;">
       <td style="color:white;padding:6px 8px;">UKUPNO</td>
-      <td style="${WR}">${fmtN(grand.neto)}</td>
+      <td style="${WR}">${fmtN(gNeto)}</td>
       <td style="${WR}color:#86efac;">${fmtN(grand.ukupno)}</td>
-      <td style="text-align:right;padding:6px 8px;">${realizacijaBadge(grand.stepen)}</td>
-      <td style="${WR}color:#94a3b8;">${fmtN(Math.max(0,grand.neto-grand.ukupno))}</td><td></td>
+      <td style="text-align:right;padding:6px 8px;">${realizacijaBadge(grandSzStepen)}</td>
+      <td style="${WR}color:#94a3b8;">${fmtN(Math.max(0,gNeto-grand.ukupno))}</td><td></td>
     </tr>
     </tbody></table></div></div>`;
 
