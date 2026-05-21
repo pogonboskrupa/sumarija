@@ -199,19 +199,51 @@
         }
 
         function invalidateCachesByManifest(newManifest) {
-            // Pametna invalidacija - brišemo samo keširane podatke koji su se promijenili
             const year = new Date().getFullYear();
+            const month = new Date().getMonth() + 1;
             const cachesToInvalidate = [
                 'cache_primaci_' + year,
                 'cache_otpremaci_' + year,
                 'cache_odjeli_' + year,
-                'cache_dashboard_' + year
+                'cache_dashboard_' + year + '_m' + month,
+                'cache_primke_sjeca',
+                'cache_otpreme_zadnjih5',
+                'cache_primke_zadnjih5',
+                'cache_primac_detail_' + year,
+                'cache_otpremac_detail_' + year,
             ];
-
             cachesToInvalidate.forEach(key => {
                 localStorage.removeItem(key);
                 console.log(`🗑️ [CACHE] Invalidated: ${key}`);
             });
+
+            // Obavijesti korisnika i odmah osvježi trenutni panel
+            _showNewDataBanner(newManifest);
+            if (window.currentTab) {
+                setTimeout(() => switchTab(window.currentTab), 300);
+            }
+        }
+
+        function _showNewDataBanner(manifest) {
+            const el = document.getElementById('cache-indicator');
+            if (!el) return;
+            const d = manifest && manifest.data;
+            const detail = d ? ` (${d.primaci_count}P / ${d.otpremaci_count}O)` : '';
+            el.textContent = `🔄 Novi podaci u bazi${detail}`;
+            el.style.cssText = [
+                'display:inline-block',
+                'font-size:11px',
+                'padding:3px 8px',
+                'border-radius:12px',
+                'background:#7c2d12',
+                'color:#fed7aa',
+                'border:1px solid #ea580c',
+                'cursor:default',
+                'white-space:nowrap',
+                'transition:opacity 0.5s',
+                'opacity:1'
+            ].join(';');
+            if (el._fadeTimer) { clearTimeout(el._fadeTimer); el._fadeTimer = null; }
         }
 
         function startManifestChecker() {
@@ -573,8 +605,16 @@
             if (!el) return;
             const ts = new Date(Date.now() - age);
             const pad = n => String(n).padStart(2, '0');
-            const label = `${pad(ts.getHours())}:${pad(ts.getMinutes())} · ${pad(ts.getDate())}.${pad(ts.getMonth() + 1)}.`;
-            el.textContent = (isStale ? '📅 Keš: ' : '📅 Keš: ') + label;
+            let label = `${pad(ts.getHours())}:${pad(ts.getMinutes())} · ${pad(ts.getDate())}.${pad(ts.getMonth() + 1)}.`;
+            // Dodaj broj unosa iz manifesta ako je dostupan
+            try {
+                const mRaw = localStorage.getItem('manifest');
+                if (mRaw) {
+                    const m = JSON.parse(mRaw);
+                    if (m && m.data) label += ` · ${m.data.primaci_count}P/${m.data.otpremaci_count}O`;
+                }
+            } catch(e) {}
+            el.textContent = '📅 Keš: ' + label;
             el.style.cssText = [
                 'display:inline-block',
                 'font-size:11px',
