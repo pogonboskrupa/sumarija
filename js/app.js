@@ -667,11 +667,7 @@
 
         // Clear all cache - TRUE HARD REFRESH (like Ctrl+Shift+R)
         async function clearAllCache() {
-            showConfirmModal(
-                'Brisanje keša',
-                'Da li ste sigurni da želite obrisati sav keš? Stranica će se osvježiti.',
-                async function() { await _doClearAllCache(); }
-            );
+            await _doClearAllCache();
         }
 
         async function _doClearAllCache() {
