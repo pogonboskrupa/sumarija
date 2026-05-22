@@ -216,12 +216,10 @@
                 localStorage.removeItem(key);
                 console.log(`🗑️ [CACHE] Invalidated: ${key}`);
             });
-
-            // Obavijesti korisnika i odmah osvježi trenutni panel
+            // Samo prikaži banner — ne pozivaj switchTab ovdje jer bi
+            // prikazao loading-screen dok podaci još nisu učitani.
+            // Korisnik vidi banner i zna da su dostupni novi podaci.
             _showNewDataBanner(newManifest);
-            if (window.currentTab) {
-                setTimeout(() => switchTab(window.currentTab), 300);
-            }
         }
 
         function _showNewDataBanner(manifest) {
@@ -744,11 +742,13 @@
                 closeUserMenu(); // Close menu
                 showSuccess('✅ Keš obrisan', 'Učitavam sve prikaze...');
 
-                // Step 8: Provjeri manifest + učitaj sve prikaze bez reload-a (forceRefresh = true)
+                // Step 8: Fetchuj sve prikaze, pa tek onda osvježi trenutni tab
+                // (switchTab MORA biti nakon preloada — inače nema keša → loading screen)
                 console.log('[CACHE CLEAR] Step 8: Loading all views (force refresh)...');
-                setTimeout(() => {
+                setTimeout(async () => {
                     checkManifest();
-                    preloadAllViews(false, true);
+                    await preloadAllViews(false, true);
+                    if (window.currentTab) switchTab(window.currentTab);
                 }, 800);
 
             } catch (error) {
