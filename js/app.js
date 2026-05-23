@@ -222,6 +222,25 @@
             _showNewDataBanner(newManifest);
         }
 
+        function _showRefreshingChip() {
+            const el = document.getElementById('cache-indicator');
+            if (!el) return;
+            el.textContent = '🔄 Ažuriram...';
+            el.style.cssText = [
+                'display:inline-block',
+                'font-size:11px',
+                'padding:3px 8px',
+                'border-radius:12px',
+                'background:#1e3a5f',
+                'color:#93c5fd',
+                'border:1px solid #3b82f6',
+                'cursor:default',
+                'white-space:nowrap',
+                'opacity:1'
+            ].join(';');
+            if (el._fadeTimer) { clearTimeout(el._fadeTimer); el._fadeTimer = null; }
+        }
+
         function _showNewDataBanner(manifest) {
             const el = document.getElementById('cache-indicator');
             if (!el) return;
@@ -739,16 +758,16 @@
                     }
                 }
 
-                closeUserMenu(); // Close menu
-                showSuccess('✅ Keš obrisan', 'Učitavam sve prikaze...');
+                closeUserMenu();
 
-                // Step 8: Fetchuj sve prikaze, pa tek onda osvježi trenutni tab
-                // (switchTab MORA biti nakon preloada — inače nema keša → loading screen)
-                console.log('[CACHE CLEAR] Step 8: Loading all views (force refresh)...');
+                // Step 8: Tihi preload u pozadini + osvježi current tab kad završi
+                console.log('[CACHE CLEAR] Step 8: Loading all views (silent, force refresh)...');
+                _showRefreshingChip();
                 setTimeout(async () => {
                     checkManifest();
-                    await preloadAllViews(false, true);
-                    if (window.currentTab) switchTab(window.currentTab);
+                    await preloadAllViews(true, true); // silent=true, nema toasta
+                    if (window.currentTab) switchTab(window.currentTab); // data je u cacheu → instant render
+                    hideCacheIndicator();
                 }, 800);
 
             } catch (error) {
