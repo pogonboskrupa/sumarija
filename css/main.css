@@ -28,13 +28,14 @@
         .user-menu { position: relative; }
         .user-menu-button { background: #f3f4f6; color: #374151; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .user-menu-button:hover { background: #e5e7eb; }
-        .user-menu-dropdown { display: none; position: absolute; right: 0; top: 100%; margin-top: 8px; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); min-width: 200px; z-index: 1000; }
+        .user-menu-dropdown { display: none; position: absolute; right: 0; top: 100%; margin-top: 8px; background: white; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.22); min-width: 364px; z-index: 1000; overflow: hidden; border: 1px solid #e5e7eb; }
         .user-menu-dropdown.show { display: block; }
-        .user-menu-item { padding: 12px 16px; cursor: pointer; font-size: 14px; color: #374151; border-bottom: 1px solid #f3f4f6; }
-        .user-menu-item:hover { background: #f9fafb; }
+        .user-menu-header { padding: 18px 26px 16px; background: #1e3a8a; color: white; font-size: 13px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; }
+        .user-menu-item { padding: 20px 26px; cursor: pointer; font-size: 19px; font-weight: 600; color: #1e293b; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 16px; transition: background 0.12s; }
+        .user-menu-item:hover { background: #f0f9ff; color: #0369a1; }
         .user-menu-item:last-child { border-bottom: none; }
         .user-menu-item.danger { color: #dc2626; }
-        .user-menu-item.danger:hover { background: #fee2e2; }
+        .user-menu-item.danger:hover { background: #fee2e2; color: #b91c1c; }
         .btn-logout { background: #dc2626; color: white; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; }
         .btn-logout:hover { background: #b91c1c; }
         .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
@@ -102,8 +103,9 @@
 
         /* Tabs navigation */
         .tabs-container { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-bottom: 1px solid #e5e7eb; }
-        .tabs { max-width: 1200px; margin: 0 auto; display: flex; gap: 4px; padding: 0 24px; overflow-x: auto; }
-        .tab { background: transparent; border: none; padding: 14px 20px; font-size: 14px; font-weight: 600; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
+        .tabs { width: 100%; display: flex; gap: 0; padding: 0 8px; overflow-x: auto; scrollbar-width: none; }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab { background: transparent; border: none; padding: 14px 16px; font-size: 13px; font-weight: 600; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; }
         .tab:hover { color: #374151; background: #f9fafb; }
         .tab.active { color: #047857; border-bottom-color: #047857; background: #f0fdf4; }
 
@@ -381,12 +383,12 @@
         /* Confirm Modal */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center; }
         .modal-overlay.show { display: flex; }
-        .modal { background: white; border-radius: 16px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-        .modal-header { margin-bottom: 16px; }
-        .modal-title { font-size: 18px; font-weight: 700; color: #1f2937; }
-        .modal-body { margin-bottom: 24px; font-size: 14px; color: #6b7280; line-height: 1.6; }
-        .modal-footer { display: flex; gap: 12px; justify-content: flex-end; }
-        .modal-footer .btn { padding: 10px 20px; }
+        .modal { background: white; border-radius: 20px; padding: 32px; max-width: 520px; width: 90%; box-shadow: 0 24px 70px rgba(0,0,0,0.3); }
+        .modal-header { margin-bottom: 20px; }
+        .modal-title { font-size: 24px; font-weight: 700; color: #1f2937; }
+        .modal-body { margin-bottom: 32px; font-size: 18px; color: #6b7280; line-height: 1.6; }
+        .modal-footer { display: flex; gap: 16px; justify-content: flex-end; }
+        .modal-footer .btn { padding: 13px 26px; font-size: 16px; }
         .btn-danger { background: #dc2626; color: white; }
         .btn-danger:hover { background: #b91c1c; }
 
@@ -485,6 +487,56 @@
             font-weight: 700; font-size: 12px; border-top: 3px solid #10b981;
         }
         .kupci-table .totals-row td { border-bottom: 3px solid #10b981; padding: 12px 6px; }
+
+        /* ============================================
+           OTPREMAC GODIŠNJI PRIKAZ - Wide kupci-table style
+           ============================================ */
+        .otpremac-godisnji-table thead th {
+            background: linear-gradient(to bottom, #1e40af 0%, #2563eb 100%);
+            color: #ffffff;
+            border-top: 2px solid #1e40af;
+            border-bottom: 2px solid #1e3a8a;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+        /* Sticky first column (Mjesec) */
+        .otpremac-godisnji-table th:first-child,
+        .otpremac-godisnji-table td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 10;
+            min-width: 110px;
+            font-weight: 700;
+        }
+        .otpremac-godisnji-table thead th:first-child {
+            z-index: 15;
+            background: linear-gradient(to bottom, #1e40af 0%, #2563eb 100%);
+        }
+        .otpremac-godisnji-table tbody td:first-child {
+            background: inherit;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.08);
+        }
+        .otpremac-godisnji-table .totals-row {
+            background: linear-gradient(to right, #eff6ff 0%, #dbeafe 100%);
+            border-top: 3px solid #2563eb;
+            font-weight: 700;
+        }
+        .otpremac-godisnji-table .totals-row td {
+            color: #1e40af;
+            border-bottom: 3px solid #2563eb;
+        }
+        /* Boje po mjesecima za godišnji prikaz otpreme */
+        .kupci-table tbody tr.mjesec-1 { background: linear-gradient(to right, #fce7f3 0%, #fbcfe8 100%); }
+        .kupci-table tbody tr.mjesec-2 { background: linear-gradient(to right, #f3e8ff 0%, #e9d5ff 100%); }
+        .kupci-table tbody tr.mjesec-3 { background: linear-gradient(to right, #e0e7ff 0%, #c7d2fe 100%); }
+        .kupci-table tbody tr.mjesec-4 { background: linear-gradient(to right, #dbeafe 0%, #bfdbfe 100%); }
+        .kupci-table tbody tr.mjesec-5 { background: linear-gradient(to right, #cffafe 0%, #a5f3fc 100%); }
+        .kupci-table tbody tr.mjesec-6 { background: linear-gradient(to right, #ccfbf1 0%, #99f6e4 100%); }
+        .kupci-table tbody tr.mjesec-7 { background: linear-gradient(to right, #d1fae5 0%, #a7f3d0 100%); }
+        .kupci-table tbody tr.mjesec-8 { background: linear-gradient(to right, #d9f99d 0%, #bef264 100%); }
+        .kupci-table tbody tr.mjesec-9 { background: linear-gradient(to right, #fef9c3 0%, #fef08a 100%); }
+        .kupci-table tbody tr.mjesec-10 { background: linear-gradient(to right, #fed7aa 0%, #fdba74 100%); }
+        .kupci-table tbody tr.mjesec-11 { background: linear-gradient(to right, #fecaca 0%, #fca5a5 100%); }
+        .kupci-table tbody tr.mjesec-12 { background: linear-gradient(to right, #e5e7eb 0%, #d1d5db 100%); }
 
         /* ============================================
            DODANI UNOSI TABLE - Enterprise Redesign
@@ -1109,13 +1161,15 @@
             .filter-input, .filter-select { font-size: 13px; padding: 8px; }
 
             /* Modal */
-            .modal { width: 95%; padding: 16px; }
-            .modal-title { font-size: 16px; }
-            .modal-body { font-size: 13px; }
+            .modal { width: 95%; padding: 22px; }
+            .modal-title { font-size: 20px; }
+            .modal-body { font-size: 17px; }
+            .modal-footer .btn { padding: 12px 22px; font-size: 15px; }
 
             /* User menu */
             .user-menu-button { padding: 6px 12px; font-size: 12px; }
-            .user-menu-dropdown { min-width: 180px; }
+            .user-menu-dropdown { min-width: 320px; right: -4px; }
+            .user-menu-item { font-size: 17px; padding: 18px 22px; gap: 14px; }
 
             /* Hide or adjust specific elements on mobile */
             .badge { padding: 4px 8px; font-size: 10px; }
@@ -1197,17 +1251,17 @@
 
         .toast {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            padding: 16px 20px;
-            min-width: 300px;
-            max-width: 400px;
+            border-radius: 16px;
+            box-shadow: 0 12px 50px rgba(0,0,0,0.22);
+            padding: 20px 26px;
+            min-width: 390px;
+            max-width: 520px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
             pointer-events: auto;
             opacity: 0;
-            transform: translateX(400px);
+            transform: translateX(520px);
             transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
 
@@ -1218,11 +1272,11 @@
 
         .toast.hide {
             opacity: 0;
-            transform: translateX(400px);
+            transform: translateX(520px);
         }
 
         .toast-icon {
-            font-size: 24px;
+            font-size: 32px;
             flex-shrink: 0;
         }
 
@@ -1231,13 +1285,13 @@
         }
 
         .toast-title {
-            font-weight: 600;
-            font-size: 14px;
+            font-weight: 700;
+            font-size: 18px;
             margin-bottom: 4px;
         }
 
         .toast-message {
-            font-size: 13px;
+            font-size: 17px;
             color: #6b7280;
             line-height: 1.4;
         }
@@ -1245,16 +1299,16 @@
         .toast-close {
             background: none;
             border: none;
-            font-size: 20px;
+            font-size: 26px;
             color: #9ca3af;
             cursor: pointer;
             padding: 0;
-            width: 24px;
-            height: 24px;
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 4px;
+            border-radius: 6px;
             flex-shrink: 0;
         }
 
@@ -1306,15 +1360,15 @@
             .toast {
                 min-width: auto;
                 max-width: none;
-                padding: 12px 16px;
+                padding: 16px 20px;
             }
 
             .toast-title {
-                font-size: 13px;
+                font-size: 17px;
             }
 
             .toast-message {
-                font-size: 12px;
+                font-size: 15px;
             }
         }
 
@@ -2600,9 +2654,12 @@
         #primac-godisnji-content,
         #primac-odjeli-content,
         #otpremac-personal-content,
+        #otpremac-godisnji-content,
         #otpremac-odjeli-content,
         #my-sjece-content,
         #my-otpreme-content,
+        #primac-sihtarica-content,
+        #otpremac-sihtarica-content,
         #pending-unosi-content,
         #poslovodja-unosi-content {
             max-width: 100%;
@@ -2633,6 +2690,8 @@
             #otpremac-odjeli-content,
             #my-sjece-content,
             #my-otpreme-content,
+            #primac-sihtarica-content,
+            #otpremac-sihtarica-content,
             #pending-unosi-content,
             #poslovodja-unosi-content { padding-inline: 40px; }
         }
@@ -2785,6 +2844,8 @@
             #otpremac-odjeli-content,
             #my-sjece-content,
             #my-otpreme-content,
+            #primac-sihtarica-content,
+            #otpremac-sihtarica-content,
             #pending-unosi-content,
             #poslovodja-unosi-content { padding-inline: 12px; padding-block: 12px; }
         }
@@ -2887,3 +2948,61 @@
         body.force-android-view .kub-col-napomena {
             display: none !important;
         }
+
+/* ============================================ */
+/* 🏢 KUPAC DETAILS MODAL — Responsive          */
+/* ============================================ */
+
+/* Base — sve veličine ekrana, bez max-width limita */
+.kupac-details-inner {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 24px 70px rgba(0,0,0,0.3);
+    width: calc(100vw - 24px);
+    max-width: none;
+    height: calc(100vh - 24px);
+    max-height: none;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Mobile — full screen, no rounded corners */
+@media (max-width: 768px) {
+    #kupac-details-modal {
+        padding: 0 !important;
+        align-items: stretch !important;
+    }
+    .kupac-details-inner {
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        height: 100%;
+        border-radius: 0 !important;
+        box-shadow: none;
+    }
+    #kupac-details-modal .modal-header {
+        border-radius: 0 !important;
+    }
+}
+
+/* Compact table on small screens */
+@media (max-width: 576px) {
+    #kupac-details-table th,
+    #kupac-details-table td {
+        padding: 8px 5px !important;
+        font-size: 11px !important;
+        min-width: 52px !important;
+    }
+    /* Sticky Datum column stays readable */
+    #kupac-details-table th:first-child,
+    #kupac-details-table td:first-child {
+        min-width: 78px !important;
+        font-size: 12px !important;
+    }
+    /* Hide Odjel column (least important on mobile) */
+    #kupac-details-table th:nth-child(2),
+    #kupac-details-table td:nth-child(2) {
+        display: none !important;
+    }
+}

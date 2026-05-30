@@ -48,6 +48,9 @@
                 'izvjestaji-primac': 'izvjestaji-primac-content',
                 'izvjestaji-otpremac': 'izvjestaji-otpremac-content',
                 'kubikator': 'kubikator-content',
+                'primac-sihtarica': 'primac-sihtarica-content',
+                'otpremac-sihtarica': 'otpremac-sihtarica-content',
+                'godisnji-plan': 'godisnji-plan-content',
             };
             const ttl = (typeof getSmartCacheTTL === 'function') ? getSmartCacheTTL() : 60000;
             const lastRender = window._tabRenderTime[tab];
@@ -153,6 +156,12 @@
                 loadStanjeZaliha();
             } else if (tab === 'primaci-admin') {
                 loadPrimaciAdminTab();
+            } else if (tab === 'primac-sihtarica') {
+                loadSihtaricaPrimac();
+            } else if (tab === 'otpremac-sihtarica') {
+                loadSihtaricaOtpremac();
+            } else if (tab === 'godisnji-plan') {
+                if (typeof loadGodisnjiPlan === 'function') loadGodisnjiPlan(false);
             }
         }
 
@@ -193,7 +202,7 @@
             // Update submenu buttons
             const submenuTabs = document.querySelectorAll('#primaci-content .submenu-tab');
             submenuTabs.forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
 
             // Hide all submenu content
             document.getElementById('primaci-monthly-view').classList.add('hidden');
@@ -273,7 +282,7 @@
             // Update submenu buttons
             const submenuTabs = document.querySelectorAll('#otpremaci-content .submenu-tab');
             submenuTabs.forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
 
             // Hide all submenu content
             document.getElementById('otpremaci-monthly-view').classList.add('hidden');
@@ -319,12 +328,13 @@
             // Update submenu buttons
             const submenuTabs = document.querySelectorAll('#kupci-content .submenu-tab');
             submenuTabs.forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
 
             // Hide all submenu content
             document.getElementById('kupci-godisnji-view').classList.add('hidden');
             document.getElementById('kupci-mjesecni-view').classList.add('hidden');
             document.getElementById('kupci-kvartalni-view').classList.add('hidden');
+            document.getElementById('kupci-statistika-view').classList.add('hidden');
 
             // Show selected view
             if (view === 'godisnji') {
@@ -337,6 +347,19 @@
                 const currentQuarter = Math.floor(new Date().getMonth() / 3) + 1;
                 document.getElementById('kupci-kvartalni-select').value = currentQuarter;
                 renderKupciKvartalniTable();
+            } else if (view === 'statistika') {
+                document.getElementById('kupci-statistika-view').classList.remove('hidden');
+                const statYear = parseInt(document.getElementById('kupci-statistika-year')?.value || new Date().getFullYear());
+                const statContent = document.getElementById('kupci-statistika-content');
+                // switchToTab hides all [id$="-content"] elements — explicitly un-hide this inner div
+                if (statContent) statContent.classList.remove('hidden');
+                const needsRender = !window._kupciStatData || window._kupciStatData.year !== statYear || !statContent || statContent.children.length === 0;
+                if (needsRender) {
+                    loadKupciStatistika();
+                } else {
+                    // Data already loaded — re-render table so latest JS styles apply
+                    selectStatPeriod(window._kupciStatCurrentPeriod || 'god');
+                }
             }
         }
 
