@@ -98,7 +98,7 @@
 
   // ---- POPUP HTML ----
   function _buildPopup(props, info) {
-    const odjel  = props.name || props.odjel || '?';
+    const odjel  = props.odjel || props.name || '?';
     const gj     = props.gj   || '—';
     const odsjek = props.odsjek ? ` / odsjek ${props.odsjek}` : '';
 
@@ -157,7 +157,7 @@
     _layer = L.geoJSON(geojson, {
       style: feature => {
         const props = feature.properties || {};
-        const odjel = String(props.name || props.odjel || '').trim();
+        const odjel = String(props.odjel || props.name || '').trim();
         const gj    = String(props.gj || '').trim();
         const key   = _normKey(gj + ' ' + odjel);
         const info  = statusMap.get(key);
@@ -166,7 +166,7 @@
       },
       onEachFeature: (feature, leafletLayer) => {
         const props  = feature.properties || {};
-        const odjel  = String(props.name || props.odjel || '').trim();
+        const odjel  = String(props.odjel || props.name || '').trim();
         const gj     = String(props.gj || '').trim();
         const key    = _normKey(gj + ' ' + odjel);
         const info   = statusMap.get(key);
