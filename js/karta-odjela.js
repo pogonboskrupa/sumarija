@@ -36,12 +36,16 @@
     };
   }
 
-  // ---- NORMALIZACIJA (isti algoritam kao u godisnji-plan.js) ----
+  // ---- NORMALIZACIJA ----
+  // Agresivnija od godisnji-plan.js: briše i /N sufiks (npr. 59/1→59, 68/2→68)
+  // jer KML čuva samo bazični broj odjela
   function _normKey(s) {
     return String(s || '').trim().toUpperCase()
       .replace(/Č/g, 'C').replace(/Ć/g, 'C')
       .replace(/Š/g, 'S').replace(/Ž/g, 'Z').replace(/Đ/g, 'DJ')
-      .replace(/P\s*$/, '').trim();
+      .replace(/\/\d+\s*$/, '') // strip /N suffix
+      .replace(/P\s*$/, '')     // strip trailing P
+      .trim();
   }
 
   // ---- STATUS MAP ----
