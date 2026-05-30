@@ -51,6 +51,7 @@
                 'primac-sihtarica': 'primac-sihtarica-content',
                 'otpremac-sihtarica': 'otpremac-sihtarica-content',
                 'godisnji-plan': 'godisnji-plan-content',
+                'karta-odjela': 'karta-odjela-content',
             };
             const ttl = (typeof getSmartCacheTTL === 'function') ? getSmartCacheTTL() : 60000;
             const lastRender = window._tabRenderTime[tab];
@@ -162,6 +163,8 @@
                 loadSihtaricaOtpremac();
             } else if (tab === 'godisnji-plan') {
                 if (typeof loadGodisnjiPlan === 'function') loadGodisnjiPlan(false);
+            } else if (tab === 'karta-odjela') {
+                if (typeof initKartaOdjela === 'function') initKartaOdjela(false);
             }
         }
 

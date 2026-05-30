@@ -1,0 +1,5 @@
+{
+  "type": "FeatureCollection",
+  "_note": "Zamijeniti ovaj placeholder stvarnim poligonima odjela. Svaki feature mora imati properties.name (broj odjela, npr. '13') i properties.gj (gospodarska jedinica, npr. 'Risovac Krupa'). Opcionalno: properties.odsjek za pododjele.",
+  "features": []
+}

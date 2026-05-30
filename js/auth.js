@@ -131,6 +131,7 @@
                     { id: 'otpremaci', icon: '🚛', label: 'OTPREMA' },
                     { id: 'primaci-admin', icon: '🌲', label: 'Primači na šuma panju' },
                     { id: 'godisnji-plan', icon: '📋', label: 'Godišnji plan' },
+                    { id: 'karta-odjela', icon: '🗺️', label: 'Karta odjela' },
                     { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
                     { id: 'pending-unosi', icon: '📋', label: 'Dodani unosi', hasBadge: true },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
