@@ -384,15 +384,7 @@
     const ld = document.getElementById('karta-loading');
     if (ld) ld.style.display = 'none';
 
-    // Filtriramo samo plan odjele i slučajne užike
-    const visibleFeatures = { type:'FeatureCollection', features: geojson.features.filter(f => {
-      const p   = f.properties || {};
-      const key = _normKey((p.gj||'') + ' ' + (p.odjel||p.name||''));
-      const odjelOnly = _normKey(p.odjel||p.name||'');
-      return statusMap.has(key) || _slucajniSet.has(key) || _slucajniSet.has(odjelOnly);
-    })};
-
-    _layer = L.geoJSON(visibleFeatures, {
+    _layer = L.geoJSON(geojson, {
       style: feature => {
         const p      = feature.properties || {};
         const key    = _normKey((p.gj||'') + ' ' + (p.odjel||p.name||''));
