@@ -3068,3 +3068,30 @@
                 gap: 4px;
             }
         }
+
+        /* ============================================ */
+        /* 🗺️ KARTA ODJELA — responsive mapa           */
+        /* ============================================ */
+        #karta-odjela-map {
+            width: 100%;
+            height: calc(100vh - 240px);
+            min-height: 400px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            background: #f1f5f9;
+        }
+
+        @media (max-width: 1024px) {
+            #karta-odjela-map {
+                height: calc(100svh - 200px);
+                min-height: 320px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            #karta-odjela-map {
+                height: calc(100svh - 260px);
+                min-height: 260px;
+            }
+        }
