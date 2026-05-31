@@ -9,7 +9,7 @@
   const CACHE_OTPR  = 'cache_otpreme_karta';
 
   // Lokacija Šumarije Bosanska Krupa — Trg Alije Izetbegovića 1
-  const SUMARIJA_LATLNG = [44.8872, 16.1521];
+  const SUMARIJA_LATLNG = [44.883425, 16.154427];
   const OSRM_URL = 'https://router.project-osrm.org/route/v1/driving';
 
   let _map          = null;
@@ -615,8 +615,8 @@
     if (!_sumarijaMark) {
       _sumarijaMark = L.marker(SUMARIJA_LATLNG, {
         icon: L.divIcon({
-          html:'<div style="background:#166534;color:white;font-size:11px;font-weight:700;padding:3px 7px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.3);">🏢 Šumarija</div>',
-          className:'', iconAnchor:[40,20]
+          html:'<div style="background:#166534;color:white;font-size:11px;font-weight:700;padding:4px 8px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.3);transform:translateX(-50%);">🏢 Šumarija Bosanska Krupa</div>',
+          className:'', iconAnchor:[0,0]
         })
       }).addTo(_map);
       _sumarijaMark.bindTooltip('Šumarija Bosanska Krupa — Trg Alije Izetbegovića 1');
