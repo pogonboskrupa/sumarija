@@ -1095,7 +1095,7 @@
             .header-user-role { font-size: 11px; }
 
             /* Tabs */
-            .tabs-container { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 8px 12px; }
+            .tabs-container { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 8px 12px; position: sticky; top: 0; z-index: 200; }
             .tab { font-size: 12px; padding: 8px 12px; white-space: nowrap; }
 
             /* Summary cards */
