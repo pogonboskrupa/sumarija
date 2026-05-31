@@ -25,7 +25,8 @@
   let _routeLine    = null;
   let _routeLine2   = null; // ruta odjel→odjel
   let _sumarijaMark = null;
-  let _currentLatlng = null;
+  let _currentLatlng     = null;
+  let _currentOdjelLabel = null;
   let _odjelRutaMode = false;    // da li je aktivan režim rute između odjela
   let _odjelRutaFrom = null;     // { latlng, label }
   let _odjelRutaFromMark = null;
@@ -168,6 +169,24 @@
     if (_currentLatlng) _drawRoute(_currentLatlng);
   };
 
+  window.routeOdjelToOdjel = function() {
+    if (!_currentLatlng) return;
+    closeMapaModal();
+    // Postavi polazište na trenutni odjel i čekaj klik na odredište
+    if (_routeLine2) { _map.removeLayer(_routeLine2); _routeLine2 = null; }
+    const infoDiv = document.getElementById('mapa-ruta-info');
+    if (infoDiv) infoDiv.style.display = 'none';
+    _odjelRutaMode = true;
+    _odjelRutaFrom = { latlng: _currentLatlng, label: _currentOdjelLabel };
+    _odjelRutaFromMark = L.circleMarker(_currentLatlng, {
+      radius:10, color:'#dc2626', fillColor:'#fca5a5', fillOpacity:0.9, weight:3
+    }).bindTooltip(`Polazište: Odjel ${_currentOdjelLabel}`, { permanent:true, direction:'top', offset:[0,-8] }).addTo(_map);
+    const btn = document.getElementById('karta-odjel-ruta-btn');
+    if (btn) { btn.style.background = '#2563eb'; btn.style.color = 'white'; }
+    const hint = document.getElementById('mapa-ruta-hint');
+    if (hint) { hint.textContent = `🎯 Polazište: Odjel ${_currentOdjelLabel} — kliknite na odredišni odjel`; hint.style.display = 'block'; }
+  };
+
   // ---- RUTA IZMEĐU DVA ODJELA ----
   async function _drawOdjelRuta(from, to, fromLabel, toLabel) {
     if (_routeLine2) { _map.removeLayer(_routeLine2); _routeLine2 = null; }
@@ -237,8 +256,9 @@
 
   // ---- DETALJI MODAL ----
   function _openDetaljiModal(props, info, latlng) {
-    _currentLatlng = latlng;
-    const odjel  = props.odjel || props.name || '?';
+    _currentLatlng     = latlng;
+    _currentOdjelLabel = String(props.odjel || props.name || '?');
+    const odjel  = _currentOdjelLabel;
     const gj     = props.gj   || '—';
     const odsjek = props.odsjek || '—';
     const gjColor = {'Risovac Krupa':'#1d4ed8','Grmeč Jasenica':'#15803d','Vojskova':'#b45309'}[gj]||'#374151';
@@ -251,7 +271,11 @@
     const statusColor = { posjeceno:'#166534','u-sjeci':'#92400e',planirano:'#6b7280',slucajni:'#7c3aed' };
     const statusBg    = { posjeceno:'#dcfce7','u-sjeci':'#fef3c7',planirano:'#f3f4f6',slucajni:'#f5f3ff' };
 
-    const routeBtn = `<button onclick="routeToOdjel()" style="display:flex;align-items:center;gap:6px;background:#2563eb;color:white;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;width:100%;justify-content:center;margin-top:12px;">🛣️ Ruta od Šumarije</button>`;
+    const routeBtn = `
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button onclick="routeToOdjel()" style="flex:1;display:flex;align-items:center;gap:6px;background:#2563eb;color:white;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;justify-content:center;">🏢 Ruta od Šumarije</button>
+        <button onclick="routeOdjelToOdjel()" style="flex:1;display:flex;align-items:center;gap:6px;background:#dc2626;color:white;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;justify-content:center;">🔀 Ruta do odjela…</button>
+      </div>`;
 
     const odjelNormKey = _normKey((props.gj||'') + ' ' + (props.odjel||props.name||''));
     const isSlucajni   = !info && _slucajniSet.has(_normKey(props.odjel||props.name||''));
