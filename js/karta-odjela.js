@@ -66,6 +66,13 @@
     return v === 0 ? '—' : v.toLocaleString('de-DE') + ' m³';
   }
 
+  const PLAN_YEAR = 2026;
+
+  function _getYear(p) {
+    const parts = (p.datum||'').split('.');
+    return parts.length >= 3 ? parseInt(parts[2]) : null;
+  }
+
   // ---- STATUS MAP + SLUČAJNI ----
   function _buildStatusMap(primke, otpreme) {
     const planEntries    = _planEntries();
@@ -74,26 +81,38 @@
     const map            = new Map();
     _slucajniSet         = new Set();
 
-    // Slučajni užici — primke čiji odjel nije ni u jednom planu
-    (primke||[]).forEach(p => {
+    const primkeTekuce  = (primke||[]).filter(p => _getYear(p) === PLAN_YEAR);
+    const primkeOstale  = (primke||[]).filter(p => _getYear(p) !== PLAN_YEAR);
+    const otpremeTekuce = (otpreme||[]).filter(p => _getYear(p) === PLAN_YEAR);
+    const otremeOstale  = (otpreme||[]).filter(p => _getYear(p) !== PLAN_YEAR);
+
+    // Slučajni užici — primke (tekuće godine) čiji odjel nije ni u jednom planu
+    primkeTekuce.forEach(p => {
       const k = _normKey(p.odjel);
       if (!planOdjelKeys.has(k)) _slucajniSet.add(k);
     });
 
     planEntries.forEach(entry => {
       const key  = _normKey(entry.gj+' '+entry.odjel);
+      const odjelKey = _normKey(entry.odjel);
       const sjeca = _emptySort();
       const otpr  = _emptySort();
+      const sjecaOst = _emptySort();
+      const otprOst  = _emptySort();
 
-      (primke||[]).filter(p => _normKey(p.odjel) === key).forEach(p => _addSort(sjeca, p.sortiment, p.kolicina));
-      (otpreme||[]).filter(p => _normKey(p.odjel) === key).forEach(p => _addSort(otpr, p.sortiment, p.kolicina));
+      primkeTekuce.filter(p => _normKey(p.odjel) === odjelKey).forEach(p => _addSort(sjeca, p.sortiment, p.kolicina));
+      otpremeTekuce.filter(p => _normKey(p.odjel) === odjelKey).forEach(p => _addSort(otpr, p.sortiment, p.kolicina));
+      primkeOstale.filter(p => _normKey(p.odjel) === odjelKey).forEach(p => _addSort(sjecaOst, p.sortiment, p.kolicina));
+      otremeOstale.filter(p => _normKey(p.odjel) === odjelKey).forEach(p => _addSort(otprOst, p.sortiment, p.kolicina));
 
-      sjeca.ukupno = _sumSort(sjeca);
-      otpr.ukupno  = _sumSort(otpr);
+      sjeca.ukupno    = _sumSort(sjeca);
+      otpr.ukupno     = _sumSort(otpr);
+      sjecaOst.ukupno = _sumSort(sjecaOst);
+      otprOst.ukupno  = _sumSort(otprOst);
 
       const pct    = entry.neto > 0 ? sjeca.ukupno / entry.neto * 100 : 0;
       const status = pct >= 95 ? 'posjeceno' : pct > 5 ? 'u-sjeci' : 'planirano';
-      map.set(key, { gj:entry.gj, odjel:entry.odjel, status, pct, sjeca, otpr, neto:entry.neto, bruto:entry.bruto });
+      map.set(key, { gj:entry.gj, odjel:entry.odjel, status, pct, sjeca, otpr, sjecaOst, otprOst, neto:entry.neto, bruto:entry.bruto });
     });
 
     return map;
@@ -305,16 +324,27 @@
       const zaliha  = sj.ukupno - (hasOtpr ? ot.ukupno : 0);
       const e       = _planEntries().find(x => _normKey(x.gj+' '+x.odjel) === _normKey(info.gj+' '+info.odjel)) || {};
 
-      const sortRow = (label, sv, ov, pv, col) => {
-        const z = sv - (ov||0);
+      // Grupisani sortimenti
+      const sjCijC = sj.celDuga + sj.celCijepana + sj.skart;
+      const sjCijL = sj.ogrDugi + sj.ogrCijepani + sj.gule;
+      const otCijC = ot.celDuga + ot.celCijepana + ot.skart;
+      const otCijL = ot.ogrDugi + ot.ogrCijepani + ot.gule;
+
+      // Sječa i otprema iz netekuće godine
+      const so = info.sjecaOst || _emptySort();
+      const oo = info.otprOst  || _emptySort();
+      const hasOst = so.ukupno > 0 || oo.ukupno > 0;
+
+      const td  = (v, col, bold) => `<td style="padding:5px 8px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:${col};${bold?'font-weight:700;':''}">${_fmt(v)}</td>`;
+      const tdL = (v) => `<td style="padding:5px 8px;font-size:12px;border-bottom:1px solid #f1f5f9;color:#374151;">${v}</td>`;
+
+      const grpRow = (label, sv, ov, pv) => {
+        const z  = sv - (ov||0);
         const zC = z<0?'#dc2626':z===0?'#6b7280':'#059669';
-        return `<tr>
-          <td style="padding:5px 8px;font-size:12px;color:#374151;border-bottom:1px solid #f1f5f9;">${label}</td>
-          <td style="padding:5px 8px;font-size:12px;font-weight:700;text-align:right;border-bottom:1px solid #f1f5f9;color:${col||'#111'};">${_fmt(sv)}</td>
-          ${hasOtpr?`<td style="padding:5px 8px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:#92400e;">${_fmt(ov)}</td>
-          <td style="padding:5px 8px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:${zC};font-weight:600;">${_fmt(z)}</td>`:''}
-          <td style="padding:5px 8px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:#9ca3af;">${_fmt(pv)}</td>
-        </tr>`;
+        return `<tr>${tdL(label)}${td(sv,'#15803d',true)}${hasOtpr?td(ov,'#92400e',false)+td(z,zC,true):''}${td(pv,'#9ca3af',false)}</tr>`;
+      };
+      const subRow = (label, sv, ov) => {
+        return `<tr style="background:#fafafa;">${tdL('<span style="font-size:11px;color:#9ca3af;padding-left:10px;">↳ '+label+'</span>')}${td(sv,'#6b7280',false)}${hasOtpr?td(ov,'#9ca3af',false)+'<td style="border-bottom:1px solid #f1f5f9;"></td>':''}<td style="border-bottom:1px solid #f1f5f9;"></td></tr>`;
       };
 
       body = `
@@ -332,7 +362,7 @@
 
         <div style="background:#f8fafc;border-radius:10px;padding:12px 14px;margin-bottom:12px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-            <span style="font-size:12px;font-weight:600;color:#374151;">Realizacija plana</span>
+            <span style="font-size:12px;font-weight:600;color:#374151;">Realizacija plana ${PLAN_YEAR}</span>
             <span style="font-size:15px;font-weight:800;color:${statusColor[s]};">${pct}%</span>
           </div>
           <div style="height:7px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:8px;">
@@ -340,12 +370,12 @@
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <div style="background:white;border-radius:6px;padding:4px 10px;text-align:center;flex:1;min-width:70px;">
-              <div style="font-size:10px;color:#9ca3af;">Sječa</div>
+              <div style="font-size:10px;color:#9ca3af;">Sječa ${PLAN_YEAR}</div>
               <div style="font-weight:800;font-size:13px;color:#15803d;">${_fmt(sj.ukupno)}</div>
             </div>
             ${hasOtpr?`
             <div style="background:white;border-radius:6px;padding:4px 10px;text-align:center;flex:1;min-width:70px;">
-              <div style="font-size:10px;color:#9ca3af;">Otprema</div>
+              <div style="font-size:10px;color:#9ca3af;">Otprema ${PLAN_YEAR}</div>
               <div style="font-weight:800;font-size:13px;color:#b45309;">${_fmt(ot.ukupno)}</div>
             </div>
             <div style="background:white;border-radius:6px;padding:4px 10px;text-align:center;flex:1;min-width:70px;">
@@ -359,8 +389,8 @@
           </div>
         </div>
 
-        <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Sortimenti</div>
-        <table style="width:100%;border-collapse:collapse;">
+        <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Sortimenti — ${PLAN_YEAR}</div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
           <thead><tr style="background:#f1f5f9;">
             <th style="padding:5px 8px;font-size:11px;text-align:left;color:#6b7280;font-weight:600;">Sortiment</th>
             <th style="padding:5px 8px;font-size:11px;text-align:right;color:#15803d;font-weight:600;">Sječa</th>
@@ -368,14 +398,16 @@
             <th style="padding:5px 8px;font-size:11px;text-align:right;color:#9ca3af;font-weight:600;">Plan</th>
           </tr></thead>
           <tbody>
-            ${sortRow('TRUPCI Č',     sj.cTrupci,    ot.cTrupci,    e.cTrupci, '#1e40af')}
-            ${sortRow('CEL.DUGA',     sj.celDuga,    ot.celDuga,    null,      '#5b21b6')}
-            ${sortRow('CEL.CIJEPANA', sj.celCijepana,ot.celCijepana,null,      '#7c3aed')}
-            ${sortRow('ŠKART',        sj.skart,      ot.skart,      null,      '#9ca3af')}
-            ${sortRow('TRUPCI L',     sj.lTrupci,    ot.lTrupci,    e.lTrupci, '#15803d')}
-            ${sortRow('OGR.DUGI',     sj.ogrDugi,    ot.ogrDugi,    null,      '#92400e')}
-            ${sortRow('OGR.CIJEPANI', sj.ogrCijepani,ot.ogrCijepani,null,      '#b45309')}
-            ${sortRow('GULE',         sj.gule,       ot.gule,       null,      '#d97706')}
+            ${grpRow('TRUPCI Č',   sj.cTrupci, ot.cTrupci, e.cTrupci||0)}
+            ${grpRow('CIJEPANO Č', sjCijC,     otCijC,     e.cijepanoC||0)}
+            ${subRow('Cel.duga',   sj.celDuga,    ot.celDuga)}
+            ${subRow('Cel.cijepana',sj.celCijepana,ot.celCijepana)}
+            ${subRow('Škart',      sj.skart,      ot.skart)}
+            ${grpRow('TRUPCI L',   sj.lTrupci, ot.lTrupci, e.lTrupci||0)}
+            ${grpRow('CIJEPANO L', sjCijL,     otCijL,     e.cijepanoL||0)}
+            ${subRow('Ogr.dugi',   sj.ogrDugi,    ot.ogrDugi)}
+            ${subRow('Ogr.cijepani',sj.ogrCijepani,ot.ogrCijepani)}
+            ${subRow('Gule',       sj.gule,       ot.gule)}
             <tr style="background:#f8fafc;font-weight:800;border-top:2px solid #e5e7eb;">
               <td style="padding:6px 8px;font-size:12px;">UKUPNO</td>
               <td style="padding:6px 8px;font-size:13px;text-align:right;color:#15803d;">${_fmt(sj.ukupno)}</td>
@@ -385,6 +417,10 @@
             </tr>
           </tbody>
         </table>
+
+        ${hasOst ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;font-size:12px;color:#92400e;">
+          ⚠️ <b>Sječa/otprema iz prethodnih godina:</b> sječa ${_fmt(so.ukupno)}, otprema ${_fmt(oo.ukupno)}
+        </div>` : ''}
         ${routeBtn}`;
     }
 
@@ -647,35 +683,36 @@
   };
 
   // ---- PLAN ENTRIES ----
+  // cTrupci=TRUPCI Č, cijepanoC=CEL.DUGA+CEL.CIJEPANA+ŠKART, lTrupci=TRUPCI L, cijepanoL=OGR.DUGI+OGR.CIJEPANI+GULE
   function _planEntries() {
     return [
-      { gj:'Risovac Krupa', odjel:'13',    bruto:3244,  neto:2768, cTrupci:3,    lTrupci:875  },
-      { gj:'Risovac Krupa', odjel:'35',    bruto:5417,  neto:4648, cTrupci:122,  lTrupci:1813 },
-      { gj:'Risovac Krupa', odjel:'50',    bruto:5161,  neto:4329, cTrupci:1824, lTrupci:971  },
-      { gj:'Risovac Krupa', odjel:'54P',   bruto:1511,  neto:1276, cTrupci:639,  lTrupci:208  },
-      { gj:'Risovac Krupa', odjel:'55',    bruto:5195,  neto:4258, cTrupci:2193, lTrupci:789  },
-      { gj:'Risovac Krupa', odjel:'56',    bruto:3877,  neto:3206, cTrupci:1779, lTrupci:439  },
-      { gj:'Risovac Krupa', odjel:'59/1',  bruto:3724,  neto:3087, cTrupci:1545, lTrupci:658  },
-      { gj:'Risovac Krupa', odjel:'63',    bruto:4033,  neto:3339, cTrupci:1309, lTrupci:796  },
-      { gj:'Risovac Krupa', odjel:'66',    bruto:2645,  neto:2307, cTrupci:0,    lTrupci:949  },
-      { gj:'Risovac Krupa', odjel:'68/2',  bruto:2605,  neto:2287, cTrupci:35,   lTrupci:1012 },
-      { gj:'Risovac Krupa', odjel:'71P',   bruto:1957,  neto:1655, cTrupci:664,  lTrupci:401  },
-      { gj:'Risovac Krupa', odjel:'97',    bruto:4889,  neto:4058, cTrupci:1253, lTrupci:901  },
-      { gj:'Risovac Krupa', odjel:'113P',  bruto:5177,  neto:4300, cTrupci:225,  lTrupci:1278 },
-      { gj:'Grmeč Jasenica', odjel:'4/1',   bruto:2490, neto:2117, cTrupci:0,   lTrupci:303  },
-      { gj:'Grmeč Jasenica', odjel:'11P',   bruto:208,  neto:179,  cTrupci:0,   lTrupci:73   },
-      { gj:'Grmeč Jasenica', odjel:'43P',   bruto:1099, neto:740,  cTrupci:40,  lTrupci:160  },
-      { gj:'Grmeč Jasenica', odjel:'60',    bruto:3551, neto:3061, cTrupci:295, lTrupci:1050 },
-      { gj:'Grmeč Jasenica', odjel:'61',    bruto:4774, neto:4105, cTrupci:454, lTrupci:1393 },
-      { gj:'Grmeč Jasenica', odjel:'64/2P', bruto:996,  neto:608,  cTrupci:13,  lTrupci:211  },
-      { gj:'Grmeč Jasenica', odjel:'66',    bruto:5339, neto:4493, cTrupci:0,   lTrupci:1025 },
-      { gj:'Grmeč Jasenica', odjel:'67',    bruto:4853, neto:4199, cTrupci:0,   lTrupci:1530 },
-      { gj:'Grmeč Jasenica', odjel:'69P',   bruto:1309, neto:1204, cTrupci:82,  lTrupci:390  },
-      { gj:'Grmeč Jasenica', odjel:'85P',   bruto:678,  neto:418,  cTrupci:0,   lTrupci:25   },
-      { gj:'Grmeč Jasenica', odjel:'88P',   bruto:1805, neto:1200, cTrupci:0,   lTrupci:20   },
-      { gj:'Vojskova', odjel:'15',  bruto:450, neto:383, cTrupci:0, lTrupci:0   },
-      { gj:'Vojskova', odjel:'21P', bruto:787, neto:624, cTrupci:0, lTrupci:202 },
-      { gj:'Vojskova', odjel:'25',  bruto:750, neto:637, cTrupci:0, lTrupci:0   },
+      { gj:'Risovac Krupa', odjel:'13',    bruto:3244,  neto:2768, cTrupci:3,    cijepanoC:2,   lTrupci:875,  cijepanoL:1888 },
+      { gj:'Risovac Krupa', odjel:'35',    bruto:5417,  neto:4648, cTrupci:122,  cijepanoC:44,  lTrupci:1813, cijepanoL:2670 },
+      { gj:'Risovac Krupa', odjel:'50',    bruto:5161,  neto:4329, cTrupci:1824, cijepanoC:227, lTrupci:971,  cijepanoL:1307 },
+      { gj:'Risovac Krupa', odjel:'54P',   bruto:1511,  neto:1276, cTrupci:639,  cijepanoC:109, lTrupci:208,  cijepanoL:320  },
+      { gj:'Risovac Krupa', odjel:'55',    bruto:5195,  neto:4258, cTrupci:2193, cijepanoC:328, lTrupci:789,  cijepanoL:948  },
+      { gj:'Risovac Krupa', odjel:'56',    bruto:3877,  neto:3206, cTrupci:1779, cijepanoC:263, lTrupci:439,  cijepanoL:725  },
+      { gj:'Risovac Krupa', odjel:'59/1',  bruto:3724,  neto:3087, cTrupci:1545, cijepanoC:208, lTrupci:658,  cijepanoL:676  },
+      { gj:'Risovac Krupa', odjel:'63',    bruto:4033,  neto:3339, cTrupci:1309, cijepanoC:236, lTrupci:796,  cijepanoL:998  },
+      { gj:'Risovac Krupa', odjel:'66',    bruto:2645,  neto:2307, cTrupci:0,    cijepanoC:52,  lTrupci:949,  cijepanoL:1307 },
+      { gj:'Risovac Krupa', odjel:'68/2',  bruto:2605,  neto:2287, cTrupci:35,   cijepanoC:6,   lTrupci:1012, cijepanoL:1234 },
+      { gj:'Risovac Krupa', odjel:'71P',   bruto:1957,  neto:1655, cTrupci:664,  cijepanoC:114, lTrupci:401,  cijepanoL:476  },
+      { gj:'Risovac Krupa', odjel:'97',    bruto:4889,  neto:4058, cTrupci:1253, cijepanoC:236, lTrupci:901,  cijepanoL:1668 },
+      { gj:'Risovac Krupa', odjel:'113P',  bruto:5177,  neto:4300, cTrupci:225,  cijepanoC:74,  lTrupci:1278, cijepanoL:2723 },
+      { gj:'Grmeč Jasenica', odjel:'4/1',   bruto:2490, neto:2117, cTrupci:0,   cijepanoC:0,   lTrupci:303,  cijepanoL:1814 },
+      { gj:'Grmeč Jasenica', odjel:'11P',   bruto:208,  neto:179,  cTrupci:0,   cijepanoC:0,   lTrupci:73,   cijepanoL:106  },
+      { gj:'Grmeč Jasenica', odjel:'43P',   bruto:1099, neto:740,  cTrupci:40,  cijepanoC:100, lTrupci:160,  cijepanoL:440  },
+      { gj:'Grmeč Jasenica', odjel:'60',    bruto:3551, neto:3061, cTrupci:295, cijepanoC:65,  lTrupci:1050, cijepanoL:1651 },
+      { gj:'Grmeč Jasenica', odjel:'61',    bruto:4774, neto:4105, cTrupci:454, cijepanoC:102, lTrupci:1393, cijepanoL:2156 },
+      { gj:'Grmeč Jasenica', odjel:'64/2P', bruto:996,  neto:608,  cTrupci:13,  cijepanoC:23,  lTrupci:211,  cijepanoL:361  },
+      { gj:'Grmeč Jasenica', odjel:'66',    bruto:5339, neto:4493, cTrupci:0,   cijepanoC:0,   lTrupci:1025, cijepanoL:3468 },
+      { gj:'Grmeč Jasenica', odjel:'67',    bruto:4853, neto:4199, cTrupci:0,   cijepanoC:0,   lTrupci:1530, cijepanoL:2669 },
+      { gj:'Grmeč Jasenica', odjel:'69P',   bruto:1309, neto:1204, cTrupci:82,  cijepanoC:32,  lTrupci:390,  cijepanoL:700  },
+      { gj:'Grmeč Jasenica', odjel:'85P',   bruto:678,  neto:418,  cTrupci:0,   cijepanoC:73,  lTrupci:25,   cijepanoL:320  },
+      { gj:'Grmeč Jasenica', odjel:'88P',   bruto:1805, neto:1200, cTrupci:0,   cijepanoC:0,   lTrupci:20,   cijepanoL:1180 },
+      { gj:'Vojskova', odjel:'15',  bruto:450, neto:383, cTrupci:0, cijepanoC:0, lTrupci:0,   cijepanoL:383 },
+      { gj:'Vojskova', odjel:'21P', bruto:787, neto:624, cTrupci:0, cijepanoC:0, lTrupci:202, cijepanoL:422 },
+      { gj:'Vojskova', odjel:'25',  bruto:750, neto:637, cTrupci:0, cijepanoC:0, lTrupci:0,   cijepanoL:637 },
     ];
   }
 
