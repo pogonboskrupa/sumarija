@@ -5,8 +5,9 @@
 (function () {
   'use strict';
 
-  const GEOJSON_URL = 'data/odjeli.geojson';
-  const CACHE_KEY   = 'cache_karta_primke';
+  const GEOJSON_URL  = 'data/odjeli.geojson';
+  const CACHE_SJECA  = 'cache_primke_sjeca';
+  const CACHE_OTPR   = 'cache_otpreme_karta';
 
   let _map         = null;
   let _layer       = null;
@@ -52,35 +53,50 @@
   }
 
   // ---- STATUS MAP ----
-  function _buildStatusMap(primke) {
+  function _buildStatusMap(primke, otpreme) {
     const planEntries = _fallbackPlanEntries();
     const map = new Map();
 
     planEntries.forEach(entry => {
       const key = _normKey(entry.gj + ' ' + entry.odjel);
-      const actual = { cTrupci:0, celDuga:0, celCijepana:0, skart:0, lTrupci:0, ogrDugi:0, ogrCijepani:0, gule:0, ukupno:0 };
+      const sjeca  = { cTrupci:0, celDuga:0, celCijepana:0, skart:0, lTrupci:0, ogrDugi:0, ogrCijepani:0, gule:0 };
+      const otpr   = { cTrupci:0, celDuga:0, celCijepana:0, skart:0, lTrupci:0, ogrDugi:0, ogrCijepani:0, gule:0 };
 
+      const PLAN_YEAR = 2026;
+
+      // sječa
       primke.filter(p => _normKey(p.odjel) === key).forEach(p => {
-        switch (p.sortiment) {
-          case 'TRUPCI Č':     actual.cTrupci     += p.kolicina; break;
-          case 'CEL.DUGA':     actual.celDuga      += p.kolicina; break;
-          case 'CEL.CIJEPANA': actual.celCijepana  += p.kolicina; break;
-          case 'ŠKART':        actual.skart        += p.kolicina; break;
-          case 'TRUPCI L':     actual.lTrupci      += p.kolicina; break;
-          case 'OGR.DUGI':     actual.ogrDugi      += p.kolicina; break;
-          case 'OGR.CIJEPANI': actual.ogrCijepani  += p.kolicina; break;
-          case 'GULE':         actual.gule         += p.kolicina; break;
-        }
-        actual.ukupno += p.kolicina;
+        _addSortiment(sjeca, p.sortiment, p.kolicina);
+      });
+      // otprema
+      (otpreme || []).filter(p => _normKey(p.odjel) === key).forEach(p => {
+        _addSortiment(otpr, p.sortiment, p.kolicina);
       });
 
-      const pct = entry.neto > 0 ? (actual.ukupno / entry.neto * 100) : 0;
+      sjeca.ukupno  = sjeca.cTrupci + sjeca.celDuga + sjeca.celCijepana + sjeca.skart + sjeca.lTrupci + sjeca.ogrDugi + sjeca.ogrCijepani + sjeca.gule;
+      otpr.ukupno   = otpr.cTrupci  + otpr.celDuga  + otpr.celCijepana  + otpr.skart  + otpr.lTrupci  + otpr.ogrDugi  + otpr.ogrCijepani  + otpr.gule;
+
+      const pct = entry.neto > 0 ? (sjeca.ukupno / entry.neto * 100) : 0;
       const status = pct >= 95 ? 'posjeceno' : pct > 5 ? 'u-sjeci' : 'planirano';
 
-      map.set(key, { gj: entry.gj, odjel: entry.odjel, status, pct, actual, neto: entry.neto, bruto: entry.bruto });
+      map.set(key, { gj: entry.gj, odjel: entry.odjel, status, pct, sjeca, otpr, neto: entry.neto, bruto: entry.bruto });
     });
 
     return map;
+  }
+
+  function _addSortiment(obj, sortiment, kolicina) {
+    const k = parseFloat(kolicina) || 0;
+    switch (sortiment) {
+      case 'TRUPCI Č':     obj.cTrupci     += k; break;
+      case 'CEL.DUGA':     obj.celDuga      += k; break;
+      case 'CEL.CIJEPANA': obj.celCijepana  += k; break;
+      case 'ŠKART':        obj.skart        += k; break;
+      case 'TRUPCI L':     obj.lTrupci      += k; break;
+      case 'OGR.DUGI':     obj.ogrDugi      += k; break;
+      case 'OGR.CIJEPANI': obj.ogrCijepani  += k; break;
+      case 'GULE':         obj.gule         += k; break;
+    }
   }
 
   // ---- DETALJI MODAL ----
@@ -109,17 +125,24 @@
       const barW = Math.min(100, Math.round(info.pct || 0));
       const barColor = (info.pct || 0) > 100 ? '#dc2626' : _getColor(s);
 
-      const sortRow = (label, val, plan, color) => {
-        if (!val && !plan) return '';
+        const sj = info.sjeca;
+      const ot = info.otpr;
+      const e  = _fallbackPlanEntries().find(x => _normKey(x.gj+' '+x.odjel) === _normKey(info.gj+' '+info.odjel)) || {};
+      const hasOtpr = ot && ot.ukupno > 0;
+      const zaliha  = sj.ukupno - (hasOtpr ? ot.ukupno : 0);
+
+      const sortRow = (label, sjecaVal, otprVal, planVal, color) => {
+        const z = sjecaVal - (otprVal || 0);
+        if (!sjecaVal && !planVal) return '';
+        const zCol = z < 0 ? '#dc2626' : z === 0 ? '#6b7280' : '#059669';
         return `<tr>
-          <td style="padding:5px 10px;font-size:12px;color:#374151;border-bottom:1px solid #f1f5f9;">${label}</td>
-          <td style="padding:5px 10px;font-size:12px;font-weight:700;text-align:right;border-bottom:1px solid #f1f5f9;color:${color||'#111'};">${_fmt(val)}</td>
-          <td style="padding:5px 10px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:#9ca3af;">${_fmt(plan)}</td>
+          <td style="padding:5px 8px;font-size:12px;color:#374151;border-bottom:1px solid #f1f5f9;">${label}</td>
+          <td style="padding:5px 8px;font-size:12px;font-weight:700;text-align:right;border-bottom:1px solid #f1f5f9;color:${color||'#111'};">${_fmt(sjecaVal)}</td>
+          ${hasOtpr ? `<td style="padding:5px 8px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:#92400e;">${_fmt(otprVal)}</td>
+          <td style="padding:5px 8px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:${zCol};font-weight:600;">${_fmt(z)}</td>` : ''}
+          <td style="padding:5px 8px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:#9ca3af;">${_fmt(planVal)}</td>
         </tr>`;
       };
-
-      const a = info.actual;
-      const e = _fallbackPlanEntries().find(x => _normKey(x.gj+' '+x.odjel) === _normKey(info.gj+' '+info.odjel)) || {};
 
       bodyHtml = `
         <!-- Header info -->
@@ -138,44 +161,61 @@
         </div>
 
         <!-- Realizacija bar -->
-        <div style="background:#f8fafc;border-radius:10px;padding:12px 14px;margin-bottom:16px;">
+        <div style="background:#f8fafc;border-radius:10px;padding:12px 14px;margin-bottom:12px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-            <span style="font-size:12px;font-weight:600;color:#374151;">Realizacija plana</span>
+            <span style="font-size:12px;font-weight:600;color:#374151;">Realizacija plana (sječa)</span>
             <span style="font-size:16px;font-weight:800;color:${statusColor[s]};">${pct}%</span>
           </div>
           <div style="height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;">
-            <div style="height:100%;width:${barW}%;background:${barColor};border-radius:4px;transition:width .4s;"></div>
+            <div style="height:100%;width:${barW}%;background:${barColor};border-radius:4px;"></div>
           </div>
-          <div style="display:flex;justify-content:space-between;margin-top:6px;">
-            <span style="font-size:11px;color:#6b7280;">Posječeno: <b style="color:#111;">${_fmt(a.ukupno)}</b></span>
-            <span style="font-size:11px;color:#6b7280;">Plan neto: <b style="color:#111;">${_fmt(info.neto)}</b></span>
-            <span style="font-size:11px;color:#6b7280;">Plan bruto: <b style="color:#111;">${_fmt(info.bruto)}</b></span>
+          <div style="display:flex;justify-content:space-between;margin-top:8px;flex-wrap:wrap;gap:6px;">
+            <div style="background:white;border-radius:6px;padding:5px 10px;text-align:center;flex:1;min-width:80px;">
+              <div style="font-size:10px;color:#9ca3af;">Sječa</div>
+              <div style="font-weight:800;font-size:13px;color:#15803d;">${_fmt(sj.ukupno)}</div>
+            </div>
+            ${hasOtpr ? `
+            <div style="background:white;border-radius:6px;padding:5px 10px;text-align:center;flex:1;min-width:80px;">
+              <div style="font-size:10px;color:#9ca3af;">Otprema</div>
+              <div style="font-weight:800;font-size:13px;color:#b45309;">${_fmt(ot.ukupno)}</div>
+            </div>
+            <div style="background:white;border-radius:6px;padding:5px 10px;text-align:center;flex:1;min-width:80px;">
+              <div style="font-size:10px;color:#9ca3af;">Zaliha</div>
+              <div style="font-weight:800;font-size:13px;color:${zaliha<0?'#dc2626':'#1d4ed8'};">${_fmt(zaliha)}</div>
+            </div>` : ''}
+            <div style="background:white;border-radius:6px;padding:5px 10px;text-align:center;flex:1;min-width:80px;">
+              <div style="font-size:10px;color:#9ca3af;">Plan neto</div>
+              <div style="font-weight:800;font-size:13px;color:#6b7280;">${_fmt(info.neto)}</div>
+            </div>
           </div>
         </div>
 
         <!-- Sortimenti tabela -->
-        <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Sortimenti</div>
+        <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Sortimenti</div>
         <table style="width:100%;border-collapse:collapse;">
           <thead>
             <tr style="background:#f1f5f9;">
-              <th style="padding:6px 10px;font-size:11px;text-align:left;color:#6b7280;font-weight:600;">Sortiment</th>
-              <th style="padding:6px 10px;font-size:11px;text-align:right;color:#6b7280;font-weight:600;">Posječeno</th>
-              <th style="padding:6px 10px;font-size:11px;text-align:right;color:#9ca3af;font-weight:600;">Plan</th>
+              <th style="padding:5px 8px;font-size:11px;text-align:left;color:#6b7280;font-weight:600;">Sortiment</th>
+              <th style="padding:5px 8px;font-size:11px;text-align:right;color:#15803d;font-weight:600;">Sječa</th>
+              ${hasOtpr ? '<th style="padding:5px 8px;font-size:11px;text-align:right;color:#b45309;font-weight:600;">Otprema</th><th style="padding:5px 8px;font-size:11px;text-align:right;color:#1d4ed8;font-weight:600;">Zaliha</th>' : ''}
+              <th style="padding:5px 8px;font-size:11px;text-align:right;color:#9ca3af;font-weight:600;">Plan</th>
             </tr>
           </thead>
           <tbody>
-            ${sortRow('TRUPCI Č',      a.cTrupci,     e.cTrupci,  '#1e40af')}
-            ${sortRow('CEL.DUGA',      a.celDuga,     null,       '#5b21b6')}
-            ${sortRow('CEL.CIJEPANA',  a.celCijepana, null,       '#7c3aed')}
-            ${sortRow('ŠKART',         a.skart,       null,       '#9ca3af')}
-            ${sortRow('TRUPCI L',      a.lTrupci,     e.lTrupci,  '#15803d')}
-            ${sortRow('OGR.DUGI',      a.ogrDugi,     null,       '#92400e')}
-            ${sortRow('OGR.CIJEPANI',  a.ogrCijepani, null,       '#b45309')}
-            ${sortRow('GULE',          a.gule,        null,       '#d97706')}
-            <tr style="background:#f8fafc;font-weight:800;">
-              <td style="padding:7px 10px;font-size:12px;">UKUPNO</td>
-              <td style="padding:7px 10px;font-size:13px;text-align:right;color:#059669;">${_fmt(a.ukupno)}</td>
-              <td style="padding:7px 10px;font-size:12px;text-align:right;color:#9ca3af;">${_fmt(info.neto)}</td>
+            ${sortRow('TRUPCI Č',     sj.cTrupci,    ot.cTrupci,    e.cTrupci,  '#1e40af')}
+            ${sortRow('CEL.DUGA',     sj.celDuga,    ot.celDuga,    null,       '#5b21b6')}
+            ${sortRow('CEL.CIJEPANA', sj.celCijepana,ot.celCijepana,null,       '#7c3aed')}
+            ${sortRow('ŠKART',        sj.skart,      ot.skart,      null,       '#9ca3af')}
+            ${sortRow('TRUPCI L',     sj.lTrupci,    ot.lTrupci,    e.lTrupci,  '#15803d')}
+            ${sortRow('OGR.DUGI',     sj.ogrDugi,    ot.ogrDugi,    null,       '#92400e')}
+            ${sortRow('OGR.CIJEPANI', sj.ogrCijepani,ot.ogrCijepani,null,       '#b45309')}
+            ${sortRow('GULE',         sj.gule,       ot.gule,       null,       '#d97706')}
+            <tr style="background:#f8fafc;font-weight:800;border-top:2px solid #e5e7eb;">
+              <td style="padding:7px 8px;font-size:12px;">UKUPNO</td>
+              <td style="padding:7px 8px;font-size:13px;text-align:right;color:#15803d;">${_fmt(sj.ukupno)}</td>
+              ${hasOtpr ? `<td style="padding:7px 8px;font-size:13px;text-align:right;color:#b45309;">${_fmt(ot.ukupno)}</td>
+              <td style="padding:7px 8px;font-size:13px;text-align:right;color:${zaliha<0?'#dc2626':'#1d4ed8'};">${_fmt(zaliha)}</td>` : ''}
+              <td style="padding:7px 8px;font-size:12px;text-align:right;color:#9ca3af;">${_fmt(info.neto)}</td>
             </tr>
           </tbody>
         </table>`;
@@ -287,17 +327,17 @@
   };
 
   // ---- UČITAVANJE ----
-  async function _loadPrimke(force) {
+  async function _loadArr(endpoint, cacheKey, dataKey, force) {
     try {
-      const url = (typeof buildApiUrl === 'function') ? buildApiUrl('primke') : null;
+      const url = (typeof buildApiUrl === 'function') ? buildApiUrl(endpoint) : null;
       if (!url) return [];
-      const data = await fetchWithCache(url, CACHE_KEY, force || false, 150000);
-      return (data && data.primke) ? data.primke : [];
+      const data = await fetchWithCache(url, cacheKey, force || false, 150000);
+      return (data && data[dataKey]) ? data[dataKey] : [];
     } catch (e) {
-      console.warn('[Mapa] primke fetch failed:', e.message);
+      console.warn('[Mapa]', endpoint, 'fetch failed:', e.message);
       try {
-        const raw = localStorage.getItem(CACHE_KEY);
-        if (raw) { const obj = JSON.parse(raw); return (obj && obj.data && obj.data.primke) || []; }
+        const raw = localStorage.getItem(cacheKey);
+        if (raw) { const obj = JSON.parse(raw); return (obj && obj.data && obj.data[dataKey]) || []; }
       } catch (_) {}
       return [];
     }
@@ -350,8 +390,12 @@
     const ld = document.getElementById('karta-loading');
     if (ld) { ld.style.display = 'flex'; ld.textContent = '⏳ Učitavam podatke...'; }
 
-    const [geojson, primke] = await Promise.all([_loadGeojson(), _loadPrimke(force)]);
-    _statusMap = _buildStatusMap(primke);
+    const [geojson, primke, otpreme] = await Promise.all([
+      _loadGeojson(),
+      _loadArr('primke',  CACHE_SJECA, 'primke',  force),
+      _loadArr('otpreme', CACHE_OTPR,  'otpreme', force),
+    ]);
+    _statusMap = _buildStatusMap(primke, otpreme);
     _renderLayer(geojson, _statusMap);
 
     setTimeout(() => { if (_map) _map.invalidateSize(); }, 200);
