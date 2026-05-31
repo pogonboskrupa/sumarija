@@ -50,7 +50,9 @@
     return String(s||'').trim().toUpperCase()
       .replace(/Č/g,'C').replace(/Ć/g,'C')
       .replace(/Š/g,'S').replace(/Ž/g,'Z').replace(/Đ/g,'DJ')
-      .replace(/\/\d+\s*$/,'').replace(/P\s*$/,'').trim();
+      .replace(/P\s*$/,'')      // strip trailing P before stripping /N
+      .replace(/\/\d+\s*$/,'') // then strip /N suffix
+      .trim();
   }
 
   function _fmt(n) {
@@ -61,15 +63,16 @@
 
   // ---- STATUS MAP + SLUČAJNI ----
   function _buildStatusMap(primke, otpreme) {
-    const planEntries = _planEntries();
-    const planKeys    = new Set(planEntries.map(e => _normKey(e.gj+' '+e.odjel)));
-    const map         = new Map();
-    _slucajniSet      = new Set();
+    const planEntries    = _planEntries();
+    const planKeys       = new Set(planEntries.map(e => _normKey(e.gj+' '+e.odjel)));
+    const planOdjelKeys  = new Set(planEntries.map(e => _normKey(e.odjel)));
+    const map            = new Map();
+    _slucajniSet         = new Set();
 
-    // Slučajni užici — primke čiji odjel nije u planu
+    // Slučajni užici — primke čiji odjel nije ni u jednom planu
     (primke||[]).forEach(p => {
       const k = _normKey(p.odjel);
-      if (!planKeys.has(k)) _slucajniSet.add(k);
+      if (!planOdjelKeys.has(k)) _slucajniSet.add(k);
     });
 
     planEntries.forEach(entry => {
