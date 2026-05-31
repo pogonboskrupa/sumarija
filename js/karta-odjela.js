@@ -23,8 +23,12 @@
   let _allFeatures  = [];
   let _mapBounds    = null;
   let _routeLine    = null;
+  let _routeLine2   = null; // ruta odjel→odjel
   let _sumarijaMark = null;
-  let _currentLatlng = null; // centroid zadnjeg kliknutog odjela
+  let _currentLatlng = null;
+  let _odjelRutaMode = false;    // da li je aktivan režim rute između odjela
+  let _odjelRutaFrom = null;     // { latlng, label }
+  let _odjelRutaFromMark = null;
 
   // ---- BOJE ----
   function _getColor(status) {
@@ -162,6 +166,73 @@
   window.routeToOdjel = function() {
     closeMapaModal();
     if (_currentLatlng) _drawRoute(_currentLatlng);
+  };
+
+  // ---- RUTA IZMEĐU DVA ODJELA ----
+  async function _drawOdjelRuta(from, to, fromLabel, toLabel) {
+    if (_routeLine2) { _map.removeLayer(_routeLine2); _routeLine2 = null; }
+
+    const url = `${OSRM_URL}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
+    try {
+      const resp = await fetch(url);
+      const data = await resp.json();
+      if (data.code !== 'Ok' || !data.routes.length) throw new Error('Nema rute');
+
+      const route   = data.routes[0];
+      const coords  = route.geometry.coordinates.map(c => [c[1],c[0]]);
+      const distKm  = (route.distance / 1000).toFixed(1);
+      const durMin  = Math.round(route.duration / 60);
+
+      _routeLine2 = L.polyline(coords, { color:'#dc2626', weight:4, opacity:0.85, dashArray:'8 4' })
+        .bindTooltip(`${distKm} km · ~${durMin} min`, { permanent:true, direction:'center', className:'karta-tooltip' })
+        .addTo(_map);
+
+      const infoDiv = document.getElementById('mapa-ruta-info');
+      if (infoDiv) {
+        infoDiv.innerHTML = `🔀 <b>Odjel ${fromLabel} → Odjel ${toLabel}</b>: <b>${distKm} km</b> · ⏱️ ~<b>${durMin} min</b>
+          <button onclick="clearOdjelRuta()" style="margin-left:8px;font-size:11px;padding:2px 8px;border:1px solid #d1d5db;border-radius:4px;cursor:pointer;background:white;">✕ Ukloni</button>`;
+        infoDiv.style.display = 'inline-flex';
+      }
+      _map.fitBounds(_routeLine2.getBounds(), { padding:[30,30] });
+    } catch(e) {
+      alert('Greška pri učitavanju rute: ' + e.message);
+    }
+  }
+
+  function _clearOdjelRutaState() {
+    _odjelRutaMode = false;
+    _odjelRutaFrom = null;
+    if (_odjelRutaFromMark) { _map.removeLayer(_odjelRutaFromMark); _odjelRutaFromMark = null; }
+    const btn = document.getElementById('karta-odjel-ruta-btn');
+    if (btn) { btn.style.background = 'white'; btn.style.color = '#374151'; }
+    const hint = document.getElementById('mapa-ruta-hint');
+    if (hint) hint.style.display = 'none';
+  }
+
+  window.clearOdjelRuta = function() {
+    if (_routeLine2) { _map.removeLayer(_routeLine2); _routeLine2 = null; }
+    const infoDiv = document.getElementById('mapa-ruta-info');
+    if (infoDiv) infoDiv.style.display = 'none';
+    _clearOdjelRutaState();
+  };
+
+  window.toggleOdjelRutaMode = function() {
+    if (_odjelRutaMode) {
+      _clearOdjelRutaState();
+      return;
+    }
+    // Ukloni stare rute
+    if (_routeLine)  { _map.removeLayer(_routeLine);  _routeLine  = null; }
+    if (_routeLine2) { _map.removeLayer(_routeLine2); _routeLine2 = null; }
+    const infoDiv = document.getElementById('mapa-ruta-info');
+    if (infoDiv) infoDiv.style.display = 'none';
+
+    _odjelRutaMode = true;
+    _odjelRutaFrom = null;
+    const btn = document.getElementById('karta-odjel-ruta-btn');
+    if (btn) { btn.style.background = '#2563eb'; btn.style.color = 'white'; }
+    const hint = document.getElementById('mapa-ruta-hint');
+    if (hint) { hint.textContent = '📍 Kliknite na prvi odjel (polazište)'; hint.style.display = 'block'; }
   };
 
   // ---- DETALJI MODAL ----
@@ -421,6 +492,26 @@
         lyr.on('mouseout',  function() { if (_layer) _layer.resetStyle(this); });
         lyr.on('click',     function(e) {
           const center = _centroid(this) || e.latlng;
+          const label  = String(this._kartaProps.odjel || this._kartaProps.name || '?');
+
+          if (_odjelRutaMode) {
+            if (!_odjelRutaFrom) {
+              // Odabir polazišta
+              _odjelRutaFrom = { latlng: center, label };
+              _odjelRutaFromMark = L.circleMarker(center, {
+                radius:10, color:'#dc2626', fillColor:'#fca5a5', fillOpacity:0.9, weight:3
+              }).bindTooltip(`Polazište: Odjel ${label}`, { permanent:true, direction:'top', offset:[0,-8] }).addTo(_map);
+              const hint = document.getElementById('mapa-ruta-hint');
+              if (hint) hint.textContent = `🎯 Polazište: Odjel ${label} — kliknite na odredišni odjel`;
+            } else {
+              // Odabir odredišta — crtaj rutu
+              const from = _odjelRutaFrom;
+              _clearOdjelRutaState();
+              _drawOdjelRuta(from.latlng, center, from.label, label);
+            }
+            return;
+          }
+
           _openDetaljiModal(this._kartaProps, this._kartaInfo, center);
         });
       }

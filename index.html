@@ -3146,6 +3146,7 @@
                         <button onclick="document.getElementById('karta-search').value='';searchKartaOdjel();" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">✕</button>
                     </div>
                     <button id="karta-sat-btn" onclick="toggleMapaSat()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🛰️ Satelit</button>
+                    <button id="karta-odjel-ruta-btn" onclick="toggleOdjelRutaMode()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🔀 Ruta odjel→odjel</button>
                     <button onclick="resetKartaView()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">↺ Reset pogleda</button>
                     <!-- Legenda -->
                     <div style="display:flex;gap:10px;margin-left:auto;flex-wrap:wrap;">
@@ -3155,6 +3156,8 @@
                         <span style="font-size:11px;display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:14px;height:14px;background:#6366f1;border-radius:3px;"></span>Bez plana</span>
                     </div>
                 </div>
+                <!-- Hint za ruta-mode -->
+                <div id="mapa-ruta-hint" style="display:none;padding:8px 14px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;font-size:13px;color:#dc2626;font-weight:600;margin-bottom:8px;"></div>
                 <!-- Leaflet mapa -->
                 <div id="karta-odjela-map" style="width:100%;height:calc(100vh - 260px);min-height:400px;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;background:#f1f5f9;">
                     <div id="karta-loading" style="display:flex;align-items:center;justify-content:center;height:100%;color:#6b7280;font-size:14px;">⏳ Učitavam kartu...</div>
