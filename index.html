@@ -3140,6 +3140,12 @@
                             <option value="bez-plana">Bez plana</option>
                         </select>
                     </div>
+                    <div style="display:flex;align-items:center;gap:4px;">
+                        <input id="karta-search" type="text" placeholder="Broj odjela..." oninput="searchKartaOdjel()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;width:120px;" />
+                        <button onclick="searchKartaOdjel()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🔍</button>
+                        <button onclick="document.getElementById('karta-search').value='';searchKartaOdjel();" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">✕</button>
+                    </div>
+                    <button id="karta-sat-btn" onclick="toggleMapaSat()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🛰️ Satelit</button>
                     <button onclick="resetKartaView()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">↺ Reset pogleda</button>
                     <!-- Legenda -->
                     <div style="display:flex;gap:10px;margin-left:auto;flex-wrap:wrap;">
@@ -3153,6 +3159,8 @@
                 <div id="karta-odjela-map" style="width:100%;height:calc(100vh - 260px);min-height:400px;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;background:#f1f5f9;">
                     <div id="karta-loading" style="display:flex;align-items:center;justify-content:center;height:100%;color:#6b7280;font-size:14px;">⏳ Učitavam kartu...</div>
                 </div>
+                <!-- Ruta info -->
+                <div id="mapa-ruta-info" style="display:none;margin-top:10px;padding:10px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:13px;color:#1e40af;"></div>
             </div>
 
             </main><!-- /main-content -->
