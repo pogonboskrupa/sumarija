@@ -135,7 +135,9 @@
       const distKm   = (route.distance / 1000).toFixed(1);
       const durMin   = Math.round(route.duration / 60);
 
-      _routeLine = L.polyline(coords, { color:'#2563eb', weight:4, opacity:0.85, dashArray:'8 4' }).addTo(_map);
+      _routeLine = L.polyline(coords, { color:'#2563eb', weight:4, opacity:0.85, dashArray:'8 4' })
+        .bindTooltip(`${distKm} km · ~${durMin} min`, { permanent:true, direction:'center', className:'karta-tooltip' })
+        .addTo(_map);
 
       const infoDiv = document.getElementById('mapa-ruta-info');
       if (infoDiv) {
@@ -180,13 +182,21 @@
 
     const routeBtn = `<button onclick="routeToOdjel()" style="display:flex;align-items:center;gap:6px;background:#2563eb;color:white;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;width:100%;justify-content:center;margin-top:12px;">🛣️ Ruta od Šumarije</button>`;
 
+    const odjelNormKey = _normKey((props.gj||'') + ' ' + (props.odjel||props.name||''));
+    const isSlucajni   = !info && _slucajniSet.has(_normKey(props.odjel||props.name||''));
+
     let body;
     if (!info) {
-      // Slučajni užitak — ima primki ali nije u planu
+      const label = isSlucajni ? 'Slučajni užitak' : 'Bez plana';
+      const bg    = isSlucajni ? '#f5f3ff' : '#f3f4f6';
+      const col   = isSlucajni ? '#7c3aed' : '#6b7280';
+      const note  = isSlucajni
+        ? `${gj} — ima podatke sječe, nije u godišnjem planu 2026`
+        : `${gj} — nema podataka za ovaj odjel`;
       body = `
         <div style="text-align:center;padding:20px 0 0;">
-          <span style="background:#f5f3ff;color:#7c3aed;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700;">Slučajni užitak</span>
-          <div style="font-size:13px;color:#6b7280;margin-top:8px;">${gj} — nije u godišnjem planu 2026</div>
+          <span style="background:${bg};color:${col};padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700;">${label}</span>
+          <div style="font-size:13px;color:#6b7280;margin-top:8px;">${note}</div>
         </div>
         ${routeBtn}`;
     } else {
@@ -201,7 +211,6 @@
       const e       = _planEntries().find(x => _normKey(x.gj+' '+x.odjel) === _normKey(info.gj+' '+info.odjel)) || {};
 
       const sortRow = (label, sv, ov, pv, col) => {
-        if (!sv && !pv) return '';
         const z = sv - (ov||0);
         const zC = z<0?'#dc2626':z===0?'#6b7280':'#059669';
         return `<tr>
