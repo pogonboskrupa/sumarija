@@ -3112,7 +3112,7 @@
             <div id="karta-odjela-content" class="container hidden">
                 <div class="page-header">
                     <div class="page-header-left">
-                        <h1>🗺️ Karta odjela 2026</h1>
+                        <h1>🗺️ Mapa odjela 2026</h1>
                         <p>Prostorni prikaz odjela po statusu realizacije plana sječe</p>
                     </div>
                     <div class="page-header-right">
@@ -3236,6 +3236,25 @@
     </div>
 
 
+
+    <!-- Mapa — Detalji odjela Modal -->
+    <div id="mapa-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:16px;">
+        <div style="background:white;border-radius:14px;width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#14532d 0%,#166534 100%);color:white;padding:16px 20px;display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;">
+                <div>
+                    <div id="mapa-modal-title" style="font-size:18px;font-weight:800;"></div>
+                    <div id="mapa-modal-gj" style="font-size:12px;opacity:.85;margin-top:2px;"></div>
+                </div>
+                <button onclick="closeMapaModal()" style="background:rgba(255,255,255,.2);border:none;color:white;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+            </div>
+            <div id="mapa-modal-body" style="padding:20px;overflow-y:auto;flex:1;"></div>
+        </div>
+    </div>
+
+    <style>
+    .karta-tooltip { background:white; border:1px solid #d1d5db; border-radius:4px; padding:2px 6px; font-size:11px; font-weight:700; color:#1e293b; box-shadow:0 2px 6px rgba(0,0,0,.15); }
+    .karta-tooltip::before { display:none; }
+    </style>
 
     <!-- GP Odjel Detail Modal -->
     <div id="gp-odjel-modal" class="modal-overlay" style="display:none;align-items:flex-start;justify-content:center;padding:24px;">
