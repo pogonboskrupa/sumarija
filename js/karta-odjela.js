@@ -610,6 +610,12 @@
       const ld = document.getElementById('karta-loading');
       if (ld) ld.style.display = 'none';
 
+      // Backdrop click zatvara modal
+      const modal = document.getElementById('mapa-modal');
+      if (modal) modal.addEventListener('click', function(e) {
+        if (e.target === modal) closeMapaModal();
+      });
+
       _map = L.map('karta-odjela-map', { center:SUMARIJA_LATLNG, zoom:11, zoomControl:true, maxBoundsViscosity:0.9 });
 
       _osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
