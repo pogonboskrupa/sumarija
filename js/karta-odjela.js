@@ -105,6 +105,13 @@
       primkeOstale.filter(p => _normKey(p.odjel) === odjelKey).forEach(p => _addSort(sjecaOst, p.sortiment, p.kolicina));
       otremeOstale.filter(p => _normKey(p.odjel) === odjelKey).forEach(p => _addSort(otprOst, p.sortiment, p.kolicina));
 
+      // Radilište, izvođač, poslovođa — iz tekućih primki za ovaj odjel
+      const odjelPrimke = primkeTekuce.filter(p => _normKey(p.odjel) === odjelKey);
+      const uniq = (arr, fn) => [...new Set(arr.map(fn).filter(Boolean))].join(', ') || '—';
+      const radiliste  = uniq(odjelPrimke, p => p.radiliste);
+      const izvodjac   = uniq(odjelPrimke, p => p.izvodjac);
+      const poslovodja = uniq(odjelPrimke, p => p.poslovodja);
+
       sjeca.ukupno    = _sumSort(sjeca);
       otpr.ukupno     = _sumSort(otpr);
       sjecaOst.ukupno = _sumSort(sjecaOst);
@@ -112,7 +119,7 @@
 
       const pct    = entry.neto > 0 ? sjeca.ukupno / entry.neto * 100 : 0;
       const status = pct >= 95 ? 'posjeceno' : pct > 5 ? 'u-sjeci' : 'planirano';
-      map.set(key, { gj:entry.gj, odjel:entry.odjel, status, pct, sjeca, otpr, sjecaOst, otprOst, neto:entry.neto, bruto:entry.bruto });
+      map.set(key, { gj:entry.gj, odjel:entry.odjel, status, pct, sjeca, otpr, sjecaOst, otprOst, neto:entry.neto, bruto:entry.bruto, radiliste, izvodjac, poslovodja });
     });
 
     return map;
@@ -285,6 +292,20 @@
     document.getElementById('mapa-modal-title').textContent = 'Odjel ' + odjel;
     document.getElementById('mapa-modal-gj').textContent = gj;
     document.getElementById('mapa-modal-gj').style.color = gjColor;
+
+    const metaDiv = document.getElementById('mapa-modal-meta');
+    if (metaDiv && info) {
+      const metaItem = (icon, label, val) => val && val !== '—'
+        ? `<div style="display:flex;align-items:center;gap:4px;font-size:11px;opacity:.9;"><span>${icon}</span><span><b>${label}:</b> ${val}</span></div>`
+        : '';
+      metaDiv.innerHTML =
+        metaItem('📍', 'Radilište', info.radiliste) +
+        metaItem('👷', 'Izvođač',   info.izvodjac)  +
+        metaItem('👤', 'Poslovođa', info.poslovodja);
+      metaDiv.style.display = metaDiv.innerHTML ? 'flex' : 'none';
+    } else if (metaDiv) {
+      metaDiv.innerHTML = ''; metaDiv.style.display = 'none';
+    }
 
     const statusLabel = { posjeceno:'Posječeno','u-sjeci':'U sječi',planirano:'Planirano',slucajni:'Slučajni užitak' };
     const statusColor = { posjeceno:'#166534','u-sjeci':'#92400e',planirano:'#6b7280',slucajni:'#7c3aed' };
