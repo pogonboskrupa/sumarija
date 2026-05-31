@@ -77,7 +77,6 @@
   function _buildStatusMap(primke, otpreme) {
     const planEntries    = _planEntries();
     const planKeys       = new Set(planEntries.map(e => _normKey(e.gj+' '+e.odjel)));
-    const planOdjelKeys  = new Set(planEntries.map(e => _normKey(e.odjel)));
     const map            = new Map();
     _slucajniSet         = new Set();
 
@@ -86,27 +85,26 @@
     const otpremeTekuce = (otpreme||[]).filter(p => _getYear(p) === PLAN_YEAR);
     const otremeOstale  = (otpreme||[]).filter(p => _getYear(p) !== PLAN_YEAR);
 
-    // Slučajni užici — primke (tekuće godine) čiji odjel nije ni u jednom planu
+    // Slučajni užici — primke čiji odjel nije ni u jednom planu (p.odjel sadrži GJ prefix)
     primkeTekuce.forEach(p => {
       const k = _normKey(p.odjel);
-      if (!planOdjelKeys.has(k)) _slucajniSet.add(k);
+      if (!planKeys.has(k)) _slucajniSet.add(k);
     });
 
     planEntries.forEach(entry => {
-      const key  = _normKey(entry.gj+' '+entry.odjel);
-      const odjelKey = _normKey(entry.odjel);
+      const key  = _normKey(entry.gj+' '+entry.odjel);  // matches normKey(p.odjel)
       const sjeca = _emptySort();
       const otpr  = _emptySort();
       const sjecaOst = _emptySort();
       const otprOst  = _emptySort();
 
-      primkeTekuce.filter(p => _normKey(p.odjel) === odjelKey).forEach(p => _addSort(sjeca, p.sortiment, p.kolicina));
-      otpremeTekuce.filter(p => _normKey(p.odjel) === odjelKey).forEach(p => _addSort(otpr, p.sortiment, p.kolicina));
-      primkeOstale.filter(p => _normKey(p.odjel) === odjelKey).forEach(p => _addSort(sjecaOst, p.sortiment, p.kolicina));
-      otremeOstale.filter(p => _normKey(p.odjel) === odjelKey).forEach(p => _addSort(otprOst, p.sortiment, p.kolicina));
+      primkeTekuce.filter(p => _normKey(p.odjel) === key).forEach(p => _addSort(sjeca, p.sortiment, p.kolicina));
+      otpremeTekuce.filter(p => _normKey(p.odjel) === key).forEach(p => _addSort(otpr, p.sortiment, p.kolicina));
+      primkeOstale.filter(p => _normKey(p.odjel) === key).forEach(p => _addSort(sjecaOst, p.sortiment, p.kolicina));
+      otremeOstale.filter(p => _normKey(p.odjel) === key).forEach(p => _addSort(otprOst, p.sortiment, p.kolicina));
 
       // Radilište, izvođač, poslovođa — iz tekućih primki za ovaj odjel
-      const odjelPrimke = primkeTekuce.filter(p => _normKey(p.odjel) === odjelKey);
+      const odjelPrimke = primkeTekuce.filter(p => _normKey(p.odjel) === key);
       const uniq = (arr, fn) => [...new Set(arr.map(fn).filter(Boolean))].join(', ') || '—';
       const radiliste  = uniq(odjelPrimke, p => p.radiliste);
       const izvodjac   = uniq(odjelPrimke, p => p.izvodjac);
