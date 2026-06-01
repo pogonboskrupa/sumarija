@@ -649,17 +649,9 @@
       _labelMarkers.push(tip);
     });
 
-    // Postavi maxBounds iz GeoJSON extenta
+    // Sačuvaj bounds za Reset dugme, ali ne fituj automatski
     try {
       _mapBounds = _layer.getBounds();
-      if (_mapBounds.isValid()) {
-        _map.fitBounds(_mapBounds, { padding:[20,20] });
-        const sw  = _mapBounds.getSouthWest(), ne = _mapBounds.getNorthEast();
-        const lp  = (_mapBounds.getNorth()-_mapBounds.getSouth())*0.3;
-        const lgp = (_mapBounds.getEast()-_mapBounds.getWest())*0.3;
-        _map.setMaxBounds([[sw.lat-lp,sw.lng-lgp],[ne.lat+lp,ne.lng+lgp]]);
-        _map.options.minZoom = 9;
-      }
     } catch(e) {}
 
     // Marker šumarije
@@ -722,7 +714,7 @@
         if (e.target === modal) closeMapaModal();
       });
 
-      _map = L.map('karta-odjela-map', { center:SUMARIJA_LATLNG, zoom:11, zoomControl:true, maxBoundsViscosity:0.9 });
+      _map = L.map('karta-odjela-map', { center:SUMARIJA_LATLNG, zoom:12, zoomControl:true });
 
       _osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
