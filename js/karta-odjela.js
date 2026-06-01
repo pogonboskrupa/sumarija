@@ -18,8 +18,9 @@
   let _isSat        = false;
   let _layer        = null;
   let _geojson      = null;
-  let _statusMap    = new Map();
-  let _slucajniSet  = new Set(); // normKeys primki koje nisu u planu
+  let _statusMap       = new Map();
+  let _slucajniSet     = new Set(); // normKeys s "SLUCAJNI" u nazivu
+  let _prelazniSetGlobal = new Set(); // normKeys bez plana, bez "SLUCAJNI" — prelazni
   let _allFeatures  = [];
   let _mapBounds    = null;
   let _routeLine    = null;
@@ -38,6 +39,7 @@
       case 'u-sjeci':    return '#d97706';
       case 'planirano':  return '#9ca3af';
       case 'slucajni':   return '#7c3aed';
+      case 'prelazni':   return '#0891b2'; // teal — bio u prošlogodišnjem planu
       default:           return '#6366f1';
     }
   }
@@ -90,11 +92,20 @@
     const otpremeTekuce = (otpreme||[]).filter(p => _getYear(p) === PLAN_YEAR);
     const otremeOstale  = (otpreme||[]).filter(p => _getYear(p) !== PLAN_YEAR);
 
-    // Slučajni užici — primke čiji odjel nije ni u jednom planu (p.odjel sadrži GJ prefix)
+    _slucajniSet  = new Set(); // ima "SLUCAJNI" u nazivu odjela
+    let _prelazniSet = new Set(); // nije u planu 2026, ali nema "SLUCAJNI" — prelazni iz prethodne godine
+
     primkeTekuce.forEach(p => {
       const k = _normKey(p.odjel);
-      if (!planKeys.has(k)) _slucajniSet.add(k);
+      if (!planKeys.has(k)) {
+        if (k.includes('SLUCAJNI') || k.includes('SLUCAJAN')) {
+          _slucajniSet.add(k);
+        } else {
+          _prelazniSet.add(k);
+        }
+      }
     });
+    _prelazniSetGlobal = _prelazniSet;
 
     planEntries.forEach(entry => {
       const key  = _normKey(entry.gj+' '+entry.odjel);  // matches normKey(p.odjel)
@@ -310,9 +321,9 @@
       metaDiv.innerHTML = ''; metaDiv.style.display = 'none';
     }
 
-    const statusLabel = { posjeceno:'Posječeno','u-sjeci':'U sječi',planirano:'Planirano',slucajni:'Slučajni užitak' };
-    const statusColor = { posjeceno:'#166534','u-sjeci':'#92400e',planirano:'#6b7280',slucajni:'#7c3aed' };
-    const statusBg    = { posjeceno:'#dcfce7','u-sjeci':'#fef3c7',planirano:'#f3f4f6',slucajni:'#f5f3ff' };
+    const statusLabel = { posjeceno:'Posječeno','u-sjeci':'U sječi',planirano:'Planirano',slucajni:'Slučajni užitak',prelazni:'Nekategorisan odjel' };
+    const statusColor = { posjeceno:'#166534','u-sjeci':'#92400e',planirano:'#6b7280',slucajni:'#7c3aed',prelazni:'#0e7490' };
+    const statusBg    = { posjeceno:'#dcfce7','u-sjeci':'#fef3c7',planirano:'#f3f4f6',slucajni:'#f5f3ff',prelazni:'#ecfeff' };
 
     const routeBtn = `
       <div style="display:flex;gap:8px;margin-top:12px;">
@@ -320,16 +331,19 @@
         <button onclick="routeOdjelToOdjel()" style="flex:1;display:flex;align-items:center;gap:6px;background:#dc2626;color:white;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;justify-content:center;">🔀 Ruta do odjela…</button>
       </div>`;
 
-    const odjelNormKey = _normKey((props.gj||'') + ' ' + (props.odjel||props.name||''));
-    const isSlucajni   = !info && _slucajniSet.has(_normKey(props.odjel||props.name||''));
+    const normKey2    = _normKey((props.gj||'') + ' ' + (props.odjel||props.name||''));
+    const isSlucajni  = !info && _slucajniSet.has(normKey2);
+    const isPrelazni  = !info && !isSlucajni && _prelazniSetGlobal.has(normKey2);
 
     let body;
     if (!info) {
-      const label = isSlucajni ? 'Slučajni užitak' : 'Bez plana';
-      const bg    = isSlucajni ? '#f5f3ff' : '#f3f4f6';
-      const col   = isSlucajni ? '#7c3aed' : '#6b7280';
+      const label = isSlucajni ? 'Slučajni užitak' : isPrelazni ? 'Nekategorisan odjel' : 'Bez plana';
+      const bg    = isSlucajni ? '#f5f3ff' : isPrelazni ? '#ecfeff' : '#f3f4f6';
+      const col   = isSlucajni ? '#7c3aed' : isPrelazni ? '#0e7490' : '#6b7280';
       const note  = isSlucajni
-        ? `${gj} — ima podatke sječe, nije u godišnjem planu 2026`
+        ? `${gj} — sječa evidentirana kao slučajni užitak`
+        : isPrelazni
+        ? `${gj} — nije u planu 2026, vjerovatno prelazni odjel iz prethodne godine`
         : `${gj} — nema podataka za ovaj odjel`;
       body = `
         <div style="text-align:center;padding:20px 0 0;">
@@ -556,18 +570,20 @@
       style: feature => {
         const p      = feature.properties || {};
         const key    = _normKey((p.gj||'') + ' ' + (p.odjel||p.name||''));
-        const info   = statusMap.get(key);
-        const isSluc = !info && (_slucajniSet.has(key) || _slucajniSet.has(_normKey(p.odjel||p.name||'')));
-        return _getStyle(info ? info.status : isSluc ? 'slucajni' : 'bez-plana');
+        const info      = statusMap.get(key);
+        const isSluc    = !info && _slucajniSet.has(key);
+        const isPrelazni= !info && !isSluc && _prelazniSetGlobal.has(key);
+        return _getStyle(info ? info.status : isSluc ? 'slucajni' : isPrelazni ? 'prelazni' : 'bez-plana');
       },
       onEachFeature: (feature, lyr) => {
         const props  = feature.properties || {};
         const odjel  = String(props.odjel || props.name || '').trim();
         const gj     = String(props.gj    || '').trim();
         const key    = _normKey(gj + ' ' + odjel);
-        const info   = statusMap.get(key);
-        const isSluc = !info && (_slucajniSet.has(key) || _slucajniSet.has(_normKey(odjel)));
-        const status = info ? info.status : isSluc ? 'slucajni' : 'bez-plana';
+        const info      = statusMap.get(key);
+        const isSluc    = !info && _slucajniSet.has(key);
+        const isPrelazni= !info && !isSluc && _prelazniSetGlobal.has(key);
+        const status    = info ? info.status : isSluc ? 'slucajni' : isPrelazni ? 'prelazni' : 'bez-plana';
 
         lyr._kartaStatus = status;
         lyr._kartaGj     = gj;
@@ -575,8 +591,8 @@
         lyr._kartaProps  = props;
         _allFeatures.push(lyr);
 
-        // Hover tooltip samo za odjele bez labela (bez-plana)
-        if (status === 'bez-plana') {
+        // Hover tooltip za odjele bez permanentnog labela
+        if (status === 'bez-plana' || status === 'prelazni') {
           lyr.bindTooltip(odjel || '?', { permanent:false, direction:'center', className:'karta-tooltip' });
         }
         lyr.on('mouseover', function() { this.setStyle(_getHoverStyle(this._kartaStatus)); });
@@ -619,7 +635,7 @@
       const gj     = String(p.gj || '').trim();
       const key    = _normKey(gj + ' ' + odjel);
       const status = lyr._kartaStatus;
-      const showLabel = status !== 'bez-plana';
+      const showLabel = status !== 'bez-plana' && status !== 'prelazni';
       if (!showLabel) return;
 
       if (!odjelGroups.has(key)) {
