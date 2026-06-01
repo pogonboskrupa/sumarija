@@ -630,16 +630,18 @@
     });
 
     odjelGroups.forEach(grp => {
-      // Centar iz ujedinjenih bounding boxova svih poligona grupe
-      let bounds = null;
+      // Centar najvećeg odsjeka u grupi (najveći bounding box po površini)
+      let bestLyr = null, bestArea = -1;
       grp.lyrs.forEach(lyr => {
         try {
           const b = lyr.getBounds();
-          bounds = bounds ? bounds.extend(b) : b;
+          const area = (b.getNorth()-b.getSouth()) * (b.getEast()-b.getWest());
+          if (area > bestArea) { bestArea = area; bestLyr = lyr; }
         } catch(_) {}
       });
-      if (!bounds || !bounds.isValid()) return;
-      const center = bounds.getCenter();
+      if (!bestLyr) return;
+      let center;
+      try { center = bestLyr.getBounds().getCenter(); } catch(_) { return; }
 
       const cls = grp.isSluc ? 'karta-tooltip karta-tooltip-slucajni' : 'karta-tooltip';
       const tip = L.tooltip({ permanent:true, direction:'center', className:cls, interactive:false, opacity:1 })
