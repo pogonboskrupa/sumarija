@@ -534,9 +534,13 @@
     if (_mapBounds && _mapBounds.isValid()) _map.fitBounds(_mapBounds, { padding:[20,20] });
   };
 
+  let _labelMarkers = []; // permanentni labeli po odjelu
+
   // ---- RENDEROVANJE ----
   function _renderLayer(geojson, statusMap) {
     if (_layer) { _map.removeLayer(_layer); _layer = null; }
+    _labelMarkers.forEach(m => _map.removeLayer(m));
+    _labelMarkers = [];
     _allFeatures = [];
 
     if (!geojson || !geojson.features || !geojson.features.length) {
@@ -571,13 +575,8 @@
         lyr._kartaProps  = props;
         _allFeatures.push(lyr);
 
-        const showLabel = info || isSluc; // plan odjeli i slučajni užici dobijaju label
-        const labelClass = isSluc ? 'karta-tooltip karta-tooltip-slucajni' : 'karta-tooltip';
-        lyr.bindTooltip(odjel || '?', {
-          permanent: showLabel,
-          direction: 'center',
-          className: labelClass,
-        });
+        // Hover tooltip (kratko prikazivanje na mouse over)
+        lyr.bindTooltip(odjel || '?', { permanent:false, direction:'center', className:'karta-tooltip' });
         lyr.on('mouseover', function() { this.setStyle(_getHoverStyle(this._kartaStatus)); });
         lyr.on('mouseout',  function() { if (_layer) _layer.resetStyle(this); });
         lyr.on('click',     function(e) {
@@ -608,6 +607,53 @@
     });
 
     _layer.addTo(_map);
+
+    // ---- JEDAN LABEL PO ODJELU ----
+    // Grupisati poligone po odjelu, naći zajednički centar, dodati jedan label
+    const odjelGroups = new Map(); // normKey(gj+odjel) → { lyrs, odjel, isSluc, odsjeci }
+    _allFeatures.forEach(lyr => {
+      const p      = lyr._kartaProps || {};
+      const odjel  = String(p.odjel || p.name || '').trim();
+      const gj     = String(p.gj || '').trim();
+      const key    = _normKey(gj + ' ' + odjel);
+      const status = lyr._kartaStatus;
+      const showLabel = status !== 'bez-plana';
+      if (!showLabel) return;
+
+      if (!odjelGroups.has(key)) {
+        odjelGroups.set(key, { lyrs:[], odjel, isSluc: status === 'slucajni', odsjeci: new Set() });
+      }
+      const grp = odjelGroups.get(key);
+      grp.lyrs.push(lyr);
+      if (p.odsjek) grp.odsjeci.add(String(p.odsjek).trim());
+    });
+
+    odjelGroups.forEach(grp => {
+      // Centar iz ujedinjenih bounding boxova svih poligona grupe
+      let bounds = null;
+      grp.lyrs.forEach(lyr => {
+        try {
+          const b = lyr.getBounds();
+          bounds = bounds ? bounds.extend(b) : b;
+        } catch(_) {}
+      });
+      if (!bounds || !bounds.isValid()) return;
+      const center = bounds.getCenter();
+
+      const odsjeci = [...grp.odsjeci].filter(Boolean).sort();
+      const odsjecStr = odsjeci.length > 1
+        ? `<div style="font-size:10px;opacity:.75;margin-top:1px;">(${odsjeci.join(', ')})</div>`
+        : '';
+      const html = `<div style="text-align:center;line-height:1.2;">${grp.odjel}${odsjecStr}</div>`;
+
+      const cls = grp.isSluc ? 'karta-tooltip karta-tooltip-slucajni' : 'karta-tooltip';
+      const marker = L.marker(center, {
+        icon: L.divIcon({ html, className: cls, iconSize: null, iconAnchor: null }),
+        interactive: false,
+        zIndexOffset: 500,
+      }).addTo(_map);
+      _labelMarkers.push(marker);
+    });
 
     // Postavi maxBounds iz GeoJSON extenta
     try {
