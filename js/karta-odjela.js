@@ -136,6 +136,35 @@
       map.set(key, { gj:entry.gj, odjel:entry.odjel, status, pct, sjeca, otpr, sjecaOst, otprOst, neto:entry.neto, bruto:entry.bruto, radiliste, izvodjac, poslovodja });
     });
 
+    // Extra map za non-plan odjele (slučajni + prelazni)
+    const extraMap = new Map();
+    const nonPlanPrimke = [...primkeTekuce, ...primkeOstale].filter(p => !planKeys.has(_normKey(p.odjel)));
+    const nonPlanOtpr   = [...otpremeTekuce, ...otremeOstale].filter(p => !planKeys.has(_normKey(p.odjel)));
+    const nonPlanKeys   = new Set([
+      ...nonPlanPrimke.map(p => _normKey(p.odjel)),
+      ...nonPlanOtpr.map(p => _normKey(p.odjel))
+    ]);
+    nonPlanKeys.forEach(k => {
+      const sj  = _emptySort();
+      const ot  = _emptySort();
+      const sjO = _emptySort();
+      const otO = _emptySort();
+      primkeTekuce.filter(p => _normKey(p.odjel) === k).forEach(p => _addSort(sj, p.sortiment, p.kolicina));
+      otpremeTekuce.filter(p => _normKey(p.odjel) === k).forEach(p => _addSort(ot, p.sortiment, p.kolicina));
+      primkeOstale.filter(p => _normKey(p.odjel) === k).forEach(p => _addSort(sjO, p.sortiment, p.kolicina));
+      otremeOstale.filter(p => _normKey(p.odjel) === k).forEach(p => _addSort(otO, p.sortiment, p.kolicina));
+      sj.ukupno  = _sumSort(sj);
+      ot.ukupno  = _sumSort(ot);
+      sjO.ukupno = _sumSort(sjO);
+      otO.ukupno = _sumSort(otO);
+      const srcPrimke = primkeTekuce.filter(p => _normKey(p.odjel) === k);
+      const uniq = (arr, fn) => [...new Set(arr.map(fn).filter(Boolean))].join(', ') || '—';
+      extraMap.set(k, { sjeca:sj, otpr:ot, sjecaOst:sjO, otprOst:otO,
+        radiliste: uniq(srcPrimke, p => p.radiliste),
+        izvodjac:  uniq(srcPrimke, p => p.izvodjac),
+        poslovodja:uniq(srcPrimke, p => p.poslovodja) });
+    });
+    map._extra = extraMap;
     return map;
   }
 
@@ -295,7 +324,7 @@
   };
 
   // ---- DETALJI MODAL ----
-  function _openDetaljiModal(props, info, latlng) {
+  function _openDetaljiModal(props, info, latlng, extra) {
     _currentLatlng     = latlng;
     _currentOdjelLabel = String(props.odjel || props.name || '?');
     const odjel  = _currentOdjelLabel;
@@ -308,17 +337,17 @@
     document.getElementById('mapa-modal-gj').style.color = gjColor;
 
     const metaDiv = document.getElementById('mapa-modal-meta');
-    if (metaDiv && info) {
+    if (metaDiv) {
+      const src = info || extra;
       const metaItem = (icon, label, val) => val && val !== '—'
         ? `<div style="display:flex;align-items:center;gap:4px;font-size:11px;opacity:.9;"><span>${icon}</span><span><b>${label}:</b> ${val}</span></div>`
         : '';
-      metaDiv.innerHTML =
-        metaItem('📍', 'Radilište', info.radiliste) +
-        metaItem('👷', 'Izvođač',   info.izvodjac)  +
-        metaItem('👤', 'Poslovođa', info.poslovodja);
+      metaDiv.innerHTML = src
+        ? metaItem('📍', 'Radilište', src.radiliste) +
+          metaItem('👷', 'Izvođač',   src.izvodjac)  +
+          metaItem('👤', 'Poslovođa', src.poslovodja)
+        : '';
       metaDiv.style.display = metaDiv.innerHTML ? 'flex' : 'none';
-    } else if (metaDiv) {
-      metaDiv.innerHTML = ''; metaDiv.style.display = 'none';
     }
 
     const statusLabel = { posjeceno:'Posječeno','u-sjeci':'U sječi',planirano:'Planirano',slucajni:'Slučajni užitak',prelazni:'Nekategorisan odjel' };
@@ -345,11 +374,70 @@
         : isPrelazni
         ? `${gj} — nije u planu 2026, vjerovatno prelazni odjel iz prethodne godine`
         : `${gj} — nema podataka za ovaj odjel`;
+
+      let extraTable = '';
+      if (extra) {
+        const sj  = extra.sjeca    || _emptySort();
+        const ot  = extra.otpr     || _emptySort();
+        const sjO = extra.sjecaOst || _emptySort();
+        const otO = extra.otprOst  || _emptySort();
+        const prevYear = PLAN_YEAR - 1;
+        const hasTek = sj.ukupno > 0 || ot.ukupno > 0;
+        const hasOst = sjO.ukupno > 0 || otO.ukupno > 0;
+        if (hasTek || hasOst) {
+          const td  = (v) => `<td style="padding:5px 8px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;">${_fmt(v)}</td>`;
+          const tdL = (v) => `<td style="padding:5px 8px;font-size:12px;border-bottom:1px solid #f1f5f9;color:#374151;">${v}</td>`;
+          const row = (lbl, sv, ov, svO, ovO, bold) => {
+            const bS = bold?'font-weight:700;':'';
+            return `<tr>
+              <td style="padding:5px 8px;font-size:12px;border-bottom:1px solid #f1f5f9;${bS}">${lbl}</td>
+              <td style="padding:5px 8px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:#15803d;${bS}">${_fmt(sv)}</td>
+              <td style="padding:5px 8px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:#92400e;${bS}">${_fmt(ov)}</td>
+              <td style="padding:5px 8px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:#15803d;opacity:.7;${bS}">${_fmt(svO)}</td>
+              <td style="padding:5px 8px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:#92400e;opacity:.7;${bS}">${_fmt(ovO)}</td>
+            </tr>`;
+          };
+          const sjCijC = sj.celDuga+sj.celCijepana+sj.skart;
+          const sjCijL = sj.ogrDugi+sj.ogrCijepani+sj.gule;
+          const otCijC = ot.celDuga+ot.celCijepana+ot.skart;
+          const otCijL = ot.ogrDugi+ot.ogrCijepani+ot.gule;
+          const sjOCijC = sjO.celDuga+sjO.celCijepana+sjO.skart;
+          const sjOCijL = sjO.ogrDugi+sjO.ogrCijepani+sjO.gule;
+          const otOCijC = otO.celDuga+otO.celCijepana+otO.skart;
+          const otOCijL = otO.ogrDugi+otO.ogrCijepani+otO.gule;
+          extraTable = `
+            <div style="margin-top:14px;">
+              <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Evidencija sječe</div>
+              <div style="overflow-x:auto;">
+              <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                  <tr style="background:#f1f5f9;">
+                    <th style="padding:5px 8px;font-size:11px;text-align:left;color:#6b7280;">Sortiment</th>
+                    <th style="padding:5px 8px;font-size:11px;text-align:right;color:#15803d;">Sječa ${PLAN_YEAR}</th>
+                    <th style="padding:5px 8px;font-size:11px;text-align:right;color:#92400e;">Otpr. ${PLAN_YEAR}</th>
+                    <th style="padding:5px 8px;font-size:11px;text-align:right;color:#6b7280;">Sječa ${prevYear}</th>
+                    <th style="padding:5px 8px;font-size:11px;text-align:right;color:#6b7280;">Otpr. ${prevYear}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${row('TRUPCI Č',   sj.cTrupci, ot.cTrupci, sjO.cTrupci, otO.cTrupci, false)}
+                  ${row('CIJEPANO Č', sjCijC, otCijC, sjOCijC, otOCijC, false)}
+                  ${row('TRUPCI L',   sj.lTrupci, ot.lTrupci, sjO.lTrupci, otO.lTrupci, false)}
+                  ${row('CIJEPANO L', sjCijL, otCijL, sjOCijL, otOCijL, false)}
+                  ${row('UKUPNO',     sj.ukupno, ot.ukupno, sjO.ukupno, otO.ukupno, true)}
+                </tbody>
+              </table>
+              </div>
+            </div>`;
+        }
+      }
+
       body = `
         <div style="text-align:center;padding:20px 0 0;">
           <span style="background:${bg};color:${col};padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700;">${label}</span>
           <div style="font-size:13px;color:#6b7280;margin-top:8px;">${note}</div>
         </div>
+        ${extraTable}
         ${routeBtn}`;
     } else {
       const s       = info.status;
@@ -589,6 +677,7 @@
         lyr._kartaGj     = gj;
         lyr._kartaInfo   = info;
         lyr._kartaProps  = props;
+        lyr._kartaExtra  = !info ? (statusMap._extra && statusMap._extra.get(key)) || null : null;
         _allFeatures.push(lyr);
 
         // Hover tooltip za odjele bez permanentnog labela
@@ -619,7 +708,7 @@
             return;
           }
 
-          _openDetaljiModal(this._kartaProps, this._kartaInfo, center);
+          _openDetaljiModal(this._kartaProps, this._kartaInfo, center, this._kartaExtra);
         });
       }
     });
