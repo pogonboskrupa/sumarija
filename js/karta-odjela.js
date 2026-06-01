@@ -43,11 +43,16 @@
   }
   function _getStyle(status) {
     const c = _getColor(status);
-    return { fillColor:c, fillOpacity:0.55, color:c, weight:2, opacity:0.85 };
+    const dashed = (status === 'bez-plana');
+    return {
+      fillColor: c, fillOpacity: 0.55,
+      color: '#1a1a1a', weight: 4, opacity: 0.85,
+      dashArray: dashed ? '6 4' : null,
+    };
   }
   function _getHoverStyle(status) {
     const c = _getColor(status);
-    return { fillColor:c, fillOpacity:0.8, color:'#1e293b', weight:3, opacity:1 };
+    return { fillColor:c, fillOpacity:0.8, color:'#000', weight:5, opacity:1 };
   }
 
   // ---- NORMALIZACIJA ----
@@ -566,7 +571,13 @@
         lyr._kartaProps  = props;
         _allFeatures.push(lyr);
 
-        lyr.bindTooltip(odjel || '?', { permanent:false, direction:'center', className:'karta-tooltip' });
+        const showLabel = info || isSluc; // plan odjeli i slučajni užici dobijaju label
+        const labelClass = isSluc ? 'karta-tooltip karta-tooltip-slucajni' : 'karta-tooltip';
+        lyr.bindTooltip(odjel || '?', {
+          permanent: showLabel,
+          direction: 'center',
+          className: labelClass,
+        });
         lyr.on('mouseover', function() { this.setStyle(_getHoverStyle(this._kartaStatus)); });
         lyr.on('mouseout',  function() { if (_layer) _layer.resetStyle(this); });
         lyr.on('click',     function(e) {
