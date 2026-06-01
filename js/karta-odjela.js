@@ -137,29 +137,33 @@
     });
 
     // Extra map za non-plan odjele (slučajni + prelazni)
+    // Key = _normKey(p.odjel) s uklonjenim SLUCAJNI sufiksom, da matchuje GeoJSON polygon key
     const extraMap = new Map();
+    const _baseKey = k => k.replace(/\s+SLUCAJNI\b.*/,'').replace(/\s+SLUCAJAN\b.*/,'').trim();
     const nonPlanPrimke = [...primkeTekuce, ...primkeOstale].filter(p => !planKeys.has(_normKey(p.odjel)));
     const nonPlanOtpr   = [...otpremeTekuce, ...otremeOstale].filter(p => !planKeys.has(_normKey(p.odjel)));
     const nonPlanKeys   = new Set([
-      ...nonPlanPrimke.map(p => _normKey(p.odjel)),
-      ...nonPlanOtpr.map(p => _normKey(p.odjel))
+      ...nonPlanPrimke.map(p => _baseKey(_normKey(p.odjel))),
+      ...nonPlanOtpr.map(p => _baseKey(_normKey(p.odjel)))
     ]);
-    nonPlanKeys.forEach(k => {
+    nonPlanKeys.forEach(bk => {
       const sj  = _emptySort();
       const ot  = _emptySort();
       const sjO = _emptySort();
       const otO = _emptySort();
-      primkeTekuce.filter(p => _normKey(p.odjel) === k).forEach(p => _addSort(sj, p.sortiment, p.kolicina));
-      otpremeTekuce.filter(p => _normKey(p.odjel) === k).forEach(p => _addSort(ot, p.sortiment, p.kolicina));
-      primkeOstale.filter(p => _normKey(p.odjel) === k).forEach(p => _addSort(sjO, p.sortiment, p.kolicina));
-      otremeOstale.filter(p => _normKey(p.odjel) === k).forEach(p => _addSort(otO, p.sortiment, p.kolicina));
+      // Match primke čiji base key odgovara (pokriva i "104 SLUCAJNI" i "104")
+      const matchP = p => _baseKey(_normKey(p.odjel)) === bk;
+      primkeTekuce.filter(matchP).forEach(p => _addSort(sj, p.sortiment, p.kolicina));
+      otpremeTekuce.filter(matchP).forEach(p => _addSort(ot, p.sortiment, p.kolicina));
+      primkeOstale.filter(matchP).forEach(p => _addSort(sjO, p.sortiment, p.kolicina));
+      otremeOstale.filter(matchP).forEach(p => _addSort(otO, p.sortiment, p.kolicina));
       sj.ukupno  = _sumSort(sj);
       ot.ukupno  = _sumSort(ot);
       sjO.ukupno = _sumSort(sjO);
       otO.ukupno = _sumSort(otO);
-      const srcPrimke = primkeTekuce.filter(p => _normKey(p.odjel) === k);
+      const srcPrimke = primkeTekuce.filter(matchP);
       const uniq = (arr, fn) => [...new Set(arr.map(fn).filter(Boolean))].join(', ') || '—';
-      extraMap.set(k, { sjeca:sj, otpr:ot, sjecaOst:sjO, otprOst:otO,
+      extraMap.set(bk, { sjeca:sj, otpr:ot, sjecaOst:sjO, otprOst:otO,
         radiliste: uniq(srcPrimke, p => p.radiliste),
         izvodjac:  uniq(srcPrimke, p => p.izvodjac),
         poslovodja:uniq(srcPrimke, p => p.poslovodja) });
@@ -385,16 +389,16 @@
         const hasTek = sj.ukupno > 0 || ot.ukupno > 0;
         const hasOst = sjO.ukupno > 0 || otO.ukupno > 0;
         if (hasTek || hasOst) {
-          const td  = (v) => `<td style="padding:5px 8px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;">${_fmt(v)}</td>`;
-          const tdL = (v) => `<td style="padding:5px 8px;font-size:12px;border-bottom:1px solid #f1f5f9;color:#374151;">${v}</td>`;
+          const cell = (v, color, bold) =>
+            `<td style="padding:7px 10px;font-size:13px;text-align:right;border-bottom:1px solid #f1f5f9;color:${color};${bold?'font-weight:700;':''}">${_fmt(v)}</td>`;
           const row = (lbl, sv, ov, svO, ovO, bold) => {
-            const bS = bold?'font-weight:700;':'';
-            return `<tr>
-              <td style="padding:5px 8px;font-size:12px;border-bottom:1px solid #f1f5f9;${bS}">${lbl}</td>
-              <td style="padding:5px 8px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:#15803d;${bS}">${_fmt(sv)}</td>
-              <td style="padding:5px 8px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:#92400e;${bS}">${_fmt(ov)}</td>
-              <td style="padding:5px 8px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:#15803d;opacity:.7;${bS}">${_fmt(svO)}</td>
-              <td style="padding:5px 8px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:#92400e;opacity:.7;${bS}">${_fmt(ovO)}</td>
+            const bS = bold?'font-weight:700;font-size:13px;':'font-size:13px;';
+            return `<tr${bold?' style="background:#f8fafc;"':''}>
+              <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;${bS}">${lbl}</td>
+              ${cell(sv,  '#15803d', bold)}
+              ${cell(ov,  '#92400e', bold)}
+              ${cell(svO, '#6b7280', bold)}
+              ${cell(ovO, '#9ca3af', bold)}
             </tr>`;
           };
           const sjCijC = sj.celDuga+sj.celCijepana+sj.skart;
@@ -406,17 +410,17 @@
           const otOCijC = otO.celDuga+otO.celCijepana+otO.skart;
           const otOCijL = otO.ogrDugi+otO.ogrCijepani+otO.gule;
           extraTable = `
-            <div style="margin-top:14px;">
-              <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Evidencija sječe</div>
+            <div style="margin-top:16px;background:#f8fafc;border-radius:12px;overflow:hidden;">
+              <div style="padding:10px 14px 4px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;">Evidencija sječe</div>
               <div style="overflow-x:auto;">
               <table style="width:100%;border-collapse:collapse;">
                 <thead>
-                  <tr style="background:#f1f5f9;">
-                    <th style="padding:5px 8px;font-size:11px;text-align:left;color:#6b7280;">Sortiment</th>
-                    <th style="padding:5px 8px;font-size:11px;text-align:right;color:#15803d;">Sječa ${PLAN_YEAR}</th>
-                    <th style="padding:5px 8px;font-size:11px;text-align:right;color:#92400e;">Otpr. ${PLAN_YEAR}</th>
-                    <th style="padding:5px 8px;font-size:11px;text-align:right;color:#6b7280;">Sječa ${prevYear}</th>
-                    <th style="padding:5px 8px;font-size:11px;text-align:right;color:#6b7280;">Otpr. ${prevYear}</th>
+                  <tr style="background:#e2e8f0;">
+                    <th style="padding:7px 10px;font-size:12px;text-align:left;color:#475569;font-weight:600;">Sortiment</th>
+                    <th style="padding:7px 10px;font-size:12px;text-align:right;color:#15803d;font-weight:600;">Sječa<br><span style="font-size:10px;">${PLAN_YEAR}</span></th>
+                    <th style="padding:7px 10px;font-size:12px;text-align:right;color:#92400e;font-weight:600;">Otpr.<br><span style="font-size:10px;">${PLAN_YEAR}</span></th>
+                    <th style="padding:7px 10px;font-size:12px;text-align:right;color:#6b7280;font-weight:600;">Sječa<br><span style="font-size:10px;">${prevYear}</span></th>
+                    <th style="padding:7px 10px;font-size:12px;text-align:right;color:#9ca3af;font-weight:600;">Otpr.<br><span style="font-size:10px;">${prevYear}</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -461,8 +465,8 @@
       const oo = info.otprOst  || _emptySort();
       const hasOst = so.ukupno > 0 || oo.ukupno > 0;
 
-      const td  = (v, col, bold) => `<td style="padding:5px 8px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:${col};${bold?'font-weight:700;':''}">${_fmt(v)}</td>`;
-      const tdL = (v) => `<td style="padding:5px 8px;font-size:12px;border-bottom:1px solid #f1f5f9;color:#374151;">${v}</td>`;
+      const td  = (v, col, bold) => `<td style="padding:7px 10px;font-size:13px;text-align:right;border-bottom:1px solid #f1f5f9;color:${col};${bold?'font-weight:700;':''}">${_fmt(v)}</td>`;
+      const tdL = (v) => `<td style="padding:7px 10px;font-size:13px;border-bottom:1px solid #f1f5f9;color:#374151;">${v}</td>`;
 
       const grpRow = (label, sv, ov, pv) => {
         const z  = sv - (ov||0);
@@ -470,58 +474,59 @@
         return `<tr>${tdL(label)}${td(sv,'#15803d',true)}${hasOtpr?td(ov,'#92400e',false)+td(z,zC,true):''}${td(pv,'#9ca3af',false)}</tr>`;
       };
       const subRow = (label, sv, ov) => {
-        return `<tr style="background:#fafafa;">${tdL('<span style="font-size:11px;color:#9ca3af;padding-left:10px;">↳ '+label+'</span>')}${td(sv,'#6b7280',false)}${hasOtpr?td(ov,'#9ca3af',false)+'<td style="border-bottom:1px solid #f1f5f9;"></td>':''}<td style="border-bottom:1px solid #f1f5f9;"></td></tr>`;
+        return `<tr style="background:#fafafa;">${tdL('<span style="font-size:12px;color:#9ca3af;padding-left:10px;">↳ '+label+'</span>')}${td(sv,'#6b7280',false)}${hasOtpr?td(ov,'#9ca3af',false)+'<td style="border-bottom:1px solid #f1f5f9;"></td>':''}<td style="border-bottom:1px solid #f1f5f9;"></td></tr>`;
       };
 
       body = `
-        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;">
+        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;">
           <div style="flex:1;min-width:130px;">
-            <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Gospodarska jedinica</div>
-            <div style="font-weight:700;font-size:13px;">${gj}</div>
+            <div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Gospodarska jedinica</div>
+            <div style="font-weight:700;font-size:15px;">${gj}</div>
           </div>
           <div style="flex:1;min-width:70px;">
-            <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Odsjek</div>
-            <div style="font-weight:600;font-size:13px;">${odsjek}</div>
+            <div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Odsjek</div>
+            <div style="font-weight:600;font-size:15px;">${odsjek}</div>
           </div>
-          <span style="background:${statusBg[s]};color:${statusColor[s]};padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;align-self:flex-start;">${statusLabel[s]||s}</span>
+          <span style="background:${statusBg[s]};color:${statusColor[s]};padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700;align-self:flex-start;">${statusLabel[s]||s}</span>
         </div>
 
-        <div style="background:#f8fafc;border-radius:10px;padding:12px 14px;margin-bottom:12px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-            <span style="font-size:12px;font-weight:600;color:#374151;">Realizacija plana ${PLAN_YEAR}</span>
-            <span style="font-size:15px;font-weight:800;color:${statusColor[s]};">${pct}%</span>
+        <div style="background:#f8fafc;border-radius:12px;padding:14px 16px;margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:13px;font-weight:600;color:#374151;">Realizacija plana ${PLAN_YEAR}</span>
+            <span style="font-size:18px;font-weight:800;color:${statusColor[s]};">${pct}%</span>
           </div>
-          <div style="height:7px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:8px;">
+          <div style="height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:10px;">
             <div style="height:100%;width:${barW}%;background:${barCol};border-radius:4px;"></div>
           </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <div style="background:white;border-radius:6px;padding:4px 10px;text-align:center;flex:1;min-width:70px;">
-              <div style="font-size:10px;color:#9ca3af;">Sječa ${PLAN_YEAR}</div>
-              <div style="font-weight:800;font-size:13px;color:#15803d;">${_fmt(sj.ukupno)}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:70px;">
+              <div style="font-size:11px;color:#9ca3af;">Sječa ${PLAN_YEAR}</div>
+              <div style="font-weight:800;font-size:15px;color:#15803d;">${_fmt(sj.ukupno)}</div>
             </div>
             ${hasOtpr?`
-            <div style="background:white;border-radius:6px;padding:4px 10px;text-align:center;flex:1;min-width:70px;">
-              <div style="font-size:10px;color:#9ca3af;">Otprema ${PLAN_YEAR}</div>
-              <div style="font-weight:800;font-size:13px;color:#b45309;">${_fmt(ot.ukupno)}</div>
+            <div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:70px;">
+              <div style="font-size:11px;color:#9ca3af;">Otprema ${PLAN_YEAR}</div>
+              <div style="font-weight:800;font-size:15px;color:#b45309;">${_fmt(ot.ukupno)}</div>
             </div>
-            <div style="background:white;border-radius:6px;padding:4px 10px;text-align:center;flex:1;min-width:70px;">
-              <div style="font-size:10px;color:#9ca3af;">Zaliha</div>
-              <div style="font-weight:800;font-size:13px;color:${zaliha<0?'#dc2626':'#1d4ed8'};">${_fmt(zaliha)}</div>
+            <div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:70px;">
+              <div style="font-size:11px;color:#9ca3af;">Zaliha</div>
+              <div style="font-weight:800;font-size:15px;color:${zaliha<0?'#dc2626':'#1d4ed8'};">${_fmt(zaliha)}</div>
             </div>`:''}
-            <div style="background:white;border-radius:6px;padding:4px 10px;text-align:center;flex:1;min-width:70px;">
-              <div style="font-size:10px;color:#9ca3af;">Plan neto</div>
-              <div style="font-weight:800;font-size:13px;color:#6b7280;">${_fmt(info.neto)}</div>
+            <div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:70px;">
+              <div style="font-size:11px;color:#9ca3af;">Plan neto</div>
+              <div style="font-weight:800;font-size:15px;color:#6b7280;">${_fmt(info.neto)}</div>
             </div>
           </div>
         </div>
 
-        <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Sortimenti — ${PLAN_YEAR}</div>
-        <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
-          <thead><tr style="background:#f1f5f9;">
-            <th style="padding:5px 8px;font-size:11px;text-align:left;color:#6b7280;font-weight:600;">Sortiment</th>
-            <th style="padding:5px 8px;font-size:11px;text-align:right;color:#15803d;font-weight:600;">Sječa</th>
-            ${hasOtpr?'<th style="padding:5px 8px;font-size:11px;text-align:right;color:#b45309;font-weight:600;">Otprema</th><th style="padding:5px 8px;font-size:11px;text-align:right;color:#1d4ed8;font-weight:600;">Zaliha</th>':''}
-            <th style="padding:5px 8px;font-size:11px;text-align:right;color:#9ca3af;font-weight:600;">Plan</th>
+        <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Sortimenti — ${PLAN_YEAR}</div>
+        <div style="border-radius:12px;overflow:hidden;border:1px solid #f1f5f9;margin-bottom:12px;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr style="background:#e2e8f0;">
+            <th style="padding:7px 10px;font-size:12px;text-align:left;color:#475569;font-weight:600;">Sortiment</th>
+            <th style="padding:7px 10px;font-size:12px;text-align:right;color:#15803d;font-weight:600;">Sječa</th>
+            ${hasOtpr?'<th style="padding:7px 10px;font-size:12px;text-align:right;color:#b45309;font-weight:600;">Otprema</th><th style="padding:7px 10px;font-size:12px;text-align:right;color:#1d4ed8;font-weight:600;">Zaliha</th>':''}
+            <th style="padding:7px 10px;font-size:12px;text-align:right;color:#9ca3af;font-weight:600;">Plan</th>
           </tr></thead>
           <tbody>
             ${grpRow('TRUPCI Č',   sj.cTrupci, ot.cTrupci, e.cTrupci||0)}
@@ -534,18 +539,19 @@
             ${subRow('Ogr.dugi',   sj.ogrDugi,    ot.ogrDugi)}
             ${subRow('Ogr.cijepani',sj.ogrCijepani,ot.ogrCijepani)}
             ${subRow('Gule',       sj.gule,       ot.gule)}
-            <tr style="background:#f8fafc;font-weight:800;border-top:2px solid #e5e7eb;">
-              <td style="padding:6px 8px;font-size:12px;">UKUPNO</td>
-              <td style="padding:6px 8px;font-size:13px;text-align:right;color:#15803d;">${_fmt(sj.ukupno)}</td>
-              ${hasOtpr?`<td style="padding:6px 8px;font-size:13px;text-align:right;color:#b45309;">${_fmt(ot.ukupno)}</td>
-              <td style="padding:6px 8px;font-size:13px;text-align:right;color:${zaliha<0?'#dc2626':'#1d4ed8'};">${_fmt(zaliha)}</td>`:''}
-              <td style="padding:6px 8px;font-size:12px;text-align:right;color:#9ca3af;">${_fmt(info.neto)}</td>
+            <tr style="background:#e2e8f0;font-weight:800;border-top:2px solid #cbd5e1;">
+              <td style="padding:8px 10px;font-size:14px;">UKUPNO</td>
+              <td style="padding:8px 10px;font-size:14px;text-align:right;color:#15803d;">${_fmt(sj.ukupno)}</td>
+              ${hasOtpr?`<td style="padding:8px 10px;font-size:14px;text-align:right;color:#b45309;">${_fmt(ot.ukupno)}</td>
+              <td style="padding:8px 10px;font-size:14px;text-align:right;color:${zaliha<0?'#dc2626':'#1d4ed8'};">${_fmt(zaliha)}</td>`:''}
+              <td style="padding:8px 10px;font-size:13px;text-align:right;color:#9ca3af;">${_fmt(info.neto)}</td>
             </tr>
           </tbody>
         </table>
+        </div>
 
-        ${hasOst ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;font-size:12px;color:#92400e;">
-          ⚠️ <b>Sječa/otprema iz prethodnih godina:</b> sječa ${_fmt(so.ukupno)}, otprema ${_fmt(oo.ukupno)}
+        ${hasOst ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 14px;font-size:13px;color:#92400e;margin-bottom:10px;">
+          ⚠️ <b>Prethodne godine:</b> sječa ${_fmt(so.ukupno)}, otprema ${_fmt(oo.ukupno)}
         </div>` : ''}
         ${routeBtn}`;
     }
