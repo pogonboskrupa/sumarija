@@ -87,6 +87,7 @@
                     { id: 'primac-godisnji', icon: '📅', label: 'Godišnji prikaz' },
                     { id: 'primac-odjeli', icon: '🏭', label: 'Prikaz po odjelima' },
                     { id: 'izvjestaji-primac', icon: '📋', label: 'Izvještaji' },
+                    { id: 'primac-sihtarica', icon: '🗓️', label: 'Šihtarica' },
                     { id: 'add-sjeca', icon: '➕', label: 'Dodaj sječu' },
                     { id: 'my-sjece', icon: '📝', label: 'Moje sječe' },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
@@ -97,6 +98,7 @@
                     { id: 'otpremac-godisnji', icon: '📅', label: 'Godišnji prikaz' },
                     { id: 'otpremac-odjeli', icon: '🏭', label: 'Prikaz po odjelima' },
                     { id: 'izvjestaji-otpremac', icon: '📋', label: 'Izvještaji' },
+                    { id: 'otpremac-sihtarica', icon: '🗓️', label: 'Šihtarica' },
                     { id: 'add-otprema', icon: '➕', label: 'Dodaj otpremu' },
                     { id: 'my-otpreme', icon: '📝', label: 'Moje otpreme' },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
@@ -128,6 +130,8 @@
                     { id: 'primaci', icon: '👷', label: 'SJEČA' },
                     { id: 'otpremaci', icon: '🚛', label: 'OTPREMA' },
                     { id: 'primaci-admin', icon: '🌲', label: 'Primači na šuma panju' },
+                    { id: 'godisnji-plan', icon: '📋', label: 'Godišnji plan' },
+                    { id: 'karta-odjela', icon: '🗺️', label: 'Mapa' },
                     { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
                     { id: 'pending-unosi', icon: '📋', label: 'Dodani unosi', hasBadge: true },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
@@ -286,6 +290,10 @@
                 dropdown.classList.remove('show');
             }
 
+            // Clear legacy (non-user-specific) personal cache keys to prevent cross-user contamination
+            localStorage.removeItem('cache_otpremac_odjeli_top15');
+            localStorage.removeItem('cache_primac_odjeli_top15');
+
             // Log final cache stats before logout
             try { logCacheStats(); } catch(e) { console.error('logout logCacheStats:', e); }
 
@@ -334,7 +342,8 @@
                 'poslovodja-pregled-content', 'poslovodja-unosi-content',
                 'izvjestaji-content', 'izvjestaji-primac-content', 'izvjestaji-otpremac-content',
                 'mjesecni-sortimenti-content', 'stanje-odjela-admin-content',
-                'dinamika-content', 'kubikator-content', 'stanje-zaliha-content'
+                'dinamika-content', 'kubikator-content', 'stanje-zaliha-content',
+                'godisnji-plan-content'
             ];
             panelIds.forEach(function(id) {
                 var el = document.getElementById(id);

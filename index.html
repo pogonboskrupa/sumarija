@@ -43,6 +43,13 @@
     <!-- SheetJS for Excel export -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.mini.min.js" defer></script>
 
+    <!-- Supabase (šihtarica) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+
+    <!-- Leaflet (karta odjela) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
+
     <!-- Performance Modules -->
     <script src="js/cache-helper.js" defer></script>
     <script src="js/api-optimized.js" defer></script>
@@ -64,7 +71,19 @@
     <script src="js/ui.js" defer></script>
     <script src="js/drag-scroll.js" defer></script>
     <script src="js/charts.js" defer></script>
+    <script src="js/godisnji-plan.js" defer></script>
+    <script src="js/karta-odjela.js" defer></script>
     <script src="js/notifications.js" defer></script>
+
+    <style>
+        @media print {
+            body > *:not(#gp-print-modal) { display: none !important; }
+            #gp-print-modal { display: block !important; position: static !important; padding: 0 !important; overflow: visible !important; }
+            #gp-print-toolbar { display: none !important; }
+            #gp-print-paper { padding: 10mm 12mm !important; }
+            @page { size: A4 portrait; margin: 5mm; }
+        }
+    </style>
 
     <script>
         let chartJsLoaded = false;
@@ -178,7 +197,7 @@
                                 🔔 Notifikacije
                                 <span id="notif-status-badge" style="font-size: 11px; margin-left: 6px; padding: 2px 6px; border-radius: 10px; background: #e5e7eb; color: #6b7280;">OFF</span>
                             </div>
-                            <div class="user-menu-item" onclick="event.stopPropagation(); clearAllCache()">🗑️ Obriši keš</div>
+                            <div class="user-menu-item" onclick="event.stopPropagation(); clearAllCache()">🔄 Ažuriraj podatke</div>
                             <div class="user-menu-item danger" onclick="event.stopPropagation(); logout()">🚪 Odjavi se</div>
                         </div>
                     </div>
@@ -901,6 +920,7 @@
                 <button class="submenu-tab active" onclick="switchKupciSubmenu('mjesecni')">📅 Mjesečni pregled</button>
                 <button class="submenu-tab" onclick="switchKupciSubmenu('kvartalni')">📊 Kvartalni prikaz</button>
                 <button class="submenu-tab" onclick="switchKupciSubmenu('godisnji')">🏢 Godišnji pregled</button>
+                <button class="submenu-tab" onclick="switchKupciSubmenu('statistika')">📈 Statistika po kupcu</button>
             </div>
 
             <!-- Mjesečni pregled (default) -->
@@ -973,6 +993,28 @@
                                 <thead id="kupci-godisnji-header"></thead>
                                 <tbody id="kupci-godisnji-body"></tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistika po kupcu -->
+            <div id="kupci-statistika-view" class="submenu-content hidden">
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📈 Statistika otprema po kupcu</h2>
+                            <span class="card-subtitle">Broj otpremnica po sortimentu — kratkoročni, mjesečni i kvartalni prikaz</span>
+                        </div>
+                    </div>
+                    <div class="enterprise-card-body">
+                        <div class="controls-bar" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                            <select id="kupci-statistika-year" onchange="loadKupciStatistika()" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white; min-width: 100px; cursor: pointer;">
+                                <option value="2026">2026</option>
+                            </select>
+                        </div>
+                        <div id="kupci-statistika-content" style="margin-top: 16px;">
+                            <div style="text-align: center; padding: 40px; color: #9ca3af; font-size: 14px;">Odaberi kupca za prikaz statistike</div>
                         </div>
                     </div>
                 </div>
@@ -1196,8 +1238,8 @@
                         </h3>
                         <span class="worker-table-card-badge otpremac" id="otpremac-godisnji-year-badge">2026</span>
                     </div>
-                    <div style="overflow-x: auto;">
-                        <table class="worker-table" id="otpremac-godisnji-main-table">
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="worker-table otpremac otpremac-godisnji-table" id="otpremac-godisnji-main-table">
                             <thead id="otpremac-godisnji-main-header"></thead>
                             <tbody id="otpremac-godisnji-main-body"></tbody>
                         </table>
@@ -1607,6 +1649,38 @@
                     </div>
                     <div id="my-otpreme-container"></div>
                 </div>
+            </div>
+        </div>
+
+        <!-- PRIMAC SIHTARICA -->
+        <div id="primac-sihtarica-content" class="container hidden">
+            <div class="section">
+                <div class="worker-header primac">
+                    <div class="worker-header-icon">🗓️</div>
+                    <div>
+                        <h1 class="worker-header-title">Šihtarica</h1>
+                        <p class="worker-header-subtitle">Evidencija radnih dana — kliknite na red i unesite podatke</p>
+                    </div>
+                </div>
+                <div id="primac-godisnji-status" style="margin-top:12px;"></div>
+                <div id="primac-sihtarica-pregled" style="margin-top:16px;"></div>
+                <div id="primac-sihtarica-rekap" style="margin-top:12px;"></div>
+            </div>
+        </div>
+
+        <!-- OTPREMAC SIHTARICA -->
+        <div id="otpremac-sihtarica-content" class="container hidden">
+            <div class="section">
+                <div class="worker-header otpremac">
+                    <div class="worker-header-icon">🗓️</div>
+                    <div>
+                        <h1 class="worker-header-title">Šihtarica</h1>
+                        <p class="worker-header-subtitle">Evidencija radnih dana — kliknite na red i unesite podatke</p>
+                    </div>
+                </div>
+                <div id="otpremac-godisnji-status" style="margin-top:12px;"></div>
+                <div id="otpremac-sihtarica-pregled" style="margin-top:16px;"></div>
+                <div id="otpremac-sihtarica-rekap" style="margin-top:12px;"></div>
             </div>
         </div>
 
@@ -2497,6 +2571,7 @@
             <!-- SUB-MENU TABS -->
             <div class="sub-tabs" style="margin-bottom: 30px;">
                 <button class="sub-tab active" onclick="switchIzvjestajiSubTab('sedmicni')">📊 Sedmični izvještaj</button>
+                <button class="sub-tab" onclick="switchIzvjestajiSubTab('sedmicni-radnik')">👷 Sedmični po radniku</button>
                 <button class="sub-tab" onclick="switchIzvjestajiSubTab('mjesecni')">📅 Mjesečni izvještaj</button>
             </div>
 
@@ -2557,6 +2632,67 @@
                         <table id="izvjestaji-sedmicni-otprema-table" class="izvjestaj-week-table">
                             <thead id="izvjestaji-sedmicni-otprema-header"></thead>
                             <tbody id="izvjestaji-sedmicni-otprema-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEDMIČNI IZVJEŠTAJ PO RADNIKU -->
+            <div id="izvjestaji-sedmicni-radnik" class="sub-content hidden">
+                <div class="page-header" style="margin-top: 0;">
+                    <div class="page-header-left">
+                        <h2>👷 Sedmični izvještaj po radniku</h2>
+                        <p>Sječa i otprema po radnicima za radilište - radna sedmica</p>
+                    </div>
+                    <div class="page-header-right">
+                        <select id="izvjestaji-sedmicni-radnik-year" class="year-select" onchange="loadIzvjestajiSedmicniRadnik()">
+                            <option value="2026" selected>2026</option>
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                        </select>
+                        <select id="izvjestaji-sedmicni-radnik-month" class="month-select" onchange="loadIzvjestajiSedmicniRadnik()">
+                            <option value="0">Januar</option>
+                            <option value="1">Februar</option>
+                            <option value="2">Mart</option>
+                            <option value="3">April</option>
+                            <option value="4">Maj</option>
+                            <option value="5">Juni</option>
+                            <option value="6">Juli</option>
+                            <option value="7">August</option>
+                            <option value="8">Septembar</option>
+                            <option value="9">Oktobar</option>
+                            <option value="10">Novembar</option>
+                            <option value="11">Decembar</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- SJEČA PO RADNIKU -->
+                <div class="section">
+                    <h2>🌲 Sječa po radniku - <span id="izvjestaji-sedmicni-radnik-primka-title"></span></h2>
+                    <p style="color: #6b7280; margin-bottom: 20px;">Sortirano po radniku (primac)</p>
+                    <div class="controls-bar">
+                        <input type="text" class="search-input" id="izvjestaji-sedmicni-radnik-primka-search" placeholder="🔍 Pretraži po radniku..." onkeyup="filterIzvjestajiTable('sedmicni-radnik-primka')">
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table id="izvjestaji-sedmicni-radnik-primka-table" class="izvjestaj-week-table">
+                            <thead id="izvjestaji-sedmicni-radnik-primka-header"></thead>
+                            <tbody id="izvjestaji-sedmicni-radnik-primka-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- OTPREMA PO RADNIKU -->
+                <div class="section">
+                    <h2>🚛 Otprema po radniku - <span id="izvjestaji-sedmicni-radnik-otprema-title"></span></h2>
+                    <p style="color: #6b7280; margin-bottom: 20px;">Sortirano po radniku (otpremac)</p>
+                    <div class="controls-bar">
+                        <input type="text" class="search-input" id="izvjestaji-sedmicni-radnik-otprema-search" placeholder="🔍 Pretraži po radniku..." onkeyup="filterIzvjestajiTable('sedmicni-radnik-otprema')">
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table id="izvjestaji-sedmicni-radnik-otprema-table" class="izvjestaj-week-table">
+                            <thead id="izvjestaji-sedmicni-radnik-otprema-header"></thead>
+                            <tbody id="izvjestaji-sedmicni-radnik-otprema-body"></tbody>
                         </table>
                     </div>
                 </div>
@@ -2676,6 +2812,7 @@
                         </table>
                     </div>
                 </div>
+                <div id="primac-sedmicni-rekapitulacija"></div>
             </div>
 
             <!-- MJESEČNI IZVJEŠTAJ -->
@@ -2842,6 +2979,7 @@
                         <div class="filter-actions">
                             <button class="btn btn-primary" onclick="applyFilters()">Filtriraj</button>
                             <button class="btn btn-clear" onclick="clearFilters()">Očisti</button>
+                            <button class="btn btn-danger" onclick="deleteAllPendingUnosi()">Obriši sve</button>
                         </div>
                     </div>
                 </div>
@@ -2919,6 +3057,120 @@
                 </div>
             </div>
         </div>
+
+            <!-- GODIŠNJI PLAN CONTENT -->
+            <div id="godisnji-plan-content" class="container hidden">
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <h1>📋 Godišnji plan sječe 2026</h1>
+                        <p>Praćenje realizacije godišnjeg plana — Pogon Bosanska Krupa</p>
+                    </div>
+                    <div class="page-header-right">
+                        <button class="btn btn-secondary" onclick="openGpPrintModal()">🖨️ Štampaj</button>
+                        <button class="btn btn-primary" onclick="loadGodisnjiPlan(true)">🔄 Osvježi</button>
+                    </div>
+                </div>
+
+                <!-- Submenu tabs -->
+                <div class="submenu" id="gp-submenu" style="margin-bottom:16px;flex-wrap:wrap;">
+                    <button class="submenu-tab active" data-tab="grupe"      onclick="switchGpTab('grupe')">📊 Po grupama</button>
+                    <button class="submenu-tab"         data-tab="sortimenti" onclick="switchGpTab('sortimenti')">📦 Po sortimentima</button>
+                    <button class="submenu-tab"         data-tab="pregled"   onclick="switchGpTab('pregled')">📋 Pregled plana</button>
+                    <button class="submenu-tab"         data-tab="projekat"  onclick="switchGpTab('projekat')">📐 Plan po projektu</button>
+                </div>
+
+                <!-- Filters -->
+                <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                        <span style="font-size:12px;color:#6b7280;font-weight:600;">GJ:</span>
+                        <button data-gj-btn="sve" onclick="filterGpGj('sve')" style="padding:4px 12px;border-radius:99px;border:2px solid #6b7280;background:white;color:#374151;font-size:12px;cursor:pointer;font-weight:700;">Sve GJ</button>
+                        <button data-gj-btn="Risovac Krupa" onclick="filterGpGj('Risovac Krupa')" style="padding:4px 12px;border-radius:99px;border:2px solid #1d4ed8;background:white;color:#1d4ed8;font-size:12px;cursor:pointer;opacity:0.5;">Risovac Krupa</button>
+                        <button data-gj-btn="Grmeč Jasenica" onclick="filterGpGj('Grmeč Jasenica')" style="padding:4px 12px;border-radius:99px;border:2px solid #15803d;background:white;color:#15803d;font-size:12px;cursor:pointer;opacity:0.5;">Grmeč Jasenica</button>
+                        <button data-gj-btn="Vojskova" onclick="filterGpGj('Vojskova')" style="padding:4px 12px;border-radius:99px;border:2px solid #b45309;background:white;color:#b45309;font-size:12px;cursor:pointer;opacity:0.5;">Vojskova</button>
+                    </div>
+                    <div style="width:1px;height:24px;background:#e5e7eb;"></div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                        <span style="font-size:12px;color:#6b7280;font-weight:600;">Status:</span>
+                        <button data-st-btn="sve" onclick="filterGpStatus('sve')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#374151;font-weight:700;">Sve</button>
+                        <button data-st-btn="posjeceno" onclick="filterGpStatus('posjeceno')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#166534;">Posječeno</button>
+                        <button data-st-btn="u-sjeci" onclick="filterGpStatus('u-sjeci')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#92400e;">U sječi</button>
+                        <button data-st-btn="planirano" onclick="filterGpStatus('planirano')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#6b7280;">Planirano</button>
+                    </div>
+                    <div style="flex:1;min-width:160px;">
+                        <input type="text" placeholder="🔍 Pretraži odjel..." oninput="filterGpSearch(this.value)" style="width:100%;padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;box-sizing:border-box;">
+                    </div>
+                </div>
+
+                <!-- Sub-views -->
+                <div id="gp-grupe-view"></div>
+                <div id="gp-sortimenti-view" class="hidden"></div>
+                <div id="gp-pregled-view" class="hidden"></div>
+                <div id="gp-projekat-view" class="hidden"></div>
+            </div>
+
+            <!-- KARTA ODJELA CONTENT -->
+            <div id="karta-odjela-content" class="container hidden">
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <h1>🗺️ Mapa odjela 2026</h1>
+                        <p>Prostorni prikaz odjela po statusu realizacije plana sječe</p>
+                    </div>
+                    <div class="page-header-right">
+                        <button class="btn btn-primary" onclick="initKartaOdjela(true)">🔄 Osvježi</button>
+                    </div>
+                </div>
+                <!-- Filter traka -->
+                <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;">
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <label style="font-size:12px;font-weight:600;color:#374151;">Gospodarska jedinica:</label>
+                        <select id="karta-filter-gj" onchange="applyKartaFilter()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;">
+                            <option value="sve">Sve GJ</option>
+                            <option value="Risovac Krupa">Risovac Krupa</option>
+                            <option value="Grmeč Jasenica">Grmeč Jasenica</option>
+                            <option value="Vojskova">Vojskova</option>
+                        </select>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <label style="font-size:12px;font-weight:600;color:#374151;">Status:</label>
+                        <select id="karta-filter-status" onchange="applyKartaFilter()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;">
+                            <option value="sve">Svi statusi</option>
+                            <option value="planirano">Planirano</option>
+                            <option value="u-sjeci">U sječi</option>
+                            <option value="posjeceno">Posječeno</option>
+                            <option value="bez-plana">Bez plana</option>
+                        </select>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:4px;">
+                        <input id="karta-search" type="text" placeholder="Broj odjela..." oninput="searchKartaOdjel()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;width:120px;" />
+                        <button onclick="searchKartaOdjel()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🔍</button>
+                        <button onclick="document.getElementById('karta-search').value='';searchKartaOdjel();" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">✕</button>
+                    </div>
+                    <button id="karta-sat-btn" onclick="toggleMapaSat()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🛰️ Satelit</button>
+                    <button id="karta-odjel-ruta-btn" onclick="toggleOdjelRutaMode()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🔀 Ruta odjel→odjel</button>
+                    <button onclick="resetKartaView()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">↺ Reset pogleda</button>
+                    <!-- Legenda -->
+                    <div style="display:flex;gap:10px;margin-left:auto;flex-wrap:wrap;">
+                        <span style="font-size:11px;display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:14px;height:14px;background:#9ca3af;border-radius:3px;"></span>Planirano</span>
+                        <span style="font-size:11px;display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:14px;height:14px;background:#d97706;border-radius:3px;"></span>U sječi</span>
+                        <span style="font-size:11px;display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:14px;height:14px;background:#16a34a;border-radius:3px;"></span>Posječeno</span>
+                        <span style="font-size:11px;display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:14px;height:14px;background:#7c3aed;border-radius:3px;"></span>Slučajni užitak</span>
+                        <span style="font-size:11px;display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:14px;height:14px;background:#0891b2;border-radius:3px;"></span>Nekategorisan</span>
+                    </div>
+                </div>
+                <!-- Hint za ruta-mode -->
+                <div id="mapa-ruta-hint" style="display:none;padding:8px 14px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;font-size:13px;color:#dc2626;font-weight:600;margin-bottom:8px;"></div>
+                <!-- Leaflet mapa -->
+                <style>
+                  #karta-odjela-map { width:100%; height:calc(100vh - 240px); min-height:400px; border-radius:10px; border:1px solid #e2e8f0; overflow:hidden; background:#f1f5f9; }
+                  @media (max-width:1024px) { #karta-odjela-map { height:calc(100vh - 210px); min-height:320px; } }
+                  @media (max-width:640px)  { #karta-odjela-map { height:calc(100vh - 270px); min-height:260px; } }
+                </style>
+                <div id="karta-odjela-map" style="width:100%;height:calc(100vh - 240px);min-height:400px;">
+                    <div id="karta-loading" style="display:flex;align-items:center;justify-content:center;height:100%;color:#6b7280;font-size:14px;">⏳ Učitavam kartu...</div>
+                </div>
+                <!-- Ruta info -->
+                <div id="mapa-ruta-info" style="display:none;margin-top:10px;padding:10px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:13px;color:#1e40af;"></div>
+            </div>
 
             </main><!-- /main-content -->
         </div><!-- /app-layout -->
@@ -3000,9 +3252,90 @@
         </div>
     </div>
 
+
+
+    <!-- Mapa — Detalji odjela Modal -->
+    <div id="mapa-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:16px;">
+        <div style="background:white;border-radius:14px;width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#14532d 0%,#166534 100%);color:white;padding:16px 20px;display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;">
+                <div style="flex:1;min-width:0;">
+                    <div id="mapa-modal-title" style="font-size:18px;font-weight:800;"></div>
+                    <div id="mapa-modal-gj" style="font-size:12px;opacity:.85;margin-top:2px;"></div>
+                    <div id="mapa-modal-meta" style="display:none;flex-direction:column;gap:3px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.2);"></div>
+                </div>
+                <button onclick="closeMapaModal()" style="background:rgba(255,255,255,.2);border:none;color:white;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+            </div>
+            <div id="mapa-modal-body" style="padding:20px;overflow-y:auto;flex:1;"></div>
+        </div>
+    </div>
+
+    <style>
+    .karta-tooltip { background:white; border:1px solid #d1d5db; border-radius:5px; padding:4px 10px; font-size:21px; font-weight:800; color:#1e293b; box-shadow:0 2px 6px rgba(0,0,0,.2); white-space:nowrap; }
+    .karta-tooltip::before { display:none; }
+    .karta-tooltip-slucajni { background:#7c3aed; border-color:#6d28d9; color:white; }
+    /* divIcon labeli — ukloni Leaflet default pozadinu */
+    .leaflet-marker-icon.karta-tooltip { background:white; border:1px solid #d1d5db; }
+    .leaflet-marker-icon.karta-tooltip-slucajni { background:#7c3aed; border-color:#6d28d9; color:white; }
+    </style>
+
+    <!-- GP Odjel Detail Modal -->
+    <div id="gp-odjel-modal" class="modal-overlay" style="display:none;align-items:flex-start;justify-content:center;padding:24px;">
+        <div class="modal" style="width:95vw;max-width:1100px;max-height:90vh;display:flex;flex-direction:column;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#1e3a5f 0%,#2d5a87 100%);color:white;padding:16px 20px;border-radius:12px 12px 0 0;">
+                <div style="display:flex;justify-content:space-between;align-items:center;width:100%;flex-wrap:wrap;gap:8px;">
+                    <div>
+                        <div id="gp-modal-title" style="font-size:16px;font-weight:700;margin-bottom:2px;">Detalji odjela</div>
+                        <div id="gp-modal-ukupno" style="font-size:12px;opacity:0.8;"></div>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <button onclick="gpExportModalCsv()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;">📥 CSV</button>
+                        <button onclick="closeGpOdjelModal()" style="background:rgba(255,255,255,0.15);border:none;color:white;font-size:22px;cursor:pointer;padding:4px 10px;border-radius:6px;">&times;</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body" style="overflow:auto;flex:1;padding:0;">
+                <div style="overflow-x:auto;">
+                    <table class="monthly-table" style="width:100%;font-size:11px;min-width:800px;">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left;min-width:140px;">Datum</th>
+                                <th style="text-align:left;">Primac</th>
+                                <th style="text-align:left;">Radilište</th>
+                                <th class="right" style="color:#1e40af;">Trupci Č</th>
+                                <th class="right" style="color:#5b21b6;">Cel.D.</th>
+                                <th class="right" style="color:#7c3aed;">Cel.C.</th>
+                                <th class="right" style="color:#9ca3af;">Škart</th>
+                                <th class="right" style="color:#15803d;">Trupci L</th>
+                                <th class="right" style="color:#92400e;">Ogr.D.</th>
+                                <th class="right" style="color:#b45309;">Ogr.C.</th>
+                                <th class="right" style="color:#d97706;">Gule</th>
+                                <th class="right">Ukupno</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gp-modal-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GP Print Modal -->
+    <div id="gp-print-modal" class="modal-overlay" style="display:none;align-items:flex-start;justify-content:center;overflow:auto;">
+        <div style="width:100%;max-width:900px;">
+            <div id="gp-print-toolbar" style="position:sticky;top:0;z-index:10;background:#1e293b;color:white;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:700;font-size:15px;">📋 Godišnji plan sječe 2026</span>
+                <div style="display:flex;gap:8px;">
+                    <button onclick="gpDoPrint()" style="background:#059669;color:white;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">🖨️ Štampaj</button>
+                    <button onclick="closeGpPrintModal()" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px;">✕ Zatvori</button>
+                </div>
+            </div>
+            <div id="gp-print-paper" style="background:white;padding:20mm 18mm;min-height:297mm;"></div>
+        </div>
+    </div>
+
     <!-- Kupac Details Modal -->
     <div class="modal-overlay" id="kupac-details-modal" style="display: none;">
-        <div class="modal" style="max-width: 95vw; width: 1200px; max-height: 90vh; display: flex; flex-direction: column;">
+        <div class="modal" style="width: 95vw; max-width: 1200px; max-height: 90vh; display: flex; flex-direction: column;">
             <div class="modal-header" style="background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; padding: 16px 20px; border-radius: 12px 12px 0 0;">
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                     <div class="modal-title" id="kupac-modal-title" style="font-size: 18px; font-weight: 700;">

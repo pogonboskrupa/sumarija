@@ -105,6 +105,8 @@ function doGet(e) {
       return handleUpdatePending(e.parameter);
     } else if (path === 'delete-pending') {
       return handleDeletePending(e.parameter);
+    } else if (path === 'delete-all-pending') {
+      return handleDeleteAllPending(e.parameter);
     } else if (path === 'get-odjeli-list') {
       return handleGetOdjeliList();
     } else if (path === 'mjesecni-sortimenti') {
@@ -174,6 +176,14 @@ function doGet(e) {
       return handleGetPreklasiranja(e.parameter.username, e.parameter.password, e.parameter.odjel);
     } else if (path === 'delete-preklasiranje') {
       return handleDeletePreklasiranje(e.parameter);
+    } else if (path === 'add-sihtarica-primac') {
+      return handleAddSihtaricaPrimac(e.parameter);
+    } else if (path === 'add-sihtarica-otpremac') {
+      return handleAddSihtaricaOtpremac(e.parameter);
+    } else if (path === 'get-sihtarica') {
+      return handleGetSihtarica(e.parameter.tip, e.parameter.username, e.parameter.password);
+    } else if (path === 'set-godisnji-dani') {
+      return handleSetGodisnjiDani(e.parameter);
     }
 
     Logger.log('Unknown path: ' + path);

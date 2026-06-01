@@ -523,8 +523,22 @@ tr[style*="background: linear-gradient"][style*="#065f46"] td {
 .monthly-table tbody tr[style*="background:#3F4752"] td,
 .monthly-table tbody tr[style*="background:#2F343A"] td,
 .monthly-table tbody tr[style*="background:linear-gradient(135deg,#0891b2"] td,
-.monthly-table tbody tr[style*="background:#164e63"] td {
+.monthly-table tbody tr[style*="background:#164e63"] td,
+.monthly-table tbody tr[style*="background:#1e293b"] td {
     color: white !important;
+}
+
+/* GP annual plan — dark header rows */
+tr[style*="background:#1e3a5f"] th {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.25) !important;
+}
+th[style*="background:#1e3399"],
+th[style*="background:#3b1080"],
+th[style*="background:#14532d"],
+th[style*="background:#7c2d12"] {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.25) !important;
 }
 
 /* Dark blue backgrounds (#1e40af, #1d4ed8, #2563eb) - white text */

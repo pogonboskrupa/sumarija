@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "work.sumarijaboskrupa.app",
+    "sha256_cert_fingerprints": [
+      "23:C5:C1:F0:4D:4A:21:98:EF:A2:AF:1E:58:18:67:E7:54:29:E9:E8:2B:E0:5D:10:20:A0:39:51:22:69:75:11"
+    ]
+  }
+}]

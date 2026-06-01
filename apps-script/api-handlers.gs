@@ -513,11 +513,14 @@ function handleKupci(year, username, password) {
     if (!kupciGodisnji[kupacNormalized]) {
       kupciGodisnji[kupacNormalized] = {
         sortimenti: {},
-        ukupno: 0
+        ukupno: 0,
+        brOtpremnica: 0,
+        sortimentiCount: {}
       };
       // Inicijalizuj sve sortimente na 0
       for (let s = 0; s < SORTIMENTI_NAZIVI.length; s++) {
         kupciGodisnji[kupacNormalized].sortimenti[SORTIMENTI_NAZIVI[s]] = 0;
+        kupciGodisnji[kupacNormalized].sortimentiCount[SORTIMENTI_NAZIVI[s]] = 0;
       }
     }
 
@@ -527,11 +530,14 @@ function handleKupci(year, username, password) {
       for (let m = 0; m < 12; m++) {
         kupciMjesecni[kupacNormalized][m] = {
           sortimenti: {},
-          ukupno: 0
+          ukupno: 0,
+          brOtpremnica: 0,
+          sortimentiCount: {}
         };
         // Inicijalizuj sve sortimente na 0
         for (let s = 0; s < SORTIMENTI_NAZIVI.length; s++) {
           kupciMjesecni[kupacNormalized][m].sortimenti[SORTIMENTI_NAZIVI[s]] = 0;
+          kupciMjesecni[kupacNormalized][m].sortimentiCount[SORTIMENTI_NAZIVI[s]] = 0;
         }
       }
     }
@@ -551,6 +557,17 @@ function handleKupci(year, username, password) {
     const ukupno = parseFloat(row[OTPREMA_COL.UKUPNO]) || 0;
     kupciGodisnji[kupacNormalized].ukupno += ukupno;
     kupciMjesecni[kupacNormalized][mjesec].ukupno += ukupno;
+
+    // Broj otpremnica (svaki red = jedna isporuka)
+    kupciGodisnji[kupacNormalized].brOtpremnica += 1;
+    kupciMjesecni[kupacNormalized][mjesec].brOtpremnica += 1;
+    for (let s = 0; s < SORTIMENTI_NAZIVI.length; s++) {
+      const v = parseFloat(row[OTPREMA_COL.SORT_START + s]) || 0;
+      if (v > 0) {
+        kupciGodisnji[kupacNormalized].sortimentiCount[SORTIMENTI_NAZIVI[s]] += 1;
+        kupciMjesecni[kupacNormalized][mjesec].sortimentiCount[SORTIMENTI_NAZIVI[s]] += 1;
+      }
+    }
   }
 
   // Generiši godišnji prikaz
@@ -560,7 +577,9 @@ function handleKupci(year, username, password) {
     const red = {
       kupac: kupacIme,
       sortimenti: kupac.sortimenti,
-      ukupno: kupac.ukupno
+      ukupno: kupac.ukupno,
+      brOtpremnica: kupac.brOtpremnica,
+      sortimentiCount: kupac.sortimentiCount
     };
     godisnji.push(red);
   }
@@ -573,12 +592,14 @@ function handleKupci(year, username, password) {
   for (const kupacIme in kupciMjesecni) {
     for (let m = 0; m < 12; m++) {
       const mjesecData = kupciMjesecni[kupacIme][m];
-      if (mjesecData.ukupno > 0) { // Samo mjeseci sa podacima
+      if (mjesecData.ukupno > 0 || mjesecData.brOtpremnica > 0) {
         mjesecni.push({
           kupac: kupacIme,
           mjesec: mjeseci[m],
           sortimenti: mjesecData.sortimenti,
-          ukupno: mjesecData.ukupno
+          ukupno: mjesecData.ukupno,
+          brOtpremnica: mjesecData.brOtpremnica,
+          sortimentiCount: mjesecData.sortimentiCount
         });
       }
     }
@@ -1663,10 +1684,11 @@ function handleAddOtprema(params) {
     // Dodaj UKUPNO Č+L (Z)
     newRow.push(ukupno);
 
-    // Dodaj BROJ_OTPREMNICE, STATUS i TIMESTAMP
+    // Dodaj BROJ_OTPREMNICE, STATUS, TIMESTAMP i IMAGE_URL
     newRow.push(params.brojOtpremnice || '');
     newRow.push("PENDING");
     newRow.push(new Date());
+    newRow.push(params.imageUrl || '');  // IMAGE_URL
 
     // Dodaj red na kraj sheet-a
     unosSheet.appendRow(newRow);
@@ -1696,6 +1718,50 @@ function handleAddOtprema(params) {
 // ========================================
 
 /**
+ * Briše PENDING unose starije od 14 dana iz oba sheet-a.
+ * Poziva se automatski svaki put kad se učitaju pending unosi.
+ */
+function deleteOldPendingUnosi() {
+  try {
+    const DAYS   = 14;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - DAYS);
+
+    const ss     = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const sheets = ['PRIMAČ_UNOS', 'OTPREMAČ_UNOS'];
+    let   deleted = 0;
+
+    sheets.forEach(function(sheetName) {
+      const sheet = ss.getSheetByName(sheetName);
+      if (!sheet || sheet.getLastRow() < 2) return;
+
+      const data    = sheet.getDataRange().getValues();
+      const headers = data[0].map(function(h) { return String(h).toUpperCase().trim(); });
+      const statusIdx = headers.indexOf('STATUS');
+      const tsIdx     = headers.indexOf('TIMESTAMP');
+      if (statusIdx < 0 || tsIdx < 0) return;
+
+      // Pronađi stare PENDING redove (od dna prema vrhu da indeksi ostanu ispravni)
+      for (let i = data.length - 1; i >= 1; i--) {
+        const status = data[i][statusIdx];
+        const ts     = data[i][tsIdx];
+        if (status === 'PENDING' && ts && new Date(ts) < cutoff) {
+          sheet.deleteRow(i + 1); // Sheets su 1-indeksirani
+          deleted++;
+        }
+      }
+    });
+
+    if (deleted > 0) {
+      Logger.log('deleteOldPendingUnosi: obrisano ' + deleted + ' starih unosa');
+      invalidateAllCache();
+    }
+  } catch(e) {
+    Logger.log('deleteOldPendingUnosi ERROR: ' + e.toString());
+  }
+}
+
+/**
  * Pending Unosi endpoint - vraća sve pending unose za pregled rukovodioca
  */
 function handlePendingUnosi(year, username, password) {
@@ -1705,6 +1771,9 @@ function handlePendingUnosi(year, username, password) {
     if (!loginResult.success) {
       return createJsonResponse({ error: "Unauthorized" }, false);
     }
+
+    // Automatski obriši unose starije od 14 dana
+    deleteOldPendingUnosi();
 
     Logger.log('=== HANDLE PENDING UNOSI START ===');
     Logger.log('User: ' + loginResult.fullName);
@@ -1769,35 +1838,46 @@ function handlePendingUnosi(year, username, password) {
     }
 
     // Pročitaj OTPREMAČ_UNOS
-    // Struktura: A=Datum, B=Otpremač, C=Kupac, D=Odjel, E=Radilište, F=Izvođač, G-Z=Sortimenti, AA=BrojOtpr, AB=STATUS, AC=TIMESTAMP
     if (otpremacUnosSheet) {
       const otpremaData = otpremacUnosSheet.getDataRange().getValues();
 
+      // Detect column indices by header (robust against column reordering)
+      const otpremaHeaders = otpremaData[0].map(function(h) { return String(h).toUpperCase().trim(); });
+      const oBrojOtpIdx  = otpremaHeaders.indexOf('BROJ_OTPREMNICE');
+      const oStatusIdx   = otpremaHeaders.indexOf('STATUS');
+      const oTimestampIdx= otpremaHeaders.indexOf('TIMESTAMP');
+      const oImageUrlIdx = otpremaHeaders.indexOf('IMAGE_URL');
+
+      // Fallback to hard-coded indices when sheet lacks header row
+      const _oBrojOtpIdx  = oBrojOtpIdx  >= 0 ? oBrojOtpIdx  : 26;
+      const _oStatusIdx   = oStatusIdx   >= 0 ? oStatusIdx   : 27;
+      const _oTimestampIdx= oTimestampIdx>= 0 ? oTimestampIdx: 28;
+
       for (let i = 1; i < otpremaData.length; i++) {
         const row = otpremaData[i];
-        const datum = row[0];          // A - DATUM
-        const otpremac = row[1];       // B - OTPREMAČ
-        const kupac = row[2];          // C - KUPAC
-        const odjel = row[3];          // D - ODJEL
-        const radiliste = row[4];      // E - RADILIŠTE
-        const izvodjac = row[5];       // F - IZVOĐAČ
-        const brojOtpremnice = row[26]; // AA - BROJ_OTPREMNICE
-        const status = row[27];        // AB - STATUS
-        const timestamp = row[28];     // AC - TIMESTAMP
+        const datum = row[0];
+        const otpremac = row[1];
+        const kupac = row[2];
+        const odjel = row[3];
+        const radiliste = row[4];
+        const izvodjac = row[5];
+        const brojOtpremnice = row[_oBrojOtpIdx];
+        const status = row[_oStatusIdx];
+        const timestamp = row[_oTimestampIdx];
+        const imageUrl = oImageUrlIdx >= 0 ? (row[oImageUrlIdx] || '') : '';
 
         if (!datum || status !== "PENDING") continue;
 
         const datumObj = parseDate(datum);
         if (year && datumObj.getFullYear() !== parseInt(year)) continue;
 
-        // Pročitaj sortimente (G-Z, indeksi 6-25)
+        // Pročitaj sortimente (počinju na indeksu 6, 20 kolona)
         const sortimenti = {};
         for (let j = 0; j < 20; j++) {
           const vrijednost = parseFloat(row[6 + j]) || 0;
           sortimenti[SORTIMENTI_NAZIVI[j]] = vrijednost;
         }
 
-        // Izračunaj ukupno kao ČETINARI + LIŠĆARI
         const cetinari = parseFloat(sortimenti['Σ ČETINARI']) || 0;
         const liscari = parseFloat(sortimenti['LIŠĆARI']) || 0;
         const ukupno = cetinari + liscari;
@@ -1815,7 +1895,8 @@ function handlePendingUnosi(year, username, password) {
           sortimenti: sortimenti,
           ukupno: ukupno,
           timestamp: formatDate(new Date(timestamp)),
-          timestampObj: new Date(timestamp)
+          timestampObj: new Date(timestamp),
+          imageUrl: imageUrl
         });
       }
     }
@@ -1836,7 +1917,8 @@ function handlePendingUnosi(year, username, password) {
       brojOtpremnice: u.brojOtpremnice,
       sortimenti: u.sortimenti,
       ukupno: u.ukupno,
-      timestamp: u.timestamp
+      timestamp: u.timestamp,
+      imageUrl: u.imageUrl || ''
     }));
 
     Logger.log('=== HANDLE PENDING UNOSI END ===');
@@ -2103,6 +2185,39 @@ function handleDeletePending(params) {
     return createJsonResponse({
       error: "Greška pri brisanju unosa: " + error.toString()
     }, false);
+  }
+}
+
+// Handler za brisanje SVIH pending unosa (admin/rukovodilac)
+function handleDeleteAllPending(params) {
+  try {
+    const user = verifyUser(params.username, params.password);
+    if (!user) return createJsonResponse({ error: 'Neispravno korisničko ime ili lozinka' }, false);
+    if (user.uloga !== 'admin' && user.uloga !== 'rukovodilac') {
+      return createJsonResponse({ error: 'Nemate pravo za ovu akciju' }, false);
+    }
+
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    var deleted = 0;
+    ['PRIMAČ_UNOS', 'OTPREMAČ_UNOS'].forEach(function(sheetName) {
+      const sheet = ss.getSheetByName(sheetName);
+      if (!sheet || sheet.getLastRow() < 2) return;
+      const data = sheet.getDataRange().getValues();
+      const headers = data[0].map(function(h) { return String(h).toUpperCase().trim(); });
+      const statusIdx = headers.indexOf('STATUS');
+      if (statusIdx < 0) return;
+      for (let i = data.length - 1; i >= 1; i--) {
+        if (data[i][statusIdx] === 'PENDING') {
+          sheet.deleteRow(i + 1);
+          deleted++;
+        }
+      }
+    });
+
+    invalidateAllCache();
+    return createJsonResponse({ success: true, message: 'Obrisano ' + deleted + ' unosa', deleted: deleted }, true);
+  } catch (error) {
+    return createJsonResponse({ error: 'Greška: ' + error.toString() }, false);
   }
 }
 
@@ -4554,6 +4669,267 @@ function handleDeletePreklasiranje(params) {
 
   } catch (error) {
     Logger.log('ERROR in handleDeletePreklasiranje: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+// ============================================================
+// ŠIHTARICA — Evidencija radnih dana primača i otpremača
+// ============================================================
+
+function getOrCreateSihtaricaSheet(ss, sheetName, headers) {
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+    sheet.appendRow(headers);
+    var headerRange = sheet.getRange(1, 1, 1, headers.length);
+    headerRange.setBackground('#1e40af');
+    headerRange.setFontColor('white');
+    headerRange.setFontWeight('bold');
+  }
+  return sheet;
+}
+
+function handleAddSihtaricaPrimac(params) {
+  try {
+    var loginResult = JSON.parse(handleLogin(params.username, params.password).getContent());
+    if (!loginResult.success) return createJsonResponse({ error: 'Unauthorized' }, false);
+    if (loginResult.type !== 'primac') return createJsonResponse({ error: 'Samo primači mogu unositi šihtaricu' }, false);
+
+    var ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    var headers = ['DATUM', 'RADNIK', 'TIP_DANA', 'ODJEL', 'GJ', 'BROJ_LINIJE', 'SJEKAĆKA_PARTIJA', 'NAPOMENA', 'TIMESTAMP'];
+    var sheet = getOrCreateSihtaricaSheet(ss, 'ŠIHTARICA_PRIMAC', headers);
+
+    var tipDana = String(params.tipDana || '').trim();
+    var jeTeren = tipDana === 'TEREN';
+    var targetDate = parseDate(params.datum);
+    var tz = Session.getScriptTimeZone();
+    var targetDateStr = Utilities.formatDate(targetDate, tz, 'yyyy-MM-dd');
+    var fullNameLc = loginResult.fullName.trim().toLowerCase();
+
+    var existingRowIndex = -1;
+    if (sheet.getLastRow() > 1) {
+      var existingData = sheet.getDataRange().getValues();
+      for (var i = 1; i < existingData.length; i++) {
+        var rd = existingData[i][0];
+        var rdStr = rd instanceof Date ? Utilities.formatDate(rd, tz, 'yyyy-MM-dd') : String(rd);
+        if (rdStr === targetDateStr && String(existingData[i][1] || '').trim().toLowerCase() === fullNameLc) {
+          existingRowIndex = i + 1;
+          break;
+        }
+      }
+    }
+
+    if (!tipDana) {
+      if (existingRowIndex > 0) sheet.deleteRow(existingRowIndex);
+      return createJsonResponse({ success: true, message: 'Unos obrisan' }, true);
+    }
+
+    var rowData = [
+      targetDate,
+      loginResult.fullName,
+      tipDana,
+      jeTeren ? String(params.odjel || '').trim() : '',
+      jeTeren ? String(params.gj || '').trim() : '',
+      jeTeren ? String(params.brojLinije || '').trim() : '',
+      jeTeren ? String(params.sjekacskaPartija || '').trim() : '',
+      jeTeren ? String(params.napomena || '').trim() : '',
+      new Date()
+    ];
+
+    if (existingRowIndex > 0) {
+      sheet.getRange(existingRowIndex, 1, 1, rowData.length).setValues([rowData]);
+    } else {
+      sheet.appendRow(rowData);
+    }
+
+    return createJsonResponse({ success: true, message: 'Šihtarica uspješno unesena' }, true);
+  } catch (error) {
+    Logger.log('ERROR in handleAddSihtaricaPrimac: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+function handleAddSihtaricaOtpremac(params) {
+  try {
+    var loginResult = JSON.parse(handleLogin(params.username, params.password).getContent());
+    if (!loginResult.success) return createJsonResponse({ error: 'Unauthorized' }, false);
+    if (loginResult.type !== 'otpremac') return createJsonResponse({ error: 'Samo otpremači mogu unositi šihtaricu' }, false);
+
+    var ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    var headers = ['DATUM', 'OTPREMAC', 'TIP_DANA', 'ODJEL', 'GJ', 'BROJ_KAMIONA', 'NAPOMENA', 'TIMESTAMP'];
+    var sheet = getOrCreateSihtaricaSheet(ss, 'ŠIHTARICA_OTPREMAC', headers);
+
+    var tipDana = String(params.tipDana || '').trim();
+    var jeTeren = tipDana === 'TEREN';
+    var targetDate = parseDate(params.datum);
+    var tz = Session.getScriptTimeZone();
+    var targetDateStr = Utilities.formatDate(targetDate, tz, 'yyyy-MM-dd');
+    var fullNameLc = loginResult.fullName.trim().toLowerCase();
+
+    var existingRowIndex = -1;
+    if (sheet.getLastRow() > 1) {
+      var existingData = sheet.getDataRange().getValues();
+      for (var i = 1; i < existingData.length; i++) {
+        var rd = existingData[i][0];
+        var rdStr = rd instanceof Date ? Utilities.formatDate(rd, tz, 'yyyy-MM-dd') : String(rd);
+        if (rdStr === targetDateStr && String(existingData[i][1] || '').trim().toLowerCase() === fullNameLc) {
+          existingRowIndex = i + 1;
+          break;
+        }
+      }
+    }
+
+    if (!tipDana) {
+      if (existingRowIndex > 0) sheet.deleteRow(existingRowIndex);
+      return createJsonResponse({ success: true, message: 'Unos obrisan' }, true);
+    }
+
+    var rowData = [
+      targetDate,
+      loginResult.fullName,
+      tipDana,
+      jeTeren ? String(params.odjel || '').trim() : '',
+      jeTeren ? String(params.gj || '').trim() : '',
+      jeTeren ? String(params.brojKamiona || '').trim() : '',
+      jeTeren ? String(params.napomena || '').trim() : '',
+      new Date()
+    ];
+
+    if (existingRowIndex > 0) {
+      sheet.getRange(existingRowIndex, 1, 1, rowData.length).setValues([rowData]);
+    } else {
+      sheet.appendRow(rowData);
+    }
+
+    return createJsonResponse({ success: true, message: 'Šihtarica uspješno unesena' }, true);
+  } catch (error) {
+    Logger.log('ERROR in handleAddSihtaricaOtpremac: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+function handleGetSihtarica(tip, username, password) {
+  try {
+    var loginResult = JSON.parse(handleLogin(username, password).getContent());
+    if (!loginResult.success) return createJsonResponse({ error: 'Unauthorized' }, false);
+
+    var ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    var sheetName = tip === 'primac' ? 'ŠIHTARICA_PRIMAC' : 'ŠIHTARICA_OTPREMAC';
+    var sheet = ss.getSheetByName(sheetName);
+    var tz = Session.getScriptTimeZone();
+
+    var unosi = [];
+    if (sheet && sheet.getLastRow() > 1) {
+      var data = sheet.getDataRange().getValues();
+      var fullName = loginResult.fullName.trim().toLowerCase();
+      for (var i = 1; i < data.length; i++) {
+        var row = data[i];
+        if (String(row[1] || '').trim().toLowerCase() !== fullName) continue;
+        var datum = row[0];
+        var datumStr = datum instanceof Date ? Utilities.formatDate(datum, tz, 'yyyy-MM-dd') : String(datum);
+        var entry = {
+          datum: datumStr,
+          tipDana: String(row[2] || ''),
+          odjel: String(row[3] || ''),
+          gj: String(row[4] || '')
+        };
+        if (tip === 'primac') {
+          entry.brojLinije = String(row[5] || '');
+          entry.sjekacskaPartija = String(row[6] || '');
+          entry.napomena = String(row[7] || '');
+        } else {
+          entry.brojKamiona = String(row[5] || '');
+          entry.napomena = String(row[6] || '');
+        }
+        unosi.push(entry);
+      }
+    }
+
+    var godisnji = getGodisnjiStatus(ss, loginResult.fullName, sheetName, tip);
+    return createJsonResponse({ success: true, unosi: unosi, godisnji: godisnji }, true);
+  } catch (error) {
+    Logger.log('ERROR in handleGetSihtarica: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+function getGodisnjiStatus(ss, fullName, sihtaricaSheetName, tip) {
+  var ugovoreni = 0;
+  var tekucaGodina = new Date().getFullYear();
+
+  // Čitaj ugovorene dane iz ŠIHTARICA_GODISNJI_DANI
+  var gdSheet = ss.getSheetByName('ŠIHTARICA_GODISNJI_DANI');
+  if (gdSheet && gdSheet.getLastRow() > 1) {
+    var gdData = gdSheet.getDataRange().getValues();
+    var fn = fullName.trim().toLowerCase();
+    for (var i = 1; i < gdData.length; i++) {
+      // Kolone: USERNAME, FULLNAME, TIP (primac/otpremac), UGOVORENI_DANI, POSTAVIO, DATUM
+      if (String(gdData[i][1] || '').trim().toLowerCase() === fn &&
+          String(gdData[i][2] || '').trim() === tip) {
+        ugovoreni = parseInt(gdData[i][3]) || 0;
+        break;
+      }
+    }
+  }
+
+  // Broji iskorištene dane za tekuću godinu
+  var iskoristen = 0;
+  var sihtaricaSheet = ss.getSheetByName(sihtaricaSheetName);
+  if (sihtaricaSheet && sihtaricaSheet.getLastRow() > 1) {
+    var sData = sihtaricaSheet.getDataRange().getValues();
+    var fn2 = fullName.trim().toLowerCase();
+    for (var j = 1; j < sData.length; j++) {
+      var rowRadnik = String(sData[j][1] || '').trim().toLowerCase();
+      var rowTip = String(sData[j][2] || '');
+      var rowDatum = sData[j][0];
+      var rowGod = rowDatum instanceof Date ? rowDatum.getFullYear() : parseInt(String(rowDatum).split('.')[2]);
+      if (rowRadnik === fn2 && rowTip === 'GODIŠNJI ODMOR' && rowGod === tekucaGodina) {
+        iskoristen++;
+      }
+    }
+  }
+
+  return { ugovoreni: ugovoreni, iskoristen: iskoristen, preostalo: Math.max(0, ugovoreni - iskoristen) };
+}
+
+function handleSetGodisnjiDani(params) {
+  try {
+    var loginResult = JSON.parse(handleLogin(params.username, params.password).getContent());
+    if (!loginResult.success) return createJsonResponse({ error: 'Unauthorized' }, false);
+    if (loginResult.type !== 'admin') return createJsonResponse({ error: 'Samo admin može postaviti dane godišnjeg' }, false);
+
+    var targetUsername = String(params.targetUsername || '').trim();
+    var targetFullName = String(params.targetFullName || '').trim();
+    var tip = String(params.tip || '').trim(); // 'primac' ili 'otpremac'
+    var dani = parseInt(params.dani);
+    if (isNaN(dani) || dani < 0) return createJsonResponse({ error: 'Neispravan broj dana' }, false);
+
+    var ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    var headers = ['USERNAME', 'FULLNAME', 'TIP', 'UGOVORENI_DANI', 'POSTAVIO', 'DATUM_POSTAVLJANJA'];
+    var sheet = getOrCreateSihtaricaSheet(ss, 'ŠIHTARICA_GODISNJI_DANI', headers);
+
+    // Ažuriraj postojeći red ili dodaj novi
+    var updated = false;
+    if (sheet.getLastRow() > 1) {
+      var data = sheet.getDataRange().getValues();
+      for (var i = 1; i < data.length; i++) {
+        if (String(data[i][0]).trim() === targetUsername && String(data[i][2]).trim() === tip) {
+          sheet.getRange(i + 1, 4).setValue(dani);
+          sheet.getRange(i + 1, 5).setValue(loginResult.fullName);
+          sheet.getRange(i + 1, 6).setValue(new Date());
+          updated = true;
+          break;
+        }
+      }
+    }
+    if (!updated) {
+      sheet.appendRow([targetUsername, targetFullName, tip, dani, loginResult.fullName, new Date()]);
+    }
+
+    return createJsonResponse({ success: true, message: 'Dane godišnjeg odmora postavljeni na ' + dani }, true);
+  } catch (error) {
+    Logger.log('ERROR in handleSetGodisnjiDani: ' + error.toString());
     return createJsonResponse({ error: error.toString() }, false);
   }
 }
