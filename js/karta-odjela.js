@@ -575,8 +575,10 @@
         lyr._kartaProps  = props;
         _allFeatures.push(lyr);
 
-        // Hover tooltip (kratko prikazivanje na mouse over)
-        lyr.bindTooltip(odjel || '?', { permanent:false, direction:'center', className:'karta-tooltip' });
+        // Hover tooltip samo za odjele bez labela (bez-plana)
+        if (status === 'bez-plana') {
+          lyr.bindTooltip(odjel || '?', { permanent:false, direction:'center', className:'karta-tooltip' });
+        }
         lyr.on('mouseover', function() { this.setStyle(_getHoverStyle(this._kartaStatus)); });
         lyr.on('mouseout',  function() { if (_layer) _layer.resetStyle(this); });
         lyr.on('click',     function(e) {
@@ -641,18 +643,15 @@
       const center = bounds.getCenter();
 
       const odsjeci = [...grp.odsjeci].filter(Boolean).sort();
-      const odsjecStr = odsjeci.length > 1
-        ? `<div style="font-size:10px;opacity:.75;margin-top:1px;">(${odsjeci.join(', ')})</div>`
-        : '';
-      const html = `<div style="text-align:center;line-height:1.2;">${grp.odjel}${odsjecStr}</div>`;
+      const odsjecStr = odsjeci.length > 1 ? ` <span style="font-size:10px;opacity:.7;">(${odsjeci.join(', ')})</span>` : '';
+      const html = grp.odjel + odsjecStr;
 
       const cls = grp.isSluc ? 'karta-tooltip karta-tooltip-slucajni' : 'karta-tooltip';
-      const marker = L.marker(center, {
-        icon: L.divIcon({ html, className: cls, iconSize: null, iconAnchor: null }),
-        interactive: false,
-        zIndexOffset: 500,
-      }).addTo(_map);
-      _labelMarkers.push(marker);
+      const tip = L.tooltip({ permanent:true, direction:'center', className:cls, interactive:false, opacity:1 })
+        .setContent(html)
+        .setLatLng(center)
+        .addTo(_map);
+      _labelMarkers.push(tip);
     });
 
     // Postavi maxBounds iz GeoJSON extenta
