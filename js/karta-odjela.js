@@ -623,11 +623,10 @@
       if (!showLabel) return;
 
       if (!odjelGroups.has(key)) {
-        odjelGroups.set(key, { lyrs:[], odjel, isSluc: status === 'slucajni', odsjeci: new Set() });
+        odjelGroups.set(key, { lyrs:[], odjel, isSluc: status === 'slucajni' });
       }
       const grp = odjelGroups.get(key);
       grp.lyrs.push(lyr);
-      if (p.odsjek) grp.odsjeci.add(String(p.odsjek).trim());
     });
 
     odjelGroups.forEach(grp => {
@@ -642,13 +641,9 @@
       if (!bounds || !bounds.isValid()) return;
       const center = bounds.getCenter();
 
-      const odsjeci = [...grp.odsjeci].filter(Boolean).sort();
-      const odsjecStr = odsjeci.length > 1 ? ` <span style="font-size:10px;opacity:.7;">(${odsjeci.join(', ')})</span>` : '';
-      const html = grp.odjel + odsjecStr;
-
       const cls = grp.isSluc ? 'karta-tooltip karta-tooltip-slucajni' : 'karta-tooltip';
       const tip = L.tooltip({ permanent:true, direction:'center', className:cls, interactive:false, opacity:1 })
-        .setContent(html)
+        .setContent(grp.odjel)
         .setLatLng(center)
         .addTo(_map);
       _labelMarkers.push(tip);
