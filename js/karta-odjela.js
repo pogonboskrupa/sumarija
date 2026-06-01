@@ -169,6 +169,9 @@
         poslovodja:uniq(srcPrimke, p => p.poslovodja) });
     });
     map._extra = extraMap;
+    console.log('[karta] extraMap keys (' + extraMap.size + '):', [...extraMap.keys()]);
+    console.log('[karta] _prelazniSetGlobal:', [..._prelazniSetGlobal]);
+    console.log('[karta] _slucajniSet:', [..._slucajniSet]);
     return map;
   }
 
@@ -683,7 +686,9 @@
         lyr._kartaGj     = gj;
         lyr._kartaInfo   = info;
         lyr._kartaProps  = props;
-        lyr._kartaExtra  = !info ? (statusMap._extra && statusMap._extra.get(key)) || null : null;
+        const _xtra = !info ? (statusMap._extra && statusMap._extra.get(key)) || null : null;
+        if (!info) console.log('[karta] non-plan', key, 'status='+status, 'extra=', _xtra ? 'OK' : 'NULL', 'extraMapHas=', statusMap._extra ? statusMap._extra.has(key) : 'no_extra');
+        lyr._kartaExtra  = _xtra;
         _allFeatures.push(lyr);
 
         // Hover tooltip za odjele bez permanentnog labela
