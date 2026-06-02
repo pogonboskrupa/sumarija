@@ -3307,6 +3307,10 @@
     /* divIcon labeli — ukloni Leaflet default pozadinu */
     .leaflet-marker-icon.karta-tooltip { background:white; border:1px solid #d1d5db; }
     .leaflet-marker-icon.karta-tooltip-slucajni { background:#7c3aed; border-color:#6d28d9; color:white; }
+    @media (max-width: 640px) {
+      #mapa-modal { align-items: stretch !important; padding: 0 !important; }
+      #mapa-modal > div { border-radius: 0 !important; max-height: 100dvh !important; max-height: 100vh !important; height: 100dvh !important; height: 100vh !important; max-width: 100% !important; }
+    }
     </style>
 
     <!-- GP Odjel Detail Modal -->
