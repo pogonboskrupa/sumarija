@@ -3109,67 +3109,71 @@
             </div>
 
             <!-- KARTA ODJELA CONTENT -->
-            <div id="karta-odjela-content" class="container hidden">
-                <div class="page-header">
-                    <div class="page-header-left">
-                        <h1>🗺️ Mapa odjela 2026</h1>
-                        <p>Prostorni prikaz odjela po statusu realizacije plana sječe</p>
+            <div id="karta-odjela-content" class="hidden" style="flex-direction:column;width:100%;min-height:0;">
+                <!-- Header + filteri u padded wrapperu -->
+                <div style="padding:16px 20px 0;">
+                    <div class="page-header" style="margin-bottom:12px;">
+                        <div class="page-header-left">
+                            <h1>🗺️ Mapa odjela 2026</h1>
+                            <p>Prostorni prikaz odjela po statusu realizacije plana sječe</p>
+                        </div>
+                        <div class="page-header-right">
+                            <button class="btn btn-primary" onclick="initKartaOdjela(true)">🔄 Osvježi</button>
+                        </div>
                     </div>
-                    <div class="page-header-right">
-                        <button class="btn btn-primary" onclick="initKartaOdjela(true)">🔄 Osvježi</button>
+                    <!-- Filter traka -->
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;">
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <label style="font-size:12px;font-weight:600;color:#374151;">GJ:</label>
+                            <select id="karta-filter-gj" onchange="applyKartaFilter()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;">
+                                <option value="sve">Sve GJ</option>
+                                <option value="Risovac Krupa">Risovac Krupa</option>
+                                <option value="Grmeč Jasenica">Grmeč Jasenica</option>
+                                <option value="Vojskova">Vojskova</option>
+                            </select>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <label style="font-size:12px;font-weight:600;color:#374151;">Status:</label>
+                            <select id="karta-filter-status" onchange="applyKartaFilter()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;">
+                                <option value="sve">Svi statusi</option>
+                                <option value="planirano">Planirano</option>
+                                <option value="u-sjeci">U sječi</option>
+                                <option value="posjeceno">Posječeno</option>
+                                <option value="bez-plana">Bez plana</option>
+                            </select>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:4px;">
+                            <input id="karta-search" type="text" placeholder="Broj odjela..." oninput="searchKartaOdjel()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;width:110px;" />
+                            <button onclick="searchKartaOdjel()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🔍</button>
+                            <button onclick="document.getElementById('karta-search').value='';searchKartaOdjel();" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">✕</button>
+                        </div>
+                        <button id="karta-sat-btn" onclick="toggleMapaSat()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🛰️ Satelit</button>
+                        <button id="karta-odjel-ruta-btn" onclick="toggleOdjelRutaMode()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🔀 Ruta odjel→odjel</button>
+                        <button onclick="resetKartaView()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">↺ Reset</button>
+                        <!-- Legenda -->
+                        <div style="display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;align-items:center;">
+                            <span style="font-size:11px;display:flex;align-items:center;gap:3px;"><span style="display:inline-block;width:12px;height:12px;background:#9ca3af;border-radius:2px;"></span>Planirano</span>
+                            <span style="font-size:11px;display:flex;align-items:center;gap:3px;"><span style="display:inline-block;width:12px;height:12px;background:#d97706;border-radius:2px;"></span>U sječi</span>
+                            <span style="font-size:11px;display:flex;align-items:center;gap:3px;"><span style="display:inline-block;width:12px;height:12px;background:#16a34a;border-radius:2px;"></span>Posječeno</span>
+                            <span style="font-size:11px;display:flex;align-items:center;gap:3px;"><span style="display:inline-block;width:12px;height:12px;background:#7c3aed;border-radius:2px;"></span>Slučajni</span>
+                            <span style="font-size:11px;display:flex;align-items:center;gap:3px;"><span style="display:inline-block;width:12px;height:12px;background:#0891b2;border-radius:2px;"></span>Nekategorisan</span>
+                        </div>
                     </div>
+                    <!-- Hint za ruta-mode -->
+                    <div id="mapa-ruta-hint" style="display:none;padding:8px 14px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;font-size:13px;color:#dc2626;font-weight:600;margin-bottom:8px;"></div>
                 </div>
-                <!-- Filter traka -->
-                <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;">
-                    <div style="display:flex;align-items:center;gap:6px;">
-                        <label style="font-size:12px;font-weight:600;color:#374151;">Gospodarska jedinica:</label>
-                        <select id="karta-filter-gj" onchange="applyKartaFilter()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;">
-                            <option value="sve">Sve GJ</option>
-                            <option value="Risovac Krupa">Risovac Krupa</option>
-                            <option value="Grmeč Jasenica">Grmeč Jasenica</option>
-                            <option value="Vojskova">Vojskova</option>
-                        </select>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:6px;">
-                        <label style="font-size:12px;font-weight:600;color:#374151;">Status:</label>
-                        <select id="karta-filter-status" onchange="applyKartaFilter()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;">
-                            <option value="sve">Svi statusi</option>
-                            <option value="planirano">Planirano</option>
-                            <option value="u-sjeci">U sječi</option>
-                            <option value="posjeceno">Posječeno</option>
-                            <option value="bez-plana">Bez plana</option>
-                        </select>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:4px;">
-                        <input id="karta-search" type="text" placeholder="Broj odjela..." oninput="searchKartaOdjel()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;width:120px;" />
-                        <button onclick="searchKartaOdjel()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🔍</button>
-                        <button onclick="document.getElementById('karta-search').value='';searchKartaOdjel();" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">✕</button>
-                    </div>
-                    <button id="karta-sat-btn" onclick="toggleMapaSat()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🛰️ Satelit</button>
-                    <button id="karta-odjel-ruta-btn" onclick="toggleOdjelRutaMode()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🔀 Ruta odjel→odjel</button>
-                    <button onclick="resetKartaView()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">↺ Reset pogleda</button>
-                    <!-- Legenda -->
-                    <div style="display:flex;gap:10px;margin-left:auto;flex-wrap:wrap;">
-                        <span style="font-size:11px;display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:14px;height:14px;background:#9ca3af;border-radius:3px;"></span>Planirano</span>
-                        <span style="font-size:11px;display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:14px;height:14px;background:#d97706;border-radius:3px;"></span>U sječi</span>
-                        <span style="font-size:11px;display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:14px;height:14px;background:#16a34a;border-radius:3px;"></span>Posječeno</span>
-                        <span style="font-size:11px;display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:14px;height:14px;background:#7c3aed;border-radius:3px;"></span>Slučajni užitak</span>
-                        <span style="font-size:11px;display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:14px;height:14px;background:#0891b2;border-radius:3px;"></span>Nekategorisan</span>
-                    </div>
-                </div>
-                <!-- Hint za ruta-mode -->
-                <div id="mapa-ruta-hint" style="display:none;padding:8px 14px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;font-size:13px;color:#dc2626;font-weight:600;margin-bottom:8px;"></div>
-                <!-- Leaflet mapa -->
+                <!-- Leaflet mapa — puna širina -->
                 <style>
-                  #karta-odjela-map { width:100%; height:calc(100vh - 240px); min-height:400px; border-radius:10px; border:1px solid #e2e8f0; overflow:hidden; background:#f1f5f9; }
-                  @media (max-width:1024px) { #karta-odjela-map { height:calc(100vh - 210px); min-height:320px; } }
-                  @media (max-width:640px)  { #karta-odjela-map { height:calc(100vh - 270px); min-height:260px; } }
+                  #karta-odjela-content:not(.hidden) { display:flex !important; }
+                  #karta-odjela-map { width:100%; height:calc(100vh - 220px); min-height:400px; background:#f1f5f9; }
+                  @media (max-width:1024px) { #karta-odjela-map { height:calc(100vh - 200px); min-height:320px; } }
+                  @media (max-width:640px)  { #karta-odjela-map { height:calc(100vh - 230px); min-height:260px; } }
                 </style>
-                <div id="karta-odjela-map" style="width:100%;height:calc(100vh - 240px);min-height:400px;">
+                <div id="karta-odjela-map">
                     <div id="karta-loading" style="display:flex;align-items:center;justify-content:center;height:100%;color:#6b7280;font-size:14px;">⏳ Učitavam kartu...</div>
                 </div>
                 <!-- Ruta info -->
-                <div id="mapa-ruta-info" style="display:none;margin-top:10px;padding:10px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:13px;color:#1e40af;"></div>
+                <div id="mapa-ruta-info" style="display:none;margin:8px 20px;padding:10px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:13px;color:#1e40af;"></div>
             </div>
 
             </main><!-- /main-content -->
