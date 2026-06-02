@@ -96,12 +96,13 @@
     let _prelazniSet = new Set(); // nije u planu 2026, ali nema "SLUCAJNI" — prelazni iz prethodne godine
 
     primkeTekuce.forEach(p => {
-      const k = _normKey(p.odjel);
+      const k  = _normKey(p.odjel);
+      const bk = _baseKey(k); // stripa SLUCAJNI sufiks da matchuje GeoJSON polygon key
       if (!planKeys.has(k)) {
         if (k.includes('SLUCAJNI') || k.includes('SLUCAJAN')) {
-          _slucajniSet.add(k);
+          _slucajniSet.add(bk); // čuvamo baseKey, ne puni normKey
         } else {
-          _prelazniSet.add(k);
+          _prelazniSet.add(bk); // isto za prelazne
         }
       }
     });
@@ -139,7 +140,8 @@
     // Extra map za non-plan odjele (slučajni + prelazni)
     // Key = _normKey(p.odjel) s uklonjenim SLUCAJNI sufiksom, da matchuje GeoJSON polygon key
     const extraMap = new Map();
-    const _baseKey = k => k.replace(/\s+SLUCAJNI\b.*/,'').replace(/\s+SLUCAJAN\b.*/,'').trim();
+    // Stripa SLUCAJNI sufiks u svim formatima: "104 SLUCAJNI", "104 SLUCAJNI UZICI", "104 (SLUCAJNI 2025)"
+    const _baseKey = k => k.replace(/[\s(]+SLUCAJNI.*/,'').replace(/[\s(]+SLUCAJAN.*/,'').trim();
     const nonPlanPrimke = [...primkeTekuce, ...primkeOstale].filter(p => !planKeys.has(_normKey(p.odjel)));
     const nonPlanOtpr   = [...otpremeTekuce, ...otremeOstale].filter(p => !planKeys.has(_normKey(p.odjel)));
     const nonPlanKeys   = new Set([
@@ -169,9 +171,6 @@
         poslovodja:uniq(srcPrimke, p => p.poslovodja) });
     });
     map._extra = extraMap;
-    console.log('[karta] extraMap keys (' + extraMap.size + '):', [...extraMap.keys()]);
-    console.log('[karta] _prelazniSetGlobal:', [..._prelazniSetGlobal]);
-    console.log('[karta] _slucajniSet:', [..._slucajniSet]);
     return map;
   }
 
@@ -686,9 +685,7 @@
         lyr._kartaGj     = gj;
         lyr._kartaInfo   = info;
         lyr._kartaProps  = props;
-        const _xtra = !info ? (statusMap._extra && statusMap._extra.get(key)) || null : null;
-        if (!info) console.log('[karta] non-plan', key, 'status='+status, 'extra=', _xtra ? 'OK' : 'NULL', 'extraMapHas=', statusMap._extra ? statusMap._extra.has(key) : 'no_extra');
-        lyr._kartaExtra  = _xtra;
+        lyr._kartaExtra  = !info ? (statusMap._extra && statusMap._extra.get(key)) || null : null;
         _allFeatures.push(lyr);
 
         // Hover tooltip za odjele bez permanentnog labela
