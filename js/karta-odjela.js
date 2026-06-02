@@ -81,6 +81,9 @@
   }
 
   // ---- STATUS MAP + SLUČAJNI ----
+  // Stripa SLUCAJNI sufiks u svim formatima: "104 SLUCAJNI", "104 SLUCAJNI UZICI", "104 (SLUCAJNI 2025)"
+  const _baseKey = k => k.replace(/[\s(]+SLUCAJNI.*/,'').replace(/[\s(]+SLUCAJAN.*/,'').trim();
+
   function _buildStatusMap(primke, otpreme) {
     const planEntries    = _planEntries();
     const planKeys       = new Set(planEntries.map(e => _normKey(e.gj+' '+e.odjel)));
@@ -107,11 +110,6 @@
       }
     });
     _prelazniSetGlobal = _prelazniSet;
-
-    console.log('[karta] primkeTekuce:', primkeTekuce.length, 'primkeOstale:', primkeOstale.length);
-    if (primkeTekuce.length > 0) console.log('[karta] sample p.odjel:', primkeTekuce.slice(0,3).map(p=>p.odjel));
-    if (primkeTekuce.length > 0) console.log('[karta] sample normKey(p.odjel):', primkeTekuce.slice(0,3).map(p=>_normKey(p.odjel)));
-    console.log('[karta] sample planKey:', _normKey(planEntries[0].gj+' '+planEntries[0].odjel));
 
     planEntries.forEach(entry => {
       const key  = _normKey(entry.gj+' '+entry.odjel);  // matches normKey(p.odjel)
@@ -143,10 +141,7 @@
     });
 
     // Extra map za non-plan odjele (slučajni + prelazni)
-    // Key = _normKey(p.odjel) s uklonjenim SLUCAJNI sufiksom, da matchuje GeoJSON polygon key
     const extraMap = new Map();
-    // Stripa SLUCAJNI sufiks u svim formatima: "104 SLUCAJNI", "104 SLUCAJNI UZICI", "104 (SLUCAJNI 2025)"
-    const _baseKey = k => k.replace(/[\s(]+SLUCAJNI.*/,'').replace(/[\s(]+SLUCAJAN.*/,'').trim();
     const nonPlanPrimke = [...primkeTekuce, ...primkeOstale].filter(p => !planKeys.has(_normKey(p.odjel)));
     const nonPlanOtpr   = [...otpremeTekuce, ...otremeOstale].filter(p => !planKeys.has(_normKey(p.odjel)));
     const nonPlanKeys   = new Set([
@@ -557,9 +552,40 @@
         </table>
         </div>
 
-        ${hasOst ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 14px;font-size:13px;color:#92400e;margin-bottom:10px;">
-          ⚠️ <b>Prethodne godine:</b> sječa ${_fmt(so.ukupno)}, otprema ${_fmt(oo.ukupno)}
-        </div>` : ''}
+        ${hasOst ? (() => {
+          const prevYear = PLAN_YEAR - 1;
+          const soCijC = so.celDuga+so.celCijepana+so.skart;
+          const soCijL = so.ogrDugi+so.ogrCijepani+so.gule;
+          const ooCijC = oo.celDuga+oo.celCijepana+oo.skart;
+          const ooCijL = oo.ogrDugi+oo.ogrCijepani+oo.gule;
+          const rowO = (lbl, sv, ov, bold) => {
+            const bS = bold?'font-weight:700;font-size:13px;':'font-size:13px;';
+            return `<tr${bold?' style="background:#f8fafc;"':''}>
+              <td style="padding:7px 10px;border-bottom:1px solid #f1f5f9;${bS}">${lbl}</td>
+              <td style="padding:7px 10px;font-size:13px;text-align:right;border-bottom:1px solid #f1f5f9;color:#15803d;${bold?'font-weight:700;':''}">${_fmt(sv)}</td>
+              <td style="padding:7px 10px;font-size:13px;text-align:right;border-bottom:1px solid #f1f5f9;color:#92400e;${bold?'font-weight:700;':''}">${_fmt(ov)}</td>
+            </tr>`;
+          };
+          return `<div style="margin-bottom:12px;border-radius:12px;overflow:hidden;border:1px solid #fde68a;">
+            <div style="background:#fffbeb;padding:8px 14px 4px;font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.5px;">⚠️ Sječa ${prevYear} (prethodna godina)</div>
+            <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+              <thead><tr style="background:#fef9c3;">
+                <th style="padding:6px 10px;font-size:12px;text-align:left;color:#78350f;font-weight:600;">Sortiment</th>
+                <th style="padding:6px 10px;font-size:12px;text-align:right;color:#15803d;font-weight:600;">Sječa</th>
+                <th style="padding:6px 10px;font-size:12px;text-align:right;color:#92400e;font-weight:600;">Otprema</th>
+              </tr></thead>
+              <tbody>
+                ${rowO('TRUPCI Č',   so.cTrupci, oo.cTrupci, false)}
+                ${rowO('CIJEPANO Č', soCijC, ooCijC, false)}
+                ${rowO('TRUPCI L',   so.lTrupci, oo.lTrupci, false)}
+                ${rowO('CIJEPANO L', soCijL, ooCijL, false)}
+                ${rowO('UKUPNO',     so.ukupno, oo.ukupno, true)}
+              </tbody>
+            </table>
+            </div>
+          </div>`;
+        })() : ''}
         ${routeBtn}`;
     }
 
