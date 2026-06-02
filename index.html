@@ -3280,8 +3280,8 @@
 
     <!-- Mapa — Detalji odjela Modal -->
     <!-- Mapa — Detalji odjela Modal -->
-    <div id="mapa-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);align-items:flex-end;justify-content:center;padding:0;">
-        <div style="background:white;border-radius:18px 18px 0 0;width:100%;max-width:640px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(0,0,0,.25);overflow:hidden;">
+    <div id="mapa-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);align-items:stretch;justify-content:center;padding:0;">
+        <div style="background:white;border-radius:0;width:100%;max-width:100%;height:100dvh;height:100vh;display:flex;flex-direction:column;box-shadow:none;overflow:hidden;">
             <!-- Drag handle -->
             <div style="flex-shrink:0;display:flex;justify-content:center;padding:10px 0 4px;cursor:pointer;" onclick="closeMapaModal()">
                 <div style="width:40px;height:4px;background:#d1d5db;border-radius:2px;"></div>
@@ -3307,10 +3307,6 @@
     /* divIcon labeli — ukloni Leaflet default pozadinu */
     .leaflet-marker-icon.karta-tooltip { background:white; border:1px solid #d1d5db; }
     .leaflet-marker-icon.karta-tooltip-slucajni { background:#7c3aed; border-color:#6d28d9; color:white; }
-    @media (max-width: 640px) {
-      #mapa-modal { align-items: stretch !important; padding: 0 !important; }
-      #mapa-modal > div { border-radius: 0 !important; max-height: 100dvh !important; max-height: 100vh !important; height: 100dvh !important; height: 100vh !important; max-width: 100% !important; }
-    }
     </style>
 
     <!-- GP Odjel Detail Modal -->
