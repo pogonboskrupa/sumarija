@@ -358,7 +358,16 @@
                         }
                     } catch(e) {}
                 }
-                throw new Error('Offline — nema kešovanih podataka za ovaj prikaz.');
+                // Nema keša za ovaj tab — upozori jednom i vrati prazan odgovor
+                // (ne bacaj grešku da callers mogu gracefully prikazati prazan sadržaj)
+                if (!window._offlineNoCacheWarned) {
+                    window._offlineNoCacheWarned = true;
+                    if (typeof showWarning === 'function') {
+                        showWarning('Offline', 'Neki tabovi nemaju keširane podatke — posjeti ih dok si online da ih sačuvaš.', 6000);
+                    }
+                }
+                console.warn(`[OFFLINE] No cache for: ${cacheKey}`);
+                return { success: false, offline: true };
             }
 
             // Cache miss or stale - fetch from network with retry for transient errors

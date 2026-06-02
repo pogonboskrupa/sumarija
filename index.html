@@ -3478,6 +3478,8 @@
     });
 
     window.addEventListener('online', function() {
+        // Resetuj dedup flag da upozorenje može opet biti prikazano ako opet padne konekcija
+        window._offlineNoCacheWarned = false;
         triggerRefresh();
     });
 
