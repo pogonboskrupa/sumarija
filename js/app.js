@@ -358,7 +358,16 @@
                         }
                     } catch(e) {}
                 }
-                throw new Error('Offline — nema kešovanih podataka za ovaj prikaz.');
+                // Nema keša za ovaj tab — upozori jednom i vrati prazan odgovor
+                // (ne bacaj grešku da callers mogu gracefully prikazati prazan sadržaj)
+                if (!window._offlineNoCacheWarned) {
+                    window._offlineNoCacheWarned = true;
+                    if (typeof showWarning === 'function') {
+                        showWarning('Offline', 'Neki tabovi nemaju keširane podatke — posjeti ih dok si online da ih sačuvaš.', 6000);
+                    }
+                }
+                console.warn(`[OFFLINE] No cache for: ${cacheKey}`);
+                return { success: false, offline: true };
             }
 
             // Cache miss or stale - fetch from network with retry for transient errors
@@ -705,42 +714,43 @@
                     const currentMonthNum = currentMonth + 1; // 1-12 (za cache key koji koristi loadDashboard)
 
                     allViews = [
-                        // Glavni meniji
+                        // DASHBOARD + OPERATIVA
                         { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year + '_m' + currentMonthNum, timeout: 180000 },
-                        // Operativa tab koristi cache_dashboard_${year} (bez sufiks-a mjeseca)
                         { name: 'Operativa - Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year, timeout: 60000 },
                         { name: 'Operativa (Stats)', url: buildApiUrl('stats', { year }), cacheKey: 'cache_stats_' + year, timeout: 180000 },
-                        { name: 'Stanje Odjela', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_odjeli_' + year, timeout: 180000 },
-                        // SKIP: Stanje Odjela Admin se učitava lazy (kad korisnik klikne na tab) jer može trajati dugo
-                        // { name: 'Stanje Odjela Admin', url: buildApiUrl('stanje-odjela'), cacheKey: 'cache_stanje_odjela_admin', timeout: 180000 },
+                        { name: 'Stanje Odjela (odjeli)', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_odjeli_' + year, timeout: 180000 },
+                        { name: 'Stanje Odjela (operativa/mapa)', url: buildApiUrl('stanje-odjela'), cacheKey: 'cache_stanje_odjela', timeout: 180000 },
+                        { name: 'Lista Odjela (dropdown)', url: buildApiUrl('get-odjeli-list'), cacheKey: 'cache_odjeli_list', timeout: 60000 },
                         { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
-                        { name: 'Pending Unosi', url: buildApiUrl('pending-unosi'), cacheKey: 'cache_pending_unosi', timeout: 120000 },
+                        { name: 'Pending Unosi', url: buildApiUrl('pending-unosi', { year }), cacheKey: 'cache_pending_unosi', timeout: 120000 },
                         { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni-sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year, timeout: 120000 },
                         { name: 'Dinamika', url: buildApiUrl('get_dinamika', { year }), cacheKey: 'cache_dinamika_' + year, timeout: 120000 },
 
-                        // PRIMACI meni + SVA 4 PODMENIJA
+                        // PRIMKE — jedan fetch, sve varijante cache ključeva
+                        // (sječa tab, mapa, dashboard tekući mjesec, dashboard zadnjih5, sječa zadnjih5)
+                        { name: 'Primke (svi prikazi)', url: buildApiUrl('primke'), cacheKey: 'cache_primke_sjeca', timeout: 150000,
+                          alsoCache: ['cache_primke_tekuci_miesec', 'cache_primke_zadnjih5_dash', 'cache_primke_zadnjih5'] },
+
+                        // OTPREME — jedan fetch, sve varijante cache ključeva
+                        // (otprema tab, mapa, dashboard tekući mjesec, dashboard zadnjih5, otprema zadnjih5)
+                        { name: 'Otpreme (svi prikazi)', url: buildApiUrl('otpreme'), cacheKey: 'cache_otpreme_tab', timeout: 150000,
+                          alsoCache: ['cache_otpreme_tekuci_miesec', 'cache_otpreme_zadnjih5_dash', 'cache_otpreme_zadnjih5'] },
+
+                        // PRIMACI meni + sva 4 podmenija
                         { name: 'Primaci - Monthly', url: buildApiUrl('primaci', { year }), cacheKey: 'cache_primaci_' + year, timeout: 180000 },
                         { name: 'Primaci - Daily', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_primaci_daily_' + year + '_' + currentMonth, timeout: 180000 },
                         { name: 'Primaci - Po radilištu', url: buildApiUrl('primaci-by-radiliste', { year }), cacheKey: 'cache_primaci_radiliste_' + year, timeout: 180000 },
                         { name: 'Primaci - Po izvođaču', url: buildApiUrl('primaci-by-izvodjac', { year }), cacheKey: 'cache_primaci_izvodjac_' + year, timeout: 180000 },
+                        { name: 'Primaci - Sortimenti po primaču', url: buildApiUrl('primaci-sortimenti-by-primac', { year, month: currentMonth }), cacheKey: 'cache_primaci_sort_primac_' + year + '_' + currentMonth, timeout: 180000 },
 
-                        // OTPREMACI meni + SVA 3 PODMENIJA
+                        // OTPREMACI meni + sva 3 podmenija
                         { name: 'Otpremaci - Monthly', url: buildApiUrl('otpremaci', { year }), cacheKey: 'cache_otpremaci_' + year, timeout: 180000 },
                         { name: 'Otpremaci - Daily', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_daily_' + year + '_' + currentMonth, timeout: 180000 },
                         { name: 'Otpremaci - Po radilištu', url: buildApiUrl('otpremaci-by-radiliste', { year }), cacheKey: 'cache_otpremaci_radiliste_' + year, timeout: 180000 },
+                        { name: 'Otpremaci - Sortimenti po otpremaču', url: buildApiUrl('otpremaci-sortimenti-by-otpremac', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_sort_otpremac_' + year + '_' + currentMonth, timeout: 180000 },
 
                         // STANJE ZALIHA
                         { name: 'Stanje Zaliha', url: buildApiUrl('stanje-zaliha'), cacheKey: 'cache_stanje_zaliha', timeout: 180000 },
-
-                        // PRIMACI ADMIN (koristi isti endpoint kao primaci monthly)
-                        { name: 'Primaci Admin', url: buildApiUrl('primaci', { year }), cacheKey: 'cache_primaci_' + year, timeout: 180000 },
-
-                        // SORTIMENTI PO PRIMAC/OTPREMAC (tekući mjesec)
-                        { name: 'Primaci - Sortimenti po primaču', url: buildApiUrl('primaci-sortimenti-by-primac', { year, month: currentMonth }), cacheKey: 'cache_primaci_sort_primac_' + year + '_' + currentMonth, timeout: 180000 },
-                        { name: 'Otpremaci - Sortimenti po otpremaču', url: buildApiUrl('otpremaci-sortimenti-by-otpremac', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_sort_otpremac_' + year + '_' + currentMonth, timeout: 180000 },
-
-                        // OTPREMACI PO KUPCIMA (koristi isti endpoint kao kupci)
-                        { name: 'Otpremaci - Po kupcima', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
                     ];
 
                 } else if (userType === 'poslovođa' || userType === 'poslovodja') {
@@ -804,11 +814,20 @@
                             if (cached) {
                                 const cachedData = JSON.parse(cached);
                                 if (cachedData.data && !cachedData.data.error && (Date.now() - cachedData.timestamp) < smartTTL) {
-                                    return false; // Already cached & fresh - skip
+                                    // Primar je svjež — provjeri i sekundarne ključeve
+                                    const allSecondaryFresh = !view.alsoCache || view.alsoCache.every(k => {
+                                        try {
+                                            const s = localStorage.getItem(k);
+                                            if (!s) return false;
+                                            const sd = JSON.parse(s);
+                                            return sd.data && !sd.data.error && (Date.now() - sd.timestamp) < smartTTL;
+                                        } catch(e) { return false; }
+                                    });
+                                    if (allSecondaryFresh) return false; // Svi svježi - preskoči
                                 }
                             }
                         } catch (e) {}
-                        return true; // Not cached or stale - fetch
+                        return true; // Nije keširano ili zastarjelo - fetchuj
                     });
                     const skipped = allViews.length - uncachedViews.length;
                     if (skipped > 0) {
@@ -835,7 +854,17 @@
                 // OPTIMIZIRANO UČITAVANJE - max 8 paralelnih poziva
                 await processQueue(allViews, async (view) => {
                     try {
-                        await fetchWithCache(view.url, view.cacheKey, forceRefresh, view.timeout);
+                        // Briši sekundarne cache ključeve ako je forceRefresh
+                        if (forceRefresh && view.alsoCache) {
+                            view.alsoCache.forEach(k => localStorage.removeItem(k));
+                        }
+                        const data = await fetchWithCache(view.url, view.cacheKey, forceRefresh, view.timeout);
+                        // Kopiraj iste podatke i pod sekundarne cache ključeve
+                        // (isti API odgovor, ali ga različiti prikazi kešuju pod različitim ključevima)
+                        if (view.alsoCache && data && !data.offline && !data.error) {
+                            const entry = JSON.stringify({ data, timestamp: Date.now() });
+                            view.alsoCache.forEach(k => { try { localStorage.setItem(k, entry); } catch(e) {} });
+                        }
                         totalLoaded++;
                         console.log(`[PRELOAD] ✓ ${view.name} loaded (${totalLoaded}/${totalViews})`);
                         // Ažuriraj progress toast u realnom vremenu
