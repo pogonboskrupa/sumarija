@@ -3385,16 +3385,117 @@
         </div>
     </div>
 <!-- Globalni offline banner -->
-<div id="app-offline-banner" style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:29999;background:#1e293b;color:white;padding:9px 20px;border-radius:99px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.35);pointer-events:none;white-space:nowrap;">
-  📦 Offline — prikazano zadnje keširano stanje
+<div id="app-offline-banner" style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(20px);z-index:29999;background:#1e293b;color:white;padding:9px 20px;border-radius:99px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.35);pointer-events:none;white-space:nowrap;transition:opacity .3s,transform .3s;opacity:0;">
+  <span id="offline-banner-icon">📦</span>
+  <span id="offline-banner-text">Offline — prikazano zadnje keširano stanje</span>
+  <span id="offline-banner-age" style="opacity:.65;margin-left:4px;font-weight:400;"></span>
 </div>
 <script>
   (function() {
-    var banner = document.getElementById('app-offline-banner');
-    function update() { banner.style.display = navigator.onLine ? 'none' : 'block'; }
-    update();
-    window.addEventListener('online',  update);
-    window.addEventListener('offline', update);
+    var banner  = document.getElementById('app-offline-banner');
+    var iconEl  = document.getElementById('offline-banner-icon');
+    var textEl  = document.getElementById('offline-banner-text');
+    var ageEl   = document.getElementById('offline-banner-age');
+    var refreshTimer = null;
+    var hideTimer    = null;
+
+    function formatAge(ms) {
+        var mins = Math.round(ms / 60000);
+        if (mins < 1)  return 'upravo';
+        if (mins < 60) return mins + 'm';
+        return Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm';
+    }
+
+    function newestCacheAge() {
+        var newest = 0;
+        try {
+            for (var i = 0; i < localStorage.length; i++) {
+                var key = localStorage.key(i);
+                if (!key || !key.startsWith('cache_')) continue;
+                var obj = JSON.parse(localStorage.getItem(key) || 'null');
+                if (obj && obj.timestamp > newest) newest = obj.timestamp;
+            }
+        } catch(e) {}
+        return newest ? (Date.now() - newest) : null;
+    }
+
+    function showBanner(icon, text, ageMs, bg) {
+        clearTimeout(hideTimer);
+        iconEl.textContent = icon;
+        textEl.textContent = text;
+        ageEl.textContent  = ageMs != null ? '· ' + formatAge(ageMs) + ' stari' : '';
+        banner.style.background  = bg || '#1e293b';
+        banner.style.display     = 'block';
+        requestAnimationFrame(function() {
+            banner.style.opacity   = '1';
+            banner.style.transform = 'translateX(-50%) translateY(0)';
+        });
+    }
+
+    function hideBanner() {
+        banner.style.opacity   = '0';
+        banner.style.transform = 'translateX(-50%) translateY(20px)';
+        hideTimer = setTimeout(function() { banner.style.display = 'none'; }, 320);
+    }
+
+    function showOffline() {
+        showBanner('📦', 'Offline — prikazano zadnje keširano stanje', newestCacheAge(), '#1e293b');
+    }
+
+    function triggerRefresh() {
+        if (refreshTimer) return;
+        showBanner('🔄', 'Konekcija uspostavljena — osvježavam podatke...', null, '#166534');
+
+        refreshTimer = setTimeout(function() {
+            var interval = setInterval(function() {
+                if (typeof preloadAllViews === 'function' &&
+                    typeof currentUser !== 'undefined' && currentUser) {
+                    clearInterval(interval);
+                    preloadAllViews(false, false)
+                        .then(function() {
+                            refreshTimer = null;
+                            hideBanner();
+                            if (typeof showToast === 'function') {
+                                showToast('success', 'Podaci osvježeni',
+                                    'Podaci su ažurirani s interneta.', 4000);
+                            }
+                        })
+                        .catch(function() {
+                            refreshTimer = null;
+                            hideBanner();
+                        });
+                }
+            }, 400);
+            // Odustani ako app nije spreman za 12s
+            setTimeout(function() { clearInterval(interval); refreshTimer = null; hideBanner(); }, 12000);
+        }, 800);
+    }
+
+    window.addEventListener('offline', function() {
+        clearTimeout(refreshTimer);
+        refreshTimer = null;
+        showOffline();
+    });
+
+    window.addEventListener('online', function() {
+        triggerRefresh();
+    });
+
+    // Expozi za showCacheIndicator u app.js
+    window.offlineBannerShowStale = function(ageMs) {
+        if (!navigator.onLine) return; // vec pokazuje offline banner
+        showBanner('📦', 'Podaci iz arhive', ageMs, '#854d0e');
+        hideTimer = setTimeout(function() {
+            if (navigator.onLine) hideBanner();
+        }, 5000);
+    };
+    window.offlineBannerHide = function() {
+        if (!navigator.onLine) return;
+        hideBanner();
+    };
+
+    // Inicijalno stanje
+    if (!navigator.onLine) showOffline();
   })();
 </script>
 
