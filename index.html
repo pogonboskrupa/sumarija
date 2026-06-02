@@ -3109,7 +3109,7 @@
             </div>
 
             <!-- KARTA ODJELA CONTENT -->
-            <div id="karta-odjela-content" class="hidden" style="flex-direction:column;width:100%;min-height:0;">
+            <div id="karta-odjela-content" class="hidden">
                 <!-- Header + filteri u padded wrapperu -->
                 <div style="padding:16px 20px 0;">
                     <div class="page-header" style="margin-bottom:12px;">
@@ -3164,7 +3164,8 @@
                 </div>
                 <!-- Leaflet mapa — puna širina -->
                 <style>
-                  #karta-odjela-content:not(.hidden) { display:flex !important; }
+                  /* Karta treba punu širinu — override main-content overflow */
+                  body:has(#karta-odjela-content:not(.hidden)) .main-content { overflow-x: visible; }
                   #karta-odjela-map { width:100%; height:calc(100vh - 220px); min-height:400px; background:#f1f5f9; }
                   @media (max-width:1024px) { #karta-odjela-map { height:calc(100vh - 200px); min-height:320px; } }
                   @media (max-width:640px)  { #karta-odjela-map { height:calc(100vh - 230px); min-height:260px; } }

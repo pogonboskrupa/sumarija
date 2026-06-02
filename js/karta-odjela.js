@@ -800,13 +800,18 @@
 
   async function _loadGeojson() {
     if (_geojson) return _geojson;
+    const ld = document.getElementById('karta-loading');
     try {
-      const r = await fetch(GEOJSON_URL);
+      if (ld) { ld.style.display='flex'; ld.textContent='⏳ Učitavam poligone (može potrajati)...'; }
+      const r = await fetch(GEOJSON_URL + '?v=' + Date.now());
       if (!r.ok) throw new Error('HTTP '+r.status);
-      _geojson = await r.json();
+      const text = await r.text();
+      if (ld) ld.textContent = '⏳ Parsiram ' + Math.round(text.length/1024) + ' KB...';
+      _geojson = JSON.parse(text);
       return _geojson;
     } catch(e) {
-      console.error('[Mapa] GeoJSON failed:', e.message);
+      console.error('[Mapa] GeoJSON failed:', e);
+      if (ld) { ld.style.display='flex'; ld.textContent='❌ Greška: ' + e.message; }
       return { type:'FeatureCollection', features:[] };
     }
   }
