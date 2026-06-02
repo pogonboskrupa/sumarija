@@ -646,6 +646,28 @@
 
   let _labelMarkers = []; // permanentni labeli po odjelu
 
+  // ---- ZOOM-RESPONSIVE LABELI ----
+  let _labelStyleEl = null;
+  function _updateLabelSizes() {
+    const z = _map ? _map.getZoom() : 12;
+    // font-size po zoom nivou; ispod 11 sakrij labele
+    const size =
+      z >= 16 ? 15 :
+      z >= 15 ? 13 :
+      z >= 14 ? 11 :
+      z >= 13 ? 9  :
+      z >= 12 ? 7  :
+      z >= 11 ? 5  : 0;
+    const vis = size > 0 ? 'visible' : 'hidden';
+    if (!_labelStyleEl) {
+      _labelStyleEl = document.createElement('style');
+      _labelStyleEl.id = 'karta-label-zoom-style';
+      document.head.appendChild(_labelStyleEl);
+    }
+    _labelStyleEl.textContent =
+      `.karta-tooltip { font-size:${size}px !important; visibility:${vis}; padding:${size>0?'2px 6px':'0'} !important; }`;
+  }
+
   // ---- RENDEROVANJE ----
   function _renderLayer(geojson, statusMap) {
     if (_layer) { _map.removeLayer(_layer); _layer = null; }
@@ -841,6 +863,10 @@
         maxZoom:18,
       });
       _osmLayer.addTo(_map);
+
+      // Zoom-responsive labeli
+      _map.on('zoomend', _updateLabelSizes);
+      _updateLabelSizes();
 
     } else if (!force) {
       _map.invalidateSize();
