@@ -40,23 +40,20 @@ const CACHE_ON_FETCH_PATTERNS = [
     /\.(png|jpg|jpeg|svg|ico|woff2?|ttf)$/,
 ];
 
-// Install event - cache static assets
+// Install event - kešira resurse jedan po jedan (greška na jednom ne blokira ostale)
 self.addEventListener('install', (event) => {
-    console.log('[SW] Installing service worker...');
-
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('[SW] Caching static assets');
-                return cache.addAll(STATIC_ASSETS);
-            })
-            .then(() => {
-                console.log('[SW] Service worker installed');
-                return self.skipWaiting();
-            })
-            .catch((error) => {
-                console.error('[SW] Failed to cache assets:', error);
-            })
+        caches.open(CACHE_NAME).then(async (cache) => {
+            const results = await Promise.allSettled(
+                STATIC_ASSETS.map(url =>
+                    cache.add(url).catch(e => console.warn('[SW] Skip:', url, e.message))
+                )
+            );
+            const ok  = results.filter(r => r.status === 'fulfilled').length;
+            const err = results.filter(r => r.status === 'rejected').length;
+            console.log(`[SW] Install: ${ok} keširano, ${err} preskočeno`);
+            return self.skipWaiting();
+        })
     );
 });
 
