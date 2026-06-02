@@ -108,6 +108,11 @@
     });
     _prelazniSetGlobal = _prelazniSet;
 
+    console.log('[karta] primkeTekuce:', primkeTekuce.length, 'primkeOstale:', primkeOstale.length);
+    if (primkeTekuce.length > 0) console.log('[karta] sample p.odjel:', primkeTekuce.slice(0,3).map(p=>p.odjel));
+    if (primkeTekuce.length > 0) console.log('[karta] sample normKey(p.odjel):', primkeTekuce.slice(0,3).map(p=>_normKey(p.odjel)));
+    console.log('[karta] sample planKey:', _normKey(planEntries[0].gj+' '+planEntries[0].odjel));
+
     planEntries.forEach(entry => {
       const key  = _normKey(entry.gj+' '+entry.odjel);  // matches normKey(p.odjel)
       const sjeca = _emptySort();
