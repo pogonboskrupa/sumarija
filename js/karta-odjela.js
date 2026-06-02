@@ -29,6 +29,7 @@
   let _sumarijaMark = null;
   let _currentLatlng     = null;
   let _currentOdjelLabel = null;
+  let _stanjeMap         = null; // normKey → { projekat:[], sortimentiNazivi:[] }
   let _odjelRutaMode = false;    // da li je aktivan režim rute između odjela
   let _odjelRutaFrom = null;     // { latlng, label }
   let _odjelRutaFromMark = null;
@@ -330,10 +331,31 @@
     if (hint) { hint.textContent = '📍 Kliknite na prvi odjel (polazište)'; hint.style.display = 'block'; }
   };
 
+  // ---- STANJE ODJELA (projekat) ----
+  function _getStanjeMap() {
+    if (_stanjeMap) return _stanjeMap;
+    try {
+      const raw = localStorage.getItem('cache_stanje_odjela');
+      if (!raw) return null;
+      // fetchWithCache stores { timestamp, data: <api response> }
+      // api response is { data: [...odjeli], sortimentiNazivi: [...] }
+      const wrapper = JSON.parse(raw);
+      const payload = wrapper && wrapper.data;
+      if (!payload || !Array.isArray(payload.data)) return null;
+      _stanjeMap = new Map();
+      payload.data.forEach(od => {
+        if (!od.odjelNaziv) return;
+        const k = _normKey(od.odjelNaziv);
+        _stanjeMap.set(k, { projekat: (od.redovi && od.redovi.projekat) || [], sortimentiNazivi: payload.sortimentiNazivi || [] });
+      });
+    } catch(_) {}
+    return _stanjeMap || null;
+  }
+
   // ---- DETALJI MODAL ----
   function _openDetaljiModal(props, info, latlng, extra) {
     _currentLatlng     = latlng;
-    _currentOdjelLabel = String(props.odjel || props.name || '?');
+    _currentOdjelLabel = info ? String(info.odjel) : String(props.odjel || props.name || '?');
     const odjel  = _currentOdjelLabel;
     const gj     = props.gj   || '—';
     const odsjek = props.odsjek || '—';
@@ -480,6 +502,40 @@
         return `<tr style="background:#fafafa;">${tdL('<span style="font-size:12px;color:#9ca3af;padding-left:10px;">↳ '+label+'</span>')}${td(sv,'#6b7280',false)}${hasOtpr?td(ov,'#9ca3af',false)+'<td style="border-bottom:1px solid #f1f5f9;"></td>':''}<td style="border-bottom:1px solid #f1f5f9;"></td></tr>`;
       };
 
+      // Projekat iz stanje-odjela cache
+      const _sm = _getStanjeMap();
+      const _stanjeKey = _normKey((info.gj||'') + ' ' + info.odjel);
+      const _stanjeOd = _sm && _sm.get(_stanjeKey);
+      let projekatSection = '';
+      if (_stanjeOd && _stanjeOd.projekat && _stanjeOd.projekat.length) {
+        const sortN = _stanjeOd.sortimentiNazivi;
+        const proj  = _stanjeOd.projekat;
+        const fmtP  = v => (v === 0 || v == null) ? '—' : Number(v).toFixed(2);
+        const getCidx = name => sortN.findIndex(s => s === name);
+        const iC = getCidx('ČETINARI'), iL = getCidx('LIŠĆARI'), iSveu = getCidx('SVEUKUPNO');
+        const vC    = iC    >= 0 ? proj[iC]    : null;
+        const vL    = iL    >= 0 ? proj[iL]    : null;
+        const vSveu = iSveu >= 0 ? proj[iSveu] : null;
+        projekatSection = `
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:14px 16px;margin-bottom:14px;">
+            <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">📋 Projekat (stanje zaliha)</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              ${vC != null ? `<div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:80px;border:1px solid #fde68a;">
+                <div style="font-size:11px;color:#9ca3af;">Četinari</div>
+                <div style="font-weight:800;font-size:15px;color:#1e40af;">${fmtP(vC)}</div>
+              </div>` : ''}
+              ${vL != null ? `<div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:80px;border:1px solid #fde68a;">
+                <div style="font-size:11px;color:#9ca3af;">Lišćari</div>
+                <div style="font-weight:800;font-size:15px;color:#92400e;">${fmtP(vL)}</div>
+              </div>` : ''}
+              ${vSveu != null ? `<div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:80px;border:1px solid #fde68a;">
+                <div style="font-size:11px;color:#9ca3af;">Sveukupno</div>
+                <div style="font-weight:800;font-size:17px;color:#5b21b6;">${fmtP(vSveu)}</div>
+              </div>` : ''}
+            </div>
+          </div>`;
+      }
+
       body = `
         <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;">
           <div style="flex:1;min-width:130px;">
@@ -492,6 +548,8 @@
           </div>
           <span style="background:${statusBg[s]};color:${statusColor[s]};padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700;align-self:flex-start;">${statusLabel[s]||s}</span>
         </div>
+
+        ${projekatSection}
 
         <div style="background:#f8fafc;border-radius:12px;padding:14px 16px;margin-bottom:14px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
