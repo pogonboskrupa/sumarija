@@ -345,6 +345,22 @@
                 perfMetrics.cacheMisses++;
             }
 
+            // Offline fast-path: skip network entirely, use stale cache immediately
+            if (!navigator.onLine) {
+                if (cached) {
+                    try {
+                        const cachedData = JSON.parse(cached);
+                        if (cachedData.data) {
+                            const age = Date.now() - cachedData.timestamp;
+                            showCacheIndicator(age, true);
+                            console.warn(`[OFFLINE] Stale cache (${Math.round(age/60000)}m): ${cacheKey}`);
+                            return cachedData.data;
+                        }
+                    } catch(e) {}
+                }
+                throw new Error('Offline — nema kešovanih podataka za ovaj prikaz.');
+            }
+
             // Cache miss or stale - fetch from network with retry for transient errors
             const MAX_RETRIES = 3;
             let lastError = null;
@@ -458,11 +474,18 @@
             throw lastError || new Error('Network request failed');
         }
 
-        // Show cache indicator - disabled
-        function showCacheIndicator(age, isStale = false) {}
+        function showCacheIndicator(age, isStale = false) {
+            if (!isStale) return;
+            if (typeof window.offlineBannerShowStale === 'function') {
+                window.offlineBannerShowStale(age);
+            }
+        }
 
-        // Hide cache indicator - disabled
-        function hideCacheIndicator() {}
+        function hideCacheIndicator() {
+            if (typeof window.offlineBannerHide === 'function') {
+                window.offlineBannerHide();
+            }
+        }
 
         // Clear cache by pattern
         function clearCacheByPattern(pattern) {
