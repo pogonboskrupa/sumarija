@@ -72,6 +72,13 @@
                 }
             }
 
+            // Exit mapa fokus mode when switching away
+            if (tab !== 'karta-odjela' && document.body.classList.contains('mapa-fokus')) {
+                document.body.classList.remove('mapa-fokus');
+                const fb = document.getElementById('karta-fokus-btn');
+                if (fb) { fb.textContent = '⛶ Fokus'; fb.classList.remove('active'); }
+            }
+
             // Hide all content sections
             document.querySelectorAll('[id$="-content"]').forEach(c => c.classList.add('hidden'));
 

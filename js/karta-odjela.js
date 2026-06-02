@@ -656,6 +656,18 @@
     document.getElementById('mapa-modal').style.display = 'none';
   };
 
+  // ---- FOKUS MODE ----
+  window.toggleMapaFokus = function() {
+    document.body.classList.toggle('mapa-fokus');
+    const active = document.body.classList.contains('mapa-fokus');
+    const btn = document.getElementById('karta-fokus-btn');
+    if (btn) {
+      btn.textContent = active ? '✕ Fokus' : '⛶ Fokus';
+      btn.classList.toggle('active', active);
+    }
+    if (_map) setTimeout(() => _map.invalidateSize(), 50);
+  };
+
   // ---- SATELITSKI SLOJ ----
   window.toggleMapaSat = function() {
     _isSat = !_isSat;
