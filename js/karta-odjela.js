@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const GEOJSON_URL = 'data/odjeli.geojson';
+  const GEOJSON_URL = 'data/odjeli.geojson?v=20260602';
   const CACHE_SJECA = 'cache_primke_sjeca';
   const CACHE_OTPR  = 'cache_otpreme_karta';
 
