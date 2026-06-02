@@ -475,12 +475,16 @@
                 }
             }
 
-            // If timeout, show user-friendly message
-            if (lastError && lastError.name === 'AbortError') {
-                throw new Error('Server je spor, molimo pokušajte ponovo ili koristite keširane podatke.');
+            // Nema keša i sve retry-e iscrpljene — prikaži upozorenje jednom, vrati prazni odgovor
+            if (!window._offlineNoCacheWarned) {
+                window._offlineNoCacheWarned = true;
+                const msg = (lastError && lastError.name === 'AbortError')
+                    ? 'Server je spor. Neke stranice ne mogu biti učitane.'
+                    : 'Mrežna greška. Neke stranice ne mogu biti učitane.';
+                if (typeof showWarning === 'function') showWarning('Podaci nedostupni', msg, 6000);
+                setTimeout(() => { window._offlineNoCacheWarned = false; }, 30000);
             }
-
-            throw lastError || new Error('Network request failed');
+            return { success: false, offline: true };
         }
 
         function showCacheIndicator(age, isStale = false) {
@@ -758,8 +762,10 @@
                     var pCK = 'cache_stanje_zaliha_' + (pName || 'all').replace(/\s+/g, '_');
                     allViews = [
                         { name: 'Stanje Zaliha', url: buildApiUrl('stanje-zaliha', { poslovodja: pName }), cacheKey: pCK, timeout: 60000 },
-                        { name: 'Primke (Sječa)', url: buildApiUrl('primke'), cacheKey: 'cache_primke_sjeca', timeout: 120000 },
-                        { name: 'Otpreme', url: buildApiUrl('otpreme'), cacheKey: 'cache_otpreme_tab', timeout: 120000 }
+                        { name: 'Primke (svi prikazi)', url: buildApiUrl('primke'), cacheKey: 'cache_primke_sjeca', timeout: 120000,
+                          alsoCache: ['cache_primke_zadnjih5', 'cache_primke_tekuci_miesec'] },
+                        { name: 'Otpreme (svi prikazi)', url: buildApiUrl('otpreme'), cacheKey: 'cache_otpreme_tab', timeout: 120000,
+                          alsoCache: ['cache_otpreme_zadnjih5', 'cache_otpreme_tekuci_miesec'] },
                     ];
 
                 } else if (userType === 'operativa') {
@@ -1237,8 +1243,7 @@
                 try {
                     const data = await fetchWithCache(url, cacheKey, false, 180000);
 
-                    if (data.error) {
-                        if (!hasCachedData) throw new Error(data.error);
+                    if (data.offline || data.error) {
                         markTabRendered('dashboard');
                         return;
                     }
@@ -2246,6 +2251,10 @@
                     fetch(urlPrekl).then(r => r.json()).catch(() => ({ preklasiranja: [] }))
                 ]);
 
+                if (data.offline) {
+                    if (!hasCached) { document.getElementById('loading-screen').classList.add('hidden'); }
+                    return;
+                }
                 if (data.error || !data.odjeli) {
                     throw new Error(data.error || 'Nema podataka o odjelima');
                 }
@@ -2408,11 +2417,8 @@
                     fetchWithCache(previousYearUrl, `cache_odjeli_${previousYear}`, false, 300000)
                 ]);
 
-                if (currentYearData.error || !currentYearData.odjeli) {
-                    if (!hasCachedData) {
-                        throw new Error(currentYearData.error || 'Nema podataka o odjelima za tekuću godinu');
-                    }
-                    return; // Silently fail if we have cached data
+                if (currentYearData.offline || currentYearData.error || !currentYearData.odjeli) {
+                    return; // Silently fail — user already sees cached data or offline marker
                 }
 
                 // Kombinuj podatke
@@ -3889,8 +3895,7 @@
                 // 🔄 BACKGROUND REFRESH (180s timeout)
                 try {
                     const data = await fetchWithCache(url, cacheKey, false, 180000);
-                    if (data.error) {
-                        if (!hasCachedData) throw new Error(data.error);
+                    if (data.offline || data.error) {
                         markTabRendered('primaci');
                         return;
                     }
@@ -3937,12 +3942,14 @@
 
                 // Validate data structure
                 if (!data || !data.primaci || !Array.isArray(data.primaci)) {
+                    if (data && data.offline) return;
                     console.error('Invalid primaci data structure:', data);
                     showError('Greška', 'Neispravni podaci primača');
                     return;
                 }
 
                 if (!data.mjeseci || !Array.isArray(data.mjeseci)) {
+                    if (data && data.offline) return;
                     console.error('Missing mjeseci in primaci data');
                     showError('Greška', 'Nedostaju mjeseci u podacima');
                     return;
@@ -4221,8 +4228,7 @@
                 // 🔄 BACKGROUND REFRESH (180s timeout)
                 try {
                     const data = await fetchWithCache(url, cacheKey, false, 180000);
-                    if (data.error) {
-                        if (!hasCachedData) throw new Error(data.error);
+                    if (data.offline || data.error) {
                         markTabRendered('otpremaci');
                         return;
                     }
@@ -4269,12 +4275,14 @@
 
                 // Validate data structure
                 if (!data || !data.otpremaci || !Array.isArray(data.otpremaci)) {
+                    if (data && data.offline) return;
                     console.error('Invalid otpremaci data structure:', data);
                     showError('Greška', 'Neispravni podaci otpremača');
                     return;
                 }
 
                 if (!data.mjeseci || !Array.isArray(data.mjeseci)) {
+                    if (data && data.offline) return;
                     console.error('Missing mjeseci in otpremaci data');
                     showError('Greška', 'Nedostaju mjeseci u podacima');
                     return;
