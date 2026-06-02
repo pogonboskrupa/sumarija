@@ -3365,5 +3365,18 @@
             </div>
         </div>
     </div>
+<!-- Globalni offline banner -->
+<div id="app-offline-banner" style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:29999;background:#1e293b;color:white;padding:9px 20px;border-radius:99px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.35);pointer-events:none;white-space:nowrap;">
+  📦 Offline — prikazano zadnje keširano stanje
+</div>
+<script>
+  (function() {
+    var banner = document.getElementById('app-offline-banner');
+    function update() { banner.style.display = navigator.onLine ? 'none' : 'block'; }
+    update();
+    window.addEventListener('online',  update);
+    window.addEventListener('offline', update);
+  })();
+</script>
 
 </html>

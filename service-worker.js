@@ -1,26 +1,43 @@
 // ========== Service Worker - Offline Support ==========
 // Cache static assets, fallback za offline
 
-const CACHE_VERSION = 'v9';
+const CACHE_VERSION = 'v10';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
+// Svi resursi koji se pre-kešuju pri SW instalaciji
 const STATIC_ASSETS = [
     '/',
     '/index.html',
     '/offline.html',
     '/idb-helper.js',
     '/data-sync.js',
-    '/js/notifications.js',
+    '/js/app.js',
+    '/js/auth.js',
+    '/js/ui.js',
+    '/js/utils.js',
+    '/js/cache-helper.js',
+    '/js/charts.js',
+    '/js/godisnji-plan.js',
+    '/js/izvjestaji-new.js',
     '/js/karta-odjela.js',
+    '/js/kubikator.js',
+    '/js/notifications.js',
+    '/js/print-utils.js',
+    '/js/week-fix.js',
+    '/js/drag-scroll.js',
     '/css/main.css',
+    '/css/styles.css',
+    '/css/login-optimized.css',
+    '/css/table-contrast-fix.css',
     '/data/odjeli.geojson',
 ];
 
-// Resursi koji se kešuju pri prvom uspješnom fetchu (geojson, js, css)
+// Tipovi resursa koji se kešuju i pri kasnijem fetchu
 const CACHE_ON_FETCH_PATTERNS = [
     /\/data\/.*\.geojson$/,
     /\/js\/.*\.js$/,
     /\/css\/.*\.css$/,
+    /\.(png|jpg|jpeg|svg|ico|woff2?|ttf)$/,
 ];
 
 // Install event - cache static assets

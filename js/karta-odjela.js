@@ -906,11 +906,8 @@
 
     setTimeout(() => { if (_map) _map.invalidateSize(); }, 100);
 
-    const isOffline = !navigator.onLine;
-    _showOfflineBanner(isOffline);
-
     const ld = document.getElementById('karta-loading');
-    if (ld) { ld.style.display='flex'; ld.textContent= isOffline ? '📦 Učitavam keširano stanje...' : '⏳ Učitavam podatke...'; }
+    if (ld) { ld.style.display='flex'; ld.textContent= navigator.onLine ? '⏳ Učitavam podatke...' : '📦 Učitavam keširano stanje...'; }
 
     const [geojson, primke, otpreme] = await Promise.all([
       _loadGeojson(),
@@ -921,30 +918,8 @@
     _statusMap = _buildStatusMap(primke, otpreme);
     _renderLayer(geojson, _statusMap);
 
-    // Osluškuj promjenu statusa mreže
-    window.addEventListener('online',  () => _showOfflineBanner(false));
-    window.addEventListener('offline', () => _showOfflineBanner(true));
-
     setTimeout(() => { if (_map) _map.invalidateSize(); }, 200);
   };
-
-  function _showOfflineBanner(offline) {
-    let banner = document.getElementById('karta-offline-banner');
-    if (!banner) {
-      banner = document.createElement('div');
-      banner.id = 'karta-offline-banner';
-      banner.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:19999;padding:8px 18px;border-radius:99px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);transition:opacity .3s;pointer-events:none;';
-      document.body.appendChild(banner);
-    }
-    if (offline) {
-      banner.textContent = '📦 Offline — prikazano zadnje keširano stanje';
-      banner.style.background = '#1e293b';
-      banner.style.color = 'white';
-      banner.style.opacity = '1';
-    } else {
-      banner.style.opacity = '0';
-    }
-  }
 
   // ---- PLAN ENTRIES ----
   // cTrupci=TRUPCI Č, cijepanoC=CEL.DUGA+CEL.CIJEPANA+ŠKART, lTrupci=TRUPCI L, cijepanoL=OGR.DUGI+OGR.CIJEPANI+GULE
