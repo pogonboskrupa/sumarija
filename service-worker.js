@@ -1,7 +1,7 @@
 // ========== Service Worker - Offline Support ==========
 // Cache static assets, fallback za offline
 
-const CACHE_VERSION = 'v8';
+const CACHE_VERSION = 'v9';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
@@ -10,7 +10,17 @@ const STATIC_ASSETS = [
     '/offline.html',
     '/idb-helper.js',
     '/data-sync.js',
-    '/js/notifications.js'
+    '/js/notifications.js',
+    '/js/karta-odjela.js',
+    '/css/main.css',
+    '/data/odjeli.geojson',
+];
+
+// Resursi koji se kešuju pri prvom uspješnom fetchu (geojson, js, css)
+const CACHE_ON_FETCH_PATTERNS = [
+    /\/data\/.*\.geojson$/,
+    /\/js\/.*\.js$/,
+    /\/css\/.*\.css$/,
 ];
 
 // Install event - cache static assets
@@ -56,86 +66,79 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Fetch event - network-first with cache fallback
+// Fetch event
 self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
-    if (request.method !== 'GET') {
-        return;
-    }
+    if (request.method !== 'GET') return;
 
-    // 🚨 BYPASS: Don't intercept Google Apps Script requests
-    // This allows CORS errors to surface properly in the browser console
-    // Remove this bypass after deploying Apps Script with CORS headers
-    if (url.hostname === 'script.google.com') {
-        console.log('[SW] BYPASS: Not intercepting Apps Script request:', url.pathname);
-        return; // Let browser handle it directly
-    }
+    // Google Apps Script — ne interceptuj, fetchWithCache u app.js rješava stale cache
+    if (url.hostname === 'script.google.com') return;
 
-    // Handle manifest requests
+    // Manifest API pozivi
     if (url.searchParams.has('path') && url.searchParams.get('path').includes('manifest')) {
         event.respondWith(
-            fetch(request, { timeout: 10000 })
-                .catch(() => {
-                    return new Response(JSON.stringify({
-                        error: 'offline',
-                        primkaRowCount: 0,
-                        otpremaRowCount: 0
-                    }), {
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                })
+            fetch(request).catch(() => new Response(JSON.stringify({
+                error: 'offline', primkaRowCount: 0, otpremaRowCount: 0
+            }), { headers: { 'Content-Type': 'application/json' } }))
         );
         return;
     }
 
-    // Handle static assets - cache-first
-    if (STATIC_ASSETS.includes(url.pathname)) {
+    // GeoJSON — cache-first (velik fajl, rijetko se mijenja)
+    if (url.pathname.endsWith('.geojson')) {
         event.respondWith(
-            caches.match(request)
-                .then((cachedResponse) => {
-                    if (cachedResponse) {
-                        return cachedResponse;
+            caches.match(request).then(cached => {
+                if (cached) return cached;
+                return fetch(request).then(resp => {
+                    if (resp.status === 200) {
+                        const clone = resp.clone();
+                        caches.open(CACHE_NAME).then(c => c.put(request, clone));
                     }
-                    return fetch(request);
-                })
+                    return resp;
+                });
+            }).catch(() => caches.match(request))
         );
         return;
     }
 
-    // Network-first for everything else
+    // Statični resursi (HTML, JS, CSS) — cache-first
+    if (STATIC_ASSETS.includes(url.pathname) ||
+        CACHE_ON_FETCH_PATTERNS.some(p => p.test(url.pathname))) {
+        event.respondWith(
+            caches.match(request).then(cached => {
+                const networkFetch = fetch(request).then(resp => {
+                    if (resp.status === 200) {
+                        const clone = resp.clone();
+                        caches.open(CACHE_NAME).then(c => c.put(request, clone));
+                    }
+                    return resp;
+                });
+                // Vrati cache odmah, osvježi u pozadini (stale-while-revalidate)
+                return cached || networkFetch;
+            }).catch(() => caches.match(request))
+        );
+        return;
+    }
+
+    // Sve ostalo — network-first, cache kao fallback
     event.respondWith(
         fetch(request)
-            .then((response) => {
+            .then(response => {
                 if (response.status === 200) {
-                    const responseClone = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(request, responseClone);
-                    });
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then(c => c.put(request, clone));
                 }
                 return response;
             })
-            .catch(() => {
-                return caches.match(request)
-                    .then((cachedResponse) => {
-                        if (cachedResponse) {
-                            return cachedResponse;
-                        }
-                        // Navigation requests (page loads) → offline.html
-                        if (request.mode === 'navigate') {
-                            return caches.match('/offline.html');
-                        }
-                        return new Response(JSON.stringify({
-                            success: false,
-                            error: 'Offline - no cached data available',
-                            offline: true
-                        }), {
-                            status: 503,
-                            headers: { 'Content-Type': 'application/json' }
-                        });
-                    });
-            })
+            .catch(() => caches.match(request).then(cached => {
+                if (cached) return cached;
+                if (request.mode === 'navigate') return caches.match('/offline.html');
+                return new Response(JSON.stringify({
+                    success: false, error: 'Offline', offline: true
+                }), { status: 503, headers: { 'Content-Type': 'application/json' } });
+            }))
     );
 });
 
