@@ -47,16 +47,17 @@
   }
   function _getStyle(status) {
     const c = _getColor(status);
-    const dashed = (status === 'bez-plana');
+    const noPlan = (status === 'bez-plana');
     return {
-      fillColor: c, fillOpacity: 0.55,
-      color: '#1a1a1a', weight: 4, opacity: 0.85,
-      dashArray: dashed ? '6 4' : null,
+      fillColor: c, fillOpacity: noPlan ? 0.10 : 0.55,
+      color: noPlan ? '#9ca3af' : '#1a1a1a', weight: noPlan ? 1 : 4, opacity: noPlan ? 0.35 : 0.85,
+      dashArray: noPlan ? '4 4' : null,
     };
   }
   function _getHoverStyle(status) {
     const c = _getColor(status);
-    return { fillColor:c, fillOpacity:0.8, color:'#000', weight:5, opacity:1 };
+    const noPlan = (status === 'bez-plana');
+    return { fillColor:c, fillOpacity: noPlan ? 0.30 : 0.8, color:'#000', weight: noPlan ? 2 : 5, opacity:1 };
   }
 
   // ---- NORMALIZACIJA ----

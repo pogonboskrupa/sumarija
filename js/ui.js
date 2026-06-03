@@ -172,6 +172,11 @@
                 if (typeof loadGodisnjiPlan === 'function') loadGodisnjiPlan(false);
             } else if (tab === 'karta-odjela') {
                 if (typeof initKartaOdjela === 'function') initKartaOdjela(false);
+                // Auto-aktiviraj fokus mode pri ulasku na mapu
+                document.body.classList.add('mapa-fokus');
+                const fb = document.getElementById('karta-fokus-btn');
+                if (fb) { fb.textContent = '✕ Fokus'; fb.classList.add('active'); }
+                if (typeof _map !== 'undefined' && _map) setTimeout(() => _map.invalidateSize(), 50);
             }
         }
 

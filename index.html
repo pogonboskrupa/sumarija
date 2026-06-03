@@ -3188,6 +3188,7 @@
                     body.mapa-fokus #karta-odjela-map { height:calc(100vh - 120px) !important; }
                   }
                   #karta-fokus-btn.active { background:#1e40af !important; color:white !important; border-color:#1e40af !important; }
+                  #karta-fokus-btn { display:none !important; }
                 </style>
                 <div id="karta-odjela-map">
                     <div id="karta-loading" style="display:flex;align-items:center;justify-content:center;height:100%;color:#6b7280;font-size:14px;">⏳ Učitavam kartu...</div>
@@ -3280,12 +3281,8 @@
 
     <!-- Mapa — Detalji odjela Modal -->
     <!-- Mapa — Detalji odjela Modal -->
-    <div id="mapa-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);align-items:flex-end;justify-content:center;padding:0;">
-        <div style="background:white;border-radius:18px 18px 0 0;width:100%;max-width:640px;height:70vh;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(0,0,0,.25);overflow:hidden;">
-            <!-- Drag handle -->
-            <div style="flex-shrink:0;display:flex;justify-content:center;padding:10px 0 4px;cursor:pointer;" onclick="closeMapaModal()">
-                <div style="width:40px;height:4px;background:#d1d5db;border-radius:2px;"></div>
-            </div>
+    <div id="mapa-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);align-items:flex-start;justify-content:center;padding:0;">
+        <div style="background:white;border-radius:0 0 18px 18px;width:100%;max-width:640px;height:70vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.25);overflow:hidden;">
             <!-- Header -->
             <div style="background:linear-gradient(135deg,#14532d 0%,#166534 100%);color:white;padding:14px 20px 16px;display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;">
                 <div style="flex:1;min-width:0;">
@@ -3297,6 +3294,10 @@
             </div>
             <!-- Body -->
             <div id="mapa-modal-body" style="padding:20px 20px 28px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;"></div>
+            <!-- Drag handle (dole) -->
+            <div style="flex-shrink:0;display:flex;justify-content:center;padding:8px 0;cursor:pointer;" onclick="closeMapaModal()">
+                <div style="width:40px;height:4px;background:#d1d5db;border-radius:2px;"></div>
+            </div>
         </div>
     </div>
 
