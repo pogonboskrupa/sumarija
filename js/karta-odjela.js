@@ -49,8 +49,8 @@
     const c = _getColor(status);
     const noPlan = (status === 'bez-plana');
     return {
-      fillColor: c, fillOpacity: noPlan ? 0.10 : 0.55,
-      color: noPlan ? '#9ca3af' : '#1a1a1a', weight: noPlan ? 1 : 4, opacity: noPlan ? 0.35 : 0.85,
+      fillColor: c, fillOpacity: noPlan ? 0.20 : 0.55,
+      color: '#1a1a1a', weight: noPlan ? 1.5 : 4, opacity: noPlan ? 1 : 0.85,
       dashArray: noPlan ? '4 4' : null,
     };
   }
