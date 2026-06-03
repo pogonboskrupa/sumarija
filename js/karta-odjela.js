@@ -38,7 +38,7 @@
   function _getColor(status) {
     switch (status) {
       case 'posjeceno':  return '#16a34a';
-      case 'u-sjeci':    return '#d97706';
+      case 'u-sjeci':    return '#dc2626';
       case 'planirano':  return '#eab308';
       case 'slucajni':   return '#7c3aed';
       case 'prelazni':   return '#0891b2'; // teal — bio u prošlogodišnjem planu
@@ -381,8 +381,8 @@
     }
 
     const statusLabel = { posjeceno:'Posječeno','u-sjeci':'U sječi',planirano:'Planirano',slucajni:'Slučajni užitak',prelazni:'Nekategorisan odjel' };
-    const statusColor = { posjeceno:'#166534','u-sjeci':'#92400e',planirano:'#6b7280',slucajni:'#7c3aed',prelazni:'#0e7490' };
-    const statusBg    = { posjeceno:'#dcfce7','u-sjeci':'#fef3c7',planirano:'#f3f4f6',slucajni:'#f5f3ff',prelazni:'#ecfeff' };
+    const statusColor = { posjeceno:'#166534','u-sjeci':'#dc2626',planirano:'#6b7280',slucajni:'#7c3aed',prelazni:'#0e7490' };
+    const statusBg    = { posjeceno:'#dcfce7','u-sjeci':'#fee2e2',planirano:'#f3f4f6',slucajni:'#f5f3ff',prelazni:'#ecfeff' };
 
     const routeBtn = `
       <div style="display:flex;gap:8px;margin-top:12px;">
