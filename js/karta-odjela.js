@@ -39,7 +39,7 @@
     switch (status) {
       case 'posjeceno':  return '#16a34a';
       case 'u-sjeci':    return '#d97706';
-      case 'planirano':  return '#9ca3af';
+      case 'planirano':  return '#eab308';
       case 'slucajni':   return '#7c3aed';
       case 'prelazni':   return '#0891b2'; // teal — bio u prošlogodišnjem planu
       default:           return '#6366f1';
@@ -551,6 +551,38 @@
         </div>
 
         ${projekatSection}
+
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:12px 16px;margin-bottom:14px;">
+          <div style="font-size:11px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📋 Godišnji plan ${PLAN_YEAR}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+            <div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:80px;border:1px solid #bbf7d0;">
+              <div style="font-size:11px;color:#9ca3af;">Bruto</div>
+              <div style="font-weight:700;font-size:14px;color:#374151;">${_fmt(e.bruto||0)}</div>
+            </div>
+            <div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:80px;border:1px solid #bbf7d0;">
+              <div style="font-size:11px;color:#9ca3af;">Neto</div>
+              <div style="font-weight:800;font-size:15px;color:#166534;">${_fmt(e.neto||0)}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${(e.cTrupci||0)>0?`<div style="background:white;border-radius:7px;padding:4px 10px;flex:1;min-width:90px;border:1px solid #bbf7d0;">
+              <div style="font-size:10px;color:#9ca3af;">Trupci Č</div>
+              <div style="font-weight:700;font-size:13px;color:#1e40af;">${_fmt(e.cTrupci)}</div>
+            </div>`:''}
+            ${(e.cijepanoC||0)>0?`<div style="background:white;border-radius:7px;padding:4px 10px;flex:1;min-width:90px;border:1px solid #bbf7d0;">
+              <div style="font-size:10px;color:#9ca3af;">Cijepano Č</div>
+              <div style="font-weight:700;font-size:13px;color:#1e40af;">${_fmt(e.cijepanoC)}</div>
+            </div>`:''}
+            ${(e.lTrupci||0)>0?`<div style="background:white;border-radius:7px;padding:4px 10px;flex:1;min-width:90px;border:1px solid #bbf7d0;">
+              <div style="font-size:10px;color:#9ca3af;">Trupci L</div>
+              <div style="font-weight:700;font-size:13px;color:#92400e;">${_fmt(e.lTrupci)}</div>
+            </div>`:''}
+            ${(e.cijepanoL||0)>0?`<div style="background:white;border-radius:7px;padding:4px 10px;flex:1;min-width:90px;border:1px solid #bbf7d0;">
+              <div style="font-size:10px;color:#9ca3af;">Cijepano L</div>
+              <div style="font-weight:700;font-size:13px;color:#92400e;">${_fmt(e.cijepanoL)}</div>
+            </div>`:''}
+          </div>
+        </div>
 
         <div style="background:#f8fafc;border-radius:12px;padding:14px 16px;margin-bottom:14px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
