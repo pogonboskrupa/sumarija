@@ -347,7 +347,13 @@
       payload.data.forEach(od => {
         if (!od.odjelNaziv) return;
         const k = _normKey(od.odjelNaziv);
-        _stanjeMap.set(k, { projekat: (od.redovi && od.redovi.projekat) || [], sortimentiNazivi: payload.sortimentiNazivi || [] });
+        _stanjeMap.set(k, {
+          projekat:        (od.redovi && od.redovi.projekat)   || [],
+          sjeca:           (od.redovi && od.redovi.sjeca)       || [],
+          otprema:         (od.redovi && od.redovi.otprema)     || [],
+          sumaLager:       (od.redovi && od.redovi.sumaLager)   || [],
+          sortimentiNazivi: payload.sortimentiNazivi || []
+        });
       });
     } catch(_) {}
     return _stanjeMap || null;
@@ -503,7 +509,7 @@
         return `<tr style="background:#fafafa;">${tdL('<span style="font-size:12px;color:#9ca3af;padding-left:10px;">↳ '+label+'</span>')}${td(sv,'#6b7280',false)}${hasOtpr?td(ov,'#9ca3af',false)+'<td style="border-bottom:1px solid #f1f5f9;"></td>':''}<td style="border-bottom:1px solid #f1f5f9;"></td></tr>`;
       };
 
-      // Projekat iz stanje-odjela cache
+      // Projekat + realizacija iz stanje-odjela cache
       const _sm = _getStanjeMap();
       const _stanjeKey = _normKey((info.gj||'') + ' ' + info.odjel);
       const _stanjeOd = _sm && _sm.get(_stanjeKey);
@@ -511,28 +517,50 @@
       if (_stanjeOd && _stanjeOd.projekat && _stanjeOd.projekat.length) {
         const sortN = _stanjeOd.sortimentiNazivi;
         const proj  = _stanjeOd.projekat;
+        const sj    = _stanjeOd.sjeca    || [];
+        const lager = _stanjeOd.sumaLager || [];
         const fmtP  = v => (v === 0 || v == null) ? '—' : Number(v).toFixed(2);
-        const getCidx = name => sortN.findIndex(s => s === name);
-        const iC = getCidx('ČETINARI'), iL = getCidx('LIŠĆARI'), iSveu = getCidx('SVEUKUPNO');
-        const vC    = iC    >= 0 ? proj[iC]    : null;
-        const vL    = iL    >= 0 ? proj[iL]    : null;
-        const vSveu = iSveu >= 0 ? proj[iSveu] : null;
+        const getV  = (arr, name) => { const i = sortN.findIndex(s => s === name); return i >= 0 ? (arr[i] ?? null) : null; };
+
+        const pC  = getV(proj,  'ČETINARI'), pL  = getV(proj,  'LIŠĆARI'), pSveu = getV(proj,  'SVEUKUPNO');
+        const sC  = getV(sj,    'ČETINARI'), sL  = getV(sj,    'LIŠĆARI'), sSveu = getV(sj,    'SVEUKUPNO');
+        const zC  = getV(lager, 'ČETINARI'), zL  = getV(lager, 'LIŠĆARI'), zSveu = getV(lager, 'SVEUKUPNO');
+
+        const pctC = (pC && pC > 0 && sC != null) ? Math.min(999, sC / pC * 100).toFixed(1) : null;
+        const pctL = (pL && pL > 0 && sL != null) ? Math.min(999, sL / pL * 100).toFixed(1) : null;
+        const pctSveu = (pSveu && pSveu > 0 && sSveu != null) ? Math.min(999, sSveu / pSveu * 100).toFixed(1) : null;
+
+        const col3 = (label, pV, sV, zV, pct, accentC, accentL) => {
+          const zCol = (zV != null && zV < 0) ? '#dc2626' : '#059669';
+          return `
+          <div style="background:white;border-radius:8px;padding:8px 10px;flex:1;min-width:90px;border:1px solid #fde68a;">
+            <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">${label}</div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;">
+              <span style="font-size:10px;color:#9ca3af;">Proj.</span>
+              <span style="font-size:13px;font-weight:700;color:${accentC};">${fmtP(pV)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;">
+              <span style="font-size:10px;color:#9ca3af;">Sječa</span>
+              <span style="font-size:13px;font-weight:700;color:#15803d;">${fmtP(sV)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;">
+              <span style="font-size:10px;color:#9ca3af;">Zaliha</span>
+              <span style="font-size:13px;font-weight:700;color:${zCol};">${fmtP(zV)}</span>
+            </div>
+            ${pct != null ? `<div style="margin-top:5px;height:4px;background:#f3f4f6;border-radius:2px;overflow:hidden;">
+              <div style="height:100%;width:${Math.min(100,parseFloat(pct))}%;background:${parseFloat(pct)>=100?'#dc2626':'#15803d'};border-radius:2px;"></div>
+            </div>
+            <div style="text-align:right;font-size:10px;font-weight:700;color:${parseFloat(pct)>=100?'#dc2626':'#6b7280'};margin-top:1px;">${pct}%</div>` : ''}
+          </div>`;
+        };
+
         projekatSection = `
-          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:14px 16px;margin-bottom:14px;">
-            <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">📋 Projekat (stanje zaliha)</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              ${vC != null ? `<div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:80px;border:1px solid #fde68a;">
-                <div style="font-size:11px;color:#9ca3af;">Četinari</div>
-                <div style="font-weight:800;font-size:15px;color:#1e40af;">${fmtP(vC)}</div>
-              </div>` : ''}
-              ${vL != null ? `<div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:80px;border:1px solid #fde68a;">
-                <div style="font-size:11px;color:#9ca3af;">Lišćari</div>
-                <div style="font-weight:800;font-size:15px;color:#92400e;">${fmtP(vL)}</div>
-              </div>` : ''}
-              ${vSveu != null ? `<div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:80px;border:1px solid #fde68a;">
-                <div style="font-size:11px;color:#9ca3af;">Sveukupno</div>
-                <div style="font-weight:800;font-size:17px;color:#5b21b6;">${fmtP(vSveu)}</div>
-              </div>` : ''}
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px 16px;margin-bottom:14px;">
+            <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📋 Realizacija projekta (stanje zaliha)</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              ${pC  != null ? col3('Četinari',  pC,  sC,  zC,  pctC,  '#1e40af', '') : ''}
+              ${pL  != null ? col3('Lišćari',   pL,  sL,  zL,  pctL,  '#92400e', '') : ''}
+              ${pSveu != null ? col3('Ukupno',  pSveu, sSveu, zSveu, pctSveu, '#5b21b6', '') : ''}
             </div>
           </div>`;
       }
