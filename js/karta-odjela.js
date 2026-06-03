@@ -39,7 +39,7 @@
     switch (status) {
       case 'posjeceno':  return '#16a34a';
       case 'u-sjeci':    return '#d97706';
-      case 'planirano':  return '#9ca3af';
+      case 'planirano':  return '#eab308';
       case 'slucajni':   return '#7c3aed';
       case 'prelazni':   return '#0891b2'; // teal — bio u prošlogodišnjem planu
       default:           return '#6366f1';
