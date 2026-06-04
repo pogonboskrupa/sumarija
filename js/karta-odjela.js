@@ -70,6 +70,15 @@
       .trim();
   }
 
+  // Ključ za prikaz labela — ne strippe /N sufiks, čuva 64/1 vs 64/2
+  function _labelKey(s) {
+    return String(s||'').trim().toUpperCase()
+      .replace(/Č/g,'C').replace(/Ć/g,'C')
+      .replace(/Š/g,'S').replace(/Ž/g,'Z').replace(/Đ/g,'DJ')
+      .replace(/P\s*$/,'')
+      .trim();
+  }
+
   function _fmt(n) {
     if (n == null || isNaN(n)) return '—';
     const v = Math.round(n);
@@ -375,15 +384,17 @@
   // ---- DETALJI MODAL ----
   function _openDetaljiModal(props, info, latlng, extra) {
     _currentLatlng     = latlng;
-    _currentOdjelLabel = info ? String(info.odjel) : String(props.odjel || props.name || '?');
+    // Uvijek koristi GeoJSON props.odjel za prikaz — ne info.odjel koji može biti od drugog poligona
+    _currentOdjelLabel = String(props.odjel || props.name || (info && info.odjel) || '?');
     const odjel  = _currentOdjelLabel;
     const gj     = props.gj   || '—';
     const odsjek = props.odsjek || '—';
-    const gjColor = {'Risovac Krupa':'#1d4ed8','Grmeč Jasenica':'#15803d','Vojskova':'#b45309'}[gj]||'#374151';
+    const gjBg = {'Risovac Krupa':'rgba(147,197,253,.25)','Grmeč Jasenica':'rgba(134,239,172,.25)','Vojskova':'rgba(252,211,77,.25)'}[gj]||'rgba(255,255,255,.15)';
 
     document.getElementById('mapa-modal-title').textContent = 'Odjel ' + odjel;
-    document.getElementById('mapa-modal-gj').textContent = gj;
-    document.getElementById('mapa-modal-gj').style.color = gjColor;
+    const gjEl = document.getElementById('mapa-modal-gj');
+    gjEl.textContent = gj;
+    gjEl.style.cssText = `color:white;font-weight:600;background:${gjBg};display:inline-block;padding:2px 8px;border-radius:4px;border:1px solid rgba(255,255,255,.4);`;
 
     const metaDiv = document.getElementById('mapa-modal-meta');
     if (metaDiv) {
@@ -923,12 +934,12 @@
 
     // ---- JEDAN LABEL PO ODJELU ----
     // Grupisati poligone po odjelu, naći zajednički centar, dodati jedan label
-    const odjelGroups = new Map(); // normKey(gj+odjel) → { lyrs, odjel, isSluc, odsjeci }
+    const odjelGroups = new Map(); // _labelKey(gj+odjel) → { lyrs, odjel, isSluc }
     _allFeatures.forEach(lyr => {
       const p      = lyr._kartaProps || {};
       const odjel  = String(p.odjel || p.name || '').trim();
       const gj     = String(p.gj || '').trim();
-      const key    = _normKey(gj + ' ' + odjel);
+      const key    = _labelKey(gj + ' ' + odjel); // preservira /N razlike
       const status = lyr._kartaStatus;
       const showLabel = status !== 'bez-plana' && status !== 'prelazni';
       if (!showLabel) return;
