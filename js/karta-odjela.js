@@ -149,7 +149,11 @@
 
       const pct    = entry.neto > 0 ? sjeca.ukupno / entry.neto * 100 : 0;
       const status = pct >= 95 ? 'posjeceno' : pct > 5 ? 'u-sjeci' : 'planirano';
-      map.set(key, { gj:entry.gj, odjel:entry.odjel, status, pct, sjeca, otpr, sjecaOst, otprOst, neto:entry.neto, bruto:entry.bruto, radiliste, izvodjac, poslovodja });
+      const entryData = { gj:entry.gj, odjel:entry.odjel, status, pct, sjeca, otpr, sjecaOst, otprOst, neto:entry.neto, bruto:entry.bruto, radiliste, izvodjac, poslovodja };
+      map.set(key, entryData);
+      // Alias bez /N stripa — sprječava 64/1 da matchuje plan od 64/2P
+      const strictKey = _labelKey(entry.gj+' '+entry.odjel);
+      if (strictKey !== key) map.set(strictKey, entryData);
     });
 
     // Extra map za non-plan odjele (slučajni + prelazni)
@@ -420,7 +424,7 @@
         <button onclick="routeOdjelToOdjel()" style="flex:1;display:flex;align-items:center;gap:6px;background:#dc2626;color:white;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;justify-content:center;">🔀 Ruta do odjela…</button>
       </div>`;
 
-    const normKey2    = _normKey((props.gj||'') + ' ' + (props.odjel||props.name||''));
+    const normKey2    = _labelKey((props.gj||'') + ' ' + (props.odjel||props.name||''));
     const isSlucajni  = !info && _slucajniSet.has(normKey2);
     const isPrelazni  = !info && !isSlucajni && _prelazniSetGlobal.has(normKey2);
 
@@ -874,7 +878,7 @@
     _layer = L.geoJSON(geojson, {
       style: feature => {
         const p      = feature.properties || {};
-        const key    = _normKey((p.gj||'') + ' ' + (p.odjel||p.name||''));
+        const key    = _labelKey((p.gj||'') + ' ' + (p.odjel||p.name||''));
         const info      = statusMap.get(key);
         const isSluc    = !info && _slucajniSet.has(key);
         const isPrelazni= !info && !isSluc && _prelazniSetGlobal.has(key);
@@ -884,7 +888,7 @@
         const props  = feature.properties || {};
         const odjel  = String(props.odjel || props.name || '').trim();
         const gj     = String(props.gj    || '').trim();
-        const key    = _normKey(gj + ' ' + odjel);
+        const key    = _labelKey(gj + ' ' + odjel); // bez /N stripa — 64/1 ≠ 64/2
         const info      = statusMap.get(key);
         const isSluc    = !info && _slucajniSet.has(key);
         const isPrelazni= !info && !isSluc && _prelazniSetGlobal.has(key);
