@@ -593,90 +593,78 @@
           </div>`;
       }
 
+      // Kompaktna sekcija godišnjeg plana (ide na dno)
+      const godisnjiPlanSection = `
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:8px 12px;margin-bottom:10px;">
+          <div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">📋 Godišnji plan ${PLAN_YEAR}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;">
+              <div style="font-size:10px;color:#9ca3af;">Bruto</div>
+              <div style="font-weight:700;font-size:12px;color:#374151;">${_fmt(e.bruto||0)}</div>
+            </div>
+            <div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;">
+              <div style="font-size:10px;color:#9ca3af;">Neto</div>
+              <div style="font-weight:700;font-size:12px;color:#166534;">${_fmt(e.neto||0)}</div>
+            </div>
+            ${(e.cTrupci||0)>0?`<div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;"><div style="font-size:10px;color:#9ca3af;">Trp.Č</div><div style="font-weight:700;font-size:12px;color:#1e40af;">${_fmt(e.cTrupci)}</div></div>`:''}
+            ${(e.cijepanoC||0)>0?`<div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;"><div style="font-size:10px;color:#9ca3af;">Cij.Č</div><div style="font-weight:700;font-size:12px;color:#1e40af;">${_fmt(e.cijepanoC)}</div></div>`:''}
+            ${(e.lTrupci||0)>0?`<div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;"><div style="font-size:10px;color:#9ca3af;">Trp.L</div><div style="font-weight:700;font-size:12px;color:#92400e;">${_fmt(e.lTrupci)}</div></div>`:''}
+            ${(e.cijepanoL||0)>0?`<div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;"><div style="font-size:10px;color:#9ca3af;">Cij.L</div><div style="font-weight:700;font-size:12px;color:#92400e;">${_fmt(e.cijepanoL)}</div></div>`:''}
+          </div>
+        </div>`;
+
       body = `
-        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;">
-          <div style="flex:1;min-width:130px;">
-            <div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Gospodarska jedinica</div>
-            <div style="font-weight:700;font-size:15px;">${gj}</div>
+        <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:110px;">
+            <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Gospodarska jedinica</div>
+            <div style="font-weight:700;font-size:13px;">${gj}</div>
           </div>
-          <div style="flex:1;min-width:70px;">
-            <div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Odsjek</div>
-            <div style="font-weight:600;font-size:15px;">${odsjek}</div>
+          <div style="flex:0;min-width:50px;">
+            <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Odsjek</div>
+            <div style="font-weight:600;font-size:13px;">${odsjek}</div>
           </div>
-          <span style="background:${statusBg[s]};color:${statusColor[s]};padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700;align-self:flex-start;">${statusLabel[s]||s}</span>
+          <span style="background:${statusBg[s]};color:${statusColor[s]};padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;align-self:flex-start;">${statusLabel[s]||s}</span>
         </div>
 
         ${projekatSection}
 
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:12px 16px;margin-bottom:14px;">
-          <div style="font-size:11px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📋 Godišnji plan ${PLAN_YEAR}</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-            <div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:80px;border:1px solid #bbf7d0;">
-              <div style="font-size:11px;color:#9ca3af;">Bruto</div>
-              <div style="font-weight:700;font-size:14px;color:#374151;">${_fmt(e.bruto||0)}</div>
-            </div>
-            <div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:80px;border:1px solid #bbf7d0;">
-              <div style="font-size:11px;color:#9ca3af;">Neto</div>
-              <div style="font-weight:800;font-size:15px;color:#166534;">${_fmt(e.neto||0)}</div>
-            </div>
+        <div style="background:#f8fafc;border-radius:10px;padding:10px 12px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span style="font-size:12px;font-weight:600;color:#374151;">Realizacija plana ${PLAN_YEAR}</span>
+            <span style="font-size:16px;font-weight:800;color:${statusColor[s]};">${pct}%</span>
+          </div>
+          <div style="height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;margin-bottom:8px;">
+            <div style="height:100%;width:${barW}%;background:${barCol};border-radius:3px;"></div>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            ${(e.cTrupci||0)>0?`<div style="background:white;border-radius:7px;padding:4px 10px;flex:1;min-width:90px;border:1px solid #bbf7d0;">
-              <div style="font-size:10px;color:#9ca3af;">Trupci Č</div>
-              <div style="font-weight:700;font-size:13px;color:#1e40af;">${_fmt(e.cTrupci)}</div>
-            </div>`:''}
-            ${(e.cijepanoC||0)>0?`<div style="background:white;border-radius:7px;padding:4px 10px;flex:1;min-width:90px;border:1px solid #bbf7d0;">
-              <div style="font-size:10px;color:#9ca3af;">Cijepano Č</div>
-              <div style="font-weight:700;font-size:13px;color:#1e40af;">${_fmt(e.cijepanoC)}</div>
-            </div>`:''}
-            ${(e.lTrupci||0)>0?`<div style="background:white;border-radius:7px;padding:4px 10px;flex:1;min-width:90px;border:1px solid #bbf7d0;">
-              <div style="font-size:10px;color:#9ca3af;">Trupci L</div>
-              <div style="font-weight:700;font-size:13px;color:#92400e;">${_fmt(e.lTrupci)}</div>
-            </div>`:''}
-            ${(e.cijepanoL||0)>0?`<div style="background:white;border-radius:7px;padding:4px 10px;flex:1;min-width:90px;border:1px solid #bbf7d0;">
-              <div style="font-size:10px;color:#9ca3af;">Cijepano L</div>
-              <div style="font-weight:700;font-size:13px;color:#92400e;">${_fmt(e.cijepanoL)}</div>
-            </div>`:''}
-          </div>
-        </div>
-
-        <div style="background:#f8fafc;border-radius:12px;padding:14px 16px;margin-bottom:14px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-            <span style="font-size:13px;font-weight:600;color:#374151;">Realizacija plana ${PLAN_YEAR}</span>
-            <span style="font-size:18px;font-weight:800;color:${statusColor[s]};">${pct}%</span>
-          </div>
-          <div style="height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:10px;">
-            <div style="height:100%;width:${barW}%;background:${barCol};border-radius:4px;"></div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:70px;">
-              <div style="font-size:11px;color:#9ca3af;">Sječa ${PLAN_YEAR}</div>
-              <div style="font-weight:800;font-size:15px;color:#15803d;">${_fmt(sj.ukupno)}</div>
+            <div style="background:white;border-radius:7px;padding:4px 8px;text-align:center;flex:1;min-width:60px;">
+              <div style="font-size:10px;color:#9ca3af;">Sječa ${PLAN_YEAR}</div>
+              <div style="font-weight:800;font-size:13px;color:#15803d;">${_fmt(sj.ukupno)}</div>
             </div>
             ${hasOtpr?`
-            <div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:70px;">
-              <div style="font-size:11px;color:#9ca3af;">Otprema ${PLAN_YEAR}</div>
-              <div style="font-weight:800;font-size:15px;color:#b45309;">${_fmt(ot.ukupno)}</div>
+            <div style="background:white;border-radius:7px;padding:4px 8px;text-align:center;flex:1;min-width:60px;">
+              <div style="font-size:10px;color:#9ca3af;">Otprema</div>
+              <div style="font-weight:800;font-size:13px;color:#b45309;">${_fmt(ot.ukupno)}</div>
             </div>
-            <div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:70px;">
-              <div style="font-size:11px;color:#9ca3af;">Zaliha</div>
-              <div style="font-weight:800;font-size:15px;color:${zaliha<0?'#dc2626':'#1d4ed8'};">${_fmt(zaliha)}</div>
+            <div style="background:white;border-radius:7px;padding:4px 8px;text-align:center;flex:1;min-width:60px;">
+              <div style="font-size:10px;color:#9ca3af;">Zaliha</div>
+              <div style="font-weight:800;font-size:13px;color:${zaliha<0?'#dc2626':'#1d4ed8'};">${_fmt(zaliha)}</div>
             </div>`:''}
-            <div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:70px;">
-              <div style="font-size:11px;color:#9ca3af;">Plan neto</div>
-              <div style="font-weight:800;font-size:15px;color:#6b7280;">${_fmt(info.neto)}</div>
+            <div style="background:white;border-radius:7px;padding:4px 8px;text-align:center;flex:1;min-width:60px;">
+              <div style="font-size:10px;color:#9ca3af;">Plan neto</div>
+              <div style="font-weight:800;font-size:13px;color:#6b7280;">${_fmt(info.neto)}</div>
             </div>
           </div>
         </div>
 
-        <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Sortimenti — ${PLAN_YEAR}</div>
-        <div style="border-radius:12px;overflow:hidden;border:1px solid #f1f5f9;margin-bottom:12px;">
+        <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Sortimenti — ${PLAN_YEAR}</div>
+        <div style="border-radius:10px;overflow:hidden;border:1px solid #f1f5f9;margin-bottom:10px;">
         <table style="width:100%;border-collapse:collapse;">
           <thead><tr style="background:#e2e8f0;">
-            <th style="padding:7px 10px;font-size:12px;text-align:left;color:#475569;font-weight:600;">Sortiment</th>
-            <th style="padding:7px 10px;font-size:12px;text-align:right;color:#15803d;font-weight:600;">Sječa</th>
-            ${hasOtpr?'<th style="padding:7px 10px;font-size:12px;text-align:right;color:#b45309;font-weight:600;">Otprema</th><th style="padding:7px 10px;font-size:12px;text-align:right;color:#1d4ed8;font-weight:600;">Zaliha</th>':''}
-            <th style="padding:7px 10px;font-size:12px;text-align:right;color:#9ca3af;font-weight:600;">Plan</th>
+            <th style="padding:5px 8px;font-size:11px;text-align:left;color:#475569;font-weight:600;">Sortiment</th>
+            <th style="padding:5px 8px;font-size:11px;text-align:right;color:#15803d;font-weight:600;">Sječa</th>
+            ${hasOtpr?'<th style="padding:5px 8px;font-size:11px;text-align:right;color:#b45309;font-weight:600;">Otpr.</th><th style="padding:5px 8px;font-size:11px;text-align:right;color:#1d4ed8;font-weight:600;">Zal.</th>':''}
+            <th style="padding:5px 8px;font-size:11px;text-align:right;color:#9ca3af;font-weight:600;">Plan</th>
           </tr></thead>
           <tbody>
             ${grpRow('TRUPCI Č',   sj.cTrupci, ot.cTrupci, e.cTrupci||0)}
@@ -690,11 +678,11 @@
             ${subRow('Ogr.cijepani',sj.ogrCijepani,ot.ogrCijepani)}
             ${subRow('Gule',       sj.gule,       ot.gule)}
             <tr style="background:#e2e8f0;font-weight:800;border-top:2px solid #cbd5e1;">
-              <td style="padding:8px 10px;font-size:14px;">UKUPNO</td>
-              <td style="padding:8px 10px;font-size:14px;text-align:right;color:#15803d;">${_fmt(sj.ukupno)}</td>
-              ${hasOtpr?`<td style="padding:8px 10px;font-size:14px;text-align:right;color:#b45309;">${_fmt(ot.ukupno)}</td>
-              <td style="padding:8px 10px;font-size:14px;text-align:right;color:${zaliha<0?'#dc2626':'#1d4ed8'};">${_fmt(zaliha)}</td>`:''}
-              <td style="padding:8px 10px;font-size:13px;text-align:right;color:#9ca3af;">${_fmt(info.neto)}</td>
+              <td style="padding:6px 8px;font-size:12px;">UKUPNO</td>
+              <td style="padding:6px 8px;font-size:12px;text-align:right;color:#15803d;">${_fmt(sj.ukupno)}</td>
+              ${hasOtpr?`<td style="padding:6px 8px;font-size:12px;text-align:right;color:#b45309;">${_fmt(ot.ukupno)}</td>
+              <td style="padding:6px 8px;font-size:12px;text-align:right;color:${zaliha<0?'#dc2626':'#1d4ed8'};">${_fmt(zaliha)}</td>`:''}
+              <td style="padding:6px 8px;font-size:11px;text-align:right;color:#9ca3af;">${_fmt(info.neto)}</td>
             </tr>
           </tbody>
         </table>
@@ -734,6 +722,7 @@
             </div>
           </div>`;
         })() : ''}
+        ${godisnjiPlanSection}
         ${routeBtn}`;
     }
 
