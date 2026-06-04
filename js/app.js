@@ -383,10 +383,13 @@
                     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
                     const response = await fetch(url, { signal: controller.signal });
-                    clearTimeout(timeoutId);
+                    // NE čistimo timeout ovdje — AbortController mora ostati aktivan
+                    // i tokom čitanja body-a, inače response.json() može visiti zauvijek
+                    // ako server pošalje headere ali ne zatvori body stream.
 
                     // Check if response is OK
                     if (!response.ok) {
+                        clearTimeout(timeoutId);
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
 
@@ -394,11 +397,13 @@
                     const contentType = response.headers.get('content-type');
                     if (!contentType || !contentType.includes('application/json')) {
                         const text = await response.text();
+                        clearTimeout(timeoutId);
                         console.error('Invalid response (not JSON):', text);
                         throw new Error('Server returned invalid response format');
                     }
 
                     const data = await response.json();
+                    clearTimeout(timeoutId); // Čistimo tek nakon što je body u potpunosti pročitan
 
                     logPerformance(`API call: ${path}`, performance.now() - fetchStart);
 
