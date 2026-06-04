@@ -40,8 +40,9 @@
       case 'posjeceno':  return '#16a34a';
       case 'u-sjeci':    return '#dc2626';
       case 'planirano':  return '#eab308';
+      case 'plan-2027':  return '#f59e0b'; // amber — plan za narednu godinu
       case 'slucajni':   return '#7c3aed';
-      case 'prelazni':   return '#0891b2'; // teal — bio u prošlogodišnjem planu
+      case 'prelazni':   return '#0891b2';
       default:           return '#6366f1';
     }
   }
@@ -154,6 +155,18 @@
       // Alias bez /N stripa — sprječava 64/1 da matchuje plan od 64/2P
       const strictKey = _labelKey(entry.gj+' '+entry.odjel);
       if (strictKey !== key) map.set(strictKey, entryData);
+    });
+
+    // Plan 2027 — odjeli planirani za narednu godinu, još nisu u planu 2026
+    _plan2027Entries().forEach(entry => {
+      const normK  = _normKey(entry.gj + ' ' + entry.odjel);
+      const labelK = _labelKey(entry.gj + ' ' + entry.odjel);
+      if (map.has(normK) || map.has(labelK)) return; // ne prepiši 2026 status
+      const d = { gj: entry.gj, odjel: entry.odjel, status: 'plan-2027', pct: 0,
+        sjeca: _emptySort(), otpr: _emptySort(), sjecaOst: _emptySort(), otprOst: _emptySort(),
+        neto: 0, bruto: 0, radiliste: '—', izvodjac: '—', poslovodja: '—' };
+      map.set(normK, d);
+      if (labelK !== normK) map.set(labelK, d);
     });
 
     // Extra map za non-plan odjele (slučajni + prelazni)
@@ -414,9 +427,9 @@
       metaDiv.style.display = metaDiv.innerHTML ? 'flex' : 'none';
     }
 
-    const statusLabel = { posjeceno:'Posječeno','u-sjeci':'U sječi',planirano:'Planirano',slucajni:'Slučajni užitak',prelazni:'Nekategorisan odjel' };
-    const statusColor = { posjeceno:'#166534','u-sjeci':'#dc2626',planirano:'#6b7280',slucajni:'#7c3aed',prelazni:'#0e7490' };
-    const statusBg    = { posjeceno:'#dcfce7','u-sjeci':'#fee2e2',planirano:'#f3f4f6',slucajni:'#f5f3ff',prelazni:'#ecfeff' };
+    const statusLabel = { posjeceno:'Posječeno','u-sjeci':'U sječi',planirano:'Planirano',slucajni:'Slučajni užitak',prelazni:'Nekategorisan odjel','plan-2027':'Plan sječa 2027' };
+    const statusColor = { posjeceno:'#166534','u-sjeci':'#dc2626',planirano:'#6b7280',slucajni:'#7c3aed',prelazni:'#0e7490','plan-2027':'#92400e' };
+    const statusBg    = { posjeceno:'#dcfce7','u-sjeci':'#fee2e2',planirano:'#f3f4f6',slucajni:'#f5f3ff',prelazni:'#ecfeff','plan-2027':'#fef3c7' };
 
     const routeBtn = `
       <div style="display:flex;gap:8px;margin-top:12px;">
@@ -502,6 +515,25 @@
           <div style="font-size:13px;color:#6b7280;margin-top:8px;">${note}</div>
         </div>
         ${extraTable}
+        ${routeBtn}`;
+    } else if (info.status === 'plan-2027') {
+      body = `
+        <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:110px;">
+            <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Gospodarska jedinica</div>
+            <div style="font-weight:700;font-size:13px;">${gj}</div>
+          </div>
+          <div style="flex:0;min-width:50px;">
+            <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Odsjek</div>
+            <div style="font-weight:600;font-size:13px;">${odsjek}</div>
+          </div>
+          <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;align-self:flex-start;">Plan sječa 2027</span>
+        </div>
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:center;">
+          <div style="font-size:28px;margin-bottom:4px;">📅</div>
+          <div style="font-size:13px;font-weight:700;color:#92400e;">Planiran za sječu u 2027. godini</div>
+          <div style="font-size:12px;color:#9ca3af;margin-top:4px;">Odjel nije u planu sječe za ${PLAN_YEAR}. godinu.</div>
+        </div>
         ${routeBtn}`;
     } else {
       const s       = info.status;
@@ -1132,6 +1164,34 @@
       { gj:'Vojskova', odjel:'15',  bruto:450, neto:383, cTrupci:0, cijepanoC:0, lTrupci:0,   cijepanoL:383 },
       { gj:'Vojskova', odjel:'21P', bruto:787, neto:624, cTrupci:0, cijepanoC:0, lTrupci:202, cijepanoL:422 },
       { gj:'Vojskova', odjel:'25',  bruto:750, neto:637, cTrupci:0, cijepanoC:0, lTrupci:0,   cijepanoL:637 },
+    ];
+  }
+
+  // ---- PLAN 2027 ----
+  function _plan2027Entries() {
+    return [
+      { gj:'Grmeč Jasenica', odjel:'5/1'   },
+      { gj:'Grmeč Jasenica', odjel:'5/2'   },
+      { gj:'Grmeč Jasenica', odjel:'68'    },
+      { gj:'Grmeč Jasenica', odjel:'8'     },
+      { gj:'Grmeč Jasenica', odjel:'80'    },
+      { gj:'Grmeč Jasenica', odjel:'81'    },
+      { gj:'Risovac Krupa',  odjel:'112'   },
+      { gj:'Risovac Krupa',  odjel:'120'   },
+      { gj:'Risovac Krupa',  odjel:'14'    },
+      { gj:'Risovac Krupa',  odjel:'34'    },
+      { gj:'Risovac Krupa',  odjel:'4'     },
+      { gj:'Risovac Krupa',  odjel:'44/1P' },
+      { gj:'Risovac Krupa',  odjel:'5'     },
+      { gj:'Risovac Krupa',  odjel:'6'     },
+      { gj:'Risovac Krupa',  odjel:'60'    },
+      { gj:'Risovac Krupa',  odjel:'7'     },
+      { gj:'Risovac Krupa',  odjel:'78'    },
+      { gj:'Risovac Krupa',  odjel:'81'    },
+      { gj:'Vojskova',       odjel:'15'    },
+      { gj:'Vojskova',       odjel:'22'    },
+      { gj:'Vojskova',       odjel:'23/2'  },
+      { gj:'Vojskova',       odjel:'25'    },
     ];
   }
 
