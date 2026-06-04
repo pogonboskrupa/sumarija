@@ -3191,6 +3191,13 @@
                   }
                   #karta-fokus-btn.active { background:#1e40af !important; color:white !important; border-color:#1e40af !important; }
                   #karta-fokus-btn { display:none !important; }
+                  @media (min-width:1024px) {
+                    #mapa-modal { justify-content:flex-start; align-items:stretch; }
+                    #mapa-modal-panel { width:400px; max-width:400px; min-height:unset; max-height:calc(100vh - 44px); border-radius:0 0 12px 0; }
+                  }
+                  @media (min-width:1440px) {
+                    #mapa-modal-panel { width:460px; max-width:460px; }
+                  }
                 </style>
                 <div id="karta-odjela-map">
                     <div id="karta-loading" style="display:flex;align-items:center;justify-content:center;height:100%;color:#6b7280;font-size:14px;">⏳ Učitavam kartu...</div>
@@ -3284,7 +3291,7 @@
     <!-- Mapa — Detalji odjela Modal -->
     <!-- Mapa — Detalji odjela Modal -->
     <div id="mapa-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);align-items:flex-start;justify-content:center;padding:0;">
-        <div style="background:white;border-radius:0 0 18px 18px;width:100%;max-width:640px;min-height:40vh;max-height:calc(100vh - 44px);display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.25);overflow:hidden;">
+        <div style="background:white;border-radius:0 0 18px 18px;width:100%;max-width:640px;min-height:40vh;max-height:calc(100vh - 44px);display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.25);overflow:hidden;" id="mapa-modal-panel">
             <!-- Header -->
             <div style="background:linear-gradient(135deg,#14532d 0%,#166534 100%);color:white;padding:14px 20px 16px;display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;">
                 <div style="flex:1;min-width:0;">
