@@ -336,23 +336,36 @@
   function _getStanjeMap() {
     if (_stanjeMap) return _stanjeMap;
     try {
-      const raw = localStorage.getItem('cache_stanje_odjela');
+      // Čitaj iz cache_stanje_zaliha (projekat/sječa/zaliha po sortimentima)
+      let raw = localStorage.getItem('cache_stanje_zaliha');
+      // Ako nema, probaj poslovođa varijantu (cache_stanje_zaliha_Ime_Prezime)
+      if (!raw) {
+        const key = Object.keys(localStorage).find(k => k.startsWith('cache_stanje_zaliha_'));
+        if (key) raw = localStorage.getItem(key);
+      }
       if (!raw) return null;
-      // fetchWithCache stores { timestamp, data: <api response> }
-      // api response is { data: [...odjeli], sortimentiNazivi: [...] }
       const wrapper = JSON.parse(raw);
       const payload = wrapper && wrapper.data;
-      if (!payload || !Array.isArray(payload.data)) return null;
+      if (!payload) return null;
+
+      // stanje-zaliha vraća { odjeli: [...], sortimentiHeader: [...] }
+      // stanje-odjela vraća { data: [...], sortimentiNazivi: [...] }
+      const odjeli   = payload.odjeli || payload.data || [];
+      const sortN    = payload.sortimentiHeader || payload.sortimentiNazivi || [];
+
+      if (!Array.isArray(odjeli) || !odjeli.length) return null;
+
       _stanjeMap = new Map();
-      payload.data.forEach(od => {
-        if (!od.odjelNaziv) return;
-        const k = _normKey(od.odjelNaziv);
+      odjeli.forEach(od => {
+        const naziv = od.odjelNaziv || od.odjel || '';
+        if (!naziv) return;
+        const k = _normKey(naziv);
         _stanjeMap.set(k, {
           projekat:        (od.redovi && od.redovi.projekat)   || [],
           sjeca:           (od.redovi && od.redovi.sjeca)       || [],
           otprema:         (od.redovi && od.redovi.otprema)     || [],
           sumaLager:       (od.redovi && od.redovi.sumaLager)   || [],
-          sortimentiNazivi: payload.sortimentiNazivi || []
+          sortimentiNazivi: sortN
         });
       });
     } catch(_) {}
