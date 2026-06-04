@@ -3136,7 +3136,8 @@
                             <label style="font-size:12px;font-weight:600;color:#374151;">Status:</label>
                             <select id="karta-filter-status" onchange="applyKartaFilter()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;">
                                 <option value="sve">Svi statusi</option>
-                                <option value="planirano">Planirano</option>
+                                <option value="plan-2027">Plan 2027</option>
+                                <option value="planirano">Planirano 2026</option>
                                 <option value="u-sjeci">U sječi</option>
                                 <option value="posjeceno">Posječeno</option>
                                 <option value="bez-plana">Bez plana</option>
@@ -3153,6 +3154,7 @@
                         <button id="karta-fokus-btn" onclick="toggleMapaFokus()" title="Mapa u prvom planu" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">⛶ Fokus</button>
                         <!-- Legenda -->
                         <div style="display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;align-items:center;">
+                            <span style="font-size:11px;display:flex;align-items:center;gap:3px;"><span style="display:inline-block;width:12px;height:12px;background:#2563eb;border-radius:2px;"></span>Plan sječa 2027</span>
                             <span style="font-size:11px;display:flex;align-items:center;gap:3px;"><span style="display:inline-block;width:12px;height:12px;background:#eab308;border-radius:2px;"></span>Planirano</span>
                             <span style="font-size:11px;display:flex;align-items:center;gap:3px;"><span style="display:inline-block;width:12px;height:12px;background:#dc2626;border-radius:2px;"></span>U sječi</span>
                             <span style="font-size:11px;display:flex;align-items:center;gap:3px;"><span style="display:inline-block;width:12px;height:12px;background:#16a34a;border-radius:2px;"></span>Posječeno</span>
@@ -3191,6 +3193,13 @@
                   }
                   #karta-fokus-btn.active { background:#1e40af !important; color:white !important; border-color:#1e40af !important; }
                   #karta-fokus-btn { display:none !important; }
+                  @media (min-width:1024px) {
+                    #mapa-modal { justify-content:flex-start; align-items:stretch; }
+                    #mapa-modal-panel { width:400px; max-width:400px; min-height:unset; max-height:calc(100vh - 44px); border-radius:0 0 12px 0; }
+                  }
+                  @media (min-width:1440px) {
+                    #mapa-modal-panel { width:460px; max-width:460px; }
+                  }
                 </style>
                 <div id="karta-odjela-map">
                     <div id="karta-loading" style="display:flex;align-items:center;justify-content:center;height:100%;color:#6b7280;font-size:14px;">⏳ Učitavam kartu...</div>
@@ -3284,18 +3293,18 @@
     <!-- Mapa — Detalji odjela Modal -->
     <!-- Mapa — Detalji odjela Modal -->
     <div id="mapa-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);align-items:flex-start;justify-content:center;padding:0;">
-        <div style="background:white;border-radius:0 0 18px 18px;width:100%;max-width:640px;height:70vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.25);overflow:hidden;">
+        <div style="background:white;border-radius:0 0 18px 18px;width:100%;max-width:640px;min-height:40vh;max-height:calc(100vh - 44px);display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.25);overflow:hidden;" id="mapa-modal-panel">
             <!-- Header -->
-            <div style="background:linear-gradient(135deg,#14532d 0%,#166534 100%);color:white;padding:14px 20px 16px;display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;">
+            <div style="background:linear-gradient(135deg,#14532d 0%,#166534 100%);color:white;padding:8px 14px 10px;display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;">
                 <div style="flex:1;min-width:0;">
-                    <div id="mapa-modal-title" style="font-size:22px;font-weight:800;"></div>
-                    <div id="mapa-modal-gj" style="font-size:13px;opacity:.85;margin-top:3px;"></div>
-                    <div id="mapa-modal-meta" style="display:none;flex-direction:column;gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.25);"></div>
+                    <div id="mapa-modal-title" style="font-size:17px;font-weight:800;"></div>
+                    <div id="mapa-modal-gj" style="font-size:12px;opacity:.85;margin-top:2px;"></div>
+                    <div id="mapa-modal-meta" style="display:none;flex-direction:column;gap:3px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.25);"></div>
                 </div>
-                <button onclick="closeMapaModal()" style="background:rgba(255,255,255,.2);border:none;color:white;width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:10px;">✕</button>
+                <button onclick="closeMapaModal()" style="background:rgba(255,255,255,.2);border:none;color:white;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:8px;">✕</button>
             </div>
             <!-- Body -->
-            <div id="mapa-modal-body" style="padding:20px 20px 28px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;"></div>
+            <div id="mapa-modal-body" style="padding:12px 14px 16px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;"></div>
             <!-- Drag handle (dole) -->
             <div style="flex-shrink:0;display:flex;justify-content:center;padding:8px 0;cursor:pointer;" onclick="closeMapaModal()">
                 <div style="width:40px;height:4px;background:#d1d5db;border-radius:2px;"></div>

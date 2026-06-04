@@ -40,8 +40,9 @@
       case 'posjeceno':  return '#16a34a';
       case 'u-sjeci':    return '#dc2626';
       case 'planirano':  return '#eab308';
+      case 'plan-2027':  return '#2563eb'; // plava — plan za narednu godinu
       case 'slucajni':   return '#7c3aed';
-      case 'prelazni':   return '#0891b2'; // teal — bio u prošlogodišnjem planu
+      case 'prelazni':   return '#0891b2';
       default:           return '#6366f1';
     }
   }
@@ -67,6 +68,15 @@
       .replace(/Š/g,'S').replace(/Ž/g,'Z').replace(/Đ/g,'DJ')
       .replace(/P\s*$/,'')      // strip trailing P before stripping /N
       .replace(/\/\d+\s*$/,'') // then strip /N suffix
+      .trim();
+  }
+
+  // Ključ za prikaz labela — ne strippe /N sufiks, čuva 64/1 vs 64/2
+  function _labelKey(s) {
+    return String(s||'').trim().toUpperCase()
+      .replace(/Č/g,'C').replace(/Ć/g,'C')
+      .replace(/Š/g,'S').replace(/Ž/g,'Z').replace(/Đ/g,'DJ')
+      .replace(/P\s*$/,'')
       .trim();
   }
 
@@ -140,7 +150,23 @@
 
       const pct    = entry.neto > 0 ? sjeca.ukupno / entry.neto * 100 : 0;
       const status = pct >= 95 ? 'posjeceno' : pct > 5 ? 'u-sjeci' : 'planirano';
-      map.set(key, { gj:entry.gj, odjel:entry.odjel, status, pct, sjeca, otpr, sjecaOst, otprOst, neto:entry.neto, bruto:entry.bruto, radiliste, izvodjac, poslovodja });
+      const entryData = { gj:entry.gj, odjel:entry.odjel, status, pct, sjeca, otpr, sjecaOst, otprOst, neto:entry.neto, bruto:entry.bruto, radiliste, izvodjac, poslovodja };
+      map.set(key, entryData);
+      // Alias bez /N stripa — sprječava 64/1 da matchuje plan od 64/2P
+      const strictKey = _labelKey(entry.gj+' '+entry.odjel);
+      if (strictKey !== key) map.set(strictKey, entryData);
+    });
+
+    // Plan 2027 — odjeli planirani za narednu godinu, još nisu u planu 2026
+    _plan2027Entries().forEach(entry => {
+      const normK  = _normKey(entry.gj + ' ' + entry.odjel);
+      const labelK = _labelKey(entry.gj + ' ' + entry.odjel);
+      if (map.has(normK) || map.has(labelK)) return; // ne prepiši 2026 status
+      const d = { gj: entry.gj, odjel: entry.odjel, status: 'plan-2027', pct: 0,
+        sjeca: _emptySort(), otpr: _emptySort(), sjecaOst: _emptySort(), otprOst: _emptySort(),
+        neto: 0, bruto: 0, radiliste: '—', izvodjac: '—', poslovodja: '—' };
+      map.set(normK, d);
+      if (labelK !== normK) map.set(labelK, d);
     });
 
     // Extra map za non-plan odjele (slučajni + prelazni)
@@ -336,23 +362,36 @@
   function _getStanjeMap() {
     if (_stanjeMap) return _stanjeMap;
     try {
-      const raw = localStorage.getItem('cache_stanje_odjela');
+      // Čitaj iz cache_stanje_zaliha (projekat/sječa/zaliha po sortimentima)
+      let raw = localStorage.getItem('cache_stanje_zaliha');
+      // Ako nema, probaj poslovođa varijantu (cache_stanje_zaliha_Ime_Prezime)
+      if (!raw) {
+        const key = Object.keys(localStorage).find(k => k.startsWith('cache_stanje_zaliha_'));
+        if (key) raw = localStorage.getItem(key);
+      }
       if (!raw) return null;
-      // fetchWithCache stores { timestamp, data: <api response> }
-      // api response is { data: [...odjeli], sortimentiNazivi: [...] }
       const wrapper = JSON.parse(raw);
       const payload = wrapper && wrapper.data;
-      if (!payload || !Array.isArray(payload.data)) return null;
+      if (!payload) return null;
+
+      // stanje-zaliha vraća { odjeli: [...], sortimentiHeader: [...] }
+      // stanje-odjela vraća { data: [...], sortimentiNazivi: [...] }
+      const odjeli   = payload.odjeli || payload.data || [];
+      const sortN    = payload.sortimentiHeader || payload.sortimentiNazivi || [];
+
+      if (!Array.isArray(odjeli) || !odjeli.length) return null;
+
       _stanjeMap = new Map();
-      payload.data.forEach(od => {
-        if (!od.odjelNaziv) return;
-        const k = _normKey(od.odjelNaziv);
+      odjeli.forEach(od => {
+        const naziv = od.odjelNaziv || od.odjel || '';
+        if (!naziv) return;
+        const k = _normKey(naziv);
         _stanjeMap.set(k, {
           projekat:        (od.redovi && od.redovi.projekat)   || [],
           sjeca:           (od.redovi && od.redovi.sjeca)       || [],
           otprema:         (od.redovi && od.redovi.otprema)     || [],
           sumaLager:       (od.redovi && od.redovi.sumaLager)   || [],
-          sortimentiNazivi: payload.sortimentiNazivi || []
+          sortimentiNazivi: sortN
         });
       });
     } catch(_) {}
@@ -362,15 +401,17 @@
   // ---- DETALJI MODAL ----
   function _openDetaljiModal(props, info, latlng, extra) {
     _currentLatlng     = latlng;
-    _currentOdjelLabel = info ? String(info.odjel) : String(props.odjel || props.name || '?');
+    // Uvijek koristi GeoJSON props.odjel za prikaz — ne info.odjel koji može biti od drugog poligona
+    _currentOdjelLabel = String(props.odjel || props.name || (info && info.odjel) || '?');
     const odjel  = _currentOdjelLabel;
     const gj     = props.gj   || '—';
     const odsjek = props.odsjek || '—';
-    const gjColor = {'Risovac Krupa':'#1d4ed8','Grmeč Jasenica':'#15803d','Vojskova':'#b45309'}[gj]||'#374151';
+    const gjBg = {'Risovac Krupa':'rgba(147,197,253,.25)','Grmeč Jasenica':'rgba(134,239,172,.25)','Vojskova':'rgba(252,211,77,.25)'}[gj]||'rgba(255,255,255,.15)';
 
     document.getElementById('mapa-modal-title').textContent = 'Odjel ' + odjel;
-    document.getElementById('mapa-modal-gj').textContent = gj;
-    document.getElementById('mapa-modal-gj').style.color = gjColor;
+    const gjEl = document.getElementById('mapa-modal-gj');
+    gjEl.textContent = gj;
+    gjEl.style.cssText = `color:white;font-weight:600;background:${gjBg};display:inline-block;padding:2px 8px;border-radius:4px;border:1px solid rgba(255,255,255,.4);`;
 
     const metaDiv = document.getElementById('mapa-modal-meta');
     if (metaDiv) {
@@ -386,9 +427,9 @@
       metaDiv.style.display = metaDiv.innerHTML ? 'flex' : 'none';
     }
 
-    const statusLabel = { posjeceno:'Posječeno','u-sjeci':'U sječi',planirano:'Planirano',slucajni:'Slučajni užitak',prelazni:'Nekategorisan odjel' };
-    const statusColor = { posjeceno:'#166534','u-sjeci':'#dc2626',planirano:'#6b7280',slucajni:'#7c3aed',prelazni:'#0e7490' };
-    const statusBg    = { posjeceno:'#dcfce7','u-sjeci':'#fee2e2',planirano:'#f3f4f6',slucajni:'#f5f3ff',prelazni:'#ecfeff' };
+    const statusLabel = { posjeceno:'Posječeno','u-sjeci':'U sječi',planirano:'Planirano',slucajni:'Slučajni užitak',prelazni:'Nekategorisan odjel','plan-2027':'Plan sječa 2027' };
+    const statusColor = { posjeceno:'#166534','u-sjeci':'#dc2626',planirano:'#6b7280',slucajni:'#7c3aed',prelazni:'#0e7490','plan-2027':'#1e40af' };
+    const statusBg    = { posjeceno:'#dcfce7','u-sjeci':'#fee2e2',planirano:'#f3f4f6',slucajni:'#f5f3ff',prelazni:'#ecfeff','plan-2027':'#dbeafe' };
 
     const routeBtn = `
       <div style="display:flex;gap:8px;margin-top:12px;">
@@ -396,7 +437,7 @@
         <button onclick="routeOdjelToOdjel()" style="flex:1;display:flex;align-items:center;gap:6px;background:#dc2626;color:white;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;justify-content:center;">🔀 Ruta do odjela…</button>
       </div>`;
 
-    const normKey2    = _normKey((props.gj||'') + ' ' + (props.odjel||props.name||''));
+    const normKey2    = _labelKey((props.gj||'') + ' ' + (props.odjel||props.name||''));
     const isSlucajni  = !info && _slucajniSet.has(normKey2);
     const isPrelazni  = !info && !isSlucajni && _prelazniSetGlobal.has(normKey2);
 
@@ -474,6 +515,25 @@
           <div style="font-size:13px;color:#6b7280;margin-top:8px;">${note}</div>
         </div>
         ${extraTable}
+        ${routeBtn}`;
+    } else if (info.status === 'plan-2027') {
+      body = `
+        <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:110px;">
+            <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Gospodarska jedinica</div>
+            <div style="font-weight:700;font-size:13px;">${gj}</div>
+          </div>
+          <div style="flex:0;min-width:50px;">
+            <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Odsjek</div>
+            <div style="font-weight:600;font-size:13px;">${odsjek}</div>
+          </div>
+          <span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;align-self:flex-start;">Plan sječa 2027</span>
+        </div>
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:center;">
+          <div style="font-size:28px;margin-bottom:4px;">📅</div>
+          <div style="font-size:13px;font-weight:700;color:#1e40af;">Planiran za sječu u 2027. godini</div>
+          <div style="font-size:12px;color:#9ca3af;margin-top:4px;">Odjel nije u planu sječe za ${PLAN_YEAR}. godinu.</div>
+        </div>
         ${routeBtn}`;
     } else {
       const s       = info.status;
@@ -565,90 +625,78 @@
           </div>`;
       }
 
+      // Kompaktna sekcija godišnjeg plana (ide na dno)
+      const godisnjiPlanSection = `
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:8px 12px;margin-bottom:10px;">
+          <div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">📋 Godišnji plan ${PLAN_YEAR}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;">
+              <div style="font-size:10px;color:#9ca3af;">Bruto</div>
+              <div style="font-weight:700;font-size:12px;color:#374151;">${_fmt(e.bruto||0)}</div>
+            </div>
+            <div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;">
+              <div style="font-size:10px;color:#9ca3af;">Neto</div>
+              <div style="font-weight:700;font-size:12px;color:#166534;">${_fmt(e.neto||0)}</div>
+            </div>
+            ${(e.cTrupci||0)>0?`<div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;"><div style="font-size:10px;color:#9ca3af;">Trp.Č</div><div style="font-weight:700;font-size:12px;color:#1e40af;">${_fmt(e.cTrupci)}</div></div>`:''}
+            ${(e.cijepanoC||0)>0?`<div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;"><div style="font-size:10px;color:#9ca3af;">Cij.Č</div><div style="font-weight:700;font-size:12px;color:#1e40af;">${_fmt(e.cijepanoC)}</div></div>`:''}
+            ${(e.lTrupci||0)>0?`<div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;"><div style="font-size:10px;color:#9ca3af;">Trp.L</div><div style="font-weight:700;font-size:12px;color:#92400e;">${_fmt(e.lTrupci)}</div></div>`:''}
+            ${(e.cijepanoL||0)>0?`<div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;"><div style="font-size:10px;color:#9ca3af;">Cij.L</div><div style="font-weight:700;font-size:12px;color:#92400e;">${_fmt(e.cijepanoL)}</div></div>`:''}
+          </div>
+        </div>`;
+
       body = `
-        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;">
-          <div style="flex:1;min-width:130px;">
-            <div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Gospodarska jedinica</div>
-            <div style="font-weight:700;font-size:15px;">${gj}</div>
+        <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:110px;">
+            <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Gospodarska jedinica</div>
+            <div style="font-weight:700;font-size:13px;">${gj}</div>
           </div>
-          <div style="flex:1;min-width:70px;">
-            <div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Odsjek</div>
-            <div style="font-weight:600;font-size:15px;">${odsjek}</div>
+          <div style="flex:0;min-width:50px;">
+            <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Odsjek</div>
+            <div style="font-weight:600;font-size:13px;">${odsjek}</div>
           </div>
-          <span style="background:${statusBg[s]};color:${statusColor[s]};padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700;align-self:flex-start;">${statusLabel[s]||s}</span>
+          <span style="background:${statusBg[s]};color:${statusColor[s]};padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;align-self:flex-start;">${statusLabel[s]||s}</span>
         </div>
 
         ${projekatSection}
 
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:12px 16px;margin-bottom:14px;">
-          <div style="font-size:11px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📋 Godišnji plan ${PLAN_YEAR}</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-            <div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:80px;border:1px solid #bbf7d0;">
-              <div style="font-size:11px;color:#9ca3af;">Bruto</div>
-              <div style="font-weight:700;font-size:14px;color:#374151;">${_fmt(e.bruto||0)}</div>
-            </div>
-            <div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:80px;border:1px solid #bbf7d0;">
-              <div style="font-size:11px;color:#9ca3af;">Neto</div>
-              <div style="font-weight:800;font-size:15px;color:#166534;">${_fmt(e.neto||0)}</div>
-            </div>
+        <div style="background:#f8fafc;border-radius:10px;padding:10px 12px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span style="font-size:12px;font-weight:600;color:#374151;">Realizacija plana ${PLAN_YEAR}</span>
+            <span style="font-size:16px;font-weight:800;color:${statusColor[s]};">${pct}%</span>
+          </div>
+          <div style="height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;margin-bottom:8px;">
+            <div style="height:100%;width:${barW}%;background:${barCol};border-radius:3px;"></div>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            ${(e.cTrupci||0)>0?`<div style="background:white;border-radius:7px;padding:4px 10px;flex:1;min-width:90px;border:1px solid #bbf7d0;">
-              <div style="font-size:10px;color:#9ca3af;">Trupci Č</div>
-              <div style="font-weight:700;font-size:13px;color:#1e40af;">${_fmt(e.cTrupci)}</div>
-            </div>`:''}
-            ${(e.cijepanoC||0)>0?`<div style="background:white;border-radius:7px;padding:4px 10px;flex:1;min-width:90px;border:1px solid #bbf7d0;">
-              <div style="font-size:10px;color:#9ca3af;">Cijepano Č</div>
-              <div style="font-weight:700;font-size:13px;color:#1e40af;">${_fmt(e.cijepanoC)}</div>
-            </div>`:''}
-            ${(e.lTrupci||0)>0?`<div style="background:white;border-radius:7px;padding:4px 10px;flex:1;min-width:90px;border:1px solid #bbf7d0;">
-              <div style="font-size:10px;color:#9ca3af;">Trupci L</div>
-              <div style="font-weight:700;font-size:13px;color:#92400e;">${_fmt(e.lTrupci)}</div>
-            </div>`:''}
-            ${(e.cijepanoL||0)>0?`<div style="background:white;border-radius:7px;padding:4px 10px;flex:1;min-width:90px;border:1px solid #bbf7d0;">
-              <div style="font-size:10px;color:#9ca3af;">Cijepano L</div>
-              <div style="font-weight:700;font-size:13px;color:#92400e;">${_fmt(e.cijepanoL)}</div>
-            </div>`:''}
-          </div>
-        </div>
-
-        <div style="background:#f8fafc;border-radius:12px;padding:14px 16px;margin-bottom:14px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-            <span style="font-size:13px;font-weight:600;color:#374151;">Realizacija plana ${PLAN_YEAR}</span>
-            <span style="font-size:18px;font-weight:800;color:${statusColor[s]};">${pct}%</span>
-          </div>
-          <div style="height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:10px;">
-            <div style="height:100%;width:${barW}%;background:${barCol};border-radius:4px;"></div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:70px;">
-              <div style="font-size:11px;color:#9ca3af;">Sječa ${PLAN_YEAR}</div>
-              <div style="font-weight:800;font-size:15px;color:#15803d;">${_fmt(sj.ukupno)}</div>
+            <div style="background:white;border-radius:7px;padding:4px 8px;text-align:center;flex:1;min-width:60px;">
+              <div style="font-size:10px;color:#9ca3af;">Sječa ${PLAN_YEAR}</div>
+              <div style="font-weight:800;font-size:13px;color:#15803d;">${_fmt(sj.ukupno)}</div>
             </div>
             ${hasOtpr?`
-            <div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:70px;">
-              <div style="font-size:11px;color:#9ca3af;">Otprema ${PLAN_YEAR}</div>
-              <div style="font-weight:800;font-size:15px;color:#b45309;">${_fmt(ot.ukupno)}</div>
+            <div style="background:white;border-radius:7px;padding:4px 8px;text-align:center;flex:1;min-width:60px;">
+              <div style="font-size:10px;color:#9ca3af;">Otprema</div>
+              <div style="font-weight:800;font-size:13px;color:#b45309;">${_fmt(ot.ukupno)}</div>
             </div>
-            <div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:70px;">
-              <div style="font-size:11px;color:#9ca3af;">Zaliha</div>
-              <div style="font-weight:800;font-size:15px;color:${zaliha<0?'#dc2626':'#1d4ed8'};">${_fmt(zaliha)}</div>
+            <div style="background:white;border-radius:7px;padding:4px 8px;text-align:center;flex:1;min-width:60px;">
+              <div style="font-size:10px;color:#9ca3af;">Zaliha</div>
+              <div style="font-weight:800;font-size:13px;color:${zaliha<0?'#dc2626':'#1d4ed8'};">${_fmt(zaliha)}</div>
             </div>`:''}
-            <div style="background:white;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:70px;">
-              <div style="font-size:11px;color:#9ca3af;">Plan neto</div>
-              <div style="font-weight:800;font-size:15px;color:#6b7280;">${_fmt(info.neto)}</div>
+            <div style="background:white;border-radius:7px;padding:4px 8px;text-align:center;flex:1;min-width:60px;">
+              <div style="font-size:10px;color:#9ca3af;">Plan neto</div>
+              <div style="font-weight:800;font-size:13px;color:#6b7280;">${_fmt(info.neto)}</div>
             </div>
           </div>
         </div>
 
-        <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Sortimenti — ${PLAN_YEAR}</div>
-        <div style="border-radius:12px;overflow:hidden;border:1px solid #f1f5f9;margin-bottom:12px;">
+        <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Sortimenti — ${PLAN_YEAR}</div>
+        <div style="border-radius:10px;overflow:hidden;border:1px solid #f1f5f9;margin-bottom:10px;">
         <table style="width:100%;border-collapse:collapse;">
           <thead><tr style="background:#e2e8f0;">
-            <th style="padding:7px 10px;font-size:12px;text-align:left;color:#475569;font-weight:600;">Sortiment</th>
-            <th style="padding:7px 10px;font-size:12px;text-align:right;color:#15803d;font-weight:600;">Sječa</th>
-            ${hasOtpr?'<th style="padding:7px 10px;font-size:12px;text-align:right;color:#b45309;font-weight:600;">Otprema</th><th style="padding:7px 10px;font-size:12px;text-align:right;color:#1d4ed8;font-weight:600;">Zaliha</th>':''}
-            <th style="padding:7px 10px;font-size:12px;text-align:right;color:#9ca3af;font-weight:600;">Plan</th>
+            <th style="padding:5px 8px;font-size:11px;text-align:left;color:#475569;font-weight:600;">Sortiment</th>
+            <th style="padding:5px 8px;font-size:11px;text-align:right;color:#15803d;font-weight:600;">Sječa</th>
+            ${hasOtpr?'<th style="padding:5px 8px;font-size:11px;text-align:right;color:#b45309;font-weight:600;">Otpr.</th><th style="padding:5px 8px;font-size:11px;text-align:right;color:#1d4ed8;font-weight:600;">Zal.</th>':''}
+            <th style="padding:5px 8px;font-size:11px;text-align:right;color:#9ca3af;font-weight:600;">Plan</th>
           </tr></thead>
           <tbody>
             ${grpRow('TRUPCI Č',   sj.cTrupci, ot.cTrupci, e.cTrupci||0)}
@@ -662,11 +710,11 @@
             ${subRow('Ogr.cijepani',sj.ogrCijepani,ot.ogrCijepani)}
             ${subRow('Gule',       sj.gule,       ot.gule)}
             <tr style="background:#e2e8f0;font-weight:800;border-top:2px solid #cbd5e1;">
-              <td style="padding:8px 10px;font-size:14px;">UKUPNO</td>
-              <td style="padding:8px 10px;font-size:14px;text-align:right;color:#15803d;">${_fmt(sj.ukupno)}</td>
-              ${hasOtpr?`<td style="padding:8px 10px;font-size:14px;text-align:right;color:#b45309;">${_fmt(ot.ukupno)}</td>
-              <td style="padding:8px 10px;font-size:14px;text-align:right;color:${zaliha<0?'#dc2626':'#1d4ed8'};">${_fmt(zaliha)}</td>`:''}
-              <td style="padding:8px 10px;font-size:13px;text-align:right;color:#9ca3af;">${_fmt(info.neto)}</td>
+              <td style="padding:6px 8px;font-size:12px;">UKUPNO</td>
+              <td style="padding:6px 8px;font-size:12px;text-align:right;color:#15803d;">${_fmt(sj.ukupno)}</td>
+              ${hasOtpr?`<td style="padding:6px 8px;font-size:12px;text-align:right;color:#b45309;">${_fmt(ot.ukupno)}</td>
+              <td style="padding:6px 8px;font-size:12px;text-align:right;color:${zaliha<0?'#dc2626':'#1d4ed8'};">${_fmt(zaliha)}</td>`:''}
+              <td style="padding:6px 8px;font-size:11px;text-align:right;color:#9ca3af;">${_fmt(info.neto)}</td>
             </tr>
           </tbody>
         </table>
@@ -706,6 +754,7 @@
             </div>
           </div>`;
         })() : ''}
+        ${godisnjiPlanSection}
         ${routeBtn}`;
     }
 
@@ -850,7 +899,7 @@
     _layer = L.geoJSON(geojson, {
       style: feature => {
         const p      = feature.properties || {};
-        const key    = _normKey((p.gj||'') + ' ' + (p.odjel||p.name||''));
+        const key    = _labelKey((p.gj||'') + ' ' + (p.odjel||p.name||''));
         const info      = statusMap.get(key);
         const isSluc    = !info && _slucajniSet.has(key);
         const isPrelazni= !info && !isSluc && _prelazniSetGlobal.has(key);
@@ -860,7 +909,7 @@
         const props  = feature.properties || {};
         const odjel  = String(props.odjel || props.name || '').trim();
         const gj     = String(props.gj    || '').trim();
-        const key    = _normKey(gj + ' ' + odjel);
+        const key    = _labelKey(gj + ' ' + odjel); // bez /N stripa — 64/1 ≠ 64/2
         const info      = statusMap.get(key);
         const isSluc    = !info && _slucajniSet.has(key);
         const isPrelazni= !info && !isSluc && _prelazniSetGlobal.has(key);
@@ -910,12 +959,12 @@
 
     // ---- JEDAN LABEL PO ODJELU ----
     // Grupisati poligone po odjelu, naći zajednički centar, dodati jedan label
-    const odjelGroups = new Map(); // normKey(gj+odjel) → { lyrs, odjel, isSluc, odsjeci }
+    const odjelGroups = new Map(); // _labelKey(gj+odjel) → { lyrs, odjel, isSluc }
     _allFeatures.forEach(lyr => {
       const p      = lyr._kartaProps || {};
       const odjel  = String(p.odjel || p.name || '').trim();
       const gj     = String(p.gj || '').trim();
-      const key    = _normKey(gj + ' ' + odjel);
+      const key    = _labelKey(gj + ' ' + odjel); // preservira /N razlike
       const status = lyr._kartaStatus;
       const showLabel = status !== 'bez-plana' && status !== 'prelazni';
       if (!showLabel) return;
@@ -1115,6 +1164,34 @@
       { gj:'Vojskova', odjel:'15',  bruto:450, neto:383, cTrupci:0, cijepanoC:0, lTrupci:0,   cijepanoL:383 },
       { gj:'Vojskova', odjel:'21P', bruto:787, neto:624, cTrupci:0, cijepanoC:0, lTrupci:202, cijepanoL:422 },
       { gj:'Vojskova', odjel:'25',  bruto:750, neto:637, cTrupci:0, cijepanoC:0, lTrupci:0,   cijepanoL:637 },
+    ];
+  }
+
+  // ---- PLAN 2027 ----
+  function _plan2027Entries() {
+    return [
+      { gj:'Grmeč Jasenica', odjel:'5/1'   },
+      { gj:'Grmeč Jasenica', odjel:'5/2'   },
+      { gj:'Grmeč Jasenica', odjel:'68'    },
+      { gj:'Grmeč Jasenica', odjel:'8'     },
+      { gj:'Grmeč Jasenica', odjel:'80'    },
+      { gj:'Grmeč Jasenica', odjel:'81'    },
+      { gj:'Risovac Krupa',  odjel:'112'   },
+      { gj:'Risovac Krupa',  odjel:'120'   },
+      { gj:'Risovac Krupa',  odjel:'14'    },
+      { gj:'Risovac Krupa',  odjel:'34'    },
+      { gj:'Risovac Krupa',  odjel:'4'     },
+      { gj:'Risovac Krupa',  odjel:'44/1P' },
+      { gj:'Risovac Krupa',  odjel:'5'     },
+      { gj:'Risovac Krupa',  odjel:'6'     },
+      { gj:'Risovac Krupa',  odjel:'60'    },
+      { gj:'Risovac Krupa',  odjel:'7'     },
+      { gj:'Risovac Krupa',  odjel:'78'    },
+      { gj:'Risovac Krupa',  odjel:'81'    },
+      { gj:'Vojskova',       odjel:'15'    },
+      { gj:'Vojskova',       odjel:'22'    },
+      { gj:'Vojskova',       odjel:'23/2'  },
+      { gj:'Vojskova',       odjel:'25'    },
     ];
   }
 
