@@ -295,13 +295,8 @@
         }
 
         // Fetch with cache - cache-first strategy
-        async function fetchWithCache(url, cacheKey, forceRefresh = false, timeout = 120000) {
-            // 🚀 TURBO MODE: Default 120s timeout (super patient backend!)
-            // DEBUG: Confirm timeout parameter exists
-            if (typeof timeout === 'undefined') {
-                console.error('🔴 CRITICAL: timeout is undefined in fetchWithCache!');
-                timeout = 120000; // Fallback - 2 minutes
-            }
+        async function fetchWithCache(url, cacheKey, forceRefresh = false, timeout = 60000) {
+            if (typeof timeout === 'undefined') timeout = 60000;
 
             // Use smart cache TTL optimized for data entry patterns
             const path = new URL(url).searchParams.get('path');
@@ -371,7 +366,8 @@
             }
 
             // Cache miss or stale - fetch from network with retry for transient errors
-            const MAX_RETRIES = 3;
+            // 2 attempts total: first try full timeout, on timeout retry once with fresh signal
+            const MAX_RETRIES = 2;
             let lastError = null;
 
             for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -441,21 +437,15 @@
                 } catch (error) {
                     lastError = error;
 
-                    // Don't retry on abort (timeout) - user already waited long enough
-                    if (error.name === 'AbortError') {
-                        console.error(`Request timeout (${timeout/1000}s) - server too slow:`, path);
-                        break;
-                    }
-
-                    // Retry on transient network errors (QUIC, Failed to fetch, network errors)
                     if (attempt < MAX_RETRIES) {
-                        const delay = attempt * 2000; // 2s, 4s
-                        console.warn(`Network error (attempt ${attempt}/${MAX_RETRIES}), retrying in ${delay/1000}s:`, error.message);
+                        const isTimeout = error.name === 'AbortError';
+                        const delay = isTimeout ? 3000 : attempt * 2000;
+                        console.warn(`${isTimeout ? 'Timeout' : 'Network error'} (attempt ${attempt}/${MAX_RETRIES}), retrying in ${delay/1000}s:`, path);
                         await new Promise(resolve => setTimeout(resolve, delay));
                         continue;
                     }
 
-                    console.error('Network error after all retries:', error);
+                    console.error('Request failed after all retries:', error);
                 }
             }
 
@@ -475,14 +465,31 @@
                 }
             }
 
-            // Nema keša i sve retry-e iscrpljene — prikaži upozorenje jednom, vrati prazni odgovor
+            // Nema keša i sve retry-e iscrpljene — prikaži upozorenje s dugmetom za retry
             if (!window._offlineNoCacheWarned) {
                 window._offlineNoCacheWarned = true;
-                const msg = (lastError && lastError.name === 'AbortError')
-                    ? 'Server je spor. Neke stranice ne mogu biti učitane.'
-                    : 'Mrežna greška. Neke stranice ne mogu biti učitane.';
-                if (typeof showWarning === 'function') showWarning('Podaci nedostupni', msg, 6000);
-                setTimeout(() => { window._offlineNoCacheWarned = false; }, 30000);
+                const isTimeout = lastError && lastError.name === 'AbortError';
+                const msg = isTimeout
+                    ? 'Server je spor. Pokušaj osvježiti tab.'
+                    : 'Mrežna greška. Provjeri vezu i pokušaj ponovo.';
+                if (typeof showToast === 'function') {
+                    const toast = showToast('warning', 'Podaci nedostupni', msg, 0); // duration=0 = ne gasi se automatski
+                    if (toast) {
+                        const retryBtn = document.createElement('button');
+                        retryBtn.textContent = 'Pokušaj ponovo';
+                        retryBtn.style.cssText = 'margin-top:6px;padding:4px 10px;font-size:12px;font-weight:600;background:#d97706;color:white;border:none;border-radius:6px;cursor:pointer;display:block;';
+                        retryBtn.onclick = () => {
+                            toast.remove();
+                            window._offlineNoCacheWarned = false;
+                            if (typeof switchTab === 'function') switchTab(window.currentTab);
+                        };
+                        const content = toast.querySelector('.toast-content');
+                        if (content) content.appendChild(retryBtn);
+                        // Auto-skloni nakon 30s ako korisnik ne reaguje
+                        setTimeout(() => { if (toast.isConnected) { toast.classList.remove('show'); toast.classList.add('hide'); setTimeout(() => toast.remove(), 300); } }, 30000);
+                    }
+                }
+                setTimeout(() => { window._offlineNoCacheWarned = false; }, 31000);
             }
             return { success: false, offline: true };
         }
