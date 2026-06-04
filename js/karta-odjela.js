@@ -40,7 +40,7 @@
       case 'posjeceno':  return '#16a34a';
       case 'u-sjeci':    return '#dc2626';
       case 'planirano':  return '#eab308';
-      case 'plan-2027':  return '#f59e0b'; // amber — plan za narednu godinu
+      case 'plan-2027':  return '#2563eb'; // plava — plan za narednu godinu
       case 'slucajni':   return '#7c3aed';
       case 'prelazni':   return '#0891b2';
       default:           return '#6366f1';
@@ -428,8 +428,8 @@
     }
 
     const statusLabel = { posjeceno:'Posječeno','u-sjeci':'U sječi',planirano:'Planirano',slucajni:'Slučajni užitak',prelazni:'Nekategorisan odjel','plan-2027':'Plan sječa 2027' };
-    const statusColor = { posjeceno:'#166534','u-sjeci':'#dc2626',planirano:'#6b7280',slucajni:'#7c3aed',prelazni:'#0e7490','plan-2027':'#92400e' };
-    const statusBg    = { posjeceno:'#dcfce7','u-sjeci':'#fee2e2',planirano:'#f3f4f6',slucajni:'#f5f3ff',prelazni:'#ecfeff','plan-2027':'#fef3c7' };
+    const statusColor = { posjeceno:'#166534','u-sjeci':'#dc2626',planirano:'#6b7280',slucajni:'#7c3aed',prelazni:'#0e7490','plan-2027':'#1e40af' };
+    const statusBg    = { posjeceno:'#dcfce7','u-sjeci':'#fee2e2',planirano:'#f3f4f6',slucajni:'#f5f3ff',prelazni:'#ecfeff','plan-2027':'#dbeafe' };
 
     const routeBtn = `
       <div style="display:flex;gap:8px;margin-top:12px;">
@@ -527,11 +527,11 @@
             <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Odsjek</div>
             <div style="font-weight:600;font-size:13px;">${odsjek}</div>
           </div>
-          <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;align-self:flex-start;">Plan sječa 2027</span>
+          <span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;align-self:flex-start;">Plan sječa 2027</span>
         </div>
         <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:center;">
           <div style="font-size:28px;margin-bottom:4px;">📅</div>
-          <div style="font-size:13px;font-weight:700;color:#92400e;">Planiran za sječu u 2027. godini</div>
+          <div style="font-size:13px;font-weight:700;color:#1e40af;">Planiran za sječu u 2027. godini</div>
           <div style="font-size:12px;color:#9ca3af;margin-top:4px;">Odjel nije u planu sječe za ${PLAN_YEAR}. godinu.</div>
         </div>
         ${routeBtn}`;
