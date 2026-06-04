@@ -1,7 +1,7 @@
 // ========== Service Worker - Offline Support ==========
 // Cache static assets, fallback za offline
 
-const CACHE_VERSION = 'v7';
+const CACHE_VERSION = 'v8';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
@@ -124,7 +124,7 @@ self.addEventListener('fetch', (event) => {
                         }
                         // Navigation requests (page loads) → offline.html
                         if (request.mode === 'navigate') {
-                            return caches.match('/sumarija/offline.html');
+                            return caches.match('/offline.html');
                         }
                         return new Response(JSON.stringify({
                             success: false,

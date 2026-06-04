@@ -109,20 +109,39 @@
             }
         }
 
-        function invalidateCachesByManifest(newManifest) {
-            // Pametna invalidacija - brišemo samo keširane podatke koji su se promijenili
-            const year = new Date().getFullYear();
-            const cachesToInvalidate = [
-                'cache_primaci_' + year,
-                'cache_otpremaci_' + year,
-                'cache_odjeli_' + year,
-                'cache_dashboard_' + year
-            ];
-
-            cachesToInvalidate.forEach(key => {
+        // Briše sve localStorage cache ključeve koji počinju jednim od datih prefiksa.
+        // Pouzdanije od ručno održavanih lista točnih ključeva jer hvata i varijante
+        // sa sufiksom mjeseca/filtera (npr. cache_dashboard_2026_m5, cache_primaci_sort_primac_2026_4).
+        function invalidateCachePrefixes(prefixes) {
+            const toRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && prefixes.some(p => key.startsWith(p))) {
+                    toRemove.push(key);
+                }
+            }
+            toRemove.forEach(key => {
                 localStorage.removeItem(key);
                 console.log(`🗑️ [CACHE] Invalidated: ${key}`);
             });
+            return toRemove.length;
+        }
+
+        function invalidateCachesByManifest(newManifest) {
+            // Pametna invalidacija - briše sve cache-ove izvedene iz INDEX podataka,
+            // uključujući mjesečne (cache_dashboard_<god>_m<mj>) i sortimentne varijante.
+            invalidateCachePrefixes([
+                'cache_dashboard_',
+                'cache_primaci_',
+                'cache_otpremaci_',
+                'cache_odjeli_',
+                'cache_stats_',
+                'cache_kupci_',
+                'cache_poslovodja_',
+                'cache_dinamika_',
+                'cache_mjesecni_sortimenti_',
+                'cache_stanje_odjela'
+            ]);
         }
 
         function startManifestChecker() {
@@ -565,43 +584,22 @@
                 if (data.success) {
                     console.log('[SYNC INDEX] ✅ Index synchronization completed successfully');
 
-                    // 🚀 Invalidate SVE cache-ove koji koriste INDEX podatke
-                    const year = new Date().getFullYear();
-                    const month = new Date().getMonth();
-                    const cacheKeysToInvalidate = [
-                        // Glavni prikazi
-                        'cache_primaci_' + year,
-                        'cache_otpremaci_' + year,
-                        'cache_odjeli_' + year,
-                        'cache_dashboard_' + year,
-                        'cache_stats_' + year,
-                        'cache_kupci_' + year,
-                        'cache_stanje_odjela_admin',
-
-                        // Podmeniji - Primaci
-                        'cache_primaci_daily_' + year + '_' + month,
-                        'cache_primaci_radiliste_' + year,
-                        'cache_primaci_izvodjac_' + year,
-
-                        // Podmeniji - Otpremaci
-                        'cache_otpremaci_daily_' + year + '_' + month,
-                        'cache_otpremaci_radiliste_' + year,
-
-                        // POSLOVOĐA paneli
-                        'cache_poslovodja_odjeli_' + year,
-                        'cache_poslovodja_realizacija_' + year,
-                        'cache_poslovodja_zadnjih5_' + year,
-                        'cache_poslovodja_suma_' + year,
-
-                        // Ostalo
-                        'cache_dinamika_' + year,
-                        'cache_mjesecni_sortimenti_' + year
-                    ];
-
-                    cacheKeysToInvalidate.forEach(key => {
-                        localStorage.removeItem(key);
-                        console.log(`🗑️ [SYNC INDEX] Invalidated cache: ${key}`);
-                    });
+                    // 🚀 Invalidate SVE cache-ove koji koriste INDEX podatke.
+                    // Prefix-based brisanje hvata i mjesečne (cache_dashboard_<god>_m<mj>,
+                    // cache_primaci_daily_<god>_<mj>) i sortimentne ključeve
+                    // (cache_primaci_sort_primac_<god>_<mj>) koji su ranije ostajali stari.
+                    invalidateCachePrefixes([
+                        'cache_dashboard_',
+                        'cache_primaci_',
+                        'cache_otpremaci_',
+                        'cache_odjeli_',
+                        'cache_stats_',
+                        'cache_kupci_',
+                        'cache_poslovodja_',
+                        'cache_dinamika_',
+                        'cache_mjesecni_sortimenti_',
+                        'cache_stanje_odjela'
+                    ]);
 
                     // 🚀 Update APP DATA VERSION - svi paneli će vidjeti promjenu
                     const newVersion = Date.now().toString();
@@ -1097,8 +1095,19 @@
             const savedUser = localStorage.getItem('sumarija_user');
             const savedPass = localStorage.getItem('sumarija_pass');
 
+            let parsedUser = null;
             if (savedUser && savedPass) {
-                currentUser = JSON.parse(savedUser);
+                try {
+                    parsedUser = JSON.parse(savedUser);
+                } catch (e) {
+                    console.error('[AUTO-LOGIN] Neispravan spremljeni korisnik, brišem i prikazujem login:', e);
+                    localStorage.removeItem('sumarija_user');
+                    localStorage.removeItem('sumarija_pass');
+                }
+            }
+
+            if (parsedUser && savedPass) {
+                currentUser = parsedUser;
                 currentPassword = savedPass;
                 showApp();
                 loadPoslovodjaRadilistaMapping(); // Dohvati poslovodja→radilista iz INFO sheeta
@@ -9301,7 +9310,7 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    messageDiv.innerHTML = `✅ ${result.message}<br>Ukupno: ${result.ukupno.toFixed(2)} m³`;
+                    messageDiv.innerHTML = `✅ ${result.message}<br>Ukupno: ${(Number(result.ukupno) || 0).toFixed(2)} m³`;
                     messageDiv.style.background = '#d1fae5';
                     messageDiv.style.color = '#047857';
                     messageDiv.classList.remove('hidden');
@@ -9408,7 +9417,7 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    messageDiv.innerHTML = `✅ ${result.message}<br>Ukupno: ${result.ukupno.toFixed(2)} m³`;
+                    messageDiv.innerHTML = `✅ ${result.message}<br>Ukupno: ${(Number(result.ukupno) || 0).toFixed(2)} m³`;
                     messageDiv.style.background = '#dbeafe';
                     messageDiv.style.color = '#1e40af';
                     messageDiv.classList.remove('hidden');
@@ -9664,7 +9673,7 @@
                         html += '<td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">' + ukupno.toFixed(2) + ' m³</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + new Date(unos.timestamp).toLocaleString('hr-HR') + '</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd; text-align: center;">';
-                        html += '<button class="btn btn-primary" style="margin-right: 8px;" onclick=\'editMySjeca(' + JSON.stringify(unos).replace(/'/g, "\\'") + ')\'><✏️ Uredi</button>';
+                        html += '<button class="btn btn-primary" style="margin-right: 8px;" onclick=\'editMySjeca(' + JSON.stringify(unos).replace(/'/g, "\\'") + ')\'>✏️ Uredi</button>';
                         html += '<button class="btn btn-secondary" onclick="deleteMySjeca(' + unos.rowIndex + ')">🗑️ Obriši</button>';
                         html += '</td>';
                         html += '</tr>';
@@ -9877,8 +9886,8 @@
                 formData.append('odjel', document.getElementById('edit-sjeca-odjel').value);
 
                 // Add all sortimenti
-                var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ČETINARI',
-                                     'F/L L', 'I L', 'II L', 'III L', 'TRUPCI', 'OGR.DUGI', 'OGR.CIJEPANI', 'LIŠĆARI'];
+                var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'ČETINARI',
+                                     'F/L L', 'I L', 'II L', 'III L', 'TRUPCI', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI'];
 
                 sortimentiKeys.forEach(function(key) {
                     var fieldId = 'edit-sjeca-' + key.replace(/\//g, '').replace(/ /g, '-');
@@ -9891,7 +9900,7 @@
                 var result = await response.json();
 
                 if (result.success) {
-                    messageDiv.innerHTML = '✅ ' + result.message + '<br>Ukupno: ' + result.ukupno.toFixed(2) + ' m³';
+                    messageDiv.innerHTML = '✅ ' + result.message + '<br>Ukupno: ' + (Number(result.ukupno) || 0).toFixed(2) + ' m³';
                     messageDiv.style.background = '#d1fae5';
                     messageDiv.style.color = '#047857';
                     messageDiv.classList.remove('hidden');
@@ -10024,8 +10033,8 @@
                 formData.append('kupac', document.getElementById('edit-otprema-kupac').value);
                 formData.append('brojOtpremnice', document.getElementById('edit-otprema-broj-otpremnice').value);
 
-                var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ČETINARI',
-                                     'F/L L', 'I L', 'II L', 'III L', 'TRUPCI', 'OGR.DUGI', 'OGR.CIJEPANI', 'LIŠĆARI'];
+                var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'ČETINARI',
+                                     'F/L L', 'I L', 'II L', 'III L', 'TRUPCI', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI'];
 
                 sortimentiKeys.forEach(function(key) {
                     var fieldId = 'edit-otprema-' + key.replace(/\//g, '').replace(/ /g, '-');
@@ -10038,7 +10047,7 @@
                 var result = await response.json();
 
                 if (result.success) {
-                    messageDiv.innerHTML = '✅ ' + result.message + '<br>Ukupno: ' + result.ukupno.toFixed(2) + ' m³';
+                    messageDiv.innerHTML = '✅ ' + result.message + '<br>Ukupno: ' + (Number(result.ukupno) || 0).toFixed(2) + ' m³';
                     messageDiv.style.background = '#dbeafe';
                     messageDiv.style.color = '#1e40af';
                     messageDiv.classList.remove('hidden');
@@ -10228,8 +10237,27 @@
                             );
 
                             if (stanjeMatch && stanjeMatch.redovi && stanjeMatch.redovi.projekat) {
-                                // Sum all sortimenti from projekat row (red 10 iz Excel-a)
-                                projekatTotal = stanjeMatch.redovi.projekat.reduce((sum, val) => sum + (val || 0), 0);
+                                // Read the stored grand-total column directly. The projekat row is a
+                                // positional array aligned to stanjeOdjelaData.sortimentiNazivi, which
+                                // includes aggregate columns (TRUPCI Č, ČETINARI, TRUPCI L, LIŠĆARI,
+                                // SVEUKUPNO). Summing the whole array would double/triple-count.
+                                const sortNazivi = stanjeOdjelaData.sortimentiNazivi || [];
+                                let ukupnoIdx = sortNazivi.indexOf('SVEUKUPNO');
+                                if (ukupnoIdx === -1) ukupnoIdx = sortNazivi.indexOf('UKUPNO Č+L');
+                                if (ukupnoIdx !== -1) {
+                                    projekatTotal = stanjeMatch.redovi.projekat[ukupnoIdx] || 0;
+                                } else {
+                                    // Fallback: derive from ČETINARI + LIŠĆARI columns if present,
+                                    // otherwise sum only true leaf columns (never the aggregates).
+                                    const cetIdx = sortNazivi.indexOf('ČETINARI');
+                                    const lisIdx = sortNazivi.indexOf('LIŠĆARI');
+                                    if (cetIdx !== -1 || lisIdx !== -1) {
+                                        projekatTotal = (stanjeMatch.redovi.projekat[cetIdx] || 0) +
+                                                        (stanjeMatch.redovi.projekat[lisIdx] || 0);
+                                    } else {
+                                        projekatTotal = stanjeMatch.redovi.projekat.reduce((sum, val) => sum + (val || 0), 0);
+                                    }
+                                }
                                 radilisteNaziv = stanjeMatch.radiliste || '';
                                 zadnjiDatum = stanjeMatch.zadnjiDatum;
 

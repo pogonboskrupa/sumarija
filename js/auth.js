@@ -181,6 +181,10 @@
 
         // Auto-refresh listeners - slusa "app-data-synced" event i osvjezava trenutni panel
         function setupAutoRefreshListeners() {
+            // Registruj listener samo jednom po učitavanju stranice (sprječava
+            // gomilanje duplikata pri logout→ponovni login bez reloada)
+            if (window.__autoRefreshListenersInit) return;
+            window.__autoRefreshListenersInit = true;
             window.addEventListener('app-data-synced', (event) => {
                 const { version, type, timestamp } = event.detail;
                 console.log(`[AUTO-REFRESH] Received "app-data-synced" event:`, event.detail);
@@ -202,6 +206,10 @@
         // Scheduled auto-refresh for Poslovodja and Radnici panels
         // Runs daily at 09:00 on weekdays (Monday-Friday), when data entry ends
         function setupScheduledRefresh() {
+            // Pokreni interval samo jednom (sprječava višestruke setInterval-e
+            // koji bi se gomilali pri ponovnom loginu u istoj sesiji)
+            if (window.__scheduledRefreshInit) return;
+            window.__scheduledRefreshInit = true;
             const REFRESH_TIMES = ['09:00'];
             let lastRefreshDate = null;
 
@@ -243,6 +251,9 @@
 
         // Cross-tab synchronization - slusa promjene u localStorage izmedju tabova
         function setupCrossTabSync() {
+            // Registruj storage listener samo jednom po učitavanju stranice
+            if (window.__crossTabSyncInit) return;
+            window.__crossTabSyncInit = true;
             window.addEventListener('storage', (event) => {
                 if (event.key === 'app_data_version') {
                     const newVersion = event.newValue;
