@@ -7080,7 +7080,7 @@
 
             // Koristi globalni stanjeZalihaData ako je već učitan, inače čitaj iz keša
             let odjeli = (typeof stanjeZalihaData !== 'undefined' && stanjeZalihaData && stanjeZalihaData.length) ? stanjeZalihaData : null;
-            let sortN  = (typeof stanjeZalihaSortimenti !== 'undefined' && stanjeZalihaSortimenti && stanjeZalihaSortimenti.length) ? stanjeZalihaSortimenti : null;
+            let sortimentiHdr = (typeof stanjeZalihaSortimenti !== 'undefined' && stanjeZalihaSortimenti && stanjeZalihaSortimenti.length) ? stanjeZalihaSortimenti : null;
 
             if (!odjeli) {
                 try {
@@ -7093,7 +7093,7 @@
                     }
                     if (raw) {
                         odjeli = raw.odjeli || [];
-                        sortN  = raw.sortimentiHeader || raw.sortimentiNazivi || [];
+                        sortimentiHdr = raw.sortimentiHeader || raw.sortimentiNazivi || [];
                     }
                 } catch(e) {}
             }
@@ -7115,83 +7115,116 @@
                 return;
             }
 
-            // Formatiraj broj
-            const fmt = v => {
-                const n = parseFloat(v);
-                if (!n || n === 0) return '<span style="color:#d1d5db;">—</span>';
-                const style = n < 0 ? 'color:#dc2626;font-weight:700;' : '';
-                return `<span style="${style}">${n.toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
-            };
-
-            // Summary kartice (projekat, sječa, otprema, ukupno zaliha)
-            const proj   = parseFloat(od.projekat  || 0);
-            const sjeca  = parseFloat(od.sjeca     || 0);
-            const otpr   = parseFloat(od.otprema   || 0);
-            const netZ   = (typeof getNetZaliha === 'function') ? getNetZaliha(od) : od.zaliha || {};
-            const ukupno = netZ['UKUPNO Č+L'] !== undefined ? netZ['UKUPNO Č+L'] : (od.ukupnoZaliha || 0);
-            const pct    = proj > 0 ? ((sjeca / proj) * 100).toFixed(1) : '—';
-            const fmtN   = v => v !== 0 ? v.toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
-            const zBoja  = ukupno < 0 ? '#dc2626' : ukupno > 0 ? '#065f46' : '#6b7280';
-
-            const summary = `
-                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">
-                    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;text-align:center;">
-                        <div style="font-size:10px;color:#92400e;font-weight:600;text-transform:uppercase;">Projekat</div>
-                        <div style="font-size:14px;font-weight:700;color:#92400e;">${fmtN(proj)}</div>
-                    </div>
-                    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 10px;text-align:center;">
-                        <div style="font-size:10px;color:#065f46;font-weight:600;text-transform:uppercase;">Sječa</div>
-                        <div style="font-size:14px;font-weight:700;color:#065f46;">${fmtN(sjeca)}</div>
-                    </div>
-                    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 10px;text-align:center;">
-                        <div style="font-size:10px;color:#1e40af;font-weight:600;text-transform:uppercase;">Otprema</div>
-                        <div style="font-size:14px;font-weight:700;color:#1e40af;">${fmtN(otpr)}</div>
-                    </div>
-                    <div style="background:${ukupno < 0 ? '#fef2f2' : '#faf5ff'};border:1px solid ${ukupno < 0 ? '#fca5a5' : '#e9d5ff'};border-radius:8px;padding:8px 10px;text-align:center;">
-                        <div style="font-size:10px;color:${zBoja};font-weight:600;text-transform:uppercase;">Zaliha</div>
-                        <div style="font-size:14px;font-weight:700;color:${zBoja};">${fmtN(ukupno)}</div>
-                    </div>
-                </div>
-                ${proj > 0 ? `<div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:11px;color:#6b7280;margin-bottom:3px;"><span>Realizacija</span><span>${pct}%</span></div><div style="height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;"><div style="height:100%;width:${Math.min(100,parseFloat(pct)||0)}%;background:${parseFloat(pct)>100?'#dc2626':'#10b981'};border-radius:3px;"></div></div></div>` : ''}`;
-
-            // Per-sortiment zaliha tabela
-            const zaliha = od.zaliha || {};
-            const sortKeys = [
+            // Isti sortimenti kao u renderStanjeZalihaCards
+            const sortimentiShort = [
+                "F/L Č","I Č","II Č","III Č","RD","TRUPCI Č",
+                "CEL.D","CEL.C","ŠKART","Σ Č",
+                "F/L L","I L","II L","III L","TRUPCI L",
+                "OGR.D","OGR.C","GULE","LIŠĆ","UKUPNO"
+            ];
+            const sortimentiFull = [
                 "F/L Č","I Č","II Č","III Č","RD","TRUPCI Č",
                 "CEL.DUGA","CEL.CIJEPANA","ŠKART","Σ ČETINARI",
                 "F/L L","I L","II L","III L","TRUPCI L",
                 "OGR.DUGI","OGR.CIJEPANI","GULE","LIŠĆARI","UKUPNO Č+L"
             ];
-            const activeSorts = sortKeys.filter(k => zaliha[k] != null && zaliha[k] !== 0);
+            // Koristi header iz podataka ako je dostupan, inače fallback na sortimentiFull
+            const useSortH = (sortimentiHdr && sortimentiHdr.length) ? sortimentiHdr : sortimentiFull;
 
-            let zalihaTable = '';
-            if (activeSorts.length) {
-                const rows = activeSorts.map(k => {
-                    const v = netZ[k] !== undefined ? netZ[k] : (zaliha[k] || 0);
-                    const isSuma = k.startsWith('Σ') || k.startsWith('TRUPCI') || k.startsWith('LIŠĆARI') || k === 'UKUPNO Č+L';
-                    const bg = k === 'UKUPNO Č+L' ? '#ede9fe' : k.includes('Č') && isSuma ? '#dbeafe' : k.includes('L') && isSuma ? '#fef3c7' : 'white';
-                    const fw = isSuma ? 'font-weight:700;' : '';
-                    const col = v < 0 ? '#dc2626' : '#374151';
-                    return `<tr style="background:${bg};border-bottom:1px solid #f1f5f9;">
-                        <td style="padding:6px 10px;font-size:12px;${fw}">${k}</td>
-                        <td style="padding:6px 10px;font-size:12px;text-align:right;${fw}color:${col};">${v.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
-                    </tr>`;
+            const netZ = getNetZaliha(od);
+            const ukupnoZaliha = od.ukupnoZaliha || 0;
+            const pozitivnaZaliha = (netZ && netZ["UKUPNO Č+L"] !== undefined) ? netZ["UKUPNO Č+L"] : ukupnoZaliha;
+
+            let statusClass = 'neutral';
+            let statusIcon = '📦';
+            if (pozitivnaZaliha < 0) { statusClass = 'danger'; statusIcon = '🔴'; }
+            else if (pozitivnaZaliha > 100) { statusClass = 'warning'; statusIcon = '⚠️'; }
+            else if (pozitivnaZaliha > 0) { statusClass = 'success'; statusIcon = '✅'; }
+
+            const razlExcl = getRazlikeExclusions(od.odjel);
+
+            const theadCells = sortimentiShort.map((s, i) => {
+                const isTotal = i === 9 || i === 18 || i === 19;
+                const bgColor = isTotal ? '#2d5a87' : '#1e3a5f';
+                return `<th style="padding:10px 6px;text-align:center;font-weight:600;color:white;border:1px solid #374151;white-space:nowrap;background:${bgColor};">${s}</th>`;
+            }).join('');
+
+            const bodyRows = ['projekat','sjeca','otprema','zaliha'].map(vrsta => {
+                const labels    = { projekat:'📋 PROJEKAT', sjeca:'🪓 SJEČA', otprema:'🚛 OTPREMA', zaliha:'📦 ZALIHA' };
+                const rowColors = { projekat:'#eff6ff', sjeca:'#ecfdf5', otprema:'#fffbeb', zaliha:'#faf5ff' };
+                const textColors= { projekat:'#1e40af', sjeca:'#065f46', otprema:'#b45309', zaliha:'#7c3aed' };
+                const sortimenti = vrsta === 'zaliha'
+                    ? buildCorrectedZaliha(applyPreklasiranja(od.zaliha, od.odjel), razlExcl)
+                    : (od[vrsta] || {});
+                const cells = useSortH.map((s, i) => {
+                    const value = sortimenti[s] || 0;
+                    const isTotal = i === 9 || i === 18 || i === 19;
+                    const isRazlika = vrsta === 'zaliha' && !isTotal && !!razlExcl[s];
+                    const displayValue = value === 0 ? '-' : value.toFixed(2);
+                    const cellColor = isRazlika ? '#92400e' : (vrsta === 'zaliha' && value < 0 ? '#dc2626' : '#374151');
+                    const cellBg = isTotal ? (vrsta === 'zaliha' ? '#e9d5ff' : '#f3e8ff') : (isRazlika ? '#fef9c3' : '');
+                    return `<td title="${isRazlika ? 'Razlika mjerenja — isključeno iz ukupnog' : ''}" style="padding:10px 6px;text-align:right;color:${cellColor};border:1px solid #d1d5db;font-weight:${isTotal?'700':'400'};font-style:${isRazlika?'italic':'normal'};${cellBg?'background:'+cellBg+';':''}">${displayValue}</td>`;
                 }).join('');
-                zalihaTable = `
-                    <div style="font-size:11px;font-weight:700;color:#6b21a8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">📦 Zaliha po sortimentima</div>
-                    <div style="border-radius:8px;overflow:hidden;border:1px solid #e9d5ff;">
-                        <table style="width:100%;border-collapse:collapse;">
-                            <thead><tr style="background:#faf5ff;">
-                                <th style="padding:6px 10px;font-size:11px;text-align:left;color:#6b21a8;">Sortiment</th>
-                                <th style="padding:6px 10px;font-size:11px;text-align:right;color:#6b21a8;">m³</th>
-                            </tr></thead>
-                            <tbody>${rows}</tbody>
-                        </table>
-                    </div>`;
-            }
+                return `<tr style="background:${rowColors[vrsta]};">
+                    <td style="padding:10px 12px;font-weight:700;color:${textColors[vrsta]};white-space:nowrap;border:1px solid #d1d5db;">${labels[vrsta]}</td>
+                    ${cells}
+                </tr>`;
+            }).join('');
 
-            const radiliste = od.radiliste ? `<div style="font-size:12px;color:#6b7280;margin-bottom:10px;">📍 <b>${od.radiliste}</b>${od.zadnjaOtprema ? ' &nbsp;·&nbsp; 🚛 Zadnja otprema: ' + od.zadnjaOtprema : ''}</div>` : '';
-            body.innerHTML = radiliste + summary + zalihaTable;
+            body.innerHTML = `
+                <div class="stanje-zaliha-card ${statusClass}" style="background:white;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.08);overflow:hidden;">
+                    <div style="background:linear-gradient(135deg,#1e3a5f 0%,#2d5a87 100%);color:white;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <h3 style="margin:0;font-size:18px;font-weight:700;">${od.odjel}</h3>
+                            <p style="margin:4px 0 0 0;font-size:13px;opacity:0.85;">📍 ${od.radiliste || 'N/A'}${od.zadnjaOtprema ? ' &nbsp;|&nbsp; 🚛 ' + od.zadnjaOtprema : ''}</p>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:24px;font-weight:700;">${pozitivnaZaliha.toFixed(2)} m³</div>
+                            <div style="font-size:12px;opacity:0.85;">${statusIcon} Zaliha</div>
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#e5e7eb;border-bottom:1px solid #e5e7eb;">
+                        <div style="background:white;padding:12px 16px;text-align:center;">
+                            <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">📋 Projekat</div>
+                            <div style="font-size:16px;font-weight:700;color:#3b82f6;">${(od.ukupnoProjekat || 0).toFixed(2)}</div>
+                        </div>
+                        <div style="background:white;padding:12px 16px;text-align:center;">
+                            <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">🪓 Sječa</div>
+                            <div style="font-size:16px;font-weight:700;color:#10b981;">${(od.ukupnoSjeca || 0).toFixed(2)}</div>
+                        </div>
+                        <div style="background:white;padding:12px 16px;text-align:center;">
+                            <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">🚛 Otprema</div>
+                            <div style="font-size:16px;font-weight:700;color:#f59e0b;">${(od.ukupnoOtprema || 0).toFixed(2)}</div>
+                        </div>
+                        <div style="background:white;padding:12px 16px;text-align:center;">
+                            <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">📦 Zaliha</div>
+                            <div style="font-size:16px;font-weight:700;color:#059669;">${pozitivnaZaliha.toFixed(2)}</div>
+                        </div>
+                    </div>
+                    <details open style="border-top:1px solid #e5e7eb;">
+                        <summary style="padding:12px 20px;cursor:pointer;font-weight:600;color:#374151;background:#f9fafb;display:flex;align-items:center;gap:8px;">
+                            <span style="transition:transform 0.2s;">▶</span> Detaljni prikaz po sortimentima
+                        </summary>
+                        <div style="overflow-x:auto;padding:16px;">
+                            <table class="stanje-zaliha-table" style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #d1d5db;">
+                                <thead>
+                                    <tr style="background:#1e3a5f;">
+                                        <th style="padding:10px 12px;text-align:left;font-weight:600;color:white;border:1px solid #374151;white-space:nowrap;">VRSTA</th>
+                                        ${theadCells}
+                                    </tr>
+                                </thead>
+                                <tbody>${bodyRows}</tbody>
+                            </table>
+                        </div>
+                    </details>
+                </div>`;
+            // arrow rotation CSS (ako već nije dodan)
+            if (!document.getElementById('stanje-zaliha-modal-style')) {
+                const st = document.createElement('style');
+                st.id = 'stanje-zaliha-modal-style';
+                st.textContent = `.stanje-zaliha-card details[open] summary span:first-child{transform:rotate(90deg);}`;
+                document.head.appendChild(st);
+            }
         }
 
         // Load otpremac odjeli data (ZADNJIH 15 ODJELA IZ SVIH GODINA)
