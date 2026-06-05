@@ -7078,71 +7078,120 @@
             body.innerHTML = '<div style="text-align:center;padding:30px;color:#6b7280;">⏳ Učitavam...</div>';
             modal.style.display = 'flex';
 
-            // Čitaj iz cache_stanje_zaliha
-            let raw = null;
-            try {
-                const k1 = localStorage.getItem('cache_stanje_zaliha');
-                if (k1) raw = JSON.parse(k1).data;
-                if (!raw) {
-                    const k2 = Object.keys(localStorage).find(k => k.startsWith('cache_stanje_zaliha_') && !k.includes('admin'));
-                    if (k2) raw = JSON.parse(localStorage.getItem(k2)).data;
-                }
-            } catch(e) {}
+            // Koristi globalni stanjeZalihaData ako je već učitan, inače čitaj iz keša
+            let odjeli = (typeof stanjeZalihaData !== 'undefined' && stanjeZalihaData && stanjeZalihaData.length) ? stanjeZalihaData : null;
+            let sortN  = (typeof stanjeZalihaSortimenti !== 'undefined' && stanjeZalihaSortimenti && stanjeZalihaSortimenti.length) ? stanjeZalihaSortimenti : null;
 
-            if (!raw) {
+            if (!odjeli) {
+                try {
+                    let raw = null;
+                    const k1 = localStorage.getItem('cache_stanje_zaliha');
+                    if (k1) raw = JSON.parse(k1).data;
+                    if (!raw) {
+                        const k2 = Object.keys(localStorage).find(k => k.startsWith('cache_stanje_zaliha_') && !k.includes('admin'));
+                        if (k2) raw = JSON.parse(localStorage.getItem(k2)).data;
+                    }
+                    if (raw) {
+                        odjeli = raw.odjeli || [];
+                        sortN  = raw.sortimentiHeader || raw.sortimentiNazivi || [];
+                    }
+                } catch(e) {}
+            }
+
+            if (!odjeli || !odjeli.length) {
                 body.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280;font-size:14px;">Nema podataka.<br>Otvorite tab <b>Stanje zaliha</b> da osvježite podatke.</div>';
                 return;
             }
 
-            const odjeli = raw.odjeli || raw.data || [];
-            const sortN  = raw.sortimentiHeader || raw.sortimentiNazivi || [];
-            const q = odjelNaziv.toLowerCase().replace('.xlsx','').trim();
-
-            const odjelData = odjeli.find(o => {
-                const n = (o.odjelNaziv || o.odjel || '').toLowerCase().replace('.xlsx','').trim();
+            // Matchuj po odjel.odjel (stanje-zaliha struktura)
+            const q = odjelNaziv.toLowerCase().trim();
+            const od = odjeli.find(o => {
+                const n = (o.odjel || '').toLowerCase().trim();
                 return n === q || n.includes(q) || q.includes(n);
             });
 
-            if (!odjelData) {
+            if (!od) {
                 body.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280;font-size:14px;">Nema stanja zaliha za <b>' + odjelNaziv + '</b></div>';
                 return;
             }
 
-            const redovi = odjelData.redovi || {};
-            const vrste = [
-                { naziv:'PROJEKAT', data: redovi.projekat   || [], bg:'#fffbeb', color:'#92400e', border:'#fbbf24', icon:'📋' },
-                { naziv:'SJEČA',    data: redovi.sjeca       || [], bg:'#f0fdf4', color:'#065f46', border:'#10b981', icon:'🌲' },
-                { naziv:'OTPREMA',  data: redovi.otprema     || [], bg:'#eff6ff', color:'#1e40af', border:'#3b82f6', icon:'🚛' },
-                { naziv:'ZALIHA',   data: redovi.sumaLager   || [], bg:'#faf5ff', color:'#6b21a8', border:'#a855f7', icon:'📦' }
+            // Formatiraj broj
+            const fmt = v => {
+                const n = parseFloat(v);
+                if (!n || n === 0) return '<span style="color:#d1d5db;">—</span>';
+                const style = n < 0 ? 'color:#dc2626;font-weight:700;' : '';
+                return `<span style="${style}">${n.toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
+            };
+
+            // Summary kartice (projekat, sječa, otprema, ukupno zaliha)
+            const proj   = parseFloat(od.projekat  || 0);
+            const sjeca  = parseFloat(od.sjeca     || 0);
+            const otpr   = parseFloat(od.otprema   || 0);
+            const netZ   = (typeof getNetZaliha === 'function') ? getNetZaliha(od) : od.zaliha || {};
+            const ukupno = netZ['UKUPNO Č+L'] !== undefined ? netZ['UKUPNO Č+L'] : (od.ukupnoZaliha || 0);
+            const pct    = proj > 0 ? ((sjeca / proj) * 100).toFixed(1) : '—';
+            const fmtN   = v => v !== 0 ? v.toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
+            const zBoja  = ukupno < 0 ? '#dc2626' : ukupno > 0 ? '#065f46' : '#6b7280';
+
+            const summary = `
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">
+                    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;text-align:center;">
+                        <div style="font-size:10px;color:#92400e;font-weight:600;text-transform:uppercase;">Projekat</div>
+                        <div style="font-size:14px;font-weight:700;color:#92400e;">${fmtN(proj)}</div>
+                    </div>
+                    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 10px;text-align:center;">
+                        <div style="font-size:10px;color:#065f46;font-weight:600;text-transform:uppercase;">Sječa</div>
+                        <div style="font-size:14px;font-weight:700;color:#065f46;">${fmtN(sjeca)}</div>
+                    </div>
+                    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 10px;text-align:center;">
+                        <div style="font-size:10px;color:#1e40af;font-weight:600;text-transform:uppercase;">Otprema</div>
+                        <div style="font-size:14px;font-weight:700;color:#1e40af;">${fmtN(otpr)}</div>
+                    </div>
+                    <div style="background:${ukupno < 0 ? '#fef2f2' : '#faf5ff'};border:1px solid ${ukupno < 0 ? '#fca5a5' : '#e9d5ff'};border-radius:8px;padding:8px 10px;text-align:center;">
+                        <div style="font-size:10px;color:${zBoja};font-weight:600;text-transform:uppercase;">Zaliha</div>
+                        <div style="font-size:14px;font-weight:700;color:${zBoja};">${fmtN(ukupno)}</div>
+                    </div>
+                </div>
+                ${proj > 0 ? `<div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:11px;color:#6b7280;margin-bottom:3px;"><span>Realizacija</span><span>${pct}%</span></div><div style="height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;"><div style="height:100%;width:${Math.min(100,parseFloat(pct)||0)}%;background:${parseFloat(pct)>100?'#dc2626':'#10b981'};border-radius:3px;"></div></div></div>` : ''}`;
+
+            // Per-sortiment zaliha tabela
+            const zaliha = od.zaliha || {};
+            const sortKeys = [
+                "F/L Č","I Č","II Č","III Č","RD","TRUPCI Č",
+                "CEL.DUGA","CEL.CIJEPANA","ŠKART","Σ ČETINARI",
+                "F/L L","I L","II L","III L","TRUPCI L",
+                "OGR.DUGI","OGR.CIJEPANI","GULE","LIŠĆARI","UKUPNO Č+L"
             ];
+            const activeSorts = sortKeys.filter(k => zaliha[k] != null && zaliha[k] !== 0);
 
-            const fmt = v => (v == null || v === '' || v === 0) ? '<span style="color:#d1d5db;">—</span>' : Number(v).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2});
+            let zalihaTable = '';
+            if (activeSorts.length) {
+                const rows = activeSorts.map(k => {
+                    const v = netZ[k] !== undefined ? netZ[k] : (zaliha[k] || 0);
+                    const isSuma = k.startsWith('Σ') || k.startsWith('TRUPCI') || k.startsWith('LIŠĆARI') || k === 'UKUPNO Č+L';
+                    const bg = k === 'UKUPNO Č+L' ? '#ede9fe' : k.includes('Č') && isSuma ? '#dbeafe' : k.includes('L') && isSuma ? '#fef3c7' : 'white';
+                    const fw = isSuma ? 'font-weight:700;' : '';
+                    const col = v < 0 ? '#dc2626' : '#374151';
+                    return `<tr style="background:${bg};border-bottom:1px solid #f1f5f9;">
+                        <td style="padding:6px 10px;font-size:12px;${fw}">${k}</td>
+                        <td style="padding:6px 10px;font-size:12px;text-align:right;${fw}color:${col};">${v.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                    </tr>`;
+                }).join('');
+                zalihaTable = `
+                    <div style="font-size:11px;font-weight:700;color:#6b21a8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">📦 Zaliha po sortimentima</div>
+                    <div style="border-radius:8px;overflow:hidden;border:1px solid #e9d5ff;">
+                        <table style="width:100%;border-collapse:collapse;">
+                            <thead><tr style="background:#faf5ff;">
+                                <th style="padding:6px 10px;font-size:11px;text-align:left;color:#6b21a8;">Sortiment</th>
+                                <th style="padding:6px 10px;font-size:11px;text-align:right;color:#6b21a8;">m³</th>
+                            </tr></thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>`;
+            }
 
-            const headCells = sortN.map(s => {
-                const style = s === 'ČETINARI' ? 'color:#1e40af;background:#dbeafe;' : s === 'LIŠĆARI' ? 'color:#92400e;background:#fef3c7;' : s === 'SVEUKUPNO' ? 'color:#5b21b6;background:#ede9fe;font-weight:800;' : 'color:#047857;background:#f0fdf4;';
-                return `<th style="padding:8px 10px;text-align:right;font-size:11px;font-weight:700;white-space:nowrap;${style}">${s}</th>`;
-            }).join('');
-
-            const bodyRows = vrste.map(v => {
-                const cells = sortN.map((s, i) => `<td style="padding:7px 10px;text-align:right;font-size:12px;border-right:1px solid #f1f5f9;">${fmt(v.data[i])}</td>`).join('');
-                return `<tr>
-                    <td style="padding:8px 12px;font-weight:700;font-size:13px;color:${v.color};background:${v.bg};border-right:3px solid ${v.border};white-space:nowrap;position:sticky;left:0;z-index:1;">${v.icon} ${v.naziv}</td>
-                    ${cells}
-                </tr>`;
-            }).join('');
-
-            const radiliste = odjelData.radiliste ? `<div style="font-size:12px;color:#6b7280;margin-bottom:12px;">📍 Radilište: <b>${odjelData.radiliste}</b></div>` : '';
-
-            body.innerHTML = radiliste + `
-                <div style="overflow-x:auto;border-radius:10px;border:1px solid #e5e7eb;">
-                    <table style="width:100%;border-collapse:collapse;background:white;">
-                        <thead><tr>
-                            <th style="padding:8px 12px;text-align:left;font-size:12px;font-weight:700;color:#374151;background:#f8fafc;position:sticky;left:0;z-index:2;min-width:110px;">Vrsta</th>
-                            ${headCells}
-                        </tr></thead>
-                        <tbody>${bodyRows}</tbody>
-                    </table>
-                </div>`;
+            const radiliste = od.radiliste ? `<div style="font-size:12px;color:#6b7280;margin-bottom:10px;">📍 <b>${od.radiliste}</b>${od.zadnjaOtprema ? ' &nbsp;·&nbsp; 🚛 Zadnja otprema: ' + od.zadnjaOtprema : ''}</div>` : '';
+            body.innerHTML = radiliste + summary + zalihaTable;
         }
 
         // Load otpremac odjeli data (ZADNJIH 15 ODJELA IZ SVIH GODINA)
