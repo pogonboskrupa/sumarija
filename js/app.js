@@ -140,7 +140,7 @@
                 'cache_poslovodja_',
                 'cache_dinamika_',
                 'cache_mjesecni_sortimenti_',
-                'cache_stanje_odjela'
+                'cache_stanje_zaliha'
             ]);
         }
 
@@ -645,7 +645,7 @@
                         'cache_poslovodja_',
                         'cache_dinamika_',
                         'cache_mjesecni_sortimenti_',
-                        'cache_stanje_odjela'
+                        'cache_stanje_zaliha'
                     ]);
 
                     // 🚀 Update APP DATA VERSION - svi paneli će vidjeti promjenu
@@ -734,7 +734,6 @@
                         { name: 'Operativa - Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year, timeout: 60000 },
                         { name: 'Operativa (Stats)', url: buildApiUrl('stats', { year }), cacheKey: 'cache_stats_' + year, timeout: 180000 },
                         { name: 'Stanje Odjela (odjeli)', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_odjeli_' + year, timeout: 180000 },
-                        { name: 'Stanje Odjela (operativa/mapa)', url: buildApiUrl('stanje-odjela'), cacheKey: 'cache_stanje_odjela', timeout: 180000 },
                         { name: 'Lista Odjela (dropdown)', url: buildApiUrl('get-odjeli-list'), cacheKey: 'cache_odjeli_list', timeout: 60000 },
                         { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
                         { name: 'Pending Unosi', url: buildApiUrl('pending-unosi', { year }), cacheKey: 'cache_pending_unosi', timeout: 120000 },
@@ -8229,8 +8228,24 @@
         let stanjeOdjelaSortimenti = [];
 
         async function loadStanjeOdjela() {
-            // Turbo: instant show cached data
-            var soCached = turboShow('cache_stanje_odjela', 'operativa-content', function(d) { return d.data; });
+            // Čitaj iz cache_stanje_zaliha (isti podaci, stanje-odjela je stari naziv)
+            const _normCacheKey = () => {
+                // poslovođa ima vlastiti cache key
+                if (currentUser && (userType === 'poslovođa' || userType === 'poslovodja')) {
+                    return 'cache_stanje_zaliha_' + (currentUser.fullName || 'all').replace(/\s+/g, '_');
+                }
+                return 'cache_stanje_zaliha';
+            };
+            const cacheKey = _normCacheKey();
+
+            const _parseStanje = (raw) => {
+                if (!raw) return null;
+                const odjeli = raw.odjeli || raw.data || [];
+                const sortN  = raw.sortimentiHeader || raw.sortimentiNazivi || [];
+                return { data: odjeli, sortimentiNazivi: sortN };
+            };
+
+            var soCached = turboShow(cacheKey, 'operativa-content', function(d) { return _parseStanje(d); });
             var soHasCached = false;
             if (soCached) {
                 stanjeOdjelaData = soCached.data;
@@ -8245,10 +8260,11 @@
             }
 
             try {
-                const url = buildApiUrl('stanje-odjela');
-                const data = await fetchWithCache(url, `cache_stanje_odjela`);
+                const url = buildApiUrl('stanje-zaliha');
+                const raw = await fetchWithCache(url, cacheKey);
+                const data = _parseStanje(raw);
 
-                if (data.error) throw new Error(data.error);
+                if (!data) throw new Error('Nema podataka');
 
                 // Sačuvaj podatke globalno
                 stanjeOdjelaData = data.data;
@@ -10255,13 +10271,17 @@
                 // Fetch sva 3 endpointa PARALELNO (brže od sekvencijalnog)
                 const dashboardUrl = buildApiUrl('dashboard', { year });
                 const odjeliUrl = buildApiUrl('odjeli', { year });
-                const stanjeOdjelaUrl = buildApiUrl('stanje-odjela');
+                const stanjeOdjelaUrl = buildApiUrl('stanje-zaliha');
 
-                const [dashboardData, odjeliResponse, stanjeOdjelaData] = await Promise.all([
+                const [dashboardData, odjeliResponse, stanjeOdjelaRaw] = await Promise.all([
                     fetchWithCache(dashboardUrl, 'cache_dashboard_' + year, false, 60000),
                     fetchWithCache(odjeliUrl, 'cache_odjeli_' + year, false, 60000),
-                    fetchWithCache(stanjeOdjelaUrl, 'cache_stanje_odjela'),
+                    fetchWithCache(stanjeOdjelaUrl, 'cache_stanje_zaliha'),
                 ]);
+                // Normalizuj strukturu (stanje-zaliha može imati 'odjeli' ili 'data')
+                const stanjeOdjelaData = stanjeOdjelaRaw
+                    ? { data: stanjeOdjelaRaw.odjeli || stanjeOdjelaRaw.data || [], sortimentiNazivi: stanjeOdjelaRaw.sortimentiHeader || stanjeOdjelaRaw.sortimentiNazivi || [] }
+                    : null;
 
 
                 // DEBUG: Log odjeli count and total from API
@@ -10930,12 +10950,17 @@
         // Load and process ZALIHA data
         async function loadZalihaData() {
             try {
-                // Fetch stanje-odjela data
-                const stanjeOdjelaUrl = buildApiUrl('stanje-odjela');
-                const stanjeData = await fetchWithCache(stanjeOdjelaUrl, 'cache_stanje_odjela_admin', false, 180000);
+                const stanjeOdjelaUrl = buildApiUrl('stanje-zaliha');
+                const stanjeRaw = await fetchWithCache(stanjeOdjelaUrl, 'cache_stanje_zaliha', false, 180000);
 
-                if (!stanjeData || !stanjeData.data) {
-                    console.error('No stanje-odjela data available');
+                if (!stanjeRaw) {
+                    console.error('No stanje-zaliha data available');
+                    return;
+                }
+                const stanjeData = { data: stanjeRaw.odjeli || stanjeRaw.data || [], sortimentiNazivi: stanjeRaw.sortimentiHeader || stanjeRaw.sortimentiNazivi || [] };
+
+                if (!stanjeData.data.length) {
+                    console.error('No stanje-zaliha data available');
                     return;
                 }
 
