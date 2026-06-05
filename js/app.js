@@ -1653,8 +1653,9 @@
                             const izvodjacBg = izvodjacColorMap[o.izvođač] || '';
                             const izvodjacStyle = izvodjacBg ? `background-color: ${izvodjacBg};` : '';
                             const sjecaDateStyle = getSjecaMonthStyle(o.datumZadnjeSjece);
+                            const odjelEsc = (o.odjel || '').replace(/'/g, "\\'");
                             return `
-                                <tr>
+                                <tr style="cursor:pointer;" onclick="showOdjelStanjeModal('${odjelEsc}')" title="Klikni za stanje zaliha">
                                     <td class="${radilisteClass}" style="font-weight: 500;">${o.odjel || '-'}</td>
                                     <td class="right ${radilisteClass}">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
                                     <td class="right ${radilisteClass}">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
@@ -7061,6 +7062,87 @@
                 odjeliDefaultPage++;
                 renderOdjeliDefaultPage();
             }
+        }
+
+        // ---- STANJE ZALIHA MODAL (klik na odjel u Dashboard tablici) ----
+        function closeOdjelStanjeModal() {
+            document.getElementById('odjel-stanje-modal').style.display = 'none';
+        }
+
+        function showOdjelStanjeModal(odjelNaziv) {
+            const modal = document.getElementById('odjel-stanje-modal');
+            const title = document.getElementById('odjel-stanje-modal-title');
+            const body  = document.getElementById('odjel-stanje-modal-body');
+
+            title.textContent = odjelNaziv;
+            body.innerHTML = '<div style="text-align:center;padding:30px;color:#6b7280;">⏳ Učitavam...</div>';
+            modal.style.display = 'flex';
+
+            // Čitaj iz cache_stanje_zaliha
+            let raw = null;
+            try {
+                const k1 = localStorage.getItem('cache_stanje_zaliha');
+                if (k1) raw = JSON.parse(k1).data;
+                if (!raw) {
+                    const k2 = Object.keys(localStorage).find(k => k.startsWith('cache_stanje_zaliha_') && !k.includes('admin'));
+                    if (k2) raw = JSON.parse(localStorage.getItem(k2)).data;
+                }
+            } catch(e) {}
+
+            if (!raw) {
+                body.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280;font-size:14px;">Nema podataka.<br>Otvorite tab <b>Stanje zaliha</b> da osvježite podatke.</div>';
+                return;
+            }
+
+            const odjeli = raw.odjeli || raw.data || [];
+            const sortN  = raw.sortimentiHeader || raw.sortimentiNazivi || [];
+            const q = odjelNaziv.toLowerCase().replace('.xlsx','').trim();
+
+            const odjelData = odjeli.find(o => {
+                const n = (o.odjelNaziv || o.odjel || '').toLowerCase().replace('.xlsx','').trim();
+                return n === q || n.includes(q) || q.includes(n);
+            });
+
+            if (!odjelData) {
+                body.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280;font-size:14px;">Nema stanja zaliha za <b>' + odjelNaziv + '</b></div>';
+                return;
+            }
+
+            const redovi = odjelData.redovi || {};
+            const vrste = [
+                { naziv:'PROJEKAT', data: redovi.projekat   || [], bg:'#fffbeb', color:'#92400e', border:'#fbbf24', icon:'📋' },
+                { naziv:'SJEČA',    data: redovi.sjeca       || [], bg:'#f0fdf4', color:'#065f46', border:'#10b981', icon:'🌲' },
+                { naziv:'OTPREMA',  data: redovi.otprema     || [], bg:'#eff6ff', color:'#1e40af', border:'#3b82f6', icon:'🚛' },
+                { naziv:'ZALIHA',   data: redovi.sumaLager   || [], bg:'#faf5ff', color:'#6b21a8', border:'#a855f7', icon:'📦' }
+            ];
+
+            const fmt = v => (v == null || v === '' || v === 0) ? '<span style="color:#d1d5db;">—</span>' : Number(v).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+            const headCells = sortN.map(s => {
+                const style = s === 'ČETINARI' ? 'color:#1e40af;background:#dbeafe;' : s === 'LIŠĆARI' ? 'color:#92400e;background:#fef3c7;' : s === 'SVEUKUPNO' ? 'color:#5b21b6;background:#ede9fe;font-weight:800;' : 'color:#047857;background:#f0fdf4;';
+                return `<th style="padding:8px 10px;text-align:right;font-size:11px;font-weight:700;white-space:nowrap;${style}">${s}</th>`;
+            }).join('');
+
+            const bodyRows = vrste.map(v => {
+                const cells = sortN.map((s, i) => `<td style="padding:7px 10px;text-align:right;font-size:12px;border-right:1px solid #f1f5f9;">${fmt(v.data[i])}</td>`).join('');
+                return `<tr>
+                    <td style="padding:8px 12px;font-weight:700;font-size:13px;color:${v.color};background:${v.bg};border-right:3px solid ${v.border};white-space:nowrap;position:sticky;left:0;z-index:1;">${v.icon} ${v.naziv}</td>
+                    ${cells}
+                </tr>`;
+            }).join('');
+
+            const radiliste = odjelData.radiliste ? `<div style="font-size:12px;color:#6b7280;margin-bottom:12px;">📍 Radilište: <b>${odjelData.radiliste}</b></div>` : '';
+
+            body.innerHTML = radiliste + `
+                <div style="overflow-x:auto;border-radius:10px;border:1px solid #e5e7eb;">
+                    <table style="width:100%;border-collapse:collapse;background:white;">
+                        <thead><tr>
+                            <th style="padding:8px 12px;text-align:left;font-size:12px;font-weight:700;color:#374151;background:#f8fafc;position:sticky;left:0;z-index:2;min-width:110px;">Vrsta</th>
+                            ${headCells}
+                        </tr></thead>
+                        <tbody>${bodyRows}</tbody>
+                    </table>
+                </div>`;
         }
 
         // Load otpremac odjeli data (ZADNJIH 15 ODJELA IZ SVIH GODINA)
