@@ -437,15 +437,19 @@
                 } catch (error) {
                     lastError = error;
 
+                    const isTimeout = error.name === 'AbortError';
                     if (attempt < MAX_RETRIES) {
-                        const isTimeout = error.name === 'AbortError';
                         const delay = isTimeout ? 3000 : attempt * 2000;
                         console.warn(`${isTimeout ? 'Timeout' : 'Network error'} (attempt ${attempt}/${MAX_RETRIES}), retrying in ${delay/1000}s:`, path);
                         await new Promise(resolve => setTimeout(resolve, delay));
                         continue;
                     }
 
-                    console.error('Request failed after all retries:', error);
+                    if (isTimeout) {
+                        console.warn(`[API] Timeout after ${timeout/1000}s (sve retry-e iscrpljene):`, path);
+                    } else {
+                        console.error('Request failed after all retries:', error);
+                    }
                 }
             }
 
