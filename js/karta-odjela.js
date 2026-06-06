@@ -1195,4 +1195,185 @@
     ];
   }
 
+
+  // ============================================================
+  // GPS SNIMANJE TRAGA — Snimi vlaku / Snimi trag
+  // ============================================================
+
+  let _gpsWatchId      = null;
+  let _gpsPoints       = [];
+  let _gpsPolyline     = null;
+  let _gpsType         = null;  // 'vlaka' | 'trag'
+  let _gpsMode         = null;  // null | 'pjesacenje' | 'trcanje' | 'bicikl' | 'vozilo'
+  let _gpsStartTime    = null;
+  let _gpsTotalDist    = 0;
+  let _gpsLastPos      = null;
+  let _gpsTimerInt     = null;
+  let _gpsSavedLayers  = [];    // polyline slojevi sačuvanih trasa
+
+  const GPS_MODES = {
+    pjesacenje: { label:'🚶 Pješačenje', color:'#16a34a', dash:null   },
+    trcanje:    { label:'🏃 Trčanje',    color:'#dc2626', dash:null   },
+    bicikl:     { label:'🚴 Bicikl',     color:'#2563eb', dash:null   },
+    vozilo:     { label:'🚗 Vozilo',     color:'#f59e0b', dash:null   },
+  };
+  const VLAKA_CFG = { label:'🌲 Vlaka', color:'#92400e' };
+
+  function _haversine(p1, p2) {
+    const R = 6371000;
+    const f1 = p1[0] * Math.PI/180, f2 = p2[0] * Math.PI/180;
+    const df = (p2[0]-p1[0]) * Math.PI/180;
+    const dl = (p2[1]-p1[1]) * Math.PI/180;
+    const a  = Math.sin(df/2)**2 + Math.cos(f1)*Math.cos(f2)*Math.sin(dl/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  function _gpsOnPos(pos) {
+    const { latitude:lat, longitude:lng, accuracy } = pos.coords;
+    const pt = [lat, lng];
+
+    if (_gpsLastPos) {
+      const d = _haversine(_gpsLastPos, pt);
+      // odbaci šum (<2m) i GPS skokove (>300m)
+      if (d >= 2 && d < 300) {
+        _gpsTotalDist += d;
+        _gpsPoints.push(pt);
+      }
+    } else {
+      _gpsPoints.push(pt);
+      if (_map) _map.setView(pt, 16);
+    }
+    _gpsLastPos = pt;
+
+    if (_gpsPoints.length > 1) {
+      const color = _gpsType === 'vlaka' ? VLAKA_CFG.color : (GPS_MODES[_gpsMode]?.color || '#374151');
+      if (_gpsPolyline) {
+        _gpsPolyline.setLatLngs(_gpsPoints);
+      } else if (_map) {
+        _gpsPolyline = L.polyline(_gpsPoints, { color, weight:5, opacity:0.9 }).addTo(_map);
+      }
+    }
+
+    _gpsUpdateBar(accuracy);
+  }
+
+  function _gpsUpdateBar(accuracy) {
+    if (!_gpsStartTime) return;
+    const elapsed = Date.now() - _gpsStartTime;
+    const mins    = Math.floor(elapsed / 60000);
+    const secs    = Math.floor((elapsed % 60000) / 1000);
+    const dist    = _gpsTotalDist >= 1000
+      ? (_gpsTotalDist/1000).toFixed(2) + ' km'
+      : Math.round(_gpsTotalDist) + ' m';
+    const timeStr = `${mins}:${secs.toString().padStart(2,'0')}`;
+    const accStr  = accuracy != null ? `±${Math.round(accuracy)} m` : '';
+    const modeLabel = _gpsType === 'vlaka' ? VLAKA_CFG.label : (GPS_MODES[_gpsMode]?.label || '');
+
+    const el = id => document.getElementById(id);
+    if (el('gps-bar-mode')) el('gps-bar-mode').textContent  = modeLabel;
+    if (el('gps-bar-dist')) el('gps-bar-dist').textContent  = dist;
+    if (el('gps-bar-time')) el('gps-bar-time').textContent  = timeStr;
+    if (el('gps-bar-acc'))  el('gps-bar-acc').textContent   = accStr;
+  }
+
+  function _gpsStart(type, mode) {
+    if (!navigator.geolocation) { alert('GPS nije dostupan na ovom uređaju.'); return; }
+    if (_gpsWatchId !== null) return;
+
+    _gpsType = type; _gpsMode = mode;
+    _gpsPoints = []; _gpsTotalDist = 0;
+    _gpsLastPos = null; _gpsPolyline = null;
+    _gpsStartTime = Date.now();
+
+    _gpsWatchId = navigator.geolocation.watchPosition(
+      _gpsOnPos,
+      err => console.warn('[GPS]', err.message),
+      { enableHighAccuracy:true, maximumAge:2000, timeout:15000 }
+    );
+
+    _gpsTimerInt = setInterval(() => _gpsUpdateBar(null), 1000);
+
+    // Prikaži status bar
+    const bar = document.getElementById('gps-status-bar');
+    if (bar) bar.style.display = 'flex';
+
+    // Obojaaj gumbe
+    const color = type === 'vlaka' ? VLAKA_CFG.color : (GPS_MODES[mode]?.color || '#374151');
+    const btnV = document.getElementById('karta-vlaka-btn');
+    const btnT = document.getElementById('karta-trag-btn');
+    if (type === 'vlaka' && btnV) {
+      btnV.style.cssText += `background:${color};color:white;border-color:${color};`;
+      btnV.textContent = '⏹ Zaustavi';
+    } else if (type === 'trag' && btnT) {
+      btnT.style.cssText += `background:${color};color:white;border-color:${color};`;
+      btnT.textContent = '⏹ Zaustavi';
+    }
+  }
+
+  function _gpsSaveTrack() {
+    if (_gpsPoints.length < 2) return;
+    const track = {
+      id: Date.now(),
+      type: _gpsType,
+      mode: _gpsMode,
+      points: _gpsPoints,
+      distance: Math.round(_gpsTotalDist),
+      duration: Date.now() - _gpsStartTime,
+      datum: new Date().toLocaleDateString('bs-BA'),
+    };
+    const key = _gpsType === 'vlaka' ? 'karta_vlake' : 'karta_tragovi';
+    try {
+      const arr = JSON.parse(localStorage.getItem(key) || '[]');
+      arr.push(track);
+      localStorage.setItem(key, JSON.stringify(arr));
+    } catch(e) { console.warn('[GPS] save error', e); }
+    return track;
+  }
+
+  window.stopGPSRecording = function() {
+    if (_gpsWatchId !== null) {
+      navigator.geolocation.clearWatch(_gpsWatchId);
+      _gpsWatchId = null;
+    }
+    clearInterval(_gpsTimerInt);
+
+    _gpsSaveTrack();
+
+    // Ostavi polyline ali priguši ga
+    if (_gpsPolyline) {
+      _gpsPolyline.setStyle({ opacity:0.5, dashArray:'8,5' });
+      _gpsSavedLayers.push(_gpsPolyline);
+      _gpsPolyline = null;
+    }
+
+    document.getElementById('gps-status-bar').style.display = 'none';
+
+    const btnV = document.getElementById('karta-vlaka-btn');
+    const btnT = document.getElementById('karta-trag-btn');
+    if (btnV) { btnV.removeAttribute('style'); btnV.textContent = '🌲 Snimi vlaku'; }
+    if (btnT) { btnT.removeAttribute('style'); btnT.textContent = '📍 Snimi trag'; }
+  };
+
+  window.startSnimajVlaku = function() {
+    if (_gpsWatchId !== null) { window.stopGPSRecording(); return; }
+    _gpsStart('vlaka', null);
+  };
+
+  window.startSnimajTrag = function() {
+    if (_gpsWatchId !== null) { window.stopGPSRecording(); return; }
+    const ov = document.getElementById('gps-mode-overlay');
+    if (ov) ov.style.display = 'flex';
+  };
+
+  window.selectTragMode = function(mode) {
+    const ov = document.getElementById('gps-mode-overlay');
+    if (ov) ov.style.display = 'none';
+    _gpsStart('trag', mode);
+  };
+
+  window.cancelTragMode = function() {
+    const ov = document.getElementById('gps-mode-overlay');
+    if (ov) ov.style.display = 'none';
+  };
+
 })();
