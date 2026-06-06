@@ -1131,9 +1131,6 @@
     _renderLayer(geojson, _statusMap);
 
     setTimeout(() => { if (_map) _map.invalidateSize(); }, 200);
-
-    // Učitaj vlake sa servera u pozadini (ne blokira render)
-    _gpsLoadVlakeFromServer();
   };
 
   // ---- PLAN ENTRIES ----
@@ -1316,89 +1313,21 @@
   function _gpsSaveTrack() {
     if (_gpsPoints.length < 2) return;
     const track = {
-      id:       Date.now(),
-      type:     _gpsType,
-      mode:     _gpsMode,
-      points:   _gpsPoints,
+      id: Date.now(),
+      type: _gpsType,
+      mode: _gpsMode,
+      points: _gpsPoints,
       distance: Math.round(_gpsTotalDist),
       duration: Date.now() - _gpsStartTime,
-      datum:    new Date().toLocaleDateString('bs-BA'),
-      korisnik: (window.currentUser && (window.currentUser.fullName || window.currentUser.username)) || 'Nepoznat',
+      datum: new Date().toLocaleDateString('bs-BA'),
     };
-
-    if (_gpsType === 'vlaka') {
-      // ── VLAKA → SERVER (vidljivo svim projektantima) ──
-      _gpsVlakaSaveToServer(track);
-    } else {
-      // ── TRAG → localStorage (samo ovaj uređaj) ──
-      try {
-        const arr = JSON.parse(localStorage.getItem('karta_tragovi') || '[]');
-        arr.push(track);
-        localStorage.setItem('karta_tragovi', JSON.stringify(arr));
-      } catch(e) { console.warn('[GPS] localStorage save error', e); }
-    }
+    const key = _gpsType === 'vlaka' ? 'karta_vlake' : 'karta_tragovi';
+    try {
+      const arr = JSON.parse(localStorage.getItem(key) || '[]');
+      arr.push(track);
+      localStorage.setItem(key, JSON.stringify(arr));
+    } catch(e) { console.warn('[GPS] save error', e); }
     return track;
-  }
-
-  // Downsampluj točke na max 250 da URL ne bude predugačak
-  function _simplifyPoints(pts, max) {
-    if (pts.length <= max) return pts;
-    const step = pts.length / max;
-    const out  = [];
-    for (let i = 0; i < max; i++) out.push(pts[Math.round(i * step)]);
-    return out;
-  }
-
-  async function _gpsVlakaSaveToServer(track) {
-    if (typeof buildApiUrl !== 'function') return;
-    const simplified = _simplifyPoints(track.points, 250);
-    const url = buildApiUrl('save-vlaka', {
-      korisnik: track.korisnik,
-      datum:    track.datum,
-      distance: track.distance,
-      duration: track.duration,
-      points:   JSON.stringify(simplified),
-    });
-    try {
-      const r = await fetch(url, { method: 'POST' });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const res = await r.json();
-      console.log('[GPS] Vlaka saved to server:', res);
-    } catch(e) {
-      console.warn('[GPS] Server save failed, saving locally as backup:', e);
-      try {
-        const arr = JSON.parse(localStorage.getItem('karta_vlake_backup') || '[]');
-        arr.push(track);
-        localStorage.setItem('karta_vlake_backup', JSON.stringify(arr));
-      } catch(_) {}
-    }
-  }
-
-  // Učitaj vlake sa servera i prikaži na karti (poziva se pri init)
-  async function _gpsLoadVlakeFromServer() {
-    if (!_map || typeof buildApiUrl !== 'function') return;
-    const url = buildApiUrl('get-vlake');
-    try {
-      const data = await fetch(url).then(r => r.json());
-      const vlake = data.vlake || data.data || [];
-      vlake.forEach(v => {
-        if (!v.points || v.points.length < 2) return;
-        let pts = v.points;
-        if (typeof pts === 'string') { try { pts = JSON.parse(pts); } catch(_) { return; } }
-        const pl = L.polyline(pts, {
-          color: '#92400e', weight:4, opacity:0.65, dashArray:'8,5'
-        }).addTo(_map);
-        const dist = v.distance ? Math.round(v.distance) + ' m' : '?';
-        pl.bindTooltip(
-          `🌲 <b>Vlaka</b><br>👤 ${v.korisnik || '?'} — ${v.datum || ''}<br>📏 ${dist}`,
-          { permanent:false, direction:'auto' }
-        );
-        _gpsSavedLayers.push(pl);
-      });
-      console.log(`[GPS] Učitano ${vlake.length} vlaka sa servera`);
-    } catch(e) {
-      console.warn('[GPS] Nije moguće učitati vlake sa servera:', e.message);
-    }
   }
 
   window.stopGPSRecording = function() {
