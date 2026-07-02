@@ -606,14 +606,18 @@ function filterByPoslovodjaRadilista(data) {
 // 🖨️ ŠTAMPAJ - Profesionalni print prikaz
 // ============================================
 function printIzvjestaj(tip) {
-    const isSedmicni = tip === 'sedmicni';
+    const isRadnik = tip === 'sedmicni-radnik';
+    const isSedmicni = tip === 'sedmicni' || isRadnik;
 
     const year = document.getElementById(`izvjestaji-${tip}-year`).value;
     const monthIdx = parseInt(document.getElementById(`izvjestaji-${tip}-month`).value);
     const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni',
                            'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
     const monthName = mjeseciNazivi[monthIdx];
-    const tipLabel = isSedmicni ? 'Sedmični izvještaj' : 'Mjesečni izvještaj';
+    const tipLabel = isRadnik ? 'Sedmični izvještaj po radniku'
+                             : (isSedmicni ? 'Sedmični izvještaj' : 'Mjesečni izvještaj');
+    // Naslovi sekcija: po radniku vs po odjelima
+    const grupa = isRadnik ? 'radniku' : 'odjelima';
     const datumStampe = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
     // Kloniraj obje tabele iz DOM-a
@@ -828,10 +832,10 @@ function printIzvjestaj(tip) {
   </div>
 </div>
 
-<div class="section-title">🌲 Sječa po odjelima — ${monthName} ${year}</div>
+<div class="section-title">🌲 Sječa po ${grupa} — ${monthName} ${year}</div>
 ${primkaHtml}
 
-<div class="section-title">🚛 Otprema po odjelima — ${monthName} ${year}</div>
+<div class="section-title">🚛 Otprema po ${grupa} — ${monthName} ${year}</div>
 ${otpremaHtml}
 
 <div class="print-footer">
