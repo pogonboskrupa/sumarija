@@ -16,7 +16,15 @@
 
             try {
                 const response = await fetch(`${API_URL}?path=login&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`);
-                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(`Server je vratio grešku (HTTP ${response.status}). Pokušajte ponovo za minutu.`);
+                }
+                let data;
+                try {
+                    data = await response.json();
+                } catch (_) {
+                    throw new Error('Server je vratio neispravan odgovor. Pokušajte ponovo za minutu.');
+                }
 
                 if (data.success) {
                     currentUser = data;
@@ -218,6 +226,8 @@
             let lastRefreshDate = null;
 
             function checkAndRefresh() {
+                // Ne radi ništa ako je korisnik odjavljen (interval preživljava logout)
+                if (!currentUser) return;
                 const now = new Date();
                 const dayOfWeek = now.getDay();
                 const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
@@ -237,7 +247,9 @@
 
                     showInfo('Automatsko ažuriranje', 'Pokretanje zakazanog ažuriranja podataka...');
 
-                    preloadAllViews(true).then(() => {
+                    // forceRefresh=true — bez toga bi smart-TTL keš (svjež do sutra 6:30)
+                    // samo replay-ao keširane podatke i zakazano ažuriranje ne bi radilo ništa
+                    preloadAllViews(true, true).then(() => {
                         console.log('[SCHEDULED REFRESH] Scheduled refresh completed at ' + currentTime);
                         showSuccess('Ažuriranje završeno', 'Podaci su automatski osvježeni.');
                     }).catch(err => {
@@ -271,10 +283,11 @@
                         showInfo('Podaci osvježeni', 'Drugi tab je pokrenuo indeksiranje. Osvježavam podatke...');
 
                         setTimeout(() => {
+                            if (!currentUser) return; // korisnik se u međuvremenu odjavio
                             preloadAllViews(true).then(() => {
                                 console.log('[CROSS-TAB SYNC] All views refreshed after cross-tab sync');
                                 showSuccess('Podatke osvježeni', 'Prikazujem najnovije podatke.');
-                            });
+                            }).catch(err => console.error('[CROSS-TAB SYNC] Refresh failed:', err));
                         }, 1500);
                     }
                 }
@@ -290,9 +303,22 @@
                 dropdown.classList.remove('show');
             }
 
-            // Clear legacy (non-user-specific) personal cache keys to prevent cross-user contamination
-            localStorage.removeItem('cache_otpremac_odjeli_top15');
-            localStorage.removeItem('cache_primac_odjeli_top15');
+            // Obriši SVE cache_* ključeve — backend filtrira mnoge endpointe po korisniku
+            // (primac-detail, otpremac-detail...) a ključevi nemaju username u sebi, pa bi
+            // sljedeći korisnik na istom uređaju vidio tuđe podatke iz keša
+            try {
+                const cacheKeys = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    if (k && k.startsWith('cache_')) cacheKeys.push(k);
+                }
+                cacheKeys.forEach(k => localStorage.removeItem(k));
+                console.log(`[LOGOUT] Obrisano ${cacheKeys.length} cache ključeva`);
+            } catch(e) { console.error('logout cache clear:', e); }
+
+            // Resetuj tab render-cache — switchTab bi inače prikazao DOM prethodnog
+            // korisnika ("instant cache" putanja gleda samo da li div ima djecu)
+            window._tabRenderTime = {};
 
             // Log final cache stats before logout
             try { logCacheStats(); } catch(e) { console.error('logout logCacheStats:', e); }

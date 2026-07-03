@@ -56,6 +56,7 @@
             const ttl = (typeof getSmartCacheTTL === 'function') ? getSmartCacheTTL() : 60000;
             const lastRender = window._tabRenderTime[tab];
             const contentId = tabContentMap[tab];
+            let bgRefreshEl = null; // sadržaj koji ostaje vidljiv tokom tihog refresha
             if (contentId) {
                 const el = document.getElementById(contentId);
                 if (el && el.children.length > 0) {
@@ -69,6 +70,7 @@
                     }
                     // Cache je star - osvježi u pozadini bez loading screen-a
                     // (korisnik već vidi podatke, refresh će ažurirati tiho)
+                    bgRefreshEl = el;
                 }
             }
 
@@ -79,8 +81,11 @@
                 if (fb) { fb.textContent = '⛶ Fokus'; fb.classList.remove('active'); }
             }
 
-            // Hide all content sections
-            document.querySelectorAll('[id$="-content"]').forEach(c => c.classList.add('hidden'));
+            // Hide all content sections — osim onog koji se tiho osvježava u pozadini
+            // (inače bi podaci bljesnuli pa nestali do kraja refresha)
+            document.querySelectorAll('[id$="-content"]').forEach(c => {
+                if (c !== bgRefreshEl) c.classList.add('hidden');
+            });
 
             // Load appropriate content
             if (tab === 'dashboard') {
@@ -165,9 +170,14 @@
             } else if (tab === 'primaci-admin') {
                 loadPrimaciAdminTab();
             } else if (tab === 'primac-sihtarica') {
-                loadSihtaricaPrimac();
+                // Loader još nije implementiran — guard sprječava ReferenceError i blank ekran
+                document.getElementById('primac-sihtarica-content').classList.remove('hidden');
+                document.getElementById('loading-screen').classList.add('hidden');
+                if (typeof loadSihtaricaPrimac === 'function') loadSihtaricaPrimac();
             } else if (tab === 'otpremac-sihtarica') {
-                loadSihtaricaOtpremac();
+                document.getElementById('otpremac-sihtarica-content').classList.remove('hidden');
+                document.getElementById('loading-screen').classList.add('hidden');
+                if (typeof loadSihtaricaOtpremac === 'function') loadSihtaricaOtpremac();
             } else if (tab === 'godisnji-plan') {
                 if (typeof loadGodisnjiPlan === 'function') loadGodisnjiPlan(false);
             } else if (tab === 'karta-odjela') {
@@ -365,7 +375,9 @@
             } else if (view === 'statistika') {
                 document.getElementById('kupci-statistika-view').classList.remove('hidden');
                 const statYear = parseInt(document.getElementById('kupci-statistika-year')?.value || new Date().getFullYear());
-                if (!window._kupciStatData || window._kupciStatData.year !== statYear) loadKupciStatistika();
+                // typeof guard — loader ne postoji u kodu, bez guarda tab baca ReferenceError
+                if ((!window._kupciStatData || window._kupciStatData.year !== statYear) &&
+                    typeof loadKupciStatistika === 'function') loadKupciStatistika();
             }
         }
 
@@ -600,19 +612,27 @@
             const tbody = table.querySelector('tbody');
             const rows = Array.from(tbody.querySelectorAll('tr'));
 
+            // dd.mm.yyyy ili dd/mm/yyyy → sortabilan broj yyyymmdd
+            const DATE_RX = /^\s*(\d{1,2})[./](\d{1,2})[./](\d{4})\.?\s*$/;
+            const sortVal = (txt) => {
+                const dm = txt.match(DATE_RX);
+                if (dm) return parseInt(dm[3]) * 10000 + parseInt(dm[2]) * 100 + parseInt(dm[1]);
+                const n = parseFloat(txt.replace(/[^\d.-]/g, ''));
+                return isNaN(n) ? null : n;
+            };
+
             const sortedRows = rows.sort((a, b) => {
                 const aValue = a.querySelectorAll('td')[columnIndex].innerText;
                 const bValue = b.querySelectorAll('td')[columnIndex].innerText;
 
-                // Try to parse as number
-                const aNum = parseFloat(aValue.replace(/[^\d.-]/g, ''));
-                const bNum = parseFloat(bValue.replace(/[^\d.-]/g, ''));
+                const aNum = sortVal(aValue);
+                const bNum = sortVal(bValue);
 
-                if (!isNaN(aNum) && !isNaN(bNum)) {
-                    return aNum - bNum;
-                } else {
-                    return aValue.localeCompare(bValue, 'bs');
-                }
+                // Konzistentan komparator: brojevi/datumi zajedno, ne-brojevi na kraj
+                if (aNum !== null && bNum !== null) return aNum - bNum;
+                if (aNum !== null) return -1;
+                if (bNum !== null) return 1;
+                return aValue.localeCompare(bValue, 'bs');
             });
 
             // Toggle sort direction

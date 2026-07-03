@@ -294,23 +294,46 @@
             }
         }
 
+        // In-flight dedup — isti URL u toku vraća isti Promise umjesto paralelnog
+        // duplog poziva prema sporom Apps Script backendu (preload zna tražiti
+        // primac-detail 4× pod različitim cache ključevima)
+        const _inflightFetches = new Map(); // url → { promise, cacheKey }
+
         // Fetch with cache - cache-first strategy
         async function fetchWithCache(url, cacheKey, forceRefresh = false, timeout = 60000) {
+            if (!forceRefresh && _inflightFetches.has(url)) {
+                const flight = _inflightFetches.get(url);
+                if (flight.cacheKey === cacheKey) return flight.promise;
+                // Isti URL, drugi ključ — podijeli odgovor i keširaj i pod ovaj ključ
+                return flight.promise.then(data => {
+                    if (data && !data.offline && !data.error) {
+                        try { localStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() })); } catch(e) {}
+                    }
+                    return data;
+                });
+            }
+            const promise = _fetchWithCacheImpl(url, cacheKey, forceRefresh, timeout);
+            _inflightFetches.set(url, { promise, cacheKey });
+            promise.then(
+                () => _inflightFetches.delete(url),
+                () => _inflightFetches.delete(url)
+            );
+            return promise;
+        }
+
+        async function _fetchWithCacheImpl(url, cacheKey, forceRefresh = false, timeout = 60000) {
             if (typeof timeout === 'undefined') timeout = 60000;
 
             // Use smart cache TTL optimized for data entry patterns
             const path = new URL(url).searchParams.get('path');
             const cacheTTL = getSmartCacheTTL();
 
-            // If force refresh, clear cache for this key
-            if (forceRefresh) {
-                localStorage.removeItem(cacheKey);
-            }
-
             // Check cache first
+            // VAŽNO: kod forceRefresh NE brišemo keš unaprijed — samo preskačemo
+            // freshness check. Keš ostaje kao stale-fallback ako mreža padne.
             const cacheCheckStart = performance.now();
             const cached = localStorage.getItem(cacheKey);
-            if (cached) {
+            if (cached && !forceRefresh) {
                 try {
                     const cachedData = JSON.parse(cached);
                     const now = Date.now();
@@ -360,6 +383,8 @@
                     if (typeof showWarning === 'function') {
                         showWarning('Offline', 'Neki tabovi nemaju keširane podatke — posjeti ih dok si online da ih sačuvaš.', 6000);
                     }
+                    // Resetuj flag — inače bi trajno potisnuo i online error-toast s retry dugmetom
+                    setTimeout(() => { window._offlineNoCacheWarned = false; }, 8000);
                 }
                 console.warn(`[OFFLINE] No cache for: ${cacheKey}`);
                 return { success: false, offline: true };
@@ -371,12 +396,13 @@
             let lastError = null;
 
             for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                let timeoutId = null;
                 try {
                     perfMetrics.apiCalls++;
                     const fetchStart = performance.now();
 
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), timeout);
+                    timeoutId = setTimeout(() => controller.abort(), timeout);
 
                     const response = await fetch(url, { signal: controller.signal });
                     // NE čistimo timeout ovdje — AbortController mora ostati aktivan
@@ -441,6 +467,7 @@
 
                 } catch (error) {
                     lastError = error;
+                    if (timeoutId) clearTimeout(timeoutId); // ne ostavljaj tajmer da abortuje mrtav controller
 
                     if (attempt < MAX_RETRIES) {
                         const isTimeout = error.name === 'AbortError';
@@ -486,7 +513,9 @@
                         retryBtn.onclick = () => {
                             toast.remove();
                             window._offlineNoCacheWarned = false;
-                            if (typeof switchTab === 'function') switchTab(window.currentTab);
+                            // currentTab je undefined ako greška nastane prije prvog switchTab-a
+                            if (typeof switchTab === 'function' && window.currentTab) switchTab(window.currentTab);
+                            else location.reload();
                         };
                         const content = toast.querySelector('.toast-content');
                         if (content) content.appendChild(retryBtn);
@@ -601,12 +630,13 @@
                 }
 
                 closeUserMenu(); // Close menu
-                showSuccess('✅ Keš obrisan', 'Učitavam sve prikaze...');
+                showSuccess('✅ Keš obrisan', 'Stranica se osvježava...');
 
-                // Step 8: Učitaj sve prikaze bez reload-a (forceRefresh = true)
-                console.log('[CACHE CLEAR] Step 8: Loading all views (force refresh)...');
+                // Step 8: Reload — SW je unregistrovan pa se mora ponovo instalirati,
+                // inače PWA ostaje bez offline podrške do ručnog reload-a
+                console.log('[CACHE CLEAR] Step 8: Reloading page (SW re-install)...');
                 setTimeout(() => {
-                    preloadAllViews(false, true);
+                    location.reload();
                 }, 800);
 
             } catch (error) {
@@ -745,12 +775,12 @@
                         // PRIMKE — jedan fetch, sve varijante cache ključeva
                         // (sječa tab, mapa, dashboard tekući mjesec, dashboard zadnjih5, sječa zadnjih5)
                         { name: 'Primke (svi prikazi)', url: buildApiUrl('primke'), cacheKey: 'cache_primke_sjeca', timeout: 150000,
-                          alsoCache: ['cache_primke_tekuci_miesec', 'cache_primke_zadnjih5_dash', 'cache_primke_zadnjih5'] },
+                          alsoCache: ['cache_primke_tekuci_mjesec', 'cache_primke_zadnjih5_dash', 'cache_primke_zadnjih5'] },
 
                         // OTPREME — jedan fetch, sve varijante cache ključeva
                         // (otprema tab, mapa, dashboard tekući mjesec, dashboard zadnjih5, otprema zadnjih5)
                         { name: 'Otpreme (svi prikazi)', url: buildApiUrl('otpreme'), cacheKey: 'cache_otpreme_tab', timeout: 150000,
-                          alsoCache: ['cache_otpreme_tekuci_miesec', 'cache_otpreme_zadnjih5_dash', 'cache_otpreme_zadnjih5'] },
+                          alsoCache: ['cache_otpreme_tekuci_mjesec', 'cache_otpreme_zadnjih5_dash', 'cache_otpreme_zadnjih5'] },
 
                         // PRIMACI meni + sva 4 podmenija
                         { name: 'Primaci - Monthly', url: buildApiUrl('primaci', { year }), cacheKey: 'cache_primaci_' + year, timeout: 180000 },
@@ -775,9 +805,9 @@
                     allViews = [
                         { name: 'Stanje Zaliha', url: buildApiUrl('stanje-zaliha', { poslovodja: pName }), cacheKey: pCK, timeout: 60000 },
                         { name: 'Primke (svi prikazi)', url: buildApiUrl('primke'), cacheKey: 'cache_primke_sjeca', timeout: 120000,
-                          alsoCache: ['cache_primke_zadnjih5', 'cache_primke_tekuci_miesec'] },
+                          alsoCache: ['cache_primke_zadnjih5', 'cache_primke_tekuci_mjesec'] },
                         { name: 'Otpreme (svi prikazi)', url: buildApiUrl('otpreme'), cacheKey: 'cache_otpreme_tab', timeout: 120000,
-                          alsoCache: ['cache_otpreme_zadnjih5', 'cache_otpreme_tekuci_miesec'] },
+                          alsoCache: ['cache_otpreme_zadnjih5', 'cache_otpreme_tekuci_mjesec'] },
                     ];
 
                 } else if (userType === 'operativa') {
@@ -877,9 +907,14 @@
                             view.alsoCache.forEach(k => localStorage.removeItem(k));
                         }
                         const data = await fetchWithCache(view.url, view.cacheKey, forceRefresh, view.timeout);
+                        // fetchWithCache nikad ne baca — neuspjeh vraća {offline:true} ili {error}
+                        // pa ga ovdje moramo prepoznati kao pad, inače je izvještaj uvijek "20/20 ✅"
+                        if (data && (data.offline || data.error)) {
+                            throw new Error(data.error || 'offline/timeout');
+                        }
                         // Kopiraj iste podatke i pod sekundarne cache ključeve
                         // (isti API odgovor, ali ga različiti prikazi kešuju pod različitim ključevima)
-                        if (view.alsoCache && data && !data.offline && !data.error) {
+                        if (view.alsoCache && data) {
                             const entry = JSON.stringify({ data, timestamp: Date.now() });
                             view.alsoCache.forEach(k => { try { localStorage.setItem(k, entry); } catch(e) {} });
                         }
