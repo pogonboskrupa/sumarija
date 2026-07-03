@@ -140,7 +140,7 @@
                 'cache_poslovodja_',
                 'cache_dinamika_',
                 'cache_mjesecni_sortimenti_',
-                'cache_stanje_odjela'
+                'cache_stanje_zaliha'
             ]);
         }
 
@@ -469,15 +469,19 @@
                     lastError = error;
                     if (timeoutId) clearTimeout(timeoutId); // ne ostavljaj tajmer da abortuje mrtav controller
 
+                    const isTimeout = error.name === 'AbortError';
                     if (attempt < MAX_RETRIES) {
-                        const isTimeout = error.name === 'AbortError';
                         const delay = isTimeout ? 3000 : attempt * 2000;
                         console.warn(`${isTimeout ? 'Timeout' : 'Network error'} (attempt ${attempt}/${MAX_RETRIES}), retrying in ${delay/1000}s:`, path);
                         await new Promise(resolve => setTimeout(resolve, delay));
                         continue;
                     }
 
-                    console.error('Request failed after all retries:', error);
+                    if (isTimeout) {
+                        console.warn(`[API] Timeout after ${timeout/1000}s (sve retry-e iscrpljene):`, path);
+                    } else {
+                        console.error('Request failed after all retries:', error);
+                    }
                 }
             }
 
@@ -676,7 +680,7 @@
                         'cache_poslovodja_',
                         'cache_dinamika_',
                         'cache_mjesecni_sortimenti_',
-                        'cache_stanje_odjela'
+                        'cache_stanje_zaliha'
                     ]);
 
                     // 🚀 Update APP DATA VERSION - svi paneli će vidjeti promjenu
@@ -765,7 +769,6 @@
                         { name: 'Operativa - Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year, timeout: 60000 },
                         { name: 'Operativa (Stats)', url: buildApiUrl('stats', { year }), cacheKey: 'cache_stats_' + year, timeout: 180000 },
                         { name: 'Stanje Odjela (odjeli)', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_odjeli_' + year, timeout: 180000 },
-                        { name: 'Stanje Odjela (operativa/mapa)', url: buildApiUrl('stanje-odjela'), cacheKey: 'cache_stanje_odjela', timeout: 180000 },
                         { name: 'Lista Odjela (dropdown)', url: buildApiUrl('get-odjeli-list'), cacheKey: 'cache_odjeli_list', timeout: 60000 },
                         { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
                         { name: 'Pending Unosi', url: buildApiUrl('pending-unosi', { year }), cacheKey: 'cache_pending_unosi', timeout: 120000 },
@@ -1690,8 +1693,9 @@
                             const izvodjacBg = izvodjacColorMap[o.izvođač] || '';
                             const izvodjacStyle = izvodjacBg ? `background-color: ${izvodjacBg};` : '';
                             const sjecaDateStyle = getSjecaMonthStyle(o.datumZadnjeSjece);
+                            const odjelEsc = (o.odjel || '').replace(/'/g, "\\'");
                             return `
-                                <tr>
+                                <tr style="cursor:pointer;" onclick="showOdjelStanjeModal('${odjelEsc}')" title="Klikni za stanje zaliha">
                                     <td class="${radilisteClass}" style="font-weight: 500;">${o.odjel || '-'}</td>
                                     <td class="right ${radilisteClass}">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
                                     <td class="right ${radilisteClass}">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
@@ -7100,6 +7104,145 @@
             }
         }
 
+        // ---- STANJE ZALIHA MODAL (klik na odjel u Dashboard tablici) ----
+        function closeOdjelStanjeModal() {
+            document.getElementById('odjel-stanje-modal').style.display = 'none';
+        }
+
+        function showOdjelStanjeModal(odjelNaziv) {
+            const modal = document.getElementById('odjel-stanje-modal');
+            const title = document.getElementById('odjel-stanje-modal-title');
+            const body  = document.getElementById('odjel-stanje-modal-body');
+
+            title.textContent = odjelNaziv;
+            body.innerHTML = '<div style="text-align:center;padding:30px;color:#6b7280;">⏳ Učitavam...</div>';
+            modal.style.display = 'flex';
+
+            // Koristi globalni stanjeZalihaData ako je već učitan, inače čitaj iz keša
+            let odjeli = (typeof stanjeZalihaData !== 'undefined' && stanjeZalihaData && stanjeZalihaData.length) ? stanjeZalihaData : null;
+
+            if (!odjeli) {
+                try {
+                    let raw = null;
+                    const k1 = localStorage.getItem('cache_stanje_zaliha');
+                    if (k1) raw = JSON.parse(k1).data;
+                    if (!raw) {
+                        const k2 = Object.keys(localStorage).find(k => k.startsWith('cache_stanje_zaliha_') && !k.includes('admin'));
+                        if (k2) raw = JSON.parse(localStorage.getItem(k2)).data;
+                    }
+                    if (raw) odjeli = raw.odjeli || [];
+                } catch(e) {}
+            }
+
+            if (!odjeli || !odjeli.length) {
+                body.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280;font-size:14px;">Nema podataka.<br>Otvorite tab <b>Stanje zaliha</b> da osvježite podatke.</div>';
+                return;
+            }
+
+            const q = odjelNaziv.toLowerCase().trim();
+            const od = odjeli.find(o => {
+                const n = (o.odjel || '').toLowerCase().trim();
+                return n === q || n.includes(q) || q.includes(n);
+            });
+
+            if (!od) {
+                body.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280;font-size:14px;">Nema stanja zaliha za <b>' + odjelNaziv + '</b></div>';
+                return;
+            }
+
+            const sortimentiFull = [
+                "F/L Č","I Č","II Č","III Č","RD","TRUPCI Č",
+                "CEL.DUGA","CEL.CIJEPANA","ŠKART","Σ ČETINARI",
+                "F/L L","I L","II L","III L","TRUPCI L",
+                "OGR.DUGI","OGR.CIJEPANI","GULE","LIŠĆARI","UKUPNO Č+L"
+            ];
+
+            const netZ        = getNetZaliha(od);
+            const pozZaliha   = (netZ && netZ["UKUPNO Č+L"] !== undefined) ? netZ["UKUPNO Č+L"] : (od.ukupnoZaliha || 0);
+            const razlExcl    = getRazlikeExclusions(od.odjel);
+
+            const proj4  = od.projekat   || {};
+            const sjeca4 = od.sjeca      || {};
+            const otpr4  = od.otprema    || {};
+            const zal4   = buildCorrectedZaliha(applyPreklasiranja(od.zaliha, od.odjel), razlExcl);
+
+            // Samo aktivni sortimenti — ima barem jednu nenultu vrijednost
+            const activeSorts = sortimentiFull.filter(k =>
+                (proj4[k] || 0) !== 0 || (sjeca4[k] || 0) !== 0 ||
+                (otpr4[k] || 0) !== 0 || (zal4[k]  || 0) !== 0
+            );
+            // Uvijek prikaži Σ ČETINARI, LIŠĆARI, UKUPNO Č+L ako ima ikakvog podatka
+            const sumKeys = ["Σ ČETINARI","LIŠĆARI","UKUPNO Č+L"];
+            sumKeys.forEach(k => { if (!activeSorts.includes(k) && (zal4[k] || 0) !== 0) activeSorts.push(k); });
+
+            const f = v => {
+                const n = parseFloat(v) || 0;
+                if (n === 0) return '<span style="color:#d1d5db;font-size:11px;">—</span>';
+                const col = n < 0 ? '#dc2626' : 'inherit';
+                return `<span style="color:${col};">${n.toFixed(2)}</span>`;
+            };
+
+            const rows = activeSorts.map(k => {
+                const isTotal = sumKeys.includes(k);
+                const isRazl  = !!razlExcl[k];
+                const bg = k === 'UKUPNO Č+L' ? '#ede9fe' : k === 'Σ ČETINARI' ? '#dbeafe' : k === 'LIŠĆARI' ? '#fef3c7' : isRazl ? '#fef9c3' : (activeSorts.indexOf(k) % 2 === 0 ? '#f9fafb' : 'white');
+                const fw = isTotal ? 'font-weight:700;' : '';
+                const fs = isRazl ? 'font-style:italic;' : '';
+                const zv = isRazl ? '<span title="Razlika mjerenja" style="color:#92400e;font-style:italic;">' + (parseFloat(zal4[k])||0).toFixed(2) + '</span>' : f(zal4[k]);
+                return `<tr style="background:${bg};">
+                    <td style="padding:5px 8px;font-size:12px;${fw}${fs}color:${isRazl?'#92400e':'#374151'};">${k}</td>
+                    <td style="padding:5px 6px;text-align:right;font-size:12px;${fw}">${f(proj4[k])}</td>
+                    <td style="padding:5px 6px;text-align:right;font-size:12px;${fw}">${f(sjeca4[k])}</td>
+                    <td style="padding:5px 6px;text-align:right;font-size:12px;${fw}">${f(otpr4[k])}</td>
+                    <td style="padding:5px 6px;text-align:right;font-size:12px;${fw}">${zv}</td>
+                </tr>`;
+            }).join('');
+
+            const statusIcon = pozZaliha < 0 ? '🔴' : pozZaliha > 100 ? '⚠️' : pozZaliha > 0 ? '✅' : '📦';
+            const zCol = pozZaliha < 0 ? '#dc2626' : '#059669';
+
+            body.innerHTML = `
+                <!-- Kompaktni header -->
+                <div style="background:linear-gradient(135deg,#1e3a5f,#2d5a87);color:white;border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+                    <div style="font-size:12px;opacity:.85;">📍 ${od.radiliste || 'N/A'}${od.zadnjaOtprema ? ' · 🚛 ' + od.zadnjaOtprema : ''}</div>
+                    <div style="font-size:18px;font-weight:700;">${statusIcon} ${pozZaliha.toFixed(2)} m³</div>
+                </div>
+                <!-- 4 kartice u 2×2 gridu -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
+                    <div style="background:#eff6ff;border-radius:8px;padding:8px 10px;text-align:center;">
+                        <div style="font-size:10px;color:#1e40af;font-weight:600;">📋 PROJEKAT</div>
+                        <div style="font-size:15px;font-weight:700;color:#1e40af;">${(od.ukupnoProjekat||0).toFixed(2)}</div>
+                    </div>
+                    <div style="background:#ecfdf5;border-radius:8px;padding:8px 10px;text-align:center;">
+                        <div style="font-size:10px;color:#065f46;font-weight:600;">🪓 SJEČA</div>
+                        <div style="font-size:15px;font-weight:700;color:#065f46;">${(od.ukupnoSjeca||0).toFixed(2)}</div>
+                    </div>
+                    <div style="background:#fffbeb;border-radius:8px;padding:8px 10px;text-align:center;">
+                        <div style="font-size:10px;color:#b45309;font-weight:600;">🚛 OTPREMA</div>
+                        <div style="font-size:15px;font-weight:700;color:#b45309;">${(od.ukupnoOtprema||0).toFixed(2)}</div>
+                    </div>
+                    <div style="background:${pozZaliha<0?'#fef2f2':'#f0fdf4'};border-radius:8px;padding:8px 10px;text-align:center;">
+                        <div style="font-size:10px;color:${zCol};font-weight:600;">📦 ZALIHA</div>
+                        <div style="font-size:15px;font-weight:700;color:${zCol};">${pozZaliha.toFixed(2)}</div>
+                    </div>
+                </div>
+                <!-- Tabela: sortimenti kao redovi, P/S/O/Z kao kolone -->
+                <div style="border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;">
+                    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                        <thead>
+                            <tr style="background:#1e3a5f;color:white;">
+                                <th style="padding:7px 8px;text-align:left;font-weight:600;">Sortiment</th>
+                                <th style="padding:7px 6px;text-align:right;font-weight:600;">Proj.</th>
+                                <th style="padding:7px 6px;text-align:right;font-weight:600;">Sječa</th>
+                                <th style="padding:7px 6px;text-align:right;font-weight:600;">Otpr.</th>
+                                <th style="padding:7px 6px;text-align:right;font-weight:600;">Zaliha</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>`;
+        }
+
         // Load otpremac odjeli data (ZADNJIH 15 ODJELA IZ SVIH GODINA)
         // ✅ OPTIMIZOVANO: Jedan API poziv sa limit=15 (backend procesira sve godine)
         async function loadOtpremacOdjeli() {
@@ -8265,8 +8408,24 @@
         let stanjeOdjelaSortimenti = [];
 
         async function loadStanjeOdjela() {
-            // Turbo: instant show cached data
-            var soCached = turboShow('cache_stanje_odjela', 'operativa-content', function(d) { return d.data; });
+            // Čitaj iz cache_stanje_zaliha (isti podaci, stanje-odjela je stari naziv)
+            const _normCacheKey = () => {
+                // poslovođa ima vlastiti cache key
+                if (currentUser && (userType === 'poslovođa' || userType === 'poslovodja')) {
+                    return 'cache_stanje_zaliha_' + (currentUser.fullName || 'all').replace(/\s+/g, '_');
+                }
+                return 'cache_stanje_zaliha';
+            };
+            const cacheKey = _normCacheKey();
+
+            const _parseStanje = (raw) => {
+                if (!raw) return null;
+                const odjeli = raw.odjeli || raw.data || [];
+                const sortN  = raw.sortimentiHeader || raw.sortimentiNazivi || [];
+                return { data: odjeli, sortimentiNazivi: sortN };
+            };
+
+            var soCached = turboShow(cacheKey, 'operativa-content', function(d) { return _parseStanje(d); });
             var soHasCached = false;
             if (soCached) {
                 stanjeOdjelaData = soCached.data;
@@ -8281,10 +8440,11 @@
             }
 
             try {
-                const url = buildApiUrl('stanje-odjela');
-                const data = await fetchWithCache(url, `cache_stanje_odjela`);
+                const url = buildApiUrl('stanje-zaliha');
+                const raw = await fetchWithCache(url, cacheKey);
+                const data = _parseStanje(raw);
 
-                if (data.error) throw new Error(data.error);
+                if (!data) throw new Error('Nema podataka');
 
                 // Sačuvaj podatke globalno
                 stanjeOdjelaData = data.data;
@@ -10291,13 +10451,17 @@
                 // Fetch sva 3 endpointa PARALELNO (brže od sekvencijalnog)
                 const dashboardUrl = buildApiUrl('dashboard', { year });
                 const odjeliUrl = buildApiUrl('odjeli', { year });
-                const stanjeOdjelaUrl = buildApiUrl('stanje-odjela');
+                const stanjeOdjelaUrl = buildApiUrl('stanje-zaliha');
 
-                const [dashboardData, odjeliResponse, stanjeOdjelaData] = await Promise.all([
+                const [dashboardData, odjeliResponse, stanjeOdjelaRaw] = await Promise.all([
                     fetchWithCache(dashboardUrl, 'cache_dashboard_' + year, false, 60000),
                     fetchWithCache(odjeliUrl, 'cache_odjeli_' + year, false, 60000),
-                    fetchWithCache(stanjeOdjelaUrl, 'cache_stanje_odjela'),
+                    fetchWithCache(stanjeOdjelaUrl, 'cache_stanje_zaliha'),
                 ]);
+                // Normalizuj strukturu (stanje-zaliha može imati 'odjeli' ili 'data')
+                const stanjeOdjelaData = stanjeOdjelaRaw
+                    ? { data: stanjeOdjelaRaw.odjeli || stanjeOdjelaRaw.data || [], sortimentiNazivi: stanjeOdjelaRaw.sortimentiHeader || stanjeOdjelaRaw.sortimentiNazivi || [] }
+                    : null;
 
 
                 // DEBUG: Log odjeli count and total from API
@@ -10966,12 +11130,17 @@
         // Load and process ZALIHA data
         async function loadZalihaData() {
             try {
-                // Fetch stanje-odjela data
-                const stanjeOdjelaUrl = buildApiUrl('stanje-odjela');
-                const stanjeData = await fetchWithCache(stanjeOdjelaUrl, 'cache_stanje_odjela_admin', false, 180000);
+                const stanjeOdjelaUrl = buildApiUrl('stanje-zaliha');
+                const stanjeRaw = await fetchWithCache(stanjeOdjelaUrl, 'cache_stanje_zaliha', false, 180000);
 
-                if (!stanjeData || !stanjeData.data) {
-                    console.error('No stanje-odjela data available');
+                if (!stanjeRaw) {
+                    console.error('No stanje-zaliha data available');
+                    return;
+                }
+                const stanjeData = { data: stanjeRaw.odjeli || stanjeRaw.data || [], sortimentiNazivi: stanjeRaw.sortimentiHeader || stanjeRaw.sortimentiNazivi || [] };
+
+                if (!stanjeData.data.length) {
+                    console.error('No stanje-zaliha data available');
                     return;
                 }
 
