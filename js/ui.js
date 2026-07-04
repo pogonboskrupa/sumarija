@@ -48,8 +48,6 @@
                 'izvjestaji-primac': 'izvjestaji-primac-content',
                 'izvjestaji-otpremac': 'izvjestaji-otpremac-content',
                 'kubikator': 'kubikator-content',
-                'primac-sihtarica': 'primac-sihtarica-content',
-                'otpremac-sihtarica': 'otpremac-sihtarica-content',
                 'godisnji-plan': 'godisnji-plan-content',
                 'karta-odjela': 'karta-odjela-content',
             };
@@ -169,15 +167,6 @@
                 loadStanjeZaliha();
             } else if (tab === 'primaci-admin') {
                 loadPrimaciAdminTab();
-            } else if (tab === 'primac-sihtarica') {
-                // Loader još nije implementiran — guard sprječava ReferenceError i blank ekran
-                document.getElementById('primac-sihtarica-content').classList.remove('hidden');
-                document.getElementById('loading-screen').classList.add('hidden');
-                if (typeof loadSihtaricaPrimac === 'function') loadSihtaricaPrimac();
-            } else if (tab === 'otpremac-sihtarica') {
-                document.getElementById('otpremac-sihtarica-content').classList.remove('hidden');
-                document.getElementById('loading-screen').classList.add('hidden');
-                if (typeof loadSihtaricaOtpremac === 'function') loadSihtaricaOtpremac();
             } else if (tab === 'godisnji-plan') {
                 if (typeof loadGodisnjiPlan === 'function') loadGodisnjiPlan(false);
             } else if (tab === 'karta-odjela') {

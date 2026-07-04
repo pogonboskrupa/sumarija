@@ -401,6 +401,11 @@
 
                     // Do NOT cache API error responses - let them be retried fresh
                     if (data.error) {
+                        // Kredencijali više ne važe (admin promijenio lozinku) — bez ovoga
+                        // auto-login prikaže ljusku aplikacije u kojoj je svaki tab prazan
+                        if (String(data.error).toLowerCase().includes('unauthorized')) {
+                            _handleUnauthorized();
+                        }
                         return data;
                     }
 
@@ -527,6 +532,26 @@
         // parseFloat("12,5") vrati 12 (gubi decimale), Number("12,5") vrati NaN→0
         function parseNumInput(v) {
             return parseFloat(String(v == null ? '' : v).replace(',', '.')) || 0;
+        }
+
+        // Centralno rukovanje isteklim kredencijalima — kad backend vrati
+        // "Unauthorized" (npr. admin promijenio lozinku), odjavi korisnika
+        // umjesto da mu svaki tab zauvijek prikazuje prazno.
+        let _unauthorizedHandled = false;
+        function _handleUnauthorized() {
+            if (_unauthorizedHandled) return; // više paralelnih 401 → jedna odjava
+            if (!currentUser) return;         // već na login ekranu
+            _unauthorizedHandled = true;
+            console.warn('[AUTH] Kredencijali odbijeni — odjavljujem korisnika');
+            try {
+                if (typeof showError === 'function') {
+                    showError('Sesija istekla', 'Lozinka je promijenjena ili nalog više ne važi. Prijavite se ponovo.', 8000);
+                }
+                if (typeof logout === 'function') logout();
+            } finally {
+                // dozvoli ponovno okidanje za sljedeću sesiju (novi login u istom tabu)
+                setTimeout(() => { _unauthorizedHandled = false; }, 5000);
+            }
         }
 
         // Clear all cache - TRUE HARD REFRESH (like Ctrl+Shift+R)
@@ -1194,6 +1219,19 @@
                 currentUser = parsedUser;
                 currentPassword = savedPass;
                 showApp();
+
+                // Provjeri spremljene kredencijale u pozadini — ako je admin u
+                // međuvremenu promijenio lozinku, odmah odjavi umjesto da korisnik
+                // gleda praznu aplikaciju (svaki poziv bi vraćao Unauthorized)
+                if (navigator.onLine) {
+                    fetch(`${API_URL}?path=login&username=${encodeURIComponent(parsedUser.username || '')}&password=${encodeURIComponent(savedPass)}`)
+                        .then(r => r.ok ? r.json() : null)
+                        .then(res => {
+                            if (res && res.success === false) _handleUnauthorized();
+                        })
+                        .catch(() => {}); // mreža pala — pusti keširane podatke, ne odjavljuj
+                }
+
                 loadPoslovodjaRadilistaMapping(); // Dohvati poslovodja→radilista iz INFO sheeta
                 loadOdjeli(); // Load odjeli list after auto-login
 
