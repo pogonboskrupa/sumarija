@@ -553,6 +553,12 @@
             return matchingKeys.length;
         }
 
+        // Parsiraj broj iz input polja — radnici na terenu kucaju zarez ("12,5"),
+        // parseFloat("12,5") vrati 12 (gubi decimale), Number("12,5") vrati NaN→0
+        function parseNumInput(v) {
+            return parseFloat(String(v == null ? '' : v).replace(',', '.')) || 0;
+        }
+
         // Clear all cache - TRUE HARD REFRESH (like Ctrl+Shift+R)
         async function clearAllCache() {
             showConfirmModal(
@@ -1693,7 +1699,8 @@
                             const izvodjacBg = izvodjacColorMap[o.izvođač] || '';
                             const izvodjacStyle = izvodjacBg ? `background-color: ${izvodjacBg};` : '';
                             const sjecaDateStyle = getSjecaMonthStyle(o.datumZadnjeSjece);
-                            const odjelEsc = (o.odjel || '').replace(/'/g, "\\'");
+                            // Escapuj i navodnike i < — ime ide u onclick atribut (JS string u HTML atributu)
+                            const odjelEsc = (o.odjel || '').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;');
                             return `
                                 <tr style="cursor:pointer;" onclick="showOdjelStanjeModal('${odjelEsc}')" title="Klikni za stanje zaliha">
                                     <td class="${radilisteClass}" style="font-weight: 500;">${o.odjel || '-'}</td>
@@ -8399,218 +8406,6 @@
             container.innerHTML = html;
         }
 
-        // ========================================
-        // STANJE ODJELA - Trenutno stanje iz fajla ODJELI
-        // ========================================
-
-        // Globalne varijable za stanje odjela
-        let stanjeOdjelaData = [];
-        let stanjeOdjelaSortimenti = [];
-
-        async function loadStanjeOdjela() {
-            // Čitaj iz cache_stanje_zaliha (isti podaci, stanje-odjela je stari naziv)
-            const _normCacheKey = () => {
-                // poslovođa ima vlastiti cache key
-                if (currentUser && (userType === 'poslovođa' || userType === 'poslovodja')) {
-                    return 'cache_stanje_zaliha_' + (currentUser.fullName || 'all').replace(/\s+/g, '_');
-                }
-                return 'cache_stanje_zaliha';
-            };
-            const cacheKey = _normCacheKey();
-
-            const _parseStanje = (raw) => {
-                if (!raw) return null;
-                const odjeli = raw.odjeli || raw.data || [];
-                const sortN  = raw.sortimentiHeader || raw.sortimentiNazivi || [];
-                return { data: odjeli, sortimentiNazivi: sortN };
-            };
-
-            var soCached = turboShow(cacheKey, 'operativa-content', function(d) { return _parseStanje(d); });
-            var soHasCached = false;
-            if (soCached) {
-                stanjeOdjelaData = soCached.data;
-                stanjeOdjelaSortimenti = soCached.sortimentiNazivi;
-                populateStanjeOdjelaDropdown(soCached.data);
-                renderStanjeOdjelaSections(soCached.data, soCached.sortimentiNazivi);
-                soHasCached = true;
-            }
-
-            if (!soHasCached) {
-                document.getElementById('loading-screen').classList.remove('hidden');
-            }
-
-            try {
-                const url = buildApiUrl('stanje-zaliha');
-                const raw = await fetchWithCache(url, cacheKey);
-                const data = _parseStanje(raw);
-
-                if (!data) throw new Error('Nema podataka');
-
-                // Sačuvaj podatke globalno
-                stanjeOdjelaData = data.data;
-                stanjeOdjelaSortimenti = data.sortimentiNazivi;
-
-                // Populiši dropdown sa radilištima
-                populateStanjeOdjelaDropdown(data.data);
-
-                // Render sections
-                renderStanjeOdjelaSections(data.data, data.sortimentiNazivi);
-
-                document.getElementById('loading-screen').classList.add('hidden');
-
-            } catch (error) {
-                console.error('Error loading stanje odjela:', error);
-                showError('Greška', 'Greška pri učitavanju stanja odjela: ' + error.message);
-                document.getElementById('loading-screen').classList.add('hidden');
-            }
-        }
-
-        function populateStanjeOdjelaDropdown(data) {
-            const select = document.getElementById('stanje-odjela-select');
-
-            // Očisti postojeće opcije osim "Sva radilišta"
-            select.innerHTML = '<option value="">Sva radilišta</option>';
-
-            // Izvuci unique radilišta
-            const radilistaSet = new Set();
-            data.forEach(odjel => {
-                if (odjel.radiliste) {
-                    radilistaSet.add(odjel.radiliste);
-                }
-            });
-
-            // Sortiraj i dodaj u dropdown
-            const radilista = Array.from(radilistaSet).sort();
-            radilista.forEach(radiliste => {
-                const option = document.createElement('option');
-                option.value = radiliste;
-                option.textContent = radiliste;
-                select.appendChild(option);
-            });
-        }
-
-        function filterStanjeOdjela() {
-            const selectedRadiliste = document.getElementById('stanje-odjela-select').value;
-
-            if (selectedRadiliste === '') {
-                // Prikaži sve
-                renderStanjeOdjelaSections(stanjeOdjelaData, stanjeOdjelaSortimenti);
-            } else {
-                // Filtriraj samo izabrano radilište
-                const filteredData = stanjeOdjelaData.filter(odjel => odjel.radiliste === selectedRadiliste);
-                renderStanjeOdjelaSections(filteredData, stanjeOdjelaSortimenti);
-            }
-        }
-
-        function renderStanjeOdjelaSections(data, sortimentiNazivi) {
-            const container = document.getElementById('stanje-odjela-container');
-
-            if (data.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka</div>';
-                return;
-            }
-
-            let html = '';
-
-            // Za svaki odjel kreiraj zasebnu sekciju
-            data.forEach((odjelData, odjelIndex) => {
-                const radiliste = odjelData.radiliste || odjelData.odjelNaziv;
-                const odjelNaziv = odjelData.odjelNaziv;
-                const redovi = odjelData.redovi;
-
-                // Sekcija za svaki odjel
-                html += '<div class="section" style="margin-bottom: 40px; border: 2px solid #d1d5db; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">';
-
-                // Header radilišta
-                html += '<div style="background: linear-gradient(135deg, #047857 0%, #059669 100%); padding: 16px 24px; border-bottom: 3px solid #10b981;">';
-                html += '<h3 style="margin: 0; color: white; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 12px;">';
-                html += '<span style="font-size: 24px;">🏭</span>';
-                html += '<div>';
-                html += '<div>' + radiliste + '</div>';
-                html += '<div style="font-size: 12px; font-weight: 400; opacity: 0.9; margin-top: 4px;">(' + odjelNaziv + ')</div>';
-                html += '</div>';
-                html += '</h3>';
-                html += '</div>';
-
-                // Tabela sa sortimentnim zaglavljem
-                html += '<div style="overflow-x: auto;">';
-                html += '<table style="width: 100%; border-collapse: collapse; background: white;">';
-
-                // Sortimentno zaglavlje
-                html += '<thead>';
-                html += '<tr style="background: #f0fdf4; border-bottom: 2px solid #10b981;">';
-                html += '<th style="padding: 14px 16px; text-align: left; font-weight: 700; color: #047857; border-right: 1px solid #d1d5db; min-width: 180px; position: sticky; left: 0; background: #f0fdf4; z-index: 10;">Vrsta</th>';
-
-                sortimentiNazivi.forEach((sortiment, index) => {
-                    const colClass = getColumnGroup(sortiment);
-                    let bgColor = '#f0fdf4';
-                    let textColor = '#047857';
-
-                    if (sortiment === 'ČETINARI') {
-                        bgColor = '#dbeafe';
-                        textColor = '#1e40af';
-                    } else if (sortiment === 'LIŠĆARI') {
-                        bgColor = '#fef3c7';
-                        textColor = '#92400e';
-                    } else if (sortiment === 'SVEUKUPNO') {
-                        bgColor = '#ede9fe';
-                        textColor = '#5b21b6';
-                    }
-
-                    const borderRight = index < sortimentiNazivi.length - 1 ? 'border-right: 1px solid #d1d5db;' : '';
-                    html += '<th style="padding: 14px 12px; text-align: right; font-weight: 700; font-size: 13px; color: ' + textColor + '; background: ' + bgColor + '; ' + borderRight + ' white-space: nowrap;">' + sortiment + '</th>';
-                });
-
-                html += '</tr>';
-                html += '</thead>';
-
-                // Body sa 4 reda
-                html += '<tbody>';
-
-                const vrste = [
-                    { naziv: 'PROJEKAT', data: redovi.projekat, icon: '📋', bg: '#fef3c7', color: '#92400e', borderColor: '#fbbf24' },
-                    { naziv: 'SJEČA', data: redovi.sjeca, icon: '🌲', bg: '#d1fae5', color: '#065f46', borderColor: '#10b981' },
-                    { naziv: 'OTPREMA', data: redovi.otprema, icon: '🚛', bg: '#dbeafe', color: '#1e40af', borderColor: '#3b82f6' },
-                    { naziv: 'ZALIHA', data: redovi.sumaLager, icon: '📦', bg: '#e9d5ff', color: '#6b21a8', borderColor: '#a855f7' }
-                ];
-
-                vrste.forEach((vrsta, vrstaIndex) => {
-                    const borderBottom = vrstaIndex < vrste.length - 1 ? 'border-bottom: 1px solid #e5e7eb;' : '';
-
-                    html += '<tr style="' + borderBottom + '">';
-                    html += '<td style="padding: 12px 16px; font-weight: 700; color: ' + vrsta.color + '; background: ' + vrsta.bg + '; border-right: 3px solid ' + vrsta.borderColor + '; position: sticky; left: 0; z-index: 5;">';
-                    html += '<span style="display: inline-flex; align-items: center; gap: 8px;">';
-                    html += '<span style="font-size: 20px;">' + vrsta.icon + '</span>';
-                    html += '<span>' + vrsta.naziv + '</span>';
-                    html += '</span>';
-                    html += '</td>';
-
-                    vrsta.data.forEach((value, index) => {
-                        const sortiment = sortimentiNazivi[index];
-                        let bgColor = 'white';
-
-                        if (sortiment === 'ČETINARI') bgColor = '#eff6ff';
-                        else if (sortiment === 'LIŠĆARI') bgColor = '#fffbeb';
-                        else if (sortiment === 'SVEUKUPNO') bgColor = '#faf5ff';
-
-                        const borderRight = index < sortimentiNazivi.length - 1 ? 'border-right: 1px solid #e5e7eb;' : '';
-                        const displayValue = value === 0 ? '-' : value.toFixed(2);
-                        const fontWeight = sortiment === 'SVEUKUPNO' ? 'font-weight: 700;' : '';
-
-                        html += '<td style="padding: 12px; text-align: right; background: ' + bgColor + '; ' + borderRight + ' ' + fontWeight + ' color: #374151;">' + displayValue + '</td>';
-                    });
-
-                    html += '</tr>';
-                });
-
-                html += '</tbody>';
-                html += '</table>';
-                html += '</div>';
-                html += '</div>';
-            });
-
-            container.innerHTML = html;
-        }
 
         // ============================================
         // STANJE ZALIHA FUNCTIONS
@@ -9206,7 +9001,7 @@
             // Safe getter helper
             const getNum = (id) => {
                 const el = document.getElementById(id);
-                return el ? (parseFloat(el.value) || 0) : 0;
+                return el ? parseNumInput(el.value) : 0;
             };
             const setVal = (id, val) => {
                 const el = document.getElementById(id);
@@ -9258,7 +9053,7 @@
             // Safe getter helper
             const getNum = (id) => {
                 const el = document.getElementById(id);
-                return el ? (parseFloat(el.value) || 0) : 0;
+                return el ? parseNumInput(el.value) : 0;
             };
             const setVal = (id, val) => {
                 const el = document.getElementById(id);
@@ -9431,7 +9226,7 @@
         function validateFormData(prefix) {
             const errors = [];
             const getVal = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
-            const getNum = (id) => { const el = document.getElementById(id); return el ? (parseFloat(el.value) || 0) : 0; };
+            const getNum = (id) => { const el = document.getElementById(id); return el ? parseNumInput(el.value) : 0; };
 
             // 1. Datum validation
             const datum = getVal(prefix + '-datum');
@@ -9505,7 +9300,7 @@
             // Safe numeric getter: returns number or 0
             const getNum = (id) => {
                 const el = document.getElementById(id);
-                return el ? (Number(el.value) || 0) : 0;
+                return el ? parseNumInput(el.value) : 0;
             };
 
             // Validation
@@ -9597,6 +9392,7 @@
                     clearCacheByPattern('izvjestaji');
                     clearCacheByPattern('sedmicni_sjeca');
                     clearCacheByPattern('stanje_odjela');
+                    clearCacheByPattern('stanje_zaliha');
                     clearCacheByPattern('my_sjece');
                 } else {
                     throw new Error(result.error || 'Unknown error');
@@ -9633,6 +9429,12 @@
             submitBtn.disabled = true;
             submitBtn.textContent = 'Dodavanje...';
             messageDiv.classList.add('hidden');
+
+            // Normalizuj zarez u tačku — forma šalje sirove .value stringove,
+            // a parseFloat("12,5") na backendu gubi decimale
+            document.querySelectorAll('#add-otprema-form input[type="number"]').forEach(i => {
+                if (i.value && i.value.includes(',')) i.value = i.value.replace(',', '.');
+            });
 
             try {
                 // Upload image first if exists
@@ -9705,6 +9507,7 @@
                     clearCacheByPattern('izvjestaji');
                     clearCacheByPattern('sedmicni_otprema');
                     clearCacheByPattern('stanje_odjela');
+                    clearCacheByPattern('stanje_zaliha');
                     clearCacheByPattern('my_otpreme');
                 } else {
                     throw new Error(result.error || 'Unknown error');
@@ -10172,6 +9975,10 @@
                     messageDiv.style.color = '#047857';
                     messageDiv.classList.remove('hidden');
 
+                    // Obriši keš da my-sjece prikaže ažurirane vrijednosti, ne stare iz keša
+                    clearCacheByPattern('my_sjece');
+                    clearCacheByPattern('primac');
+                    if (window._tabRenderTime) delete window._tabRenderTime['my-sjece'];
                     setTimeout(function() {
                         switchTab('my-sjece');
                     }, 2000);
@@ -10319,6 +10126,9 @@
                     messageDiv.style.color = '#1e40af';
                     messageDiv.classList.remove('hidden');
 
+                    clearCacheByPattern('my_otpreme');
+                    clearCacheByPattern('otpremac');
+                    if (window._tabRenderTime) delete window._tabRenderTime['my-otpreme'];
                     setTimeout(function() {
                         switchTab('my-otpreme');
                     }, 2000);
@@ -10361,6 +10171,9 @@
 
                         if (result.success) {
                             showSuccess('Uspjeh', result.message);
+                            // Obriši keš — inače fetchWithCache vrati svjež keš s obrisanim unosom
+                            clearCacheByPattern('my_sjece');
+                            if (window._tabRenderTime) delete window._tabRenderTime['my-sjece'];
                             loadMySjece();
                         } else {
                             throw new Error(result.error || 'Unknown error');
@@ -10391,6 +10204,8 @@
 
                         if (result.success) {
                             showSuccess('Uspjeh', result.message);
+                            clearCacheByPattern('my_otpreme');
+                            if (window._tabRenderTime) delete window._tabRenderTime['my-otpreme'];
                             loadMyOtpreme();
                         } else {
                             throw new Error(result.error || 'Unknown error');
@@ -10502,40 +10317,41 @@
                         if (stanjeOdjelaData && stanjeOdjelaData.data && odjel.odjel) {
                             // ✅ Convert odjel.odjel to string to prevent "includes is not a function" error
                             const odjelStr = String(odjel.odjel || '').toLowerCase();
-                            const stanjeMatch = stanjeOdjelaData.data.find(s =>
-                                s.odjelNaziv.toLowerCase().includes(odjelStr) ||
-                                odjelStr.includes(s.odjelNaziv.replace('.xlsx', '').toLowerCase())
-                            );
+                            // stanje-zaliha struktura ima s.odjel; stari stanje-odjela je imao s.odjelNaziv
+                            // — bez fallbacka .toLowerCase() na undefined ruši cijeli Operativa tab
+                            const stanjeMatch = stanjeOdjelaData.data.find(s => {
+                                const n = String(s.odjel || s.odjelNaziv || '').replace('.xlsx', '').toLowerCase();
+                                return n && (n.includes(odjelStr) || odjelStr.includes(n));
+                            });
 
-                            if (stanjeMatch && stanjeMatch.redovi && stanjeMatch.redovi.projekat) {
-                                // Read the stored grand-total column directly. The projekat row is a
-                                // positional array aligned to stanjeOdjelaData.sortimentiNazivi, which
-                                // includes aggregate columns (TRUPCI Č, ČETINARI, TRUPCI L, LIŠĆARI,
-                                // SVEUKUPNO). Summing the whole array would double/triple-count.
-                                const sortNazivi = stanjeOdjelaData.sortimentiNazivi || [];
-                                let ukupnoIdx = sortNazivi.indexOf('SVEUKUPNO');
-                                if (ukupnoIdx === -1) ukupnoIdx = sortNazivi.indexOf('UKUPNO Č+L');
-                                if (ukupnoIdx !== -1) {
-                                    projekatTotal = stanjeMatch.redovi.projekat[ukupnoIdx] || 0;
-                                } else {
-                                    // Fallback: derive from ČETINARI + LIŠĆARI columns if present,
-                                    // otherwise sum only true leaf columns (never the aggregates).
-                                    const cetIdx = sortNazivi.indexOf('ČETINARI');
-                                    const lisIdx = sortNazivi.indexOf('LIŠĆARI');
-                                    if (cetIdx !== -1 || lisIdx !== -1) {
-                                        projekatTotal = (stanjeMatch.redovi.projekat[cetIdx] || 0) +
-                                                        (stanjeMatch.redovi.projekat[lisIdx] || 0);
+                            if (stanjeMatch) {
+                                // Nova stanje-zaliha struktura: ukupnoProjekat je skalar,
+                                // projekat je objekat {sortiment: vrijednost}
+                                if (typeof stanjeMatch.ukupnoProjekat === 'number' && stanjeMatch.ukupnoProjekat > 0) {
+                                    projekatTotal = stanjeMatch.ukupnoProjekat;
+                                } else if (stanjeMatch.projekat && typeof stanjeMatch.projekat === 'object') {
+                                    projekatTotal = stanjeMatch.projekat['UKUPNO Č+L'] ||
+                                                    ((stanjeMatch.projekat['Σ ČETINARI'] || 0) + (stanjeMatch.projekat['LIŠĆARI'] || 0));
+                                } else if (stanjeMatch.redovi && stanjeMatch.redovi.projekat) {
+                                    // Legacy stanje-odjela format: pozicioni niz poravnat sa sortimentiNazivi
+                                    const sortNazivi = stanjeOdjelaData.sortimentiNazivi || [];
+                                    let ukupnoIdx = sortNazivi.indexOf('SVEUKUPNO');
+                                    if (ukupnoIdx === -1) ukupnoIdx = sortNazivi.indexOf('UKUPNO Č+L');
+                                    if (ukupnoIdx !== -1) {
+                                        projekatTotal = stanjeMatch.redovi.projekat[ukupnoIdx] || 0;
                                     } else {
-                                        projekatTotal = stanjeMatch.redovi.projekat.reduce((sum, val) => sum + (val || 0), 0);
+                                        const cetIdx = sortNazivi.indexOf('ČETINARI');
+                                        const lisIdx = sortNazivi.indexOf('LIŠĆARI');
+                                        if (cetIdx !== -1 || lisIdx !== -1) {
+                                            projekatTotal = (stanjeMatch.redovi.projekat[cetIdx] || 0) +
+                                                            (stanjeMatch.redovi.projekat[lisIdx] || 0);
+                                        } else {
+                                            projekatTotal = stanjeMatch.redovi.projekat.reduce((sum, val) => sum + (val || 0), 0);
+                                        }
                                     }
                                 }
                                 radilisteNaziv = stanjeMatch.radiliste || '';
-                                zadnjiDatum = stanjeMatch.zadnjiDatum;
-
-                                // DEBUG: Log projekat sources za GRMEČ JASENICA 39
-                                const odjelDebugStr = String(odjel.odjel || '');
-                                if (odjel.odjel && (odjelDebugStr.includes('JASENICA 39') || odjelDebugStr.includes('GRMEČ'))) {
-                                }
+                                zadnjiDatum = stanjeMatch.zadnjiDatum || stanjeMatch.zadnjaOtprema || null;
                             }
                         }
 

@@ -1081,8 +1081,10 @@
     const modal = document.getElementById('gp-odjel-modal');
     if (!modal||!modal._gjOdjel) return;
     const { gj, odjel, rows } = modal._gjOdjel;
+    // CSV-quote polja — imena primaca/radilišta mogu sadržavati zarez i pokvariti kolone
+    const cell = v => { const s = String(v==null?'':v); return /[",\n;]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; };
     const header = 'Datum,Primac,Radiliste,Trupci C,Cel.Duga,Cel.Cijepana,Skart,Trupci L,Ogr.Dugi,Ogr.Cijepani,Gule,Ukupno';
-    const body = rows.map(r=>[r.datum,r.primac,r.radiliste,r.cTrupci,r.celDuga,r.celCijepana,r.skart,r.lTrupci,r.ogrDugi,r.ogrCijepani,r.gule,r.ukupno].join(',')).join('\n');
+    const body = rows.map(r=>[r.datum,r.primac,r.radiliste,r.cTrupci,r.celDuga,r.celCijepana,r.skart,r.lTrupci,r.ogrDugi,r.ogrCijepani,r.gule,r.ukupno].map(cell).join(',')).join('\n');
     downloadCsv(header+'\n'+body, 'Odjel_'+odjel+'_primke.csv');
   }
 
