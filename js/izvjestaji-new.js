@@ -634,6 +634,7 @@ function printIzvjestaj(tip) {
     const otpremaHtml = otpremaTable.outerHTML;
 
     const printWindow = window.open('', '_blank', 'width=1100,height=850');
+    if (!printWindow) { alert('Popup blokiran — dozvolite popup prozore za štampanje.'); return; }
     printWindow.document.write(`<!DOCTYPE html>
 <html lang="bs">
 <head>

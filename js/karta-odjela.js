@@ -235,7 +235,9 @@
     const url = `${OSRM_URL}/${lng1},${lat1};${destLatLng.lng},${destLatLng.lat}?overview=full&geometries=geojson`;
 
     try {
-      const resp = await fetch(url);
+      // Timeout — javni OSRM demo server zna visiti; bez ovoga UI čeka zauvijek
+      const resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      if (!resp.ok) throw new Error('Server rute nedostupan (HTTP ' + resp.status + ')');
       const data = await resp.json();
       if (data.code !== 'Ok' || !data.routes.length) throw new Error('Nema rute');
 
@@ -297,7 +299,9 @@
 
     const url = `${OSRM_URL}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
     try {
-      const resp = await fetch(url);
+      // Timeout — javni OSRM demo server zna visiti; bez ovoga UI čeka zauvijek
+      const resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      if (!resp.ok) throw new Error('Server rute nedostupan (HTTP ' + resp.status + ')');
       const data = await resp.json();
       if (data.code !== 'Ok' || !data.routes.length) throw new Error('Nema rute');
 

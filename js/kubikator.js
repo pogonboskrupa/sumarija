@@ -113,10 +113,12 @@ function _kubOznaciVrstaBtn() {
 
 // ─── Dodaj / spremi izmjenu ───────────────────────────────────
 function kubikatorDodaj() {
+    // Normalizuj zarez — parseFloat("32,5") vrati 32 i tiho izgubi pola centimetra
+    const _num = v => parseFloat(String(v == null ? '' : v).replace(',', '.'));
     const odjel    = (document.getElementById('kub-odjel').value    || '').trim();
     const sortiment = (document.getElementById('kub-sortiment').value || '').trim();
-    const precnik   = parseFloat(document.getElementById('kub-precnik').value);
-    const duzina    = parseFloat(document.getElementById('kub-duzina').value);
+    const precnik   = _num(document.getElementById('kub-precnik').value);
+    const duzina    = _num(document.getElementById('kub-duzina').value);
     const napomena  = (document.getElementById('kub-napomena').value || '').trim();
 
     if (!precnik || precnik <= 0) { _kubAlert('Prečnik mora biti veći od 0.'); return; }
@@ -290,7 +292,7 @@ function _kubRenderTabela() {
             <td                          style="padding:10px 8px;text-align:center;">${u.precnik}</td>
             <td                          style="padding:10px 8px;text-align:center;">${u.duzina.toFixed(2)}</td>
             <td                          style="padding:10px 8px;text-align:right;font-weight:700;color:#047857;">${u.zapremina.toFixed(2)}</td>
-            <td class="kub-col-napomena" style="padding:10px 8px;font-size:12px;color:#6b7280;">${u.napomena || ''}</td>
+            <td class="kub-col-napomena" style="padding:10px 8px;font-size:12px;color:#6b7280;">${typeof escapeHtml === 'function' ? escapeHtml(u.napomena || '') : (u.napomena || '')}</td>
             <td style="padding:10px 6px;text-align:center;white-space:nowrap;">
                 <button class="kub-action-btn" onclick="kubikatorIzmijeni(${u.id})" style="padding:5px 10px;font-size:12px;background:#2563eb;color:white;border:none;border-radius:5px;cursor:pointer;margin-right:4px;">✏️</button>
                 <button class="kub-action-btn" onclick="kubikatorObrisi(${u.id})"   style="padding:5px 10px;font-size:12px;background:#dc2626;color:white;border:none;border-radius:5px;cursor:pointer;">🗑️</button>

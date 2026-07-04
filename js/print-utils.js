@@ -97,6 +97,7 @@ function printKubikator() {
         </div>`;
 
     const win = window.open('', '_blank', 'width=1100,height=900,scrollbars=yes');
+    if (!win) { alert('Popup blokiran — dozvolite popup prozore za štampanje.'); return; }
     win.document.write(buildPrintDocument({
         tabLabel: 'Kubikator',
         activeTabLabel: 'Terenski pregled',
@@ -166,6 +167,7 @@ function printStanjeZalihaAgregatna() {
     }
 
     const win = window.open('', '_blank', 'width=1200,height=900,scrollbars=yes');
+    if (!win) { alert('Popup blokiran — dozvolite popup prozore za štampanje.'); return; }
     win.document.write(buildPrintDocument({
         tabLabel: 'Stanje Zaliha',
         activeTabLabel: 'Agregatna tabela',
@@ -241,6 +243,7 @@ function printStanjeZalihaPoOdjelima() {
     });
 
     const win = window.open('', '_blank', 'width=1200,height=900,scrollbars=yes');
+    if (!win) { alert('Popup blokiran — dozvolite popup prozore za štampanje.'); return; }
     win.document.write(buildPrintDocument({
         tabLabel: 'Stanje Zaliha',
         activeTabLabel: 'Detaljno po odjelima',
@@ -279,6 +282,7 @@ function printMjesecniCard(tip) {
         </div>`;
 
     const win = window.open('', '_blank', 'width=1200,height=900,scrollbars=yes');
+    if (!win) { alert('Popup blokiran — dozvolite popup prozore za štampanje.'); return; }
     win.document.write(buildPrintDocument({
         tabLabel: 'Sječa / Otprema',
         activeTabLabel: cardTitle,
@@ -341,6 +345,7 @@ function printActiveView(contentId, tabLabel, accentColor) {
         </div>`).join('');
 
     const win = window.open('', '_blank', 'width=1200,height=900,scrollbars=yes');
+    if (!win) { alert('Popup blokiran — dozvolite popup prozore za štampanje.'); return; }
     win.document.write(buildPrintDocument({
         tabLabel, activeTabLabel, accentColor,
         monthName, year, datumStampe, vrijemeStampe,

@@ -11,34 +11,8 @@
         console.clear();
 
         // ========== SERVICE WORKER REGISTRATION ==========
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./service-worker.js')
-                .then((registration) => {
-                    console.log('[SW] Service worker registered:', registration.scope);
-
-                    // 🔄 Force update check on page load
-                    registration.update().then(() => {
-                        console.log('[SW] Checked for updates');
-                    });
-
-                    // Listen for updates
-                    registration.addEventListener('updatefound', () => {
-                        const newWorker = registration.installing;
-                        console.log('[SW] New service worker found, installing...');
-
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                console.log('[SW] New service worker installed! Refreshing page...');
-                                // Reload page to activate new Service Worker
-                                window.location.reload();
-                            }
-                        });
-                    });
-                })
-                .catch((error) => {
-                    console.error('[SW] Service worker registration failed:', error);
-                });
-        }
+        // (jedina registracija je niže u "CACHING & OFFLINE SUPPORT" — ovdje je bila
+        // duplikat s konfliktnom strategijom koja je reloadala stranicu usred rada)
 
         // ========== CLEAN URL AFTER CACHE CLEAR ==========
         // Ako je stranica učitana sa ?nocache parametrom (nakon hard refresh-a),
@@ -187,32 +161,28 @@
         // ========== CACHING & OFFLINE SUPPORT ==========
 
         // Register Service Worker for offline support
+        // SW sam radi skipWaiting() + clients.claim(), pa je jedini posao ovdje:
+        // registruj, provjeri update, i reload TAČNO JEDNOM kad novi SW preuzme
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./service-worker.js')
                 .then(registration => {
-
-                    // Automatski aktiviraj novi service worker ako čeka
-                    if (registration.waiting) {
-                        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-                    }
-
-                    // Slušaj za updatefound event
-                    registration.addEventListener('updatefound', () => {
-                        const newWorker = registration.installing;
-
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                newWorker.postMessage({ type: 'SKIP_WAITING' });
-                            }
-                        });
-                    });
+                    console.log('[SW] Registered:', registration.scope);
+                    registration.update().catch(() => {});
                 })
                 .catch(error => {
                     console.error('❌ Service Worker registration failed:', error);
                 });
 
-            // Slušaj kada novi service worker preuzme kontrolu
+            // Reload kad novi SW preuzme kontrolu — s guardovima:
+            // - hadController: pri PRVOJ posjeti claim() okine controllerchange → bez ovoga
+            //   bi se stranica bespotrebno reloadala odmah po prvom učitavanju
+            // - swRefreshing: spriječi višestruke reloade
+            let hadController = !!navigator.serviceWorker.controller;
+            let swRefreshing = false;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!hadController) { hadController = true; return; } // prva claim() aktivacija — ne reloadaj
+                if (swRefreshing) return;
+                swRefreshing = true;
                 window.location.reload();
             });
         }
