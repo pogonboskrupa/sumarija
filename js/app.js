@@ -187,6 +187,22 @@
             });
         }
 
+        // ========== POVRATAK MREŽE — osvježi aktivni tab svježim podacima ==========
+        window.addEventListener('online', () => {
+            if (!currentUser || !window.currentTab) return;
+            console.log('[ONLINE] Mreža se vratila — osvježavam aktivni tab:', window.currentTab);
+            if (typeof showInfo === 'function') {
+                showInfo('Ponovo online', 'Osvježavam podatke...', 3000);
+            }
+            // Poništi render-keš aktivnog taba da switchTab stvarno reloaduje
+            if (window._tabRenderTime) delete window._tabRenderTime[window.currentTab];
+            setTimeout(() => {
+                if (navigator.onLine && typeof switchTab === 'function' && window.currentTab) {
+                    switchTab(window.currentTab);
+                }
+            }, 1500); // kratka pauza — konekcija zna zatreperiti pri povratku signala
+        });
+
         /**
          * Pametno cache vrijeme usklađeno sa radnim vremenom unosa podataka
          * Podaci se ubacuju radnim danima od 6:30h do 9:00h (najkasnije 9:00h)
@@ -532,6 +548,31 @@
         // parseFloat("12,5") vrati 12 (gubi decimale), Number("12,5") vrati NaN→0
         function parseNumInput(v) {
             return parseFloat(String(v == null ? '' : v).replace(',', '.')) || 0;
+        }
+
+        // Dohvati preklasiranja s keš fallbackom — korekcije zaliha moraju
+        // raditi i offline, inače bi offline prikaz zaliha bio bez korekcija
+        async function fetchPreklasiranjaCached() {
+            const CK = 'cache_preklasiranja';
+            const readCache = () => {
+                try {
+                    const raw = localStorage.getItem(CK);
+                    if (raw) return JSON.parse(raw).data || { preklasiranja: [] };
+                } catch(_) {}
+                return { preklasiranja: [] };
+            };
+            if (!navigator.onLine) return readCache();
+            try {
+                const r = await fetch(buildApiUrl('get-preklasiranja'), { signal: AbortSignal.timeout(30000) });
+                const data = await r.json();
+                if (data && data.preklasiranja) {
+                    try { localStorage.setItem(CK, JSON.stringify({ data, timestamp: Date.now() })); } catch(_) {}
+                    return data;
+                }
+                return readCache();
+            } catch(_) {
+                return readCache();
+            }
         }
 
         // Centralno rukovanje isteklim kredencijalima — kad backend vrati
@@ -1036,8 +1077,28 @@
         let _poslovodjaRadilistaFromApi = null;
 
         // Dohvati poslovodja→radilista mapping sa API-ja (iz INFO sheeta)
+        // Offline: čita zadnju keširanu mapu iz localStorage
         async function loadPoslovodjaRadilistaMapping() {
             if (!currentUser) return;
+            const mapCacheKey = 'cache_poslovodja_radilista_' + (currentUser.fullName || '').replace(/\s+/g, '_');
+            const _readCachedMapping = () => {
+                try {
+                    const raw = localStorage.getItem(mapCacheKey);
+                    if (raw) {
+                        const arr = JSON.parse(raw);
+                        if (Array.isArray(arr) && arr.length) {
+                            _poslovodjaRadilistaFromApi = arr;
+                            console.log('[RADILISTA] Loaded from cache (offline):', arr);
+                            return true;
+                        }
+                    }
+                } catch(_) {}
+                return false;
+            };
+
+            // Offline fast-path — ne troši 3 retry-a na mrežu koje nema
+            if (!navigator.onLine) { _readCachedMapping(); return; }
+
             var url = buildApiUrl('poslovodja-radilista', { poslovodja: currentUser.fullName });
             for (let attempt = 1; attempt <= 3; attempt++) {
                 try {
@@ -1045,6 +1106,7 @@
                     var data = await response.json();
                     if (data && data.radilista && data.radilista.length > 0) {
                         _poslovodjaRadilistaFromApi = data.radilista;
+                        try { localStorage.setItem(mapCacheKey, JSON.stringify(data.radilista)); } catch(_) {}
                         console.log('[RADILISTA] Loaded from INFO sheet:', _poslovodjaRadilistaFromApi);
                     }
                     return; // Success, exit
@@ -1053,7 +1115,8 @@
                         console.warn(`[RADILISTA] Fetch failed (attempt ${attempt}/3), retrying...`, e.message);
                         await new Promise(resolve => setTimeout(resolve, attempt * 2000));
                     } else {
-                        console.warn('[RADILISTA] API fetch failed after 3 attempts, using fallback:', e.message);
+                        console.warn('[RADILISTA] API fetch failed after 3 attempts, using cached mapping:', e.message);
+                        _readCachedMapping();
                     }
                 }
             }
@@ -1219,6 +1282,18 @@
             if (parsedUser && savedPass) {
                 currentUser = parsedUser;
                 currentPassword = savedPass;
+
+                // Registruj vlasnika keša + offline snapshot (za sesije nastale
+                // prije uvođenja offline prijave — inače bi im nedostajali)
+                try {
+                    localStorage.setItem('sumarija_cache_owner', parsedUser.username || '');
+                    if (!localStorage.getItem('sumarija_offline_auth')) {
+                        localStorage.setItem('sumarija_offline_auth', JSON.stringify({
+                            username: parsedUser.username, pass: savedPass, user: parsedUser
+                        }));
+                    }
+                } catch(_) {}
+
                 showApp();
 
                 // Provjeri spremljene kredencijale u pozadini — ako je admin u
@@ -2312,10 +2387,9 @@
                 document.getElementById('poslovodja-radilista-list').textContent = poslovodjaName || 'Svi odjeli';
 
                 const url = buildApiUrl('stanje-zaliha', { poslovodja: poslovodjaName });
-                const urlPrekl = buildApiUrl('get-preklasiranja');
                 const [data, preklData] = await Promise.all([
                     fetchWithCache(url, cacheKey, false, 60000),
-                    fetch(urlPrekl).then(r => r.json()).catch(() => ({ preklasiranja: [] }))
+                    fetchPreklasiranjaCached()
                 ]);
 
                 if (data.offline) {
@@ -7571,13 +7645,15 @@
                 const year = new Date().getFullYear();
                 const url = buildApiUrl('pending-unosi', { year });
 
-                // Don't cache pending entries - always fetch fresh
-                const response = await fetch(url);
-                const data = await response.json();
-
+                // Online: uvijek svjež fetch (forceRefresh) da lista bude ažurna;
+                // offline: fetchWithCache vrati zadnji keširani snapshot umjesto greške
+                const data = await fetchWithCache(url, 'cache_pending_unosi_view', navigator.onLine, 60000);
 
                 if (data.error) {
                     throw new Error(data.error);
+                }
+                if (data.offline && !data.unosi) {
+                    throw new Error('Nema keširanih podataka — otvorite ovaj tab dok ste online.');
                 }
 
                 // Store unfiltered data for filtering
@@ -8445,10 +8521,9 @@
 
             try {
                 const url = buildApiUrl('stanje-zaliha');
-                const urlPrekl = buildApiUrl('get-preklasiranja');
                 const [data, preklData] = await Promise.all([
                     fetchWithCache(url, 'cache_stanje_zaliha', false, 180000),
-                    fetch(urlPrekl).then(r => r.json()).catch(() => ({ preklasiranja: [] }))
+                    fetchPreklasiranjaCached()
                 ]);
 
                 if (data.error) throw new Error(data.error);
@@ -8672,7 +8747,7 @@
 
                 closePreklasiranjeModal();
                 // Refresh preklasiranja and re-render
-                const preklData = await fetch(buildApiUrl('get-preklasiranja')).then(r => r.json()).catch(() => ({ preklasiranja: [] }));
+                const preklData = await fetchPreklasiranjaCached();
                 preklasiranjaPodaci = (preklData && preklData.preklasiranja) || [];
                 renderPreklasiranjaTabelaAdmin();
                 // Re-render zaliha tables with new corrections
@@ -8693,7 +8768,7 @@
                 const resp = await fetch(url).then(r => r.json());
                 if (!resp.success) throw new Error(resp.error || 'Greška pri brisanju');
 
-                const preklData = await fetch(buildApiUrl('get-preklasiranja')).then(r => r.json()).catch(() => ({ preklasiranja: [] }));
+                const preklData = await fetchPreklasiranjaCached();
                 preklasiranjaPodaci = (preklData && preklData.preklasiranja) || [];
                 renderPreklasiranjaTabelaAdmin();
                 renderStanjeZalihaTabela(stanjeZalihaData);

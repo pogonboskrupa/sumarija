@@ -1,6 +1,27 @@
         // ========== AUTH MODULE ==========
         // Login, logout, showApp, auto-refresh, cross-tab sync
 
+        // Pri prijavi: ako se prijavljuje DRUGI korisnik od vlasnika keša,
+        // obriši sav cache_* (privatnost na dijeljenom uređaju). Isti korisnik
+        // zadržava keš — to omogućava pun offline rad i poslije odjave.
+        function _clearForeignCacheOnLogin(username) {
+            const owner = localStorage.getItem('sumarija_cache_owner');
+            const uname = (username || '').toLowerCase();
+            if (owner && owner.toLowerCase() !== uname) {
+                try {
+                    const cacheKeys = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const k = localStorage.key(i);
+                        if (k && k.startsWith('cache_')) cacheKeys.push(k);
+                    }
+                    cacheKeys.forEach(k => localStorage.removeItem(k));
+                    localStorage.removeItem('sumarija_offline_auth');
+                    console.log(`[LOGIN] Novi korisnik — obrisano ${cacheKeys.length} ključeva prethodnog vlasnika keša`);
+                } catch(e) { console.error('foreign cache clear:', e); }
+            }
+            localStorage.setItem('sumarija_cache_owner', username || '');
+        }
+
         // Login form handler
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -29,8 +50,16 @@
                 if (data.success) {
                     currentUser = data;
                     currentPassword = password;
+                    _clearForeignCacheOnLogin(data.username || username);
                     localStorage.setItem('sumarija_user', JSON.stringify(data));
                     localStorage.setItem('sumarija_pass', password);
+                    // Offline snapshot — preživljava odjavu, omogućava offline prijavu
+                    // ISTOG korisnika (briše ga tek prijava drugog korisnika)
+                    try {
+                        localStorage.setItem('sumarija_offline_auth', JSON.stringify({
+                            username: data.username || username, pass: password, user: data
+                        }));
+                    } catch(_) {}
                     showApp();
                     loadPoslovodjaRadilistaMapping(); // Dohvati poslovodja→radilista iz INFO sheeta
                     loadOdjeli(); // Load odjeli list after manual login
@@ -57,8 +86,37 @@
                     errorMsg.classList.remove('hidden');
                 }
             } catch (error) {
-                errorMsg.textContent = 'Greška u komunikaciji sa serverom: ' + error.message;
-                errorMsg.classList.remove('hidden');
+                // OFFLINE PRIJAVA — mreža nedostupna: ako se uneseni kredencijali
+                // poklapaju sa offline snapshotom zadnjeg korisnika (preživljava
+                // odjavu), uđi u aplikaciju sa zadnjim keširanim podacima
+                let offlineOk = false;
+                try {
+                    const snapRaw = localStorage.getItem('sumarija_offline_auth');
+                    if (snapRaw) {
+                        const snap = JSON.parse(snapRaw);
+                        if (snap && snap.pass === password &&
+                            (snap.username || '').toLowerCase() === username.toLowerCase() && snap.user) {
+                            currentUser = snap.user;
+                            currentPassword = password;
+                            localStorage.setItem('sumarija_user', JSON.stringify(snap.user));
+                            localStorage.setItem('sumarija_pass', password);
+                            offlineOk = true;
+                            showApp();
+                            if (typeof showWarning === 'function') {
+                                showWarning('Offline prijava', 'Nema mreže — prikazujem zadnje sačuvane podatke.', 6000);
+                            }
+                            loadPoslovodjaRadilistaMapping();
+                            loadOdjeli();
+                            loadData();
+                        }
+                    }
+                } catch(_) {}
+                if (!offlineOk) {
+                    errorMsg.textContent = navigator.onLine
+                        ? 'Greška u komunikaciji sa serverom: ' + error.message
+                        : 'Nema internet konekcije. Offline prijava je moguća samo za zadnjeg prijavljenog korisnika (s tačnom lozinkom).';
+                    errorMsg.classList.remove('hidden');
+                }
             } finally {
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'Prijavi se';
@@ -301,18 +359,11 @@
                 dropdown.classList.remove('show');
             }
 
-            // Obriši SVE cache_* ključeve — backend filtrira mnoge endpointe po korisniku
-            // (primac-detail, otpremac-detail...) a ključevi nemaju username u sebi, pa bi
-            // sljedeći korisnik na istom uređaju vidio tuđe podatke iz keša
-            try {
-                const cacheKeys = [];
-                for (let i = 0; i < localStorage.length; i++) {
-                    const k = localStorage.key(i);
-                    if (k && k.startsWith('cache_')) cacheKeys.push(k);
-                }
-                cacheKeys.forEach(k => localStorage.removeItem(k));
-                console.log(`[LOGOUT] Obrisano ${cacheKeys.length} cache ključeva`);
-            } catch(e) { console.error('logout cache clear:', e); }
+            // OFFLINE PODRŠKA: keš se NE briše pri odjavi — briše se tek kad se
+            // DRUGI korisnik prijavi (vidi _clearForeignCacheOnLogin). Tako isti
+            // korisnik zadrži pun offline pristup i poslije odjave, a na dijeljenom
+            // uređaju sljedeći korisnik pri prijavi automatski obriše tuđi keš.
+            // (Vlasnik keša: localStorage 'sumarija_cache_owner')
 
             // Resetuj tab render-cache — switchTab bi inače prikazao DOM prethodnog
             // korisnika ("instant cache" putanja gleda samo da li div ima djecu)
