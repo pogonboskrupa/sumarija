@@ -809,43 +809,66 @@
                         // OTPREME — jedan fetch, sve varijante cache ključeva
                         // (otprema tab, mapa, dashboard tekući mjesec, dashboard zadnjih5, otprema zadnjih5)
                         { name: 'Otpreme (svi prikazi)', url: buildApiUrl('otpreme'), cacheKey: 'cache_otpreme_tab', timeout: 150000,
-                          alsoCache: ['cache_otpreme_tekuci_mjesec', 'cache_otpreme_zadnjih5_dash', 'cache_otpreme_zadnjih5'] },
+                          alsoCache: ['cache_otpreme_tekuci_mjesec', 'cache_otpreme_zadnjih5_dash', 'cache_otpreme_zadnjih5', 'cache_otpreme_karta'] },
 
                         // PRIMACI meni + sva 4 podmenija
                         { name: 'Primaci - Monthly', url: buildApiUrl('primaci', { year }), cacheKey: 'cache_primaci_' + year, timeout: 180000 },
-                        { name: 'Primaci - Daily', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_primaci_daily_' + year + '_' + currentMonth, timeout: 180000 },
+                        { name: 'Primaci - Daily + Izvještaji', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_primaci_daily_' + year + '_' + currentMonth, timeout: 180000,
+                          alsoCache: ['cache_izvjestaji_sedmicni_primka_' + year + '_' + currentMonth, 'cache_izvjestaji_mjesecni_primka_' + year + '_' + currentMonth, 'cache_sedmicni_sjeca_' + year + '_' + currentMonth] },
                         { name: 'Primaci - Po radilištu', url: buildApiUrl('primaci-by-radiliste', { year }), cacheKey: 'cache_primaci_radiliste_' + year, timeout: 180000 },
                         { name: 'Primaci - Po izvođaču', url: buildApiUrl('primaci-by-izvodjac', { year }), cacheKey: 'cache_primaci_izvodjac_' + year, timeout: 180000 },
                         { name: 'Primaci - Sortimenti po primaču', url: buildApiUrl('primaci-sortimenti-by-primac', { year, month: currentMonth }), cacheKey: 'cache_primaci_sort_primac_' + year + '_' + currentMonth, timeout: 180000 },
 
                         // OTPREMACI meni + sva 3 podmenija
                         { name: 'Otpremaci - Monthly', url: buildApiUrl('otpremaci', { year }), cacheKey: 'cache_otpremaci_' + year, timeout: 180000 },
-                        { name: 'Otpremaci - Daily', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_daily_' + year + '_' + currentMonth, timeout: 180000 },
+                        { name: 'Otpremaci - Daily + Izvještaji', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_daily_' + year + '_' + currentMonth, timeout: 180000,
+                          alsoCache: ['cache_izvjestaji_sedmicni_otprema_' + year + '_' + currentMonth, 'cache_izvjestaji_mjesecni_otprema_' + year + '_' + currentMonth, 'cache_sedmicni_otprema_' + year + '_' + currentMonth] },
                         { name: 'Otpremaci - Po radilištu', url: buildApiUrl('otpremaci-by-radiliste', { year }), cacheKey: 'cache_otpremaci_radiliste_' + year, timeout: 180000 },
                         { name: 'Otpremaci - Sortimenti po otpremaču', url: buildApiUrl('otpremaci-sortimenti-by-otpremac', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_sort_otpremac_' + year + '_' + currentMonth, timeout: 180000 },
 
-                        // STANJE ZALIHA
+                        // STANJE ZALIHA + korekcije
                         { name: 'Stanje Zaliha', url: buildApiUrl('stanje-zaliha'), cacheKey: 'cache_stanje_zaliha', timeout: 180000 },
+                        { name: 'Preklasiranja (korekcije)', url: buildApiUrl('get-preklasiranja'), cacheKey: 'cache_preklasiranja', timeout: 60000 },
                     ];
 
                 } else if (userType === 'poslovođa' || userType === 'poslovodja') {
                     var pName = currentUser ? currentUser.fullName : '';
                     var pCK = 'cache_stanje_zaliha_' + (pName || 'all').replace(/\s+/g, '_');
+                    const pMonth = new Date().getMonth();
                     allViews = [
                         { name: 'Stanje Zaliha', url: buildApiUrl('stanje-zaliha', { poslovodja: pName }), cacheKey: pCK, timeout: 60000 },
                         { name: 'Primke (svi prikazi)', url: buildApiUrl('primke'), cacheKey: 'cache_primke_sjeca', timeout: 120000,
                           alsoCache: ['cache_primke_zadnjih5', 'cache_primke_tekuci_mjesec'] },
                         { name: 'Otpreme (svi prikazi)', url: buildApiUrl('otpreme'), cacheKey: 'cache_otpreme_tab', timeout: 120000,
                           alsoCache: ['cache_otpreme_zadnjih5', 'cache_otpreme_tekuci_mjesec'] },
+                        // IZVJEŠTAJI — sedmični, sedmični po radniku i mjesečni dijele iste URL-ove
+                        { name: 'Izvještaji - sječa', url: buildApiUrl('primaci-daily', { year, month: pMonth }), cacheKey: 'cache_izvjestaji_sedmicni_primka_' + year + '_' + pMonth, timeout: 180000,
+                          alsoCache: ['cache_izvjestaji_mjesecni_primka_' + year + '_' + pMonth, 'cache_sedmicni_sjeca_' + year + '_' + pMonth] },
+                        { name: 'Izvještaji - otprema', url: buildApiUrl('otpremaci-daily', { year, month: pMonth }), cacheKey: 'cache_izvjestaji_sedmicni_otprema_' + year + '_' + pMonth, timeout: 180000,
+                          alsoCache: ['cache_izvjestaji_mjesecni_otprema_' + year + '_' + pMonth, 'cache_sedmicni_otprema_' + year + '_' + pMonth] },
+                        { name: 'Preklasiranja (korekcije)', url: buildApiUrl('get-preklasiranja'), cacheKey: 'cache_preklasiranja', timeout: 60000 },
+                        { name: 'Lista Odjela (dropdown)', url: buildApiUrl('get-odjeli-list'), cacheKey: 'cache_odjeli_list', timeout: 60000 },
                     ];
 
                 } else if (userType === 'operativa') {
                     const currentMonth = new Date().getMonth(); // 0-11
+                    const currentMonthNum = currentMonth + 1;
                     allViews = [
-                        { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year, timeout: 180000 },
+                        { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year, timeout: 180000,
+                          alsoCache: ['cache_dashboard_' + year + '_m' + currentMonthNum] },
                         { name: 'Operativa (Stats)', url: buildApiUrl('stats', { year }), cacheKey: 'cache_stats_' + year, timeout: 180000 },
+                        { name: 'Operativa (Odjeli)', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_odjeli_' + year, timeout: 180000 },
+                        { name: 'Stanje Zaliha (operativa)', url: buildApiUrl('stanje-zaliha'), cacheKey: 'cache_stanje_zaliha', timeout: 180000 },
                         { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
-                        { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni-sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year, timeout: 120000 }
+                        { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni-sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year, timeout: 120000 },
+                        { name: 'Primke (dashboard)', url: buildApiUrl('primke'), cacheKey: 'cache_primke_sjeca', timeout: 150000,
+                          alsoCache: ['cache_primke_tekuci_mjesec', 'cache_primke_zadnjih5_dash', 'cache_primke_zadnjih5'] },
+                        { name: 'Otpreme (dashboard)', url: buildApiUrl('otpreme'), cacheKey: 'cache_otpreme_tab', timeout: 150000,
+                          alsoCache: ['cache_otpreme_tekuci_mjesec', 'cache_otpreme_zadnjih5_dash', 'cache_otpreme_zadnjih5'] },
+                        { name: 'Izvještaji - sječa', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_sedmicni_primka_' + year + '_' + currentMonth, timeout: 180000,
+                          alsoCache: ['cache_izvjestaji_mjesecni_primka_' + year + '_' + currentMonth] },
+                        { name: 'Izvještaji - otprema', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_sedmicni_otprema_' + year + '_' + currentMonth, timeout: 180000,
+                          alsoCache: ['cache_izvjestaji_mjesecni_otprema_' + year + '_' + currentMonth] },
                     ];
 
                 } else if (userType === 'primac') {
@@ -862,7 +885,9 @@
                         // Izvještaji - sedmični (tekući mjesec)
                         { name: 'Izvještaji (sedmični)', url: buildApiUrl('primac-detail', { year }), cacheKey: 'cache_primac_sedmicni_' + year + '_' + currentMonth, timeout: 120000 },
                         // Izvještaji - mjesečni (tekući mjesec)
-                        { name: 'Izvještaji (mjesečni)', url: buildApiUrl('primac-detail', { year }), cacheKey: 'cache_primac_mjesecni_' + year + '_' + currentMonth, timeout: 120000 }
+                        { name: 'Izvještaji (mjesečni)', url: buildApiUrl('primac-detail', { year }), cacheKey: 'cache_primac_mjesecni_' + year + '_' + currentMonth, timeout: 120000 },
+                        // Dropdown odjela za formu "Dodaj sječu"
+                        { name: 'Lista Odjela (dropdown)', url: buildApiUrl('get-odjeli-list'), cacheKey: 'cache_odjeli_list', timeout: 60000 }
                     ];
                 } else if (userType === 'otpremac') {
                     const currentMonth = new Date().getMonth(); // 0-11
@@ -878,7 +903,9 @@
                         // Izvještaji - sedmični (tekući mjesec)
                         { name: 'Izvještaji (sedmični)', url: buildApiUrl('otpremac-detail', { year }), cacheKey: 'cache_otpremac_sedmicni_' + year + '_' + currentMonth, timeout: 120000 },
                         // Izvještaji - mjesečni (tekući mjesec)
-                        { name: 'Izvještaji (mjesečni)', url: buildApiUrl('otpremac-detail', { year }), cacheKey: 'cache_otpremac_mjesecni_' + year + '_' + currentMonth, timeout: 120000 }
+                        { name: 'Izvještaji (mjesečni)', url: buildApiUrl('otpremac-detail', { year }), cacheKey: 'cache_otpremac_mjesecni_' + year + '_' + currentMonth, timeout: 120000 },
+                        // Dropdown odjela za formu "Dodaj otpremu"
+                        { name: 'Lista Odjela (dropdown)', url: buildApiUrl('get-odjeli-list'), cacheKey: 'cache_odjeli_list', timeout: 60000 }
                     ];
                 }
 
@@ -966,6 +993,15 @@
                         return { success: false, name: view.name };
                     }
                 }, 8); // Max 8 paralelnih poziva
+
+                // MAPA (samo admin ima tab): povuci GeoJSON poligone da ih Service Worker
+                // kešira (cache-first za .geojson) — offline mapa onda radi i ako tab
+                // nikad nije bio otvoren dok je korisnik bio online
+                if (userType === 'admin' || userType === '') {
+                    fetch('data/odjeli.geojson')
+                        .then(r => { if (r.ok) console.log('[PRELOAD] ✓ GeoJSON keširan u SW za offline mapu'); })
+                        .catch(() => {});
+                }
 
                 console.log(`[PRELOAD] Finished! Loaded: ${totalLoaded}/${totalViews}, Failed: ${totalFailed}`);
 
