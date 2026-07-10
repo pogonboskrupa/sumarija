@@ -189,8 +189,8 @@
                             <span>Meni</span>
                         </button>
                         <div class="user-menu-dropdown" id="user-menu-dropdown">
+                            <div id="menu-data-age" style="padding:8px 16px;font-size:12px;color:#6b7280;border-bottom:1px solid #f3f4f6;cursor:default;">🕓 Podaci: nepoznato</div>
                             <div class="user-menu-item" id="pwa-install-btn" style="display:none;" onclick="event.stopPropagation(); closeUserMenu(); installPwa();">📲 Instaliraj aplikaciju</div>
-                            <div class="user-menu-item" onclick="event.stopPropagation(); closeUserMenu(); preloadAllViews(false, true);">⚡ Učitaj sve prikaze</div>
                             <div class="user-menu-item" id="notif-menu-item" onclick="event.stopPropagation(); toggleNotifPanel();" style="display:none;">
                                 🔔 Notifikacije
                                 <span id="notif-status-badge" style="font-size: 11px; margin-left: 6px; padding: 2px 6px; border-radius: 10px; background: #e5e7eb; color: #6b7280;">OFF</span>
@@ -3398,6 +3398,8 @@
         if (mins < 60) return mins + 'm';
         return Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm';
     }
+    // Izloži formatter meniju (oznaka starosti podataka)
+    window.formatDataAge = formatAge;
 
     function newestCacheAge() {
         var newest = 0;
@@ -3411,6 +3413,7 @@
         } catch(e) {}
         return newest ? (Date.now() - newest) : null;
     }
+    window.newestCacheAge = newestCacheAge;
 
     function showBanner(icon, text, ageMs, bg) {
         clearTimeout(hideTimer);

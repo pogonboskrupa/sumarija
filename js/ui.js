@@ -644,16 +644,25 @@
         let confirmCallback = null;
 
         function showConfirmModal(title, message, onConfirm, opts) {
+            opts = opts || {};
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-body').textContent = message;
             confirmCallback = onConfirm;
             const overlay = document.getElementById('confirm-modal');
             // opts.large — istaknute akcije (npr. "Ažuriraj podatke") dobiju veći modal;
             // klasa se svaki put eksplicitno postavlja/uklanja da se ne "zalijepi" na sljedeći poziv
-            overlay.classList.toggle('modal-overlay-lg', !!(opts && opts.large));
+            overlay.classList.toggle('modal-overlay-lg', !!opts.large);
             overlay.classList.add('show');
 
-            document.getElementById('modal-confirm-btn').onclick = function() {
+            // opts.confirmText — label dugmeta (default "Obriši");
+            // opts.danger — crveno (btn-danger) vs plavo (btn-primary)
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            confirmBtn.textContent = opts.confirmText || 'Obriši';
+            const danger = opts.danger !== false; // default crveno (kompatibilno sa starim brisanjem)
+            confirmBtn.classList.toggle('btn-danger', danger);
+            confirmBtn.classList.toggle('btn-primary', !danger);
+
+            confirmBtn.onclick = function() {
                 if (confirmCallback) confirmCallback();
                 closeConfirmModal();
             };

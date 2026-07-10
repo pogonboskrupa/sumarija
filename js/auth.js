@@ -352,7 +352,24 @@
             console.log('[CROSS-TAB SYNC] Cross-tab synchronization listener registered');
         }
 
+        // Odjava — traži potvrdu u velikom modalu koji ujedno prikazuje verziju app-a
         function logout() {
+            const dropdown = document.getElementById('user-menu-dropdown');
+            if (dropdown) dropdown.classList.remove('show');
+            const verzija = window.APP_VERSION || 'nepoznata';
+            if (typeof showConfirmModal === 'function') {
+                showConfirmModal(
+                    'Odjava',
+                    'Verzija aplikacije: ' + verzija + '\n\nDa li se želite odjaviti? Keširani podaci ostaju sačuvani za vašu sljedeću (i offline) prijavu.',
+                    _performLogout,
+                    { large: true, confirmText: '🚪 Odjavi se', danger: true }
+                );
+            } else {
+                _performLogout(); // fallback ako modal nije dostupan
+            }
+        }
+
+        function _performLogout() {
             // Close user menu first
             const dropdown = document.getElementById('user-menu-dropdown');
             if (dropdown) {

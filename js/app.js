@@ -1,6 +1,7 @@
         // VERSION INFO - Monthly report by departments
         const APP_VERSION = '2026-01-12-v18-MONTHLY-BY-ODJELI';
         const BUILD_COMMIT = 'pending';
+        window.APP_VERSION = APP_VERSION; // dostupno za prikaz pri odjavi
 
         // Helper: provjeri da li je tab još uvijek aktivan (sprečava bleeding async sadržaja)
         function isActiveTab(tabName) {
@@ -593,7 +594,9 @@
                 if (typeof showError === 'function') {
                     showError('Sesija istekla', 'Lozinka je promijenjena ili nalog više ne važi. Prijavite se ponovo.', 8000);
                 }
-                if (typeof logout === 'function') logout();
+                // Tiha odjava BEZ modala potvrde (automatska, korisnik nije kliknuo Odjavi se)
+                if (typeof _performLogout === 'function') _performLogout();
+                else if (typeof logout === 'function') logout();
             } finally {
                 // dozvoli ponovno okidanje za sljedeću sesiju (novi login u istom tabu)
                 setTimeout(() => { _unauthorizedHandled = false; }, 5000);
@@ -609,7 +612,7 @@
                 'Ažuriranje podataka',
                 'Preuzeti najnovije podatke za sve prikaze? Postojeći podaci ostaju dostupni dok se novi učitavaju u pozadini — nakon toga se svaki tab otvara odmah, bez čekanja.',
                 async function() { await _doRefreshAllData(); },
-                { large: true }
+                { large: true, confirmText: 'Ažuriraj', danger: false }
             );
         }
 
@@ -629,6 +632,9 @@
                 // Force-refresh SVIH prikaza — svaki uspješan fetch prepiše svoj
                 // keš ključ; ako neki padne, stari keš za taj prikaz ostaje (nije obrisan!)
                 await preloadAllViews(false, true);
+
+                // Zabilježi vrijeme zadnjeg punog osvježavanja (za oznaku starosti u meniju)
+                try { localStorage.setItem('sumarija_last_full_refresh', String(Date.now())); } catch(_) {}
 
                 // Poništi render-keš SVIH tabova — sljedeći ulazak u bilo koji tab
                 // instantno renderuje iz svježeg localStorage keša (turboShow putanja)
@@ -955,44 +961,65 @@
 
                 console.log(`[PRELOAD] Starting preload of ${totalViews} views (silent=${silent})...`);
 
-                // OPTIMIZIRANO UČITAVANJE - max 8 paralelnih poziva
-                await processQueue(allViews, async (view) => {
+                // Učitaj jedan prikaz — vraća true/false; koristi se i u batch-u i u retry-u
+                const _loadOneView = async (view) => {
                     try {
-                        // Briši sekundarne cache ključeve ako je forceRefresh
                         if (forceRefresh && view.alsoCache) {
                             view.alsoCache.forEach(k => localStorage.removeItem(k));
                         }
                         const data = await fetchWithCache(view.url, view.cacheKey, forceRefresh, view.timeout);
                         // fetchWithCache nikad ne baca — neuspjeh vraća {offline:true} ili {error}
-                        // pa ga ovdje moramo prepoznati kao pad, inače je izvještaj uvijek "20/20 ✅"
                         if (data && (data.offline || data.error)) {
                             throw new Error(data.error || 'offline/timeout');
                         }
-                        // Kopiraj iste podatke i pod sekundarne cache ključeve
-                        // (isti API odgovor, ali ga različiti prikazi kešuju pod različitim ključevima)
                         if (view.alsoCache && data) {
                             const entry = JSON.stringify({ data, timestamp: Date.now() });
                             view.alsoCache.forEach(k => { try { localStorage.setItem(k, entry); } catch(e) {} });
                         }
-                        totalLoaded++;
-                        console.log(`[PRELOAD] ✓ ${view.name} loaded (${totalLoaded}/${totalViews})`);
-                        // Ažuriraj progress toast u realnom vremenu
-                        if (!silent && progressToast) {
-                            const msgEl = progressToast.querySelector('.toast-message');
-                            if (msgEl) msgEl.textContent = `${totalLoaded} / ${totalViews} prikaza`;
-                        }
-                        return { success: true, name: view.name };
+                        return true;
                     } catch (error) {
-                        totalFailed++;
-                        totalLoaded++;
-                        console.error(`[PRELOAD] ✗ ${view.name} failed:`, error);
-                        if (!silent && progressToast) {
-                            const msgEl = progressToast.querySelector('.toast-message');
-                            if (msgEl) msgEl.textContent = `${totalLoaded} / ${totalViews} prikaza`;
-                        }
-                        return { success: false, name: view.name };
+                        console.warn(`[PRELOAD] ✗ ${view.name}:`, error.message);
+                        return false;
                     }
+                };
+
+                const failedViews = [];
+
+                // OPTIMIZIRANO UČITAVANJE - max 8 paralelnih poziva
+                await processQueue(allViews, async (view) => {
+                    const ok = await _loadOneView(view);
+                    totalLoaded++;
+                    if (ok) {
+                        console.log(`[PRELOAD] ✓ ${view.name} (${totalLoaded}/${totalViews})`);
+                    } else {
+                        failedViews.push(view);
+                    }
+                    if (!silent && progressToast) {
+                        const msgEl = progressToast.querySelector('.toast-message');
+                        if (msgEl) msgEl.textContent = `${totalLoaded} / ${totalViews} prikaza`;
+                    }
+                    return { success: ok, name: view.name };
                 }, 8); // Max 8 paralelnih poziva
+
+                // RETRY neuspjelih — sekvencijalno (mreža/GAS se smiri kad batch stane).
+                // Nedeterministički timeout jednog od 8 paralelnih teških upita je
+                // glavni uzrok "1 nije uspjelo"; jedan miran pokušaj to najčešće riješi.
+                if (failedViews.length) {
+                    console.log(`[PRELOAD] Retry ${failedViews.length} neuspjelih prikaza (sekvencijalno)...`);
+                    if (!silent && progressToast) {
+                        const msgEl = progressToast.querySelector('.toast-message');
+                        if (msgEl) msgEl.textContent = `Ponovni pokušaj (${failedViews.length})...`;
+                    }
+                    for (const view of failedViews.slice()) {
+                        const ok = await _loadOneView(view);
+                        if (ok) {
+                            const idx = failedViews.indexOf(view);
+                            if (idx !== -1) failedViews.splice(idx, 1);
+                            console.log(`[PRELOAD] ✓ (retry) ${view.name}`);
+                        }
+                    }
+                }
+                totalFailed = failedViews.length;
 
                 // MAPA (samo admin ima tab): povuci GeoJSON poligone da ih Service Worker
                 // kešira (cache-first za .geojson) — offline mapa onda radi i ako tab
@@ -1003,7 +1030,12 @@
                         .catch(() => {});
                 }
 
-                console.log(`[PRELOAD] Finished! Loaded: ${totalLoaded}/${totalViews}, Failed: ${totalFailed}`);
+                console.log(`[PRELOAD] Finished! Loaded: ${totalViews - totalFailed}/${totalViews}, Failed: ${totalFailed}`);
+
+                // Zabilježi vrijeme zadnjeg punog osvježavanja ako je barem nešto uspjelo
+                if (totalViews - totalFailed > 0) {
+                    try { localStorage.setItem('sumarija_last_full_refresh', String(Date.now())); } catch(_) {}
+                }
 
                 // Ukloni progress toast i prikaži rezultat
                 if (!silent) {
@@ -1012,11 +1044,15 @@
                         progressToast.classList.add('hide');
                         setTimeout(() => progressToast && progressToast.remove(), 300);
                     }
-                    const uspjesno = totalLoaded - totalFailed;
-                    if (uspjesno > 0) {
-                        showSuccess('⚡ Gotovo!', `✅ Učitano ${uspjesno}/${totalViews} prikaza${totalFailed > 0 ? ` (${totalFailed} nije uspjelo)` : ' 🎉'}`);
+                    const uspjesno = totalViews - totalFailed;
+                    if (uspjesno > 0 && totalFailed === 0) {
+                        showSuccess('⚡ Gotovo!', `✅ Učitano svih ${totalViews} prikaza 🎉`);
+                    } else if (uspjesno > 0) {
+                        // Imenuj neuspjele da se zna ŠTA nije prošlo (a ne samo broj)
+                        const imena = failedViews.map(v => v.name).join(', ');
+                        showWarning('Djelimično učitano', `Učitano ${uspjesno}/${totalViews}. Nije uspjelo: ${imena}. Stari podaci za te prikaze su zadržani.`, 0);
                     } else {
-                        showError('Greška', 'Nije učitano nijedan prikaz. Server je možda nedostupan.');
+                        showError('Greška', 'Nije učitan nijedan prikaz. Server je možda nedostupan.');
                     }
                 }
 
@@ -1034,7 +1070,24 @@
                 event.stopPropagation();
             }
             const dropdown = document.getElementById('user-menu-dropdown');
+            const opening = !dropdown.classList.contains('show');
             dropdown.classList.toggle('show');
+            if (opening) updateDataAgeIndicator();
+        }
+
+        // Osvježi oznaku "koliko su stari podaci" u meniju (vrijeme od zadnjeg
+        // punog osvježavanja; fallback na najsvježiji keš ako toga nema)
+        function updateDataAgeIndicator() {
+            const el = document.getElementById('menu-data-age');
+            if (!el) return;
+            let ts = parseInt(localStorage.getItem('sumarija_last_full_refresh') || '0', 10);
+            let ageMs = ts ? (Date.now() - ts) : (typeof window.newestCacheAge === 'function' ? window.newestCacheAge() : null);
+            const fmt = (typeof window.formatDataAge === 'function') ? window.formatDataAge : null;
+            if (ageMs == null || !fmt) {
+                el.textContent = '🕓 Podaci: nepoznato';
+            } else {
+                el.textContent = '🕓 Podaci osvježeni: prije ' + fmt(ageMs);
+            }
         }
 
         // Close user menu dropdown
