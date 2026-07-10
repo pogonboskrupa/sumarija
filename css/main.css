@@ -388,6 +388,18 @@
         .modal-body { margin-bottom: 24px; font-size: 14px; color: #6b7280; line-height: 1.6; }
         .modal-footer { display: flex; gap: 12px; justify-content: flex-end; }
         .modal-footer .btn { padding: 10px 20px; }
+
+        /* Veliki confirm modal — samo za istaknute akcije (npr. "Ažuriraj podatke") */
+        .modal-overlay.modal-overlay-lg .modal { max-width: 1400px; padding: 48px 56px; border-radius: 20px; }
+        .modal-overlay.modal-overlay-lg .modal-header { margin-bottom: 24px; }
+        .modal-overlay.modal-overlay-lg .modal-title { font-size: 32px; }
+        .modal-overlay.modal-overlay-lg .modal-body { font-size: 20px; line-height: 1.7; margin-bottom: 36px; }
+        .modal-overlay.modal-overlay-lg .modal-footer .btn { padding: 16px 32px; font-size: 16px; }
+        @media (max-width: 900px) {
+            .modal-overlay.modal-overlay-lg .modal { max-width: 95%; padding: 28px; }
+            .modal-overlay.modal-overlay-lg .modal-title { font-size: 24px; }
+            .modal-overlay.modal-overlay-lg .modal-body { font-size: 16px; }
+        }
         .btn-danger { background: #dc2626; color: white; }
         .btn-danger:hover { background: #b91c1c; }
 

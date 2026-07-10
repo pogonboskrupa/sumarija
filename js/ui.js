@@ -643,11 +643,15 @@
 
         let confirmCallback = null;
 
-        function showConfirmModal(title, message, onConfirm) {
+        function showConfirmModal(title, message, onConfirm, opts) {
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-body').textContent = message;
             confirmCallback = onConfirm;
-            document.getElementById('confirm-modal').classList.add('show');
+            const overlay = document.getElementById('confirm-modal');
+            // opts.large — istaknute akcije (npr. "Ažuriraj podatke") dobiju veći modal;
+            // klasa se svaki put eksplicitno postavlja/uklanja da se ne "zalijepi" na sljedeći poziv
+            overlay.classList.toggle('modal-overlay-lg', !!(opts && opts.large));
+            overlay.classList.add('show');
 
             document.getElementById('modal-confirm-btn').onclick = function() {
                 if (confirmCallback) confirmCallback();
@@ -656,7 +660,9 @@
         }
 
         function closeConfirmModal() {
-            document.getElementById('confirm-modal').classList.remove('show');
+            const overlay = document.getElementById('confirm-modal');
+            overlay.classList.remove('show');
+            overlay.classList.remove('modal-overlay-lg');
             confirmCallback = null;
         }
 

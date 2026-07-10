@@ -559,7 +559,8 @@
             showConfirmModal(
                 'Brisanje keša',
                 'Da li ste sigurni da želite obrisati sav keš? Stranica će se osvježiti.',
-                async function() { await _doClearAllCache(); }
+                async function() { await _doClearAllCache(); },
+                { large: true }
             );
         }
 
