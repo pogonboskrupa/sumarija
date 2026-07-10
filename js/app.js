@@ -190,6 +190,10 @@
         // ========== POVRATAK MREŽE — osvježi aktivni tab svježim podacima ==========
         window.addEventListener('online', () => {
             if (!currentUser || !window.currentTab) return;
+            // NIKAD ne osvježavaj tabove s formama — signal na terenu zatreperi
+            // usred unosa i re-render bi obrisao pola popunjene forme
+            const formTabs = ['add-sjeca', 'add-otprema', 'edit-sjeca', 'edit-otprema'];
+            if (formTabs.includes(window.currentTab)) return;
             console.log('[ONLINE] Mreža se vratila — osvježavam aktivni tab:', window.currentTab);
             if (typeof showInfo === 'function') {
                 showInfo('Ponovo online', 'Osvježavam podatke...', 3000);
@@ -197,7 +201,8 @@
             // Poništi render-keš aktivnog taba da switchTab stvarno reloaduje
             if (window._tabRenderTime) delete window._tabRenderTime[window.currentTab];
             setTimeout(() => {
-                if (navigator.onLine && typeof switchTab === 'function' && window.currentTab) {
+                if (navigator.onLine && typeof switchTab === 'function' && window.currentTab &&
+                    !formTabs.includes(window.currentTab)) {
                     switchTab(window.currentTab);
                 }
             }, 1500); // kratka pauza — konekcija zna zatreperiti pri povratku signala
@@ -595,103 +600,81 @@
             }
         }
 
-        // Clear all cache - TRUE HARD REFRESH (like Ctrl+Shift+R)
+        // "Ažuriraj podatke" — OSVJEŽI-U-MJESTU (bez brisanja keša, bez reload-a):
+        // povuci svježe podatke za SVE tabove u pozadini pa svaki tab poslije
+        // toga otvara INSTANT iz svježeg keša. Stari podaci ostaju vidljivi
+        // dok novi ne stignu — nema čekanja ni praznih ekrana.
         async function clearAllCache() {
             showConfirmModal(
-                'Brisanje keša',
-                'Da li ste sigurni da želite obrisati sav keš? Stranica će se osvježiti.',
-                async function() { await _doClearAllCache(); },
+                'Ažuriranje podataka',
+                'Preuzeti najnovije podatke za sve prikaze? Postojeći podaci ostaju dostupni dok se novi učitavaju u pozadini — nakon toga se svaki tab otvara odmah, bez čekanja.',
+                async function() { await _doRefreshAllData(); },
                 { large: true }
             );
         }
 
-        async function _doClearAllCache() {
+        async function _doRefreshAllData() {
             try {
-                console.log('[CACHE CLEAR] Starting COMPLETE cache clear (hard refresh)...');
+                console.log('[REFRESH ALL] Osvježavanje svih prikaza u mjestu (bez brisanja keša)...');
+                closeUserMenu();
 
-                // Step 1: SAČUVAJ login credentials prije brisanja!
-                console.log('[CACHE CLEAR] Step 1: Saving login credentials...');
+                if (!navigator.onLine) {
+                    showWarning('Offline', 'Nema mreže — prikazujem zadnje sačuvane podatke. Pokušajte kad se signal vrati.');
+                    return;
+                }
+
+                // Zapamti aktivni tab da ga osvježimo prvi/na kraju
+                const activeTab = window.currentTab;
+
+                // Force-refresh SVIH prikaza — svaki uspješan fetch prepiše svoj
+                // keš ključ; ako neki padne, stari keš za taj prikaz ostaje (nije obrisan!)
+                await preloadAllViews(false, true);
+
+                // Poništi render-keš SVIH tabova — sljedeći ulazak u bilo koji tab
+                // instantno renderuje iz svježeg localStorage keša (turboShow putanja)
+                window._tabRenderTime = {};
+
+                // Odmah re-renderuj aktivni tab s novim podacima
+                if (activeTab && typeof switchTab === 'function') {
+                    switchTab(activeTab);
+                }
+
+                console.log('[REFRESH ALL] ✓ Svi prikazi osvježeni — tabovi se otvaraju instant iz keša');
+            } catch (error) {
+                console.error('[REFRESH ALL] Greška:', error);
+                closeUserMenu();
+                showError('Greška', 'Ažuriranje nije uspjelo: ' + error.message);
+            }
+        }
+
+        // HARD RESET (stara "obriši sav keš" logika) — zadržana za slučaj korupcije
+        // keša; nije vezana ni za jedno dugme, poziva se ručno iz konzole:
+        // window.hardResetCache()
+        window.hardResetCache = async function() {
+            try {
                 const savedUser = localStorage.getItem('sumarija_user');
                 const savedPass = localStorage.getItem('sumarija_pass');
-                console.log('[CACHE CLEAR] ✓ Login credentials saved');
-
-                // Step 2: Clear cache_* keys from localStorage (NE briši login!)
-                console.log('[CACHE CLEAR] Step 2: Clearing cache from localStorage...');
-                const localStorageKeys = Object.keys(localStorage);
-                console.log(`[CACHE CLEAR] Found ${localStorageKeys.length} localStorage keys:`, localStorageKeys);
-
-                // Briši samo cache_* ključeve
-                const cacheKeys = localStorageKeys.filter(k => k.startsWith('cache_'));
-                console.log(`[CACHE CLEAR] Deleting ${cacheKeys.length} cache keys...`);
-                cacheKeys.forEach(k => {
-                    localStorage.removeItem(k);
-                    console.log(`[CACHE CLEAR] - Deleted: ${k}`);
-                });
-                console.log('[CACHE CLEAR] ✓ Cache cleared from localStorage');
-
-                // Step 3: VRATI login credentials natrag!
+                Object.keys(localStorage).filter(k => k.startsWith('cache_')).forEach(k => localStorage.removeItem(k));
                 if (savedUser && savedPass) {
                     localStorage.setItem('sumarija_user', savedUser);
                     localStorage.setItem('sumarija_pass', savedPass);
-                    console.log('[CACHE CLEAR] ✓ Login credentials restored');
                 }
-
-                // Step 4: Clear sessionStorage (samo non-critical data)
-                console.log('[CACHE CLEAR] Step 4: Clearing sessionStorage...');
                 sessionStorage.clear();
-                console.log('[CACHE CLEAR] ✓ sessionStorage cleared');
-
-                // Step 5: Clear ALL Service Worker caches
                 if ('caches' in window) {
-                    console.log('[CACHE CLEAR] Step 5: Clearing Service Worker caches...');
-                    const cacheNames = await caches.keys();
-                    console.log(`[CACHE CLEAR] Found ${cacheNames.length} SW caches:`, cacheNames);
-                    await Promise.all(cacheNames.map(name => {
-                        console.log(`[CACHE CLEAR] Deleting cache: ${name}`);
-                        return caches.delete(name);
-                    }));
-                    console.log('[CACHE CLEAR] ✓ All Service Worker caches deleted');
+                    const names = await caches.keys();
+                    await Promise.all(names.map(n => caches.delete(n)));
                 }
-
-                // Step 6: Unregister ALL Service Workers (force fresh install)
                 if ('serviceWorker' in navigator) {
-                    console.log('[CACHE CLEAR] Step 6: Unregistering Service Workers...');
-                    const registrations = await navigator.serviceWorker.getRegistrations();
-                    console.log(`[CACHE CLEAR] Found ${registrations.length} SW registrations`);
-                    await Promise.all(registrations.map(registration => {
-                        console.log('[CACHE CLEAR] Unregistering SW:', registration.scope);
-                        return registration.unregister();
-                    }));
-                    console.log('[CACHE CLEAR] ✓ All Service Workers unregistered');
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(regs.map(r => r.unregister()));
                 }
-
-                // Step 7: Clear IndexedDB
-                if (window.IDBHelper) {
-                    try {
-                        console.log('[CACHE CLEAR] Step 7: Clearing IndexedDB...');
-                        await IDBHelper.clearAll();
-                        console.log('[CACHE CLEAR] ✓ IndexedDB cleared');
-                    } catch (e) {
-                        console.warn('[CACHE CLEAR] IndexedDB clear failed (non-critical):', e);
-                    }
-                }
-
-                closeUserMenu(); // Close menu
-                showSuccess('✅ Keš obrisan', 'Stranica se osvježava...');
-
-                // Step 8: Reload — SW je unregistrovan pa se mora ponovo instalirati,
-                // inače PWA ostaje bez offline podrške do ručnog reload-a
-                console.log('[CACHE CLEAR] Step 8: Reloading page (SW re-install)...');
-                setTimeout(() => {
-                    location.reload();
-                }, 800);
-
-            } catch (error) {
-                console.error('[CACHE CLEAR] ERROR during cache clear:', error);
-                closeUserMenu();
-                showError('Greška', 'Nije uspjelo brisanje keša: ' + error.message);
+                if (window.IDBHelper) { try { await IDBHelper.clearAll(); } catch(_) {} }
+                location.reload();
+            } catch (e) {
+                console.error('[HARD RESET]', e);
+                location.reload();
             }
-        }
+        };
 
         // Trigger sync index - Pokreće indeksiranje INDEX sheet-ova (samo za admin)
         async function triggerSyncIndex() {
@@ -7647,7 +7630,7 @@
 
                 // Online: uvijek svjež fetch (forceRefresh) da lista bude ažurna;
                 // offline: fetchWithCache vrati zadnji keširani snapshot umjesto greške
-                const data = await fetchWithCache(url, 'cache_pending_unosi_view', navigator.onLine, 60000);
+                const data = await fetchWithCache(url, 'cache_pending_unosi', navigator.onLine, 60000);
 
                 if (data.error) {
                     throw new Error(data.error);
