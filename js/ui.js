@@ -7,20 +7,9 @@
             window._tabRenderTime[tab] = Date.now();
         }
 
-        // Switch between tabs
-        function switchTab(tab) {
-            // Prati aktivni tab za sprečavanje bleeding-a kod async operacija
-            window.currentTab = tab;
-
-            // Update tab buttons - set active on all matching tabs (sidebar + mobile)
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-
-            // Find and activate tabs that switch to this tab (works for both sidebar and mobile)
-            document.querySelectorAll(`.tab[onclick*="'${tab}'"]`).forEach(t => t.classList.add('active'));
-
-            // Provjeri može li se tab prikazati iz prethodno renderovanog DOM-a
-            // (preskoči fetch/render ako su podaci još svježi)
-            const tabContentMap = {
+        // Mapa tab → content div id — globalna jer je koristi i requestLoadingScreen
+        // u app.js (loading ekran se prikazuje samo ako aktivni tab nema sadržaja)
+        window.TAB_CONTENT_MAP = {
                 'dashboard': 'dashboard-content',
                 'operativa': 'operativa-content',
                 'primaci': 'primaci-content',
@@ -50,10 +39,24 @@
                 'kubikator': 'kubikator-content',
                 'godisnji-plan': 'godisnji-plan-content',
                 'karta-odjela': 'karta-odjela-content',
-            };
+        };
+
+        // Switch between tabs
+        function switchTab(tab) {
+            // Prati aktivni tab za sprečavanje bleeding-a kod async operacija
+            window.currentTab = tab;
+
+            // Update tab buttons - set active on all matching tabs (sidebar + mobile)
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+
+            // Find and activate tabs that switch to this tab (works for both sidebar and mobile)
+            document.querySelectorAll(`.tab[onclick*="'${tab}'"]`).forEach(t => t.classList.add('active'));
+
+            // Provjeri može li se tab prikazati iz prethodno renderovanog DOM-a
+            // (preskoči fetch/render ako su podaci još svježi)
             const ttl = (typeof getSmartCacheTTL === 'function') ? getSmartCacheTTL() : 60000;
             const lastRender = window._tabRenderTime[tab];
-            const contentId = tabContentMap[tab];
+            const contentId = window.TAB_CONTENT_MAP[tab];
             let bgRefreshEl = null; // sadržaj koji ostaje vidljiv tokom tihog refresha
             if (contentId) {
                 const el = document.getElementById(contentId);

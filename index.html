@@ -183,6 +183,10 @@
                             <span>Android</span>
                         </button>
                     </div>
+                    <button id="check-data-btn" class="user-menu-button" onclick="checkForNewData(event)" title="Provjeri ima li novih podataka" style="position:relative;margin-right:6px;">
+                        <span id="check-data-icon">☁️</span>
+                        <span id="check-data-dot" style="display:none;position:absolute;top:4px;right:4px;width:9px;height:9px;background:#dc2626;border-radius:50%;border:1.5px solid white;"></span>
+                    </button>
                     <div class="user-menu">
                         <button class="user-menu-button" onclick="toggleUserMenu(event)">
                             <span>⚙️</span>
@@ -3147,6 +3151,7 @@
                   body.mapa-fokus .header-user { display:none !important; }
                   body.mapa-fokus .desktop-view-toggle { display:none !important; }
                   body.mapa-fokus .user-menu { display:none !important; }
+                  body.mapa-fokus #check-data-btn { display:none !important; }
                   body.mapa-fokus .header-content { min-height:0 !important; padding:4px 0 !important; }
                   body.mapa-fokus #karta-page-header { display:none !important; }
                   body.mapa-fokus #karta-odjela-map { height:calc(100vh - 110px) !important; }

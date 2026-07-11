@@ -75,6 +75,14 @@
                 cachedManifest = manifest;
                 localStorage.setItem('manifest', JSON.stringify(manifest));
 
+                // Crvena tačka na ☁️ dugmetu — ima novih podataka koje korisnik
+                // još nije preuzeo (gasi se u checkForNewData nakon preuzimanja)
+                const seenVer = localStorage.getItem('manifest_seen_version');
+                if (manifest.version && seenVer && String(manifest.version) !== seenVer) {
+                    const dot = document.getElementById('check-data-dot');
+                    if (dot) dot.style.display = 'block';
+                }
+
                 return manifest;
             } catch (error) {
                 console.error('[MANIFEST] Check failed:', error);
@@ -117,6 +125,64 @@
                 'cache_mjesecni_sortimenti_',
                 'cache_stanje_zaliha'
             ]);
+        }
+
+        // ========== PROVJERA NOVIH PODATAKA (☁️ dugme pored Meni) ==========
+        // Klik: provjeri manifest verziju na serveru; ako ima novih podataka,
+        // preuzmi SVE prikaze (svi tabovi/podtabovi) → dostupni offline i pri
+        // sljedećem ulasku u aplikaciju (localStorage perzistira).
+        let _checkingNewData = false;
+        async function checkForNewData(event) {
+            if (event) event.stopPropagation();
+            if (_checkingNewData) return; // ne dupliraj klikove
+            const icon = document.getElementById('check-data-icon');
+            const dot  = document.getElementById('check-data-dot');
+
+            if (!navigator.onLine) {
+                if (typeof showWarning === 'function') {
+                    showWarning('Offline', 'Nema mreže — koristim zadnje sačuvane podatke.');
+                }
+                return;
+            }
+
+            _checkingNewData = true;
+            if (icon) icon.textContent = '⏳';
+            try {
+                const manifest = await checkManifest(); // fetch + verzija (ima svoj timeout/fallback)
+                const serverVer = manifest && manifest.version != null ? String(manifest.version) : null;
+                const seenVer   = localStorage.getItem('manifest_seen_version');
+
+                if (!serverVer) {
+                    if (typeof showError === 'function') showError('Greška', 'Ne mogu provjeriti nove podatke — server nije odgovorio.');
+                    return;
+                }
+
+                if (seenVer && serverVer === seenVer) {
+                    // Nema novih podataka
+                    if (icon) icon.textContent = '✅';
+                    if (typeof showSuccess === 'function') {
+                        showSuccess('Podaci su ažurni', 'Nema novih podataka na serveru — prikazujete najnovije stanje.');
+                    }
+                    updateDataAgeIndicator();
+                    setTimeout(() => { if (icon) icon.textContent = '☁️'; }, 2500);
+                } else {
+                    // Ima novih podataka — preuzmi SVE prikaze
+                    if (typeof showInfo === 'function') {
+                        showInfo('Novi podaci', 'Pronađeni novi podaci — preuzimam sve prikaze...');
+                    }
+                    await _doRefreshAllData();
+                    localStorage.setItem('manifest_seen_version', serverVer);
+                    if (dot) dot.style.display = 'none';
+                    if (icon) icon.textContent = '✅';
+                    setTimeout(() => { if (icon) icon.textContent = '☁️'; }, 2500);
+                }
+            } catch (e) {
+                console.error('[CHECK DATA]', e);
+                if (typeof showError === 'function') showError('Greška', 'Provjera nije uspjela: ' + e.message);
+            } finally {
+                if (icon && icon.textContent === '⏳') icon.textContent = '☁️';
+                _checkingNewData = false;
+            }
         }
 
         function startManifestChecker() {
@@ -284,6 +350,16 @@
             } catch (e) {
                 return null;
             }
+        }
+
+        // Prikaži "Učitavam podatke" SAMO ako aktivni tab nema ništa renderovano —
+        // inače korisnik gleda postojeće (keširane) podatke dok se tiho osvježava.
+        // Ovim tab-switch NIKAD ne pokazuje loading ekran kad bilo kakav sadržaj postoji.
+        function requestLoadingScreen(contentId) {
+            const id = contentId || (window.TAB_CONTENT_MAP || {})[window.currentTab];
+            const el = id ? document.getElementById(id) : null;
+            if (el && el.children.length > 0) return; // ima sadržaja → bez loading ekrana
+            document.getElementById('loading-screen').classList.remove('hidden');
         }
 
         // In-flight dedup — isti URL u toku vraća isti Promise umjesto paralelnog
@@ -1034,7 +1110,15 @@
 
                 // Zabilježi vrijeme zadnjeg punog osvježavanja ako je barem nešto uspjelo
                 if (totalViews - totalFailed > 0) {
-                    try { localStorage.setItem('sumarija_last_full_refresh', String(Date.now())); } catch(_) {}
+                    try {
+                        localStorage.setItem('sumarija_last_full_refresh', String(Date.now()));
+                        // Sinhronizuj "viđenu" manifest verziju — upravo smo preuzeli sve,
+                        // pa ☁️ provjera ne treba javljati "novi podaci" za isto stanje
+                        const m = JSON.parse(localStorage.getItem('manifest') || 'null');
+                        if (m && m.version != null) localStorage.setItem('manifest_seen_version', String(m.version));
+                        const dot = document.getElementById('check-data-dot');
+                        if (dot) dot.style.display = 'none';
+                    } catch(_) {}
                 }
 
                 // Ukloni progress toast i prikaži rezultat
@@ -1447,7 +1531,7 @@
 
                 // If no cache, show loading screen
                 if (!hasCachedData) {
-                    document.getElementById('loading-screen').classList.remove('hidden');
+                    requestLoadingScreen();
                     document.getElementById('dashboard-content').classList.add('hidden');
                 }
 
@@ -2451,7 +2535,7 @@
             }
 
             if (!hasCached) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
                 document.getElementById('poslovodja-stanje-content').classList.add('hidden');
             }
 
@@ -2614,7 +2698,7 @@
 
                 // If no cache, show loading screen
                 if (!hasCachedData) {
-                    document.getElementById('loading-screen').classList.remove('hidden');
+                    requestLoadingScreen();
                     document.getElementById('stanje-odjela-admin-content').classList.add('hidden');
                 }
 
@@ -2726,7 +2810,7 @@
         // Ručno ažuriranje cache-a za stanje odjela (samo za admin korisnike)
         async function syncStanjeOdjelaCache() {
             try {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
 
                 // Pozovi sync API endpoint
                 const url = buildApiUrl('sync-stanje-odjela');
@@ -3235,7 +3319,7 @@
 
         // Load ZADNJIH 5 DANA (Primka i Otprema) za poslovođu
         async function loadPoslovodjaZadnjih5() {
-            document.getElementById('loading-screen').classList.remove('hidden');
+            requestLoadingScreen();
             document.getElementById('poslovodja-zadnjih5-content').classList.add('hidden');
 
             try {
@@ -3505,7 +3589,7 @@
             } catch (e) {}
 
             if (!hasCached) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
                 document.getElementById('poslovodja-sjeca-content').classList.add('hidden');
             }
 
@@ -3707,7 +3791,7 @@
             } catch (e) {}
 
             if (!hasCached) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
                 document.getElementById('poslovodja-otprema-content').classList.add('hidden');
             }
 
@@ -3944,7 +4028,7 @@
             } catch (e) {}
 
             if (!hasCached) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
                 document.getElementById('poslovodja-pregled-content').classList.add('hidden');
             }
 
@@ -4101,7 +4185,7 @@
 
                 // If no cache, show loading screen
                 if (!hasCachedData) {
-                    document.getElementById('loading-screen').classList.remove('hidden');
+                    requestLoadingScreen();
                     document.getElementById('primaci-content').classList.add('hidden');
                 }
 
@@ -4434,7 +4518,7 @@
 
                 // If no cache, show loading screen
                 if (!hasCachedData) {
-                    document.getElementById('loading-screen').classList.remove('hidden');
+                    requestLoadingScreen();
                     document.getElementById('otpremaci-content').classList.add('hidden');
                 }
 
@@ -6504,7 +6588,7 @@
             if (!isActiveTab('primac-odjeli')) return;
             // Turbo: skip loading screen if cache exists
             if (!localStorage.getItem('cache_primac_odjeli_top15')) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
                 document.getElementById('primac-odjeli-content').classList.add('hidden');
             } else {
                 document.getElementById('primac-odjeli-content').classList.remove('hidden');
@@ -7411,7 +7495,7 @@
             if (!isActiveTab('otpremac-odjeli')) return;
             // Turbo: skip loading screen if cache exists
             if (!localStorage.getItem('cache_otpremac_odjeli_top15')) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
                 document.getElementById('otpremac-odjeli-content').classList.add('hidden');
             } else {
                 document.getElementById('otpremac-odjeli-content').classList.remove('hidden');
@@ -7710,7 +7794,7 @@
 
         async function loadPendingUnosi() {
             if (!isActiveTab('pending-unosi')) return;
-            document.getElementById('loading-screen').classList.remove('hidden');
+            requestLoadingScreen();
             document.getElementById('pending-unosi-content').classList.add('hidden');
 
             try {
@@ -7756,7 +7840,7 @@
             if (!isActiveTab('poslovodja-unosi')) return;
             // Turbo: skip loading screen if supporting caches exist
             if (!localStorage.getItem('cache_primke_sjeca') || !localStorage.getItem('cache_otpreme_tab')) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
                 document.getElementById('poslovodja-unosi-content').classList.add('hidden');
             } else {
                 document.getElementById('poslovodja-unosi-content').classList.remove('hidden');
@@ -7960,7 +8044,7 @@
             }
 
             if (!msHasCached) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
                 document.getElementById('mjesecni-sortimenti-content').classList.add('hidden');
             }
 
@@ -8255,7 +8339,7 @@
             var ssMonth = document.getElementById('sedmicni-sjeca-month-select').value;
             var ssCK = `cache_sedmicni_sjeca_${ssYear}_${ssMonth}`;
             if (!localStorage.getItem(ssCK)) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
             }
 
             try {
@@ -8287,7 +8371,7 @@
             var soMonth = document.getElementById('sedmicni-otprema-month-select').value;
             var soCK = `cache_sedmicni_otprema_${soYear}_${soMonth}`;
             if (!localStorage.getItem(soCK)) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
             }
 
             try {
@@ -8588,7 +8672,7 @@
             }
 
             if (!szHasCached) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
             }
 
             try {
@@ -9857,7 +9941,7 @@
             var msCacheKey = `cache_my_sjece_${currentUser.username}`;
             // Turbo: skip loading screen if cache exists
             if (!localStorage.getItem(msCacheKey)) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
                 document.getElementById('my-sjece-content').classList.add('hidden');
             } else {
                 document.getElementById('my-sjece-content').classList.remove('hidden');
@@ -9930,7 +10014,7 @@
             var moCacheKey = `cache_my_otpreme_${currentUser.username}`;
             // Turbo: skip loading screen if cache exists
             if (!localStorage.getItem(moCacheKey)) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
                 document.getElementById('my-otpreme-content').classList.add('hidden');
             } else {
                 document.getElementById('my-otpreme-content').classList.remove('hidden');
@@ -11445,7 +11529,7 @@
             // Turbo: skip loading screen if cache exists
             var dinCacheKey = 'cache_dinamika_' + year;
             if (!localStorage.getItem(dinCacheKey)) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
                 document.getElementById('dinamika-content').classList.add('hidden');
             } else {
                 document.getElementById('dinamika-content').classList.remove('hidden');
@@ -11554,7 +11638,7 @@
             var psMonth = document.getElementById('primac-sedmicni-month').value;
             var psCK = `cache_primac_sedmicni_${psYear}_${psMonth}`;
             if (!localStorage.getItem(psCK)) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
             }
 
             try {
@@ -11620,7 +11704,7 @@
             var pmMonth = document.getElementById('primac-mjesecni-month').value;
             var pmCK = `cache_primac_mjesecni_${pmYear}_${pmMonth}`;
             if (!localStorage.getItem(pmCK)) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
             }
 
             try {
@@ -11688,7 +11772,7 @@
             var osMonth = document.getElementById('otpremac-sedmicni-month').value;
             var osCK = `cache_otpremac_sedmicni_${osYear}_${osMonth}`;
             if (!localStorage.getItem(osCK)) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
             }
 
             try {
@@ -11750,7 +11834,7 @@
             var omMonth = document.getElementById('otpremac-mjesecni-month').value;
             var omCK = `cache_otpremac_mjesecni_${omYear}_${omMonth}`;
             if (!localStorage.getItem(omCK)) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
             }
 
             try {
