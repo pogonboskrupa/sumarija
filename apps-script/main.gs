@@ -127,6 +127,8 @@ function doGet(e) {
       return handleSyncIndex(e.parameter.username, e.parameter.password);
     } else if (path === 'primaci-by-radiliste') {
       return handlePrimaciByRadiliste(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'otpremaci-by-radiliste') {
+      return handleOtpremaciByRadiliste(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'primaci-by-izvodjac') {
       return handlePrimaciByIzvodjac(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'primaci-sortimenti-by-primac') {

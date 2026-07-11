@@ -2908,6 +2908,88 @@ function handlePrimaciByRadiliste(year, username, password) {
 }
 
 // ========================================
+// OTPREMACI BY RADILISTE - Prikaz otpreme po radilištima
+// (ogledalo handlePrimaciByRadiliste, ali za INDEKS_OTPREMA; radilište je kolona E)
+// ========================================
+
+function handleOtpremaciByRadiliste(year, username, password) {
+  // Autentikacija
+  const loginResult = JSON.parse(handleLogin(username, password).getContent());
+  if (!loginResult.success) {
+    return createJsonResponse({ error: "Unauthorized" }, false);
+  }
+
+  Logger.log('=== HANDLE OTPREMACI BY RADILISTE START ===');
+  Logger.log('Year: ' + year);
+
+  try {
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const otpremaSheet = ss.getSheetByName("INDEKS_OTPREMA");
+
+    if (!otpremaSheet) {
+      return createJsonResponse({ error: "INDEKS_OTPREMA sheet not found in BAZA_PODATAKA" }, false);
+    }
+
+    const otpremaData = otpremaSheet.getDataRange().getValues();
+
+    // Grupisanje po radilištu
+    const radilistaMap = {};
+
+    for (let i = 1; i < otpremaData.length; i++) {
+      const row = otpremaData[i];
+      const datum = row[OTPREMA_COL.DATE];          // A - DATUM
+      const radiliste = row[OTPREMA_COL.RADILISTE] || 'Nepoznato'; // E - RADILIŠTE
+
+      if (!datum) continue;
+
+      const datumObj = parseDate(datum);
+      if (datumObj.getFullYear() !== parseInt(year)) continue;
+
+      const mjesec = datumObj.getMonth(); // 0-11
+      const radilisteNorm = String(radiliste).trim() || 'Nepoznato';
+
+      if (!radilistaMap[radilisteNorm]) {
+        radilistaMap[radilisteNorm] = {
+          naziv: radilisteNorm,
+          mjeseci: Array(12).fill(0),
+          sortimentiUkupno: {},
+          ukupno: 0
+        };
+        SORTIMENTI_NAZIVI.forEach(s => radilistaMap[radilisteNorm].sortimentiUkupno[s] = 0);
+      }
+
+      const kubik = parseFloat(row[OTPREMA_COL.UKUPNO]) || 0; // AA - UKUPNO Č+L
+      radilistaMap[radilisteNorm].mjeseci[mjesec] += kubik;
+      radilistaMap[radilisteNorm].ukupno += kubik;
+
+      // Sortimenti (H-AA, indeksi 7-26)
+      for (let j = 0; j < 20; j++) {
+        const vrijednost = parseFloat(row[OTPREMA_COL.SORT_START + j]) || 0;
+        radilistaMap[radilisteNorm].sortimentiUkupno[SORTIMENTI_NAZIVI[j]] += vrijednost;
+      }
+    }
+
+    const radilista = [];
+    for (const naziv in radilistaMap) {
+      radilista.push(radilistaMap[naziv]);
+    }
+    radilista.sort((a, b) => b.ukupno - a.ukupno);
+
+    Logger.log('=== HANDLE OTPREMACI BY RADILISTE END ===');
+    Logger.log('Broj radilišta: ' + radilista.length);
+
+    return createJsonResponse({
+      radilista: radilista,
+      sortimentiNazivi: SORTIMENTI_NAZIVI
+    }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleOtpremaciByRadiliste: ' + error.toString());
+    return createJsonResponse({ error: error.toString() }, false);
+  }
+}
+
+// ========================================
 // PRIMACI BY IZVODJAC - Prikaz sječe po izvođačima
 // ========================================
 
