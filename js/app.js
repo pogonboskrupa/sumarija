@@ -1,5 +1,6 @@
-        // VERSION INFO - Monthly report by departments
-        const APP_VERSION = '2026-01-12-v18-MONTHLY-BY-ODJELI';
+        // VERSION INFO — automatski ažurirano pri svakom push-u na main
+        // (.github/workflows/stamp-version.yml zamijeni ove vrijednosti nakon merge-a)
+        const APP_VERSION = '2026-07-13 (pending deploy)';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz pri odjavi
 
