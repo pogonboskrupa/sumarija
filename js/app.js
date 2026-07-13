@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.1';
+        const APP_VERSION = '1.4.2';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1172,18 +1172,28 @@
             }
         }
 
-        // Osvježi oznaku "koliko su stari podaci" u meniju (vrijeme od zadnjeg
-        // punog osvježavanja; fallback na najsvježiji keš ako toga nema)
+        // Osvježi dvije oznake starosti podataka u meniju:
+        // 1) kad su podaci zadnji put stvarno POVUČENI iz baze (zadnji puni refresh)
+        // 2) kad su podaci zadnji put KEŠIRANI (najsvježiji cache_* zapis — može biti
+        //    noviji od punog refresha ako je pojedini tab u međuvremenu tiho osvježen)
         function updateDataAgeIndicator() {
-            const el = document.getElementById('menu-data-age');
-            if (!el) return;
-            let ts = parseInt(localStorage.getItem('sumarija_last_full_refresh') || '0', 10);
-            let ageMs = ts ? (Date.now() - ts) : (typeof window.newestCacheAge === 'function' ? window.newestCacheAge() : null);
-            const fmt = (typeof window.formatDataAge === 'function') ? window.formatDataAge : null;
-            if (ageMs == null || !fmt) {
-                el.textContent = '🕓 Podaci: nepoznato';
-            } else {
-                el.textContent = '🕓 Podaci osvježeni: prije ' + fmt(ageMs);
+            const elRefreshed = document.getElementById('menu-data-refreshed');
+            const elCached     = document.getElementById('menu-data-cached');
+            const fmt = (typeof window.formatAgeFull === 'function') ? window.formatAgeFull : null;
+            if (!fmt) return;
+
+            if (elRefreshed) {
+                const ts = parseInt(localStorage.getItem('sumarija_last_full_refresh') || '0', 10);
+                elRefreshed.textContent = ts
+                    ? '🔄 Podaci osvježeni iz baze podataka prije ' + fmt(Date.now() - ts) + '.'
+                    : '🔄 Podaci osvježeni iz baze podataka: nepoznato';
+            }
+
+            if (elCached) {
+                const ageMs = (typeof window.newestCacheAge === 'function') ? window.newestCacheAge() : null;
+                elCached.textContent = (ageMs != null)
+                    ? '💾 Podaci keširani prije ' + fmt(ageMs) + '.'
+                    : '💾 Podaci keširani: nepoznato';
             }
         }
 

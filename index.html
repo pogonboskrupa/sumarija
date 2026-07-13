@@ -193,7 +193,10 @@
                             <span>Meni</span>
                         </button>
                         <div class="user-menu-dropdown" id="user-menu-dropdown">
-                            <div id="menu-data-age" style="padding:8px 16px;font-size:12px;color:#6b7280;border-bottom:1px solid #f3f4f6;cursor:default;">🕓 Podaci: nepoznato</div>
+                            <div style="padding:8px 16px 8px;font-size:12px;color:#6b7280;border-bottom:1px solid #f3f4f6;cursor:default;">
+                                <div id="menu-data-refreshed">🔄 Podaci osvježeni iz baze podataka: nepoznato</div>
+                                <div id="menu-data-cached" style="margin-top:3px;">💾 Podaci keširani: nepoznato</div>
+                            </div>
                             <div class="user-menu-item" id="pwa-install-btn" style="display:none;" onclick="event.stopPropagation(); closeUserMenu(); installPwa();">📲 Instaliraj aplikaciju</div>
                             <div class="user-menu-item" id="notif-menu-item" onclick="event.stopPropagation(); toggleNotifPanel();" style="display:none;">
                                 🔔 Notifikacije
@@ -3406,6 +3409,22 @@
     }
     // Izloži formatter meniju (oznaka starosti podataka)
     window.formatDataAge = formatAge;
+
+    // Puni bosanski format za meni ("5 minuta", "1 sat i 20 minuta") — NIKAD "upravo",
+    // uvijek konkretan broj (0 minuta i više), po traženju korisnika
+    function formatAgeFull(ms) {
+        var rijec = function(n, jedna, dvije, vise) {
+            return n + ' ' + (n === 1 ? jedna : (n >= 2 && n <= 4 ? dvije : vise));
+        };
+        var mins = Math.max(0, Math.floor(ms / 60000));
+        if (mins < 60) return rijec(mins, 'minutu', 'minute', 'minuta');
+        var hrs = Math.floor(mins / 60);
+        var rem = mins % 60;
+        var hrsText = rijec(hrs, 'sat', 'sata', 'sati');
+        if (rem === 0) return hrsText;
+        return hrsText + ' i ' + rijec(rem, 'minutu', 'minute', 'minuta');
+    }
+    window.formatAgeFull = formatAgeFull;
 
     function newestCacheAge() {
         var newest = 0;
