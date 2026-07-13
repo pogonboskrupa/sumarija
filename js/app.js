@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.2';
+        const APP_VERSION = '1.4.3';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1376,7 +1376,41 @@
         }
 
         // Main initialization on page load
+        // Prikaži siguran fallback ekran umjesto trajno zaglavljenog "Učitavam podatke"
+        // — koristi se i iz catch bloka ispod i iz watchdog tajmera
+        function _showInitFailureScreen(reason) {
+            try {
+                const ls = document.getElementById('loading-screen');
+                if (ls) {
+                    ls.innerHTML = `
+                        <div class="loading-icon">⚠️</div>
+                        <div class="loading-text">Aplikacija se nije uspjela pokrenuti</div>
+                        <div style="margin-top:8px;font-size:13px;color:#6b7280;">${reason || 'Nepoznata greška'}</div>
+                        <button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;background:#047857;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;">🔄 Pokušaj ponovo</button>
+                    `;
+                }
+                const appScreen = document.getElementById('app-screen');
+                if (appScreen) appScreen.classList.remove('hidden');
+            } catch(_) {}
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
+          try {
+            // Watchdog — ako se loading-screen ne skloni u razumnom roku (bilo koji
+            // neuhvaćeni izuzetak, hung promise, ili nepredviđeno stanje), korisnik
+            // ne smije ostati zaglavljen bez ikakve povratne informacije ili dugmeta
+            setTimeout(() => {
+                const ls = document.getElementById('loading-screen');
+                const appScreen = document.getElementById('app-screen');
+                const stillStuck = ls && !ls.classList.contains('hidden') &&
+                    appScreen && !appScreen.classList.contains('hidden') &&
+                    ls.querySelector('.loading-text') && ls.querySelector('.loading-text').textContent.includes('Učitavam');
+                if (stillStuck) {
+                    console.error('[WATCHDOG] Aplikacija zaglavljena na loading ekranu >10s');
+                    _showInitFailureScreen('Učitavanje je predugo trajalo. Provjerite vezu i pokušajte ponovo.');
+                }
+            }, 10000);
+
             // ========== HARD RELOAD DETECTION ==========
             // Check if this is a hard reload from "Obriši keš" button
             const url = new URL(window.location.href);
@@ -1508,6 +1542,13 @@
                     });
                 }
             }
+          } catch (e) {
+              // Bilo koji neuhvaćeni izuzetak u pokretanju aplikacije (npr. oštećen
+              // offline snapshot, DOM element koji nedostaje) — ne ostavljaj korisnika
+              // zaglavljenog na "Učitavam podatke" bez povratne informacije
+              console.error('[INIT] Greška pri pokretanju aplikacije:', e);
+              _showInitFailureScreen(e.message);
+          }
         });
 
         // Log cache statistics when page is closed
