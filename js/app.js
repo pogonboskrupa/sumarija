@@ -1150,7 +1150,11 @@
             const dropdown = document.getElementById('user-menu-dropdown');
             const opening = !dropdown.classList.contains('show');
             dropdown.classList.toggle('show');
-            if (opening) updateDataAgeIndicator();
+            if (opening) {
+                updateDataAgeIndicator();
+                const verEl = document.getElementById('menu-app-version');
+                if (verEl) verEl.textContent = 'v' + (window.APP_VERSION || '—');
+            }
         }
 
         // Osvježi oznaku "koliko su stari podaci" u meniju (vrijeme od zadnjeg
