@@ -1,7 +1,8 @@
         // VERSION INFO — semantičko verzionisanje (major.minor.patch), izvor istine
-        // je fajl VERSION u root-u repozitorija. Automatski se povećava (patch+1) i
-        // upisuje ovdje pri svakom push-u na main — vidi .github/workflows/stamp-version.yml
-        const APP_VERSION = '1.4.0';
+        // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
+        // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
+        // direktno u istom commit-u koji nosi stvarnu izmjenu.
+        const APP_VERSION = '1.4.1';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
