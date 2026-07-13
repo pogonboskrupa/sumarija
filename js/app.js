@@ -128,9 +128,12 @@
         }
 
         // ========== PROVJERA NOVIH PODATAKA (☁️ dugme pored Meni) ==========
-        // Klik: provjeri manifest verziju na serveru; ako ima novih podataka,
-        // preuzmi SVE prikaze (svi tabovi/podtabovi) → dostupni offline i pri
-        // sljedećem ulasku u aplikaciju (localStorage perzistira).
+        // Klik: UVIJEK preuzmi SVE prikaze za ulogu korisnika (admin/primač/otpremač/
+        // poslovođa/operativa) u pozadini → dostupni offline i pri sljedećem ulasku.
+        // NAPOMENA: prvobitna verzija je prvo poredila manifest verziju i preuzimala
+        // samo ako se promijenila — ali manifest prati samo dio sheet-ova, pa bi tabovi
+        // koji nikad nisu keširani (nova sesija, propušten prikaz) ostali prazni zauvijek
+        // jer se puni preload nikad nije okinuo. Sad se uvijek radi potpuno osvježavanje.
         let _checkingNewData = false;
         async function checkForNewData(event) {
             if (event) event.stopPropagation();
@@ -148,37 +151,25 @@
             _checkingNewData = true;
             if (icon) icon.textContent = '⏳';
             try {
-                const manifest = await checkManifest(); // fetch + verzija (ima svoj timeout/fallback)
-                const serverVer = manifest && manifest.version != null ? String(manifest.version) : null;
-                const seenVer   = localStorage.getItem('manifest_seen_version');
+                // Puni preload svih tabova/podtabova za trenutnu ulogu — u pozadini,
+                // stari podaci ostaju vidljivi dok se novi ne preuzmu (_doRefreshAllData
+                // već ima svoj progress toast i imenuje neuspjele prikaze ako ih ima)
+                await _doRefreshAllData();
 
-                if (!serverVer) {
-                    if (typeof showError === 'function') showError('Greška', 'Ne mogu provjeriti nove podatke — server nije odgovorio.');
-                    return;
-                }
+                // Osvježi "viđenu" manifest verziju (samo za crvenu tačku pozadinskog checkera)
+                try {
+                    const manifest = await checkManifest();
+                    if (manifest && manifest.version != null) {
+                        localStorage.setItem('manifest_seen_version', String(manifest.version));
+                    }
+                } catch(_) {}
+                if (dot) dot.style.display = 'none';
 
-                if (seenVer && serverVer === seenVer) {
-                    // Nema novih podataka
-                    if (icon) icon.textContent = '✅';
-                    if (typeof showSuccess === 'function') {
-                        showSuccess('Podaci su ažurni', 'Nema novih podataka na serveru — prikazujete najnovije stanje.');
-                    }
-                    updateDataAgeIndicator();
-                    setTimeout(() => { if (icon) icon.textContent = '☁️'; }, 2500);
-                } else {
-                    // Ima novih podataka — preuzmi SVE prikaze
-                    if (typeof showInfo === 'function') {
-                        showInfo('Novi podaci', 'Pronađeni novi podaci — preuzimam sve prikaze...');
-                    }
-                    await _doRefreshAllData();
-                    localStorage.setItem('manifest_seen_version', serverVer);
-                    if (dot) dot.style.display = 'none';
-                    if (icon) icon.textContent = '✅';
-                    setTimeout(() => { if (icon) icon.textContent = '☁️'; }, 2500);
-                }
+                if (icon) icon.textContent = '✅';
+                setTimeout(() => { if (icon) icon.textContent = '☁️'; }, 2500);
             } catch (e) {
                 console.error('[CHECK DATA]', e);
-                if (typeof showError === 'function') showError('Greška', 'Provjera nije uspjela: ' + e.message);
+                if (typeof showError === 'function') showError('Greška', 'Osvježavanje nije uspjelo: ' + e.message);
             } finally {
                 if (icon && icon.textContent === '⏳') icon.textContent = '☁️';
                 _checkingNewData = false;
