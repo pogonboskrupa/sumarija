@@ -1,8 +1,13 @@
 name: Stamp app version
 
-# Upisuje trenutni commit (hash + vrijeme) u js/app.js pri svakom pushu na main,
-# tako da "Verzija aplikacije" prikazana u modalu Odjave uvijek odgovara
-# tačno onome što je live na sajtu — bez ručnog ažuriranja broja verzije.
+# Semantičko verzionisanje (major.minor.patch). Izvor istine je fajl VERSION
+# u root-u repozitorija. Pri svakom pushu na main:
+#   1. Pročita trenutnu verziju iz VERSION (npr. "1.4.0")
+#   2. Upiše TU verziju u js/app.js (APP_VERSION) — to je verzija koja se
+#      upravo deploy-uje, prikazana u meniju pored "Odjavi se"
+#   3. Poveća patch broj (1.4.0 → 1.4.1) i sačuva nazad u VERSION za sljedeći push
+# Tako je uvijek jasno koja je verzija live, a svaki naredni commit na main
+# automatski dobija sljedeći broj bez ručne intervencije.
 on:
   push:
     branches: [main]
@@ -20,23 +25,31 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Stamp version into js/app.js
+      - name: Stamp current version into js/app.js
+        id: stamp
         run: |
           set -e
           SHA=$(git rev-parse --short HEAD)
-          DATE=$(date -u +'%Y-%m-%d %H:%M UTC')
-          VERSION="${DATE} (${SHA})"
-          sed -i "s|const APP_VERSION = '.*';|const APP_VERSION = '${VERSION}';|" js/app.js
+          CURRENT=$(cat VERSION | tr -d '[:space:]')
+          sed -i "s|const APP_VERSION = '.*';|const APP_VERSION = '${CURRENT}';|" js/app.js
           sed -i "s|const BUILD_COMMIT = '.*';|const BUILD_COMMIT = '${SHA}';|" js/app.js
-          echo "Stamped version: ${VERSION}"
+          echo "Stamped live version: ${CURRENT} (${SHA})"
+
+          # Izračunaj sljedeću patch verziju za NAREDNI push
+          MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT" | cut -d. -f2)
+          PATCH=$(echo "$CURRENT" | cut -d. -f3)
+          NEXT="${MAJOR}.${MINOR}.$((PATCH + 1))"
+          echo "$NEXT" > VERSION
+          echo "Next version will be: ${NEXT}"
 
       - name: Commit version stamp
         run: |
           set -e
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if ! git diff --quiet -- js/app.js; then
-            git add js/app.js
+          if ! git diff --quiet -- js/app.js VERSION; then
+            git add js/app.js VERSION
             git commit -m "chore: stamp app version [skip ci]"
             git push
           else

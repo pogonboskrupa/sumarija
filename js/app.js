@@ -1,8 +1,9 @@
-        // VERSION INFO — automatski ažurirano pri svakom push-u na main
-        // (.github/workflows/stamp-version.yml zamijeni ove vrijednosti nakon merge-a)
-        const APP_VERSION = '2026-07-13 13:39 UTC (977ea53)';
-        const BUILD_COMMIT = '977ea53';
-        window.APP_VERSION = APP_VERSION; // dostupno za prikaz pri odjavi
+        // VERSION INFO — semantičko verzionisanje (major.minor.patch), izvor istine
+        // je fajl VERSION u root-u repozitorija. Automatski se povećava (patch+1) i
+        // upisuje ovdje pri svakom push-u na main — vidi .github/workflows/stamp-version.yml
+        const APP_VERSION = '1.4.0';
+        const BUILD_COMMIT = 'pending';
+        window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
         // Helper: provjeri da li je tab još uvijek aktivan (sprečava bleeding async sadržaja)
         function isActiveTab(tabName) {
