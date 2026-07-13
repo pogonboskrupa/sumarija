@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Automatski se povećava (patch+1) i
         // upisuje ovdje pri svakom push-u na main — vidi .github/workflows/stamp-version.yml
         const APP_VERSION = '1.4.0';
-        const BUILD_COMMIT = 'pending';
+        const BUILD_COMMIT = 'b1c31d0';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
         // Helper: provjeri da li je tab još uvijek aktivan (sprečava bleeding async sadržaja)
