@@ -76,9 +76,18 @@ function setCachedData(cacheKey, data) {
  * Invalidate cache za specifičan endpoint
  */
 function invalidateCache(endpoint, params) {
-    const cacheKey = getCacheKey(endpoint, params);
-    localStorage.removeItem(cacheKey);
-    console.log(`[CACHE INVALIDATED] ${cacheKey}`);
+    // Ključevi se prave od punog URL-a, pa brišemo sve ključeve ove verzije
+    // koji sadrže path=<endpoint> (prefix scan umjesto exact-match koji nikad ne pogodi)
+    const needle = `path=${endpoint}`;
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith(`${CACHE_VERSION}_`) && key.includes(needle)) {
+            keysToRemove.push(key);
+        }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    console.log(`[CACHE INVALIDATED] ${endpoint} (${keysToRemove.length} keys)`);
 }
 
 /**
@@ -104,8 +113,9 @@ function cleanOldCaches() {
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        // Obriši sve što nije current verzija
-        if (key.includes('_v') && !key.startsWith(`${CACHE_VERSION}_`)) {
+        // Obriši samo ključeve starijih verzija (v1_, v3_...), ne i ključeve
+        // koji slučajno sadrže "_v" (npr. app_data_version)
+        if (/^v\d+_/.test(key) && !key.startsWith(`${CACHE_VERSION}_`)) {
             keysToRemove.push(key);
         }
     }
@@ -171,8 +181,10 @@ async function fetchMultiple(urls, options = {}) {
     const startTime = performance.now();
 
     try {
+        // VAŽNO: window.CacheHelper.fetchWithCache — bare "fetchWithCache" bi u runtime-u
+        // pogodio app.js verziju (drugačiji potpis) jer app.js pregazi globalno ime
         const results = await Promise.all(
-            urls.map(url => fetchWithCache(url, options))
+            urls.map(url => window.CacheHelper.fetchWithCache(url, options))
         );
 
         const duration = performance.now() - startTime;
@@ -196,7 +208,7 @@ async function fetchMultiple(urls, options = {}) {
 function refreshCacheInBackground(url, options = {}) {
     console.log(`[BACKGROUND REFRESH] ${url}`);
 
-    fetchWithCache(url, { ...options, bypassCache: true })
+    window.CacheHelper.fetchWithCache(url, { ...options, bypassCache: true })
         .then(() => {
             console.log(`[BACKGROUND REFRESH] Success: ${url}`);
         })

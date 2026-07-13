@@ -1,0 +1,44 @@
+name: Stamp app version
+
+# Upisuje trenutni commit (hash + vrijeme) u js/app.js pri svakom pushu na main,
+# tako da "Verzija aplikacije" prikazana u modalu Odjave uvijek odgovara
+# tačno onome što je live na sajtu — bez ručnog ažuriranja broja verzije.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  stamp-version:
+    runs-on: ubuntu-latest
+    # Spriječi beskonačnu petlju — bot-ov commit nosi [skip ci] pa se ne re-triggeruje
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Stamp version into js/app.js
+        run: |
+          set -e
+          SHA=$(git rev-parse --short HEAD)
+          DATE=$(date -u +'%Y-%m-%d %H:%M UTC')
+          VERSION="${DATE} (${SHA})"
+          sed -i "s|const APP_VERSION = '.*';|const APP_VERSION = '${VERSION}';|" js/app.js
+          sed -i "s|const BUILD_COMMIT = '.*';|const BUILD_COMMIT = '${SHA}';|" js/app.js
+          echo "Stamped version: ${VERSION}"
+
+      - name: Commit version stamp
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet -- js/app.js; then
+            git add js/app.js
+            git commit -m "chore: stamp app version [skip ci]"
+            git push
+          else
+            echo "No version change to commit."
+          fi

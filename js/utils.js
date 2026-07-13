@@ -116,6 +116,14 @@
 
         // ========== TOAST NOTIFICATIONS ==========
 
+        // Escapuj HTML — toast poruke često sadrže error.message sa servera
+        // (netrusted tekst), bez escapa je to XSS sink kroz innerHTML
+        function escapeHtml(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
         function showToast(type, title, message, duration = 4000) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -131,8 +139,8 @@
             toast.innerHTML = `
                 <div class="toast-icon">${icons[type] || 'ℹ'}</div>
                 <div class="toast-content">
-                    <div class="toast-title">${title}</div>
-                    ${message ? `<div class="toast-message">${message}</div>` : ''}
+                    <div class="toast-title">${escapeHtml(title)}</div>
+                    ${message ? `<div class="toast-message">${escapeHtml(message)}</div>` : ''}
                 </div>
                 <button class="toast-close" onclick="this.parentElement.remove()">×</button>
             `;

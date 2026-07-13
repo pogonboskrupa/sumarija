@@ -840,7 +840,7 @@
             var ppCacheKey = 'cache_primac_detail_' + ppYear;
             // Turbo: skip loading screen if cache exists
             if (!localStorage.getItem(ppCacheKey)) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
                 document.getElementById('primac-personal-content').classList.add('hidden');
             } else {
                 document.getElementById('primac-personal-content').classList.remove('hidden');
@@ -949,7 +949,7 @@
             var opCacheKey = 'cache_otpremac_detail_' + opYear;
             // Turbo: skip loading screen if cache exists
             if (!localStorage.getItem(opCacheKey)) {
-                document.getElementById('loading-screen').classList.remove('hidden');
+                requestLoadingScreen();
                 document.getElementById('otpremac-personal-content').classList.add('hidden');
             } else {
                 document.getElementById('otpremac-personal-content').classList.remove('hidden');

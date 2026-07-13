@@ -158,15 +158,24 @@
     });
 
     // Plan 2027 — odjeli planirani za narednu godinu, još nisu u planu 2026
+    // Guard za "već u planu 2026" se gradi ISKLJUČIVO iz planEntries (2026), a ne iz
+    // map-e koju ova ista petlja puni — inače susjedni /N odjeli (npr. 5/1 i 5/2) imaju
+    // identičan normKey ("GRMEC JASENICA 5" bez /N sufiksa), pa bi upis 5/1 pogrešno
+    // "zauzeo" normKey i naveo guard da tiho preskoči 5/2 kao da je već obrađen.
+    const plan2026NormKeys  = new Set(planEntries.map(e => _normKey(e.gj + ' ' + e.odjel)));
+    const plan2026LabelKeys = new Set(planEntries.map(e => _labelKey(e.gj + ' ' + e.odjel)));
     _plan2027Entries().forEach(entry => {
       const normK  = _normKey(entry.gj + ' ' + entry.odjel);
       const labelK = _labelKey(entry.gj + ' ' + entry.odjel);
-      if (map.has(normK) || map.has(labelK)) return; // ne prepiši 2026 status
+      if (plan2026NormKeys.has(normK) || plan2026LabelKeys.has(labelK)) return; // već u planu 2026
       const d = { gj: entry.gj, odjel: entry.odjel, status: 'plan-2027', pct: 0,
         sjeca: _emptySort(), otpr: _emptySort(), sjecaOst: _emptySort(), otprOst: _emptySort(),
         neto: 0, bruto: 0, radiliste: '—', izvodjac: '—', poslovodja: '—' };
-      map.set(normK, d);
-      if (labelK !== normK) map.set(labelK, d);
+      // labelK je specifičan za OVAJ /N odjel — uvijek ga upiši (to je ključ po kojem
+      // se GeoJSON poligon pronalazi pri renderu). normK je dijeljeni fallback pa ga
+      // upisuje samo prvi /N odjel koji ga zatraži, da ne prepiše sestrinski unos.
+      if (!map.has(labelK)) map.set(labelK, d);
+      if (normK !== labelK && !map.has(normK)) map.set(normK, d);
     });
 
     // Extra map za non-plan odjele (slučajni + prelazni)
@@ -235,7 +244,9 @@
     const url = `${OSRM_URL}/${lng1},${lat1};${destLatLng.lng},${destLatLng.lat}?overview=full&geometries=geojson`;
 
     try {
-      const resp = await fetch(url);
+      // Timeout — javni OSRM demo server zna visiti; bez ovoga UI čeka zauvijek
+      const resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      if (!resp.ok) throw new Error('Server rute nedostupan (HTTP ' + resp.status + ')');
       const data = await resp.json();
       if (data.code !== 'Ok' || !data.routes.length) throw new Error('Nema rute');
 
@@ -297,7 +308,9 @@
 
     const url = `${OSRM_URL}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
     try {
-      const resp = await fetch(url);
+      // Timeout — javni OSRM demo server zna visiti; bez ovoga UI čeka zauvijek
+      const resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      if (!resp.ok) throw new Error('Server rute nedostupan (HTTP ' + resp.status + ')');
       const data = await resp.json();
       if (data.code !== 'Ok' || !data.routes.length) throw new Error('Nema rute');
 

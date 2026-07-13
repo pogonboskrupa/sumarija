@@ -1,12 +1,17 @@
 // ========== Service Worker - Offline Support ==========
 
-const CACHE_VERSION = 'v11';
+const CACHE_VERSION = 'v12';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
-// Install — samo skipWaiting, bez pre-keširanja
-// Resursi se kešuju lazy pri prvom fetchu
+// Install — pre-keširaj samo offline.html (fallback koji se inače nikad ne
+// fetcha pa lazy keširanje nikad ne bi imalo šta poslužiti offline korisniku);
+// ostali resursi se kešuju lazy pri prvom fetchu
 self.addEventListener('install', (event) => {
-    event.waitUntil(self.skipWaiting());
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(c => c.add('offline.html').catch(() => {}))
+            .then(() => self.skipWaiting())
+    );
 });
 
 // Activate — obriši stare cacheove, preuzmi kontrolu odmah
@@ -36,7 +41,7 @@ self.addEventListener('fetch', (event) => {
             fetch(request)
                 .then(resp => { _cacheIfOk(resp.clone(), request); return resp; })
                 .catch(() => caches.match(request)
-                    .then(c => c || caches.match('/offline.html')))
+                    .then(c => c || caches.match('offline.html')))
         );
         return;
     }

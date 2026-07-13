@@ -7,20 +7,9 @@
             window._tabRenderTime[tab] = Date.now();
         }
 
-        // Switch between tabs
-        function switchTab(tab) {
-            // Prati aktivni tab za sprečavanje bleeding-a kod async operacija
-            window.currentTab = tab;
-
-            // Update tab buttons - set active on all matching tabs (sidebar + mobile)
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-
-            // Find and activate tabs that switch to this tab (works for both sidebar and mobile)
-            document.querySelectorAll(`.tab[onclick*="'${tab}'"]`).forEach(t => t.classList.add('active'));
-
-            // Provjeri može li se tab prikazati iz prethodno renderovanog DOM-a
-            // (preskoči fetch/render ako su podaci još svježi)
-            const tabContentMap = {
+        // Mapa tab → content div id — globalna jer je koristi i requestLoadingScreen
+        // u app.js (loading ekran se prikazuje samo ako aktivni tab nema sadržaja)
+        window.TAB_CONTENT_MAP = {
                 'dashboard': 'dashboard-content',
                 'operativa': 'operativa-content',
                 'primaci': 'primaci-content',
@@ -48,14 +37,27 @@
                 'izvjestaji-primac': 'izvjestaji-primac-content',
                 'izvjestaji-otpremac': 'izvjestaji-otpremac-content',
                 'kubikator': 'kubikator-content',
-                'primac-sihtarica': 'primac-sihtarica-content',
-                'otpremac-sihtarica': 'otpremac-sihtarica-content',
                 'godisnji-plan': 'godisnji-plan-content',
                 'karta-odjela': 'karta-odjela-content',
-            };
+        };
+
+        // Switch between tabs
+        function switchTab(tab) {
+            // Prati aktivni tab za sprečavanje bleeding-a kod async operacija
+            window.currentTab = tab;
+
+            // Update tab buttons - set active on all matching tabs (sidebar + mobile)
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+
+            // Find and activate tabs that switch to this tab (works for both sidebar and mobile)
+            document.querySelectorAll(`.tab[onclick*="'${tab}'"]`).forEach(t => t.classList.add('active'));
+
+            // Provjeri može li se tab prikazati iz prethodno renderovanog DOM-a
+            // (preskoči fetch/render ako su podaci još svježi)
             const ttl = (typeof getSmartCacheTTL === 'function') ? getSmartCacheTTL() : 60000;
             const lastRender = window._tabRenderTime[tab];
-            const contentId = tabContentMap[tab];
+            const contentId = window.TAB_CONTENT_MAP[tab];
+            let bgRefreshEl = null; // sadržaj koji ostaje vidljiv tokom tihog refresha
             if (contentId) {
                 const el = document.getElementById(contentId);
                 if (el && el.children.length > 0) {
@@ -69,6 +71,7 @@
                     }
                     // Cache je star - osvježi u pozadini bez loading screen-a
                     // (korisnik već vidi podatke, refresh će ažurirati tiho)
+                    bgRefreshEl = el;
                 }
             }
 
@@ -79,8 +82,11 @@
                 if (fb) { fb.textContent = '⛶ Fokus'; fb.classList.remove('active'); }
             }
 
-            // Hide all content sections
-            document.querySelectorAll('[id$="-content"]').forEach(c => c.classList.add('hidden'));
+            // Hide all content sections — osim onog koji se tiho osvježava u pozadini
+            // (inače bi podaci bljesnuli pa nestali do kraja refresha)
+            document.querySelectorAll('[id$="-content"]').forEach(c => {
+                if (c !== bgRefreshEl) c.classList.add('hidden');
+            });
 
             // Load appropriate content
             if (tab === 'dashboard') {
@@ -164,10 +170,6 @@
                 loadStanjeZaliha();
             } else if (tab === 'primaci-admin') {
                 loadPrimaciAdminTab();
-            } else if (tab === 'primac-sihtarica') {
-                loadSihtaricaPrimac();
-            } else if (tab === 'otpremac-sihtarica') {
-                loadSihtaricaOtpremac();
             } else if (tab === 'godisnji-plan') {
                 if (typeof loadGodisnjiPlan === 'function') loadGodisnjiPlan(false);
             } else if (tab === 'karta-odjela') {
@@ -365,7 +367,9 @@
             } else if (view === 'statistika') {
                 document.getElementById('kupci-statistika-view').classList.remove('hidden');
                 const statYear = parseInt(document.getElementById('kupci-statistika-year')?.value || new Date().getFullYear());
-                if (!window._kupciStatData || window._kupciStatData.year !== statYear) loadKupciStatistika();
+                // typeof guard — loader ne postoji u kodu, bez guarda tab baca ReferenceError
+                if ((!window._kupciStatData || window._kupciStatData.year !== statYear) &&
+                    typeof loadKupciStatistika === 'function') loadKupciStatistika();
             }
         }
 
@@ -600,19 +604,27 @@
             const tbody = table.querySelector('tbody');
             const rows = Array.from(tbody.querySelectorAll('tr'));
 
+            // dd.mm.yyyy ili dd/mm/yyyy → sortabilan broj yyyymmdd
+            const DATE_RX = /^\s*(\d{1,2})[./](\d{1,2})[./](\d{4})\.?\s*$/;
+            const sortVal = (txt) => {
+                const dm = txt.match(DATE_RX);
+                if (dm) return parseInt(dm[3]) * 10000 + parseInt(dm[2]) * 100 + parseInt(dm[1]);
+                const n = parseFloat(txt.replace(/[^\d.-]/g, ''));
+                return isNaN(n) ? null : n;
+            };
+
             const sortedRows = rows.sort((a, b) => {
                 const aValue = a.querySelectorAll('td')[columnIndex].innerText;
                 const bValue = b.querySelectorAll('td')[columnIndex].innerText;
 
-                // Try to parse as number
-                const aNum = parseFloat(aValue.replace(/[^\d.-]/g, ''));
-                const bNum = parseFloat(bValue.replace(/[^\d.-]/g, ''));
+                const aNum = sortVal(aValue);
+                const bNum = sortVal(bValue);
 
-                if (!isNaN(aNum) && !isNaN(bNum)) {
-                    return aNum - bNum;
-                } else {
-                    return aValue.localeCompare(bValue, 'bs');
-                }
+                // Konzistentan komparator: brojevi/datumi zajedno, ne-brojevi na kraj
+                if (aNum !== null && bNum !== null) return aNum - bNum;
+                if (aNum !== null) return -1;
+                if (bNum !== null) return 1;
+                return aValue.localeCompare(bValue, 'bs');
             });
 
             // Toggle sort direction
@@ -634,20 +646,35 @@
 
         let confirmCallback = null;
 
-        function showConfirmModal(title, message, onConfirm) {
+        function showConfirmModal(title, message, onConfirm, opts) {
+            opts = opts || {};
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-body').textContent = message;
             confirmCallback = onConfirm;
-            document.getElementById('confirm-modal').classList.add('show');
+            const overlay = document.getElementById('confirm-modal');
+            // opts.large — istaknute akcije (npr. "Ažuriraj podatke") dobiju veći modal;
+            // klasa se svaki put eksplicitno postavlja/uklanja da se ne "zalijepi" na sljedeći poziv
+            overlay.classList.toggle('modal-overlay-lg', !!opts.large);
+            overlay.classList.add('show');
 
-            document.getElementById('modal-confirm-btn').onclick = function() {
+            // opts.confirmText — label dugmeta (default "Obriši");
+            // opts.danger — crveno (btn-danger) vs plavo (btn-primary)
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            confirmBtn.textContent = opts.confirmText || 'Obriši';
+            const danger = opts.danger !== false; // default crveno (kompatibilno sa starim brisanjem)
+            confirmBtn.classList.toggle('btn-danger', danger);
+            confirmBtn.classList.toggle('btn-primary', !danger);
+
+            confirmBtn.onclick = function() {
                 if (confirmCallback) confirmCallback();
                 closeConfirmModal();
             };
         }
 
         function closeConfirmModal() {
-            document.getElementById('confirm-modal').classList.remove('show');
+            const overlay = document.getElementById('confirm-modal');
+            overlay.classList.remove('show');
+            overlay.classList.remove('modal-overlay-lg');
             confirmCallback = null;
         }
 

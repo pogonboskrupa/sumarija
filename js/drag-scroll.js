@@ -97,7 +97,7 @@
         el.scrollLeft = state.scrollLeft - dx;
     }
 
-    function onMouseUp(e) {
+    function onMouseUp(e, viaLeave) {
         var el = this;
         var state = getState(el);
         if (!state.isDown) return;
@@ -106,18 +106,23 @@
         el.classList.remove('drag-scroll-active');
 
         if (state.hasMoved) {
-            el.addEventListener('click', function suppressClick(ev) {
-                ev.stopPropagation();
-                ev.preventDefault();
-                el.removeEventListener('click', suppressClick, true);
-            }, { capture: true, once: true });
+            // Suppressor samo za pravi mouseup — nakon mouseleave click nikad ne
+            // stigne, pa bi jednokratni listener ostao naoružan i pojeo SLJEDEĆI
+            // legitimni klik (npr. na dugme za uređivanje)
+            if (!viaLeave) {
+                el.addEventListener('click', function suppressClick(ev) {
+                    ev.stopPropagation();
+                    ev.preventDefault();
+                    el.removeEventListener('click', suppressClick, true);
+                }, { capture: true, once: true });
+            }
 
             applyMomentum(el, state);
         }
     }
 
     function onMouseLeave(e) {
-        onMouseUp.call(this, e);
+        onMouseUp.call(this, e, true);
     }
 
     function applyMomentum(el, state) {

@@ -1,12 +1,33 @@
         // ========== AUTH MODULE ==========
         // Login, logout, showApp, auto-refresh, cross-tab sync
 
+        // Pri prijavi: ako se prijavljuje DRUGI korisnik od vlasnika keša,
+        // obriši sav cache_* (privatnost na dijeljenom uređaju). Isti korisnik
+        // zadržava keš — to omogućava pun offline rad i poslije odjave.
+        function _clearForeignCacheOnLogin(username) {
+            const owner = localStorage.getItem('sumarija_cache_owner');
+            const uname = (username || '').toLowerCase();
+            if (owner && owner.toLowerCase() !== uname) {
+                try {
+                    const cacheKeys = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const k = localStorage.key(i);
+                        if (k && k.startsWith('cache_')) cacheKeys.push(k);
+                    }
+                    cacheKeys.forEach(k => localStorage.removeItem(k));
+                    localStorage.removeItem('sumarija_offline_auth');
+                    console.log(`[LOGIN] Novi korisnik — obrisano ${cacheKeys.length} ključeva prethodnog vlasnika keša`);
+                } catch(e) { console.error('foreign cache clear:', e); }
+            }
+            localStorage.setItem('sumarija_cache_owner', username || '');
+        }
+
         // Login form handler
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
             const errorMsg = document.getElementById('error-msg');
             const loginBtn = document.getElementById('login-btn');
 
@@ -16,13 +37,29 @@
 
             try {
                 const response = await fetch(`${API_URL}?path=login&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`);
-                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(`Server je vratio grešku (HTTP ${response.status}). Pokušajte ponovo za minutu.`);
+                }
+                let data;
+                try {
+                    data = await response.json();
+                } catch (_) {
+                    throw new Error('Server je vratio neispravan odgovor. Pokušajte ponovo za minutu.');
+                }
 
                 if (data.success) {
                     currentUser = data;
                     currentPassword = password;
+                    _clearForeignCacheOnLogin(data.username || username);
                     localStorage.setItem('sumarija_user', JSON.stringify(data));
                     localStorage.setItem('sumarija_pass', password);
+                    // Offline snapshot — preživljava odjavu, omogućava offline prijavu
+                    // ISTOG korisnika (briše ga tek prijava drugog korisnika)
+                    try {
+                        localStorage.setItem('sumarija_offline_auth', JSON.stringify({
+                            username: data.username || username, pass: password, user: data
+                        }));
+                    } catch(_) {}
                     showApp();
                     loadPoslovodjaRadilistaMapping(); // Dohvati poslovodja→radilista iz INFO sheeta
                     loadOdjeli(); // Load odjeli list after manual login
@@ -49,8 +86,37 @@
                     errorMsg.classList.remove('hidden');
                 }
             } catch (error) {
-                errorMsg.textContent = 'Greška u komunikaciji sa serverom: ' + error.message;
-                errorMsg.classList.remove('hidden');
+                // OFFLINE PRIJAVA — mreža nedostupna: ako se uneseni kredencijali
+                // poklapaju sa offline snapshotom zadnjeg korisnika (preživljava
+                // odjavu), uđi u aplikaciju sa zadnjim keširanim podacima
+                let offlineOk = false;
+                try {
+                    const snapRaw = localStorage.getItem('sumarija_offline_auth');
+                    if (snapRaw) {
+                        const snap = JSON.parse(snapRaw);
+                        if (snap && snap.pass === password &&
+                            (snap.username || '').toLowerCase() === username.toLowerCase() && snap.user) {
+                            currentUser = snap.user;
+                            currentPassword = password;
+                            localStorage.setItem('sumarija_user', JSON.stringify(snap.user));
+                            localStorage.setItem('sumarija_pass', password);
+                            offlineOk = true;
+                            showApp();
+                            if (typeof showWarning === 'function') {
+                                showWarning('Offline prijava', 'Nema mreže — prikazujem zadnje sačuvane podatke.', 6000);
+                            }
+                            loadPoslovodjaRadilistaMapping();
+                            loadOdjeli();
+                            loadData();
+                        }
+                    }
+                } catch(_) {}
+                if (!offlineOk) {
+                    errorMsg.textContent = navigator.onLine
+                        ? 'Greška u komunikaciji sa serverom: ' + error.message
+                        : 'Nema internet konekcije. Offline prijava je moguća samo za zadnjeg prijavljenog korisnika (s tačnom lozinkom).';
+                    errorMsg.classList.remove('hidden');
+                }
             } finally {
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'Prijavi se';
@@ -87,7 +153,6 @@
                     { id: 'primac-godisnji', icon: '📅', label: 'Godišnji prikaz' },
                     { id: 'primac-odjeli', icon: '🏭', label: 'Prikaz po odjelima' },
                     { id: 'izvjestaji-primac', icon: '📋', label: 'Izvještaji' },
-                    { id: 'primac-sihtarica', icon: '🗓️', label: 'Šihtarica' },
                     { id: 'add-sjeca', icon: '➕', label: 'Dodaj sječu' },
                     { id: 'my-sjece', icon: '📝', label: 'Moje sječe' },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
@@ -98,7 +163,6 @@
                     { id: 'otpremac-godisnji', icon: '📅', label: 'Godišnji prikaz' },
                     { id: 'otpremac-odjeli', icon: '🏭', label: 'Prikaz po odjelima' },
                     { id: 'izvjestaji-otpremac', icon: '📋', label: 'Izvještaji' },
-                    { id: 'otpremac-sihtarica', icon: '🗓️', label: 'Šihtarica' },
                     { id: 'add-otprema', icon: '➕', label: 'Dodaj otpremu' },
                     { id: 'my-otpreme', icon: '📝', label: 'Moje otpreme' },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
@@ -218,6 +282,8 @@
             let lastRefreshDate = null;
 
             function checkAndRefresh() {
+                // Ne radi ništa ako je korisnik odjavljen (interval preživljava logout)
+                if (!currentUser) return;
                 const now = new Date();
                 const dayOfWeek = now.getDay();
                 const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
@@ -237,7 +303,9 @@
 
                     showInfo('Automatsko ažuriranje', 'Pokretanje zakazanog ažuriranja podataka...');
 
-                    preloadAllViews(true).then(() => {
+                    // forceRefresh=true — bez toga bi smart-TTL keš (svjež do sutra 6:30)
+                    // samo replay-ao keširane podatke i zakazano ažuriranje ne bi radilo ništa
+                    preloadAllViews(true, true).then(() => {
                         console.log('[SCHEDULED REFRESH] Scheduled refresh completed at ' + currentTime);
                         showSuccess('Ažuriranje završeno', 'Podaci su automatski osvježeni.');
                     }).catch(err => {
@@ -271,10 +339,11 @@
                         showInfo('Podaci osvježeni', 'Drugi tab je pokrenuo indeksiranje. Osvježavam podatke...');
 
                         setTimeout(() => {
+                            if (!currentUser) return; // korisnik se u međuvremenu odjavio
                             preloadAllViews(true).then(() => {
                                 console.log('[CROSS-TAB SYNC] All views refreshed after cross-tab sync');
                                 showSuccess('Podatke osvježeni', 'Prikazujem najnovije podatke.');
-                            });
+                            }).catch(err => console.error('[CROSS-TAB SYNC] Refresh failed:', err));
                         }, 1500);
                     }
                 }
@@ -283,16 +352,39 @@
             console.log('[CROSS-TAB SYNC] Cross-tab synchronization listener registered');
         }
 
+        // Odjava — traži potvrdu u velikom modalu koji ujedno prikazuje verziju app-a
         function logout() {
+            const dropdown = document.getElementById('user-menu-dropdown');
+            if (dropdown) dropdown.classList.remove('show');
+            const verzija = window.APP_VERSION || 'nepoznata';
+            if (typeof showConfirmModal === 'function') {
+                showConfirmModal(
+                    'Odjava',
+                    'Verzija aplikacije: ' + verzija + '\n\nDa li se želite odjaviti? Keširani podaci ostaju sačuvani za vašu sljedeću (i offline) prijavu.',
+                    _performLogout,
+                    { large: true, confirmText: '🚪 Odjavi se', danger: true }
+                );
+            } else {
+                _performLogout(); // fallback ako modal nije dostupan
+            }
+        }
+
+        function _performLogout() {
             // Close user menu first
             const dropdown = document.getElementById('user-menu-dropdown');
             if (dropdown) {
                 dropdown.classList.remove('show');
             }
 
-            // Clear legacy (non-user-specific) personal cache keys to prevent cross-user contamination
-            localStorage.removeItem('cache_otpremac_odjeli_top15');
-            localStorage.removeItem('cache_primac_odjeli_top15');
+            // OFFLINE PODRŠKA: keš se NE briše pri odjavi — briše se tek kad se
+            // DRUGI korisnik prijavi (vidi _clearForeignCacheOnLogin). Tako isti
+            // korisnik zadrži pun offline pristup i poslije odjave, a na dijeljenom
+            // uređaju sljedeći korisnik pri prijavi automatski obriše tuđi keš.
+            // (Vlasnik keša: localStorage 'sumarija_cache_owner')
+
+            // Resetuj tab render-cache — switchTab bi inače prikazao DOM prethodnog
+            // korisnika ("instant cache" putanja gleda samo da li div ima djecu)
+            window._tabRenderTime = {};
 
             // Log final cache stats before logout
             try { logCacheStats(); } catch(e) { console.error('logout logCacheStats:', e); }
