@@ -930,6 +930,8 @@
                           alsoCache: ['cache_izvjestaji_mjesecni_otprema_' + year + '_' + pMonth, 'cache_sedmicni_otprema_' + year + '_' + pMonth] },
                         { name: 'Preklasiranja (korekcije)', url: buildApiUrl('get-preklasiranja'), cacheKey: 'cache_preklasiranja', timeout: 60000 },
                         { name: 'Lista Odjela (dropdown)', url: buildApiUrl('get-odjeli-list'), cacheKey: 'cache_odjeli_list', timeout: 60000 },
+                        // Dodani unosi (poslovodja-unosi tab) — filtrira se klijentski po radilištu
+                        { name: 'Pending Unosi', url: buildApiUrl('pending-unosi', { year }), cacheKey: 'cache_pending_unosi', timeout: 120000 },
                     ];
 
                 } else if (userType === 'operativa') {
@@ -7857,8 +7859,12 @@
                 var primkeUrl = buildApiUrl('primke');
                 var otpremeUrl = buildApiUrl('otpreme');
 
+                // VAŽNO: fetchWithCache umjesto sirovog fetch — sirov fetch offline BACA
+                // grešku, a unutar Promise.all to obara CIJELI tab (i primke/otpreme koji
+                // imaju validan keš). fetchWithCache offline vraća {offline:true} bez bacanja,
+                // a pendingData.unosi||[] niže već sigurno degradira na praznu listu.
                 var results = await Promise.all([
-                    fetch(pendingUrl).then(function(r) { return r.json(); }),
+                    fetchWithCache(pendingUrl, 'cache_pending_unosi', navigator.onLine, 60000),
                     fetchWithCache(primkeUrl, 'cache_primke_sjeca'),
                     fetchWithCache(otpremeUrl, 'cache_otpreme_tab')
                 ]);
