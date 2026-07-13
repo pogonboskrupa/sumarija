@@ -453,7 +453,20 @@
 
             // Cache miss or stale - fetch from network with retry for transient errors
             // 2 attempts total: first try full timeout, on timeout retry once with fresh signal
-            const MAX_RETRIES = 2;
+            //
+            // VAŽNO: ako VEĆ imamo (makar zastarjeli) keš kao sigurnosnu mrežu, ne čekamo
+            // pun timeout (do 180s × 2 = 6 min!) prije nego padnemo na njega. Ovo je čest
+            // teren scenario: navigator.onLine javlja "online" (WiFi/mobilni signal je
+            // "spojen") ali stvarna konekcija je preslaba da zahtjev ikad prođe — bez ovog
+            // skraćenja korisnik gleda "Učitavam podatke" ili prazan ekran po nekoliko
+            // minuta umjesto da odmah vidi keširane podatke. Bez keša nema mreže za pasti
+            // nazad, pa se tada čeka pun timeout — jedina šansa da se stvarno dobiju podaci.
+            // 20s je dovoljno za legitimno spore (ali funkcionalne) GAS upite na dobroj
+            // vezi — original timeout od 120-180s postoji za istinski hladan start bez
+            // ikakvog keša, ne za "osvježi u pozadini dok već imam nešto za prikazati".
+            const hasSafetyNet = !!cached;
+            const effectiveTimeout = hasSafetyNet ? Math.min(timeout, 20000) : timeout;
+            const MAX_RETRIES = hasSafetyNet ? 1 : 2;
             let lastError = null;
 
             for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -463,7 +476,7 @@
                     const fetchStart = performance.now();
 
                     const controller = new AbortController();
-                    timeoutId = setTimeout(() => controller.abort(), timeout);
+                    timeoutId = setTimeout(() => controller.abort(), effectiveTimeout);
 
                     const response = await fetch(url, { signal: controller.signal });
                     // NE čistimo timeout ovdje — AbortController mora ostati aktivan
@@ -544,7 +557,7 @@
                     }
 
                     if (isTimeout) {
-                        console.warn(`[API] Timeout after ${timeout/1000}s (sve retry-e iscrpljene):`, path);
+                        console.warn(`[API] Timeout after ${effectiveTimeout/1000}s (sve retry-e iscrpljene):`, path);
                     } else {
                         console.error('Request failed after all retries:', error);
                     }
