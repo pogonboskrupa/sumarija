@@ -1,7 +1,7 @@
         // VERSION INFO — automatski ažurirano pri svakom push-u na main
         // (.github/workflows/stamp-version.yml zamijeni ove vrijednosti nakon merge-a)
-        const APP_VERSION = '2026-07-13 (pending deploy)';
-        const BUILD_COMMIT = 'pending';
+        const APP_VERSION = '2026-07-13 13:39 UTC (977ea53)';
+        const BUILD_COMMIT = '977ea53';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz pri odjavi
 
         // Helper: provjeri da li je tab još uvijek aktivan (sprečava bleeding async sadržaja)
