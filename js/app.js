@@ -8367,11 +8367,16 @@
 
                 if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
 
+                // Offline i nema keša za ovaj mjesec/godinu — fetchWithCache vrati
+                // {offline:true} bez .data; normalizuj na prazno umjesto pada na undefined.forEach
+                const primkaRows = primkaData.data || [];
+                const primkaSort = primkaData.sortimentiNazivi || [];
+
                 // Group by weeks (within month boundaries)
-                const weeklyData = groupDataByWeeks(primkaData.data, year, month, primkaData.sortimentiNazivi);
+                const weeklyData = groupDataByWeeks(primkaRows, year, month, primkaSort);
 
                 // Render
-                renderSedmicniIzvjestaj(weeklyData, primkaData.sortimentiNazivi, 'sedmicni-sjeca-container', year, month);
+                renderSedmicniIzvjestaj(weeklyData, primkaSort, 'sedmicni-sjeca-container', year, month);
 
                 document.getElementById('loading-screen').classList.add('hidden');
 
@@ -8399,11 +8404,15 @@
 
                 if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
 
+                // Offline i nema keša za ovaj mjesec/godinu — normalizuj na prazno umjesto pada
+                const otpremaRows = otpremaData.data || [];
+                const otpremaSort = otpremaData.sortimentiNazivi || [];
+
                 // Group by weeks (within month boundaries)
-                const weeklyData = groupDataByWeeks(otpremaData.data, year, month, otpremaData.sortimentiNazivi);
+                const weeklyData = groupDataByWeeks(otpremaRows, year, month, otpremaSort);
 
                 // Render
-                renderSedmicniIzvjestaj(weeklyData, otpremaData.sortimentiNazivi, 'sedmicni-otprema-container', year, month);
+                renderSedmicniIzvjestaj(weeklyData, otpremaSort, 'sedmicni-otprema-container', year, month);
 
                 document.getElementById('loading-screen').classList.add('hidden');
 
