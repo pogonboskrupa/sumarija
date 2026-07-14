@@ -122,6 +122,7 @@ async function loadIzvjestajiSedmicni() {
         renderIzvjestajiSedmicniTable(otpremaByWeek, otpremaSort, 'sedmicni-otprema', weeks);
 
         console.log('[IZVJEŠTAJI SEDMICNI] ✓ Data loaded successfully');
+        if (typeof markTabRendered === 'function') markTabRendered('izvjestaji');
 
     } catch (error) {
         console.error('[IZVJEŠTAJI SEDMICNI] Error:', error);
@@ -183,6 +184,7 @@ async function loadIzvjestajiSedmicniRadnik() {
         renderIzvjestajiSedmicniTable(otpremaByWeek, otpremaSort, 'sedmicni-radnik-otprema', weeks, 'Radnik');
 
         console.log('[IZVJEŠTAJI SEDMICNI RADNIK] ✓ Data loaded successfully');
+        if (typeof markTabRendered === 'function') markTabRendered('izvjestaji');
 
     } catch (error) {
         console.error('[IZVJEŠTAJI SEDMICNI RADNIK] Error:', error);
@@ -451,6 +453,7 @@ async function loadIzvjestajiMjesecni() {
         renderIzvjestajiTable(otpremaByOdjel, otpremaSort, 'mjesecni-otprema');
 
         console.log('[IZVJEŠTAJI MJESECNI] ✓ Data loaded successfully');
+        if (typeof markTabRendered === 'function') markTabRendered('izvjestaji');
 
     } catch (error) {
         console.error('[IZVJEŠTAJI MJESECNI] Error:', error);

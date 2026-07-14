@@ -50,6 +50,7 @@ function initKubikator() {
 
     // Fokus odmah na prečnik
     precnikEl && precnikEl.focus();
+    if (typeof markTabRendered === 'function') markTabRendered('kubikator');
 }
 
 // ─── Popuni odjel dropdown iz cached stanje-zaliha podataka ──

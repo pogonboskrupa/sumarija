@@ -1142,6 +1142,7 @@
 
     _statusMap = _buildStatusMap(primke, otpreme);
     _renderLayer(geojson, _statusMap);
+    if (typeof markTabRendered === 'function') markTabRendered('karta-odjela');
 
     setTimeout(() => { if (_map) _map.invalidateSize(); }, 200);
   };
