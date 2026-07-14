@@ -1049,47 +1049,29 @@
     if (_geojson) return _geojson;
     const ld = document.getElementById('karta-loading');
 
-    // Provjeri verziju u localStorage — ako se ne slaže, obriši stari cache
+    // VAŽNO: GeoJSON (7.5MB!) se VIŠE NE ČUVA u localStorage — mobilni browseri
+    // imaju kvotu od svega 5-10MB, pa je sam GeoJSON gutao gotovo cijelu kvotu.
+    // Posljedica: preload podataka za tabove (cache_*) je pucao na QuotaExceeded
+    // i tabovi su offline bili prazni. Offline poligone sada služi ISKLJUČIVO
+    // Service Worker keš (fetch handler za .geojson je cache-first).
     const VER_KEY = 'geojson_version';
-    const cachedVer = localStorage.getItem(VER_KEY);
-    const GEO_KEY   = 'geojson_data';
-    if (cachedVer === GEOJSON_VERSION) {
-      try {
-        const raw = localStorage.getItem(GEO_KEY);
-        if (raw) { _geojson = JSON.parse(raw); return _geojson; }
-      } catch(_) {}
-    } else {
-      localStorage.removeItem(GEO_KEY);
-      localStorage.removeItem(VER_KEY);
-      // Obriši i iz SW cache
-      if ('caches' in window) {
-        caches.keys().then(keys => keys.forEach(k =>
-          caches.open(k).then(c => c.delete(GEOJSON_URL))
-        ));
-      }
-    }
+    const GEO_KEY = 'geojson_data';
+    // Jednokratno čišćenje legacy zapisa — odmah oslobodi ~7.5MB za podatke tabova
+    try { localStorage.removeItem(GEO_KEY); localStorage.removeItem(VER_KEY); } catch(_) {}
 
     try {
       if (ld) { ld.style.display='flex'; ld.textContent='⏳ Učitavam poligone (može potrajati)...'; }
-      const r = await fetch(GEOJSON_URL, { cache: 'reload' });
+      // Bez cache:'reload' — pusti SW cache-first handler da posluži keširanu
+      // kopiju (i offline i online); SW u pozadini sam osvježava svoju kopiju
+      const r = await fetch(GEOJSON_URL);
       if (!r.ok) throw new Error('HTTP '+r.status);
       const text = await r.text();
       if (ld) ld.textContent = '⏳ Parsiram ' + Math.round(text.length/1024) + ' KB...';
       _geojson = JSON.parse(text);
-      // Sačuvaj u localStorage s verzijom za offline upotrebu
-      try {
-        localStorage.setItem(GEO_KEY, text);
-        localStorage.setItem(VER_KEY, GEOJSON_VERSION);
-      } catch(_) {} // localStorage može biti pun (7.5MB)
       return _geojson;
     } catch(e) {
       console.error('[Mapa] GeoJSON fetch failed:', e);
-      // Pokušaj iz localStorage (offline fallback bez obzira na verziju)
-      try {
-        const raw = localStorage.getItem(GEO_KEY);
-        if (raw) { _geojson = JSON.parse(raw); return _geojson; }
-      } catch(_) {}
-      if (ld) { ld.style.display='flex'; ld.textContent='❌ Greška: ' + e.message; }
+      if (ld) { ld.style.display='flex'; ld.textContent='❌ Greška pri učitavanju poligona: ' + e.message; }
       return { type:'FeatureCollection', features:[] };
     }
   }
