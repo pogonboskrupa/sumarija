@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.5';
+        const APP_VERSION = '1.4.6';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -992,6 +992,12 @@
                           alsoCache: ['cache_izvjestaji_sedmicni_otprema_' + prevMYear + '_' + prevMonth, 'cache_izvjestaji_mjesecni_otprema_' + prevMYear + '_' + prevMonth, 'cache_sedmicni_otprema_' + prevMYear + '_' + prevMonth] },
                         // PRETHODNA GODINA odjela — loadAdminStanjeOdjela poredi tekuću i prošlu
                         { name: 'Odjeli (prošla godina)', url: buildApiUrl('odjeli', { year: year - 1 }), cacheKey: 'cache_odjeli_' + (year - 1), timeout: 180000 },
+                        // Odjeli-all — default prikaz u "Primači na šuma panju" PRIJE odabira
+                        // primača (loadOdjeliDefaultView); bez ovoga taj podtab offline prazan
+                        { name: 'Primaci Admin - Odjeli (default)', url: buildApiUrl('odjeli-all'), cacheKey: 'cache_odjeli_all', timeout: 180000 },
+                        // Sortimenti po primaču/otpremaču — prošli mjesec (isti obrazac kao izvještaji)
+                        { name: 'Primaci - Sortimenti (prošli mj.)', url: buildApiUrl('primaci-sortimenti-by-primac', { year: prevMYear, month: prevMonth }), cacheKey: 'cache_primaci_sort_primac_' + prevMYear + '_' + prevMonth, timeout: 180000 },
+                        { name: 'Otpremaci - Sortimenti (prošli mj.)', url: buildApiUrl('otpremaci-sortimenti-by-otpremac', { year: prevMYear, month: prevMonth }), cacheKey: 'cache_otpremaci_sort_otpremac_' + prevMYear + '_' + prevMonth, timeout: 180000 },
                     ];
 
                 } else if (userType === 'poslovođa' || userType === 'poslovodja') {
