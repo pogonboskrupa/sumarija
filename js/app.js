@@ -2,9 +2,17 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.8';
+        const APP_VERSION = '1.4.9';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
+
+        // JEDNOKRATNO ČIŠĆENJE: legacy geojson_data zapis (7.5MB!) je gutao gotovo
+        // cijelu localStorage kvotu na mobilnim uređajima (5-10MB), zbog čega je
+        // preload podataka za tabove pucao na QuotaExceeded i offline tabovi bili
+        // prazni. GeoJSON za offline sada služi isključivo Service Worker keš.
+        // Čisti se ovdje (a ne samo u karti) jer korisnici koji ne otvaraju kartu
+        // inače nikad ne bi oslobodili taj prostor.
+        try { localStorage.removeItem('geojson_data'); localStorage.removeItem('geojson_version'); } catch(_) {}
 
         // ========== DETEKCIJA NOVE VERZIJE APLIKACIJE ==========
         // Većina korisnika koristi običan link u browseru (ne instaliranu PWA) —
@@ -597,29 +605,40 @@
                     }
 
                     // Store in cache (handle QuotaExceededError)
+                    // VAŽNO: raniji handler je pri punoj kvoti BRISAO SVE cache_* ključeve
+                    // da upiše jedan — usred preloada od 28 prikaza to je značilo da svaki
+                    // quota-fail obriše sve što je preload do tada napunio. Zato su offline
+                    // bili prazni baš najveći tabovi (Kupci, Stanje zaliha, Sječa/otprema...)
+                    // iako je izvještaj kazao "✓ učitano". Novi handler briše NAJSTARIJE
+                    // ključeve jedan po jedan, samo koliko treba da novi upis stane.
+                    const entry = JSON.stringify({ data: data, timestamp: Date.now() });
                     try {
-                        localStorage.setItem(cacheKey, JSON.stringify({
-                            data: data,
-                            timestamp: Date.now()
-                        }));
+                        localStorage.setItem(cacheKey, entry);
                     } catch (storageError) {
                         if (storageError.name === 'QuotaExceededError') {
-                            // Očisti stare cache ključeve i pokušaj ponovo
-                            const keysToRemove = [];
+                            console.warn(`[CACHE] Kvota puna pri upisu ${cacheKey} (${Math.round(entry.length/1024)}KB) — čistim najstarije...`);
+                            // Skupi cache_* ključeve s timestampovima, sortiraj najstarije prve
+                            const candidates = [];
                             for (let i = 0; i < localStorage.length; i++) {
                                 const key = localStorage.key(i);
-                                if (key && key.startsWith('cache_')) {
-                                    keysToRemove.push(key);
-                                }
+                                if (!key || !key.startsWith('cache_') || key === cacheKey) continue;
+                                let ts = 0;
+                                try { ts = JSON.parse(localStorage.getItem(key)).timestamp || 0; } catch(_) {}
+                                candidates.push({ key, ts });
                             }
-                            keysToRemove.forEach(k => localStorage.removeItem(k));
-                            try {
-                                localStorage.setItem(cacheKey, JSON.stringify({
-                                    data: data,
-                                    timestamp: Date.now()
-                                }));
-                            } catch (e) {
-                                // Cache nije moguć, nastavi bez njega
+                            candidates.sort((a, b) => a.ts - b.ts); // najstariji prvi
+                            let written = false;
+                            for (const c of candidates) {
+                                localStorage.removeItem(c.key);
+                                console.warn(`[CACHE] Obrisan najstariji: ${c.key}`);
+                                try {
+                                    localStorage.setItem(cacheKey, entry);
+                                    written = true;
+                                    break;
+                                } catch(_) { /* još uvijek puno — briši sljedeći */ }
+                            }
+                            if (!written) {
+                                console.error(`[CACHE] Upis ${cacheKey} nemoguć ni nakon čišćenja — podatak prevelik za preostalu kvotu`);
                             }
                         }
                     }
