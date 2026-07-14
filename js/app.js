@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.6';
+        const APP_VERSION = '1.4.7';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -119,7 +119,7 @@
         let cachedManifest = null;
         let manifestCheckInterval = null;
 
-        async function checkManifest() {
+        async function checkManifest(skipInvalidation) {
             const startTime = performance.now();
             try {
                 const url = buildApiUrl('manifest');
@@ -131,9 +131,11 @@
                 logPerformance('Manifest check', performance.now() - startTime);
 
                 // Provjeri da li se version promijenio
-                if (cachedManifest && cachedManifest.version !== manifest.version) {
-                    console.log('🔄 [MANIFEST] Version changed! Invalidating cache...');
-                    // Invalidate cache za promijenjene tabele
+                // skipInvalidation=true: koristi se ODMAH nakon punog refresha
+                // (checkForNewData) — nema smisla označavati zastarjelim ono što je
+                // upravo osvježeno, čak i uz "meko" invalidiranje koje ne briše podatke
+                if (!skipInvalidation && cachedManifest && cachedManifest.version !== manifest.version) {
+                    console.log('🔄 [MANIFEST] Version changed! Marking related cache as stale...');
                     invalidateCachesByManifest(manifest);
                 }
 
@@ -157,22 +159,39 @@
             }
         }
 
-        // Briše sve localStorage cache ključeve koji počinju jednim od datih prefiksa.
-        // Pouzdanije od ručno održavanih lista točnih ključeva jer hvata i varijante
-        // sa sufiksom mjeseca/filtera (npr. cache_dashboard_2026_m5, cache_primaci_sort_primac_2026_4).
+        // Označi kao ZASTARJELE sve localStorage cache ključeve koji počinju jednim od
+        // datih prefiksa — NE BRIŠE ih. Pouzdanije od ručno održavanih lista točnih
+        // ključeva jer hvata i varijante sa sufiksom mjeseca/filtera (npr.
+        // cache_dashboard_2026_m5, cache_primaci_sort_primac_2026_4).
+        //
+        // VAŽNO: ranije je ovo BRISALO ključeve (localStorage.removeItem). Problem:
+        // checkForNewData() (☁️ dugme) zove checkManifest() ODMAH NAKON punog
+        // refresha — ako se u međuvremenu promijenila manifest verzija (npr. neko
+        // unio novu sječu na serveru), ova funkcija bi obrisala baš one podatke koje
+        // je refresh upravo napunio (cache_dashboard_*, cache_mjesecni_sortimenti_*...).
+        // Isti rizik postoji i od pozadinskog periodičnog provjerivača (svakih 2-10
+        // min) — ako korisnik ode offline ubrzo nakon što provjera obriše keš, a
+        // prije sljedećeg fetcha, taj tab ostaje bez ičega ("Podaci nedostupni").
+        // Rješenje: postavi timestamp na 0 (fetchWithCache ga tretira kao istekao pa
+        // će ga pri sljedećem online pozivu osvježiti), ali OSTAVI data netaknut kao
+        // offline sigurnosnu mrežu.
         function invalidateCachePrefixes(prefixes) {
-            const toRemove = [];
+            let count = 0;
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
-                if (key && prefixes.some(p => key.startsWith(p))) {
-                    toRemove.push(key);
-                }
+                if (!key || !prefixes.some(p => key.startsWith(p))) continue;
+                try {
+                    const raw = localStorage.getItem(key);
+                    if (!raw) continue;
+                    const parsed = JSON.parse(raw);
+                    if (!parsed || parsed.data === undefined) continue;
+                    parsed.timestamp = 0; // forsira "stale" pri sljedećoj online provjeri
+                    localStorage.setItem(key, JSON.stringify(parsed));
+                    count++;
+                } catch(e) { /* neispravan/legacy zapis — preskoči, ne diraj */ }
             }
-            toRemove.forEach(key => {
-                localStorage.removeItem(key);
-                console.log(`🗑️ [CACHE] Invalidated: ${key}`);
-            });
-            return toRemove.length;
+            console.log(`🕓 [CACHE] Označeno zastarjelim (ne obrisano): ${count} ključeva`);
+            return count;
         }
 
         function invalidateCachesByManifest(newManifest) {
@@ -222,8 +241,9 @@
                 await _doRefreshAllData();
 
                 // Osvježi "viđenu" manifest verziju (samo za crvenu tačku pozadinskog checkera)
+                // skipInvalidation=true — upravo smo sve osvježili, ne diraj taj keš ponovo
                 try {
-                    const manifest = await checkManifest();
+                    const manifest = await checkManifest(true);
                     if (manifest && manifest.version != null) {
                         localStorage.setItem('manifest_seen_version', String(manifest.version));
                     }
