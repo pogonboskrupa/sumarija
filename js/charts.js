@@ -741,6 +741,7 @@
 
                 // Create yearly chart
                 await createWorkerYearlyChart('primac-yearly-chart', data.unosi, '#047857', '#10b981');
+                if (typeof markTabRendered === 'function') markTabRendered('primac-godisnji');
 
             } catch (error) {
                 showError('Greška', 'Greška pri učitavanju godišnjeg prikaza: ' + error.message);
@@ -827,6 +828,7 @@
 
                 // Create yearly chart
                 await createWorkerYearlyChart('otpremac-yearly-chart', data.unosi, '#1e40af', '#3b82f6');
+                if (typeof markTabRendered === 'function') markTabRendered('otpremac-godisnji');
 
             } catch (error) {
                 showError('Greška', 'Greška pri učitavanju godišnjeg prikaza otpreme: ' + error.message);
@@ -930,6 +932,7 @@
                 const selectedMonth = monthSelector ? monthSelector.value : currentMonth;
                 await createWorkerDailyChart('primac-daily-chart', data.unosi, selectedMonth, year, '#047857', '#10b981');
 
+                if (typeof markTabRendered === 'function') markTabRendered('primac-personal');
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('primac-personal-content').classList.remove('hidden');
 
@@ -1041,6 +1044,7 @@
                 const selectedMonth = monthSelector ? monthSelector.value : currentMonth;
                 await createWorkerDailyChart('otpremac-daily-chart', data.unosi, selectedMonth, year, '#1e40af', '#3b82f6');
 
+                if (typeof markTabRendered === 'function') markTabRendered('otpremac-personal');
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('otpremac-personal-content').classList.remove('hidden');
 

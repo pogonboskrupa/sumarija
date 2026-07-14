@@ -96,23 +96,33 @@ async function loadIzvjestajiSedmicni() {
         if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
         if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
 
+        // Offline i nema keša za ovaj mjesec/godinu — fetchWithCache vrati {offline:true}
+        // bez .data/.sortimentiNazivi. Normalizuj na prazno umjesto da agregacija
+        // pukne na undefined.forEach; renderIzvjestajiSedmicniTable već ima friendly
+        // "Nema podataka za odabrani period" prikaz za prazan rezultat.
+        const primkaRows = primkaData.data || [];
+        const otpremaRows = otpremaData.data || [];
+        const primkaSort  = primkaData.sortimentiNazivi || [];
+        const otpremaSort = otpremaData.sortimentiNazivi || [];
+
         // Filtriraj po radilištima poslovođe (ako je poslovođa ulogiran)
-        var primkaFiltered = filterByPoslovodjaRadilista(primkaData.data);
-        var otpremaFiltered = filterByPoslovodjaRadilista(otpremaData.data);
+        var primkaFiltered = filterByPoslovodjaRadilista(primkaRows);
+        var otpremaFiltered = filterByPoslovodjaRadilista(otpremaRows);
 
         // Izračunaj sedmice u mjesecu (1. počinje od prvog dana, sedmica završava u nedjelju)
         const weeks = calculateWeeksInMonth(year, month);
         console.log('[IZVJEŠTAJI SEDMICNI] Weeks:', weeks);
 
         // Grupiraj podatke po sedmicama i odjelima
-        const primkaByWeek = aggregateByWeekAndOdjel(primkaFiltered, primkaData.sortimentiNazivi, weeks, year, month);
-        const otpremaByWeek = aggregateByWeekAndOdjel(otpremaFiltered, otpremaData.sortimentiNazivi, weeks, year, month);
+        const primkaByWeek = aggregateByWeekAndOdjel(primkaFiltered, primkaSort, weeks, year, month);
+        const otpremaByWeek = aggregateByWeekAndOdjel(otpremaFiltered, otpremaSort, weeks, year, month);
 
         // Render tables po sedmicama
-        renderIzvjestajiSedmicniTable(primkaByWeek, primkaData.sortimentiNazivi, 'sedmicni-primka', weeks);
-        renderIzvjestajiSedmicniTable(otpremaByWeek, otpremaData.sortimentiNazivi, 'sedmicni-otprema', weeks);
+        renderIzvjestajiSedmicniTable(primkaByWeek, primkaSort, 'sedmicni-primka', weeks);
+        renderIzvjestajiSedmicniTable(otpremaByWeek, otpremaSort, 'sedmicni-otprema', weeks);
 
         console.log('[IZVJEŠTAJI SEDMICNI] ✓ Data loaded successfully');
+        if (typeof markTabRendered === 'function') markTabRendered('izvjestaji');
 
     } catch (error) {
         console.error('[IZVJEŠTAJI SEDMICNI] Error:', error);
@@ -155,19 +165,26 @@ async function loadIzvjestajiSedmicniRadnik() {
         if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
         if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
 
-        var primkaFiltered = filterByPoslovodjaRadilista(primkaData.data);
-        var otpremaFiltered = filterByPoslovodjaRadilista(otpremaData.data);
+        // Offline i nema keša za ovaj mjesec/godinu — normalizuj na prazno umjesto pada
+        const primkaRows = primkaData.data || [];
+        const otpremaRows = otpremaData.data || [];
+        const primkaSort  = primkaData.sortimentiNazivi || [];
+        const otpremaSort = otpremaData.sortimentiNazivi || [];
+
+        var primkaFiltered = filterByPoslovodjaRadilista(primkaRows);
+        var otpremaFiltered = filterByPoslovodjaRadilista(otpremaRows);
 
         const weeks = calculateWeeksInMonth(year, month);
 
         // Grupiraj po radniku (primac/otpremac) umjesto po odjelu
-        const primkaByWeek = aggregateByWeekAndOdjel(primkaFiltered, primkaData.sortimentiNazivi, weeks, year, month, 'primac');
-        const otpremaByWeek = aggregateByWeekAndOdjel(otpremaFiltered, otpremaData.sortimentiNazivi, weeks, year, month, 'otpremac');
+        const primkaByWeek = aggregateByWeekAndOdjel(primkaFiltered, primkaSort, weeks, year, month, 'primac');
+        const otpremaByWeek = aggregateByWeekAndOdjel(otpremaFiltered, otpremaSort, weeks, year, month, 'otpremac');
 
-        renderIzvjestajiSedmicniTable(primkaByWeek, primkaData.sortimentiNazivi, 'sedmicni-radnik-primka', weeks, 'Radnik');
-        renderIzvjestajiSedmicniTable(otpremaByWeek, otpremaData.sortimentiNazivi, 'sedmicni-radnik-otprema', weeks, 'Radnik');
+        renderIzvjestajiSedmicniTable(primkaByWeek, primkaSort, 'sedmicni-radnik-primka', weeks, 'Radnik');
+        renderIzvjestajiSedmicniTable(otpremaByWeek, otpremaSort, 'sedmicni-radnik-otprema', weeks, 'Radnik');
 
         console.log('[IZVJEŠTAJI SEDMICNI RADNIK] ✓ Data loaded successfully');
+        if (typeof markTabRendered === 'function') markTabRendered('izvjestaji');
 
     } catch (error) {
         console.error('[IZVJEŠTAJI SEDMICNI RADNIK] Error:', error);
@@ -417,19 +434,26 @@ async function loadIzvjestajiMjesecni() {
         if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
         if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
 
+        // Offline i nema keša za ovaj mjesec/godinu — normalizuj na prazno umjesto pada
+        const primkaRows = primkaData.data || [];
+        const otpremaRows = otpremaData.data || [];
+        const primkaSort  = primkaData.sortimentiNazivi || [];
+        const otpremaSort = otpremaData.sortimentiNazivi || [];
+
         // Filtriraj po radilištima poslovođe (ako je poslovođa ulogiran)
-        var primkaFiltered = filterByPoslovodjaRadilista(primkaData.data);
-        var otpremaFiltered = filterByPoslovodjaRadilista(otpremaData.data);
+        var primkaFiltered = filterByPoslovodjaRadilista(primkaRows);
+        var otpremaFiltered = filterByPoslovodjaRadilista(otpremaRows);
 
         // Aggregate by odjel
-        const primkaByOdjel = aggregateByOdjelIzvjestaji(primkaFiltered, primkaData.sortimentiNazivi);
-        const otpremaByOdjel = aggregateByOdjelIzvjestaji(otpremaFiltered, otpremaData.sortimentiNazivi);
+        const primkaByOdjel = aggregateByOdjelIzvjestaji(primkaFiltered, primkaSort);
+        const otpremaByOdjel = aggregateByOdjelIzvjestaji(otpremaFiltered, otpremaSort);
 
         // Render tables
-        renderIzvjestajiTable(primkaByOdjel, primkaData.sortimentiNazivi, 'mjesecni-primka');
-        renderIzvjestajiTable(otpremaByOdjel, otpremaData.sortimentiNazivi, 'mjesecni-otprema');
+        renderIzvjestajiTable(primkaByOdjel, primkaSort, 'mjesecni-primka');
+        renderIzvjestajiTable(otpremaByOdjel, otpremaSort, 'mjesecni-otprema');
 
         console.log('[IZVJEŠTAJI MJESECNI] ✓ Data loaded successfully');
+        if (typeof markTabRendered === 'function') markTabRendered('izvjestaji');
 
     } catch (error) {
         console.error('[IZVJEŠTAJI MJESECNI] Error:', error);

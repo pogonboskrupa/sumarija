@@ -193,7 +193,10 @@
                             <span>Meni</span>
                         </button>
                         <div class="user-menu-dropdown" id="user-menu-dropdown">
-                            <div id="menu-data-age" style="padding:8px 16px;font-size:12px;color:#6b7280;border-bottom:1px solid #f3f4f6;cursor:default;">🕓 Podaci: nepoznato</div>
+                            <div style="padding:8px 16px 8px;font-size:12px;color:#6b7280;border-bottom:1px solid #f3f4f6;cursor:default;">
+                                <div id="menu-data-refreshed">🔄 Podaci osvježeni iz baze podataka: nepoznato</div>
+                                <div id="menu-data-cached" style="margin-top:3px;">💾 Podaci keširani: nepoznato</div>
+                            </div>
                             <div class="user-menu-item" id="pwa-install-btn" style="display:none;" onclick="event.stopPropagation(); closeUserMenu(); installPwa();">📲 Instaliraj aplikaciju</div>
                             <div class="user-menu-item" id="notif-menu-item" onclick="event.stopPropagation(); toggleNotifPanel();" style="display:none;">
                                 🔔 Notifikacije
@@ -3384,6 +3387,13 @@
         </div>
     </div>
 <!-- Globalni offline banner -->
+<!-- Baner: nova verzija aplikacije dostupna (klik = očisti asset keš + hard refresh) -->
+<div id="app-update-banner" style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:30002;background:#047857;color:white;padding:12px 18px;border-radius:14px;font-size:14px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.4);align-items:center;gap:12px;max-width:calc(100vw - 24px);">
+    <span style="font-size:20px;">🆕</span>
+    <span>Nova verzija aplikacije <span id="app-update-version" style="font-weight:800;"></span> je dostupna!</span>
+    <button id="app-update-btn" onclick="applyAppUpdate()" style="background:white;color:#047857;border:none;padding:9px 18px;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:42px;">⬇️ Ažuriraj</button>
+</div>
+
 <div id="app-offline-banner" style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(20px);z-index:29999;background:#1e293b;color:white;padding:9px 20px;border-radius:99px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.35);pointer-events:none;white-space:nowrap;transition:opacity .3s,transform .3s;opacity:0;">
   <span id="offline-banner-icon">📦</span>
   <span id="offline-banner-text">Offline — prikazano zadnje keširano stanje</span>
@@ -3406,6 +3416,22 @@
     }
     // Izloži formatter meniju (oznaka starosti podataka)
     window.formatDataAge = formatAge;
+
+    // Puni bosanski format za meni ("5 minuta", "1 sat i 20 minuta") — NIKAD "upravo",
+    // uvijek konkretan broj (0 minuta i više), po traženju korisnika
+    function formatAgeFull(ms) {
+        var rijec = function(n, jedna, dvije, vise) {
+            return n + ' ' + (n === 1 ? jedna : (n >= 2 && n <= 4 ? dvije : vise));
+        };
+        var mins = Math.max(0, Math.floor(ms / 60000));
+        if (mins < 60) return rijec(mins, 'minutu', 'minute', 'minuta');
+        var hrs = Math.floor(mins / 60);
+        var rem = mins % 60;
+        var hrsText = rijec(hrs, 'sat', 'sata', 'sati');
+        if (rem === 0) return hrsText;
+        return hrsText + ' i ' + rijec(rem, 'minutu', 'minute', 'minuta');
+    }
+    window.formatAgeFull = formatAgeFull;
 
     function newestCacheAge() {
         var newest = 0;

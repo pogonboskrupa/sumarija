@@ -1,9 +1,72 @@
         // VERSION INFO — semantičko verzionisanje (major.minor.patch), izvor istine
-        // je fajl VERSION u root-u repozitorija. Automatski se povećava (patch+1) i
-        // upisuje ovdje pri svakom push-u na main — vidi .github/workflows/stamp-version.yml
-        const APP_VERSION = '1.4.0';
-        const BUILD_COMMIT = 'b1c31d0';
+        // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
+        // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
+        // direktno u istom commit-u koji nosi stvarnu izmjenu.
+        const APP_VERSION = '1.4.6';
+        const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
+
+        // ========== DETEKCIJA NOVE VERZIJE APLIKACIJE ==========
+        // Većina korisnika koristi običan link u browseru (ne instaliranu PWA) —
+        // Service Worker im servira stare JS/CSS fajlove (stale-while-revalidate)
+        // pa bez ovoga novu verziju dobiju tek nakon 2-3 ručna refresha, ili nikad.
+        // Rješenje: VERSION fajl na serveru se poredi s APP_VERSION upečenim u ovaj
+        // JS. Razlika → trajni baner "Nova verzija" → klik očisti SW asset keš,
+        // ažurira SW registraciju i reloaduje. localStorage podaci se NE brišu —
+        // offline pristup podacima preživljava update.
+        let _updateBannerShown = false;
+        async function checkAppVersion() {
+            if (!navigator.onLine || _updateBannerShown) return;
+            try {
+                // cache:'no-store' + ts param — zaobiđi i browser i SW keš
+                const r = await fetch('VERSION?ts=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(10000) });
+                if (!r.ok) return;
+                const serverVer = (await r.text()).trim();
+                // Validan semver i različit od upečene verzije → nova verzija je deployana
+                if (/^\d+\.\d+\.\d+$/.test(serverVer) && serverVer !== APP_VERSION) {
+                    console.log(`[UPDATE] Nova verzija dostupna: ${serverVer} (trenutna: ${APP_VERSION})`);
+                    _showUpdateBanner(serverVer);
+                }
+            } catch(_) { /* mreža/timeout — pokušaće ponovo pri sljedećoj provjeri */ }
+        }
+
+        function _showUpdateBanner(newVer) {
+            if (_updateBannerShown) return;
+            _updateBannerShown = true;
+            const banner = document.getElementById('app-update-banner');
+            const verEl  = document.getElementById('app-update-version');
+            if (verEl) verEl.textContent = 'v' + newVer;
+            if (banner) banner.style.display = 'flex';
+        }
+
+        // Klik na "Ažuriraj" u baneru — očisti asset keševe i povuci novu verziju.
+        // NAMJERNO ne briše localStorage (cache_* podatke, prijavu, offline snapshot):
+        // podaci moraju ostati dostupni offline i nakon update-a.
+        async function applyAppUpdate() {
+            const btn = document.getElementById('app-update-btn');
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ Ažuriram...'; }
+            try {
+                // 1. Obriši SVE Service Worker asset keševe (stari JS/CSS/HTML)
+                if ('caches' in window) {
+                    const names = await caches.keys();
+                    await Promise.all(names.map(n => caches.delete(n)));
+                }
+                // 2. Zatraži update SW registracije (novi service-worker.js → novi CACHE_VERSION)
+                if ('serviceWorker' in navigator) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(regs.map(reg => reg.update().catch(() => {})));
+                }
+            } catch(e) { console.warn('[UPDATE] Cache clear warning:', e); }
+            // 3. Hard reload s cache-buster parametrom — browser mora povući svježe fajlove
+            const url = new URL(window.location.href);
+            url.searchParams.set('nocache', Date.now());
+            window.location.replace(url.toString());
+        }
+
+        // Provjere: pri učitavanju, pri povratku mreže, i periodično svakih 30 min
+        window.addEventListener('DOMContentLoaded', () => { setTimeout(checkAppVersion, 5000); });
+        window.addEventListener('online', () => { setTimeout(checkAppVersion, 3000); });
+        setInterval(checkAppVersion, 30 * 60 * 1000);
 
         // Helper: provjeri da li je tab još uvijek aktivan (sprečava bleeding async sadržaja)
         function isActiveTab(tabName) {
@@ -453,7 +516,20 @@
 
             // Cache miss or stale - fetch from network with retry for transient errors
             // 2 attempts total: first try full timeout, on timeout retry once with fresh signal
-            const MAX_RETRIES = 2;
+            //
+            // VAŽNO: ako VEĆ imamo (makar zastarjeli) keš kao sigurnosnu mrežu, ne čekamo
+            // pun timeout (do 180s × 2 = 6 min!) prije nego padnemo na njega. Ovo je čest
+            // teren scenario: navigator.onLine javlja "online" (WiFi/mobilni signal je
+            // "spojen") ali stvarna konekcija je preslaba da zahtjev ikad prođe — bez ovog
+            // skraćenja korisnik gleda "Učitavam podatke" ili prazan ekran po nekoliko
+            // minuta umjesto da odmah vidi keširane podatke. Bez keša nema mreže za pasti
+            // nazad, pa se tada čeka pun timeout — jedina šansa da se stvarno dobiju podaci.
+            // 20s je dovoljno za legitimno spore (ali funkcionalne) GAS upite na dobroj
+            // vezi — original timeout od 120-180s postoji za istinski hladan start bez
+            // ikakvog keša, ne za "osvježi u pozadini dok već imam nešto za prikazati".
+            const hasSafetyNet = !!cached;
+            const effectiveTimeout = hasSafetyNet ? Math.min(timeout, 20000) : timeout;
+            const MAX_RETRIES = hasSafetyNet ? 1 : 2;
             let lastError = null;
 
             for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -463,7 +539,7 @@
                     const fetchStart = performance.now();
 
                     const controller = new AbortController();
-                    timeoutId = setTimeout(() => controller.abort(), timeout);
+                    timeoutId = setTimeout(() => controller.abort(), effectiveTimeout);
 
                     const response = await fetch(url, { signal: controller.signal });
                     // NE čistimo timeout ovdje — AbortController mora ostati aktivan
@@ -544,7 +620,7 @@
                     }
 
                     if (isTimeout) {
-                        console.warn(`[API] Timeout after ${timeout/1000}s (sve retry-e iscrpljene):`, path);
+                        console.warn(`[API] Timeout after ${effectiveTimeout/1000}s (sve retry-e iscrpljene):`, path);
                     } else {
                         console.error('Request failed after all retries:', error);
                     }
@@ -863,6 +939,9 @@
                     // 🚀 KOMPLETNI PRELOAD - SVE UČITAJ (svi meniji + PODMENIJI)!
                     const currentMonth = new Date().getMonth(); // 0-11
                     const currentMonthNum = currentMonth + 1; // 1-12 (za cache key koji koristi loadDashboard)
+                    // Prethodni mjesec (s prelaskom godine: januar → decembar prošle godine)
+                    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+                    const prevMYear = currentMonth === 0 ? year - 1 : year;
 
                     allViews = [
                         // DASHBOARD + OPERATIVA
@@ -904,12 +983,29 @@
                         // STANJE ZALIHA + korekcije
                         { name: 'Stanje Zaliha', url: buildApiUrl('stanje-zaliha'), cacheKey: 'cache_stanje_zaliha', timeout: 180000 },
                         { name: 'Preklasiranja (korekcije)', url: buildApiUrl('get-preklasiranja'), cacheKey: 'cache_preklasiranja', timeout: 60000 },
+
+                        // PRETHODNI MJESEC izvještaja — na početku mjeseca se najčešće
+                        // gleda prošli mjesec, mora raditi offline bez posjete tabu
+                        { name: 'Izvještaji - sječa (prošli mj.)', url: buildApiUrl('primaci-daily', { year: prevMYear, month: prevMonth }), cacheKey: 'cache_primaci_daily_' + prevMYear + '_' + prevMonth, timeout: 180000,
+                          alsoCache: ['cache_izvjestaji_sedmicni_primka_' + prevMYear + '_' + prevMonth, 'cache_izvjestaji_mjesecni_primka_' + prevMYear + '_' + prevMonth, 'cache_sedmicni_sjeca_' + prevMYear + '_' + prevMonth] },
+                        { name: 'Izvještaji - otprema (prošli mj.)', url: buildApiUrl('otpremaci-daily', { year: prevMYear, month: prevMonth }), cacheKey: 'cache_otpremaci_daily_' + prevMYear + '_' + prevMonth, timeout: 180000,
+                          alsoCache: ['cache_izvjestaji_sedmicni_otprema_' + prevMYear + '_' + prevMonth, 'cache_izvjestaji_mjesecni_otprema_' + prevMYear + '_' + prevMonth, 'cache_sedmicni_otprema_' + prevMYear + '_' + prevMonth] },
+                        // PRETHODNA GODINA odjela — loadAdminStanjeOdjela poredi tekuću i prošlu
+                        { name: 'Odjeli (prošla godina)', url: buildApiUrl('odjeli', { year: year - 1 }), cacheKey: 'cache_odjeli_' + (year - 1), timeout: 180000 },
+                        // Odjeli-all — default prikaz u "Primači na šuma panju" PRIJE odabira
+                        // primača (loadOdjeliDefaultView); bez ovoga taj podtab offline prazan
+                        { name: 'Primaci Admin - Odjeli (default)', url: buildApiUrl('odjeli-all'), cacheKey: 'cache_odjeli_all', timeout: 180000 },
+                        // Sortimenti po primaču/otpremaču — prošli mjesec (isti obrazac kao izvještaji)
+                        { name: 'Primaci - Sortimenti (prošli mj.)', url: buildApiUrl('primaci-sortimenti-by-primac', { year: prevMYear, month: prevMonth }), cacheKey: 'cache_primaci_sort_primac_' + prevMYear + '_' + prevMonth, timeout: 180000 },
+                        { name: 'Otpremaci - Sortimenti (prošli mj.)', url: buildApiUrl('otpremaci-sortimenti-by-otpremac', { year: prevMYear, month: prevMonth }), cacheKey: 'cache_otpremaci_sort_otpremac_' + prevMYear + '_' + prevMonth, timeout: 180000 },
                     ];
 
                 } else if (userType === 'poslovođa' || userType === 'poslovodja') {
                     var pName = currentUser ? currentUser.fullName : '';
                     var pCK = 'cache_stanje_zaliha_' + (pName || 'all').replace(/\s+/g, '_');
                     const pMonth = new Date().getMonth();
+                    const pPrevMonth = pMonth === 0 ? 11 : pMonth - 1;
+                    const pPrevYear  = pMonth === 0 ? year - 1 : year;
                     allViews = [
                         { name: 'Stanje Zaliha', url: buildApiUrl('stanje-zaliha', { poslovodja: pName }), cacheKey: pCK, timeout: 60000 },
                         { name: 'Primke (svi prikazi)', url: buildApiUrl('primke'), cacheKey: 'cache_primke_sjeca', timeout: 120000,
@@ -925,6 +1021,11 @@
                         { name: 'Lista Odjela (dropdown)', url: buildApiUrl('get-odjeli-list'), cacheKey: 'cache_odjeli_list', timeout: 60000 },
                         // Dodani unosi (poslovodja-unosi tab) — filtrira se klijentski po radilištu
                         { name: 'Pending Unosi', url: buildApiUrl('pending-unosi', { year }), cacheKey: 'cache_pending_unosi', timeout: 120000 },
+                        // Prethodni mjesec izvještaja
+                        { name: 'Izvještaji - sječa (prošli mj.)', url: buildApiUrl('primaci-daily', { year: pPrevYear, month: pPrevMonth }), cacheKey: 'cache_izvjestaji_sedmicni_primka_' + pPrevYear + '_' + pPrevMonth, timeout: 180000,
+                          alsoCache: ['cache_izvjestaji_mjesecni_primka_' + pPrevYear + '_' + pPrevMonth, 'cache_sedmicni_sjeca_' + pPrevYear + '_' + pPrevMonth] },
+                        { name: 'Izvještaji - otprema (prošli mj.)', url: buildApiUrl('otpremaci-daily', { year: pPrevYear, month: pPrevMonth }), cacheKey: 'cache_izvjestaji_sedmicni_otprema_' + pPrevYear + '_' + pPrevMonth, timeout: 180000,
+                          alsoCache: ['cache_izvjestaji_mjesecni_otprema_' + pPrevYear + '_' + pPrevMonth, 'cache_sedmicni_otprema_' + pPrevYear + '_' + pPrevMonth] },
                     ];
 
                 } else if (userType === 'operativa') {
@@ -961,8 +1062,10 @@
                         { name: 'Moje sječe', url: buildApiUrl('my-pending', { tip: 'sjeca' }), cacheKey: 'cache_my_sjece_' + (currentUser.username || ''), timeout: 120000 },
                         // Izvještaji - sedmični (tekući mjesec)
                         { name: 'Izvještaji (sedmični)', url: buildApiUrl('primac-detail', { year }), cacheKey: 'cache_primac_sedmicni_' + year + '_' + currentMonth, timeout: 120000 },
-                        // Izvještaji - mjesečni (tekući mjesec)
-                        { name: 'Izvještaji (mjesečni)', url: buildApiUrl('primac-detail', { year }), cacheKey: 'cache_primac_mjesecni_' + year + '_' + currentMonth, timeout: 120000 },
+                        // Izvještaji - mjesečni (tekući mjesec) + prethodni mjesec (isti URL/odgovor,
+                        // loaderi filtriraju po mjesecu klijentski — alsoCache je besplatan)
+                        { name: 'Izvještaji (mjesečni)', url: buildApiUrl('primac-detail', { year }), cacheKey: 'cache_primac_mjesecni_' + year + '_' + currentMonth, timeout: 120000,
+                          alsoCache: currentMonth > 0 ? ['cache_primac_sedmicni_' + year + '_' + (currentMonth - 1), 'cache_primac_mjesecni_' + year + '_' + (currentMonth - 1)] : [] },
                         // Dropdown odjela za formu "Dodaj sječu"
                         { name: 'Lista Odjela (dropdown)', url: buildApiUrl('get-odjeli-list'), cacheKey: 'cache_odjeli_list', timeout: 60000 }
                     ];
@@ -979,8 +1082,9 @@
                         { name: 'Moje otpreme', url: buildApiUrl('my-pending', { tip: 'otprema' }), cacheKey: 'cache_my_otpreme_' + (currentUser.username || ''), timeout: 120000 },
                         // Izvještaji - sedmični (tekući mjesec)
                         { name: 'Izvještaji (sedmični)', url: buildApiUrl('otpremac-detail', { year }), cacheKey: 'cache_otpremac_sedmicni_' + year + '_' + currentMonth, timeout: 120000 },
-                        // Izvještaji - mjesečni (tekući mjesec)
-                        { name: 'Izvještaji (mjesečni)', url: buildApiUrl('otpremac-detail', { year }), cacheKey: 'cache_otpremac_mjesecni_' + year + '_' + currentMonth, timeout: 120000 },
+                        // Izvještaji - mjesečni (tekući mjesec) + prethodni mjesec (klijentski filter po mjesecu)
+                        { name: 'Izvještaji (mjesečni)', url: buildApiUrl('otpremac-detail', { year }), cacheKey: 'cache_otpremac_mjesecni_' + year + '_' + currentMonth, timeout: 120000,
+                          alsoCache: currentMonth > 0 ? ['cache_otpremac_sedmicni_' + year + '_' + (currentMonth - 1), 'cache_otpremac_mjesecni_' + year + '_' + (currentMonth - 1)] : [] },
                         // Dropdown odjela za formu "Dodaj otpremu"
                         { name: 'Lista Odjela (dropdown)', url: buildApiUrl('get-odjeli-list'), cacheKey: 'cache_odjeli_list', timeout: 60000 }
                     ];
@@ -1158,18 +1262,28 @@
             }
         }
 
-        // Osvježi oznaku "koliko su stari podaci" u meniju (vrijeme od zadnjeg
-        // punog osvježavanja; fallback na najsvježiji keš ako toga nema)
+        // Osvježi dvije oznake starosti podataka u meniju:
+        // 1) kad su podaci zadnji put stvarno POVUČENI iz baze (zadnji puni refresh)
+        // 2) kad su podaci zadnji put KEŠIRANI (najsvježiji cache_* zapis — može biti
+        //    noviji od punog refresha ako je pojedini tab u međuvremenu tiho osvježen)
         function updateDataAgeIndicator() {
-            const el = document.getElementById('menu-data-age');
-            if (!el) return;
-            let ts = parseInt(localStorage.getItem('sumarija_last_full_refresh') || '0', 10);
-            let ageMs = ts ? (Date.now() - ts) : (typeof window.newestCacheAge === 'function' ? window.newestCacheAge() : null);
-            const fmt = (typeof window.formatDataAge === 'function') ? window.formatDataAge : null;
-            if (ageMs == null || !fmt) {
-                el.textContent = '🕓 Podaci: nepoznato';
-            } else {
-                el.textContent = '🕓 Podaci osvježeni: prije ' + fmt(ageMs);
+            const elRefreshed = document.getElementById('menu-data-refreshed');
+            const elCached     = document.getElementById('menu-data-cached');
+            const fmt = (typeof window.formatAgeFull === 'function') ? window.formatAgeFull : null;
+            if (!fmt) return;
+
+            if (elRefreshed) {
+                const ts = parseInt(localStorage.getItem('sumarija_last_full_refresh') || '0', 10);
+                elRefreshed.textContent = ts
+                    ? '🔄 Podaci osvježeni iz baze podataka prije ' + fmt(Date.now() - ts) + '.'
+                    : '🔄 Podaci osvježeni iz baze podataka: nepoznato';
+            }
+
+            if (elCached) {
+                const ageMs = (typeof window.newestCacheAge === 'function') ? window.newestCacheAge() : null;
+                elCached.textContent = (ageMs != null)
+                    ? '💾 Podaci keširani prije ' + fmt(ageMs) + '.'
+                    : '💾 Podaci keširani: nepoznato';
             }
         }
 
@@ -1352,7 +1466,41 @@
         }
 
         // Main initialization on page load
+        // Prikaži siguran fallback ekran umjesto trajno zaglavljenog "Učitavam podatke"
+        // — koristi se i iz catch bloka ispod i iz watchdog tajmera
+        function _showInitFailureScreen(reason) {
+            try {
+                const ls = document.getElementById('loading-screen');
+                if (ls) {
+                    ls.innerHTML = `
+                        <div class="loading-icon">⚠️</div>
+                        <div class="loading-text">Aplikacija se nije uspjela pokrenuti</div>
+                        <div style="margin-top:8px;font-size:13px;color:#6b7280;">${reason || 'Nepoznata greška'}</div>
+                        <button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;background:#047857;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;">🔄 Pokušaj ponovo</button>
+                    `;
+                }
+                const appScreen = document.getElementById('app-screen');
+                if (appScreen) appScreen.classList.remove('hidden');
+            } catch(_) {}
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
+          try {
+            // Watchdog — ako se loading-screen ne skloni u razumnom roku (bilo koji
+            // neuhvaćeni izuzetak, hung promise, ili nepredviđeno stanje), korisnik
+            // ne smije ostati zaglavljen bez ikakve povratne informacije ili dugmeta
+            setTimeout(() => {
+                const ls = document.getElementById('loading-screen');
+                const appScreen = document.getElementById('app-screen');
+                const stillStuck = ls && !ls.classList.contains('hidden') &&
+                    appScreen && !appScreen.classList.contains('hidden') &&
+                    ls.querySelector('.loading-text') && ls.querySelector('.loading-text').textContent.includes('Učitavam');
+                if (stillStuck) {
+                    console.error('[WATCHDOG] Aplikacija zaglavljena na loading ekranu >10s');
+                    _showInitFailureScreen('Učitavanje je predugo trajalo. Provjerite vezu i pokušajte ponovo.');
+                }
+            }, 10000);
+
             // ========== HARD RELOAD DETECTION ==========
             // Check if this is a hard reload from "Obriši keš" button
             const url = new URL(window.location.href);
@@ -1484,6 +1632,13 @@
                     });
                 }
             }
+          } catch (e) {
+              // Bilo koji neuhvaćeni izuzetak u pokretanju aplikacije (npr. oštećen
+              // offline snapshot, DOM element koji nedostaje) — ne ostavljaj korisnika
+              // zaglavljenog na "Učitavam podatke" bez povratne informacije
+              console.error('[INIT] Greška pri pokretanju aplikacije:', e);
+              _showInitFailureScreen(e.message);
+          }
         });
 
         // Log cache statistics when page is closed
@@ -2530,6 +2685,7 @@
                 populatePoslovodjaRadilisteDropdown(cached.odjeli);
                 renderPoslovodjaStanjeZalihaTabela(cached.odjeli);
                 renderPoslovodjaStanjeCards(cached.odjeli);
+                markTabRendered('poslovodja-stanje');
                 hasCached = true;
             }
 
@@ -2561,6 +2717,7 @@
                 populatePoslovodjaRadilisteDropdown(data.odjeli);
                 renderPoslovodjaStanjeZalihaTabela(data.odjeli);
                 renderPoslovodjaStanjeCards(data.odjeli);
+                markTabRendered('poslovodja-stanje');
 
                 if (!isActiveTab('poslovodja-stanje')) return;
                 document.getElementById('loading-screen').classList.add('hidden');
@@ -3582,6 +3739,7 @@
                         document.getElementById('loading-screen').classList.add('hidden');
                         document.getElementById('poslovodja-sjeca-content').classList.remove('hidden');
                         renderPoslovodjaSjecaTable(processPrimkeForSjeca(parsed.data));
+                        markTabRendered('poslovodja-sjeca');
                         hasCached = true;
                     }
                 }
@@ -3603,6 +3761,7 @@
 
                 if (!isActiveTab('poslovodja-sjeca')) return;
                 renderPoslovodjaSjecaTable(processPrimkeForSjeca(primkeData));
+                markTabRendered('poslovodja-sjeca');
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('poslovodja-sjeca-content').classList.remove('hidden');
@@ -3784,6 +3943,7 @@
                         document.getElementById('loading-screen').classList.add('hidden');
                         document.getElementById('poslovodja-otprema-content').classList.remove('hidden');
                         renderPoslovodjaOtpremaTabTable(processOtpremeForOtprema(parsed.data));
+                        markTabRendered('poslovodja-otprema');
                         hasCached = true;
                     }
                 }
@@ -3805,6 +3965,7 @@
 
                 if (!isActiveTab('poslovodja-otprema')) return;
                 renderPoslovodjaOtpremaTabTable(processOtpremeForOtprema(otpremeData));
+                markTabRendered('poslovodja-otprema');
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('poslovodja-otprema-content').classList.remove('hidden');
@@ -4021,6 +4182,7 @@
                         document.getElementById('poslovodja-pregled-content').classList.remove('hidden');
                         var result = processPregledData(parsedP.data, parsedO.data);
                         renderPoslovodjaPregled(result.radilisteOdjeli, result.sjecaByOdjelMonth, result.otpremaByOdjelMonth);
+                        markTabRendered('poslovodja-pregled');
                         hasCached = true;
                     }
                 }
@@ -4048,6 +4210,7 @@
                 if (!isActiveTab('poslovodja-pregled')) return;
                 var result = processPregledData(primkeData, otpremeData);
                 renderPoslovodjaPregled(result.radilisteOdjeli, result.sjecaByOdjelMonth, result.otpremaByOdjelMonth);
+                markTabRendered('poslovodja-pregled');
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('poslovodja-pregled-content').classList.remove('hidden');
@@ -6613,6 +6776,7 @@
 
                 primacOdjeliCurrentPage = 0;
                 renderPrimacOdjeliPage();
+                markTabRendered('primac-odjeli');
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('primac-odjeli-content').classList.remove('hidden');
@@ -7520,6 +7684,7 @@
 
                 otpremacOdjeliCurrentPage = 0;
                 renderOtpremacOdjeliPage();
+                markTabRendered('otpremac-odjeli');
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('otpremac-odjeli-content').classList.remove('hidden');
@@ -7819,6 +7984,7 @@
 
                 // Render table
                 renderPendingTable(unfilteredPendingData);
+                markTabRendered('pending-unosi');
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('pending-unosi-content').classList.remove('hidden');
@@ -7916,6 +8082,7 @@
 
                 unfilteredPoslovodjaUnosiData = filtered;
                 renderPoslovodjaUnosiTable(filtered);
+                markTabRendered('poslovodja-unosi');
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('poslovodja-unosi-content').classList.remove('hidden');
@@ -8354,11 +8521,16 @@
 
                 if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
 
+                // Offline i nema keša za ovaj mjesec/godinu — fetchWithCache vrati
+                // {offline:true} bez .data; normalizuj na prazno umjesto pada na undefined.forEach
+                const primkaRows = primkaData.data || [];
+                const primkaSort = primkaData.sortimentiNazivi || [];
+
                 // Group by weeks (within month boundaries)
-                const weeklyData = groupDataByWeeks(primkaData.data, year, month, primkaData.sortimentiNazivi);
+                const weeklyData = groupDataByWeeks(primkaRows, year, month, primkaSort);
 
                 // Render
-                renderSedmicniIzvjestaj(weeklyData, primkaData.sortimentiNazivi, 'sedmicni-sjeca-container', year, month);
+                renderSedmicniIzvjestaj(weeklyData, primkaSort, 'sedmicni-sjeca-container', year, month);
 
                 document.getElementById('loading-screen').classList.add('hidden');
 
@@ -8386,11 +8558,15 @@
 
                 if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
 
+                // Offline i nema keša za ovaj mjesec/godinu — normalizuj na prazno umjesto pada
+                const otpremaRows = otpremaData.data || [];
+                const otpremaSort = otpremaData.sortimentiNazivi || [];
+
                 // Group by weeks (within month boundaries)
-                const weeklyData = groupDataByWeeks(otpremaData.data, year, month, otpremaData.sortimentiNazivi);
+                const weeklyData = groupDataByWeeks(otpremaRows, year, month, otpremaSort);
 
                 // Render
-                renderSedmicniIzvjestaj(weeklyData, otpremaData.sortimentiNazivi, 'sedmicni-otprema-container', year, month);
+                renderSedmicniIzvjestaj(weeklyData, otpremaSort, 'sedmicni-otprema-container', year, month);
 
                 document.getElementById('loading-screen').classList.add('hidden');
 
@@ -8671,6 +8847,7 @@
                 populateStanjeZalihaDropdown();
                 renderStanjeZalihaTabela(stanjeZalihaData);
                 renderStanjeZalihaCards(stanjeZalihaData);
+                markTabRendered('stanje-zaliha');
                 szHasCached = true;
             }
 
@@ -8703,6 +8880,7 @@
 
                 // Init preklasiranje admin section
                 initPreklasiranjeAdminSection();
+                markTabRendered('stanje-zaliha');
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('stanje-zaliha-content').classList.remove('hidden');
@@ -10000,6 +10178,7 @@
                 html += '</div>';
 
                 document.getElementById('my-sjece-container').innerHTML = html;
+                markTabRendered('my-sjece');
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('my-sjece-content').classList.remove('hidden');
 
@@ -10077,6 +10256,7 @@
                 html += '</div>';
 
                 document.getElementById('my-otpreme-container').innerHTML = html;
+                markTabRendered('my-otpreme');
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('my-otpreme-content').classList.remove('hidden');
 
@@ -11691,6 +11871,7 @@
 
                 // Render table
                 renderPrimacOtpremacSedmicni(weeklyData, sortimentiNazivi, 'primac-sedmicni', year, month);
+                markTabRendered('izvjestaji-primac');
 
                 document.getElementById('loading-screen').classList.add('hidden');
 
@@ -11759,6 +11940,7 @@
 
                 // Render table grouped by odjeli
                 renderMjesecniByOdjeli(odjeliData, sortimentiNazivi, 'primac-mjesecni', year, month);
+                markTabRendered('izvjestaji-primac');
 
                 document.getElementById('loading-screen').classList.add('hidden');
 
@@ -11821,6 +12003,7 @@
 
                 // Render table
                 renderPrimacOtpremacSedmicni(weeklyData, sortimentiNazivi, 'otpremac-sedmicni', year, month);
+                markTabRendered('izvjestaji-otpremac');
 
                 document.getElementById('loading-screen').classList.add('hidden');
 
@@ -11889,6 +12072,7 @@
 
                 // Render table grouped by odjeli
                 renderMjesecniByOdjeli(odjeliData, sortimentiNazivi, 'otpremac-mjesecni', year, month);
+                markTabRendered('izvjestaji-otpremac');
 
                 document.getElementById('loading-screen').classList.add('hidden');
 
