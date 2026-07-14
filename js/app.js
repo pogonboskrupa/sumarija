@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.7';
+        const APP_VERSION = '1.4.8';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -943,7 +943,30 @@
         // silent = ne prikazuje notifikacije (za auto-preload pri loginu)
         // forceRefresh = brisuje cache i fetchuje svježe podatke (za ručni klik)
         let preloadScheduled = false; // Prevent duplicate preload scheduling
+
+        // Serijalizuj konkurentne pozive preloadAllViews. Bez ovoga, auto-preload
+        // pri loginu (silent=true) i ručni klik na ☁️/Ažuriraj (forceRefresh=true)
+        // mogu se preklopiti — dva paralelna prolaska kroz allViews DUPLIRAJU
+        // mrežno opterećenje na spor GAS backend baš za najteže poglede (Kupci,
+        // Stanje zaliha, Sječa/otprema — svi 180s timeout), što uzrokuje dodatne
+        // timeoute i ostavlja te tabove bez keša. Drugi poziv sad čeka da prvi
+        // završi prije nego počne svoj — sekvencijalno, nikad konkurentno.
+        let _preloadRunning = null;
         async function preloadAllViews(silent = false, forceRefresh = false) {
+            if (_preloadRunning) {
+                console.log('[PRELOAD] Već postoji aktivan preload — čekam da završi prije novog poziva...');
+                try { await _preloadRunning; } catch(_) {}
+            }
+            const run = _preloadAllViewsImpl(silent, forceRefresh);
+            _preloadRunning = run;
+            try {
+                return await run;
+            } finally {
+                if (_preloadRunning === run) _preloadRunning = null;
+            }
+        }
+
+        async function _preloadAllViewsImpl(silent = false, forceRefresh = false) {
             const year = new Date().getFullYear();
             let totalLoaded = 0;
             let totalFailed = 0;
