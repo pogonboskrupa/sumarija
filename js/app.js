@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.12';
+        const APP_VERSION = '1.4.13';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1038,15 +1038,14 @@
                         { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni-sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year, timeout: 120000 },
                         { name: 'Dinamika', url: buildApiUrl('get_dinamika', { year }), cacheKey: 'cache_dinamika_' + year, timeout: 120000 },
 
-                        // PRIMKE — jedan fetch, sve varijante cache ključeva
-                        // (sječa tab, mapa, dashboard tekući mjesec, dashboard zadnjih5, sječa zadnjih5)
-                        { name: 'Primke (svi prikazi)', url: buildApiUrl('primke'), cacheKey: 'cache_primke_sjeca', timeout: 150000,
-                          alsoCache: ['cache_primke_tekuci_mjesec', 'cache_primke_zadnjih5_dash', 'cache_primke_zadnjih5'] },
+                        // PRIMKE — jedan fetch pod kanonski ključ. Dashboard tabele i mapa
+                        // sad čitaju DIREKTNO ovaj isti ključ (cache_primke_sjeca) umjesto
+                        // zasebnih alsoCache aliasa — eliminiše duplikaciju čak i kad neki
+                        // od tih čitalaca kasnije uradi svoj vlastiti (ne-preload) refetch.
+                        { name: 'Primke (svi prikazi)', url: buildApiUrl('primke'), cacheKey: 'cache_primke_sjeca', timeout: 150000 },
 
-                        // OTPREME — jedan fetch, sve varijante cache ključeva
-                        // (otprema tab, mapa, dashboard tekući mjesec, dashboard zadnjih5, otprema zadnjih5)
-                        { name: 'Otpreme (svi prikazi)', url: buildApiUrl('otpreme'), cacheKey: 'cache_otpreme_tab', timeout: 150000,
-                          alsoCache: ['cache_otpreme_tekuci_mjesec', 'cache_otpreme_zadnjih5_dash', 'cache_otpreme_zadnjih5', 'cache_otpreme_karta'] },
+                        // OTPREME — isto, dashboard tabele i mapa čitaju cache_otpreme_tab direktno
+                        { name: 'Otpreme (svi prikazi)', url: buildApiUrl('otpreme'), cacheKey: 'cache_otpreme_tab', timeout: 150000 },
 
                         // PRIMACI meni + sva 4 podmenija
                         { name: 'Primaci - Monthly', url: buildApiUrl('primaci', { year }), cacheKey: 'cache_primaci_' + year, timeout: 180000 },
@@ -1091,10 +1090,8 @@
                     const pPrevYear  = pMonth === 0 ? year - 1 : year;
                     allViews = [
                         { name: 'Stanje Zaliha', url: buildApiUrl('stanje-zaliha', { poslovodja: pName }), cacheKey: pCK, timeout: 60000 },
-                        { name: 'Primke (svi prikazi)', url: buildApiUrl('primke'), cacheKey: 'cache_primke_sjeca', timeout: 120000,
-                          alsoCache: ['cache_primke_zadnjih5', 'cache_primke_tekuci_mjesec'] },
-                        { name: 'Otpreme (svi prikazi)', url: buildApiUrl('otpreme'), cacheKey: 'cache_otpreme_tab', timeout: 120000,
-                          alsoCache: ['cache_otpreme_zadnjih5', 'cache_otpreme_tekuci_mjesec'] },
+                        { name: 'Primke (svi prikazi)', url: buildApiUrl('primke'), cacheKey: 'cache_primke_sjeca', timeout: 120000 },
+                        { name: 'Otpreme (svi prikazi)', url: buildApiUrl('otpreme'), cacheKey: 'cache_otpreme_tab', timeout: 120000 },
                         // IZVJEŠTAJI — sedmični, sedmični po radniku i mjesečni dijele iste URL-ove
                         { name: 'Izvještaji - sječa', url: buildApiUrl('primaci-daily', { year, month: pMonth }), cacheKey: 'cache_izvjestaji_sedmicni_primka_' + year + '_' + pMonth, timeout: 180000,
                           alsoCache: ['cache_izvjestaji_mjesecni_primka_' + year + '_' + pMonth, 'cache_sedmicni_sjeca_' + year + '_' + pMonth] },
@@ -1122,10 +1119,8 @@
                         { name: 'Stanje Zaliha (operativa)', url: buildApiUrl('stanje-zaliha'), cacheKey: 'cache_stanje_zaliha', timeout: 180000 },
                         { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
                         { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni-sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year, timeout: 120000 },
-                        { name: 'Primke (dashboard)', url: buildApiUrl('primke'), cacheKey: 'cache_primke_sjeca', timeout: 150000,
-                          alsoCache: ['cache_primke_tekuci_mjesec', 'cache_primke_zadnjih5_dash', 'cache_primke_zadnjih5'] },
-                        { name: 'Otpreme (dashboard)', url: buildApiUrl('otpreme'), cacheKey: 'cache_otpreme_tab', timeout: 150000,
-                          alsoCache: ['cache_otpreme_tekuci_mjesec', 'cache_otpreme_zadnjih5_dash', 'cache_otpreme_zadnjih5'] },
+                        { name: 'Primke (dashboard)', url: buildApiUrl('primke'), cacheKey: 'cache_primke_sjeca', timeout: 150000 },
+                        { name: 'Otpreme (dashboard)', url: buildApiUrl('otpreme'), cacheKey: 'cache_otpreme_tab', timeout: 150000 },
                         { name: 'Izvještaji - sječa', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_sedmicni_primka_' + year + '_' + currentMonth, timeout: 180000,
                           alsoCache: ['cache_izvjestaji_mjesecni_primka_' + year + '_' + currentMonth] },
                         { name: 'Izvještaji - otprema', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_izvjestaji_sedmicni_otprema_' + year + '_' + currentMonth, timeout: 180000,
@@ -2258,9 +2253,11 @@
                 const primkeUrl = buildApiUrl('primke');
                 const otpremeUrl = buildApiUrl('otpreme');
 
+                // ISTI URL kao preload-ov kanonski primke/otpreme fetch — dijeli isti cache
+                // ključ umjesto zasebnog (koji je duplicirao cijeli payload, do 2.8MB dodatno)
                 const [primkeData, otpremeData] = await Promise.all([
-                    fetchWithCache(primkeUrl, 'cache_primke_tekuci_mjesec'),
-                    fetchWithCache(otpremeUrl, 'cache_otpreme_tekuci_mjesec')
+                    fetchWithCache(primkeUrl, 'cache_primke_sjeca'),
+                    fetchWithCache(otpremeUrl, 'cache_otpreme_tab')
                 ]);
 
                 const today = new Date();
@@ -2419,9 +2416,11 @@
                 const primkeUrl = buildApiUrl('primke');
                 const otpremeUrl = buildApiUrl('otpreme');
 
+                // ISTI URL kao preload-ov kanonski primke/otpreme fetch — dijeli isti cache
+                // ključ umjesto zasebnog (koji je duplicirao cijeli payload, do 2.8MB dodatno)
                 const [primkeData, otpremeData] = await Promise.all([
-                    fetchWithCache(primkeUrl, 'cache_primke_zadnjih5_dash'),
-                    fetchWithCache(otpremeUrl, 'cache_otpreme_zadnjih5_dash')
+                    fetchWithCache(primkeUrl, 'cache_primke_sjeca'),
+                    fetchWithCache(otpremeUrl, 'cache_otpreme_tab')
                 ]);
 
                 // Keširaj raw podatke za kasniju upotrebu (custom period)
@@ -3609,9 +3608,11 @@
                 const primkeUrl = buildApiUrl('primke');
                 const otpremeUrl = buildApiUrl('otpreme');
 
+                // ISTI URL kao preload-ov kanonski primke/otpreme fetch — dijeli isti cache
+                // ključ umjesto zasebnog (koji je duplicirao cijeli payload, do 2.8MB dodatno)
                 const [primkeData, otpremeData] = await Promise.all([
-                    fetchWithCache(primkeUrl, 'cache_primke_zadnjih5'),
-                    fetchWithCache(otpremeUrl, 'cache_otpreme_zadnjih5')
+                    fetchWithCache(primkeUrl, 'cache_primke_sjeca'),
+                    fetchWithCache(otpremeUrl, 'cache_otpreme_tab')
                 ]);
 
 
