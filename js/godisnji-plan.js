@@ -226,9 +226,16 @@
     });
   }
 
+  // Odjeli čiji naziv sadrži bilo koji od ovih pojmova idu u "Slučajni užici"
+  // bez obzira da li se poklapaju s planiranim odjelom.
+  const SLUCAJNI_KEYWORDS = ['ZAPISNIK', 'SLUČAJNI UŽICI', 'SANITARNA SJEČA', 'SANITAR'];
+  function isSlucajniOdjel(odjel) {
+    const u = String(odjel||'').toUpperCase();
+    return SLUCAJNI_KEYWORDS.some(kw => u.includes(kw));
+  }
+
   function buildSlucajniRows(primke) {
-    const planKeys = new Set(PLAN_ENTRIES.map(e => normKey(e.gj+' '+e.odjel)));
-    const unmatched = primke.filter(p => !planKeys.has(normKey(p.odjel)));
+    const unmatched = primke.filter(p => isSlucajniOdjel(p.odjel));
     if (!unmatched.length) return [];
     const map = new Map();
     unmatched.forEach(p => {
