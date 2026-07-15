@@ -3094,3 +3094,28 @@
                 gap: 4px;
             }
         }
+
+        /* Stanje zaliha odjela modal (klik na odjel u "Pregled po odjelima",
+           tab Šumarija Krupa) — na mobilnom preko cijelog ekrana da se ne mora
+           zumirati; desktop ostaje kao centrirani dijalog (nedirano). */
+        @media (max-width: 768px) {
+            .odjel-stanje-modal {
+                padding: 0 !important;
+                align-items: stretch !important;
+            }
+            .odjel-stanje-modal-card {
+                max-width: 100% !important;
+                width: 100% !important;
+                height: 100% !important;
+                max-height: 100% !important;
+                border-radius: 0 !important;
+                margin: 0 !important;
+            }
+            .odjel-stanje-modal-header {
+                border-radius: 0 !important;
+            }
+            #odjel-stanje-modal-body {
+                flex: 1 !important;
+                max-height: none !important;
+            }
+        }
