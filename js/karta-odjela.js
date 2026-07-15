@@ -1040,8 +1040,14 @@
     } catch(e) {
       console.warn('[Mapa]', endpoint, 'failed:', e.message);
       try {
-        const raw = (typeof _resolveCacheRaw === 'function') ? _resolveCacheRaw(cacheKey) : localStorage.getItem(cacheKey);
-        if (raw) { const obj=JSON.parse(raw); return (obj&&obj.data&&obj.data[dataKey])||[]; }
+        // Veliki ključevi (primke/otpreme) žive u IndexedDB, ne localStorage
+        if ((cacheKey === 'cache_primke_sjeca' || cacheKey === 'cache_otpreme_tab') && window.IDBHelper) {
+          const entry = await window.IDBHelper.getMeta('blob_' + cacheKey);
+          if (entry && entry.data) return entry.data[dataKey] || [];
+        } else {
+          const raw = (typeof _resolveCacheRaw === 'function') ? _resolveCacheRaw(cacheKey) : localStorage.getItem(cacheKey);
+          if (raw) { const obj=JSON.parse(raw); return (obj&&obj.data&&obj.data[dataKey])||[]; }
+        }
       } catch(_) {}
       return [];
     }
