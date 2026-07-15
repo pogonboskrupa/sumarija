@@ -60,7 +60,6 @@
     pregled:   { col:'odjel', asc:true },
     projekat:  { col:'odjel', asc:true },
   };
-  let _gpChart = null;
 
   // ---- HELPERS ----
   function normKey(s) {
@@ -592,12 +591,6 @@
       </div>
     </div>`;
 
-    // Chart
-    html += `<div class="section" style="margin-bottom:24px;">
-      <h2 style="font-size:16px;margin-bottom:12px;">📊 Top 20 odjela — % realizacije po sortimentima</h2>
-      <div style="position:relative;height:520px;"><canvas id="gp-sort-chart"></canvas></div>
-    </div>`;
-
     // Table
     html += `<div class="enterprise-card">
       <div class="enterprise-card-header">
@@ -673,61 +666,6 @@
     </tr></tbody></table></div></div></div>`;
 
     view.innerHTML = html;
-
-    // Render chart after DOM update
-    requestAnimationFrame(()=>renderSortChart(rows));
-  }
-
-  function renderSortChart(rows) {
-    if (typeof window.loadChartJs !== 'function') return;
-    window.loadChartJs().then(()=>{
-      const canvas = document.getElementById('gp-sort-chart');
-      if (!canvas) return;
-      if (_gpChart) { _gpChart.destroy(); _gpChart=null; }
-
-      const top20 = [...rows].sort((a,b)=>a.stepen-b.stepen).slice(0,20);
-      const labels = top20.map(r=>r.odjel+' ('+r.gj.split(' ')[0]+')');
-      const pctCT  = top20.map(r=>r.cTrupci>0?+(r.actual.cTrupci/r.cTrupci*100).toFixed(1):0);
-      const pctDz  = top20.map(r=>r.dzgo>0?+(dzgoAct(r.actual)/r.dzgo*100).toFixed(1):0);
-      const pctLT  = top20.map(r=>r.lTrupci>0?+(r.actual.lTrupci/r.lTrupci*100).toFixed(1):0);
-      const pctCij = top20.map(r=>r.cijepano>0?+(cijAct(r.actual)/r.cijepano*100).toFixed(1):0);
-
-      _gpChart = new Chart(canvas.getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [
-            { label:'Trupci Č',  data:pctCT,  backgroundColor:C.cTrupci+'cc',  borderWidth:0 },
-            { label:'Cjepano Č', data:pctDz,  backgroundColor:C.celDuga+'cc',  borderWidth:0 },
-            { label:'Trupci L',  data:pctLT,  backgroundColor:C.lTrupci+'cc',  borderWidth:0 },
-            { label:'Cjepano L', data:pctCij, backgroundColor:C.ogrCijepani+'cc', borderWidth:0 },
-          ],
-        },
-        options: {
-          indexAxis:'y',
-          responsive:true, maintainAspectRatio:false,
-          plugins: {
-            legend:{ position:'top', labels:{ boxWidth:12, font:{ size:12 } } },
-            tooltip:{ callbacks:{ label: ctx=>`${ctx.dataset.label}: ${ctx.parsed.x.toFixed(1)}%` } },
-          },
-          scales: {
-            x:{ title:{ display:true, text:'% realizacije' }, ticks:{ callback: v=>v+'%' }, max:150 },
-            y:{ ticks:{ font:{ size:11 } } },
-          },
-        },
-        plugins: [{
-          afterDraw(chart) {
-            const ctx = chart.ctx;
-            const x100 = chart.scales.x.getPixelForValue(100);
-            if (!x100) return;
-            ctx.save();
-            ctx.strokeStyle='#dc2626'; ctx.lineWidth=2; ctx.setLineDash([6,3]);
-            ctx.beginPath(); ctx.moveTo(x100, chart.chartArea.top); ctx.lineTo(x100, chart.chartArea.bottom); ctx.stroke();
-            ctx.restore();
-          }
-        }],
-      });
-    });
   }
 
   // ---- RENDER: PREGLED ----
