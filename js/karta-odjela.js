@@ -6,8 +6,10 @@
 
   const GEOJSON_VERSION = '20260603a';
   const GEOJSON_URL = 'data/odjeli.geojson';
+  // ISTI ključevi kao kanonski preload primke/otpreme fetch — dijeli cache umjesto
+  // da duplicira cijeli payload pod treći zaseban ključ (cache_otpreme_karta)
   const CACHE_SJECA = 'cache_primke_sjeca';
-  const CACHE_OTPR  = 'cache_otpreme_karta';
+  const CACHE_OTPR  = 'cache_otpreme_tab';
 
   // Lokacija Šumarije Bosanska Krupa — Trg Alije Izetbegovića 1
   const SUMARIJA_LATLNG = [44.883425, 16.154427];
