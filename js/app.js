@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.13';
+        const APP_VERSION = '1.4.14';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -13,6 +13,11 @@
         // Čisti se ovdje (a ne samo u karti) jer korisnici koji ne otvaraju kartu
         // inače nikad ne bi oslobodili taj prostor.
         try { localStorage.removeItem('geojson_data'); localStorage.removeItem('geojson_version'); } catch(_) {}
+
+        // JEDNOKRATNO ČIŠĆENJE: primke/otprema (do 2.8MB svaki) sada žive u
+        // IndexedDB (vidi IDB_LARGE_KEYS) — stari localStorage zapisi pod istim
+        // ključevima se više nikad ne čitaju, ali i dalje troše kvotu ako ostanu.
+        try { localStorage.removeItem('cache_primke_sjeca'); localStorage.removeItem('cache_otpreme_tab'); } catch(_) {}
 
         // ========== DETEKCIJA NOVE VERZIJE APLIKACIJE ==========
         // Većina korisnika koristi običan link u browseru (ne instaliranu PWA) —
@@ -470,15 +475,86 @@
             return raw;
         }
 
+        // VELIKI prikazi (primke/otpreme — do 2.8MB svaki) idu u IndexedDB umjesto
+        // localStorage. Čak i BEZ duplikacije (v1.4.13), sama ta dva zapisa plus
+        // preostalih ~26 prikaza premašuju tipičnu localStorage kvotu od 5-10MB —
+        // svaki upis jednog od njih je i dalje pokretao LRU eviction koji je brisao
+        // TEK keširane druge prikaze. IndexedDB kvota je za red veličine veća
+        // (obično stotine MB+), pa ovo trajno rješava kvota-thrashing za najveće
+        // stavke bez da diramo ijedan call-site (svi idu kroz fetchWithCache).
+        const IDB_LARGE_KEYS = new Set(['cache_primke_sjeca', 'cache_otpreme_tab']);
+
+        async function _readCacheEntry(cacheKey) {
+            if (IDB_LARGE_KEYS.has(cacheKey) && window.IDBHelper) {
+                try {
+                    const entry = await window.IDBHelper.getMeta('blob_' + cacheKey);
+                    return entry || null; // {data, timestamp} ili null
+                } catch (e) { return null; }
+            }
+            const raw = _resolveCacheRaw(cacheKey);
+            if (!raw) return null;
+            try { return JSON.parse(raw); } catch (e) { return null; }
+        }
+
+        async function _writeCacheEntry(cacheKey, data) {
+            const entryObj = { data: data, timestamp: Date.now() };
+            if (IDB_LARGE_KEYS.has(cacheKey) && window.IDBHelper) {
+                try {
+                    await window.IDBHelper.setMeta('blob_' + cacheKey, entryObj);
+                } catch (e) {
+                    console.error(`[CACHE] IDB upis ${cacheKey} neuspio:`, e);
+                }
+                return;
+            }
+            const entry = JSON.stringify(entryObj);
+            try {
+                localStorage.setItem(cacheKey, entry);
+            } catch (storageError) {
+                if (storageError.name === 'QuotaExceededError') {
+                    console.warn(`[CACHE] Kvota puna pri upisu ${cacheKey} (${Math.round(entry.length/1024)}KB) — čistim najstarije...`);
+                    const candidates = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (!key || !key.startsWith('cache_') || key === cacheKey) continue;
+                        let ts = 0;
+                        try { ts = JSON.parse(localStorage.getItem(key)).timestamp || 0; } catch(_) {}
+                        candidates.push({ key, ts });
+                    }
+                    candidates.sort((a, b) => a.ts - b.ts);
+                    let written = false;
+                    for (const c of candidates) {
+                        localStorage.removeItem(c.key);
+                        console.warn(`[CACHE] Obrisan najstariji: ${c.key}`);
+                        try {
+                            localStorage.setItem(cacheKey, entry);
+                            written = true;
+                            break;
+                        } catch(_) {}
+                    }
+                    if (!written) {
+                        console.error(`[CACHE] Upis ${cacheKey} nemoguć ni nakon čišćenja — podatak prevelik za preostalu kvotu`);
+                    }
+                }
+            }
+        }
+
+        async function _removeCacheEntry(cacheKey) {
+            if (IDB_LARGE_KEYS.has(cacheKey) && window.IDBHelper) {
+                try { await window.IDBHelper.setMeta('blob_' + cacheKey, null); } catch(e) {}
+                return;
+            }
+            try { localStorage.removeItem(cacheKey); } catch(e) {}
+        }
+
         // Fetch with cache - cache-first strategy
         async function fetchWithCache(url, cacheKey, forceRefresh = false, timeout = 60000) {
             if (!forceRefresh && _inflightFetches.has(url)) {
                 const flight = _inflightFetches.get(url);
                 if (flight.cacheKey === cacheKey) return flight.promise;
                 // Isti URL, drugi ključ — podijeli odgovor i keširaj i pod ovaj ključ
-                return flight.promise.then(data => {
+                return flight.promise.then(async data => {
                     if (data && !data.offline && !data.error) {
-                        try { localStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() })); } catch(e) {}
+                        await _writeCacheEntry(cacheKey, data);
                     }
                     return data;
                 });
@@ -503,31 +579,25 @@
             // VAŽNO: kod forceRefresh NE brišemo keš unaprijed — samo preskačemo
             // freshness check. Keš ostaje kao stale-fallback ako mreža padne.
             const cacheCheckStart = performance.now();
-            const cached = _resolveCacheRaw(cacheKey);
+            const cached = await _readCacheEntry(cacheKey); // {data, timestamp} ili null
             if (cached && !forceRefresh) {
-                try {
-                    const cachedData = JSON.parse(cached);
-                    const now = Date.now();
-                    const age = now - cachedData.timestamp;
+                const now = Date.now();
+                const age = now - cached.timestamp;
 
-                    // If cache is fresh, return it immediately
-                    if (age < cacheTTL) {
-                        // If cached data is an error response, clear it and fetch fresh
-                        if (cachedData.data && cachedData.data.error) {
-                            localStorage.removeItem(cacheKey);
-                            perfMetrics.cacheMisses++;
-                        } else {
-                            perfMetrics.cacheHits++;
-                            showCacheIndicator(age);
-                            const cacheRetrievalTime = performance.now() - cacheCheckStart;
-                            logPerformance(`Cache HIT: ${path} (age: ${(age/1000).toFixed(1)}s)`, cacheRetrievalTime);
-                            return cachedData.data;
-                        }
-                    } else {
+                // If cache is fresh, return it immediately
+                if (age < cacheTTL) {
+                    // If cached data is an error response, clear it and fetch fresh
+                    if (cached.data && cached.data.error) {
+                        await _removeCacheEntry(cacheKey);
                         perfMetrics.cacheMisses++;
+                    } else {
+                        perfMetrics.cacheHits++;
+                        showCacheIndicator(age);
+                        const cacheRetrievalTime = performance.now() - cacheCheckStart;
+                        logPerformance(`Cache HIT: ${path} (age: ${(age/1000).toFixed(1)}s)`, cacheRetrievalTime);
+                        return cached.data;
                     }
-                } catch (e) {
-                    console.error('Cache parse error:', e);
+                } else {
                     perfMetrics.cacheMisses++;
                 }
             } else {
@@ -536,16 +606,11 @@
 
             // Offline fast-path: skip network entirely, use stale cache immediately
             if (!navigator.onLine) {
-                if (cached) {
-                    try {
-                        const cachedData = JSON.parse(cached);
-                        if (cachedData.data) {
-                            const age = Date.now() - cachedData.timestamp;
-                            showCacheIndicator(age, true);
-                            console.warn(`[OFFLINE] Stale cache (${Math.round(age/60000)}m): ${cacheKey}`);
-                            return cachedData.data;
-                        }
-                    } catch(e) {}
+                if (cached && cached.data) {
+                    const age = Date.now() - cached.timestamp;
+                    showCacheIndicator(age, true);
+                    console.warn(`[OFFLINE] Stale cache (${Math.round(age/60000)}m): ${cacheKey}`);
+                    return cached.data;
                 }
                 // Nema keša za ovaj tab — upozori jednom i vrati prazan odgovor
                 // (ne bacaj grešku da callers mogu gracefully prikazati prazan sadržaj)
@@ -623,44 +688,10 @@
                         return data;
                     }
 
-                    // Store in cache (handle QuotaExceededError)
-                    // VAŽNO: raniji handler je pri punoj kvoti BRISAO SVE cache_* ključeve
-                    // da upiše jedan — usred preloada od 28 prikaza to je značilo da svaki
-                    // quota-fail obriše sve što je preload do tada napunio. Zato su offline
-                    // bili prazni baš najveći tabovi (Kupci, Stanje zaliha, Sječa/otprema...)
-                    // iako je izvještaj kazao "✓ učitano". Novi handler briše NAJSTARIJE
-                    // ključeve jedan po jedan, samo koliko treba da novi upis stane.
-                    const entry = JSON.stringify({ data: data, timestamp: Date.now() });
-                    try {
-                        localStorage.setItem(cacheKey, entry);
-                    } catch (storageError) {
-                        if (storageError.name === 'QuotaExceededError') {
-                            console.warn(`[CACHE] Kvota puna pri upisu ${cacheKey} (${Math.round(entry.length/1024)}KB) — čistim najstarije...`);
-                            // Skupi cache_* ključeve s timestampovima, sortiraj najstarije prve
-                            const candidates = [];
-                            for (let i = 0; i < localStorage.length; i++) {
-                                const key = localStorage.key(i);
-                                if (!key || !key.startsWith('cache_') || key === cacheKey) continue;
-                                let ts = 0;
-                                try { ts = JSON.parse(localStorage.getItem(key)).timestamp || 0; } catch(_) {}
-                                candidates.push({ key, ts });
-                            }
-                            candidates.sort((a, b) => a.ts - b.ts); // najstariji prvi
-                            let written = false;
-                            for (const c of candidates) {
-                                localStorage.removeItem(c.key);
-                                console.warn(`[CACHE] Obrisan najstariji: ${c.key}`);
-                                try {
-                                    localStorage.setItem(cacheKey, entry);
-                                    written = true;
-                                    break;
-                                } catch(_) { /* još uvijek puno — briši sljedeći */ }
-                            }
-                            if (!written) {
-                                console.error(`[CACHE] Upis ${cacheKey} nemoguć ni nakon čišćenja — podatak prevelik za preostalu kvotu`);
-                            }
-                        }
-                    }
+                    // Store in cache — veliki prikazi (primke/otpreme) idu u IndexedDB,
+                    // ostalo u localStorage s LRU eviction na QuotaExceededError
+                    // (briše najstarije cache_* ključeve jedan po jedan dok upis ne stane).
+                    await _writeCacheEntry(cacheKey, data);
 
                     hideCacheIndicator();
                     return data;
@@ -690,15 +721,10 @@
 
             // If network fails and we have stale cache, use it
             if (cached) {
-                try {
-                    const cachedData = JSON.parse(cached);
-                    const age = Date.now() - cachedData.timestamp;
-                    showCacheIndicator(age, true);
-                    console.warn(`Using stale cache (${(age/1000/60).toFixed(1)} min old) after network failure`);
-                    return cachedData.data;
-                } catch (e) {
-                    console.error('Stale cache parse error:', e);
-                }
+                const age = Date.now() - cached.timestamp;
+                showCacheIndicator(age, true);
+                console.warn(`Using stale cache (${(age/1000/60).toFixed(1)} min old) after network failure`);
+                return cached.data;
             }
 
             // Nema keša i sve retry-e iscrpljene — prikaži upozorenje s dugmetom za retry
@@ -1169,29 +1195,29 @@
                 }
 
                 // Skip views that are already cached (unless forceRefresh)
+                // _readCacheEntry je async (veliki ključevi primke/otpreme čitaju IndexedDB),
+                // pa .filter() ne radi direktno — mapiramo u bool niz pa filtriramo po njemu.
                 if (!forceRefresh) {
                     const smartTTL = getSmartCacheTTL();
-                    const uncachedViews = allViews.filter(view => {
+                    const isUncached = await Promise.all(allViews.map(async (view) => {
                         try {
-                            const cached = localStorage.getItem(view.cacheKey);
-                            if (cached) {
-                                const cachedData = JSON.parse(cached);
-                                if (cachedData.data && !cachedData.data.error && (Date.now() - cachedData.timestamp) < smartTTL) {
-                                    // Primar je svjež — provjeri i sekundarne ključeve
-                                    const allSecondaryFresh = !view.alsoCache || view.alsoCache.every(k => {
-                                        try {
-                                            const s = _resolveCacheRaw(k);
-                                            if (!s) return false;
-                                            const sd = JSON.parse(s);
-                                            return sd.data && !sd.data.error && (Date.now() - sd.timestamp) < smartTTL;
-                                        } catch(e) { return false; }
-                                    });
-                                    if (allSecondaryFresh) return false; // Svi svježi - preskoči
-                                }
+                            const cached = await _readCacheEntry(view.cacheKey);
+                            if (cached && cached.data && !cached.data.error && (Date.now() - cached.timestamp) < smartTTL) {
+                                // Primar je svjež — provjeri i sekundarne ključeve
+                                const allSecondaryFresh = !view.alsoCache || view.alsoCache.every(k => {
+                                    try {
+                                        const s = _resolveCacheRaw(k);
+                                        if (!s) return false;
+                                        const sd = JSON.parse(s);
+                                        return sd.data && !sd.data.error && (Date.now() - sd.timestamp) < smartTTL;
+                                    } catch(e) { return false; }
+                                });
+                                if (allSecondaryFresh) return false; // Svi svježi - preskoči
                             }
                         } catch (e) {}
                         return true; // Nije keširano ili zastarjelo - fetchuj
-                    });
+                    }));
+                    const uncachedViews = allViews.filter((_, i) => isUncached[i]);
                     const skipped = allViews.length - uncachedViews.length;
                     if (skipped > 0) {
                         console.log(`[PRELOAD] Skipping ${skipped} already-cached views, fetching ${uncachedViews.length} remaining`);
