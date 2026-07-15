@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.9';
+        const APP_VERSION = '1.4.10';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1008,12 +1008,14 @@
                     allViews = [
                         // DASHBOARD + OPERATIVA
                         { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year + '_m' + currentMonthNum, timeout: 180000 },
+                        // Dodani unosi — VISOK PRIORITET za offline (queue je FIFO,
+                        // rane stavke se skinu prve i prežive i djelimičan preload)
+                        { name: 'Pending Unosi', url: buildApiUrl('pending-unosi', { year }), cacheKey: 'cache_pending_unosi', timeout: 120000 },
                         { name: 'Operativa - Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year, timeout: 60000 },
                         { name: 'Operativa (Stats)', url: buildApiUrl('stats', { year }), cacheKey: 'cache_stats_' + year, timeout: 180000 },
                         { name: 'Stanje Odjela (odjeli)', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_odjeli_' + year, timeout: 180000 },
                         { name: 'Lista Odjela (dropdown)', url: buildApiUrl('get-odjeli-list'), cacheKey: 'cache_odjeli_list', timeout: 60000 },
                         { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
-                        { name: 'Pending Unosi', url: buildApiUrl('pending-unosi', { year }), cacheKey: 'cache_pending_unosi', timeout: 120000 },
                         { name: 'Mjesečni Sortimenti', url: buildApiUrl('mjesecni-sortimenti', { year }), cacheKey: 'cache_mjesecni_sortimenti_' + year, timeout: 120000 },
                         { name: 'Dinamika', url: buildApiUrl('get_dinamika', { year }), cacheKey: 'cache_dinamika_' + year, timeout: 120000 },
 
@@ -1756,6 +1758,12 @@
                     const data = await fetchWithCache(url, cacheKey, false, 180000);
 
                     if (data.offline || data.error) {
+                        // Offline bez keša: otkrij tab (makar prazan kostur) umjesto
+                        // vječnog "Učitavam podatke" — toast je već upozorio korisnika
+                        if (!hasCachedData && isActiveTab('dashboard')) {
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            document.getElementById('dashboard-content').classList.remove('hidden');
+                        }
                         markTabRendered('dashboard');
                         return;
                     }
@@ -2066,6 +2074,17 @@
                     </tr>
                 `;
                 document.getElementById('dashboard-monthly-tfoot').innerHTML = tfootHTML;
+
+                // PROGRESIVNI PRIKAZ: otkrij dashboard ČIM je glavna mjesečna tabela
+                // spremna — ranije se sadržaj otkrivao tek na SAMOM KRAJU (nakon
+                // tekući-mjesec, zadnjih-5 i odjeli tabela, od kojih svaka može
+                // trajati/failati), pa je pri prvom učitavanju korisnik gledao
+                // "Učitavam podatke" iako je glavnina već bila renderovana — i
+                // prikaz bi se "pojavio" tek kad ručno klikne tab.
+                if (isActiveTab('dashboard')) {
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    document.getElementById('dashboard-content').classList.remove('hidden');
+                }
 
                 // Load "Tekući mjesec" table
                 await loadTekuciMjesecTable();
@@ -4417,6 +4436,10 @@
                 try {
                     const data = await fetchWithCache(url, cacheKey, false, 180000);
                     if (data.offline || data.error) {
+                        if (!hasCachedData && isActiveTab('primaci')) {
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            document.getElementById('primaci-content').classList.remove('hidden');
+                        }
                         markTabRendered('primaci');
                         return;
                     }
@@ -4750,6 +4773,10 @@
                 try {
                     const data = await fetchWithCache(url, cacheKey, false, 180000);
                     if (data.offline || data.error) {
+                        if (!hasCachedData && isActiveTab('otpremaci')) {
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            document.getElementById('otpremaci-content').classList.remove('hidden');
+                        }
                         markTabRendered('otpremaci');
                         return;
                     }
