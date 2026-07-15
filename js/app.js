@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.10';
+        const APP_VERSION = '1.4.11';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1201,12 +1201,18 @@
                 console.log(`[PRELOAD] Starting preload of ${totalViews} views (silent=${silent})...`);
 
                 // Učitaj jedan prikaz — vraća true/false; koristi se i u batch-u i u retry-u
+                // BULK_TIMEOUT_CAP: u preload kontekstu ne čekamo pun view.timeout (do 180s) po
+                // hladnoj (nekeširanoj) stavci — sa 8 paralelnih slotova to gura kasnije stavke u
+                // red na 6-12 minuta. Bulk preload treba proći kroz SVE stavke brzo; stavke koje
+                // ipak ne stignu zadržavaju stari keš (ništa se ne briše) i hvataju se u retry prolazu.
+                const BULK_TIMEOUT_CAP = 35000;
                 const _loadOneView = async (view) => {
                     try {
                         if (forceRefresh && view.alsoCache) {
                             view.alsoCache.forEach(k => localStorage.removeItem(k));
                         }
-                        const data = await fetchWithCache(view.url, view.cacheKey, forceRefresh, view.timeout);
+                        const bulkTimeout = Math.min(view.timeout, BULK_TIMEOUT_CAP);
+                        const data = await fetchWithCache(view.url, view.cacheKey, forceRefresh, bulkTimeout);
                         // fetchWithCache nikad ne baca — neuspjeh vraća {offline:true} ili {error}
                         if (data && (data.offline || data.error)) {
                             throw new Error(data.error || 'offline/timeout');
@@ -1240,23 +1246,27 @@
                     return { success: ok, name: view.name };
                 }, 8); // Max 8 paralelnih poziva
 
-                // RETRY neuspjelih — sekvencijalno (mreža/GAS se smiri kad batch stane).
-                // Nedeterministički timeout jednog od 8 paralelnih teških upita je
-                // glavni uzrok "1 nije uspjelo"; jedan miran pokušaj to najčešće riješi.
+                // RETRY neuspjelih — blago paralelno (4 istovremeno). Batch je upravo stao pa je
+                // mreža/GAS mirniji, a paralelizam (umjesto strogo sekvencijalnog) sprječava da
+                // veći broj neuspjelih stavki predugo čeka red kad ih ima puno (npr. 16/28).
                 if (failedViews.length) {
-                    console.log(`[PRELOAD] Retry ${failedViews.length} neuspjelih prikaza (sekvencijalno)...`);
+                    console.log(`[PRELOAD] Retry ${failedViews.length} neuspjelih prikaza (paralelno, max 4)...`);
                     if (!silent && progressToast) {
                         const msgEl = progressToast.querySelector('.toast-message');
                         if (msgEl) msgEl.textContent = `Ponovni pokušaj (${failedViews.length})...`;
                     }
-                    for (const view of failedViews.slice()) {
+                    const stillFailed = [];
+                    await processQueue(failedViews.slice(), async (view) => {
                         const ok = await _loadOneView(view);
                         if (ok) {
-                            const idx = failedViews.indexOf(view);
-                            if (idx !== -1) failedViews.splice(idx, 1);
                             console.log(`[PRELOAD] ✓ (retry) ${view.name}`);
+                        } else {
+                            stillFailed.push(view);
                         }
-                    }
+                        return ok;
+                    }, 4);
+                    failedViews.length = 0;
+                    failedViews.push(...stillFailed);
                 }
                 totalFailed = failedViews.length;
 
