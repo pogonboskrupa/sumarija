@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.11';
+        const APP_VERSION = '1.4.12';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -451,6 +451,25 @@
         // primac-detail 4× pod različitim cache ključevima)
         const _inflightFetches = new Map(); // url → { promise, cacheKey }
 
+        // ALIAS ključevi (preload alsoCache): umjesto da duplikuju CIJEL payload pod
+        // svakim aliasom (npr. primke 2.7MB × 4 ključa = ~11MB samo za jedan prikaz —
+        // to je bio glavni uzrok "Kvota puna" thrashinga koji je brisao tek upisan keš),
+        // alias ključ čuva samo malen pokazivač {__alias: primarniKljuc}. Čitanje ide
+        // kroz ovu funkciju koja slijedi pokazivač i vraća SIROVI JSON string primarnog
+        // ključa (isti oblik kao normalan cache unos), pa je sav postojeći kod koji
+        // očekuje `{data, timestamp}` iz cached stringa netaknut.
+        function _resolveCacheRaw(key) {
+            const raw = localStorage.getItem(key);
+            if (!raw) return null;
+            try {
+                const parsed = JSON.parse(raw);
+                if (parsed && parsed.__alias) {
+                    return localStorage.getItem(parsed.__alias);
+                }
+            } catch (e) {}
+            return raw;
+        }
+
         // Fetch with cache - cache-first strategy
         async function fetchWithCache(url, cacheKey, forceRefresh = false, timeout = 60000) {
             if (!forceRefresh && _inflightFetches.has(url)) {
@@ -484,7 +503,7 @@
             // VAŽNO: kod forceRefresh NE brišemo keš unaprijed — samo preskačemo
             // freshness check. Keš ostaje kao stale-fallback ako mreža padne.
             const cacheCheckStart = performance.now();
-            const cached = localStorage.getItem(cacheKey);
+            const cached = _resolveCacheRaw(cacheKey);
             if (cached && !forceRefresh) {
                 try {
                     const cachedData = JSON.parse(cached);
@@ -1166,7 +1185,7 @@
                                     // Primar je svjež — provjeri i sekundarne ključeve
                                     const allSecondaryFresh = !view.alsoCache || view.alsoCache.every(k => {
                                         try {
-                                            const s = localStorage.getItem(k);
+                                            const s = _resolveCacheRaw(k);
                                             if (!s) return false;
                                             const sd = JSON.parse(s);
                                             return sd.data && !sd.data.error && (Date.now() - sd.timestamp) < smartTTL;
@@ -1218,8 +1237,11 @@
                             throw new Error(data.error || 'offline/timeout');
                         }
                         if (view.alsoCache && data) {
-                            const entry = JSON.stringify({ data, timestamp: Date.now() });
-                            view.alsoCache.forEach(k => { try { localStorage.setItem(k, entry); } catch(e) {} });
+                            // Alias, ne duplikat — vidi _resolveCacheRaw. Sprječava eksploziju
+                            // kvote kad isti veliki payload (npr. primke/otpreme) treba biti
+                            // dostupan pod više cache ključeva.
+                            const aliasEntry = JSON.stringify({ __alias: view.cacheKey, timestamp: Date.now() });
+                            view.alsoCache.forEach(k => { try { localStorage.setItem(k, aliasEntry); } catch(e) {} });
                         }
                         return true;
                     } catch (error) {

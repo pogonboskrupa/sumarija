@@ -1038,7 +1038,7 @@
     } catch(e) {
       console.warn('[Mapa]', endpoint, 'failed:', e.message);
       try {
-        const raw = localStorage.getItem(cacheKey);
+        const raw = (typeof _resolveCacheRaw === 'function') ? _resolveCacheRaw(cacheKey) : localStorage.getItem(cacheKey);
         if (raw) { const obj=JSON.parse(raw); return (obj&&obj.data&&obj.data[dataKey])||[]; }
       } catch(_) {}
       return [];
