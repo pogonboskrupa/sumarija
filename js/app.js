@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.24';
+        const APP_VERSION = '1.4.25';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6685,13 +6685,9 @@
 
         // Popuni godinu/kupca selektore i učitaj statistiku (poziva se pri otvaranju podtaba)
         async function initKupciStatistikaControls() {
-            console.log('[Kupci Statistika] initKupciStatistikaControls() start');
             const yearSelect = document.getElementById('kupci-statistika-year');
             const kupacSelect = document.getElementById('kupci-statistika-kupac');
-            if (!yearSelect || !kupacSelect) {
-                console.error('[Kupci Statistika] yearSelect/kupacSelect NE POSTOJE u DOM-u!', !!yearSelect, !!kupacSelect);
-                return;
-            }
+            if (!yearSelect || !kupacSelect) return;
 
             // Godine (tekuća + 2 prethodne) — popuni samo jednom
             if (!yearSelect.dataset.populated) {
@@ -6713,7 +6709,6 @@
                 kupacSelect.innerHTML = '<option value="">-- Odaberi kupca --</option>' +
                     kupci.map(k => `<option value="${k.replace(/"/g, '&quot;')}">${k}</option>`).join('');
                 if (prevKupac && kupci.includes(prevKupac)) kupacSelect.value = prevKupac;
-                console.log('[Kupci Statistika] Lista kupaca popunjena:', kupci.length, 'kupaca za', year);
             } catch (e) {
                 console.error('[Kupci Statistika] Greška pri učitavanju liste kupaca:', e);
             }
@@ -6850,19 +6845,23 @@
         }
 
         async function loadKupciStatistika() {
-            console.log('[Kupci Statistika] loadKupciStatistika() start');
             const yearSelect = document.getElementById('kupci-statistika-year');
             const kupacSelect = document.getElementById('kupci-statistika-kupac');
             const content = document.getElementById('kupci-statistika-content');
-            if (!yearSelect || !kupacSelect || !content) {
-                console.error('[Kupci Statistika] Element(i) nedostaju:', !!yearSelect, !!kupacSelect, !!content);
-                return;
-            }
+            if (!yearSelect || !kupacSelect || !content) return;
+
+            // KRITIČNO: switchTab() (js/ui.js) generički bira SVE elemente čiji id
+            // završava na "-content" (`[id$="-content"]`) da sakrije top-level tabove
+            // — "kupci-statistika-content" nenamjerno upada u isti obrazac (iako je
+            // ugniježđen podsadržaj, ne top-level tab), pa ga taj prolaz označi
+            // 'hidden' i NIKAD ga ne otkrije nazad. innerHTML se ispravno upiše, ali
+            // sam div ostaje display:none. Zato ovdje eksplicitno uklanjamo tu klasu
+            // pri svakom renderu.
+            content.classList.remove('hidden');
 
             const year = parseInt(yearSelect.value) || new Date().getFullYear();
             const kupac = kupacSelect.value;
             const myToken = ++_kupacStatLoadToken;
-            console.log('[Kupci Statistika] year=', year, 'kupac=', JSON.stringify(kupac));
 
             content.innerHTML = `
                 <div style="text-align: center; padding: 60px; color: #6b7280;">
@@ -6877,10 +6876,8 @@
                 try {
                     const url = buildApiUrl('kupci', { year });
                     const kupciData = await fetchWithCache(url, 'cache_kupci_' + year);
-                    console.log('[Kupci Statistika] kupciData (overview) primljen:', kupciData && kupciData.godisnji ? kupciData.godisnji.length + ' kupaca' : kupciData);
-                    if (myToken !== _kupacStatLoadToken) { console.log('[Kupci Statistika] token zastario, preskačem render'); return; }
+                    if (myToken !== _kupacStatLoadToken) return;
                     renderKupciStatistikaOverview(kupciData, year);
-                    console.log('[Kupci Statistika] overview renderovan, content.innerHTML.length=', content.innerHTML.length);
                 } catch (error) {
                     console.error('[Kupci Statistika] Greška (overview):', error);
                     if (myToken !== _kupacStatLoadToken) return;
@@ -6895,30 +6892,12 @@
                 if (!stat) {
                     const url = buildApiUrl('kupci', { year });
                     const kupciData = await fetchWithCache(url, 'cache_kupci_' + year);
-                    console.log('[Kupci Statistika] kupciData primljen za', kupac, ':', kupciData && kupciData.godisnji ? kupciData.godisnji.length + ' kupaca ukupno' : kupciData);
                     stat = computeKupacStatistikaFast(kupac, year, kupciData);
                     _kupciStatCache[cacheKey] = stat;
                 }
-                console.log('[Kupci Statistika] stat za', kupac, ':', stat);
 
-                if (myToken !== _kupacStatLoadToken) {
-                    console.log('[Kupci Statistika] token zastario (myToken=' + myToken + ', trenutni=' + _kupacStatLoadToken + ') — preskačem render za', kupac);
-                    return; // stigao prekasno — korisnik je u međuvremenu odabrao drugog kupca
-                }
+                if (myToken !== _kupacStatLoadToken) return; // stigao prekasno — korisnik je u međuvremenu odabrao drugog kupca
                 renderKupciStatistika(stat, kupac, year);
-                console.log('[Kupci Statistika] renderKupciStatistika pozvan za', kupac, '— content.innerHTML.length=', content.innerHTML.length);
-                {
-                    // Dijagnostika VIDLJIVOSTI — DOM sadržaj postoji (dokazano dužinom
-                    // innerHTML), pitanje je da li je stvarno prikazan na ekranu.
-                    const view = document.getElementById('kupci-statistika-view');
-                    const kupciTab = document.getElementById('kupci-content');
-                    const rect = content.getBoundingClientRect();
-                    const cs = window.getComputedStyle(content);
-                    console.log('[Kupci Statistika] VIDLJIVOST — view.hidden=', view && view.classList.contains('hidden'),
-                        'kupciTab.hidden=', kupciTab && kupciTab.classList.contains('hidden'),
-                        'content rect=', { width: rect.width, height: rect.height, top: rect.top },
-                        'display=', cs.display, 'visibility=', cs.visibility, 'opacity=', cs.opacity);
-                }
 
                 // Detaljniji dio (top odjeli/otpremači, period aktivnosti, razmak) —
                 // učitaj u pozadini i dopuni prikaz kad stigne, ne blokiraj glavni prikaz.
@@ -6937,7 +6916,7 @@
             } catch (error) {
                 if (myToken !== _kupacStatLoadToken) return;
                 console.error('[Kupci Statistika] Greška:', error);
-                content.innerHTML = `<div style="text-align: center; padding: 60px; color: #dc2626;">❌ Greška pri učitavanju: ${error.message}<br><span style="font-size:11px;color:#9ca3af;">${(error.stack||'').slice(0,300)}</span></div>`;
+                content.innerHTML = `<div style="text-align: center; padding: 60px; color: #dc2626;">❌ Greška pri učitavanju: ${error.message}</div>`;
             }
         }
 
@@ -6952,15 +6931,10 @@
         // Pregled SVIH kupaca (bez odabira) — rang lista po ukupnoj količini, sa
         // brojem otpremnica i top sortimentom; klik na red otvara puni prikaz kupca.
         function renderKupciStatistikaOverview(kupciData, year) {
-            console.log('[Kupci Statistika] renderKupciStatistikaOverview() start, kupciData:', kupciData);
             const content = document.getElementById('kupci-statistika-content');
-            if (!content) {
-                console.error('[Kupci Statistika] #kupci-statistika-content NE POSTOJI u DOM-u!');
-                return;
-            }
+            if (!content) return;
 
             const godisnji = (kupciData && kupciData.godisnji) ? [...kupciData.godisnji] : [];
-            console.log('[Kupci Statistika] godisnji.length =', godisnji.length);
             if (!godisnji.length) {
                 content.innerHTML = `<div style="text-align: center; padding: 40px; color: #9ca3af; font-size: 14px;">Nema podataka o kupcima za ${year}. godinu</div>`;
                 return;
@@ -7003,15 +6977,10 @@
         }
 
         function renderKupciStatistika(stat, kupacName, year) {
-            console.log('[Kupci Statistika] renderKupciStatistika() start, kupac=', kupacName, 'stat.totalCount=', stat.totalCount, 'stat.rang=', stat.rang);
             const content = document.getElementById('kupci-statistika-content');
-            if (!content) {
-                console.error('[Kupci Statistika] #kupci-statistika-content NE POSTOJI (renderKupciStatistika)!');
-                return;
-            }
+            if (!content) return;
 
             if (stat.totalCount === 0) {
-                console.warn('[Kupci Statistika] totalCount=0 za', kupacName, '— godRow nije nađen ili nema otprema. rang=', stat.rang);
                 content.innerHTML = `<div style="text-align: center; padding: 40px; color: #9ca3af; font-size: 14px;">Nema otprema za kupca <strong>${kupacName}</strong> u ${year}. godini</div>`;
                 return;
             }
