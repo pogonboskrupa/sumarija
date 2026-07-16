@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.18';
+        const APP_VERSION = '1.4.19';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6748,6 +6748,7 @@
             const sortimentCounts = {};
             const odjeliMap = new Map();
             const otpremaciMap = new Map();
+            const distinctDaysSet = new Set(); // za prosječan razmak između otprema
             let firstDate = null, lastDate = null, totalCount = 0, totalUkupno = 0;
 
             const monthly = monthResults.map(({ rows, sortimentiNazivi }, month) => {
@@ -6781,11 +6782,20 @@
                     if (d) {
                         if (!firstDate || d < firstDate) firstDate = d;
                         if (!lastDate  || d > lastDate)  lastDate  = d;
+                        distinctDaysSet.add(d.getTime());
                     }
                 });
                 totalCount += rows.length;
                 return agg;
             });
+
+            // Prosječan razmak (dana) između uzastopnih dana isporuke
+            const distinctDays = Array.from(distinctDaysSet).sort((a, b) => a - b);
+            let avgGapDays = null;
+            if (distinctDays.length > 1) {
+                const totalSpan = distinctDays[distinctDays.length - 1] - distinctDays[0];
+                avgGapDays = (totalSpan / (24 * 60 * 60 * 1000)) / (distinctDays.length - 1);
+            }
 
             const kvartalNazivi = { 1: 'Q1 (Jan-Mar)', 2: 'Q2 (Apr-Jun)', 3: 'Q3 (Jul-Sep)', 4: 'Q4 (Okt-Dec)' };
             const quarterly = [1, 2, 3, 4].map(q => {
@@ -6805,8 +6815,24 @@
             return {
                 monthly, quarterly, sortimentiNazivi, sortimentTotals, sortimentCounts,
                 topOdjeli, topOtpremaci, totalCount, totalUkupno, aktivnihMjeseci,
-                firstDate, lastDate,
+                firstDate, lastDate, avgGapDays, distinctDaysCount: distinctDays.length,
             };
+        }
+
+        // Rang kupca po ukupnoj količini među svim kupcima te godine (iz istog
+        // cache_kupci_<godina> keša koji se koristi za "Godišnji pregled")
+        async function computeKupacRang(kupacName, year) {
+            try {
+                const url = buildApiUrl('kupci', { year });
+                const data = await fetchWithCache(url, 'cache_kupci_' + year);
+                const godisnji = (data && data.godisnji) ? data.godisnji : [];
+                const sorted = [...godisnji].sort((a, b) => (b.ukupno || 0) - (a.ukupno || 0));
+                const idx = sorted.findIndex(k => (k.kupac || '').toLowerCase() === kupacName.toLowerCase());
+                if (idx === -1) return null;
+                return { rang: idx + 1, ukupnoKupaca: sorted.length };
+            } catch (e) {
+                return null;
+            }
         }
 
         async function loadKupciStatistika() {
@@ -6834,7 +6860,12 @@
             let stat = _kupciStatCache[cacheKey];
             if (!stat) {
                 try {
-                    stat = await computeKupacStatistika(kupac, year);
+                    const [statResult, rangResult] = await Promise.all([
+                        computeKupacStatistika(kupac, year),
+                        computeKupacRang(kupac, year),
+                    ]);
+                    stat = statResult;
+                    stat.rang = rangResult;
                     _kupciStatCache[cacheKey] = stat;
                 } catch (error) {
                     content.innerHTML = `<div style="text-align: center; padding: 60px; color: #dc2626;">❌ Greška pri učitavanju: ${error.message}</div>`;
@@ -6857,7 +6888,20 @@
             const prosjek = stat.totalCount > 0 ? stat.totalUkupno / stat.totalCount : 0;
             const najboljiMjesec = stat.monthly.reduce((best, m) => (!best || m.ukupno > best.ukupno) ? m : best, null);
 
-            let html = '<div class="summary-cards">';
+            // Neaktivnost — ima smisla samo za tekuću godinu (poređenje sa "danas")
+            const nowYear = new Date().getFullYear();
+            const daysSinceLast = stat.lastDate ? Math.floor((Date.now() - stat.lastDate.getTime()) / 86400000) : null;
+            const isInactive = (year === nowYear) && daysSinceLast !== null && daysSinceLast > 60;
+
+            let html = '';
+            if (isInactive) {
+                html += `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:20px;">⚠️</span>
+                    <span style="color:#991b1b;font-size:13px;font-weight:600;">Kupac neaktivan ${daysSinceLast} dana — zadnja otprema ${_fmtKupacDatum(stat.lastDate)}.</span>
+                </div>`;
+            }
+
+            html += '<div class="summary-cards">';
             html += `<div class="summary-card green">
                 <div class="summary-card-title">Ukupno ${year}.</div>
                 <div class="summary-card-value">${stat.totalUkupno.toFixed(2)} m³</div>
@@ -6876,6 +6920,16 @@
             html += `<div class="summary-card">
                 <div class="summary-card-title">Period aktivnosti</div>
                 <div class="summary-card-value" style="font-size:15px;">${_fmtKupacDatum(stat.firstDate)} – ${_fmtKupacDatum(stat.lastDate)}</div>
+            </div>`;
+            html += `<div class="summary-card">
+                <div class="summary-card-title">Rang po količini</div>
+                <div class="summary-card-value">${stat.rang ? '#' + stat.rang.rang : '—'}</div>
+                <div class="summary-card-subtitle">${stat.rang ? 'od ' + stat.rang.ukupnoKupaca + ' kupaca u ' + year + '.' : ''}</div>
+            </div>`;
+            html += `<div class="summary-card">
+                <div class="summary-card-title">Prosječan razmak</div>
+                <div class="summary-card-value">${stat.avgGapDays != null ? stat.avgGapDays.toFixed(1) + ' d' : '—'}</div>
+                <div class="summary-card-subtitle">${stat.distinctDaysCount > 1 ? 'između ' + stat.distinctDaysCount + ' dana isporuke' : 'nedovoljno podataka'}</div>
             </div>`;
             html += '</div>';
 
