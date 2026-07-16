@@ -3150,6 +3150,11 @@
                             <button onclick="searchKartaOdjel()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🔍</button>
                             <button onclick="document.getElementById('karta-search').value='';searchKartaOdjel();" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">✕</button>
                         </div>
+                        <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#374151;cursor:pointer;background:white;border:1px solid #d1d5db;border-radius:6px;padding:4px 10px;">
+                            <input id="karta-otprema-toggle" type="checkbox" onchange="applyKartaFilter()" style="cursor:pointer;margin:0;" />
+                            🚛 Prikaz otpreme
+                        </label>
+                        <span id="karta-otprema-info" style="font-size:11px;color:#b45309;font-weight:700;display:none;"></span>
                         <button id="karta-sat-btn" onclick="toggleMapaSat()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🛰️ Satelit</button>
                         <button id="karta-odjel-ruta-btn" onclick="toggleOdjelRutaMode()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🔀 Ruta odjel→odjel</button>
                         <button onclick="resetKartaView()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">↺ Reset</button>
