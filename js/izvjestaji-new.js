@@ -11,6 +11,7 @@ function switchIzvjestajiSubTab(subTab) {
     const sedmicniElem = document.getElementById('izvjestaji-sedmicni');
     const sedmicniRadnikElem = document.getElementById('izvjestaji-sedmicni-radnik');
     const mjesecniElem = document.getElementById('izvjestaji-mjesecni');
+    const poOdjelimaElem = document.getElementById('izvjestaji-po-odjelima');
 
     // ✅ SAFETY CHECK: Elementi moraju postojati
     if (!sedmicniElem || !mjesecniElem) {
@@ -25,6 +26,7 @@ function switchIzvjestajiSubTab(subTab) {
     sedmicniElem.classList.add('hidden');
     if (sedmicniRadnikElem) sedmicniRadnikElem.classList.add('hidden');
     mjesecniElem.classList.add('hidden');
+    if (poOdjelimaElem) poOdjelimaElem.classList.add('hidden');
 
     if (subTab === 'sedmicni') {
         sedmicniElem.classList.remove('hidden');
@@ -58,6 +60,18 @@ function switchIzvjestajiSubTab(subTab) {
         document.getElementById('izvjestaji-mjesecni-month').value = currentDate.getMonth();
 
         loadIzvjestajiMjesecni();
+    } else if (subTab === 'po-odjelima') {
+        if (poOdjelimaElem) poOdjelimaElem.classList.remove('hidden');
+        const btn = document.querySelector('#izvjestaji-content .sub-tab[onclick="switchIzvjestajiSubTab(\'po-odjelima\')"]');
+        if (btn) btn.classList.add('active');
+
+        const currentDate = new Date();
+        const yrElem = document.getElementById('izvjestaji-po-odjelima-year');
+        const moElem = document.getElementById('izvjestaji-po-odjelima-month');
+        if (yrElem) yrElem.value = currentDate.getFullYear();
+        if (moElem) moElem.value = currentDate.getMonth();
+
+        loadIzvjestajiPoOdjelima();
     }
 }
 
@@ -872,6 +886,281 @@ ${otpremaHtml}
 </body>
 </html>`);
     printWindow.document.close();
+}
+
+// ============================================
+// 🏭 IZVJEŠTAJ PO ODJELIMA — sječa + otprema + radnici + sortimenti (mjesec)
+// ============================================
+
+// Grupne kolone (podzbirovi) — preskaču se u prikazu sortimenata i pri računu
+// ukupnog da se izbjegne dupliranje; "UKUPNO Č+L" je primarni izvor ukupnog.
+const IZV_GRUPNE_KOLONE = ['Σ ČETINARI', 'LIŠĆARI', 'UKUPNO Č+L'];
+const IZV_UKUPNO_KOL    = 'UKUPNO Č+L';
+
+function _izvRowUkupno(row, sortimentiNazivi) {
+    const t = parseFloat(row.sortimenti && row.sortimenti[IZV_UKUPNO_KOL]) || 0;
+    if (t) return t;
+    // Fallback: zbroj svih ne-grupnih kolona (kad UKUPNO Č+L nedostaje)
+    let s = 0;
+    sortimentiNazivi.forEach(k => {
+        if (IZV_GRUPNE_KOLONE.indexOf(k) === -1) s += parseFloat(row.sortimenti && row.sortimenti[k]) || 0;
+    });
+    return s;
+}
+
+async function loadIzvjestajiPoOdjelima() {
+    console.log('[IZVJEŠTAJI PO ODJELIMA] Loading data...');
+    const content = document.getElementById('izvjestaji-po-odjelima-content');
+
+    try {
+        const yearElem = document.getElementById('izvjestaji-po-odjelima-year');
+        const monthElem = document.getElementById('izvjestaji-po-odjelima-month');
+        if (!yearElem || !monthElem || !content) return;
+
+        const year = parseInt(yearElem.value);
+        const month = parseInt(monthElem.value);
+        const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+        const monthName = mjeseciNazivi[month] + ' ' + year;
+
+        content.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280;"><div style="font-size:32px;margin-bottom:12px;">⏳</div>Učitavanje podataka za ' + monthName + '...</div>';
+
+        // Isti endpoint i keš kao mjesečni izvještaj — dijeli topli keš, radi offline
+        const primkaUrl = buildApiUrl('primaci-daily', { year, month });
+        const otpremaUrl = buildApiUrl('otpremaci-daily', { year, month });
+
+        const [primkaData, otpremaData] = await Promise.all([
+            fetchWithCache(primkaUrl, `cache_izvjestaji_mjesecni_primka_${year}_${month}`, false, 180000),
+            fetchWithCache(otpremaUrl, `cache_izvjestaji_mjesecni_otprema_${year}_${month}`, false, 180000)
+        ]);
+
+        if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
+        if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
+
+        const primkaRows  = primkaData.data || [];
+        const otpremaRows = otpremaData.data || [];
+        const sortimentiNazivi = (primkaData.sortimentiNazivi && primkaData.sortimentiNazivi.length)
+            ? primkaData.sortimentiNazivi
+            : (otpremaData.sortimentiNazivi || []);
+
+        // Filtriraj po radilištima poslovođe (ako je poslovođa ulogiran)
+        const primkaFiltered  = filterByPoslovodjaRadilista(primkaRows);
+        const otpremaFiltered = filterByPoslovodjaRadilista(otpremaRows);
+
+        const odjeli = aggregatePoOdjelima(primkaFiltered, otpremaFiltered, sortimentiNazivi);
+        renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName);
+
+        console.log('[IZVJEŠTAJI PO ODJELIMA] ✓ Data loaded successfully');
+        if (typeof markTabRendered === 'function') markTabRendered('izvjestaji');
+
+    } catch (error) {
+        console.error('[IZVJEŠTAJI PO ODJELIMA] Error:', error);
+        if (content) content.innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626;">❌ Greška pri učitavanju: ' + error.message + '</div>';
+    }
+}
+
+// Agregiraj primku i otpremu po odjelu — sortimenti, radnici, kupci, ukupno
+function aggregatePoOdjelima(primkaRows, otpremaRows, sortimentiNazivi) {
+    const odjeli = {};
+
+    function ensure(odjel) {
+        if (!odjeli[odjel]) {
+            odjeli[odjel] = {
+                odjel: odjel,
+                radiliste: {}, izvodjac: {},
+                sjecaSort: {}, otpremaSort: {},
+                primaci: {}, otpremaci: {}, kupci: {},
+                sjecaUkupno: 0, otpremaUkupno: 0,
+            };
+            sortimentiNazivi.forEach(s => { odjeli[odjel].sjecaSort[s] = 0; odjeli[odjel].otpremaSort[s] = 0; });
+        }
+        return odjeli[odjel];
+    }
+
+    primkaRows.forEach(row => {
+        const o = ensure(String(row.odjel || '—'));
+        if (row.radiliste) o.radiliste[row.radiliste] = true;
+        if (row.izvodjac) o.izvodjac[row.izvodjac] = true;
+        sortimentiNazivi.forEach(s => { o.sjecaSort[s] += parseFloat(row.sortimenti && row.sortimenti[s]) || 0; });
+        const t = _izvRowUkupno(row, sortimentiNazivi);
+        o.sjecaUkupno += t;
+        const p = row.primac || '—';
+        o.primaci[p] = (o.primaci[p] || 0) + t;
+    });
+
+    otpremaRows.forEach(row => {
+        const o = ensure(String(row.odjel || '—'));
+        if (row.radiliste) o.radiliste[row.radiliste] = true;
+        if (row.izvodjac) o.izvodjac[row.izvodjac] = true;
+        sortimentiNazivi.forEach(s => { o.otpremaSort[s] += parseFloat(row.sortimenti && row.sortimenti[s]) || 0; });
+        const t = _izvRowUkupno(row, sortimentiNazivi);
+        o.otpremaUkupno += t;
+        const ot = row.otpremac || '—';
+        o.otpremaci[ot] = (o.otpremaci[ot] || 0) + t;
+        const k = row.kupac || '';
+        if (k) o.kupci[k] = (o.kupci[k] || 0) + t;
+    });
+
+    // Sortiraj po ukupnom prometu (sječa + otprema), najveći prvi
+    return Object.keys(odjeli).map(k => odjeli[k])
+        .sort((a, b) => (b.sjecaUkupno + b.otpremaUkupno) - (a.sjecaUkupno + a.otpremaUkupno));
+}
+
+function _izvSortList(obj) {
+    // Vrati [{ime, ukupno}] sortirano opadajuće
+    return Object.keys(obj).map(ime => ({ ime, ukupno: obj[ime] }))
+        .filter(x => x.ukupno > 0)
+        .sort((a, b) => b.ukupno - a.ukupno);
+}
+
+function renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName) {
+    const content = document.getElementById('izvjestaji-po-odjelima-content');
+    if (!content) return;
+
+    if (!odjeli.length) {
+        content.innerHTML = '<div style="text-align:center;padding:60px;color:#6b7280;"><div style="font-size:48px;margin-bottom:16px;">📭</div><div style="font-size:16px;">Nema podataka za ' + monthName + '</div></div>';
+        return;
+    }
+
+    const totalSjeca   = odjeli.reduce((s, o) => s + o.sjecaUkupno, 0);
+    const totalOtprema = odjeli.reduce((s, o) => s + o.otpremaUkupno, 0);
+    const najveci = odjeli[0];
+    const fmt = v => (v > 0 ? v.toFixed(2) : '-');
+    const keys = obj => Object.keys(obj).join(', ') || '—';
+
+    // Summary kartice
+    let html = '<div class="summary-cards">';
+    html += `<div class="summary-card green"><div class="summary-card-title">Ukupno sječa — ${monthName}</div><div class="summary-card-value">${totalSjeca.toFixed(2)} m³</div><div class="summary-card-subtitle">${odjeli.length} odjela</div></div>`;
+    html += `<div class="summary-card blue"><div class="summary-card-title">Ukupno otprema — ${monthName}</div><div class="summary-card-value">${totalOtprema.toFixed(2)} m³</div></div>`;
+    html += `<div class="summary-card"><div class="summary-card-title">Najveći odjel</div><div class="summary-card-value" style="font-size:20px;">${najveci.odjel}</div><div class="summary-card-subtitle">${(najveci.sjecaUkupno + najveci.otpremaUkupno).toFixed(2)} m³ ukupno</div></div>`;
+    html += '</div>';
+
+    // Po odjelu
+    odjeli.forEach(o => {
+        const sortRows = sortimentiNazivi.filter(s =>
+            IZV_GRUPNE_KOLONE.indexOf(s) === -1 && ((o.sjecaSort[s] || 0) > 0 || (o.otpremaSort[s] || 0) > 0));
+        const primaci = _izvSortList(o.primaci);
+        const otpremaci = _izvSortList(o.otpremaci);
+        const kupci = _izvSortList(o.kupci);
+
+        html += `<div class="enterprise-card izvjestaj-odjel-card" data-odjel="${String(o.odjel).toUpperCase()}" style="margin-top:16px;">
+            <div class="enterprise-card-header">
+                <div>
+                    <h2>🏭 Odjel ${o.odjel}</h2>
+                    <span class="card-subtitle">Radilište: ${keys(o.radiliste)} · Izvođač: ${keys(o.izvodjac)}</span>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <span style="background:#dcfce7;color:#166534;font-weight:700;font-size:13px;padding:6px 12px;border-radius:8px;">🌲 Sječa: ${o.sjecaUkupno.toFixed(2)} m³</span>
+                    <span style="background:#dbeafe;color:#1e40af;font-weight:700;font-size:13px;padding:6px 12px;border-radius:8px;">🚛 Otprema: ${o.otpremaUkupno.toFixed(2)} m³</span>
+                </div>
+            </div>
+            <div class="enterprise-card-body">`;
+
+        // Sortimenti tabela (sječa vs otprema)
+        html += `<h3 style="font-size:14px;font-weight:700;color:#374151;margin:0 0 8px;">📦 Po sortimentima</h3>
+            <div style="overflow-x:auto;">
+            <table class="kupci-table" style="width:100%;font-size:13px;">
+            <thead><tr><th style="text-align:left;">Sortiment</th><th class="right">Sječa m³</th><th class="right">Otprema m³</th></tr></thead>
+            <tbody>`;
+        if (sortRows.length) {
+            sortRows.forEach(s => {
+                html += `<tr><td style="font-weight:600;">${s}</td><td class="right">${fmt(o.sjecaSort[s] || 0)}</td><td class="right">${fmt(o.otpremaSort[s] || 0)}</td></tr>`;
+            });
+        } else {
+            html += `<tr><td colspan="3" style="text-align:center;color:#9ca3af;">Nema sortimenata</td></tr>`;
+        }
+        html += `<tr class="totals-row"><td>UKUPNO</td><td class="right">${o.sjecaUkupno.toFixed(2)}</td><td class="right">${o.otpremaUkupno.toFixed(2)}</td></tr>`;
+        html += `</tbody></table></div>`;
+
+        // Radnici (primaci / otpremaci) + kupci
+        html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:14px;">`;
+
+        html += `<div><h3 style="font-size:14px;font-weight:700;color:#166534;margin:0 0 8px;">👷 Sječa po radniku</h3>
+            <table class="kupci-table" style="width:100%;font-size:13px;"><thead><tr><th style="text-align:left;">Primač</th><th class="right">m³</th></tr></thead><tbody>`;
+        if (primaci.length) primaci.forEach(p => { html += `<tr><td>${p.ime}</td><td class="right">${p.ukupno.toFixed(2)}</td></tr>`; });
+        else html += `<tr><td colspan="2" style="text-align:center;color:#9ca3af;">—</td></tr>`;
+        html += `</tbody></table></div>`;
+
+        html += `<div><h3 style="font-size:14px;font-weight:700;color:#1e40af;margin:0 0 8px;">🚛 Otprema po radniku</h3>
+            <table class="kupci-table" style="width:100%;font-size:13px;"><thead><tr><th style="text-align:left;">Otpremač</th><th class="right">m³</th></tr></thead><tbody>`;
+        if (otpremaci.length) otpremaci.forEach(p => { html += `<tr><td>${p.ime}</td><td class="right">${p.ukupno.toFixed(2)}</td></tr>`; });
+        else html += `<tr><td colspan="2" style="text-align:center;color:#9ca3af;">—</td></tr>`;
+        html += `</tbody></table></div>`;
+
+        if (kupci.length) {
+            html += `<div><h3 style="font-size:14px;font-weight:700;color:#0e7490;margin:0 0 8px;">🏢 Otprema po kupcu</h3>
+                <table class="kupci-table" style="width:100%;font-size:13px;"><thead><tr><th style="text-align:left;">Kupac</th><th class="right">m³</th></tr></thead><tbody>`;
+            kupci.forEach(p => { html += `<tr><td>${p.ime}</td><td class="right">${p.ukupno.toFixed(2)}</td></tr>`; });
+            html += `</tbody></table></div>`;
+        }
+
+        html += `</div></div></div>`;
+    });
+
+    content.innerHTML = html;
+}
+
+// Pretraga po odjelu — sakrij/prikaži kartice
+function filterIzvjestajPoOdjelima() {
+    const input = document.getElementById('izvjestaji-po-odjelima-search');
+    if (!input) return;
+    const q = input.value.toUpperCase().trim();
+    document.querySelectorAll('#izvjestaji-po-odjelima-content .izvjestaj-odjel-card').forEach(card => {
+        const o = card.getAttribute('data-odjel') || '';
+        card.style.display = (!q || o.indexOf(q) > -1) ? '' : 'none';
+    });
+}
+
+// Štampaj — otvori sadržaj u print prozoru
+function printIzvjestajPoOdjelima() {
+    const content = document.getElementById('izvjestaji-po-odjelima-content');
+    if (!content || !content.querySelector('.izvjestaj-odjel-card')) {
+        alert('Podaci još nisu učitani. Molimo sačekajte.');
+        return;
+    }
+    const yearEl = document.getElementById('izvjestaji-po-odjelima-year');
+    const monthEl = document.getElementById('izvjestaji-po-odjelima-month');
+    const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+    const monthName = mjeseciNazivi[parseInt(monthEl.value)] + ' ' + yearEl.value;
+    const datumStampe = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+    const win = window.open('', '_blank', 'width=1100,height=850');
+    if (!win) { alert('Popup blokiran — dozvolite popup prozore za štampanje.'); return; }
+    win.document.write(`<!DOCTYPE html><html lang="bs"><head><meta charset="UTF-8">
+<title>Izvještaj po odjelima — ${monthName}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',Arial,sans-serif; font-size:12px; color:#111; padding:16mm 14mm; }
+  .print-header { display:flex; justify-content:space-between; border-bottom:3px solid #1e3a5f; padding-bottom:10px; margin-bottom:14px; }
+  .company-name { font-size:15px; font-weight:700; color:#1e3a5f; text-transform:uppercase; }
+  .company-sub { font-size:10px; color:#4b5563; text-transform:uppercase; }
+  .report-title { font-size:14px; font-weight:700; color:#1e3a5f; text-align:right; }
+  .report-period { font-size:11px; color:#374151; text-align:right; }
+  .enterprise-card { border:1px solid #cbd5e1; border-radius:6px; margin-bottom:14px; page-break-inside:avoid; }
+  .enterprise-card-header { background:#1e3a5f; color:#fff; padding:8px 12px; }
+  .enterprise-card-header h2 { font-size:14px; }
+  .enterprise-card-header .card-subtitle { font-size:10px; color:#cbd5e1; }
+  .enterprise-card-header span[style*="background"] { color:#111 !important; }
+  .enterprise-card-body { padding:10px 12px; }
+  h3 { font-size:12px; margin:8px 0 6px; }
+  table { width:100%; border-collapse:collapse; font-size:11px; margin-bottom:6px; }
+  thead th { background:#2d5a87; color:#fff; padding:4px 6px; border:1px solid #1e3a5f; text-align:right; }
+  thead th:first-child { text-align:left; }
+  tbody td { padding:3px 6px; border:1px solid #cbd5e1; text-align:right; }
+  tbody td:first-child { text-align:left; }
+  .totals-row td { background:#1e3a5f; color:#fff; font-weight:700; }
+  @media print { @page { size:A4 portrait; margin:12mm; } .no-print { display:none; } }
+  .no-print { text-align:center; margin-bottom:14px; }
+  .btn-print { background:#1e3a5f; color:#fff; border:none; padding:10px 28px; border-radius:8px; cursor:pointer; font-weight:700; margin-right:8px; }
+  .btn-close { background:#6b7280; color:#fff; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; }
+</style></head><body>
+<div class="no-print"><button class="btn-print" onclick="window.print()">🖨️ Štampaj</button><button class="btn-close" onclick="window.close()">✕ Zatvori</button></div>
+<div class="print-header">
+  <div><div class="company-name">ŠPD "Unsko-Sanske Šume" d.o.o.</div><div class="company-sub">Šumarija Bosanska Krupa</div></div>
+  <div><div class="report-title">Izvještaj po odjelima</div><div class="report-period">Period: ${monthName}</div><div class="report-period" style="font-size:9px;color:#6b7280;">Datum štampe: ${datumStampe}</div></div>
+</div>
+${content.innerHTML}
+</body></html>`);
+    win.document.close();
 }
 
 console.log('[IZVJEŠTAJI] ✓ New izvjestaji functions loaded');
