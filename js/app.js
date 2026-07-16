@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.25';
+        const APP_VERSION = '1.4.26';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6954,13 +6954,17 @@
                 <thead><tr><th>#</th><th>Kupac</th><th class="right">Broj otpremnica</th><th class="right ukupno-col">Ukupno m³</th><th class="right">Prosjek</th><th class="right">Top sortiment</th></tr></thead>
                 <tbody>`;
 
+            // Top sortiment se računa SAMO među ovih 6 glavnih kategorija (dogovoreno) —
+            // ne uzima u obzir ostale (npr. ŠKART, GULE...) iz punog sortimentiNazivi.
+            const TOP_SORT_KANDIDATI = ['TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'TRUPCI L', 'OGR.DUGI', 'OGR.CIJEPANI'];
+
             godisnji.forEach((k, idx) => {
                 const kupacEsc = (k.kupac || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
                 const brOtpremnica = k.brOtpremnica || 0;
                 const prosjek = brOtpremnica > 0 ? (k.ukupno || 0) / brOtpremnica : 0;
                 const sortimenti = k.sortimenti || {};
-                const topSort = Object.keys(sortimenti).reduce((best, s) =>
-                    (!best || sortimenti[s] > sortimenti[best]) ? s : best, null);
+                const topSort = TOP_SORT_KANDIDATI.reduce((best, s) =>
+                    (!best || (sortimenti[s] || 0) > (sortimenti[best] || 0)) ? s : best, null);
                 const rowBg = idx % 2 === 0 ? '#f9fafb' : 'white';
                 html += `<tr style="background:${rowBg};cursor:pointer;" onclick="selectKupacStatistika('${kupacEsc}')" title="Klikni za detalje">
                     <td style="text-align:center;color:#9ca3af;font-weight:600;">${idx + 1}.</td>
