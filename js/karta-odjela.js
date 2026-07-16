@@ -62,6 +62,13 @@
     const noPlan = (status === 'bez-plana');
     return { fillColor:c, fillOpacity: noPlan ? 0.30 : 0.8, color:'#000', weight: noPlan ? 2 : 5, opacity:1 };
   }
+  // Stil u "Prikaz otpreme" režimu — zadržava boju statusa (zeleno posječeno,
+  // crveno u sječi, itd.) ali dodaje bold narandžasti obrub da odjeli s otpremom
+  // jasno iskaču, uključujući "bez-plana" odjele koji su inače blijedi/isprekidani.
+  function _getOtpremaStyle(status) {
+    const c = _getColor(status);
+    return { fillColor:c, fillOpacity:0.6, color:'#b45309', weight:4, opacity:1, dashArray:null };
+  }
 
   // ---- NORMALIZACIJA ----
   function _normKey(s) {
@@ -89,10 +96,18 @@
   }
 
   const PLAN_YEAR = 2026;
+  const MJESECI_NAZIVI = ['Januar','Februar','Mart','April','Maj','Juni','Juli','August','Septembar','Oktobar','Novembar','Decembar'];
+
+  let _otpremaMode = false; // "Prikaz otpreme" checkbox — prikaži samo odjele s otpremom u tekućem mjesecu
 
   function _getYear(p) {
     const parts = (p.datum||'').split('.');
     return parts.length >= 3 ? parseInt(parts[2]) : null;
+  }
+
+  function _getMonth(p) {
+    const parts = (p.datum||'').split('.');
+    return parts.length >= 2 ? parseInt(parts[1]) : null; // 1-12
   }
 
   // ---- STATUS MAP + SLUČAJNI ----
@@ -211,6 +226,25 @@
         poslovodja:uniq(srcPrimke, p => p.poslovodja) });
     });
     map._extra = extraMap;
+
+    // ---- OTPREMA TEKUĆEG MJESECA ----
+    // Za "Prikaz otpreme" checkbox: skup odjela (po baseKey normKey) koji su imali
+    // otpremu u tekućem kalendarskom mjesecu/godini, sa ukupnom količinom (m³).
+    // Koristi _baseKey(_normKey(...)) — isti obrazac kao non-plan matching — pa
+    // radi i za planske i za slučajne/prelazne/bez-plana odjele.
+    const now      = new Date();
+    const curMonth = now.getMonth() + 1; // 1-12
+    const curYear  = now.getFullYear();
+    const otpremaMjesecMap = new Map(); // baseKey(normKey) → m³
+    (otpreme||[]).forEach(p => {
+      if (_getYear(p) === curYear && _getMonth(p) === curMonth) {
+        const k = _baseKey(_normKey(p.odjel));
+        otpremaMjesecMap.set(k, (otpremaMjesecMap.get(k) || 0) + (parseFloat(p.kolicina) || 0));
+      }
+    });
+    map._otpremaMjesec     = otpremaMjesecMap;
+    map._otpremaMjesecNaziv = MJESECI_NAZIVI[curMonth - 1] + ' ' + curYear;
+
     return map;
   }
 
@@ -851,22 +885,46 @@
     const gjF = (document.getElementById('karta-filter-gj')     || {}).value || 'sve';
     const stF = (document.getElementById('karta-filter-status') || {}).value || 'sve';
     const q   = ((document.getElementById('karta-search')       || {}).value || '').trim().toUpperCase();
+    _otpremaMode = (document.getElementById('karta-otprema-toggle') || {}).checked || false;
 
+    let otpremaBroj = 0;
     _allFeatures.forEach(lyr => {
       const p   = lyr._kartaProps || {};
       const o   = String(p.odjel || p.name || '').trim().toUpperCase();
       const gjM = gjF === 'sve' || lyr._kartaGj === gjF;
       const stM = stF === 'sve' || lyr._kartaStatus === stF;
       const qM  = !q || o.startsWith(q) || String(p.gj||'').toUpperCase().includes(q);
-      if (gjM && stM && qM) { if (!_map.hasLayer(lyr)) lyr.addTo(_map); }
-      else                  { if (_map.hasLayer(lyr))  _map.removeLayer(lyr); }
+      // U režimu otpreme prikaži SAMO odjele s otpremom u tekućem mjesecu
+      // (uključujući bez-plana/slučajne/prelazne) — ostali se sakriju.
+      const otM = !_otpremaMode || (lyr._kartaOtpremaMjesec > 0);
+
+      if (gjM && stM && qM && otM) {
+        if (!_map.hasLayer(lyr)) lyr.addTo(_map);
+        if (_otpremaMode) { lyr.setStyle(_getOtpremaStyle(lyr._kartaStatus)); otpremaBroj++; }
+        else if (_layer)  { _layer.resetStyle(lyr); }
+      } else {
+        if (_map.hasLayer(lyr))  _map.removeLayer(lyr);
+      }
     });
+
+    // Info traka pored checkboxa — koliko odjela ima otpremu i za koji mjesec
+    const info = document.getElementById('karta-otprema-info');
+    if (info) {
+      if (_otpremaMode) {
+        const naziv = (_statusMap && _statusMap._otpremaMjesecNaziv) || 'tekući mjesec';
+        info.textContent = `${otpremaBroj} odjela s otpremom — ${naziv}`;
+        info.style.display = 'inline';
+      } else {
+        info.style.display = 'none';
+      }
+    }
   };
 
   window.resetKartaView = function() {
     const s = document.getElementById('karta-search'); if (s) s.value = '';
     document.getElementById('karta-filter-gj').value     = 'sve';
     document.getElementById('karta-filter-status').value = 'sve';
+    const ot = document.getElementById('karta-otprema-toggle'); if (ot) ot.checked = false;
     applyKartaFilter();
     if (_mapBounds && _mapBounds.isValid()) _map.fitBounds(_mapBounds, { padding:[20,20] });
   };
@@ -935,6 +993,9 @@
         lyr._kartaInfo   = info;
         lyr._kartaProps  = props;
         lyr._kartaExtra  = !info ? (statusMap._extra && statusMap._extra.get(key)) || null : null;
+        // Otprema tekućeg mjeseca za ovaj odjel (m³) — za "Prikaz otpreme" filter
+        const otKey = _baseKey(_normKey(gj + ' ' + odjel));
+        lyr._kartaOtpremaMjesec = statusMap._otpremaMjesec ? (statusMap._otpremaMjesec.get(otKey) || 0) : 0;
         _allFeatures.push(lyr);
 
         // Hover tooltip za odjele bez permanentnog labela
@@ -942,7 +1003,11 @@
           lyr.bindTooltip(odjel || '?', { permanent:false, direction:'center', className:'karta-tooltip' });
         }
         lyr.on('mouseover', function() { this.setStyle(_getHoverStyle(this._kartaStatus)); });
-        lyr.on('mouseout',  function() { if (_layer) _layer.resetStyle(this); });
+        lyr.on('mouseout',  function() {
+          // U režimu otpreme zadrži otprema-highlight umjesto default stila
+          if (_otpremaMode && this._kartaOtpremaMjesec > 0) this.setStyle(_getOtpremaStyle(this._kartaStatus));
+          else if (_layer) _layer.resetStyle(this);
+        });
         lyr.on('click',     function(e) {
           const center = _centroid(this) || e.latlng;
           const label  = String(this._kartaProps.odjel || this._kartaProps.name || '?');
