@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.22';
+        const APP_VERSION = '1.4.23';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6895,12 +6895,18 @@
                 if (!stat) {
                     const url = buildApiUrl('kupci', { year });
                     const kupciData = await fetchWithCache(url, 'cache_kupci_' + year);
+                    console.log('[Kupci Statistika] kupciData primljen za', kupac, ':', kupciData && kupciData.godisnji ? kupciData.godisnji.length + ' kupaca ukupno' : kupciData);
                     stat = computeKupacStatistikaFast(kupac, year, kupciData);
                     _kupciStatCache[cacheKey] = stat;
                 }
+                console.log('[Kupci Statistika] stat za', kupac, ':', stat);
 
-                if (myToken !== _kupacStatLoadToken) return; // stigao prekasno — korisnik je u međuvremenu odabrao drugog kupca
+                if (myToken !== _kupacStatLoadToken) {
+                    console.log('[Kupci Statistika] token zastario (myToken=' + myToken + ', trenutni=' + _kupacStatLoadToken + ') — preskačem render za', kupac);
+                    return; // stigao prekasno — korisnik je u međuvremenu odabrao drugog kupca
+                }
                 renderKupciStatistika(stat, kupac, year);
+                console.log('[Kupci Statistika] renderKupciStatistika pozvan za', kupac, '— content.innerHTML.length=', content.innerHTML.length);
 
                 // Detaljniji dio (top odjeli/otpremači, period aktivnosti, razmak) —
                 // učitaj u pozadini i dopuni prikaz kad stigne, ne blokiraj glavni prikaz.
@@ -6985,10 +6991,15 @@
         }
 
         function renderKupciStatistika(stat, kupacName, year) {
+            console.log('[Kupci Statistika] renderKupciStatistika() start, kupac=', kupacName, 'stat.totalCount=', stat.totalCount, 'stat.rang=', stat.rang);
             const content = document.getElementById('kupci-statistika-content');
-            if (!content) return;
+            if (!content) {
+                console.error('[Kupci Statistika] #kupci-statistika-content NE POSTOJI (renderKupciStatistika)!');
+                return;
+            }
 
             if (stat.totalCount === 0) {
+                console.warn('[Kupci Statistika] totalCount=0 za', kupacName, '— godRow nije nađen ili nema otprema. rang=', stat.rang);
                 content.innerHTML = `<div style="text-align: center; padding: 40px; color: #9ca3af; font-size: 14px;">Nema otprema za kupca <strong>${kupacName}</strong> u ${year}. godini</div>`;
                 return;
             }
