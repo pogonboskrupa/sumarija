@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.21';
+        const APP_VERSION = '1.4.22';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6685,9 +6685,13 @@
 
         // Popuni godinu/kupca selektore i učitaj statistiku (poziva se pri otvaranju podtaba)
         async function initKupciStatistikaControls() {
+            console.log('[Kupci Statistika] initKupciStatistikaControls() start');
             const yearSelect = document.getElementById('kupci-statistika-year');
             const kupacSelect = document.getElementById('kupci-statistika-kupac');
-            if (!yearSelect || !kupacSelect) return;
+            if (!yearSelect || !kupacSelect) {
+                console.error('[Kupci Statistika] yearSelect/kupacSelect NE POSTOJE u DOM-u!', !!yearSelect, !!kupacSelect);
+                return;
+            }
 
             // Godine (tekuća + 2 prethodne) — popuni samo jednom
             if (!yearSelect.dataset.populated) {
@@ -6709,6 +6713,7 @@
                 kupacSelect.innerHTML = '<option value="">-- Odaberi kupca --</option>' +
                     kupci.map(k => `<option value="${k.replace(/"/g, '&quot;')}">${k}</option>`).join('');
                 if (prevKupac && kupci.includes(prevKupac)) kupacSelect.value = prevKupac;
+                console.log('[Kupci Statistika] Lista kupaca popunjena:', kupci.length, 'kupaca za', year);
             } catch (e) {
                 console.error('[Kupci Statistika] Greška pri učitavanju liste kupaca:', e);
             }
@@ -6845,14 +6850,19 @@
         }
 
         async function loadKupciStatistika() {
+            console.log('[Kupci Statistika] loadKupciStatistika() start');
             const yearSelect = document.getElementById('kupci-statistika-year');
             const kupacSelect = document.getElementById('kupci-statistika-kupac');
             const content = document.getElementById('kupci-statistika-content');
-            if (!yearSelect || !kupacSelect || !content) return;
+            if (!yearSelect || !kupacSelect || !content) {
+                console.error('[Kupci Statistika] Element(i) nedostaju:', !!yearSelect, !!kupacSelect, !!content);
+                return;
+            }
 
             const year = parseInt(yearSelect.value) || new Date().getFullYear();
             const kupac = kupacSelect.value;
             const myToken = ++_kupacStatLoadToken;
+            console.log('[Kupci Statistika] year=', year, 'kupac=', JSON.stringify(kupac));
 
             content.innerHTML = `
                 <div style="text-align: center; padding: 60px; color: #6b7280;">
@@ -6867,9 +6877,12 @@
                 try {
                     const url = buildApiUrl('kupci', { year });
                     const kupciData = await fetchWithCache(url, 'cache_kupci_' + year);
-                    if (myToken !== _kupacStatLoadToken) return;
+                    console.log('[Kupci Statistika] kupciData (overview) primljen:', kupciData && kupciData.godisnji ? kupciData.godisnji.length + ' kupaca' : kupciData);
+                    if (myToken !== _kupacStatLoadToken) { console.log('[Kupci Statistika] token zastario, preskačem render'); return; }
                     renderKupciStatistikaOverview(kupciData, year);
+                    console.log('[Kupci Statistika] overview renderovan, content.innerHTML.length=', content.innerHTML.length);
                 } catch (error) {
+                    console.error('[Kupci Statistika] Greška (overview):', error);
                     if (myToken !== _kupacStatLoadToken) return;
                     content.innerHTML = `<div style="text-align: center; padding: 60px; color: #dc2626;">❌ Greška pri učitavanju: ${error.message}</div>`;
                 }
@@ -6921,10 +6934,15 @@
         // Pregled SVIH kupaca (bez odabira) — rang lista po ukupnoj količini, sa
         // brojem otpremnica i top sortimentom; klik na red otvara puni prikaz kupca.
         function renderKupciStatistikaOverview(kupciData, year) {
+            console.log('[Kupci Statistika] renderKupciStatistikaOverview() start, kupciData:', kupciData);
             const content = document.getElementById('kupci-statistika-content');
-            if (!content) return;
+            if (!content) {
+                console.error('[Kupci Statistika] #kupci-statistika-content NE POSTOJI u DOM-u!');
+                return;
+            }
 
             const godisnji = (kupciData && kupciData.godisnji) ? [...kupciData.godisnji] : [];
+            console.log('[Kupci Statistika] godisnji.length =', godisnji.length);
             if (!godisnji.length) {
                 content.innerHTML = `<div style="text-align: center; padding: 40px; color: #9ca3af; font-size: 14px;">Nema podataka o kupcima za ${year}. godinu</div>`;
                 return;
