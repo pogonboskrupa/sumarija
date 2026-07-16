@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.23';
+        const APP_VERSION = '1.4.24';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6907,6 +6907,18 @@
                 }
                 renderKupciStatistika(stat, kupac, year);
                 console.log('[Kupci Statistika] renderKupciStatistika pozvan za', kupac, '— content.innerHTML.length=', content.innerHTML.length);
+                {
+                    // Dijagnostika VIDLJIVOSTI — DOM sadržaj postoji (dokazano dužinom
+                    // innerHTML), pitanje je da li je stvarno prikazan na ekranu.
+                    const view = document.getElementById('kupci-statistika-view');
+                    const kupciTab = document.getElementById('kupci-content');
+                    const rect = content.getBoundingClientRect();
+                    const cs = window.getComputedStyle(content);
+                    console.log('[Kupci Statistika] VIDLJIVOST — view.hidden=', view && view.classList.contains('hidden'),
+                        'kupciTab.hidden=', kupciTab && kupciTab.classList.contains('hidden'),
+                        'content rect=', { width: rect.width, height: rect.height, top: rect.top },
+                        'display=', cs.display, 'visibility=', cs.visibility, 'opacity=', cs.opacity);
+                }
 
                 // Detaljniji dio (top odjeli/otpremači, period aktivnosti, razmak) —
                 // učitaj u pozadini i dopuni prikaz kad stigne, ne blokiraj glavni prikaz.
