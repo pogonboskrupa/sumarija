@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.20';
+        const APP_VERSION = '1.4.21';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6854,11 +6854,6 @@
             const kupac = kupacSelect.value;
             const myToken = ++_kupacStatLoadToken;
 
-            if (!kupac) {
-                content.innerHTML = '<div style="text-align: center; padding: 40px; color: #9ca3af; font-size: 14px;">Odaberi kupca za prikaz statistike</div>';
-                return;
-            }
-
             content.innerHTML = `
                 <div style="text-align: center; padding: 60px; color: #6b7280;">
                     <div style="font-size: 32px; margin-bottom: 15px;">⏳</div>
@@ -6866,38 +6861,109 @@
                 </div>
             `;
 
-            const cacheKey = year + '|' + kupac;
-            let stat = _kupciStatCache[cacheKey];
-            if (!stat) {
+            // Bez odabranog kupca: pregled SVIH kupaca (rang lista po sortimentima) —
+            // klik na red bira tog kupca i učitava puni prikaz ispod.
+            if (!kupac) {
                 try {
+                    const url = buildApiUrl('kupci', { year });
+                    const kupciData = await fetchWithCache(url, 'cache_kupci_' + year);
+                    if (myToken !== _kupacStatLoadToken) return;
+                    renderKupciStatistikaOverview(kupciData, year);
+                } catch (error) {
+                    if (myToken !== _kupacStatLoadToken) return;
+                    content.innerHTML = `<div style="text-align: center; padding: 60px; color: #dc2626;">❌ Greška pri učitavanju: ${error.message}</div>`;
+                }
+                return;
+            }
+
+            try {
+                const cacheKey = year + '|' + kupac;
+                let stat = _kupciStatCache[cacheKey];
+                if (!stat) {
                     const url = buildApiUrl('kupci', { year });
                     const kupciData = await fetchWithCache(url, 'cache_kupci_' + year);
                     stat = computeKupacStatistikaFast(kupac, year, kupciData);
                     _kupciStatCache[cacheKey] = stat;
-                } catch (error) {
-                    if (myToken !== _kupacStatLoadToken) return; // korisnik je već odabrao drugog kupca
-                    content.innerHTML = `<div style="text-align: center; padding: 60px; color: #dc2626;">❌ Greška pri učitavanju: ${error.message}</div>`;
-                    return;
                 }
+
+                if (myToken !== _kupacStatLoadToken) return; // stigao prekasno — korisnik je u međuvremenu odabrao drugog kupca
+                renderKupciStatistika(stat, kupac, year);
+
+                // Detaljniji dio (top odjeli/otpremači, period aktivnosti, razmak) —
+                // učitaj u pozadini i dopuni prikaz kad stigne, ne blokiraj glavni prikaz.
+                let detalji = _kupciStatDetailCache[cacheKey];
+                if (detalji) {
+                    renderKupacDetaljiInto(detalji, year);
+                } else {
+                    computeKupacDetalji(kupac, year).then(result => {
+                        _kupciStatDetailCache[cacheKey] = result;
+                        if (myToken !== _kupacStatLoadToken) return;
+                        renderKupacDetaljiInto(result, year);
+                    }).catch(e => {
+                        console.error('[Kupci Statistika] Greška pri učitavanju detalja:', e);
+                    });
+                }
+            } catch (error) {
+                if (myToken !== _kupacStatLoadToken) return;
+                console.error('[Kupci Statistika] Greška:', error);
+                content.innerHTML = `<div style="text-align: center; padding: 60px; color: #dc2626;">❌ Greška pri učitavanju: ${error.message}<br><span style="font-size:11px;color:#9ca3af;">${(error.stack||'').slice(0,300)}</span></div>`;
+            }
+        }
+
+        // Klik na red u pregledu svih kupaca — odaberi tog kupca i učitaj puni prikaz
+        function selectKupacStatistika(kupacName) {
+            const kupacSelect = document.getElementById('kupci-statistika-kupac');
+            if (!kupacSelect) return;
+            kupacSelect.value = kupacName;
+            loadKupciStatistika();
+        }
+
+        // Pregled SVIH kupaca (bez odabira) — rang lista po ukupnoj količini, sa
+        // brojem otpremnica i top sortimentom; klik na red otvara puni prikaz kupca.
+        function renderKupciStatistikaOverview(kupciData, year) {
+            const content = document.getElementById('kupci-statistika-content');
+            if (!content) return;
+
+            const godisnji = (kupciData && kupciData.godisnji) ? [...kupciData.godisnji] : [];
+            if (!godisnji.length) {
+                content.innerHTML = `<div style="text-align: center; padding: 40px; color: #9ca3af; font-size: 14px;">Nema podataka o kupcima za ${year}. godinu</div>`;
+                return;
             }
 
-            if (myToken !== _kupacStatLoadToken) return; // stigao prekasno — korisnik je u međuvremenu odabrao drugog kupca
-            renderKupciStatistika(stat, kupac, year);
+            godisnji.sort((a, b) => (b.ukupno || 0) - (a.ukupno || 0));
+            const grandTotal = godisnji.reduce((s, k) => s + (k.ukupno || 0), 0);
 
-            // Detaljniji dio (top odjeli/otpremači, period aktivnosti, razmak) —
-            // učitaj u pozadini i dopuni prikaz kad stigne, ne blokiraj glavni prikaz.
-            let detalji = _kupciStatDetailCache[cacheKey];
-            if (detalji) {
-                renderKupacDetaljiInto(detalji, year);
-            } else {
-                computeKupacDetalji(kupac, year).then(result => {
-                    _kupciStatDetailCache[cacheKey] = result;
-                    if (myToken !== _kupacStatLoadToken) return;
-                    renderKupacDetaljiInto(result, year);
-                }).catch(e => {
-                    console.error('[Kupci Statistika] Greška pri učitavanju detalja:', e);
-                });
-            }
+            let html = `<div style="text-align:center;padding:10px 0 16px;color:#6b7280;font-size:13px;">
+                👇 Odaberi kupca iznad ili klikni na red za detaljnu statistiku
+            </div>`;
+
+            html += `<div class="enterprise-card">
+                <div class="enterprise-card-header"><div><h2>🏆 Rang lista kupaca — ${year}.</h2><span class="card-subtitle">${godisnji.length} kupaca, ukupno ${grandTotal.toFixed(2)} m³</span></div></div>
+                <div class="enterprise-card-body"><div style="overflow-x:auto;">
+                <table class="kupci-table" style="width:100%;">
+                <thead><tr><th>#</th><th>Kupac</th><th class="right">Broj otpremnica</th><th class="right ukupno-col">Ukupno m³</th><th class="right">Prosjek</th><th class="right">Top sortiment</th></tr></thead>
+                <tbody>`;
+
+            godisnji.forEach((k, idx) => {
+                const kupacEsc = (k.kupac || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const brOtpremnica = k.brOtpremnica || 0;
+                const prosjek = brOtpremnica > 0 ? (k.ukupno || 0) / brOtpremnica : 0;
+                const sortimenti = k.sortimenti || {};
+                const topSort = Object.keys(sortimenti).reduce((best, s) =>
+                    (!best || sortimenti[s] > sortimenti[best]) ? s : best, null);
+                const rowBg = idx % 2 === 0 ? '#f9fafb' : 'white';
+                html += `<tr style="background:${rowBg};cursor:pointer;" onclick="selectKupacStatistika('${kupacEsc}')" title="Klikni za detalje">
+                    <td style="text-align:center;color:#9ca3af;font-weight:600;">${idx + 1}.</td>
+                    <td style="font-weight:600;">${k.kupac || '-'}</td>
+                    <td class="right">${brOtpremnica || '-'}</td>
+                    <td class="right ukupno-col">${(k.ukupno || 0).toFixed(2)}</td>
+                    <td class="right">${prosjek > 0 ? prosjek.toFixed(2) : '-'}</td>
+                    <td class="right">${topSort && sortimenti[topSort] > 0 ? topSort : '-'}</td>
+                </tr>`;
+            });
+
+            html += `</tbody></table></div></div></div>`;
+            content.innerHTML = html;
         }
 
         function renderKupciStatistika(stat, kupacName, year) {
