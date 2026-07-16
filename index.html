@@ -927,6 +927,7 @@
                 <button class="submenu-tab" onclick="switchKupciSubmenu('kvartalni')">📊 Kvartalni prikaz</button>
                 <button class="submenu-tab" onclick="switchKupciSubmenu('godisnji')">🏢 Godišnji pregled</button>
                 <button class="submenu-tab" onclick="switchKupciSubmenu('statistika')">📈 Statistika po kupcu</button>
+                <button class="submenu-tab" onclick="switchKupciSubmenu('statistika-sortiment')">🪵 Statistika po sortimentu</button>
             </div>
 
             <!-- Mjesečni pregled (default) -->
@@ -1023,6 +1024,30 @@
                         </div>
                         <div id="kupci-statistika-content" style="margin-top: 16px;">
                             <div style="text-align: center; padding: 40px; color: #9ca3af; font-size: 14px;">Odaberi kupca za prikaz statistike</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistika po sortimentu -->
+            <div id="kupci-sortiment-view" class="submenu-content hidden">
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>🪵 Statistika otprema po sortimentu</h2>
+                            <span class="card-subtitle">Ko kupuje koji sortiment — mjesečni i kvartalni trend, top kupci</span>
+                        </div>
+                    </div>
+                    <div class="enterprise-card-body">
+                        <div class="controls-bar" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                            <select id="kupci-sortiment-odabir" onchange="loadKupciSortimentStatistika()" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white; min-width: 220px; cursor: pointer;">
+                                <option value="">-- Odaberi sortiment --</option>
+                            </select>
+                            <select id="kupci-sortiment-year" onchange="loadKupciSortimentStatistika()" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white; min-width: 100px; cursor: pointer;">
+                            </select>
+                        </div>
+                        <div id="kupci-sortiment-content" style="margin-top: 16px;">
+                            <div style="text-align: center; padding: 40px; color: #9ca3af; font-size: 14px;">Odaberi sortiment za prikaz statistike</div>
                         </div>
                     </div>
                 </div>

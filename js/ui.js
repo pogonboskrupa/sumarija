@@ -352,6 +352,7 @@
             document.getElementById('kupci-mjesecni-view').classList.add('hidden');
             document.getElementById('kupci-kvartalni-view').classList.add('hidden');
             document.getElementById('kupci-statistika-view').classList.add('hidden');
+            document.getElementById('kupci-sortiment-view').classList.add('hidden');
 
             // Show selected view
             if (view === 'godisnji') {
@@ -367,6 +368,9 @@
             } else if (view === 'statistika') {
                 document.getElementById('kupci-statistika-view').classList.remove('hidden');
                 if (typeof initKupciStatistikaControls === 'function') initKupciStatistikaControls();
+            } else if (view === 'statistika-sortiment') {
+                document.getElementById('kupci-sortiment-view').classList.remove('hidden');
+                if (typeof initKupciSortimentControls === 'function') initKupciSortimentControls();
             }
         }
 
