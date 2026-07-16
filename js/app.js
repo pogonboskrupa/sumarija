@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.17';
+        const APP_VERSION = '1.4.18';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6663,6 +6663,326 @@
                     </div>
                 `;
             }
+        }
+
+        // ============================================
+        // 📈 KUPCI - STATISTIKA PO KUPCU (podtab)
+        // ============================================
+        const _kupciStatCache = {}; // "godina|kupac" -> izračunata statistika (izbjegava re-agregaciju pri povratku na isti prikaz)
+        let _kupacStatChart = null;
+
+        // Popuni godinu/kupca selektore i učitaj statistiku (poziva se pri otvaranju podtaba)
+        async function initKupciStatistikaControls() {
+            const yearSelect = document.getElementById('kupci-statistika-year');
+            const kupacSelect = document.getElementById('kupci-statistika-kupac');
+            if (!yearSelect || !kupacSelect) return;
+
+            // Godine (tekuća + 2 prethodne) — popuni samo jednom
+            if (!yearSelect.dataset.populated) {
+                const nowYear = new Date().getFullYear();
+                yearSelect.innerHTML = [nowYear, nowYear - 1, nowYear - 2]
+                    .map(y => `<option value="${y}">${y}</option>`).join('');
+                yearSelect.dataset.populated = '1';
+            }
+
+            const year = parseInt(yearSelect.value) || new Date().getFullYear();
+            const prevKupac = kupacSelect.value;
+
+            // Lista kupaca za odabranu godinu — iz istog keša kao "Godišnji pregled"
+            try {
+                const url = buildApiUrl('kupci', { year });
+                const data = await fetchWithCache(url, 'cache_kupci_' + year);
+                const kupci = (data && data.godisnji) ? data.godisnji.map(k => k.kupac).filter(Boolean) : [];
+                kupci.sort((a, b) => a.localeCompare(b, 'hr'));
+                kupacSelect.innerHTML = '<option value="">-- Odaberi kupca --</option>' +
+                    kupci.map(k => `<option value="${k.replace(/"/g, '&quot;')}">${k}</option>`).join('');
+                if (prevKupac && kupci.includes(prevKupac)) kupacSelect.value = prevKupac;
+            } catch (e) {
+                console.error('[Kupci Statistika] Greška pri učitavanju liste kupaca:', e);
+            }
+
+            loadKupciStatistika();
+        }
+
+        function _fmtKupacDatum(d) {
+            if (!d) return '-';
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            return `${dd}.${mm}.${d.getFullYear()}`;
+        }
+
+        function _parseKupacDatum(datumStr, fallbackYear) {
+            if (!datumStr) return null;
+            const parts = String(datumStr).split('.');
+            if (parts.length < 2) return null;
+            const day = parseInt(parts[0]) || 1;
+            const month = (parseInt(parts[1]) || 1) - 1;
+            const yr = parts[2] ? parseInt(parts[2]) : fallbackYear;
+            const d = new Date(yr, month, day);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        // Prikupi sve otpremnice ovog kupca kroz svih 12 mjeseci odabrane godine i
+        // agregiraj: mjesečno, kvartalno, po sortimentu, po odjelu, po otpremaču.
+        async function computeKupacStatistika(kupacName, year) {
+            const mjeseciNazivi = ["Januar","Februar","Mart","April","Maj","Juni","Juli","August","Septembar","Oktobar","Novembar","Decembar"];
+            const kupacLower = kupacName.toLowerCase();
+
+            const monthResults = await Promise.all(Array.from({ length: 12 }, async (_, month) => {
+                const url = buildApiUrl('otpremaci-daily', { year, month });
+                const cKey = `cache_otpremaci_daily_${year}_${month}`;
+                try {
+                    const data = await fetchWithCache(url, cKey);
+                    if (data && Array.isArray(data.data)) {
+                        return {
+                            rows: data.data.filter(r => r.kupac && r.kupac.toLowerCase() === kupacLower),
+                            sortimentiNazivi: data.sortimentiNazivi || [],
+                        };
+                    }
+                } catch (e) { /* mjesec bez podataka/mreže — tretiraj kao prazan */ }
+                return { rows: [], sortimentiNazivi: [] };
+            }));
+
+            const sortimentiSet = new Set();
+            const sortimentTotals = {};
+            const sortimentCounts = {};
+            const odjeliMap = new Map();
+            const otpremaciMap = new Map();
+            let firstDate = null, lastDate = null, totalCount = 0, totalUkupno = 0;
+
+            const monthly = monthResults.map(({ rows, sortimentiNazivi }, month) => {
+                sortimentiNazivi.forEach(s => sortimentiSet.add(s));
+                const agg = { month, naziv: mjeseciNazivi[month], count: rows.length, ukupno: 0, sortimenti: {} };
+
+                rows.forEach(row => {
+                    let rowUkupno = 0;
+                    const sList = sortimentiNazivi.length ? sortimentiNazivi : Object.keys(row.sortimenti || {});
+                    sList.forEach(s => {
+                        const val = (row.sortimenti && row.sortimenti[s]) || 0;
+                        if (val > 0) {
+                            agg.sortimenti[s] = (agg.sortimenti[s] || 0) + val;
+                            sortimentTotals[s] = (sortimentTotals[s] || 0) + val;
+                            sortimentCounts[s] = (sortimentCounts[s] || 0) + 1;
+                            rowUkupno += val;
+                        }
+                    });
+                    agg.ukupno += rowUkupno;
+                    totalUkupno += rowUkupno;
+
+                    const odjelKey = row.odjel || '-';
+                    if (!odjeliMap.has(odjelKey)) odjeliMap.set(odjelKey, { ukupno: 0, count: 0 });
+                    const oA = odjeliMap.get(odjelKey); oA.ukupno += rowUkupno; oA.count++;
+
+                    const otpKey = row.otpremac || '-';
+                    if (!otpremaciMap.has(otpKey)) otpremaciMap.set(otpKey, { ukupno: 0, count: 0 });
+                    const tA = otpremaciMap.get(otpKey); tA.ukupno += rowUkupno; tA.count++;
+
+                    const d = _parseKupacDatum(row.datum, year);
+                    if (d) {
+                        if (!firstDate || d < firstDate) firstDate = d;
+                        if (!lastDate  || d > lastDate)  lastDate  = d;
+                    }
+                });
+                totalCount += rows.length;
+                return agg;
+            });
+
+            const kvartalNazivi = { 1: 'Q1 (Jan-Mar)', 2: 'Q2 (Apr-Jun)', 3: 'Q3 (Jul-Sep)', 4: 'Q4 (Okt-Dec)' };
+            const quarterly = [1, 2, 3, 4].map(q => {
+                const idxs = [(q - 1) * 3, (q - 1) * 3 + 1, (q - 1) * 3 + 2];
+                const agg = { quarter: q, naziv: kvartalNazivi[q], count: 0, ukupno: 0 };
+                idxs.forEach(i => { agg.count += monthly[i].count; agg.ukupno += monthly[i].ukupno; });
+                return agg;
+            });
+
+            const sortimentiNazivi = Array.from(sortimentiSet);
+            const topOdjeli = Array.from(odjeliMap.entries())
+                .map(([odjel, v]) => ({ odjel, ...v })).sort((a, b) => b.ukupno - a.ukupno).slice(0, 8);
+            const topOtpremaci = Array.from(otpremaciMap.entries())
+                .map(([otpremac, v]) => ({ otpremac, ...v })).sort((a, b) => b.ukupno - a.ukupno).slice(0, 8);
+            const aktivnihMjeseci = monthly.filter(m => m.count > 0).length;
+
+            return {
+                monthly, quarterly, sortimentiNazivi, sortimentTotals, sortimentCounts,
+                topOdjeli, topOtpremaci, totalCount, totalUkupno, aktivnihMjeseci,
+                firstDate, lastDate,
+            };
+        }
+
+        async function loadKupciStatistika() {
+            const yearSelect = document.getElementById('kupci-statistika-year');
+            const kupacSelect = document.getElementById('kupci-statistika-kupac');
+            const content = document.getElementById('kupci-statistika-content');
+            if (!yearSelect || !kupacSelect || !content) return;
+
+            const year = parseInt(yearSelect.value) || new Date().getFullYear();
+            const kupac = kupacSelect.value;
+
+            if (!kupac) {
+                content.innerHTML = '<div style="text-align: center; padding: 40px; color: #9ca3af; font-size: 14px;">Odaberi kupca za prikaz statistike</div>';
+                return;
+            }
+
+            content.innerHTML = `
+                <div style="text-align: center; padding: 60px; color: #6b7280;">
+                    <div style="font-size: 32px; margin-bottom: 15px;">⏳</div>
+                    <div style="font-size: 16px;">Učitavanje statistike...</div>
+                </div>
+            `;
+
+            const cacheKey = year + '|' + kupac;
+            let stat = _kupciStatCache[cacheKey];
+            if (!stat) {
+                try {
+                    stat = await computeKupacStatistika(kupac, year);
+                    _kupciStatCache[cacheKey] = stat;
+                } catch (error) {
+                    content.innerHTML = `<div style="text-align: center; padding: 60px; color: #dc2626;">❌ Greška pri učitavanju: ${error.message}</div>`;
+                    return;
+                }
+            }
+
+            renderKupciStatistika(stat, kupac, year);
+        }
+
+        function renderKupciStatistika(stat, kupacName, year) {
+            const content = document.getElementById('kupci-statistika-content');
+            if (!content) return;
+
+            if (stat.totalCount === 0) {
+                content.innerHTML = `<div style="text-align: center; padding: 40px; color: #9ca3af; font-size: 14px;">Nema otprema za kupca <strong>${kupacName}</strong> u ${year}. godini</div>`;
+                return;
+            }
+
+            const prosjek = stat.totalCount > 0 ? stat.totalUkupno / stat.totalCount : 0;
+            const najboljiMjesec = stat.monthly.reduce((best, m) => (!best || m.ukupno > best.ukupno) ? m : best, null);
+
+            let html = '<div class="summary-cards">';
+            html += `<div class="summary-card green">
+                <div class="summary-card-title">Ukupno ${year}.</div>
+                <div class="summary-card-value">${stat.totalUkupno.toFixed(2)} m³</div>
+                <div class="summary-card-subtitle">${stat.aktivnihMjeseci} od 12 mjeseci aktivno</div>
+            </div>`;
+            html += `<div class="summary-card blue">
+                <div class="summary-card-title">Broj otpremnica</div>
+                <div class="summary-card-value">${stat.totalCount}</div>
+                <div class="summary-card-subtitle">Prosjek ${prosjek.toFixed(2)} m³/otpremnica</div>
+            </div>`;
+            html += `<div class="summary-card">
+                <div class="summary-card-title">Najbolji mjesec</div>
+                <div class="summary-card-value" style="font-size:20px;">${najboljiMjesec && najboljiMjesec.ukupno > 0 ? najboljiMjesec.naziv : '—'}</div>
+                <div class="summary-card-subtitle">${najboljiMjesec && najboljiMjesec.ukupno > 0 ? najboljiMjesec.ukupno.toFixed(2) + ' m³' : ''}</div>
+            </div>`;
+            html += `<div class="summary-card">
+                <div class="summary-card-title">Period aktivnosti</div>
+                <div class="summary-card-value" style="font-size:15px;">${_fmtKupacDatum(stat.firstDate)} – ${_fmtKupacDatum(stat.lastDate)}</div>
+            </div>`;
+            html += '</div>';
+
+            // Graf — mjesečni trend
+            html += `<div class="enterprise-card" style="margin-top:16px;">
+                <div class="enterprise-card-header"><div><h2>📈 Mjesečni trend</h2><span class="card-subtitle">Ukupna količina (m³) po mjesecu</span></div></div>
+                <div class="enterprise-card-body"><div style="position:relative;height:300px;"><canvas id="kupac-stat-chart"></canvas></div></div>
+            </div>`;
+
+            // Mjesečna tabela
+            html += `<div class="enterprise-card" style="margin-top:16px;">
+                <div class="enterprise-card-header"><div><h2>📅 Mjesečni pregled</h2></div></div>
+                <div class="enterprise-card-body"><div style="overflow-x:auto;">
+                <table class="kupci-table" style="width:100%;">
+                <thead><tr><th>Mjesec</th><th class="right">Broj otpremnica</th><th class="right ukupno-col">Ukupno m³</th></tr></thead>
+                <tbody>`;
+            stat.monthly.forEach(m => {
+                html += `<tr><td>${m.naziv}</td><td class="right">${m.count || '-'}</td><td class="right ukupno-col">${m.ukupno > 0 ? m.ukupno.toFixed(2) : '-'}</td></tr>`;
+            });
+            html += `<tr class="totals-row"><td>UKUPNO</td><td class="right">${stat.totalCount}</td><td class="right ukupno-col">${stat.totalUkupno.toFixed(2)}</td></tr>`;
+            html += `</tbody></table></div></div></div>`;
+
+            // Kvartalna tabela
+            html += `<div class="enterprise-card" style="margin-top:16px;">
+                <div class="enterprise-card-header"><div><h2>📊 Kvartalni pregled</h2></div></div>
+                <div class="enterprise-card-body"><div style="overflow-x:auto;">
+                <table class="kupci-table" style="width:100%;">
+                <thead><tr><th>Kvartal</th><th class="right">Broj otpremnica</th><th class="right ukupno-col">Ukupno m³</th></tr></thead>
+                <tbody>`;
+            stat.quarterly.forEach(q => {
+                html += `<tr><td>${q.naziv}</td><td class="right">${q.count || '-'}</td><td class="right ukupno-col">${q.ukupno > 0 ? q.ukupno.toFixed(2) : '-'}</td></tr>`;
+            });
+            html += `</tbody></table></div></div></div>`;
+
+            // Po sortimentima — broj otpremnica i količina
+            if (stat.sortimentiNazivi.length) {
+                const sortedSort = stat.sortimentiNazivi
+                    .filter(s => (stat.sortimentTotals[s] || 0) > 0)
+                    .sort((a, b) => (stat.sortimentTotals[b] || 0) - (stat.sortimentTotals[a] || 0));
+                html += `<div class="enterprise-card" style="margin-top:16px;">
+                    <div class="enterprise-card-header"><div><h2>🪵 Po sortimentima</h2><span class="card-subtitle">Broj otpremnica i ukupna količina po sortimentu</span></div></div>
+                    <div class="enterprise-card-body"><div style="overflow-x:auto;">
+                    <table class="kupci-table" style="width:100%;">
+                    <thead><tr><th>Sortiment</th><th class="right">Broj otpremnica</th><th class="right ukupno-col">Ukupno m³</th><th class="right">% od ukupno</th></tr></thead>
+                    <tbody>`;
+                sortedSort.forEach(s => {
+                    const val = stat.sortimentTotals[s] || 0;
+                    const cnt = stat.sortimentCounts[s] || 0;
+                    const pct = stat.totalUkupno > 0 ? (val / stat.totalUkupno * 100) : 0;
+                    html += `<tr><td>${s}</td><td class="right">${cnt}</td><td class="right ukupno-col">${val.toFixed(2)}</td><td class="right">${pct.toFixed(1)}%</td></tr>`;
+                });
+                html += `</tbody></table></div></div></div>`;
+            }
+
+            // Top odjeli / Top otpremači
+            html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:16px;">`;
+            html += `<div class="enterprise-card"><div class="enterprise-card-header"><div><h2>🏭 Top odjeli</h2></div></div>
+                <div class="enterprise-card-body"><div style="overflow-x:auto;">
+                <table class="kupci-table" style="width:100%;"><thead><tr><th>Odjel</th><th class="right">Otpremnica</th><th class="right ukupno-col">m³</th></tr></thead><tbody>`;
+            stat.topOdjeli.forEach(o => {
+                html += `<tr><td>${o.odjel}</td><td class="right">${o.count}</td><td class="right ukupno-col">${o.ukupno.toFixed(2)}</td></tr>`;
+            });
+            html += `</tbody></table></div></div></div>`;
+
+            html += `<div class="enterprise-card"><div class="enterprise-card-header"><div><h2>🚛 Top otpremači</h2></div></div>
+                <div class="enterprise-card-body"><div style="overflow-x:auto;">
+                <table class="kupci-table" style="width:100%;"><thead><tr><th>Otpremač</th><th class="right">Otpremnica</th><th class="right ukupno-col">m³</th></tr></thead><tbody>`;
+            stat.topOtpremaci.forEach(o => {
+                html += `<tr><td>${o.otpremac}</td><td class="right">${o.count}</td><td class="right ukupno-col">${o.ukupno.toFixed(2)}</td></tr>`;
+            });
+            html += `</tbody></table></div></div></div>`;
+            html += `</div>`;
+
+            content.innerHTML = html;
+            requestAnimationFrame(() => renderKupacStatChart(stat));
+        }
+
+        function renderKupacStatChart(stat) {
+            if (typeof window.loadChartJs !== 'function') return;
+            window.loadChartJs().then(() => {
+                const canvas = document.getElementById('kupac-stat-chart');
+                if (!canvas) return;
+                if (_kupacStatChart) { _kupacStatChart.destroy(); _kupacStatChart = null; }
+                const existing = Chart.getChart(canvas);
+                if (existing) existing.destroy();
+
+                _kupacStatChart = new Chart(canvas.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: stat.monthly.map(m => m.naziv.slice(0, 3)),
+                        datasets: [{
+                            label: 'Ukupno m³',
+                            data: stat.monthly.map(m => +m.ukupno.toFixed(2)),
+                            backgroundColor: '#0891b2cc',
+                            borderRadius: 4,
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => `${ctx.parsed.y.toFixed(2)} m³` } },
+                        },
+                        scales: { y: { beginAtZero: true, title: { display: true, text: 'm³' } } },
+                    },
+                });
+            });
         }
 
         // Load otpreme po kupcima u tekućem mjesecu
