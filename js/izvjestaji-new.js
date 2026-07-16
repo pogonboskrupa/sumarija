@@ -910,7 +910,7 @@ function _izvRowUkupno(row, sortimentiNazivi) {
 
 async function loadIzvjestajiPoOdjelima() {
     console.log('[IZVJEŠTAJI PO ODJELIMA] Loading data...');
-    const content = document.getElementById('izvjestaji-po-odjelima-content');
+    const content = document.getElementById('izvjestaji-po-odjelima-prikaz');
 
     try {
         const yearElem = document.getElementById('izvjestaji-po-odjelima-year');
@@ -1013,7 +1013,7 @@ function _izvSortList(obj) {
 }
 
 function renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName) {
-    const content = document.getElementById('izvjestaji-po-odjelima-content');
+    const content = document.getElementById('izvjestaji-po-odjelima-prikaz');
     if (!content) return;
 
     if (!odjeli.length) {
@@ -1104,7 +1104,7 @@ function filterIzvjestajPoOdjelima() {
     const input = document.getElementById('izvjestaji-po-odjelima-search');
     if (!input) return;
     const q = input.value.toUpperCase().trim();
-    document.querySelectorAll('#izvjestaji-po-odjelima-content .izvjestaj-odjel-card').forEach(card => {
+    document.querySelectorAll('#izvjestaji-po-odjelima-prikaz .izvjestaj-odjel-card').forEach(card => {
         const o = card.getAttribute('data-odjel') || '';
         card.style.display = (!q || o.indexOf(q) > -1) ? '' : 'none';
     });
@@ -1112,7 +1112,7 @@ function filterIzvjestajPoOdjelima() {
 
 // Štampaj — otvori sadržaj u print prozoru
 function printIzvjestajPoOdjelima() {
-    const content = document.getElementById('izvjestaji-po-odjelima-content');
+    const content = document.getElementById('izvjestaji-po-odjelima-prikaz');
     if (!content || !content.querySelector('.izvjestaj-odjel-card')) {
         alert('Podaci još nisu učitani. Molimo sačekajte.');
         return;
