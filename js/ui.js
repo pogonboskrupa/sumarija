@@ -366,10 +366,7 @@
                 renderKupciKvartalniTable();
             } else if (view === 'statistika') {
                 document.getElementById('kupci-statistika-view').classList.remove('hidden');
-                const statYear = parseInt(document.getElementById('kupci-statistika-year')?.value || new Date().getFullYear());
-                // typeof guard — loader ne postoji u kodu, bez guarda tab baca ReferenceError
-                if ((!window._kupciStatData || window._kupciStatData.year !== statYear) &&
-                    typeof loadKupciStatistika === 'function') loadKupciStatistika();
+                if (typeof initKupciStatistikaControls === 'function') initKupciStatistikaControls();
             }
         }
 

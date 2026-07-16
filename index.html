@@ -1015,8 +1015,10 @@
                     </div>
                     <div class="enterprise-card-body">
                         <div class="controls-bar" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                            <select id="kupci-statistika-kupac" onchange="loadKupciStatistika()" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white; min-width: 220px; cursor: pointer;">
+                                <option value="">-- Odaberi kupca --</option>
+                            </select>
                             <select id="kupci-statistika-year" onchange="loadKupciStatistika()" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white; min-width: 100px; cursor: pointer;">
-                                <option value="2026">2026</option>
                             </select>
                         </div>
                         <div id="kupci-statistika-content" style="margin-top: 16px;">
