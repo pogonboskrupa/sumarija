@@ -228,21 +228,39 @@
     map._extra = extraMap;
 
     // ---- OTPREMA TEKUĆEG MJESECA ----
-    // Za "Prikaz otpreme" checkbox: skup odjela (po baseKey normKey) koji su imali
-    // otpremu u tekućem kalendarskom mjesecu/godini, sa ukupnom količinom (m³).
-    // Koristi _baseKey(_normKey(...)) — isti obrazac kao non-plan matching — pa
-    // radi i za planske i za slučajne/prelazne/bez-plana odjele.
+    // Za "Prikaz otpreme" checkbox: skup odjela koji su imali otpremu u tekućem
+    // kalendarskom mjesecu/godini, sa ukupnom količinom (m³).
+    //
+    // BUGFIX: _normKey BRIŠE /N sufiks (64/1 i 64/2 → isti ključ "64"). Kad se
+    // taj spljošteni ključ koristio za SVE zapise, otprema evidentirana za
+    // POJEDINAČAN pododsjek (npr. "Risovac Krupa 59/1") je lažno "prelijevala"
+    // highlight i na susjedni pododsjek (59/2) koji te otpreme uopšte nije imao
+    // — na mapi se to vidjelo kao highlight "pored" pravog odjela / naizgled
+    // nasumični odsjeci. Rješenje: DVA nivoa preciznosti —
+    //  1. precise: labelKey (ČUVA /N) — kad zapis već navodi tačan pododsjek
+    //  2. fallback: normKey (briše /N) — SAMO za zapise koji nemaju /N u nazivu
+    //     (agregatni/roditeljski unos bez preciznog pododsjeka) — primjenjuje
+    //     se širom svih pododsjeka jer se iz podatka ne može znati tačno koji.
     const now      = new Date();
     const curMonth = now.getMonth() + 1; // 1-12
     const curYear  = now.getFullYear();
-    const otpremaMjesecMap = new Map(); // baseKey(normKey) → m³
+    const otpremaPreciseMap  = new Map(); // baseKey(labelKey) → m³ (čuva /N)
+    const otpremaFallbackMap = new Map(); // baseKey(normKey)  → m³ (bez /N)
     (otpreme||[]).forEach(p => {
       if (_getYear(p) === curYear && _getMonth(p) === curMonth) {
-        const k = _baseKey(_normKey(p.odjel));
-        otpremaMjesecMap.set(k, (otpremaMjesecMap.get(k) || 0) + (parseFloat(p.kolicina) || 0));
+        const raw = String(p.odjel || '');
+        const amt = parseFloat(p.kolicina) || 0;
+        if (/\/\d+/.test(raw)) {
+          const pk = _baseKey(_labelKey(raw));
+          otpremaPreciseMap.set(pk, (otpremaPreciseMap.get(pk) || 0) + amt);
+        } else {
+          const fk = _baseKey(_normKey(raw));
+          otpremaFallbackMap.set(fk, (otpremaFallbackMap.get(fk) || 0) + amt);
+        }
       }
     });
-    map._otpremaMjesec     = otpremaMjesecMap;
+    map._otpremaPrecise     = otpremaPreciseMap;
+    map._otpremaFallback    = otpremaFallbackMap;
     map._otpremaMjesecNaziv = MJESECI_NAZIVI[curMonth - 1] + ' ' + curYear;
 
     return map;
@@ -993,9 +1011,14 @@
         lyr._kartaInfo   = info;
         lyr._kartaProps  = props;
         lyr._kartaExtra  = !info ? (statusMap._extra && statusMap._extra.get(key)) || null : null;
-        // Otprema tekućeg mjeseca za ovaj odjel (m³) — za "Prikaz otpreme" filter
-        const otKey = _baseKey(_normKey(gj + ' ' + odjel));
-        lyr._kartaOtpremaMjesec = statusMap._otpremaMjesec ? (statusMap._otpremaMjesec.get(otKey) || 0) : 0;
+        // Otprema tekućeg mjeseca za ovaj odjel (m³) — za "Prikaz otpreme" filter.
+        // Precizan match (čuva /N) + fallback (bez /N, samo za agregatne unose
+        // bez preciznog pododsjeka) — vidi komentar u _buildStatusMap.
+        const otPreciseKey  = _baseKey(_labelKey(gj + ' ' + odjel));
+        const otFallbackKey = _baseKey(_normKey(gj + ' ' + odjel));
+        const otPrecise  = statusMap._otpremaPrecise  ? (statusMap._otpremaPrecise.get(otPreciseKey)   || 0) : 0;
+        const otFallback = statusMap._otpremaFallback ? (statusMap._otpremaFallback.get(otFallbackKey) || 0) : 0;
+        lyr._kartaOtpremaMjesec = otPrecise + otFallback;
         _allFeatures.push(lyr);
 
         // Hover tooltip za odjele bez permanentnog labela
