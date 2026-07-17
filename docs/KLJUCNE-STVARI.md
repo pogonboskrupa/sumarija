@@ -63,14 +63,18 @@ fajlova, pa njegove verzije uvijek pobjeđuju:
 
 | Funkcija | Duplikat u | Aktivna verzija |
 |---|---|---|
-| `fetchWithCache` | `js/cache-helper.js` | app.js |
-| `buildApiUrl` | `js/api-optimized.js` | app.js |
+| `fetchWithCache` | ~~`js/cache-helper.js`~~ (obrisan v1.4.33) | app.js |
+| `buildApiUrl` | ~~`js/api-optimized.js`~~ (obrisan v1.4.33) | app.js |
 | `checkManifest` | `data-sync.js` | app.js |
-| `getWeekWithinMonth`, `formatDateDDMMYYYY` | `js/week-fix.js` | app.js |
+| `getWeekWithinMonth`, `formatDateDDMMYYYY` | ~~`js/week-fix.js`~~ (obrisan v1.4.33) | app.js |
 
-Posljedica: `week-fix.js` (i veći dio cache-helper/api-optimized) je **inertan
-mrtvi kod**. Ako nešto "popravljaš" u tim fajlovima — popravka ne radi ništa.
-Mijenjaj `js/app.js`.
+**Update v1.4.33**: `js/cache-helper.js`, `js/api-optimized.js` i `js/week-fix.js`
+su bili u potpunosti inertan mrtvi kod (nijedna njihova funkcija/`window.API`/
+`window.CacheHelper` izvoz se nije koristio nigdje van sebe samih — provjereno
+grep-om kroz cijeli repo) i **fizički su obrisani**, zajedno sa `<script>`/
+`<link rel="preload">` tagovima u `index.html`. `data-sync.js`s `checkManifest`
+i dalje postoji kao živ (ali pregažen) duplikat — nije dirano jer je fajl aktivan
+za drugu funkcionalnost (delta sync), samo ta jedna funkcija je mrtva.
 
 ## 5. Nalazi provjere koda (v1.4.32)
 
@@ -93,6 +97,8 @@ Mijenjaj `js/app.js`.
   `cache_stats_<year>` se pisao ali **nigdje nije čitan**; svaki puni refresh
   je bacao težak `stats` GAS poziv (180s timeout) uzalud. `Operativa - Dashboard`
   (`cache_dashboard_<godina>` bez mjeseca) — nakon brisanja panela bez čitaoca.
+- **Fizički obrisani mrtvi fajlovi** (v1.4.33): `js/cache-helper.js`,
+  `js/api-optimized.js`, `js/week-fix.js` — vidi tabelu iznad. -664 linije.
 
 ### Poznato, namjerno ostavljeno
 - `cache-helper.js` / `api-optimized.js` / `week-fix.js` su mrtvi (v. Zamka #2) —
