@@ -170,7 +170,6 @@
             } else if (userType === 'operativa') {
                 tabsConfig = [
                     { id: 'dashboard', icon: '🌲', label: 'Šumarija Krupa', active: true },
-                    { id: 'operativa', icon: '📊', label: 'Operativa & Analiza' },
                     { id: 'kupci', icon: '📦', label: 'Kupci' },
                     { id: 'mjesecni-sortimenti', icon: '📅', label: 'Mjesečni pregled' },
                     { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' }
@@ -428,7 +427,7 @@
                 'add-sjeca-content', 'add-otprema-content',
                 'my-sjece-content', 'my-otpreme-content',
                 'edit-sjeca-content', 'edit-otprema-content',
-                'pending-unosi-content', 'operativa-content',
+                'pending-unosi-content',
                 'poslovodja-stanje-content',
                 'poslovodja-sjeca-content', 'poslovodja-otprema-content',
                 'poslovodja-pregled-content', 'poslovodja-unosi-content',
