@@ -11,7 +11,6 @@
         // u app.js (loading ekran se prikazuje samo ako aktivni tab nema sadržaja)
         window.TAB_CONTENT_MAP = {
                 'dashboard': 'dashboard-content',
-                'operativa': 'operativa-content',
                 'primaci': 'primaci-content',
                 'otpremaci': 'otpremaci-content',
                 'kupci': 'kupci-content',
@@ -91,8 +90,6 @@
             // Load appropriate content
             if (tab === 'dashboard') {
                 loadDashboard();
-            } else if (tab === 'operativa') {
-                loadOperativa();
             } else if (tab === 'primaci') {
                 loadPrimaci();
                 loadPrimaciDaily();
