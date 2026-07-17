@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.34';
+        const APP_VERSION = '1.4.35';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -84,6 +84,25 @@
         // Helper: provjeri da li je tab još uvijek aktivan (sprečava bleeding async sadržaja)
         function isActiveTab(tabName) {
             return window.currentTab === tabName;
+        }
+
+        // Otkrij content panel — ali SAMO ako pripada trenutno aktivnom tabu.
+        // BUGFIX ("podaci od drugog taba na dnu liste"): async loaderi rade
+        // `getElementById('X-content').classList.remove('hidden')` NAKON await-a.
+        // Ako korisnik u međuvremenu pređe na drugi tab, stari loader ponovo
+        // otkrije SVOJ panel — dva -content panela su onda vidljiva istovremeno,
+        // naslagana vertikalno, pa lista prethodnog taba "procuri" na dno tekućeg.
+        // Ova funkcija blokira otkrivanje ako znamo da panel pripada nekom DRUGOM
+        // glavnom tabu. Podpaneli (edit/add/...) nisu u TAB_CONTENT_MAP → prolaze
+        // nepromijenjeno (prikazuju se sinhrono, nisu podložni ovom raceu).
+        function showTabContent(contentId) {
+            const map = window.TAB_CONTENT_MAP || {};
+            const owningTab = Object.keys(map).find(t => map[t] === contentId);
+            if (owningTab && window.currentTab && owningTab !== window.currentTab) {
+                return; // stale async — korisnik je prešao na drugi tab
+            }
+            const el = document.getElementById(contentId);
+            if (el) el.classList.remove('hidden');
         }
 
         // SUPER VISIBLE VERSION CHECK
@@ -1783,7 +1802,7 @@
                             // ✨ INSTANT: Show cached data immediately WITHOUT loading screen
                             if (!isActiveTab('dashboard')) return;
                             document.getElementById('loading-screen').classList.add('hidden');
-                            document.getElementById('dashboard-content').classList.remove('hidden');
+                            showTabContent('dashboard-content');
                             await renderDashboard(parsed.data);
                             hasCachedData = true;
 
@@ -1811,7 +1830,7 @@
                         // vječnog "Učitavam podatke" — toast je već upozorio korisnika
                         if (!hasCachedData && isActiveTab('dashboard')) {
                             document.getElementById('loading-screen').classList.add('hidden');
-                            document.getElementById('dashboard-content').classList.remove('hidden');
+                            showTabContent('dashboard-content');
                         }
                         markTabRendered('dashboard');
                         return;
@@ -2132,7 +2151,7 @@
                 // prikaz bi se "pojavio" tek kad ručno klikne tab.
                 if (isActiveTab('dashboard')) {
                     document.getElementById('loading-screen').classList.add('hidden');
-                    document.getElementById('dashboard-content').classList.remove('hidden');
+                    showTabContent('dashboard-content');
                 }
 
                 // Load "Tekući mjesec" table
@@ -2253,7 +2272,7 @@
                 // Show content (in case it was hidden during initial load)
                 if (!isActiveTab('dashboard')) return;
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('dashboard-content').classList.remove('hidden');
+                showTabContent('dashboard-content');
 
                 // Set current month in daily chart selector and load chart (currentMonth already defined above)
                 const monthSelect = document.getElementById('dashboard-daily-month-select');
@@ -2855,7 +2874,7 @@
 
                 if (!isActiveTab('poslovodja-stanje')) return;
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('poslovodja-stanje-content').classList.remove('hidden');
+                showTabContent('poslovodja-stanje-content');
 
             } catch (error) {
                 console.error('Error loading poslovođa stanje:', error);
@@ -2895,7 +2914,7 @@
                         renderPoslovodjaStanjeCards(fallbackOdjeli);
 
                         document.getElementById('loading-screen').classList.add('hidden');
-                        document.getElementById('poslovodja-stanje-content').classList.remove('hidden');
+                        showTabContent('poslovodja-stanje-content');
 
                         showNotification('⚠️ Prikazani keširani podaci zbog sporog servera', 'warning');
                         return;
@@ -2973,7 +2992,7 @@
                         if (parsed.data) {
                             // ✨ INSTANT: Show cached data immediately
                             document.getElementById('loading-screen').classList.add('hidden');
-                            document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
+                            showTabContent('stanje-odjela-admin-content');
                             renderAdminStanjeTable(parsed.data);
                             hasCachedData = true;
 
@@ -3026,7 +3045,7 @@
                 renderAdminStanjeTable(combinedData);
 
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('stanje-odjela-admin-content').classList.remove('hidden');
+                showTabContent('stanje-odjela-admin-content');
 
                 // Hide cache indicator when fresh data arrives
                 hideCacheIndicator();
@@ -3700,7 +3719,7 @@
                 renderPoslovodjaOtpremaZ5Table(filteredOtpreme);
 
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('poslovodja-zadnjih5-content').classList.remove('hidden');
+                showTabContent('poslovodja-zadnjih5-content');
 
             } catch (error) {
                 console.error('Error loading poslovođa zadnjih 5:', error);
@@ -3873,7 +3892,7 @@
                     var parsed = JSON.parse(raw);
                     if (parsed.data && parsed.data.primke) {
                         document.getElementById('loading-screen').classList.add('hidden');
-                        document.getElementById('poslovodja-sjeca-content').classList.remove('hidden');
+                        showTabContent('poslovodja-sjeca-content');
                         renderPoslovodjaSjecaTable(processPrimkeForSjeca(parsed.data));
                         markTabRendered('poslovodja-sjeca');
                         hasCached = true;
@@ -3900,7 +3919,7 @@
                 markTabRendered('poslovodja-sjeca');
 
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('poslovodja-sjeca-content').classList.remove('hidden');
+                showTabContent('poslovodja-sjeca-content');
 
             } catch (error) {
                 console.error('Error loading poslovođa sječa:', error);
@@ -4077,7 +4096,7 @@
                     var parsed = JSON.parse(raw);
                     if (parsed.data && parsed.data.otpreme) {
                         document.getElementById('loading-screen').classList.add('hidden');
-                        document.getElementById('poslovodja-otprema-content').classList.remove('hidden');
+                        showTabContent('poslovodja-otprema-content');
                         renderPoslovodjaOtpremaTabTable(processOtpremeForOtprema(parsed.data));
                         markTabRendered('poslovodja-otprema');
                         hasCached = true;
@@ -4104,7 +4123,7 @@
                 markTabRendered('poslovodja-otprema');
 
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('poslovodja-otprema-content').classList.remove('hidden');
+                showTabContent('poslovodja-otprema-content');
 
             } catch (error) {
                 console.error('Error loading poslovođa otprema:', error);
@@ -4315,7 +4334,7 @@
                     var parsedO = JSON.parse(rawOtpreme);
                     if (parsedP.data && parsedO.data) {
                         document.getElementById('loading-screen').classList.add('hidden');
-                        document.getElementById('poslovodja-pregled-content').classList.remove('hidden');
+                        showTabContent('poslovodja-pregled-content');
                         var result = processPregledData(parsedP.data, parsedO.data);
                         renderPoslovodjaPregled(result.radilisteOdjeli, result.sjecaByOdjelMonth, result.otpremaByOdjelMonth);
                         markTabRendered('poslovodja-pregled');
@@ -4349,7 +4368,7 @@
                 markTabRendered('poslovodja-pregled');
 
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('poslovodja-pregled-content').classList.remove('hidden');
+                showTabContent('poslovodja-pregled-content');
 
             } catch (error) {
                 console.error('Error loading poslovođa pregled:', error);
@@ -4468,7 +4487,7 @@
                             // ✨ INSTANT: Show cached data immediately
                             if (!isActiveTab('primaci')) return;
                             document.getElementById('loading-screen').classList.add('hidden');
-                            document.getElementById('primaci-content').classList.remove('hidden');
+                            showTabContent('primaci-content');
                             renderPrimaci(parsed.data);
                             hasCachedData = true;
 
@@ -4493,7 +4512,7 @@
                     if (data.offline || data.error) {
                         if (!hasCachedData && isActiveTab('primaci')) {
                             document.getElementById('loading-screen').classList.add('hidden');
-                            document.getElementById('primaci-content').classList.remove('hidden');
+                            showTabContent('primaci-content');
                         }
                         markTabRendered('primaci');
                         return;
@@ -4785,7 +4804,7 @@
 
                 if (!isActiveTab('primaci')) return;
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('primaci-content').classList.remove('hidden');
+                showTabContent('primaci-content');
         }
 
         // Load otpremaci data
@@ -4805,7 +4824,7 @@
                             // ✨ INSTANT: Show cached data immediately
                             if (!isActiveTab('otpremaci')) return;
                             document.getElementById('loading-screen').classList.add('hidden');
-                            document.getElementById('otpremaci-content').classList.remove('hidden');
+                            showTabContent('otpremaci-content');
                             renderOtpremaci(parsed.data);
                             hasCachedData = true;
 
@@ -4830,7 +4849,7 @@
                     if (data.offline || data.error) {
                         if (!hasCachedData && isActiveTab('otpremaci')) {
                             document.getElementById('loading-screen').classList.add('hidden');
-                            document.getElementById('otpremaci-content').classList.remove('hidden');
+                            showTabContent('otpremaci-content');
                         }
                         markTabRendered('otpremaci');
                         return;
@@ -4968,7 +4987,7 @@
 
                 if (!isActiveTab('otpremaci')) return;
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('otpremaci-content').classList.remove('hidden');
+                showTabContent('otpremaci-content');
         }
 
         // Helper function to get month name
@@ -5916,7 +5935,7 @@
                         if (parsed.data && parsed.data.godisnji) {
                             // ✨ INSTANT: Show cached data immediately
                             if (!isActiveTab('kupci')) return;
-                            document.getElementById('kupci-content').classList.remove('hidden');
+                            showTabContent('kupci-content');
                             document.getElementById('loading-screen').classList.add('hidden');
                             kupciMjesecniRawData = parsed.data.mjesecni || [];
                             renderKupciGodisnjiTable(parsed.data.godisnji, parsed.data.sortimentiNazivi);
@@ -5934,7 +5953,7 @@
 
                 // If no cache, prepare for fresh load
                 if (!hasCachedData) {
-                    document.getElementById('kupci-content').classList.remove('hidden');
+                    showTabContent('kupci-content');
                     document.getElementById('loading-screen').classList.add('hidden');
                 }
 
@@ -7622,7 +7641,7 @@
                 requestLoadingScreen();
                 document.getElementById('primac-odjeli-content').classList.add('hidden');
             } else {
-                document.getElementById('primac-odjeli-content').classList.remove('hidden');
+                showTabContent('primac-odjeli-content');
             }
 
             try {
@@ -7648,7 +7667,7 @@
                 markTabRendered('primac-odjeli');
 
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('primac-odjeli-content').classList.remove('hidden');
+                showTabContent('primac-odjeli-content');
 
             } catch (error) {
                 showError('Greška', 'Greška pri učitavanju podataka: ' + error.message);
@@ -8530,7 +8549,7 @@
                 requestLoadingScreen();
                 document.getElementById('otpremac-odjeli-content').classList.add('hidden');
             } else {
-                document.getElementById('otpremac-odjeli-content').classList.remove('hidden');
+                showTabContent('otpremac-odjeli-content');
             }
 
             try {
@@ -8556,7 +8575,7 @@
                 markTabRendered('otpremac-odjeli');
 
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('otpremac-odjeli-content').classList.remove('hidden');
+                showTabContent('otpremac-odjeli-content');
 
             } catch (error) {
                 showError('Greška', 'Greška pri učitavanju podataka: ' + error.message);
@@ -8856,14 +8875,14 @@
                 markTabRendered('pending-unosi');
 
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('pending-unosi-content').classList.remove('hidden');
+                showTabContent('pending-unosi-content');
 
             } catch (error) {
                 console.error('Error loading dodani unosi:', error);
                 document.getElementById('pending-unosi-container').innerHTML =
                     '<p style="color: #dc2626; text-align: center; padding: 40px;">Greška: ' + error.message + '</p>';
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('pending-unosi-content').classList.remove('hidden');
+                showTabContent('pending-unosi-content');
             }
         }
 
@@ -8877,7 +8896,7 @@
                 requestLoadingScreen();
                 document.getElementById('poslovodja-unosi-content').classList.add('hidden');
             } else {
-                document.getElementById('poslovodja-unosi-content').classList.remove('hidden');
+                showTabContent('poslovodja-unosi-content');
             }
 
             try {
@@ -8954,14 +8973,14 @@
                 markTabRendered('poslovodja-unosi');
 
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('poslovodja-unosi-content').classList.remove('hidden');
+                showTabContent('poslovodja-unosi-content');
 
             } catch (error) {
                 console.error('Error loading poslovođa dodani unosi:', error);
                 document.getElementById('poslovodja-unosi-container').innerHTML =
                     '<p style="color: #dc2626; text-align: center; padding: 40px;">Greška: ' + error.message + '</p>';
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('poslovodja-unosi-content').classList.remove('hidden');
+                showTabContent('poslovodja-unosi-content');
             }
         }
 
@@ -9108,14 +9127,14 @@
                 renderMjesecnaTabela(data.otprema, 'mjesecna-otprema');
 
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('mjesecni-sortimenti-content').classList.remove('hidden');
+                showTabContent('mjesecni-sortimenti-content');
                 markTabRendered('mjesecni-sortimenti');
 
             } catch (error) {
                 console.error('Error loading mjesečni sortimenti:', error);
                 showError('Greška', 'Greška pri učitavanju mjesečnih podataka: ' + error.message);
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('mjesecni-sortimenti-content').classList.remove('hidden');
+                showTabContent('mjesecni-sortimenti-content');
             }
         }
 
@@ -9752,7 +9771,7 @@
                 markTabRendered('stanje-zaliha');
 
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('stanje-zaliha-content').classList.remove('hidden');
+                showTabContent('stanje-zaliha-content');
 
             } catch (error) {
                 console.error('Error loading stanje zaliha:', error);
@@ -10424,7 +10443,7 @@
         // Show Add Sjeca Form
         function showAddSjecaForm() {
             document.getElementById('loading-screen').classList.add('hidden');
-            document.getElementById('add-sjeca-content').classList.remove('hidden');
+            showTabContent('add-sjeca-content');
 
             // Set today's date as default
             const today = new Date().toISOString().split('T')[0];
@@ -10451,7 +10470,7 @@
         // Show Add Otprema Form
         function showAddOtpremaForm() {
             document.getElementById('loading-screen').classList.add('hidden');
-            document.getElementById('add-otprema-content').classList.remove('hidden');
+            showTabContent('add-otprema-content');
 
             // Set today's date as default
             const today = new Date().toISOString().split('T')[0];
@@ -11025,7 +11044,7 @@
                 requestLoadingScreen();
                 document.getElementById('my-sjece-content').classList.add('hidden');
             } else {
-                document.getElementById('my-sjece-content').classList.remove('hidden');
+                showTabContent('my-sjece-content');
             }
 
             try {
@@ -11080,13 +11099,13 @@
                 document.getElementById('my-sjece-container').innerHTML = html;
                 markTabRendered('my-sjece');
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('my-sjece-content').classList.remove('hidden');
+                showTabContent('my-sjece-content');
 
             } catch (error) {
                 console.error('Error loading my sjece:', error);
                 document.getElementById('my-sjece-container').innerHTML = '<p style="color: #dc2626; text-align: center; padding: 40px;">Greška: ' + error.message + '</p>';
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('my-sjece-content').classList.remove('hidden');
+                showTabContent('my-sjece-content');
             }
         }
 
@@ -11099,7 +11118,7 @@
                 requestLoadingScreen();
                 document.getElementById('my-otpreme-content').classList.add('hidden');
             } else {
-                document.getElementById('my-otpreme-content').classList.remove('hidden');
+                showTabContent('my-otpreme-content');
             }
 
             try {
@@ -11158,13 +11177,13 @@
                 document.getElementById('my-otpreme-container').innerHTML = html;
                 markTabRendered('my-otpreme');
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('my-otpreme-content').classList.remove('hidden');
+                showTabContent('my-otpreme-content');
 
             } catch (error) {
                 console.error('Error loading my otpreme:', error);
                 document.getElementById('my-otpreme-container').innerHTML = '<p style="color: #dc2626; text-align: center; padding: 40px;">Greška: ' + error.message + '</p>';
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('my-otpreme-content').classList.remove('hidden');
+                showTabContent('my-otpreme-content');
             }
         }
 
@@ -11176,7 +11195,7 @@
             document.getElementById('my-sjece-content').classList.add('hidden');
 
             // Show edit form
-            document.getElementById('edit-sjeca-content').classList.remove('hidden');
+            showTabContent('edit-sjeca-content');
 
             // Populate form with existing data
             document.getElementById('edit-sjeca-rowIndex').value = unos.rowIndex;
@@ -11330,7 +11349,7 @@
             // Similar to editMySjeca but for otprema
             document.getElementById('loading-screen').classList.add('hidden');
             document.getElementById('my-otpreme-content').classList.add('hidden');
-            document.getElementById('edit-otprema-content').classList.remove('hidden');
+            showTabContent('edit-otprema-content');
 
             document.getElementById('edit-otprema-rowIndex').value = unos.rowIndex;
             document.getElementById('edit-otprema-datum').value = unos.datum;
@@ -11858,7 +11877,7 @@
                 requestLoadingScreen();
                 document.getElementById('dinamika-content').classList.add('hidden');
             } else {
-                document.getElementById('dinamika-content').classList.remove('hidden');
+                showTabContent('dinamika-content');
             }
 
             try {
@@ -11883,7 +11902,7 @@
                 calculateDinamikaTotal();
 
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('dinamika-content').classList.remove('hidden');
+                showTabContent('dinamika-content');
                 markTabRendered('dinamika');
 
             } catch (error) {

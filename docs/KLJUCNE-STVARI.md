@@ -55,6 +55,22 @@ Dosadašnje žrtve:
 **Pravilo: novi ugniježđeni kontejneri NE SMIJU imati ID koji završava na
 `-content`.** Koristi `-prikaz`, `-view`, `-panel`...
 
+## 3b. ⚠️ ZAMKA #1b: async loader otkrije panel nakon promjene taba (v1.4.35)
+
+Async loaderi (`loadX`) rade `getElementById('X-content').classList.remove(
+'hidden')` **nakon `await`-a**. Ako korisnik pređe na drugi tab dok fetch traje,
+stari loader se razriješi i **ponovo otkrije SVOJ panel** — dva `-content`
+panela su vidljiva istovremeno, naslagana vertikalno, pa lista prethodnog taba
+"procuri" na dno tekućeg ("podaci od drugog taba na dnu liste").
+
+Rješenje: helper `showTabContent(contentId)` (app.js, blizu `isActiveTab`) —
+otkriva panel SAMO ako pripada trenutno aktivnom tabu (obrnuta pretraga kroz
+`TAB_CONTENT_MAP`). Podpaneli van mape (edit/add/stanje-odjela-admin/
+poslovodja-zadnjih5) prolaze nepromijenjeno. **Svi** `-content` un-hide pozivi
+u app.js (47 mjesta) idu kroz ovaj helper. **Pravilo: nikad ne raditi sirovi
+`getElementById('X-content').classList.remove('hidden')` u async kodu — koristi
+`showTabContent('X-content')`.**
+
 ## 4. ⚠️ ZAMKA #2: duple globalne funkcije / redoslijed skripti
 
 Defer skripte se izvršavaju po redu u `index.html`; **kasnija `function`
