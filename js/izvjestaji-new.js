@@ -949,7 +949,9 @@ async function loadIzvjestajiPoOdjelima() {
         const otpremaFiltered = filterByPoslovodjaRadilista(otpremaRows);
 
         const odjeli = aggregatePoOdjelima(primkaFiltered, otpremaFiltered, sortimentiNazivi);
+        populateIzvjestajiPoOdjelimaRadiliste(odjeli);
         renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName);
+        filterIzvjestajiPoOdjelimaRadiliste();
 
         console.log('[IZVJEŠTAJI PO ODJELIMA] ✓ Data loaded successfully');
         if (typeof markTabRendered === 'function') markTabRendered('izvjestaji');
@@ -1007,6 +1009,30 @@ function aggregatePoOdjelima(primkaRows, otpremaRows, sortimentiNazivi) {
         .sort((a, b) => (b.sjecaUkupno + b.otpremaUkupno) - (a.sjecaUkupno + a.otpremaUkupno));
 }
 
+// Primarno radilište odjela — prvo uneseno u insertion-order setu (o.radiliste)
+function _izvPrimarnoRadiliste(o) {
+    const keys = Object.keys(o.radiliste || {});
+    return keys.length ? keys[0] : null;
+}
+
+// Grupiši već-agregirane odjele po primarnom radilištu — alfabetski, "OSTALO" zadnje
+function groupOdjeliByRadiliste(odjeli) {
+    const grupe = {};
+    odjeli.forEach(o => {
+        const rad = _izvPrimarnoRadiliste(o) || 'OSTALO';
+        if (!grupe[rad]) grupe[rad] = [];
+        grupe[rad].push(o);
+    });
+    const sortedKeys = Object.keys(grupe).sort((a, b) => {
+        if (a === 'OSTALO') return 1;
+        if (b === 'OSTALO') return -1;
+        return a.localeCompare(b, 'bs');
+    });
+    const result = {};
+    sortedKeys.forEach(k => { result[k] = grupe[k]; });
+    return result;
+}
+
 function _izvSortList(obj) {
     // Vrati [{ime, ukupno}] sortirano opadajuće
     return Object.keys(obj).map(ime => ({ ime, ukupno: obj[ime] }))
@@ -1036,15 +1062,27 @@ function renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName) {
     html += `<div class="summary-card"><div class="summary-card-title">Najveći odjel</div><div class="summary-card-value" style="font-size:20px;">${najveci.odjel}</div><div class="summary-card-subtitle">${(najveci.sjecaUkupno + najveci.otpremaUkupno).toFixed(2)} m³ ukupno</div></div>`;
     html += '</div>';
 
-    // Po odjelu
-    odjeli.forEach(o => {
+    // Po radilištu, pa po odjelu unutar radilišta
+    const grupe = groupOdjeliByRadiliste(odjeli);
+    Object.keys(grupe).forEach(radiliste => {
+        const grupaOdjeli = grupe[radiliste];
+        const grupaUkupno = grupaOdjeli.reduce((s, o) => s + o.sjecaUkupno + o.otpremaUkupno, 0);
+        const radUpper = String(radiliste).toUpperCase();
+
+        html += `<div class="izvjestaj-radiliste-grupa" data-radiliste="${radUpper}">`;
+        html += `<div style="background: linear-gradient(135deg, #1e3a5f, #2563eb); color: white; padding: 14px 20px; border-radius: 10px; margin: 30px 0 16px 0; font-size: 16px; font-weight: 700; letter-spacing: 0.5px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <span>📍 ${radiliste}</span>
+            <span style="font-size:13px;font-weight:600;opacity:0.9;">${grupaOdjeli.length} odjela · ${grupaUkupno.toFixed(2)} m³</span>
+        </div>`;
+
+        grupaOdjeli.forEach(o => {
         const sortRows = sortimentiNazivi.filter(s =>
             IZV_GRUPNE_KOLONE.indexOf(s) === -1 && ((o.sjecaSort[s] || 0) > 0 || (o.otpremaSort[s] || 0) > 0));
         const primaci = _izvSortList(o.primaci);
         const otpremaci = _izvSortList(o.otpremaci);
         const kupci = _izvSortList(o.kupci);
 
-        html += `<div class="enterprise-card izvjestaj-odjel-card" data-odjel="${String(o.odjel).toUpperCase()}" style="margin-top:16px;">
+        html += `<div class="enterprise-card izvjestaj-odjel-card" data-odjel="${String(o.odjel).toUpperCase()}" data-radiliste="${radUpper}" style="margin-top:16px;">
             <div class="enterprise-card-header">
                 <div>
                     <h2>🏭 Odjel ${o.odjel}</h2>
@@ -1096,6 +1134,9 @@ function renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName) {
         }
 
         html += `</div></div></div>`;
+        });
+
+        html += `</div>`; // .izvjestaj-radiliste-grupa
     });
 
     content.innerHTML = html;
@@ -1110,6 +1151,34 @@ function filterIzvjestajPoOdjelima() {
         const o = card.getAttribute('data-odjel') || '';
         card.style.display = (!q || o.indexOf(q) > -1) ? '' : 'none';
     });
+    filterIzvjestajiPoOdjelimaRadiliste();
+}
+
+// Filter po radilištu — sakrij/prikaži cijele grupe (banner + kartice)
+function filterIzvjestajiPoOdjelimaRadiliste() {
+    const select = document.getElementById('izvjestaji-po-odjelima-radiliste');
+    const val = select ? select.value : '';
+    document.querySelectorAll('#izvjestaji-po-odjelima-prikaz .izvjestaj-radiliste-grupa').forEach(grupa => {
+        const rad = grupa.getAttribute('data-radiliste') || '';
+        grupa.style.display = (!val || rad === val) ? '' : 'none';
+    });
+}
+
+// Popuni radiliste dropdown na osnovu trenutno učitanih odjela (alfabetski, sa "Sva radilišta")
+function populateIzvjestajiPoOdjelimaRadiliste(odjeli) {
+    const select = document.getElementById('izvjestaji-po-odjelima-radiliste');
+    if (!select) return;
+    const prev = select.value;
+    const radilista = new Set();
+    odjeli.forEach(o => {
+        const r = _izvPrimarnoRadiliste(o);
+        if (r) radilista.add(r);
+    });
+    const sorted = Array.from(radilista).sort((a, b) => a.localeCompare(b, 'bs'));
+    let html = '<option value="">Sva radilišta</option>';
+    sorted.forEach(r => { html += `<option value="${String(r).toUpperCase()}">${r}</option>`; });
+    select.innerHTML = html;
+    select.value = (prev && sorted.some(r => String(r).toUpperCase() === prev)) ? prev : '';
 }
 
 // Štampaj — otvori sadržaj u print prozoru
@@ -1119,19 +1188,33 @@ function printIzvjestajPoOdjelima() {
         alert('Podaci još nisu učitani. Molimo sačekajte.');
         return;
     }
+    const vidljiveKartice = Array.from(content.querySelectorAll('.izvjestaj-odjel-card')).filter(card => {
+        const grupa = card.closest('.izvjestaj-radiliste-grupa');
+        return card.style.display !== 'none' && (!grupa || grupa.style.display !== 'none');
+    });
+    if (!vidljiveKartice.length) {
+        alert('Nema vidljivih odjela za štampu — provjerite filter radilišta/pretragu.');
+        return;
+    }
     const yearEl = document.getElementById('izvjestaji-po-odjelima-year');
     const monthEl = document.getElementById('izvjestaji-po-odjelima-month');
     const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
     const monthName = mjeseciNazivi[parseInt(monthEl.value)] + ' ' + yearEl.value;
     const datumStampe = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-    // Broj odjela — ide u zaglavlje kao brz pregled obima izvještaja
-    const brojOdjela = content.querySelectorAll('.izvjestaj-odjel-card').length;
+    // Ako je odabrano konkretno radilište, štampamo samo taj dio izvještaja
+    const radilisteSelect = document.getElementById('izvjestaji-po-odjelima-radiliste');
+    const radilisteNaziv = radilisteSelect && radilisteSelect.value
+        ? (radilisteSelect.options[radilisteSelect.selectedIndex].textContent || '')
+        : '';
+
+    // Broj odjela — samo vidljive kartice (poštuje filter po radilištu i pretragu)
+    const brojOdjela = vidljiveKartice.length;
 
     const win = window.open('', '_blank', 'width=1100,height=850');
     if (!win) { alert('Popup blokiran — dozvolite popup prozore za štampanje.'); return; }
     win.document.write(`<!DOCTYPE html><html lang="bs"><head><meta charset="UTF-8">
-<title>Izvještaj po odjelima — ${monthName}</title>
+<title>Izvještaj po odjelima — ${monthName}${radilisteNaziv ? ' — ' + radilisteNaziv : ''}</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:'Segoe UI',Arial,sans-serif; font-size:12px; color:#111; padding:16mm 14mm; }
@@ -1202,8 +1285,8 @@ function printIzvjestajPoOdjelima() {
 <div class="print-header">
   <div><div class="company-name">ŠPD "Unsko-Sanske Šume" d.o.o.</div><div class="company-sub">Šumarija Bosanska Krupa</div></div>
   <div>
-    <div class="report-title">Izvještaj po odjelima</div>
-    <div class="report-period">Period: ${monthName} · ${brojOdjela} odjela</div>
+    <div class="report-title">Izvještaj po odjelima${radilisteNaziv ? ' — ' + radilisteNaziv : ''}</div>
+    <div class="report-period">Period: ${monthName}${radilisteNaziv ? ' · Radilište: ' + radilisteNaziv : ''} · ${brojOdjela} odjela</div>
     <div class="report-meta">Datum štampe: ${datumStampe}</div>
   </div>
 </div>
