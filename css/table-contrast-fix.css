@@ -325,8 +325,12 @@ td[style*="color: #ef4444"] {
     color: #b91c1c !important;
 }
 
-/* UKUPNO/Total rows - MAXIMUM emphasis */
-table tbody tr:last-child td,
+/* UKUPNO/Total rows - MAXIMUM emphasis
+   #dashboard-table (Šumarija tab, Mjesečni pregled) je izuzet — njegov UKUPNO
+   red je u posebnom <tfoot> (već pokriven pravilom "table tfoot td" ispod),
+   pa je zadnji red u <tbody> obični mjesec (Decembar), ne total — bez izuzetka
+   bi se Decembar uvijek boldirao bez obzira na to koji je mjesec stvarno tekući. */
+table:not(#dashboard-table) tbody tr:last-child td,
 table tfoot td,
 .ukupno-row td,
 .total-row td {
@@ -445,7 +449,7 @@ th[style*="color: #ffffff"] {
         font-weight: 800 !important;
     }
 
-    table tbody tr:last-child td,
+    table:not(#dashboard-table) tbody tr:last-child td,
     .ukupno-row td {
         font-size: 16px !important;
         font-weight: 900 !important;
