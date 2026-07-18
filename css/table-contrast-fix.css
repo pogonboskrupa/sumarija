@@ -342,12 +342,14 @@ table tfoot td,
 /* Izvještaj po odjelima (Izvještaji tab) — tabele "Sječa/Otprema po radniku"
    i "Otprema po kupcu" (.kupci-table) nemaju UKUPNO red, pa je zadnji red
    uvijek samo posljednji radnik/kupac na listi — generičko pravilo iznad ga
-   je pogrešno boldiralo kao da je total red. UKUPNO red u tabeli sortimenata
-   (klasa .totals-row) ostaje netaknut i i dalje boldiran preko dedicated
-   ".kupci-table .totals-row" pravila (main.css) — zato je ovdje izuzet. */
+   je boldiralo JAČE (900/15px) nego sve ostale redove (koji dobiju 700/14px
+   preko ".kupci-table tbody td" pravila), pa je zadnji red izgledao vidljivo
+   drugačije. Ovdje ga svodimo na ISTU vrijednost (700/14px) kao ostali redovi
+   — svi redovi jednako boldirani, bez vizuelne razlike. UKUPNO red u tabeli
+   sortimenata (klasa .totals-row) ostaje netaknut, van dometa ovog pravila. */
 #izvjestaji-po-odjelima-prikaz table.kupci-table tbody tr:last-child:not(.totals-row) td {
-    font-weight: 400 !important;
-    font-size: 13px !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
 }
 
 /* CRITICAL: Dark background rows MUST have white text */
