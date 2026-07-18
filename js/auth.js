@@ -127,6 +127,22 @@
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
             if (typeof setAppViewport === 'function') setAppViewport();
+
+            // Traži "persistent storage" — bez ovoga Android/Chrome smije tiho
+            // obrisati localStorage/IndexedDB (offline podaci) kad uređaju
+            // ponestane prostora, pogotovo poslije dužeg perioda neaktivnosti
+            // (npr. korisnik na terenu koji app ne otvara satima/danima).
+            // Instalirane PWA/TWA (APK) aplikacije obično dobiju "persisted"
+            // automatski, ali eksplicitan zahtjev je siguran fallback svuda.
+            if (navigator.storage && navigator.storage.persist) {
+                navigator.storage.persisted().then(already => {
+                    if (!already) {
+                        navigator.storage.persist().then(granted => {
+                            console.log(granted ? '[STORAGE] Persistent storage odobren — offline podaci zaštićeni od automatskog brisanja.' : '[STORAGE] Persistent storage NIJE odobren (browser politika).');
+                        }).catch(() => {});
+                    }
+                }).catch(() => {});
+            }
             document.getElementById('user-name').textContent = currentUser.fullName;
             document.getElementById('user-role').textContent = currentUser.role === 'admin' ? 'Administrator' : currentUser.type;
 
