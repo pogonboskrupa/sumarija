@@ -35,6 +35,8 @@
         .user-menu-item:last-child { border-bottom: none; }
         .user-menu-item.danger { color: #dc2626; }
         .user-menu-item.danger:hover { background: #fee2e2; }
+        .user-menu-item.gold { background: #fef3c7; color: #92400e; font-weight: 700; border-left: 3px solid #d97706; }
+        .user-menu-item.gold:hover { background: #fde68a; }
         .btn-logout { background: #dc2626; color: white; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; }
         .btn-logout:hover { background: #b91c1c; }
         .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
