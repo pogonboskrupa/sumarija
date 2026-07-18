@@ -2897,6 +2897,20 @@
         }
 
         /* ============================================ */
+        /* ↔️ HORIZONTALNI TABOVI - default raspored     */
+        /* Samo sidebar → horizontalni tabovi, BEZ Kubikator */
+        /* touch-stilova (ti ostaju vezani za force-android-view) */
+        /* ============================================ */
+
+        body.force-horizontal-tabs .sidebar.desktop-only {
+            display: none !important;
+        }
+
+        body.force-horizontal-tabs .tabs-container.mobile-only {
+            display: block !important;
+        }
+
+        /* ============================================ */
         /* 📱 ANDROID VIEW - Desktop prikaz bez sidebara */
         /* Identično desktop-u, samo sidebar → horizontalni tabovi */
         /* ============================================ */
