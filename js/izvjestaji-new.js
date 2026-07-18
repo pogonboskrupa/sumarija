@@ -1033,6 +1033,20 @@ function groupOdjeliByRadiliste(odjeli) {
     return result;
 }
 
+// Boja pozadine reda sortimenta — svijetlo zelena za četinare, svijetlo plava
+// za lišćare, jača nijansa iste boje za trupce (KUBIKATOR_CETINARI/LISCARI
+// definisani u js/kubikator.js, dostupni globalno u trenutku poziva)
+function _izvSortimentBoja(s) {
+    const isTrupci = typeof s === 'string' && s.indexOf('TRUPCI') === 0;
+    if (typeof KUBIKATOR_CETINARI !== 'undefined' && KUBIKATOR_CETINARI.indexOf(s) !== -1) {
+        return isTrupci ? '#86efac' : '#dcfce7';
+    }
+    if (typeof KUBIKATOR_LISCARI !== 'undefined' && KUBIKATOR_LISCARI.indexOf(s) !== -1) {
+        return isTrupci ? '#93c5fd' : '#dbeafe';
+    }
+    return '';
+}
+
 function _izvSortList(obj) {
     // Vrati [{ime, ukupno}] sortirano opadajuće
     return Object.keys(obj).map(ime => ({ ime, ukupno: obj[ime] }))
@@ -1103,7 +1117,9 @@ function renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName) {
             <tbody>`;
         if (sortRows.length) {
             sortRows.forEach(s => {
-                html += `<tr><td style="font-weight:600;">${s}</td><td class="right">${fmt(o.sjecaSort[s] || 0)}</td><td class="right">${fmt(o.otpremaSort[s] || 0)}</td></tr>`;
+                const boja = _izvSortimentBoja(s);
+                const trStyle = boja ? ` style="background:${boja};"` : '';
+                html += `<tr${trStyle}><td style="font-weight:600;">${s}</td><td class="right">${fmt(o.sjecaSort[s] || 0)}</td><td class="right">${fmt(o.otpremaSort[s] || 0)}</td></tr>`;
             });
         } else {
             html += `<tr><td colspan="3" style="text-align:center;color:#6b7280;">Nema sortimenata</td></tr>`;
