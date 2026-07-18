@@ -100,7 +100,7 @@
 
   // ---- UI COMPONENTS ----
   function realizacijaBadge(pct) {
-    if (pct == null || isNaN(pct)) return '<span style="color:#9ca3af;background:#f3f4f6;padding:2px 7px;border-radius:99px;font-size:11px;font-weight:600;">—</span>';
+    if (pct == null || isNaN(pct)) return '<span style="color:#6b7280;background:#f3f4f6;padding:2px 7px;border-radius:99px;font-size:11px;font-weight:600;">—</span>';
     const p = parseFloat(pct.toFixed(1));
     let col, bg;
     if (p >= 90)     { col='#166534'; bg='#dcfce7'; }
@@ -325,7 +325,7 @@
 
   function sortArrow(tab, col) {
     const s = _sort[tab];
-    if (!s || s.col!==col) return '<span style="color:#9ca3af;font-size:10px;">⇅</span>';
+    if (!s || s.col!==col) return '<span style="color:#6b7280;font-size:10px;">⇅</span>';
     return s.asc ? '<span style="color:#059669;font-size:10px;">↑</span>' : '<span style="color:#059669;font-size:10px;">↓</span>';
   }
 
@@ -391,7 +391,7 @@
         } else {
           console.error('[GP]', err);
           const v = document.getElementById('gp-'+_activeTab+'-view');
-          if (v) v.innerHTML = `<div style="text-align:center;padding:60px;color:#dc2626;"><div style="font-size:32px;margin-bottom:12px;">❌</div>Server je spor ili nedostupan.<br><small style="color:#6b7280;">${err.message}</small><br><br><button class="btn btn-primary" onclick="loadGodisnjiPlan(true)">Pokušaj ponovo</button></div>`;
+          if (v) v.innerHTML = `<div style="text-align:center;padding:60px;color:#dc2626;"><div style="font-size:32px;margin-bottom:12px;">❌</div>Server je spor ili nedostupan.<br><small style="color:#4b5563;">${err.message}</small><br><br><button class="btn btn-primary" onclick="loadGodisnjiPlan(true)">Pokušaj ponovo</button></div>`;
         }
       }
     } finally {
@@ -402,7 +402,7 @@
   function showLoading() {
     ['grupe','sortimenti','pregled','projekat'].forEach(t=>{
       const v = document.getElementById('gp-'+t+'-view');
-      if (v && t===_activeTab) v.innerHTML = '<div style="text-align:center;padding:60px;color:#6b7280;"><div style="font-size:32px;margin-bottom:12px;">⏳</div>Učitavam podatke...</div>';
+      if (v && t===_activeTab) v.innerHTML = '<div style="text-align:center;padding:60px;color:#4b5563;"><div style="font-size:32px;margin-bottom:12px;">⏳</div>Učitavam podatke...</div>';
     });
   }
 
@@ -573,10 +573,10 @@
           <span style="font-size:14px;font-weight:700;color:#374151;">${lbl}</span>
           ${realizacijaBadge(pct)}
         </div>
-        <div style="font-size:22px;font-weight:800;color:${col};">${fmtN(act)} <span style="font-size:13px;font-weight:400;color:#6b7280;">m³</span></div>
-        <div style="font-size:12px;color:#6b7280;margin:4px 0;">od ${fmtN(plan)} m³ plana</div>
+        <div style="font-size:22px;font-weight:800;color:${col};">${fmtN(act)} <span style="font-size:13px;font-weight:400;color:#4b5563;">m³</span></div>
+        <div style="font-size:12px;color:#4b5563;margin:4px 0;">od ${fmtN(plan)} m³ plana</div>
         ${bar2(pct, col)}
-        <div style="font-size:11px;color:#9ca3af;margin-top:6px;">Ostalo: ${fmtN(ost)} m³</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:6px;">Ostalo: ${fmtN(ost)} m³</div>
       </div>`;
     });
     html += '</div>';
@@ -585,8 +585,8 @@
     html += `<div class="section" style="margin-bottom:24px;">
       <h2 style="font-size:16px;margin-bottom:12px;">📈 Ukupna realizacija godišnjeg plana ${PLAN_YEAR}</h2>
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px;">
-        <div><span style="font-size:13px;color:#6b7280;">Plan neto: </span><strong>${fmtN(grand.neto)} m³</strong></div>
-        <div><span style="font-size:13px;color:#6b7280;">Ostvareno: </span><strong style="color:#059669;">${fmtN(grand.ukupno)} m³</strong></div>
+        <div><span style="font-size:13px;color:#4b5563;">Plan neto: </span><strong>${fmtN(grand.neto)} m³</strong></div>
+        <div><span style="font-size:13px;color:#4b5563;">Ostvareno: </span><strong style="color:#059669;">${fmtN(grand.ukupno)} m³</strong></div>
         ${realizacijaBadge(grand.stepen)}
       </div>
       <div style="height:10px;background:#e5e7eb;border-radius:5px;margin-bottom:16px;"><div style="height:100%;width:${Math.min(100,grand.stepen).toFixed(1)}%;background:#059669;border-radius:5px;transition:width 0.4s;"></div></div>
@@ -640,10 +640,10 @@
           <td class="right" style="padding:7px 8px;">${fmt(r.neto)}</td>
           <td class="right" style="font-weight:600;padding:7px 8px;">${fmt(r.actual.ukupno)}</td>
           <td class="right" style="padding:7px 8px;">${realizacijaBadge(r.stepen)}</td>
-          <td class="right" style="padding:7px 8px;">${pctCT!=null?realizacijaBadge(pctCT):'<span style="color:#9ca3af">—</span>'}</td>
-          <td class="right" style="padding:7px 8px;">${pctDz!=null?realizacijaBadge(pctDz):'<span style="color:#9ca3af">—</span>'}</td>
-          <td class="right" style="padding:7px 8px;">${pctLT!=null?realizacijaBadge(pctLT):'<span style="color:#9ca3af">—</span>'}</td>
-          <td class="right" style="padding:7px 8px;">${pctCij!=null?realizacijaBadge(pctCij):'<span style="color:#9ca3af">—</span>'}</td>
+          <td class="right" style="padding:7px 8px;">${pctCT!=null?realizacijaBadge(pctCT):'<span style="color:#6b7280">—</span>'}</td>
+          <td class="right" style="padding:7px 8px;">${pctDz!=null?realizacijaBadge(pctDz):'<span style="color:#6b7280">—</span>'}</td>
+          <td class="right" style="padding:7px 8px;">${pctLT!=null?realizacijaBadge(pctLT):'<span style="color:#6b7280">—</span>'}</td>
+          <td class="right" style="padding:7px 8px;">${pctCij!=null?realizacijaBadge(pctCij):'<span style="color:#6b7280">—</span>'}</td>
           <td style="padding:7px 8px;">${bar2(r.stepen,'#059669')}</td>
         </tr>`;
       });
@@ -837,7 +837,7 @@
         const pNet = sz ? sz.neto     : r.neto;
         const fallback = !sz;
         const projLabel = fallback
-          ? '📐 Plan <span style="font-size:9px;color:#9ca3af;">(nema SZ)</span>'
+          ? '📐 Plan <span style="font-size:9px;color:#6b7280;">(nema SZ)</span>'
           : '📐 Projekat';
 
         sCT+=pCT; sDz+=pDz; sLT+=pLT; sCj+=pCj; sNeto+=pNet;
@@ -942,7 +942,7 @@
         <td class="right">${fmt(gjSzNeto)}</td>
         <td class="right" style="color:#059669;font-weight:600;">${fmt(sub.ukupno)}</td>
         <td class="right">${realizacijaBadge(szStep)}</td>
-        <td class="right" style="color:#9ca3af;">${fmt(ost)}</td>
+        <td class="right" style="color:#6b7280;">${fmt(ost)}</td>
         <td style="min-width:120px;">${bar2(szStep, GJ_COLOR[gj])}</td>
       </tr>`;
     });
@@ -967,13 +967,13 @@
     const planRow = _rows.find(r=>r.gj===gj&&r.odjel===odjel);
 
     document.getElementById('gp-modal-title').innerHTML =
-      `${gjBadge(gj)} &nbsp; Odjel ${odjel} &nbsp; <span style="font-size:13px;font-weight:400;color:#9ca3af;">${rows.length} primka zapisa</span>`;
+      `${gjBadge(gj)} &nbsp; Odjel ${odjel} &nbsp; <span style="font-size:13px;font-weight:400;color:#6b7280;">${rows.length} primka zapisa</span>`;
     document.getElementById('gp-modal-ukupno').textContent = planRow ? fmtN(planRow.actual.ukupno)+' m³ ostvareno' : '';
 
     let tbody = '';
     let totals = { cTrupci:0, celDuga:0, celCijepana:0, skart:0, lTrupci:0, ogrDugi:0, ogrCijepani:0, gule:0, ukupno:0 };
     if (rows.length===0) {
-      tbody = '<tr><td colspan="11" style="text-align:center;padding:30px;color:#6b7280;">Nema primka zapisa za ovaj odjel.</td></tr>';
+      tbody = '<tr><td colspan="11" style="text-align:center;padding:30px;color:#4b5563;">Nema primka zapisa za ovaj odjel.</td></tr>';
     } else {
       rows.forEach(r=>{
         Object.keys(totals).forEach(k=>{ totals[k]+=(r[k]||0); });
@@ -1046,7 +1046,7 @@
       <div style="text-align:center;margin-bottom:24px;border-bottom:2px solid #1e293b;padding-bottom:16px;">
         <h1 style="font-size:20px;margin:0 0 6px;">GODIŠNJI PLAN SJEČE ${PLAN_YEAR}</h1>
         <h2 style="font-size:15px;font-weight:400;margin:0 0 6px;">Pogon Bosanska Krupa</h2>
-        <span style="font-size:12px;color:#6b7280;">Datum štampe: ${new Date().toLocaleDateString('bs-BA')}</span>
+        <span style="font-size:12px;color:#4b5563;">Datum štampe: ${new Date().toLocaleDateString('bs-BA')}</span>
       </div>`;
 
     grouped.forEach(({ gj, rows:gr })=>{

@@ -311,7 +311,7 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
 
     if (!hasAnyData) {
         headerElem.innerHTML = '';
-        bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za odabrani period</td></tr>';
+        bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka za odabrani period</td></tr>';
         return;
     }
 
@@ -518,7 +518,7 @@ function renderIzvjestajiTable(data, sortimentiNazivi, tablePrefix) {
         headerElem.innerHTML = '';
         bodyElem.innerHTML = `
             <tr>
-                <td colspan="100" style="text-align: center; padding: 60px; color: #6b7280;">
+                <td colspan="100" style="text-align: center; padding: 60px; color: #4b5563;">
                     <div style="font-size: 48px; margin-bottom: 16px;">📭</div>
                     <div style="font-size: 16px;">Nema podataka za odabrani period</div>
                 </td>
@@ -724,7 +724,7 @@ function printIzvjestaj(tip) {
   }
   .report-meta {
     font-size: 9px;
-    color: #6b7280;
+    color: #4b5563;
     margin-top: 4px;
   }
 
@@ -814,7 +814,7 @@ function printIzvjestaj(tip) {
     display: flex;
     justify-content: space-between;
     font-size: 9px;
-    color: #6b7280;
+    color: #4b5563;
   }
 
   /* ── PRINT MEDIA ── */
@@ -924,7 +924,7 @@ async function loadIzvjestajiPoOdjelima() {
         const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
         const monthName = mjeseciNazivi[month] + ' ' + year;
 
-        content.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280;"><div style="font-size:32px;margin-bottom:12px;">⏳</div>Učitavanje podataka za ' + monthName + '...</div>';
+        content.innerHTML = '<div style="text-align:center;padding:40px;color:#4b5563;"><div style="font-size:32px;margin-bottom:12px;">⏳</div>Učitavanje podataka za ' + monthName + '...</div>';
 
         // Isti endpoint i keš kao mjesečni izvještaj — dijeli topli keš, radi offline
         const primkaUrl = buildApiUrl('primaci-daily', { year, month });
@@ -1019,7 +1019,7 @@ function renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName) {
     if (!content) return;
 
     if (!odjeli.length) {
-        content.innerHTML = '<div style="text-align:center;padding:60px;color:#6b7280;"><div style="font-size:48px;margin-bottom:16px;">📭</div><div style="font-size:16px;">Nema podataka za ' + monthName + '</div></div>';
+        content.innerHTML = '<div style="text-align:center;padding:60px;color:#4b5563;"><div style="font-size:48px;margin-bottom:16px;">📭</div><div style="font-size:16px;">Nema podataka za ' + monthName + '</div></div>';
         return;
     }
 
@@ -1068,7 +1068,7 @@ function renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName) {
                 html += `<tr><td style="font-weight:600;">${s}</td><td class="right">${fmt(o.sjecaSort[s] || 0)}</td><td class="right">${fmt(o.otpremaSort[s] || 0)}</td></tr>`;
             });
         } else {
-            html += `<tr><td colspan="3" style="text-align:center;color:#9ca3af;">Nema sortimenata</td></tr>`;
+            html += `<tr><td colspan="3" style="text-align:center;color:#6b7280;">Nema sortimenata</td></tr>`;
         }
         html += `<tr class="totals-row"><td>UKUPNO</td><td class="right">${o.sjecaUkupno.toFixed(2)}</td><td class="right">${o.otpremaUkupno.toFixed(2)}</td></tr>`;
         html += `</tbody></table></div>`;
@@ -1079,13 +1079,13 @@ function renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName) {
         html += `<div><h3 style="font-size:14px;font-weight:700;color:#166534;margin:0 0 8px;">👷 Sječa po radniku</h3>
             <table class="kupci-table" style="width:100%;font-size:13px;"><thead><tr><th style="text-align:left;">Primač</th><th class="right">m³</th></tr></thead><tbody>`;
         if (primaci.length) primaci.forEach(p => { html += `<tr><td>${p.ime}</td><td class="right">${p.ukupno.toFixed(2)}</td></tr>`; });
-        else html += `<tr><td colspan="2" style="text-align:center;color:#9ca3af;">—</td></tr>`;
+        else html += `<tr><td colspan="2" style="text-align:center;color:#6b7280;">—</td></tr>`;
         html += `</tbody></table></div>`;
 
         html += `<div><h3 style="font-size:14px;font-weight:700;color:#1e40af;margin:0 0 8px;">🚛 Otprema po radniku</h3>
             <table class="kupci-table" style="width:100%;font-size:13px;"><thead><tr><th style="text-align:left;">Otpremač</th><th class="right">m³</th></tr></thead><tbody>`;
         if (otpremaci.length) otpremaci.forEach(p => { html += `<tr><td>${p.ime}</td><td class="right">${p.ukupno.toFixed(2)}</td></tr>`; });
-        else html += `<tr><td colspan="2" style="text-align:center;color:#9ca3af;">—</td></tr>`;
+        else html += `<tr><td colspan="2" style="text-align:center;color:#6b7280;">—</td></tr>`;
         html += `</tbody></table></div>`;
 
         if (kupci.length) {
@@ -1142,15 +1142,15 @@ function printIzvjestajPoOdjelima() {
   .company-sub { font-size:10px; color:#4b5563; text-transform:uppercase; letter-spacing:0.3px; }
   .report-title { font-size:14px; font-weight:700; color:#1e3a5f; text-align:right; }
   .report-period { font-size:11px; color:#374151; text-align:right; margin-top:2px; }
-  .report-meta { font-size:9px; color:#6b7280; text-align:right; margin-top:4px; }
+  .report-meta { font-size:9px; color:#4b5563; text-align:right; margin-top:4px; }
 
   /* ── SUMMARY KARTICE (main.css ih normalno stilizuje — ovdje ih moramo
      definisati jer print popup ne učitava main.css) ── */
   .summary-cards { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-bottom:18px; }
   .summary-card { border:1px solid #cbd5e1; border-radius:8px; padding:12px 14px; page-break-inside:avoid; }
-  .summary-card-title { font-size:9px; color:#6b7280; text-transform:uppercase; letter-spacing:0.4px; font-weight:700; margin-bottom:4px; }
+  .summary-card-title { font-size:9px; color:#4b5563; text-transform:uppercase; letter-spacing:0.4px; font-weight:700; margin-bottom:4px; }
   .summary-card-value { font-size:18px; font-weight:800; color:#111827; }
-  .summary-card-subtitle { font-size:9.5px; color:#6b7280; margin-top:3px; }
+  .summary-card-subtitle { font-size:9.5px; color:#4b5563; margin-top:3px; }
   .summary-card.green { border-color:#059669; background:#f0fdf4; }
   .summary-card.green .summary-card-value { color:#047857; }
   .summary-card.blue { border-color:#2563eb; background:#eff6ff; }
@@ -1181,7 +1181,7 @@ function printIzvjestajPoOdjelima() {
   }
 
   /* ── PODNOŽJE ── */
-  .print-footer { margin-top:20px; padding-top:8px; border-top:1px solid #d1d5db; display:flex; justify-content:space-between; font-size:9px; color:#6b7280; }
+  .print-footer { margin-top:20px; padding-top:8px; border-top:1px solid #d1d5db; display:flex; justify-content:space-between; font-size:9px; color:#4b5563; }
   .print-footer .potpis { text-align:center; }
   .print-footer .potpis-linija { border-top:1px solid #9ca3af; width:140px; margin:22px auto 4px; }
 

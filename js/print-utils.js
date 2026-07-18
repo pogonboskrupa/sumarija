@@ -59,14 +59,14 @@ function printKubikator() {
     // Tabela svih unosa
     const tabelaRows = [...unosi].reverse().map((u, i) => `
         <tr style="border-bottom:1px solid #e5e7eb;">
-            <td style="padding:7px 8px;text-align:center;color:#6b7280;">${unosi.length - i}</td>
+            <td style="padding:7px 8px;text-align:center;color:#4b5563;">${unosi.length - i}</td>
             <td style="padding:7px 8px;font-size:11px;">${fmtTs(u.ts)}</td>
             <td style="padding:7px 8px;font-size:11px;color:#374151;">${u.odjel || '—'}</td>
             <td style="padding:7px 8px;font-weight:600;">${u.sortiment || '—'}</td>
             <td style="padding:7px 8px;text-align:center;">${u.precnik}</td>
             <td style="padding:7px 8px;text-align:center;">${u.duzina.toFixed(2)}</td>
             <td style="padding:7px 8px;text-align:right;font-weight:700;color:${accent};">${u.zapremina.toFixed(2)}</td>
-            <td style="padding:7px 8px;font-size:11px;color:#6b7280;">${u.napomena || ''}</td>
+            <td style="padding:7px 8px;font-size:11px;color:#4b5563;">${u.napomena || ''}</td>
         </tr>`).join('');
 
     const tabelaHtml = `
@@ -219,7 +219,7 @@ function printStanjeZalihaPoOdjelima() {
                 const label = cell.querySelector('div:first-child');
                 const value = cell.querySelector('div:last-child');
                 statsHtml += `<div style="flex:1;text-align:center;padding:8px;border-right:1px solid #e5e7eb;background:#f9fafb;">
-                    <div style="font-size:10px;color:#6b7280;">${label ? label.textContent.replace(/[📋🪓🚛📦]/g,'').trim() : ''}</div>
+                    <div style="font-size:10px;color:#4b5563;">${label ? label.textContent.replace(/[📋🪓🚛📦]/g,'').trim() : ''}</div>
                     <div style="font-size:13px;font-weight:700;color:#1e3a5f;">${value ? value.textContent.trim() : '—'}</div>
                 </div>`;
             });
@@ -462,12 +462,12 @@ body {
     text-transform: uppercase;
     letter-spacing: 0.6px;
 }
-.company-sub { font-size: 9px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.4px; }
+.company-sub { font-size: 9px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.4px; }
 .doc-header-right { text-align: right; }
 .doc-title { font-size: 15px; font-weight: 700; color: ${dark}; }
 .doc-subtitle { font-size: 11px; color: #374151; margin-top: 2px; }
 .doc-person { font-size: 13px; font-weight: 700; color: ${dark}; margin-top: 3px; }
-.doc-meta { font-size: 9px; color: #9ca3af; margin-top: 4px; }
+.doc-meta { font-size: 9px; color: #6b7280; margin-top: 4px; }
 
 /* ── SEKCIJA ── */
 .print-section { margin-bottom: 20px; page-break-inside: avoid; }
@@ -575,7 +575,7 @@ td.col-sveukupno, th.col-sveukupno { background: #dcfce7; }
     display: flex;
     justify-content: space-between;
     font-size: 9px;
-    color: #9ca3af;
+    color: #6b7280;
 }
 
 /* ── EKRANSKI KONTROLNI BAR ── */
