@@ -339,6 +339,17 @@ table tfoot td,
     font-size: 15px !important;
 }
 
+/* Izvještaj po odjelima (Izvještaji tab) — tabele "Sječa/Otprema po radniku"
+   i "Otprema po kupcu" (.kupci-table) nemaju UKUPNO red, pa je zadnji red
+   uvijek samo posljednji radnik/kupac na listi — generičko pravilo iznad ga
+   je pogrešno boldiralo kao da je total red. UKUPNO red u tabeli sortimenata
+   (klasa .totals-row) ostaje netaknut i i dalje boldiran preko dedicated
+   ".kupci-table .totals-row" pravila (main.css) — zato je ovdje izuzet. */
+#izvjestaji-po-odjelima-prikaz table.kupci-table tbody tr:last-child:not(.totals-row) td {
+    font-weight: 400 !important;
+    font-size: 13px !important;
+}
+
 /* CRITICAL: Dark background rows MUST have white text */
 /* Override the color: #0f172a from above */
 tr[style*="background: #047857"] td,
