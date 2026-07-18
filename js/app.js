@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.38';
+        const APP_VERSION = '1.4.39';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1687,6 +1687,15 @@
                 if (vpAndroid) {
                     vpAndroid.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes');
                 }
+            }
+
+            // Default prikaz: horizontalni tabovi, SAMO ako korisnik nikad nije
+            // ručno dirao nijedan od toggle-a (obje vrijednosti null = prvi
+            // put/nikad kliknuto). Čim korisnik jednom klikne bilo koji toggle,
+            // localStorage prestaje biti null i default se više ne primjenjuje
+            // — poštuje se njihov eksplicitni izbor od tog trenutka nadalje.
+            if (desktopView === null && androidView === null) {
+                document.body.classList.add('force-horizontal-tabs');
             }
 
             // Add event listeners for dinamika calculation inputs
