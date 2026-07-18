@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.36';
+        const APP_VERSION = '1.4.37';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1607,7 +1607,7 @@
                     ls.innerHTML = `
                         <div class="loading-icon">⚠️</div>
                         <div class="loading-text">Aplikacija se nije uspjela pokrenuti</div>
-                        <div style="margin-top:8px;font-size:13px;color:#6b7280;">${reason || 'Nepoznata greška'}</div>
+                        <div style="margin-top:8px;font-size:13px;color:#4b5563;">${reason || 'Nepoznata greška'}</div>
                         <button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;background:#047857;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;">🔄 Pokušaj ponovo</button>
                     `;
                 }
@@ -2086,14 +2086,14 @@
                                 <div class="table-progress-bar">
                                     <div class="table-progress-fill" style="width: ${Math.min(progressSjeca, 100)}%; background: #059669;"></div>
                                 </div>
-                                <small style="color: #6b7280;">${formatOstalo(ostaloSjeca)} ; ${progressSjeca}%</small>
+                                <small style="color: #4b5563;">${formatOstalo(ostaloSjeca)} ; ${progressSjeca}%</small>
                             </td>
                             <td class="number">
                                 ${(m.dinamika != null && !isNaN(m.dinamika)) ? m.dinamika.toFixed(2) : '0.00'}
                                 <div class="table-progress-bar">
                                     <div class="table-progress-fill" style="width: ${Math.min(progressOtprema, 100)}%; background: #2563eb;"></div>
                                 </div>
-                                <small style="color: #6b7280;">${formatOstalo(ostaloOtprema)} ; ${progressOtprema}%</small>
+                                <small style="color: #4b5563;">${formatOstalo(ostaloOtprema)} ; ${progressOtprema}%</small>
                             </td>
                         </tr>
                     `;
@@ -2263,7 +2263,7 @@
                         document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri prikazu tabele</td></tr>';
                     }
                 } else {
-                    document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #6b7280;">Nema podataka o odjelima</td></tr>';
+                    document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #4b5563;">Nema podataka o odjelima</td></tr>';
                 }
 
                 // Load pending count for badge (admin only)
@@ -3199,7 +3199,7 @@
 
             if (odjeli.length === 0) {
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka o odjelima</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka o odjelima</td></tr>';
                 return;
             }
 
@@ -3265,8 +3265,8 @@
                         <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 700; color: ${zalihaColor}; background: #eff6ff; border-right: 3px solid #1e40af;">${zaliha.toFixed(2)}</td>
 
                         <!-- Q4 prošle godine -->
-                        <td style="text-align: right; font-family: 'Courier New', monospace; ${q4RowStyle} ${prevQ4Sjeca > 0 ? 'font-weight: 600;' : 'color: #9ca3af;'}">${prevQ4Sjeca > 0 ? prevQ4Sjeca.toFixed(2) : '-'}</td>
-                        <td style="text-align: right; font-family: 'Courier New', monospace; ${q4RowStyle} ${prevQ4Otprema > 0 ? '' : 'color: #9ca3af;'}">${prevQ4Otprema > 0 ? prevQ4Otprema.toFixed(2) : '-'}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; ${q4RowStyle} ${prevQ4Sjeca > 0 ? 'font-weight: 600;' : 'color: #6b7280;'}">${prevQ4Sjeca > 0 ? prevQ4Sjeca.toFixed(2) : '-'}</td>
+                        <td style="text-align: right; font-family: 'Courier New', monospace; ${q4RowStyle} ${prevQ4Otprema > 0 ? '' : 'color: #6b7280;'}">${prevQ4Otprema > 0 ? prevQ4Otprema.toFixed(2) : '-'}</td>
                         <td style="text-align: right; font-family: 'Courier New', monospace; font-weight: 700; color: ${prevZalihaColor}; ${q4RowStyle}">${hasQ4Data ? prevQ4Zaliha.toFixed(2) : '-'}</td>
                     </tr>
                 `;
@@ -3446,7 +3446,7 @@
             const countEl = document.getElementById('poslovodja-stanje-count');
 
             if (data.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 60px; color: #6b7280; font-size: 16px;">Nema podataka za prikaz</div>';
+                container.innerHTML = '<div style="text-align: center; padding: 60px; color: #4b5563; font-size: 16px;">Nema podataka za prikaz</div>';
                 if (countEl) countEl.textContent = '';
                 return;
             }
@@ -3494,7 +3494,7 @@
                 html += `
                 <div style="margin: 32px 0 16px; padding: 12px 20px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-left: 4px solid #3b82f6; border-radius: 8px;">
                     <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: #1e3a5f;">📍 ${radiliste}</h2>
-                    <p style="margin: 4px 0 0; font-size: 13px; color: #6b7280;">${odjeli.length} odjela</p>
+                    <p style="margin: 4px 0 0; font-size: 13px; color: #4b5563;">${odjeli.length} odjela</p>
                 </div>`;
 
                 odjeli.forEach(function(odjel, index) {
@@ -3536,19 +3536,19 @@
                     <!-- Summary Stats -->
                     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #e5e7eb; border-bottom: 1px solid #e5e7eb;">
                         <div style="background: white; padding: 12px 16px; text-align: center;">
-                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">📋 Projekat</div>
+                            <div style="font-size: 12px; color: #4b5563; margin-bottom: 4px;">📋 Projekat</div>
                             <div style="font-size: 16px; font-weight: 700; color: #3b82f6;">${(odjel.ukupnoProjekat || 0).toFixed(2)}</div>
                         </div>
                         <div style="background: white; padding: 12px 16px; text-align: center;">
-                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">🪓 Sječa</div>
+                            <div style="font-size: 12px; color: #4b5563; margin-bottom: 4px;">🪓 Sječa</div>
                             <div style="font-size: 16px; font-weight: 700; color: #10b981;">${(odjel.ukupnoSjeca || 0).toFixed(2)}</div>
                         </div>
                         <div style="background: white; padding: 12px 16px; text-align: center;">
-                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">🚛 Otprema</div>
+                            <div style="font-size: 12px; color: #4b5563; margin-bottom: 4px;">🚛 Otprema</div>
                             <div style="font-size: 16px; font-weight: 700; color: #f59e0b;">${(odjel.ukupnoOtprema || 0).toFixed(2)}</div>
                         </div>
                         <div style="background: white; padding: 12px 16px; text-align: center;">
-                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">📦 Zaliha</div>
+                            <div style="font-size: 12px; color: #4b5563; margin-bottom: 4px;">📦 Zaliha</div>
                             <div style="font-size: 16px; font-weight: 700; color: #059669;">${pozitivnaZaliha.toFixed(2)}</div>
                         </div>
                     </div>
@@ -3735,7 +3735,7 @@
 
             if (primke.length === 0) {
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema primki u zadnjih 5 dana</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #4b5563;">Nema primki u zadnjih 5 dana</td></tr>';
                 return;
             }
 
@@ -3776,7 +3776,7 @@
 
             if (otpreme.length === 0) {
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema otprema u zadnjih 5 dana</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #4b5563;">Nema otprema u zadnjih 5 dana</td></tr>';
                 return;
             }
 
@@ -3935,7 +3935,7 @@
 
             if (data.length === 0) {
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za zadnjih 10 dana</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka za zadnjih 10 dana</td></tr>';
                 return;
             }
 
@@ -4139,7 +4139,7 @@
 
             if (data.length === 0) {
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za zadnjih 10 dana</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka za zadnjih 10 dana</td></tr>';
                 return;
             }
 
@@ -4381,7 +4381,7 @@
             var container = document.getElementById('poslovodja-pregled-container');
 
             if (Object.keys(radilisteOdjeli).length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka</div>';
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka</div>';
                 return;
             }
 
@@ -4411,7 +4411,7 @@
             html += '<h3 style="margin: 0; color: ' + accentColor + '; font-size: 14px; font-weight: 700;">' + odjel + ' - ' + type + '</h3></div>';
 
             if (keys.length === 0) {
-                html += '<p style="color: #9ca3af; padding: 10px 16px; font-size: 13px; font-style: italic;">Nema podataka</p>';
+                html += '<p style="color: #6b7280; padding: 10px 16px; font-size: 13px; font-style: italic;">Nema podataka</p>';
                 return html;
             }
 
@@ -4617,7 +4617,7 @@
                             ${(p.mjeseci && Array.isArray(p.mjeseci) ? p.mjeseci : new Array(12).fill(0)).map((v, mIdx) => {
                                 const val = (v != null && !isNaN(v)) ? v : 0;
                                 const displayVal = val > 0 ? val.toFixed(2) : '-';
-                                const cellStyle = val > 0 ? 'font-weight: 600; color: #000000; text-shadow: 0 0 1px rgba(255,255,255,0.8);' : 'color: #9ca3af;';
+                                const cellStyle = val > 0 ? 'font-weight: 600; color: #000000; text-shadow: 0 0 1px rgba(255,255,255,0.8);' : 'color: #6b7280;';
                                 return `<td class="right" style="${cellStyle} border: 1px solid #d1fae5; padding: 8px; font-size: 11px; font-family: 'Roboto Mono', ui-monospace, monospace;">${displayVal}</td>`;
                             }).join('')}
                             <td class="right" style="font-weight: 700; background: linear-gradient(to right, #d1fae5, #a7f3d0); border: 2px solid #059669; padding: 10px; font-size: 11px; color: #065f46;">
@@ -4692,7 +4692,7 @@
                         totalDana += dani;
 
                         const displayVal = prosjek > 0 ? prosjek.toFixed(2) : '-';
-                        const cellStyle = prosjek > 0 ? 'font-weight: 600; color: #000000;' : 'color: #9ca3af;';
+                        const cellStyle = prosjek > 0 ? 'font-weight: 600; color: #000000;' : 'color: #6b7280;';
                         return `<td class="right" style="${cellStyle} border: 1px solid #bfdbfe; padding: 8px; font-size: 11px; font-family: 'Roboto Mono', ui-monospace, monospace;">${displayVal}</td>`;
                     }).join('');
 
@@ -4764,7 +4764,7 @@
                         daniMonthTotals[mIdx] = Math.max(daniMonthTotals[mIdx], val);
                         ukupnoDana += val;
                         const displayVal = val > 0 ? val : '-';
-                        const cellStyle = val > 0 ? 'font-weight: 600; color: #000000;' : 'color: #9ca3af;';
+                        const cellStyle = val > 0 ? 'font-weight: 600; color: #000000;' : 'color: #6b7280;';
                         return `<td class="right" style="${cellStyle} border: 1px solid #fde68a; padding: 8px; font-size: 11px; font-family: 'Roboto Mono', ui-monospace, monospace;">${displayVal}</td>`;
                     }).join('');
 
@@ -4954,7 +4954,7 @@
                             ${(o.mjeseci && Array.isArray(o.mjeseci) ? o.mjeseci : new Array(12).fill(0)).map((v, mIdx) => {
                                 const val = (v != null && !isNaN(v)) ? v : 0;
                                 const displayVal = val > 0 ? val.toFixed(2) : '-';
-                                const cellStyle = val > 0 ? 'font-weight: 600; color: #000000; text-shadow: 0 0 1px rgba(255,255,255,0.8);' : 'color: #9ca3af;';
+                                const cellStyle = val > 0 ? 'font-weight: 600; color: #000000; text-shadow: 0 0 1px rgba(255,255,255,0.8);' : 'color: #6b7280;';
                                 return `<td class="right" style="${cellStyle} border: 1px solid #dbeafe; padding: 8px; font-size: 11px; font-family: 'Roboto Mono', ui-monospace, monospace;">${displayVal}</td>`;
                             }).join('')}
                             <td class="right" style="font-weight: 700; background: linear-gradient(to right, #dbeafe, #bfdbfe); border: 2px solid #2563eb; padding: 10px; font-size: 11px; color: #1e40af;">
@@ -5033,7 +5033,7 @@
                         </tr>
                     `;
                     document.getElementById('primaci-daily-body').innerHTML = `
-                        <tr><td style="text-align: center; padding: 40px; color: #6b7280;">
+                        <tr><td style="text-align: center; padding: 40px; color: #4b5563;">
                             Nema podataka za tekući mjesec
                         </td></tr>
                     `;
@@ -5225,7 +5225,7 @@
                         </tr>
                     `;
                     document.getElementById('otpremaci-daily-body').innerHTML = `
-                        <tr><td style="text-align: center; padding: 40px; color: #6b7280;">
+                        <tr><td style="text-align: center; padding: 40px; color: #4b5563;">
                             Nema podataka za tekući mjesec
                         </td></tr>
                     `;
@@ -5414,7 +5414,7 @@
                         </th></tr>
                     `;
                     document.getElementById('primaci-radilista-body').innerHTML = `
-                        <tr><td style="text-align: center; padding: 40px; color: #6b7280;">
+                        <tr><td style="text-align: center; padding: 40px; color: #4b5563;">
                             Nema podataka o radilištima
                         </td></tr>
                     `;
@@ -5538,7 +5538,7 @@
                         </th></tr>
                     `;
                     document.getElementById('primaci-izvodjaci-body').innerHTML = `
-                        <tr><td style="text-align: center; padding: 40px; color: #6b7280;">
+                        <tr><td style="text-align: center; padding: 40px; color: #4b5563;">
                             Nema podataka o izvođačima
                         </td></tr>
                     `;
@@ -5644,7 +5644,7 @@
             const url = buildApiUrl('primaci-sortimenti-by-primac', { year, month });
 
             const container = document.getElementById('primaci-sortimenti-primac-container');
-            container.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280;">⏳ Učitavam...</div>';
+            container.innerHTML = '<div style="text-align:center;padding:40px;color:#4b5563;">⏳ Učitavam...</div>';
 
             try {
                 const data = await fetchWithCache(url, cacheKey, false, 180000);
@@ -5661,12 +5661,12 @@
             const container = document.getElementById('primaci-sortimenti-primac-container');
 
             if (!data.radilista || data.radilista.length === 0) {
-                container.innerHTML = `<p style="text-align:center;padding:40px;color:#6B7280;">Nema podataka za ${MJESECI_NAZIVI[month]} ${year}.</p>`;
+                container.innerHTML = `<p style="text-align:center;padding:40px;color:#4b5563;">Nema podataka za ${MJESECI_NAZIVI[month]} ${year}.</p>`;
                 return;
             }
 
             const sortNazivi = data.sortimentiNazivi; // 20 naziva
-            let html = `<p style="color:#6B7280;font-size:13px;margin-bottom:16px;">📅 Prikazani podaci za: <strong style="color:#2F343A;">${MJESECI_NAZIVI[month]} ${year}</strong></p>`;
+            let html = `<p style="color:#4b5563;font-size:13px;margin-bottom:16px;">📅 Prikazani podaci za: <strong style="color:#2F343A;">${MJESECI_NAZIVI[month]} ${year}</strong></p>`;
 
             data.radilista.forEach(radiliste => {
                 html += `<h4 style="background:#2F343A;color:#F3F4F6;padding:11px 18px;border-radius:8px;margin:24px 0 10px;font-weight:600;font-size:14px;letter-spacing:0.02em;">🏗️ ${radiliste.naziv}</h4>`;
@@ -5723,7 +5723,7 @@
             const url = buildApiUrl('otpremaci-sortimenti-by-otpremac', { year, month });
 
             const container = document.getElementById('otpremaci-sortimenti-otpremac-container');
-            container.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280;">⏳ Učitavam...</div>';
+            container.innerHTML = '<div style="text-align:center;padding:40px;color:#4b5563;">⏳ Učitavam...</div>';
 
             try {
                 const data = await fetchWithCache(url, cacheKey, false, 180000);
@@ -5740,12 +5740,12 @@
             const container = document.getElementById('otpremaci-sortimenti-otpremac-container');
 
             if (!data.radilista || data.radilista.length === 0) {
-                container.innerHTML = `<p style="text-align:center;padding:40px;color:#6b7280;">Nema podataka za ${MJESECI_NAZIVI[month]} ${year}.</p>`;
+                container.innerHTML = `<p style="text-align:center;padding:40px;color:#4b5563;">Nema podataka za ${MJESECI_NAZIVI[month]} ${year}.</p>`;
                 return;
             }
 
             const sortNazivi = data.sortimentiNazivi;
-            let html = `<p style="color:#6b7280;font-size:13px;margin-bottom:12px;">📅 Prikazani podaci za: <strong>${MJESECI_NAZIVI[month]} ${year}</strong></p>`;
+            let html = `<p style="color:#4b5563;font-size:13px;margin-bottom:12px;">📅 Prikazani podaci za: <strong>${MJESECI_NAZIVI[month]} ${year}</strong></p>`;
 
             data.radilista.forEach(radiliste => {
                 html += `<h4 style="background:#0891b2;color:white;padding:10px 16px;border-radius:6px;margin:20px 0 8px;">🏗️ ${radiliste.naziv}</h4>`;
@@ -5820,7 +5820,7 @@
                         </th></tr>
                     `;
                     document.getElementById('otpremaci-radilista-body').innerHTML = `
-                        <tr><td style="text-align: center; padding: 40px; color: #6b7280;">
+                        <tr><td style="text-align: center; padding: 40px; color: #4b5563;">
                             Nema podataka o radilištima
                         </td></tr>
                     `;
@@ -6103,7 +6103,7 @@
 
             if (!godisnji || godisnji.length === 0) {
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za godišnji prikaz</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka za godišnji prikaz</td></tr>';
                 return;
             }
 
@@ -6211,7 +6211,7 @@
 
             if (!filteredData || filteredData.length === 0) {
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za tekući mjesec (' + currentMjesec + ')</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka za tekući mjesec (' + currentMjesec + ')</td></tr>';
                 return;
             }
 
@@ -6408,7 +6408,7 @@
 
             if (aggregated.length === 0) {
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za ' + kvartalLabels[selectedQuarter] + '</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka za ' + kvartalLabels[selectedQuarter] + '</td></tr>';
                 return;
             }
 
@@ -6534,7 +6534,7 @@
             modal.style.display = 'flex';
             titleElem.innerHTML = `🏢 Otpreme za: <strong>${kupacName}</strong>`;
             bodyElem.innerHTML = `
-                <div style="text-align: center; padding: 60px; color: #6b7280;">
+                <div style="text-align: center; padding: 60px; color: #4b5563;">
                     <div style="font-size: 32px; margin-bottom: 15px;">⏳</div>
                     <div style="font-size: 16px;">Učitavanje podataka za kupca...</div>
                 </div>
@@ -6572,7 +6572,7 @@
 
                 if (allData.length === 0) {
                     bodyElem.innerHTML = `
-                        <div style="text-align: center; padding: 60px; color: #6b7280;">
+                        <div style="text-align: center; padding: 60px; color: #4b5563;">
                             <div style="font-size: 48px; margin-bottom: 15px;">📭</div>
                             <div style="font-size: 18px;">Nema podataka o otpremama za kupca <strong>${kupacName}</strong> u ${year}. godini</div>
                         </div>
@@ -6883,7 +6883,7 @@
             const myToken = ++_kupacStatLoadToken;
 
             content.innerHTML = `
-                <div style="text-align: center; padding: 60px; color: #6b7280;">
+                <div style="text-align: center; padding: 60px; color: #4b5563;">
                     <div style="font-size: 32px; margin-bottom: 15px;">⏳</div>
                     <div style="font-size: 16px;">Učitavanje statistike...</div>
                 </div>
@@ -6955,14 +6955,14 @@
 
             const godisnji = (kupciData && kupciData.godisnji) ? [...kupciData.godisnji] : [];
             if (!godisnji.length) {
-                content.innerHTML = `<div style="text-align: center; padding: 40px; color: #9ca3af; font-size: 14px;">Nema podataka o kupcima za ${year}. godinu</div>`;
+                content.innerHTML = `<div style="text-align: center; padding: 40px; color: #6b7280; font-size: 14px;">Nema podataka o kupcima za ${year}. godinu</div>`;
                 return;
             }
 
             godisnji.sort((a, b) => (b.ukupno || 0) - (a.ukupno || 0));
             const grandTotal = godisnji.reduce((s, k) => s + (k.ukupno || 0), 0);
 
-            let html = `<div style="text-align:center;padding:10px 0 16px;color:#6b7280;font-size:13px;">
+            let html = `<div style="text-align:center;padding:10px 0 16px;color:#4b5563;font-size:13px;">
                 👇 Odaberi kupca iznad ili klikni na red za detaljnu statistiku
             </div>`;
 
@@ -6984,7 +6984,7 @@
                     (!best || (sortimenti[s] || 0) > (sortimenti[best] || 0)) ? s : best, null);
                 const rowBg = idx % 2 === 0 ? '#f9fafb' : 'white';
                 html += `<tr style="background:${rowBg};cursor:pointer;" onclick="selectKupacStatistika('${kupacEsc}')" title="Klikni za detalje">
-                    <td style="text-align:center;color:#9ca3af;font-weight:600;">${idx + 1}.</td>
+                    <td style="text-align:center;color:#6b7280;font-weight:600;">${idx + 1}.</td>
                     <td style="font-weight:600;">${k.kupac || '-'}</td>
                     <td class="right">${brOtpremnica || '-'}</td>
                     <td class="right ukupno-col">${(k.ukupno || 0).toFixed(2)}</td>
@@ -7002,7 +7002,7 @@
             if (!content) return;
 
             if (stat.totalCount === 0) {
-                content.innerHTML = `<div style="text-align: center; padding: 40px; color: #9ca3af; font-size: 14px;">Nema otprema za kupca <strong>${kupacName}</strong> u ${year}. godini</div>`;
+                content.innerHTML = `<div style="text-align: center; padding: 40px; color: #6b7280; font-size: 14px;">Nema otprema za kupca <strong>${kupacName}</strong> u ${year}. godini</div>`;
                 return;
             }
 
@@ -7095,7 +7095,7 @@
 
             // Top odjeli / Top otpremači — placeholder dok detalji ne stignu (u pozadini)
             html += `<div id="kupac-stat-detalji-slot" style="margin-top:16px;">
-                <div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px;">⏳ Učitavam top odjele i otpremače...</div>
+                <div style="text-align:center;padding:20px;color:#6b7280;font-size:13px;">⏳ Učitavam top odjele i otpremače...</div>
             </div>`;
 
             content.innerHTML = html;
@@ -7146,7 +7146,7 @@
                     html += `<tr><td>${o.odjel}</td><td class="right">${o.count}</td><td class="right ukupno-col">${o.ukupno.toFixed(2)}</td></tr>`;
                 });
             } else {
-                html += `<tr><td colspan="3" style="text-align:center;color:#9ca3af;">Nema podataka</td></tr>`;
+                html += `<tr><td colspan="3" style="text-align:center;color:#6b7280;">Nema podataka</td></tr>`;
             }
             html += `</tbody></table></div></div></div>`;
 
@@ -7158,7 +7158,7 @@
                     html += `<tr><td>${o.otpremac}</td><td class="right">${o.count}</td><td class="right ukupno-col">${o.ukupno.toFixed(2)}</td></tr>`;
                 });
             } else {
-                html += `<tr><td colspan="3" style="text-align:center;color:#9ca3af;">Nema podataka</td></tr>`;
+                html += `<tr><td colspan="3" style="text-align:center;color:#6b7280;">Nema podataka</td></tr>`;
             }
             html += `</tbody></table></div></div></div>`;
             html += `</div>`;
@@ -7302,7 +7302,7 @@
             const myToken = ++_sortimentStatLoadToken;
 
             content.innerHTML = `
-                <div style="text-align: center; padding: 60px; color: #6b7280;">
+                <div style="text-align: center; padding: 60px; color: #4b5563;">
                     <div style="font-size: 32px; margin-bottom: 15px;">⏳</div>
                     <div style="font-size: 16px;">Učitavanje statistike...</div>
                 </div>
@@ -7354,7 +7354,7 @@
                 return { sortiment: s, ukupno, count, aktivnihKupaca };
             }).sort((a, b) => b.ukupno - a.ukupno);
 
-            let html = `<div style="text-align:center;padding:10px 0 16px;color:#6b7280;font-size:13px;">
+            let html = `<div style="text-align:center;padding:10px 0 16px;color:#4b5563;font-size:13px;">
                 👇 Odaberi sortiment iznad ili klikni na red za detaljnu statistiku
             </div>`;
 
@@ -7369,7 +7369,7 @@
                 const pct = grandTotal > 0 ? (r.ukupno / grandTotal * 100) : 0;
                 const rowBg = idx % 2 === 0 ? '#f9fafb' : 'white';
                 html += `<tr style="background:${rowBg};cursor:pointer;" onclick="selectSortimentStatistika('${r.sortiment}')" title="Klikni za detalje">
-                    <td style="text-align:center;color:#9ca3af;font-weight:600;">${idx + 1}.</td>
+                    <td style="text-align:center;color:#6b7280;font-weight:600;">${idx + 1}.</td>
                     <td style="font-weight:600;">${r.sortiment}</td>
                     <td class="right">${r.count || '-'}</td>
                     <td class="right ukupno-col">${r.ukupno.toFixed(2)}</td>
@@ -7387,7 +7387,7 @@
             if (!content) return;
 
             if (stat.totalUkupno === 0) {
-                content.innerHTML = `<div style="text-align: center; padding: 40px; color: #9ca3af; font-size: 14px;">Nema otprema sortimenta <strong>${sortiment}</strong> u ${year}. godini</div>`;
+                content.innerHTML = `<div style="text-align: center; padding: 40px; color: #6b7280; font-size: 14px;">Nema otprema sortimenta <strong>${sortiment}</strong> u ${year}. godini</div>`;
                 return;
             }
 
@@ -7450,7 +7450,7 @@
                 <tbody>`;
             stat.topKupci.slice(0, 20).forEach((k, idx) => {
                 const pct = stat.totalUkupno > 0 ? (k.kolicina / stat.totalUkupno * 100) : 0;
-                html += `<tr><td style="text-align:center;color:#9ca3af;">${idx + 1}.</td><td style="font-weight:600;">${k.kupac}</td><td class="right">${k.count || '-'}</td><td class="right ukupno-col">${k.kolicina.toFixed(2)}</td><td class="right">${pct.toFixed(1)}%</td></tr>`;
+                html += `<tr><td style="text-align:center;color:#6b7280;">${idx + 1}.</td><td style="font-weight:600;">${k.kupac}</td><td class="right">${k.count || '-'}</td><td class="right ukupno-col">${k.kolicina.toFixed(2)}</td><td class="right">${pct.toFixed(1)}%</td></tr>`;
             });
             html += `</tbody></table></div></div></div>`;
 
@@ -7538,7 +7538,7 @@
                 // DEBUG: Show which months are available
                 const availableMonths = [...new Set(mjesecni.map(r => r.mjesec))].join(', ');
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = `<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280;">
+                bodyElem.innerHTML = `<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #4b5563;">
                     <p>Nema podataka za tekući mjesec: <strong>${currentMjesec}</strong></p>
                     <p style="margin-top: 10px; font-size: 14px;">Dostupni mjeseci u bazi: ${availableMonths || 'Nema podataka'}</p>
                 </td></tr>`;
@@ -7690,7 +7690,7 @@
                 html += `
                     <div style="margin-bottom: 40px; border: 2px solid #10b981; border-radius: 12px; padding: 20px; background: #f0fdf4;">
                         <h3 style="color: #047857; margin-bottom: 16px;">📁 ${odjel.odjel} ${yearBadge}</h3>
-                        <p style="font-size: 13px; color: #6b7280; margin-bottom: 16px;">Zadnji unos: ${odjel.zadnjiDatum || 'N/A'}</p>
+                        <p style="font-size: 13px; color: #4b5563; margin-bottom: 16px;">Zadnji unos: ${odjel.zadnjiDatum || 'N/A'}</p>
 
                         <!-- Apsolutne vrijednosti -->
                         <h4 style="font-size: 15px; margin-bottom: 8px; color: #059669;">Apsolutne vrijednosti (m³)</h4>
@@ -8184,7 +8184,7 @@
 
                 html += '<div style="margin-bottom: 24px; border: 2px solid #10b981; border-radius: 12px; padding: 20px; background: #f0fdf4;">' +
                     '<h3 style="color: #047857; margin-bottom: 12px;">📁 ' + odjel.odjel + ' ' + yearBadge + '</h3>' +
-                    '<p style="font-size: 13px; color: #6b7280; margin-bottom: 12px;">Zadnji unos: ' + (odjel.zadnjiDatum || 'N/A') + ' | Ukupno: <strong>' + odjel.ukupno.toFixed(2) + ' m³</strong></p>' +
+                    '<p style="font-size: 13px; color: #4b5563; margin-bottom: 12px;">Zadnji unos: ' + (odjel.zadnjiDatum || 'N/A') + ' | Ukupno: <strong>' + odjel.ukupno.toFixed(2) + ' m³</strong></p>' +
                     '<h4 style="font-size: 14px; margin-bottom: 8px; color: #059669;">Apsolutne vrijednosti (m³)</h4>' +
                     '<div class="kupci-table-wrapper" style="margin-bottom: 16px;">' +
                     '<table class="kupci-table"><thead><tr>' + sortHeaderCells + '<th class="ukupno-col">Ukupno</th></tr></thead>' +
@@ -8197,7 +8197,7 @@
             });
 
             if (pageOdjeli.length === 0) {
-                html = '<div style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka o odjelima za ovog primača.</div>';
+                html = '<div style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka o odjelima za ovog primača.</div>';
             }
 
             document.getElementById('primaci-admin-odjeli-container').innerHTML = html;
@@ -8368,7 +8368,7 @@
             });
 
             if (pageOdjeli.length === 0) {
-                html = '<div style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka o odjelima.</div>';
+                html = '<div style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka o odjelima.</div>';
             }
 
             containerEl.innerHTML = html;
@@ -8412,7 +8412,7 @@
             const body  = document.getElementById('odjel-stanje-modal-body');
 
             title.textContent = odjelNaziv;
-            body.innerHTML = '<div style="text-align:center;padding:30px;color:#6b7280;">⏳ Učitavam...</div>';
+            body.innerHTML = '<div style="text-align:center;padding:30px;color:#4b5563;">⏳ Učitavam...</div>';
             modal.style.display = 'flex';
 
             // Koristi globalni stanjeZalihaData ako je već učitan, inače čitaj iz keša
@@ -8432,7 +8432,7 @@
             }
 
             if (!odjeli || !odjeli.length) {
-                body.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280;font-size:14px;">Nema podataka.<br>Otvorite tab <b>Stanje zaliha</b> da osvježite podatke.</div>';
+                body.innerHTML = '<div style="text-align:center;padding:40px;color:#4b5563;font-size:14px;">Nema podataka.<br>Otvorite tab <b>Stanje zaliha</b> da osvježite podatke.</div>';
                 return;
             }
 
@@ -8443,7 +8443,7 @@
             });
 
             if (!od) {
-                body.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280;font-size:14px;">Nema stanja zaliha za <b>' + odjelNaziv + '</b></div>';
+                body.innerHTML = '<div style="text-align:center;padding:40px;color:#4b5563;font-size:14px;">Nema stanja zaliha za <b>' + odjelNaziv + '</b></div>';
                 return;
             }
 
@@ -8598,7 +8598,7 @@
                 html += `
                     <div style="margin-bottom: 40px; border: 2px solid #2563eb; border-radius: 12px; padding: 20px; background: #eff6ff;">
                         <h3 style="color: #1e40af; margin-bottom: 16px;">📁 ${odjel.odjel} ${yearBadge}</h3>
-                        <p style="font-size: 13px; color: #6b7280; margin-bottom: 16px;">Zadnji unos: ${odjel.zadnjiDatum || 'N/A'}</p>
+                        <p style="font-size: 13px; color: #4b5563; margin-bottom: 16px;">Zadnji unos: ${odjel.zadnjiDatum || 'N/A'}</p>
 
                         <!-- Apsolutne vrijednosti -->
                         <h4 style="font-size: 15px; margin-bottom: 8px; color: #2563eb;">Apsolutne vrijednosti (m³)</h4>
@@ -8738,7 +8738,7 @@
             var html = '';
 
             if (!data || data.length === 0) {
-                html = '<p style="text-align: center; padding: 40px; color: #6b7280;">Nema dodanih unosa</p>';
+                html = '<p style="text-align: center; padding: 40px; color: #4b5563;">Nema dodanih unosa</p>';
             } else {
                 var sortimentiNazivi = data[0] && data[0].sortimenti ? Object.keys(data[0].sortimenti) : [];
                 var sc = pendingSortCol, sd = pendingSortDir;
@@ -8992,7 +8992,7 @@
             var html = '';
 
             if (!data || data.length === 0) {
-                html = '<p style="text-align: center; padding: 40px; color: #6b7280;">Nema dodanih unosa za vaša radilišta</p>';
+                html = '<p style="text-align: center; padding: 40px; color: #4b5563;">Nema dodanih unosa za vaša radilišta</p>';
             } else {
                 var sortimentiNazivi = data[0] && data[0].sortimenti ? Object.keys(data[0].sortimenti) : [];
                 var sc = poslovodjaSortCol, sd = poslovodjaSortDir;
@@ -9151,7 +9151,7 @@
 
             if (!data || !data.sortimenti || data.sortimenti.length === 0) {
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #6b7280; font-family: Comfortaa, sans-serif;">Nema podataka</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #4b5563; font-family: Comfortaa, sans-serif;">Nema podataka</td></tr>';
                 return;
             }
 
@@ -9261,7 +9261,7 @@
                         cellStyle += value > 0 ? ' color: #7f1d1d; font-weight: 800;' : ' color: #f87171; font-weight: 400;';
                     } else {
                         // Default
-                        cellStyle += value > 0 ? ' color: #1f2937; font-weight: 500;' : ' color: #9ca3af; font-weight: 400;';
+                        cellStyle += value > 0 ? ' color: #1f2937; font-weight: 500;' : ' color: #6b7280; font-weight: 400;';
                     }
 
                     bodyHtml += `<td style="${cellStyle}">${displayVal}</td>`;
@@ -9616,7 +9616,7 @@
             const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
 
             if (weeks.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za odabrani mjesec</div>';
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka za odabrani mjesec</div>';
                 return;
             }
 
@@ -9810,7 +9810,7 @@
                 </summary>
                 <div style="border:1px solid #e5e7eb;border-radius:0 0 8px 8px;margin-top:2px;">`;
             if (!count) {
-                container.innerHTML = detailsOpen + '<p style="padding:16px;color:#6b7280;font-size:13px;margin:0;">Nema unesenih preklasiranja.</p></div></details>';
+                container.innerHTML = detailsOpen + '<p style="padding:16px;color:#4b5563;font-size:13px;margin:0;">Nema unesenih preklasiranja.</p></div></details>';
                 setupPreklDetToggle();
                 return;
             }
@@ -9839,8 +9839,8 @@
                     <td style="padding:7px 10px;border:1px solid #e5e7eb;font-weight:600;">${p.odjel}</td>
                     ${sortimentCell}
                     <td style="padding:7px 10px;border:1px solid #e5e7eb;text-align:right;font-family:monospace;">${(p.kolicina||0).toFixed(2)}</td>
-                    <td style="padding:7px 10px;border:1px solid #e5e7eb;color:#6b7280;">${p.napomena || '—'}</td>
-                    <td style="padding:7px 10px;border:1px solid #e5e7eb;color:#6b7280;">${p.korisnik || ''}</td>
+                    <td style="padding:7px 10px;border:1px solid #e5e7eb;color:#4b5563;">${p.napomena || '—'}</td>
+                    <td style="padding:7px 10px;border:1px solid #e5e7eb;color:#4b5563;">${p.korisnik || ''}</td>
                     <td style="padding:4px 6px;border:1px solid #e5e7eb;text-align:center;">
                         <button onclick="deletePreklasiranje(${p.rowIndex})" style="background:#fee2e2;border:none;color:#dc2626;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;">Briši</button>
                     </td>
@@ -10044,7 +10044,7 @@
             const countEl = document.getElementById('stanje-zaliha-count');
 
             if (data.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 60px; color: #6b7280; font-size: 16px;">Nema podataka za prikaz</div>';
+                container.innerHTML = '<div style="text-align: center; padding: 60px; color: #4b5563; font-size: 16px;">Nema podataka za prikaz</div>';
                 countEl.textContent = '';
                 return;
             }
@@ -10117,19 +10117,19 @@
                     <!-- Summary Stats -->
                     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #e5e7eb; border-bottom: 1px solid #e5e7eb;">
                         <div style="background: white; padding: 12px 16px; text-align: center;">
-                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">📋 Projekat</div>
+                            <div style="font-size: 12px; color: #4b5563; margin-bottom: 4px;">📋 Projekat</div>
                             <div style="font-size: 16px; font-weight: 700; color: #3b82f6;">${(odjel.ukupnoProjekat || 0).toFixed(2)}</div>
                         </div>
                         <div style="background: white; padding: 12px 16px; text-align: center;">
-                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">🪓 Sječa</div>
+                            <div style="font-size: 12px; color: #4b5563; margin-bottom: 4px;">🪓 Sječa</div>
                             <div style="font-size: 16px; font-weight: 700; color: #10b981;">${(odjel.ukupnoSjeca || 0).toFixed(2)}</div>
                         </div>
                         <div style="background: white; padding: 12px 16px; text-align: center;">
-                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">🚛 Otprema</div>
+                            <div style="font-size: 12px; color: #4b5563; margin-bottom: 4px;">🚛 Otprema</div>
                             <div style="font-size: 16px; font-weight: 700; color: #f59e0b;">${(odjel.ukupnoOtprema || 0).toFixed(2)}</div>
                         </div>
                         <div style="background: white; padding: 12px 16px; text-align: center;">
-                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">📦 Zaliha</div>
+                            <div style="font-size: 12px; color: #4b5563; margin-bottom: 4px;">📦 Zaliha</div>
                             <div style="font-size: 16px; font-weight: 700; color: #059669;">${pozitivnaZaliha.toFixed(2)}</div>
                         </div>
                     </div>
@@ -10218,7 +10218,7 @@
 
             // Prikaži loading
             document.getElementById('stanje-zaliha-container').innerHTML = `
-                <div style="text-align: center; padding: 60px; color: #6b7280;">
+                <div style="text-align: center; padding: 60px; color: #4b5563;">
                     <div style="font-size: 32px; margin-bottom: 16px;">🔄</div>
                     <p>Osvježavam podatke...</p>
                 </div>
@@ -11091,7 +11091,7 @@
 
                     html += '</tbody></table>';
                 } else {
-                    html += '<p style="text-align: center; color: #6b7280; padding: 40px;">Nemate pending unosa.</p>';
+                    html += '<p style="text-align: center; color: #4b5563; padding: 40px;">Nemate pending unosa.</p>';
                 }
 
                 html += '</div>';
@@ -11169,7 +11169,7 @@
 
                     html += '</tbody></table>';
                 } else {
-                    html += '<p style="text-align: center; color: #6b7280; padding: 40px;">Nemate pending unosa.</p>';
+                    html += '<p style="text-align: center; color: #4b5563; padding: 40px;">Nemate pending unosa.</p>';
                 }
 
                 html += '</div>';
@@ -11215,7 +11215,7 @@
                 var styleExtra = isCalculated ? 'background: #f3f4f6; color: #374151; font-weight: 600;' : '';
 
                 sortimentiHtml += '<div class="form-group">';
-                sortimentiHtml += '<label>' + key + (isCalculated ? ': <span style="color: #6b7280; font-size: 0.85em;">(auto)</span>' : ':') + '</label>';
+                sortimentiHtml += '<label>' + key + (isCalculated ? ': <span style="color: #4b5563; font-size: 0.85em;">(auto)</span>' : ':') + '</label>';
                 sortimentiHtml += '<input type="number" step="0.01" id="' + fieldId + '" value="' + value + '" min="0" ' + readonlyAttr + ' class="edit-sjeca-input" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%; ' + styleExtra + '">';
                 sortimentiHtml += '</div>';
             });
@@ -11369,7 +11369,7 @@
                 var styleExtra = isCalculated ? 'background: #f3f4f6; color: #374151; font-weight: 600;' : '';
 
                 sortimentiHtml += '<div class="form-group">';
-                sortimentiHtml += '<label>' + key + (isCalculated ? ': <span style="color: #6b7280; font-size: 0.85em;">(auto)</span>' : ':') + '</label>';
+                sortimentiHtml += '<label>' + key + (isCalculated ? ': <span style="color: #4b5563; font-size: 0.85em;">(auto)</span>' : ':') + '</label>';
                 sortimentiHtml += '<input type="number" step="0.01" id="' + fieldId + '" value="' + value + '" min="0" ' + readonlyAttr + ' style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%; ' + styleExtra + '">';
                 sortimentiHtml += '</div>';
             });
@@ -11675,7 +11675,7 @@
                                 <div style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 4px;">
                                     ${odjel.odjel}
                                 </div>
-                                <div style="font-size: 12px; color: #6b7280;">
+                                <div style="font-size: 12px; color: #4b5563;">
                                     ${odjel.radiliste ? odjel.radiliste : 'N/A'} • ${odjel.izvodjac ? odjel.izvodjac : 'N/A'}
                                 </div>
                             </div>
@@ -11683,14 +11683,14 @@
                                 <div style="font-size: 24px; font-weight: 700; color: #059669;">
                                     ${odjel.zaliha.toFixed(2)} m³
                                 </div>
-                                <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">
+                                <div style="font-size: 11px; color: #4b5563; margin-top: 4px;">
                                     Sječa: ${odjel.sjeca.toFixed(0)} m³
                                 </div>
                             </div>
                         </div>
                     `;
                 }).join('')
-                : '<p style="color: #6b7280; text-align: center; padding: 20px;">Nema podataka</p>';
+                : '<p style="color: #4b5563; text-align: center; padding: 20px;">Nema podataka</p>';
 
             document.getElementById('suma-lager-top5').innerHTML = html;
         }
@@ -11703,7 +11703,7 @@
                 .slice(0, 10);
 
             if (sorted.length === 0) {
-                document.getElementById('suma-lager-chart').innerHTML = '<p style="color: #6b7280; text-align: center; padding: 40px;">Nema podataka za prikaz</p>';
+                document.getElementById('suma-lager-chart').innerHTML = '<p style="color: #4b5563; text-align: center; padding: 40px;">Nema podataka za prikaz</p>';
                 return;
             }
 
@@ -11723,7 +11723,7 @@
                                 <span style="font-size: 11px; color: white; font-weight: 600;">${percentage.toFixed(0)}%</span>
                             </div>
                         </div>
-                        <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">
+                        <div style="font-size: 11px; color: #4b5563; margin-top: 4px;">
                             Sječa: ${odjel.sjeca.toFixed(0)} m³ | Otprema: ${odjel.otprema.toFixed(0)} m³
                         </div>
                     </div>
@@ -11739,7 +11739,7 @@
 
             if (sorted.length === 0) {
                 document.getElementById('suma-lager-table').innerHTML =
-                    '<tr><td colspan="19" style="text-align: center; color: #6b7280; padding: 40px;">Nema podataka</td></tr>';
+                    '<tr><td colspan="19" style="text-align: center; color: #4b5563; padding: 40px;">Nema podataka</td></tr>';
                 return;
             }
 
@@ -12333,11 +12333,11 @@
             sortimentiNazivi.forEach(s => monthTotals[s] = 0);
 
             if (weeklyData.length === 0) {
-                bodyHtml = `<tr><td colspan="${sortimentiNazivi.length + 1}" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za odabrani period</td></tr>`;
+                bodyHtml = `<tr><td colspan="${sortimentiNazivi.length + 1}" style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka za odabrani period</td></tr>`;
             } else {
                 weeklyData.forEach((week) => {
                     bodyHtml += '<tr>';
-                    bodyHtml += `<td><strong>Sedmica ${week.weekNumber}</strong><br><span style="color: #6b7280; font-size: 12px;">${week.weekStart} - ${week.weekEnd}</span></td>`;
+                    bodyHtml += `<td><strong>Sedmica ${week.weekNumber}</strong><br><span style="color: #4b5563; font-size: 12px;">${week.weekStart} - ${week.weekEnd}</span></td>`;
 
                     sortimentiNazivi.forEach(sortiment => {
                         let value = week.sortimentiSums[sortiment] || 0;
@@ -12405,7 +12405,7 @@
             sortimentiNazivi.forEach(s => totals[s] = 0);
 
             if (odjeliData.length === 0) {
-                bodyHtml = `<tr><td colspan="${sortimentiNazivi.length + 1}" style="text-align: center; padding: 40px; color: #6b7280;">Nema podataka za izabrani mjesec</td></tr>`;
+                bodyHtml = `<tr><td colspan="${sortimentiNazivi.length + 1}" style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka za izabrani mjesec</td></tr>`;
             } else {
                 odjeliData.forEach((row) => {
                     bodyHtml += '<tr>';

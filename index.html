@@ -185,18 +185,18 @@
                             <span>Meni</span>
                         </button>
                         <div class="user-menu-dropdown" id="user-menu-dropdown">
-                            <div style="padding:8px 16px 8px;font-size:12px;color:#6b7280;border-bottom:1px solid #f3f4f6;cursor:default;">
+                            <div style="padding:8px 16px 8px;font-size:12px;color:#4b5563;border-bottom:1px solid #f3f4f6;cursor:default;">
                                 <div id="menu-data-refreshed">🔄 Podaci osvježeni iz baze podataka: nepoznato</div>
                                 <div id="menu-data-cached" style="margin-top:3px;">💾 Podaci keširani: nepoznato</div>
                             </div>
                             <div class="user-menu-item" id="pwa-install-btn" style="display:none;" onclick="event.stopPropagation(); closeUserMenu(); installPwa();">📲 Instaliraj aplikaciju</div>
                             <div class="user-menu-item" id="notif-menu-item" onclick="event.stopPropagation(); toggleNotifPanel();" style="display:none;">
                                 🔔 Notifikacije
-                                <span id="notif-status-badge" style="font-size: 11px; margin-left: 6px; padding: 2px 6px; border-radius: 10px; background: #e5e7eb; color: #6b7280;">OFF</span>
+                                <span id="notif-status-badge" style="font-size: 11px; margin-left: 6px; padding: 2px 6px; border-radius: 10px; background: #e5e7eb; color: #4b5563;">OFF</span>
                             </div>
                             <div class="user-menu-item" onclick="event.stopPropagation(); clearAllCache()">🔄 Ažuriraj podatke</div>
                             <div class="user-menu-item danger" onclick="event.stopPropagation(); logout()">🚪 Odjavi se</div>
-                            <div id="menu-app-version" style="padding:6px 16px 8px;font-size:10px;color:#9ca3af;cursor:default;">v—</div>
+                            <div id="menu-app-version" style="padding:6px 16px 8px;font-size:10px;color:#6b7280;cursor:default;">v—</div>
                         </div>
                     </div>
                 </div>
@@ -208,13 +208,13 @@
             <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; border-radius:16px; padding:28px; width:340px; max-width:90vw; box-shadow:0 20px 60px rgba(0,0,0,0.3);" onclick="event.stopPropagation()">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                     <h3 style="margin:0; font-size:18px; color:#1f2937;">🔔 Notifikacije</h3>
-                    <button onclick="closeNotifPanel()" style="background:none; border:none; font-size:20px; cursor:pointer; color:#6b7280; padding:4px;">✕</button>
+                    <button onclick="closeNotifPanel()" style="background:none; border:none; font-size:20px; cursor:pointer; color:#4b5563; padding:4px;">✕</button>
                 </div>
 
                 <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f3f4f6;">
                     <div>
                         <div style="font-weight:600; color:#1f2937;">Omogući obavijesti</div>
-                        <div style="font-size:12px; color:#6b7280; margin-top:2px;">Primaj obavijesti o novim podacima</div>
+                        <div style="font-size:12px; color:#4b5563; margin-top:2px;">Primaj obavijesti o novim podacima</div>
                     </div>
                     <label style="position:relative; width:44px; height:24px; display:inline-block;">
                         <input type="checkbox" id="notif-toggle" onchange="handleNotifToggle(this.checked)" style="opacity:0; width:0; height:0;">
@@ -224,13 +224,13 @@
                 </div>
 
                 <div id="notif-options-panel" style="display:none; padding-top:12px;">
-                    <div style="font-size:13px; font-weight:600; color:#6b7280; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Obavijesti za:</div>
+                    <div style="font-size:13px; font-weight:600; color:#4b5563; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Obavijesti za:</div>
 
                     <label style="display:flex; align-items:center; padding:10px 0; cursor:pointer; gap:10px;">
                         <input type="checkbox" id="notif-primka" checked onchange="NotificationManager.updatePref('novaPrimka', this.checked)" style="width:18px; height:18px; accent-color:#059669;">
                         <div>
                             <div style="font-weight:500; color:#1f2937;">Nova sječa (primka)</div>
-                            <div style="font-size:12px; color:#6b7280;">Kad se unesu novi zapisi sječe</div>
+                            <div style="font-size:12px; color:#4b5563;">Kad se unesu novi zapisi sječe</div>
                         </div>
                     </label>
 
@@ -238,7 +238,7 @@
                         <input type="checkbox" id="notif-otprema" checked onchange="NotificationManager.updatePref('novaOtprema', this.checked)" style="width:18px; height:18px; accent-color:#2563eb;">
                         <div>
                             <div style="font-weight:500; color:#1f2937;">Nova otprema</div>
-                            <div style="font-size:12px; color:#6b7280;">Kad se unesu novi zapisi otpreme</div>
+                            <div style="font-size:12px; color:#4b5563;">Kad se unesu novi zapisi otpreme</div>
                         </div>
                     </label>
 
@@ -300,7 +300,7 @@
 
             <!-- Sječa i Otprema tekućeg mjeseca -->
             <div class="section">
-                <h2>📅 Sječa i otprema tekućeg mjeseca <span id="tekuci-mjesec-period" style="font-weight: 400; font-size: 14px; color: #6b7280;"></span></h2>
+                <h2>📅 Sječa i otprema tekućeg mjeseca <span id="tekuci-mjesec-period" style="font-weight: 400; font-size: 14px; color: #4b5563;"></span></h2>
                 <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                     <table class="monthly-table" id="tekuci-mjesec-table" style="width: 100%; border-collapse: collapse;">
                         <thead id="tekuci-mjesec-header"></thead>
@@ -312,8 +312,8 @@
             <!-- Sječa i Otprema zadnjih 5 radnih dana -->
             <div class="section">
                 <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
-                    <h2 style="margin: 0;">📅 Sječa i otprema zadnjih 5 radnih dana <span id="zadnjih5-period" style="font-weight: 400; font-size: 14px; color: #6b7280;"></span></h2>
-                    <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #6b7280; flex-wrap: wrap;">
+                    <h2 style="margin: 0;">📅 Sječa i otprema zadnjih 5 radnih dana <span id="zadnjih5-period" style="font-weight: 400; font-size: 14px; color: #4b5563;"></span></h2>
+                    <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #4b5563; flex-wrap: wrap;">
                         <span>Izaberi period:</span>
                         <input type="date" id="zadnjih-od" style="padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; color: #374151;">
                         <span>—</span>
@@ -799,14 +799,14 @@
 
             <!-- Placeholder kad primač nije izabran - Pregled po odjelima (DEFAULT) -->
             <div id="primaci-admin-placeholder">
-                <div id="primaci-admin-odjeli-default-loading" style="text-align: center; padding: 40px; color: #6b7280;">
+                <div id="primaci-admin-odjeli-default-loading" style="text-align: center; padding: 40px; color: #4b5563;">
                     <div class="loading-icon" style="font-size: 32px;">⏳</div>
                     <p>Učitavanje pregleda po odjelima...</p>
                 </div>
                 <div id="primaci-admin-odjeli-default-container"></div>
                 <div id="primaci-admin-odjeli-default-pagination" style="display: none; justify-content: center; gap: 10px; margin-top: 16px; align-items: center;">
                     <button id="primaci-admin-odjeli-default-prev" onclick="prevPageOdjeliDefault()" class="submenu-tab" style="padding: 6px 16px;">← Prethodna</button>
-                    <span id="primaci-admin-odjeli-default-page-info" style="font-size: 13px; color: #6b7280;">Stranica 1</span>
+                    <span id="primaci-admin-odjeli-default-page-info" style="font-size: 13px; color: #4b5563;">Stranica 1</span>
                     <button id="primaci-admin-odjeli-default-next" onclick="nextPageOdjeliDefault()" class="submenu-tab" style="padding: 6px 16px;">Sledeća →</button>
                 </div>
             </div>
@@ -902,7 +902,7 @@
                 <div id="primaci-admin-odjeli-container"></div>
                 <div style="display: flex; justify-content: center; gap: 10px; margin-top: 16px; align-items: center;">
                     <button id="primaci-admin-odjeli-prev" onclick="prevPagePrimaciAdminOdjeli()" class="submenu-tab" style="padding: 6px 16px;">← Prethodna</button>
-                    <span id="primaci-admin-odjeli-page-info" style="font-size: 13px; color: #6b7280;">Stranica 1</span>
+                    <span id="primaci-admin-odjeli-page-info" style="font-size: 13px; color: #4b5563;">Stranica 1</span>
                     <button id="primaci-admin-odjeli-next" onclick="nextPagePrimaciAdminOdjeli()" class="submenu-tab" style="padding: 6px 16px;">Sledeća →</button>
                 </div>
             </div>
@@ -1015,7 +1015,7 @@
                             </select>
                         </div>
                         <div id="kupci-statistika-content" style="margin-top: 16px;">
-                            <div style="text-align: center; padding: 40px; color: #9ca3af; font-size: 14px;">Odaberi kupca za prikaz statistike</div>
+                            <div style="text-align: center; padding: 40px; color: #6b7280; font-size: 14px;">Odaberi kupca za prikaz statistike</div>
                         </div>
                     </div>
                 </div>
@@ -1039,7 +1039,7 @@
                             </select>
                         </div>
                         <div id="kupci-sortiment-content" style="margin-top: 16px;">
-                            <div style="text-align: center; padding: 40px; color: #9ca3af; font-size: 14px;">Odaberi sortiment za prikaz statistike</div>
+                            <div style="text-align: center; padding: 40px; color: #6b7280; font-size: 14px;">Odaberi sortiment za prikaz statistike</div>
                         </div>
                     </div>
                 </div>
@@ -1070,7 +1070,7 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 12px;">
                         <div>
                             <h3 class="worker-chart-title" style="margin: 0;">📊 Dnevni izvještaj sječa</h3>
-                            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">Prikaz dnevne sječe po mjesecima</p>
+                            <p style="margin: 5px 0 0 0; color: #4b5563; font-size: 14px;">Prikaz dnevne sječe po mjesecima</p>
                         </div>
                         <select id="primac-daily-month-select" class="year-select" onchange="loadPrimacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 150px;">
                             <option value="1">Januar</option>
@@ -1134,7 +1134,7 @@
                 <!-- Mjesečni dijagram sječe -->
                 <div class="worker-chart-card primac">
                     <h3 class="worker-chart-title">📊 Mjesečna sječa - Grafički prikaz</h3>
-                    <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">Mjesečne rekapitulacije za cijelu godinu</p>
+                    <p style="margin: 0 0 15px 0; color: #4b5563; font-size: 14px;">Mjesečne rekapitulacije za cijelu godinu</p>
                     <canvas id="primac-yearly-chart" class="worker-chart-canvas"></canvas>
                 </div>
 
@@ -1180,7 +1180,7 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 12px;">
                         <div>
                             <h3 class="worker-chart-title" style="margin: 0;">📊 Dnevni izvještaj otpreme</h3>
-                            <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">Prikaz dnevne otpreme po mjesecima</p>
+                            <p style="margin: 5px 0 0 0; color: #4b5563; font-size: 14px;">Prikaz dnevne otpreme po mjesecima</p>
                         </div>
                         <select id="otpremac-daily-month-select" class="year-select" onchange="loadOtpremacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #1e40af; min-width: 150px;">
                             <option value="1">Januar</option>
@@ -1203,7 +1203,7 @@
                 <!-- Mjesečni dijagram otpreme -->
                 <div class="worker-chart-card otpremac">
                     <h3 class="worker-chart-title">📊 Mjesečna otprema - Grafički prikaz</h3>
-                    <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">Godišnji pregled otpreme po mjesecima</p>
+                    <p style="margin: 0 0 15px 0; color: #4b5563; font-size: 14px;">Godišnji pregled otpreme po mjesecima</p>
                     <canvas id="otpremac-chart" class="worker-chart-canvas"></canvas>
                 </div>
 
@@ -1251,7 +1251,7 @@
                 <!-- Mjesečni dijagram otpreme -->
                 <div class="worker-chart-card otpremac">
                     <h3 class="worker-chart-title">📊 Mjesečna otprema - Grafički prikaz</h3>
-                    <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">Mjesečne rekapitulacije za cijelu godinu</p>
+                    <p style="margin: 0 0 15px 0; color: #4b5563; font-size: 14px;">Mjesečne rekapitulacije za cijelu godinu</p>
                     <canvas id="otpremac-yearly-chart" class="worker-chart-canvas"></canvas>
                 </div>
 
@@ -1353,7 +1353,7 @@
                             <input type="number" step="0.01" id="sjeca-RD" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
-                            <label class="worker-form-label">TRUPCI Č <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
+                            <label class="worker-form-label">TRUPCI Č <span style="font-size: 10px; color: #4b5563;">(AUTO)</span></label>
                             <input type="number" step="0.01" id="sjeca-TRUPCI-C" value="0" min="0" readonly class="worker-form-input" style="background: #f3f4f6; font-weight: 600;">
                         </div>
                         <div class="worker-form-group">
@@ -1369,7 +1369,7 @@
                             <input type="number" step="0.01" id="sjeca-SKART" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
-                            <label class="worker-form-label">Σ ČETINARI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
+                            <label class="worker-form-label">Σ ČETINARI <span style="font-size: 10px; color: #4b5563;">(AUTO)</span></label>
                             <input type="number" step="0.01" id="sjeca-CETINARI" value="0" min="0" readonly class="worker-form-input" style="background: #dbeafe; font-weight: 700; color: #1e40af;">
                         </div>
                     </div>
@@ -1396,7 +1396,7 @@
                             <input type="number" step="0.01" id="sjeca-III-L" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
-                            <label class="worker-form-label">TRUPCI L <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
+                            <label class="worker-form-label">TRUPCI L <span style="font-size: 10px; color: #4b5563;">(AUTO)</span></label>
                             <input type="number" step="0.01" id="sjeca-TRUPCI-L" value="0" min="0" readonly class="worker-form-input" style="background: #f3f4f6; font-weight: 600;">
                         </div>
                         <div class="worker-form-group">
@@ -1412,7 +1412,7 @@
                             <input type="number" step="0.01" id="sjeca-GULE" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
-                            <label class="worker-form-label">LIŠĆARI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
+                            <label class="worker-form-label">LIŠĆARI <span style="font-size: 10px; color: #4b5563;">(AUTO)</span></label>
                             <input type="number" step="0.01" id="sjeca-LISCARI" value="0" min="0" readonly class="worker-form-input" style="background: #fef3c7; font-weight: 700; color: #92400e;">
                         </div>
                     </div>
@@ -1523,7 +1523,7 @@
                             <input type="number" step="0.01" id="otprema-RD" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
-                            <label class="worker-form-label">TRUPCI Č <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
+                            <label class="worker-form-label">TRUPCI Č <span style="font-size: 10px; color: #4b5563;">(AUTO)</span></label>
                             <input type="number" step="0.01" id="otprema-TRUPCI-C" value="0" min="0" readonly class="worker-form-input" style="background: #f3f4f6; font-weight: 600;">
                         </div>
                         <div class="worker-form-group">
@@ -1539,7 +1539,7 @@
                             <input type="number" step="0.01" id="otprema-SKART" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
-                            <label class="worker-form-label">Σ ČETINARI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
+                            <label class="worker-form-label">Σ ČETINARI <span style="font-size: 10px; color: #4b5563;">(AUTO)</span></label>
                             <input type="number" step="0.01" id="otprema-CETINARI" value="0" min="0" readonly class="worker-form-input" style="background: #dbeafe; font-weight: 700; color: #1e40af;">
                         </div>
                     </div>
@@ -1566,7 +1566,7 @@
                             <input type="number" step="0.01" id="otprema-III-L" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
-                            <label class="worker-form-label">TRUPCI L <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
+                            <label class="worker-form-label">TRUPCI L <span style="font-size: 10px; color: #4b5563;">(AUTO)</span></label>
                             <input type="number" step="0.01" id="otprema-TRUPCI-L" value="0" min="0" readonly class="worker-form-input" style="background: #f3f4f6; font-weight: 600;">
                         </div>
                         <div class="worker-form-group">
@@ -1582,7 +1582,7 @@
                             <input type="number" step="0.01" id="otprema-GULE" value="0" min="0" max="10000" class="worker-form-input">
                         </div>
                         <div class="worker-form-group">
-                            <label class="worker-form-label">LIŠĆARI <span style="font-size: 10px; color: #6b7280;">(AUTO)</span></label>
+                            <label class="worker-form-label">LIŠĆARI <span style="font-size: 10px; color: #4b5563;">(AUTO)</span></label>
                             <input type="number" step="0.01" id="otprema-LISCARI" value="0" min="0" readonly class="worker-form-input" style="background: #fef3c7; font-weight: 700; color: #92400e;">
                         </div>
                     </div>
@@ -1834,7 +1834,7 @@
                         <select id="poslovodja-radiliste-select" class="filter-select" onchange="filterPoslovodjaStanje()" style="min-width: 200px; padding: 10px 16px; border: 2px solid #d1d5db; border-radius: 8px; font-size: 14px;">
                             <option value="">Sva radilišta</option>
                         </select>
-                        <span id="poslovodja-stanje-count" style="color: #6b7280; font-size: 14px;"></span>
+                        <span id="poslovodja-stanje-count" style="color: #4b5563; font-size: 14px;"></span>
                     </div>
                 </div>
 
@@ -1903,7 +1903,7 @@
                     <h2>🏆 Top 5 Odjela - Najveća Zaliha</h2>
                     <p>Pet odjela sa najvećom zalihom drva na lageru</p>
                     <div id="suma-lager-top5">
-                        <p style="color: #6b7280; text-align: center; padding: 20px;">Učitavanje...</p>
+                        <p style="color: #4b5563; text-align: center; padding: 20px;">Učitavanje...</p>
                     </div>
                 </div>
 
@@ -2165,14 +2165,14 @@
                         </div>
 
                         <div style="grid-column:1/-1;">
-                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Odjel <span style="font-weight:400;color:#9ca3af;">(opcija)</span></label>
+                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Odjel <span style="font-weight:400;color:#6b7280;">(opcija)</span></label>
                             <select id="kub-odjel" style="width:100%;padding:13px 12px;font-size:16px;border:2px solid #d1d5db;border-radius:8px;background:white;">
                                 <option value="">— opciono —</option>
                             </select>
                         </div>
 
                         <div style="grid-column:1/-1;">
-                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Sortiment <span style="font-weight:400;color:#9ca3af;">(opcija)</span></label>
+                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Sortiment <span style="font-weight:400;color:#6b7280;">(opcija)</span></label>
                             <select id="kub-sortiment" style="width:100%;padding:13px 12px;font-size:16px;border:2px solid #d1d5db;border-radius:8px;background:white;">
                                 <option value="">— opciono —</option>
                             </select>
@@ -2193,7 +2193,7 @@
                         </div>
 
                         <div style="grid-column:1/-1;">
-                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Napomena <span style="font-weight:400;color:#9ca3af;">(opcija)</span></label>
+                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Napomena <span style="font-weight:400;color:#6b7280;">(opcija)</span></label>
                             <input type="text" id="kub-napomena"
                                 placeholder="npr. Komad 3, oštećena kora..."
                                 style="width:100%;padding:13px 12px;font-size:15px;border:2px solid #d1d5db;border-radius:8px;box-sizing:border-box;">
@@ -2239,7 +2239,7 @@
                                 </tr>
                             </thead>
                             <tbody id="kub-rekap-tbody">
-                                <tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:10px;">Nema unosa</td></tr>
+                                <tr><td colspan="3" style="text-align:center;color:#6b7280;padding:10px;">Nema unosa</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -2260,7 +2260,7 @@
                         <table id="kub-tabela" style="width:100%;border-collapse:collapse;font-size:13px;min-width:600px;">
                             <thead>
                                 <tr style="background:#f9fafb;border-bottom:2px solid #d1d5db;">
-                                    <th class="kub-col-rb"       style="padding:10px 8px;text-align:center;color:#6b7280;font-weight:600;">#</th>
+                                    <th class="kub-col-rb"       style="padding:10px 8px;text-align:center;color:#4b5563;font-weight:600;">#</th>
                                     <th class="kub-col-datum"    style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Datum/Vrij.</th>
                                     <th                          style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Odjel</th>
                                     <th                          style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Sortiment</th>
@@ -2272,7 +2272,7 @@
                                 </tr>
                             </thead>
                             <tbody id="kub-tabela-tbody">
-                                <tr><td colspan="9" style="text-align:center;color:#9ca3af;padding:30px;">Nema unosa. Dodajte prvi komad.</td></tr>
+                                <tr><td colspan="9" style="text-align:center;color:#6b7280;padding:30px;">Nema unosa. Dodajte prvi komad.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -2342,7 +2342,7 @@
                 <!-- SJEČA PO ODJELIMA -->
                 <div class="section">
                     <h2>🌲 Sječa po odjelima - <span id="izvjestaji-sedmicni-primka-title"></span></h2>
-                    <p style="color: #6b7280; margin-bottom: 20px;">Sortirano po ukupnoj količini (najveće na vrhu)</p>
+                    <p style="color: #4b5563; margin-bottom: 20px;">Sortirano po ukupnoj količini (najveće na vrhu)</p>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="izvjestaji-sedmicni-primka-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterIzvjestajiTable('sedmicni-primka')">
                     </div>
@@ -2357,7 +2357,7 @@
                 <!-- OTPREMA PO ODJELIMA -->
                 <div class="section">
                     <h2>🚛 Otprema po odjelima - <span id="izvjestaji-sedmicni-otprema-title"></span></h2>
-                    <p style="color: #6b7280; margin-bottom: 20px;">Sortirano po ukupnoj količini (najveće na vrhu)</p>
+                    <p style="color: #4b5563; margin-bottom: 20px;">Sortirano po ukupnoj količini (najveće na vrhu)</p>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="izvjestaji-sedmicni-otprema-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterIzvjestajiTable('sedmicni-otprema')">
                     </div>
@@ -2404,7 +2404,7 @@
                 <!-- SJEČA PO RADNIKU -->
                 <div class="section">
                     <h2>🌲 Sječa po radniku - <span id="izvjestaji-sedmicni-radnik-primka-title"></span></h2>
-                    <p style="color: #6b7280; margin-bottom: 20px;">Sortirano po radniku (primac)</p>
+                    <p style="color: #4b5563; margin-bottom: 20px;">Sortirano po radniku (primac)</p>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="izvjestaji-sedmicni-radnik-primka-search" placeholder="🔍 Pretraži po radniku..." onkeyup="filterIzvjestajiTable('sedmicni-radnik-primka')">
                     </div>
@@ -2419,7 +2419,7 @@
                 <!-- OTPREMA PO RADNIKU -->
                 <div class="section">
                     <h2>🚛 Otprema po radniku - <span id="izvjestaji-sedmicni-radnik-otprema-title"></span></h2>
-                    <p style="color: #6b7280; margin-bottom: 20px;">Sortirano po radniku (otpremac)</p>
+                    <p style="color: #4b5563; margin-bottom: 20px;">Sortirano po radniku (otpremac)</p>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="izvjestaji-sedmicni-radnik-otprema-search" placeholder="🔍 Pretraži po radniku..." onkeyup="filterIzvjestajiTable('sedmicni-radnik-otprema')">
                     </div>
@@ -2466,7 +2466,7 @@
                 <!-- SJEČA PO ODJELIMA -->
                 <div class="section">
                     <h2>🌲 Sječa po odjelima - <span id="izvjestaji-mjesecni-primka-title"></span></h2>
-                    <p style="color: #6b7280; margin-bottom: 20px;">Sortirano po ukupnoj količini (najveće na vrhu)</p>
+                    <p style="color: #4b5563; margin-bottom: 20px;">Sortirano po ukupnoj količini (najveće na vrhu)</p>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="izvjestaji-mjesecni-primka-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterIzvjestajiTable('mjesecni-primka')">
                     </div>
@@ -2481,7 +2481,7 @@
                 <!-- OTPREMA PO ODJELIMA -->
                 <div class="section">
                     <h2>🚛 Otprema po odjelima - <span id="izvjestaji-mjesecni-otprema-title"></span></h2>
-                    <p style="color: #6b7280; margin-bottom: 20px;">Sortirano po ukupnoj količini (najveće na vrhu)</p>
+                    <p style="color: #4b5563; margin-bottom: 20px;">Sortirano po ukupnoj količini (najveće na vrhu)</p>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="izvjestaji-mjesecni-otprema-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterIzvjestajiTable('mjesecni-otprema')">
                     </div>
@@ -2526,7 +2526,7 @@
                     </div>
                 </div>
                 <div id="izvjestaji-po-odjelima-prikaz" style="margin-top: 8px;">
-                    <div style="text-align: center; padding: 40px; color: #9ca3af; font-size: 14px;">Učitavanje...</div>
+                    <div style="text-align: center; padding: 40px; color: #6b7280; font-size: 14px;">Učitavanje...</div>
                 </div>
             </div>
         </div>
@@ -2793,7 +2793,7 @@
                         <select id="stanje-zaliha-radiliste" class="filter-select" onchange="filterStanjeZaliha()" style="min-width: 200px; padding: 10px 16px; border: 2px solid #d1d5db; border-radius: 8px; font-size: 14px;">
                             <option value="">Sva radilišta</option>
                         </select>
-                        <span id="stanje-zaliha-count" style="color: #6b7280; font-size: 14px;"></span>
+                        <span id="stanje-zaliha-count" style="color: #4b5563; font-size: 14px;"></span>
                     </div>
                 </div>
 
@@ -2817,7 +2817,7 @@
                         <button class="btn btn-primary" onclick="openPreklasiranjeModal()" style="font-size:13px;padding:8px 16px;">+ Novo preklasiranje</button>
                     </div>
                     <div id="preklasiranje-tabela-container">
-                        <p style="color:#6b7280;font-size:13px;">Učitavanje...</p>
+                        <p style="color:#4b5563;font-size:13px;">Učitavanje...</p>
                     </div>
                 </div>
 
@@ -2852,7 +2852,7 @@
                 <!-- Filters -->
                 <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
                     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-                        <span style="font-size:12px;color:#6b7280;font-weight:600;">GJ:</span>
+                        <span style="font-size:12px;color:#4b5563;font-weight:600;">GJ:</span>
                         <button data-gj-btn="sve" onclick="filterGpGj('sve')" style="padding:4px 12px;border-radius:99px;border:2px solid #6b7280;background:white;color:#374151;font-size:12px;cursor:pointer;font-weight:700;">Sve GJ</button>
                         <button data-gj-btn="Risovac Krupa" onclick="filterGpGj('Risovac Krupa')" style="padding:4px 12px;border-radius:99px;border:2px solid #1d4ed8;background:white;color:#1d4ed8;font-size:12px;cursor:pointer;opacity:0.5;">Risovac Krupa</button>
                         <button data-gj-btn="Grmeč Jasenica" onclick="filterGpGj('Grmeč Jasenica')" style="padding:4px 12px;border-radius:99px;border:2px solid #15803d;background:white;color:#15803d;font-size:12px;cursor:pointer;opacity:0.5;">Grmeč Jasenica</button>
@@ -2860,11 +2860,11 @@
                     </div>
                     <div style="width:1px;height:24px;background:#e5e7eb;"></div>
                     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-                        <span style="font-size:12px;color:#6b7280;font-weight:600;">Status:</span>
+                        <span style="font-size:12px;color:#4b5563;font-weight:600;">Status:</span>
                         <button data-st-btn="sve" onclick="filterGpStatus('sve')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#374151;font-weight:700;">Sve</button>
                         <button data-st-btn="posjeceno" onclick="filterGpStatus('posjeceno')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#166534;">Posječeno</button>
                         <button data-st-btn="u-sjeci" onclick="filterGpStatus('u-sjeci')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#dc2626;">U sječi</button>
-                        <button data-st-btn="planirano" onclick="filterGpStatus('planirano')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#6b7280;">Planirano</button>
+                        <button data-st-btn="planirano" onclick="filterGpStatus('planirano')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#4b5563;">Planirano</button>
                     </div>
                     <div style="flex:1;min-width:160px;">
                         <input type="text" placeholder="🔍 Pretraži odjel..." oninput="filterGpSearch(this.value)" style="width:100%;padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;box-sizing:border-box;">
@@ -2978,7 +2978,7 @@
                   }
                 </style>
                 <div id="karta-odjela-map">
-                    <div id="karta-loading" style="display:flex;align-items:center;justify-content:center;height:100%;color:#6b7280;font-size:14px;">⏳ Učitavam kartu...</div>
+                    <div id="karta-loading" style="display:flex;align-items:center;justify-content:center;height:100%;color:#4b5563;font-size:14px;">⏳ Učitavam kartu...</div>
                 </div>
                 <!-- Ruta info -->
                 <div id="mapa-ruta-info" style="display:none;margin:8px 20px;padding:10px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:13px;color:#1e40af;"></div>
@@ -3137,7 +3137,7 @@
                                 <th class="right" style="color:#1e40af;">Trupci Č</th>
                                 <th class="right" style="color:#5b21b6;">Cel.D.</th>
                                 <th class="right" style="color:#7c3aed;">Cel.C.</th>
-                                <th class="right" style="color:#9ca3af;">Škart</th>
+                                <th class="right" style="color:#6b7280;">Škart</th>
                                 <th class="right" style="color:#15803d;">Trupci L</th>
                                 <th class="right" style="color:#92400e;">Ogr.D.</th>
                                 <th class="right" style="color:#b45309;">Ogr.C.</th>
@@ -3179,7 +3179,7 @@
                 </div>
             </div>
             <div class="modal-body" id="kupac-modal-body" style="padding: 0; overflow: auto; flex: 1;">
-                <div style="text-align: center; padding: 40px; color: #6b7280;">
+                <div style="text-align: center; padding: 40px; color: #4b5563;">
                     <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
                     Učitavanje podataka...
                 </div>

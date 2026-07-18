@@ -551,7 +551,7 @@
           const otOCijL = otO.ogrDugi+otO.ogrCijepani+otO.gule;
           extraTable = `
             <div style="margin-top:16px;background:#f8fafc;border-radius:12px;overflow:hidden;">
-              <div style="padding:10px 14px 4px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;">Evidencija sječe</div>
+              <div style="padding:10px 14px 4px;font-size:11px;font-weight:700;color:#4b5563;text-transform:uppercase;letter-spacing:.5px;">Evidencija sječe</div>
               <div style="overflow-x:auto;">
               <table style="width:100%;border-collapse:collapse;">
                 <thead>
@@ -559,8 +559,8 @@
                     <th style="padding:7px 10px;font-size:12px;text-align:left;color:#475569;font-weight:600;">Sortiment</th>
                     <th style="padding:7px 10px;font-size:12px;text-align:right;color:#15803d;font-weight:600;">Sječa<br><span style="font-size:10px;">${PLAN_YEAR}</span></th>
                     <th style="padding:7px 10px;font-size:12px;text-align:right;color:#92400e;font-weight:600;">Otpr.<br><span style="font-size:10px;">${PLAN_YEAR}</span></th>
-                    <th style="padding:7px 10px;font-size:12px;text-align:right;color:#6b7280;font-weight:600;">Sječa<br><span style="font-size:10px;">${prevYear}</span></th>
-                    <th style="padding:7px 10px;font-size:12px;text-align:right;color:#9ca3af;font-weight:600;">Otpr.<br><span style="font-size:10px;">${prevYear}</span></th>
+                    <th style="padding:7px 10px;font-size:12px;text-align:right;color:#4b5563;font-weight:600;">Sječa<br><span style="font-size:10px;">${prevYear}</span></th>
+                    <th style="padding:7px 10px;font-size:12px;text-align:right;color:#6b7280;font-weight:600;">Otpr.<br><span style="font-size:10px;">${prevYear}</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -579,7 +579,7 @@
       body = `
         <div style="text-align:center;padding:20px 0 0;">
           <span style="background:${bg};color:${col};padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700;">${label}</span>
-          <div style="font-size:13px;color:#6b7280;margin-top:8px;">${note}</div>
+          <div style="font-size:13px;color:#4b5563;margin-top:8px;">${note}</div>
         </div>
         ${extraTable}
         ${routeBtn}`;
@@ -587,11 +587,11 @@
       body = `
         <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;">
           <div style="flex:1;min-width:110px;">
-            <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Gospodarska jedinica</div>
+            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;">Gospodarska jedinica</div>
             <div style="font-weight:700;font-size:13px;">${gj}</div>
           </div>
           <div style="flex:0;min-width:50px;">
-            <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Odsjek</div>
+            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;">Odsjek</div>
             <div style="font-weight:600;font-size:13px;">${odsjek}</div>
           </div>
           <span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;align-self:flex-start;">Plan sječa 2027</span>
@@ -599,7 +599,7 @@
         <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:center;">
           <div style="font-size:28px;margin-bottom:4px;">📅</div>
           <div style="font-size:13px;font-weight:700;color:#1e40af;">Planiran za sječu u 2027. godini</div>
-          <div style="font-size:12px;color:#9ca3af;margin-top:4px;">Odjel nije u planu sječe za ${PLAN_YEAR}. godinu.</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:4px;">Odjel nije u planu sječe za ${PLAN_YEAR}. godinu.</div>
         </div>
         ${routeBtn}`;
     } else {
@@ -633,7 +633,7 @@
         return `<tr>${tdL(label)}${td(sv,'#15803d',true)}${hasOtpr?td(ov,'#92400e',false)+td(z,zC,true):''}${td(pv,'#9ca3af',false)}</tr>`;
       };
       const subRow = (label, sv, ov) => {
-        return `<tr style="background:#fafafa;">${tdL('<span style="font-size:12px;color:#9ca3af;padding-left:10px;">↳ '+label+'</span>')}${td(sv,'#6b7280',false)}${hasOtpr?td(ov,'#9ca3af',false)+'<td style="border-bottom:1px solid #f1f5f9;"></td>':''}<td style="border-bottom:1px solid #f1f5f9;"></td></tr>`;
+        return `<tr style="background:#fafafa;">${tdL('<span style="font-size:12px;color:#6b7280;padding-left:10px;">↳ '+label+'</span>')}${td(sv,'#6b7280',false)}${hasOtpr?td(ov,'#9ca3af',false)+'<td style="border-bottom:1px solid #f1f5f9;"></td>':''}<td style="border-bottom:1px solid #f1f5f9;"></td></tr>`;
       };
 
       // Projekat + realizacija iz stanje-odjela cache
@@ -661,17 +661,17 @@
           const zCol = (zV != null && zV < 0) ? '#dc2626' : '#059669';
           return `
           <div style="background:white;border-radius:8px;padding:8px 10px;flex:1;min-width:90px;border:1px solid #fde68a;">
-            <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">${label}</div>
+            <div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">${label}</div>
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;">
-              <span style="font-size:10px;color:#9ca3af;">Proj.</span>
+              <span style="font-size:10px;color:#6b7280;">Proj.</span>
               <span style="font-size:13px;font-weight:700;color:${accentC};">${fmtP(pV)}</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;">
-              <span style="font-size:10px;color:#9ca3af;">Sječa</span>
+              <span style="font-size:10px;color:#6b7280;">Sječa</span>
               <span style="font-size:13px;font-weight:700;color:#15803d;">${fmtP(sV)}</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:baseline;">
-              <span style="font-size:10px;color:#9ca3af;">Zaliha</span>
+              <span style="font-size:10px;color:#6b7280;">Zaliha</span>
               <span style="font-size:13px;font-weight:700;color:${zCol};">${fmtP(zV)}</span>
             </div>
             ${pct != null ? `<div style="margin-top:5px;height:4px;background:#f3f4f6;border-radius:2px;overflow:hidden;">
@@ -698,28 +698,28 @@
           <div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">📋 Godišnji plan ${PLAN_YEAR}</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;">
-              <div style="font-size:10px;color:#9ca3af;">Bruto</div>
+              <div style="font-size:10px;color:#6b7280;">Bruto</div>
               <div style="font-weight:700;font-size:12px;color:#374151;">${_fmt(e.bruto||0)}</div>
             </div>
             <div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;">
-              <div style="font-size:10px;color:#9ca3af;">Neto</div>
+              <div style="font-size:10px;color:#6b7280;">Neto</div>
               <div style="font-weight:700;font-size:12px;color:#166534;">${_fmt(e.neto||0)}</div>
             </div>
-            ${(e.cTrupci||0)>0?`<div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;"><div style="font-size:10px;color:#9ca3af;">Trp.Č</div><div style="font-weight:700;font-size:12px;color:#1e40af;">${_fmt(e.cTrupci)}</div></div>`:''}
-            ${(e.cijepanoC||0)>0?`<div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;"><div style="font-size:10px;color:#9ca3af;">Cij.Č</div><div style="font-weight:700;font-size:12px;color:#1e40af;">${_fmt(e.cijepanoC)}</div></div>`:''}
-            ${(e.lTrupci||0)>0?`<div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;"><div style="font-size:10px;color:#9ca3af;">Trp.L</div><div style="font-weight:700;font-size:12px;color:#92400e;">${_fmt(e.lTrupci)}</div></div>`:''}
-            ${(e.cijepanoL||0)>0?`<div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;"><div style="font-size:10px;color:#9ca3af;">Cij.L</div><div style="font-weight:700;font-size:12px;color:#92400e;">${_fmt(e.cijepanoL)}</div></div>`:''}
+            ${(e.cTrupci||0)>0?`<div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;"><div style="font-size:10px;color:#6b7280;">Trp.Č</div><div style="font-weight:700;font-size:12px;color:#1e40af;">${_fmt(e.cTrupci)}</div></div>`:''}
+            ${(e.cijepanoC||0)>0?`<div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;"><div style="font-size:10px;color:#6b7280;">Cij.Č</div><div style="font-weight:700;font-size:12px;color:#1e40af;">${_fmt(e.cijepanoC)}</div></div>`:''}
+            ${(e.lTrupci||0)>0?`<div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;"><div style="font-size:10px;color:#6b7280;">Trp.L</div><div style="font-weight:700;font-size:12px;color:#92400e;">${_fmt(e.lTrupci)}</div></div>`:''}
+            ${(e.cijepanoL||0)>0?`<div style="background:white;border-radius:6px;padding:4px 8px;text-align:center;flex:1;min-width:60px;border:1px solid #bbf7d0;"><div style="font-size:10px;color:#6b7280;">Cij.L</div><div style="font-weight:700;font-size:12px;color:#92400e;">${_fmt(e.cijepanoL)}</div></div>`:''}
           </div>
         </div>`;
 
       body = `
         <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;">
           <div style="flex:1;min-width:110px;">
-            <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Gospodarska jedinica</div>
+            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;">Gospodarska jedinica</div>
             <div style="font-weight:700;font-size:13px;">${gj}</div>
           </div>
           <div style="flex:0;min-width:50px;">
-            <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;">Odsjek</div>
+            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;">Odsjek</div>
             <div style="font-weight:600;font-size:13px;">${odsjek}</div>
           </div>
           <span style="background:${statusBg[s]};color:${statusColor[s]};padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;align-self:flex-start;">${statusLabel[s]||s}</span>
@@ -737,21 +737,21 @@
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <div style="background:white;border-radius:7px;padding:4px 8px;text-align:center;flex:1;min-width:60px;">
-              <div style="font-size:10px;color:#9ca3af;">Sječa ${PLAN_YEAR}</div>
+              <div style="font-size:10px;color:#6b7280;">Sječa ${PLAN_YEAR}</div>
               <div style="font-weight:800;font-size:13px;color:#15803d;">${_fmt(sj.ukupno)}</div>
             </div>
             ${hasOtpr?`
             <div style="background:white;border-radius:7px;padding:4px 8px;text-align:center;flex:1;min-width:60px;">
-              <div style="font-size:10px;color:#9ca3af;">Otprema</div>
+              <div style="font-size:10px;color:#6b7280;">Otprema</div>
               <div style="font-weight:800;font-size:13px;color:#b45309;">${_fmt(ot.ukupno)}</div>
             </div>
             <div style="background:white;border-radius:7px;padding:4px 8px;text-align:center;flex:1;min-width:60px;">
-              <div style="font-size:10px;color:#9ca3af;">Zaliha</div>
+              <div style="font-size:10px;color:#6b7280;">Zaliha</div>
               <div style="font-weight:800;font-size:13px;color:${zaliha<0?'#dc2626':'#1d4ed8'};">${_fmt(zaliha)}</div>
             </div>`:''}
             <div style="background:white;border-radius:7px;padding:4px 8px;text-align:center;flex:1;min-width:60px;">
-              <div style="font-size:10px;color:#9ca3af;">Plan neto</div>
-              <div style="font-weight:800;font-size:13px;color:#6b7280;">${_fmt(info.neto)}</div>
+              <div style="font-size:10px;color:#6b7280;">Plan neto</div>
+              <div style="font-weight:800;font-size:13px;color:#4b5563;">${_fmt(info.neto)}</div>
             </div>
           </div>
         </div>
@@ -763,7 +763,7 @@
             <th style="padding:5px 8px;font-size:11px;text-align:left;color:#475569;font-weight:600;">Sortiment</th>
             <th style="padding:5px 8px;font-size:11px;text-align:right;color:#15803d;font-weight:600;">Sječa</th>
             ${hasOtpr?'<th style="padding:5px 8px;font-size:11px;text-align:right;color:#b45309;font-weight:600;">Otpr.</th><th style="padding:5px 8px;font-size:11px;text-align:right;color:#1d4ed8;font-weight:600;">Zal.</th>':''}
-            <th style="padding:5px 8px;font-size:11px;text-align:right;color:#9ca3af;font-weight:600;">Plan</th>
+            <th style="padding:5px 8px;font-size:11px;text-align:right;color:#6b7280;font-weight:600;">Plan</th>
           </tr></thead>
           <tbody>
             ${grpRow('TRUPCI Č',   sj.cTrupci, ot.cTrupci, e.cTrupci||0)}
@@ -781,7 +781,7 @@
               <td style="padding:6px 8px;font-size:12px;text-align:right;color:#15803d;">${_fmt(sj.ukupno)}</td>
               ${hasOtpr?`<td style="padding:6px 8px;font-size:12px;text-align:right;color:#b45309;">${_fmt(ot.ukupno)}</td>
               <td style="padding:6px 8px;font-size:12px;text-align:right;color:${zaliha<0?'#dc2626':'#1d4ed8'};">${_fmt(zaliha)}</td>`:''}
-              <td style="padding:6px 8px;font-size:11px;text-align:right;color:#9ca3af;">${_fmt(info.neto)}</td>
+              <td style="padding:6px 8px;font-size:11px;text-align:right;color:#6b7280;">${_fmt(info.neto)}</td>
             </tr>
           </tbody>
         </table>
