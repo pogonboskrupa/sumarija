@@ -782,14 +782,14 @@ function printIzvjestaj(tip) {
     border-right: 3px solid #c7d2fe !important;
   }
   .week-date { display: block; font-size: 13px; font-weight: 800; color: #3730a3; line-height: 1.4; }
-  .week-totals-row td { background: #eff6ff; font-weight: 700; color: #1e40af; }
+  .week-totals-row td { background: #bfdbfe; font-weight: 700; color: #1e3a8a; }
   .week-totals-row .week-label-cell { background: #eef2ff !important; color: #3730a3 !important; }
   .week-separator td { border-top: 3px solid #a5b4fc; }
   .grand-totals-row td {
-    background: #e0e7ff !important;
-    color: #3730a3 !important;
+    background: #a5b4fc !important;
+    color: #312e81 !important;
     font-weight: 700;
-    border-color: #c7d2fe;
+    border-color: #818cf8;
   }
 
   /* Ukupno row za mjesečni — crna slova s bijelim outlineom umjesto bijelih

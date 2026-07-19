@@ -1173,17 +1173,17 @@ table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-sedmica {
     border-top: 3px solid #a5b4fc;
 }
 
-/* ---- UKUPNO SEDMICA red - svijetlo plava, ista porodica boja kao kolona 1 ---- */
+/* ---- UKUPNO SEDMICA red - plava, pojačana (bila #eff6ff, sad #bfdbfe) ---- */
 .izvjestaj-week-table tbody tr.week-totals-row {
-    background: #eff6ff !important;
+    background: #bfdbfe !important;
 }
 
 .izvjestaj-week-table tbody tr.week-totals-row td {
-    color: #1e40af !important;
+    color: #1e3a8a !important;
     font-weight: 800 !important;
     font-size: 13px;
     padding: 10px 10px;
-    border-color: #bfdbfe;
+    border-color: #93c5fd;
 }
 
 /* ---- Detail redovi (odjeli) ---- */
@@ -1222,24 +1222,25 @@ table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-sedmica {
     background: #f8fafc;
 }
 
-/* ---- GRAND TOTAL (UKUPNO MJESEC) — najjači akcent u tabeli, ali i dalje
-   svijetao: indigo-200 pozadina + tamno indigo tekst, umjesto crne. ---- */
+/* ---- GRAND TOTAL (UKUPNO MJESEC) — najjači akcent u tabeli, pojačan
+   (bio #e0e7ff, sad #a5b4fc; label ćelija #c7d2fe → #4f46e5 s bijelim
+   tekstom) — i dalje svjetliji, moderniji dizajn, ne pun crni blok. ---- */
 .izvjestaj-week-table tbody tr.grand-totals-row {
-    background: #e0e7ff !important;
-    border-top: 2px solid #818cf8;
+    background: #a5b4fc !important;
+    border-top: 2px solid #6366f1;
 }
 
 .izvjestaj-week-table tbody tr.grand-totals-row td {
-    color: #3730a3 !important;
+    color: #312e81 !important;
     font-weight: 800 !important;
     font-size: 14px;
     padding: 14px 10px;
-    border-color: #c7d2fe;
+    border-color: #818cf8;
 }
 
 .izvjestaj-week-table tbody tr.grand-totals-row td:first-child {
-    background: #c7d2fe !important;
-    color: #312e81 !important;
+    background: #4f46e5 !important;
+    color: #ffffff !important;
     text-align: left;
     font-size: 14px;
     letter-spacing: 0.5px;
