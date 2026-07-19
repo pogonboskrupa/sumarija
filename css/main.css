@@ -2912,6 +2912,14 @@
             display: block !important;
         }
 
+        /* Bez ovoga, na širinama ≥1025px .app-layout ostaje CSS grid sa
+           "260px 1fr" kolonama (main.css ~2728) — sidebar je display:none ali
+           njegova 260px grid-traka i dalje postoji, pa sadržaj biva stisnut u
+           preostali 1fr prostor lijevo, ostavljajući prazan prostor desno. */
+        body.force-horizontal-tabs .app-layout {
+            grid-template-columns: 1fr !important;
+        }
+
         /* ============================================ */
         /* 📱 ANDROID VIEW - Desktop prikaz bez sidebara */
         /* Identično desktop-u, samo sidebar → horizontalni tabovi */
