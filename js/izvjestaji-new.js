@@ -759,7 +759,7 @@ function printIzvjestaj(tip) {
     letter-spacing: 0.3px;
   }
   thead th:first-child { text-align: left; }
-  ${isSedmicni || isSedmicniRadnik ? 'thead th { background: #b45309 !important; border-color: #92400e !important; }' : ''}
+  ${isSedmicni || isSedmicniRadnik ? 'thead th { background: #57606a !important; border-color: #3f464d !important; }' : ''}
   tbody tr { background: #fff; }
   tbody tr:nth-child(even) { background: #f0f4f8; }
   tbody td {
@@ -770,19 +770,19 @@ function printIzvjestaj(tip) {
   }
   tbody td:first-child { text-align: left; font-weight: 600; color: #1e3a5f; }
 
-  /* Sedmični specifični stilovi — oker boja, ista kao zaglavlje i UKUPNO red */
+  /* Sedmični specifični stilovi — svijetlo antracit boja, ista kao zaglavlje i UKUPNO red */
   .week-label-cell {
-    background: #b45309 !important;
+    background: #57606a !important;
     color: #fff !important;
     font-weight: 800;
     text-align: center !important;
     vertical-align: middle;
     padding: 8px !important;
-    border-right: 3px solid #92400e !important;
+    border-right: 3px solid #3f464d !important;
   }
   .week-date { display: block; font-size: 13px; font-weight: 800; color: #fff; line-height: 1.4; }
-  .week-totals-row td { background: #b45309; font-weight: 700; color: #fff; }
-  .week-totals-row .week-label-cell { background: #b45309 !important; color: #fff !important; }
+  .week-totals-row td { background: #57606a; font-weight: 700; color: #fff; }
+  .week-totals-row .week-label-cell { background: #57606a !important; color: #fff !important; }
   .week-separator td { border-top: 2px solid #1e3a5f; }
   .grand-totals-row td {
     background: #1e3a5f !important;
