@@ -209,10 +209,10 @@
                     { id: 'mjesecni-sortimenti', icon: '📅', label: 'Sječa/otprema' },
                     { id: 'primaci', icon: '👷', label: 'SJEČA' },
                     { id: 'otpremaci', icon: '🚛', label: 'OTPREMA' },
+                    { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
                     { id: 'primaci-admin', icon: '🌲', label: 'Primači na šuma panju' },
                     { id: 'godisnji-plan', icon: '📋', label: 'Godišnji plan' },
                     { id: 'karta-odjela', icon: '🗺️', label: 'Mapa' },
-                    { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
                     { id: 'pending-unosi', icon: '📋', label: 'Dodani unosi', hasBadge: true },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
                 ];
