@@ -2029,6 +2029,48 @@
             <div id="poslovodja-pregled-container"></div>
         </div>
 
+        <!-- POSLOVODJA IZVJEŠTAJ PO ODJELIMA (samo svoja radilišta) -->
+        <div id="poslovodja-izvjestaj-odjeli-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>🏭 Izvještaj po odjelima</h1>
+                    <p>Sječa i otprema po vašim odjelima — sortimenti, radnici i kupci za mjesec</p>
+                </div>
+                <div class="page-header-right">
+                    <button onclick="printIzvjestajPoOdjelima('poslovodja-odjeli')" style="background: #1e3a5f; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;">🖨️ ŠTAMPAJ</button>
+                    <select id="poslovodja-odjeli-year" class="year-select" onchange="loadIzvjestajiPoOdjelima('poslovodja-odjeli','poslovodja-izvjestaj-odjeli')">
+                        <option value="2026" selected>2026</option>
+                        <option value="2025">2025</option>
+                        <option value="2024">2024</option>
+                    </select>
+                    <select id="poslovodja-odjeli-month" class="month-select" onchange="loadIzvjestajiPoOdjelima('poslovodja-odjeli','poslovodja-izvjestaj-odjeli')">
+                        <option value="0">Januar</option>
+                        <option value="1">Februar</option>
+                        <option value="2">Mart</option>
+                        <option value="3">April</option>
+                        <option value="4">Maj</option>
+                        <option value="5">Juni</option>
+                        <option value="6">Juli</option>
+                        <option value="7">August</option>
+                        <option value="8">Septembar</option>
+                        <option value="9">Oktobar</option>
+                        <option value="10">Novembar</option>
+                        <option value="11">Decembar</option>
+                    </select>
+                    <select id="poslovodja-odjeli-radiliste" class="year-select" onchange="filterIzvjestajiPoOdjelimaRadiliste('poslovodja-odjeli')" style="min-width: 160px;">
+                        <option value="">Sva radilišta</option>
+                    </select>
+                    <input type="text" class="search-input" id="poslovodja-odjeli-search" placeholder="🔍 Pretraži po odjelu..." oninput="filterIzvjestajPoOdjelima('poslovodja-odjeli')" style="min-width: 180px;">
+                </div>
+            </div>
+            <div style="background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #1e40af; font-weight: 600;">📍 Vaša radilišta: <span id="poslovodja-radilista-list-odjeli"></span></p>
+            </div>
+            <div id="poslovodja-odjeli-prikaz" style="margin-top: 8px;">
+                <div style="text-align: center; padding: 40px; color: #6b7280; font-size: 14px;">Učitavanje...</div>
+            </div>
+        </div>
+
         <!-- POSLOVODJA DODANI UNOSI -->
         <div id="poslovodja-unosi-content" class="container hidden">
             <div class="page-header">

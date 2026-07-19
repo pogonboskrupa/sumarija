@@ -29,6 +29,7 @@
                 'poslovodja-sjeca': 'poslovodja-sjeca-content',
                 'poslovodja-otprema': 'poslovodja-otprema-content',
                 'poslovodja-pregled': 'poslovodja-pregled-content',
+                'poslovodja-izvjestaj-odjeli': 'poslovodja-izvjestaj-odjeli-content',
                 'poslovodja-unosi': 'poslovodja-unosi-content',
                 'stanje-zaliha': 'stanje-zaliha-content',
                 'primaci-admin': 'primaci-admin-content',
@@ -134,6 +135,20 @@
                 loadPoslovodjaOtprema();
             } else if (tab === 'poslovodja-pregled') {
                 loadPoslovodjaPregled();
+            } else if (tab === 'poslovodja-izvjestaj-odjeli') {
+                document.getElementById('poslovodja-izvjestaj-odjeli-content').classList.remove('hidden');
+                // Popuni "Vaša radilišta" baner (isti izvor kao ostali poslovođa tabovi)
+                var _radBaner = document.getElementById('poslovodja-radilista-list-odjeli');
+                if (_radBaner && typeof getPoslovodjaRadilista === 'function') {
+                    _radBaner.textContent = getPoslovodjaRadilista().join(', ');
+                }
+                // Default na tekući mjesec/godinu
+                var _cd = new Date();
+                var _yr = document.getElementById('poslovodja-odjeli-year');
+                var _mo = document.getElementById('poslovodja-odjeli-month');
+                if (_yr) _yr.value = _cd.getFullYear();
+                if (_mo) _mo.value = _cd.getMonth();
+                loadIzvjestajiPoOdjelima('poslovodja-odjeli', 'poslovodja-izvjestaj-odjeli');
             } else if (tab === 'poslovodja-unosi') {
                 loadPoslovodjaUnosi();
             } else if (tab === 'izvjestaji') {

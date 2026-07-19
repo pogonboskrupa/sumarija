@@ -910,13 +910,17 @@ function _izvRowUkupno(row, sortimentiNazivi) {
     return s;
 }
 
-async function loadIzvjestajiPoOdjelima() {
-    console.log('[IZVJEŠTAJI PO ODJELIMA] Loading data...');
-    const content = document.getElementById('izvjestaji-po-odjelima-prikaz');
+// prefix — omogućava da isti izvještaj radi na dvije lokacije (glavni Izvještaji
+// tab: 'izvjestaji-po-odjelima', i poslovođa panel: 'poslovodja-odjeli'). Svi
+// element ID-jevi i markTabRendered tab se izvode iz njega. Poslovođa varijanta
+// automatski vidi samo svoje odjele jer filterByPoslovodjaRadilista filtrira redove.
+async function loadIzvjestajiPoOdjelima(prefix = 'izvjestaji-po-odjelima', tabId = 'izvjestaji') {
+    console.log('[IZVJEŠTAJI PO ODJELIMA] Loading data...', prefix);
+    const content = document.getElementById(prefix + '-prikaz');
 
     try {
-        const yearElem = document.getElementById('izvjestaji-po-odjelima-year');
-        const monthElem = document.getElementById('izvjestaji-po-odjelima-month');
+        const yearElem = document.getElementById(prefix + '-year');
+        const monthElem = document.getElementById(prefix + '-month');
         if (!yearElem || !monthElem || !content) return;
 
         const year = parseInt(yearElem.value);
@@ -949,12 +953,12 @@ async function loadIzvjestajiPoOdjelima() {
         const otpremaFiltered = filterByPoslovodjaRadilista(otpremaRows);
 
         const odjeli = aggregatePoOdjelima(primkaFiltered, otpremaFiltered, sortimentiNazivi);
-        populateIzvjestajiPoOdjelimaRadiliste(odjeli);
-        renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName);
-        filterIzvjestajiPoOdjelimaRadiliste();
+        populateIzvjestajiPoOdjelimaRadiliste(odjeli, prefix);
+        renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName, prefix);
+        filterIzvjestajiPoOdjelimaRadiliste(prefix);
 
         console.log('[IZVJEŠTAJI PO ODJELIMA] ✓ Data loaded successfully');
-        if (typeof markTabRendered === 'function') markTabRendered('izvjestaji');
+        if (typeof markTabRendered === 'function') markTabRendered(tabId);
 
     } catch (error) {
         console.error('[IZVJEŠTAJI PO ODJELIMA] Error:', error);
@@ -1054,8 +1058,8 @@ function _izvSortList(obj) {
         .sort((a, b) => b.ukupno - a.ukupno);
 }
 
-function renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName) {
-    const content = document.getElementById('izvjestaji-po-odjelima-prikaz');
+function renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName, prefix = 'izvjestaji-po-odjelima') {
+    const content = document.getElementById(prefix + '-prikaz');
     if (!content) return;
 
     if (!odjeli.length) {
@@ -1159,30 +1163,30 @@ function renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName) {
 }
 
 // Pretraga po odjelu — sakrij/prikaži kartice
-function filterIzvjestajPoOdjelima() {
-    const input = document.getElementById('izvjestaji-po-odjelima-search');
+function filterIzvjestajPoOdjelima(prefix = 'izvjestaji-po-odjelima') {
+    const input = document.getElementById(prefix + '-search');
     if (!input) return;
     const q = input.value.toUpperCase().trim();
-    document.querySelectorAll('#izvjestaji-po-odjelima-prikaz .izvjestaj-odjel-card').forEach(card => {
+    document.querySelectorAll('#' + prefix + '-prikaz .izvjestaj-odjel-card').forEach(card => {
         const o = card.getAttribute('data-odjel') || '';
         card.style.display = (!q || o.indexOf(q) > -1) ? '' : 'none';
     });
-    filterIzvjestajiPoOdjelimaRadiliste();
+    filterIzvjestajiPoOdjelimaRadiliste(prefix);
 }
 
 // Filter po radilištu — sakrij/prikaži cijele grupe (banner + kartice)
-function filterIzvjestajiPoOdjelimaRadiliste() {
-    const select = document.getElementById('izvjestaji-po-odjelima-radiliste');
+function filterIzvjestajiPoOdjelimaRadiliste(prefix = 'izvjestaji-po-odjelima') {
+    const select = document.getElementById(prefix + '-radiliste');
     const val = select ? select.value : '';
-    document.querySelectorAll('#izvjestaji-po-odjelima-prikaz .izvjestaj-radiliste-grupa').forEach(grupa => {
+    document.querySelectorAll('#' + prefix + '-prikaz .izvjestaj-radiliste-grupa').forEach(grupa => {
         const rad = grupa.getAttribute('data-radiliste') || '';
         grupa.style.display = (!val || rad === val) ? '' : 'none';
     });
 }
 
 // Popuni radiliste dropdown na osnovu trenutno učitanih odjela (alfabetski, sa "Sva radilišta")
-function populateIzvjestajiPoOdjelimaRadiliste(odjeli) {
-    const select = document.getElementById('izvjestaji-po-odjelima-radiliste');
+function populateIzvjestajiPoOdjelimaRadiliste(odjeli, prefix = 'izvjestaji-po-odjelima') {
+    const select = document.getElementById(prefix + '-radiliste');
     if (!select) return;
     const prev = select.value;
     const radilista = new Set();
@@ -1198,8 +1202,8 @@ function populateIzvjestajiPoOdjelimaRadiliste(odjeli) {
 }
 
 // Štampaj — otvori sadržaj u print prozoru
-function printIzvjestajPoOdjelima() {
-    const content = document.getElementById('izvjestaji-po-odjelima-prikaz');
+function printIzvjestajPoOdjelima(prefix = 'izvjestaji-po-odjelima') {
+    const content = document.getElementById(prefix + '-prikaz');
     if (!content || !content.querySelector('.izvjestaj-odjel-card')) {
         alert('Podaci još nisu učitani. Molimo sačekajte.');
         return;
@@ -1212,14 +1216,14 @@ function printIzvjestajPoOdjelima() {
         alert('Nema vidljivih odjela za štampu — provjerite filter radilišta/pretragu.');
         return;
     }
-    const yearEl = document.getElementById('izvjestaji-po-odjelima-year');
-    const monthEl = document.getElementById('izvjestaji-po-odjelima-month');
+    const yearEl = document.getElementById(prefix + '-year');
+    const monthEl = document.getElementById(prefix + '-month');
     const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
     const monthName = mjeseciNazivi[parseInt(monthEl.value)] + ' ' + yearEl.value;
     const datumStampe = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
     // Ako je odabrano konkretno radilište, štampamo samo taj dio izvještaja
-    const radilisteSelect = document.getElementById('izvjestaji-po-odjelima-radiliste');
+    const radilisteSelect = document.getElementById(prefix + '-radiliste');
     const radilisteNaziv = radilisteSelect && radilisteSelect.value
         ? (radilisteSelect.options[radilisteSelect.selectedIndex].textContent || '')
         : '';

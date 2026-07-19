@@ -197,6 +197,7 @@
                     { id: 'poslovodja-stanje', icon: '📦', label: 'Stanje zaliha' },
                     { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
                     { id: 'poslovodja-pregled', icon: '📑', label: 'PREGLED' },
+                    { id: 'poslovodja-izvjestaj-odjeli', icon: '🏭', label: 'Izvještaj po odjelima' },
                     { id: 'poslovodja-unosi', icon: '📝', label: 'Dodani unosi', hasBadge: true }
                 ];
             } else {
@@ -446,7 +447,7 @@
                 'pending-unosi-content',
                 'poslovodja-stanje-content',
                 'poslovodja-sjeca-content', 'poslovodja-otprema-content',
-                'poslovodja-pregled-content', 'poslovodja-unosi-content',
+                'poslovodja-pregled-content', 'poslovodja-izvjestaj-odjeli-content', 'poslovodja-unosi-content',
                 'izvjestaji-content', 'izvjestaji-primac-content', 'izvjestaji-otpremac-content',
                 'mjesecni-sortimenti-content', 'stanje-odjela-admin-content',
                 'dinamika-content', 'kubikator-content', 'stanje-zaliha-content',
