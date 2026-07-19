@@ -355,7 +355,8 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
         // SEDMICA ćelija sa rowspan - tamna pozadina, dvored prikaz
         bodyHtml += `<tr class="week-totals-row${separatorClass}">`;
         bodyHtml += `<td class="week-label-cell" rowspan="${odjeli.length + 1}">`;
-        bodyHtml += `<span class="week-date">${week.dateRange}</span>`;
+        // Dvored prikaz (od / do) da dug datum ne prelazi u susjednu kolonu
+        bodyHtml += `<span class="week-date">${week.dateRange.replace(' - ', '<br>– ')}</span>`;
         bodyHtml += `</td>`;
         bodyHtml += `<td><strong>UKUPNO</strong></td>`;
         sortimentiNazivi.forEach(s => {
@@ -770,15 +771,15 @@ function printIzvjestaj(tip) {
 
   /* Sedmični specifični stilovi */
   .week-label-cell {
-    background: #fef3c7 !important;
-    color: #92400e !important;
+    background: #1e3a5f !important;
+    color: #fff !important;
     font-weight: 800;
     text-align: center !important;
     vertical-align: middle;
     padding: 8px !important;
-    border-right: 3px solid #d97706 !important;
+    border-right: 3px solid #14304f !important;
   }
-  .week-date { display: block; font-size: 14px; font-weight: 800; color: #92400e; }
+  .week-date { display: block; font-size: 13px; font-weight: 800; color: #fff; line-height: 1.4; }
   .week-totals-row td { background: #dbeafe; font-weight: 700; color: #1e40af; }
   .week-totals-row .week-label-cell { background: #1e3a5f !important; color: #fff !important; }
   .week-separator td { border-top: 2px solid #1e3a5f; }
