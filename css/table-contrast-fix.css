@@ -1031,6 +1031,12 @@ th[style*="color: white"] {
     overflow: hidden;
 }
 
+/* Sedmični tabele — lakši, moderniji okvir (bez teškog tamnog ruba) */
+table[id^="izvjestaji-sedmicni"].izvjestaj-week-table {
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
 /* Header - tamno siva, uniformna (default za sve .izvjestaj-week-table —
    dijele je i mjesečni i primac/otpremac portal tabele, ne samo sedmični) */
 .izvjestaj-week-table thead th {
@@ -1060,22 +1066,26 @@ th[style*="color: white"] {
     border-right: 2px solid #4b5563;
 }
 
-/* Sedmični izvještaj (Izvještaji tab) — zaglavlje u svijetlo antracit boji,
-   ista kao kolona 1 (datum) i UKUPNO red. Skopirano samo na sedmične tabele
-   preko ID prefiksa jer .izvjestaj-week-table klasu dijele i mjesečna
-   tabela i primac/otpremac portal tabele, koje ostaju u default boji. */
+/* Sedmični izvještaj + Sedmični po radniku (Izvještaji tab) — moderan,
+   svjetliji dizajn: bijela/svijetlo siva pozadina zaglavlja umjesto punih
+   tamnih blokova, indigo akcent za kolonu 1 (datum) i UKUPNO redove.
+   Skopirano samo na sedmične tabele preko ID prefiksa jer
+   .izvjestaj-week-table klasu dijele i mjesečna tabela i primac/otpremac
+   portal tabele, koje ostaju u default (tamnijoj) boji. */
 table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th {
-    background: #57606a !important;
-    border-color: #3f464d;
+    background: #f8fafc !important;
+    color: #475569 !important;
+    border-color: #e2e8f0;
 }
 
 table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th:first-child,
 table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-sedmica {
-    background: #57606a !important;
+    background: #eef2ff !important;
+    color: #4338ca !important;
     width: 140px;
     min-width: 140px;
     max-width: 140px;
-    border-right: 3px solid #3f464d;
+    border-right: 3px solid #c7d2fe;
 }
 
 /* Body rows */
@@ -1129,14 +1139,15 @@ table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-sedmica {
     background: #e0f2fe !important;
 }
 
-/* ---- Datum sedmice ćelija (rowspan, svijetlo antracit boja ista kao zaglavlje i UKUPNO red) ---- */
+/* ---- Datum sedmice ćelija (rowspan) — svijetlo indigo, moderan card-akcent
+   umjesto punog tamnog bloka; ista paleta kao zaglavlje i UKUPNO red ---- */
 .izvjestaj-week-table tbody td.week-label-cell {
-    background: #57606a !important;
-    color: #ffffff !important;
+    background: #eef2ff !important;
+    color: #3730a3 !important;
     text-align: center;
     vertical-align: middle;
     padding: 10px 6px;
-    border-right: 3px solid #3f464d;
+    border-right: 3px solid #c7d2fe;
     width: 140px;
     min-width: 140px;
     max-width: 140px;
@@ -1150,27 +1161,27 @@ table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-sedmica {
     display: block;
     font-size: 14px;
     font-weight: 800;
-    color: #ffffff;
+    color: #3730a3;
     line-height: 1.4;
     letter-spacing: 0.2px;
 }
 
 /* ---- Separator između sedmica ---- */
 .izvjestaj-week-table tbody tr.week-separator td {
-    border-top: 3px solid #374151;
+    border-top: 2px solid #e2e8f0;
 }
 
-/* ---- UKUPNO SEDMICA red - ista svijetlo antracit boja kao zaglavlje i kolona 1 ---- */
+/* ---- UKUPNO SEDMICA red - svijetlo plava, ista porodica boja kao kolona 1 ---- */
 .izvjestaj-week-table tbody tr.week-totals-row {
-    background: #57606a !important;
+    background: #eff6ff !important;
 }
 
 .izvjestaj-week-table tbody tr.week-totals-row td {
-    color: #ffffff !important;
+    color: #1e40af !important;
     font-weight: 800 !important;
     font-size: 13px;
     padding: 10px 10px;
-    border-color: #3f464d;
+    border-color: #bfdbfe;
 }
 
 /* ---- Detail redovi (odjeli) ---- */
@@ -1209,23 +1220,24 @@ table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-sedmica {
     background: #f8fafc;
 }
 
-/* ---- GRAND TOTAL (UKUPNO MJESEC) ---- */
+/* ---- GRAND TOTAL (UKUPNO MJESEC) — najjači akcent u tabeli, ali i dalje
+   svijetao: indigo-200 pozadina + tamno indigo tekst, umjesto crne. ---- */
 .izvjestaj-week-table tbody tr.grand-totals-row {
-    background: #1e293b !important;
-    border-top: 3px solid #0f172a;
+    background: #e0e7ff !important;
+    border-top: 2px solid #818cf8;
 }
 
 .izvjestaj-week-table tbody tr.grand-totals-row td {
-    color: #ffffff !important;
+    color: #3730a3 !important;
     font-weight: 800 !important;
     font-size: 14px;
     padding: 14px 10px;
-    border-color: #334155;
+    border-color: #c7d2fe;
 }
 
 .izvjestaj-week-table tbody tr.grand-totals-row td:first-child {
-    background: #0f172a !important;
-    color: #ffffff !important;
+    background: #c7d2fe !important;
+    color: #312e81 !important;
     text-align: left;
     font-size: 14px;
     letter-spacing: 0.5px;

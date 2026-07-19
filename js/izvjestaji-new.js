@@ -759,7 +759,7 @@ function printIzvjestaj(tip) {
     letter-spacing: 0.3px;
   }
   thead th:first-child { text-align: left; }
-  ${isSedmicni || isSedmicniRadnik ? 'thead th { background: #57606a !important; border-color: #3f464d !important; }' : ''}
+  ${isSedmicni || isSedmicniRadnik ? 'thead th { background: #f8fafc !important; color: #475569 !important; border-color: #e2e8f0 !important; }' : ''}
   tbody tr { background: #fff; }
   tbody tr:nth-child(even) { background: #f0f4f8; }
   tbody td {
@@ -770,25 +770,26 @@ function printIzvjestaj(tip) {
   }
   tbody td:first-child { text-align: left; font-weight: 600; color: #1e3a5f; }
 
-  /* Sedmični specifični stilovi — svijetlo antracit boja, ista kao zaglavlje i UKUPNO red */
+  /* Sedmični specifični stilovi — moderan svjetliji dizajn (indigo/plava
+     porodica boja), ista paleta kao zaglavlje i UKUPNO redovi */
   .week-label-cell {
-    background: #57606a !important;
-    color: #fff !important;
+    background: #eef2ff !important;
+    color: #3730a3 !important;
     font-weight: 800;
     text-align: center !important;
     vertical-align: middle;
     padding: 8px !important;
-    border-right: 3px solid #3f464d !important;
+    border-right: 3px solid #c7d2fe !important;
   }
-  .week-date { display: block; font-size: 13px; font-weight: 800; color: #fff; line-height: 1.4; }
-  .week-totals-row td { background: #57606a; font-weight: 700; color: #fff; }
-  .week-totals-row .week-label-cell { background: #57606a !important; color: #fff !important; }
-  .week-separator td { border-top: 2px solid #1e3a5f; }
+  .week-date { display: block; font-size: 13px; font-weight: 800; color: #3730a3; line-height: 1.4; }
+  .week-totals-row td { background: #eff6ff; font-weight: 700; color: #1e40af; }
+  .week-totals-row .week-label-cell { background: #eef2ff !important; color: #3730a3 !important; }
+  .week-separator td { border-top: 2px solid #e2e8f0; }
   .grand-totals-row td {
-    background: #1e3a5f !important;
-    color: #fff !important;
+    background: #e0e7ff !important;
+    color: #3730a3 !important;
     font-weight: 700;
-    border-color: #1e3a5f;
+    border-color: #c7d2fe;
   }
 
   /* Ukupno row za mjesečni — crna slova s bijelim outlineom umjesto bijelih
