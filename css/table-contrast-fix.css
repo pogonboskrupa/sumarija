@@ -1110,37 +1110,28 @@ th[style*="color: white"] {
     background: #e0f2fe !important;
 }
 
-/* ---- SEDMICA label ćelija (rowspan, tamna pozadina) ---- */
+/* ---- Datum sedmice ćelija (rowspan, oker/svijetlo zlatna pozadina) ---- */
 .izvjestaj-week-table tbody td.week-label-cell {
-    background: #1e293b !important;
-    color: #ffffff !important;
+    background: #fef3c7 !important;
+    color: #92400e !important;
     text-align: center;
     vertical-align: middle;
-    padding: 8px 6px;
-    border-right: 2px solid #334155;
-    width: 100px;
-    min-width: 100px;
-    max-width: 110px;
+    padding: 10px 8px;
+    border-right: 3px solid #d97706;
+    width: 150px;
+    min-width: 150px;
+    max-width: 165px;
     white-space: nowrap;
     position: sticky;
     left: 0;
     z-index: 12;
 }
 
-.izvjestaj-week-table tbody td.week-label-cell .week-num {
-    display: block;
-    font-size: 18px;
-    font-weight: 800;
-    letter-spacing: 1px;
-    line-height: 1.2;
-}
-
 .izvjestaj-week-table tbody td.week-label-cell .week-date {
     display: block;
-    font-size: 11px;
-    font-weight: 400;
-    color: #94a3b8;
-    margin-top: 2px;
+    font-size: 16px;
+    font-weight: 800;
+    color: #92400e;
     letter-spacing: 0.3px;
 }
 

@@ -237,7 +237,7 @@ function calculateWeeksInMonth(year, month) {
             start: weekStart,
             end: weekEnd,
             label: `S${wNum}`,
-            dateRange: `${ws}.${mm} - ${we}.${mm}`
+            dateRange: `${ws}.${mm}.${year} - ${we}.${mm}.${year}`
         });
 
         weekStart = weekEnd + 1;
@@ -355,7 +355,6 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
         // SEDMICA ćelija sa rowspan - tamna pozadina, dvored prikaz
         bodyHtml += `<tr class="week-totals-row${separatorClass}">`;
         bodyHtml += `<td class="week-label-cell" rowspan="${odjeli.length + 1}">`;
-        bodyHtml += `<span class="week-num">${week.label}</span>`;
         bodyHtml += `<span class="week-date">${week.dateRange}</span>`;
         bodyHtml += `</td>`;
         bodyHtml += `<td><strong>UKUPNO</strong></td>`;
@@ -771,15 +770,15 @@ function printIzvjestaj(tip) {
 
   /* Sedmični specifični stilovi */
   .week-label-cell {
-    background: #1e3a5f !important;
-    color: #fff !important;
-    font-weight: 700;
+    background: #fef3c7 !important;
+    color: #92400e !important;
+    font-weight: 800;
     text-align: center !important;
     vertical-align: middle;
-    padding: 6px !important;
+    padding: 8px !important;
+    border-right: 3px solid #d97706 !important;
   }
-  .week-num { display: block; font-size: 11px; font-weight: 700; }
-  .week-date { display: block; font-size: 8px; color: #93c5fd; margin-top: 2px; }
+  .week-date { display: block; font-size: 14px; font-weight: 800; color: #92400e; }
   .week-totals-row td { background: #dbeafe; font-weight: 700; color: #1e40af; }
   .week-totals-row .week-label-cell { background: #1e3a5f !important; color: #fff !important; }
   .week-separator td { border-top: 2px solid #1e3a5f; }
