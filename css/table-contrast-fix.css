@@ -1031,7 +1031,8 @@ th[style*="color: white"] {
     overflow: hidden;
 }
 
-/* Header - tamno siva, uniformna */
+/* Header - tamno siva, uniformna (default za sve .izvjestaj-week-table —
+   dijele je i mjesečni i primac/otpremac portal tabele, ne samo sedmični) */
 .izvjestaj-week-table thead th {
     background: #1f2937 !important;
     color: #ffffff !important;
@@ -1057,6 +1058,24 @@ th[style*="color: white"] {
     max-width: 110px;
     white-space: nowrap;
     border-right: 2px solid #4b5563;
+}
+
+/* Sedmični izvještaj (Izvještaji tab) — zaglavlje u oker boji, ista kao
+   kolona 1 (datum) i UKUPNO red. Skopirano samo na sedmične tabele preko
+   ID prefiksa jer .izvjestaj-week-table klasu dijele i mjesečna tabela i
+   primac/otpremac portal tabele, koje ostaju u default tamnoj boji. */
+table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th {
+    background: #b45309 !important;
+    border-color: #92400e;
+}
+
+table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th:first-child,
+table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-sedmica {
+    background: #b45309 !important;
+    width: 140px;
+    min-width: 140px;
+    max-width: 140px;
+    border-right: 3px solid #92400e;
 }
 
 /* Body rows */
@@ -1110,14 +1129,14 @@ th[style*="color: white"] {
     background: #e0f2fe !important;
 }
 
-/* ---- Datum sedmice ćelija (rowspan, tamno plava kao zaglavlje tabele) ---- */
+/* ---- Datum sedmice ćelija (rowspan, oker boja ista kao zaglavlje i UKUPNO red) ---- */
 .izvjestaj-week-table tbody td.week-label-cell {
-    background: #1e3a5f !important;
+    background: #b45309 !important;
     color: #ffffff !important;
     text-align: center;
     vertical-align: middle;
     padding: 10px 6px;
-    border-right: 3px solid #14304f;
+    border-right: 3px solid #92400e;
     width: 140px;
     min-width: 140px;
     max-width: 140px;
@@ -1141,9 +1160,9 @@ th[style*="color: white"] {
     border-top: 3px solid #374151;
 }
 
-/* ---- UKUPNO SEDMICA red ---- */
+/* ---- UKUPNO SEDMICA red - ista oker boja kao zaglavlje i kolona 1 ---- */
 .izvjestaj-week-table tbody tr.week-totals-row {
-    background: #059669 !important;
+    background: #b45309 !important;
 }
 
 .izvjestaj-week-table tbody tr.week-totals-row td {
@@ -1151,7 +1170,7 @@ th[style*="color: white"] {
     font-weight: 800 !important;
     font-size: 13px;
     padding: 10px 10px;
-    border-color: #047857;
+    border-color: #92400e;
 }
 
 /* ---- Detail redovi (odjeli) ---- */
