@@ -784,7 +784,7 @@ function printIzvjestaj(tip) {
   .week-date { display: block; font-size: 13px; font-weight: 800; color: #3730a3; line-height: 1.4; }
   .week-totals-row td { background: #eff6ff; font-weight: 700; color: #1e40af; }
   .week-totals-row .week-label-cell { background: #eef2ff !important; color: #3730a3 !important; }
-  .week-separator td { border-top: 2px solid #e2e8f0; }
+  .week-separator td { border-top: 3px solid #a5b4fc; }
   .grand-totals-row td {
     background: #e0e7ff !important;
     color: #3730a3 !important;

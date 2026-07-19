@@ -1166,9 +1166,11 @@ table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-sedmica {
     letter-spacing: 0.2px;
 }
 
-/* ---- Separator između sedmica ---- */
+/* ---- Separator između sedmica — jači, vidljiviji rub (indigo, ista
+   porodica boja kao ostatak dizajna, tanji od UKUPNO MJESEC ruba
+   ispod radi zadržane hijerarhije) ---- */
 .izvjestaj-week-table tbody tr.week-separator td {
-    border-top: 2px solid #e2e8f0;
+    border-top: 3px solid #a5b4fc;
 }
 
 /* ---- UKUPNO SEDMICA red - svijetlo plava, ista porodica boja kao kolona 1 ---- */
