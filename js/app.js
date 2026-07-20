@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.56';
+        const APP_VERSION = '1.4.57';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -5102,8 +5102,8 @@
                     // ✅ Zaglavlje datuma - čist, pro dizajn
                     const numSortimenti = data.sortimentiNazivi.length;
                     bodyHTML += `
-                        <tr style="background: linear-gradient(180deg, #f97316 0%, #ea580c 100%); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.1);">
-                            <td colspan="${2 + numSortimenti}" style="font-weight: 700; font-size: 13px; padding: 10px 14px; text-align: left; border-top: 2px solid #c2410c; color: #fff; letter-spacing: 0.5px; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">
+                        <tr style="background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.08);">
+                            <td colspan="${2 + numSortimenti}" style="font-weight: 700; font-size: 13px; padding: 10px 14px; text-align: left; border-top: 2px solid #f59e0b; color: #92400e; letter-spacing: 0.5px;">
                                 📅 ${datum} &mdash; ${dayName}
                             </td>
                         </tr>
@@ -5147,15 +5147,15 @@
                     const dailyTotalsCells = data.sortimentiNazivi.map(s => {
                         const val = dailyTotals[s];
                         const displayVal = val > 0 ? val.toFixed(2) : '-';
-                        return `<td style="border: 1px solid #c2410c; font-family: 'Courier New', monospace; font-size: 11px; text-align: right; padding: 8px 5px; font-weight: 700; background: #fff7ed; color: #9a3412;">${displayVal}</td>`;
+                        return `<td style="border: 1px solid #f59e0b; font-family: 'Courier New', monospace; font-size: 11px; text-align: right; padding: 8px 5px; font-weight: 700; background: #fffbeb; color: #92400e;">${displayVal}</td>`;
                     }).join('');
 
                     bodyHTML += `
-                        <tr style="background: #fff7ed; border-bottom: 2px solid #ea580c;">
-                            <td style="position: sticky; left: 0; background: #fff7ed; z-index: 10; border-right: 2px solid #e2e8f0; padding: 8px 8px; font-size: 11px; font-weight: 700; color: #c2410c; box-shadow: 2px 0 3px rgba(0,0,0,0.04); border: 1px solid #c2410c;">
+                        <tr style="background: #fffbeb; border-bottom: 2px solid #f59e0b;">
+                            <td style="position: sticky; left: 0; background: #fffbeb; z-index: 10; border-right: 2px solid #e2e8f0; padding: 8px 8px; font-size: 11px; font-weight: 700; color: #92400e; box-shadow: 2px 0 3px rgba(0,0,0,0.04); border: 1px solid #f59e0b;">
                                 UKUPNO ${datum}
                             </td>
-                            <td style="background: #fff7ed; border: 1px solid #c2410c;"></td>
+                            <td style="background: #fffbeb; border: 1px solid #f59e0b;"></td>
                             ${dailyTotalsCells}
                         </tr>
                     `;
@@ -5418,7 +5418,7 @@
 
                 if (!data.radilista || data.radilista.length === 0) {
                     document.getElementById('primaci-radilista-header').innerHTML = `
-                        <tr><th style="background: #ea580c; color: white; padding: 12px;">
+                        <tr><th style="background: #fef3c7; color: #92400e; padding: 12px;">
                             🏗️ Prikaz po radilištima - ${year}
                         </th></tr>
                     `;
@@ -5435,12 +5435,12 @@
 
                 let headerHTML = `
                     <tr>
-                        <th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
+                        <th style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 12px; position: sticky; top: 0; z-index: 20;">
                             🏗️ Radilište
                         </th>
                 `;
                 mjeseci.forEach(mj => {
-                    headerHTML += `<th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 12px;">${mj}</th>`;
+                    headerHTML += `<th style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 12px;">${mj}</th>`;
                 });
                 headerHTML += `
                     <th style="background: linear-gradient(135deg, #7c2d12, #451a03); color: white; padding: 12px; font-weight: 900; position: sticky; top: 0; z-index: 20;">
@@ -5478,12 +5478,12 @@
                 // Render godišnju rekapitulaciju po sortimentima
                 let recapHeaderHTML = `
                     <tr>
-                        <th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
+                        <th style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 12px; position: sticky; top: 0; z-index: 20;">
                             🏗️ Radilište
                         </th>
                 `;
                 data.sortimentiNazivi.forEach(s => {
-                    recapHeaderHTML += `<th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 10px;">${s}</th>`;
+                    recapHeaderHTML += `<th style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 10px;">${s}</th>`;
                 });
                 recapHeaderHTML += `</tr>`;
                 document.getElementById('primaci-radilista-recap-header').innerHTML = recapHeaderHTML;
@@ -5542,7 +5542,7 @@
 
                 if (!data.izvodjaci || data.izvodjaci.length === 0) {
                     document.getElementById('primaci-izvodjaci-header').innerHTML = `
-                        <tr><th style="background: #ea580c; color: white; padding: 12px;">
+                        <tr><th style="background: #fef3c7; color: #92400e; padding: 12px;">
                             👷 Prikaz po izvođačima - ${year}
                         </th></tr>
                     `;
@@ -5559,12 +5559,12 @@
 
                 let headerHTML = `
                     <tr>
-                        <th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
+                        <th style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 12px; position: sticky; top: 0; z-index: 20;">
                             👷 Izvođač radova
                         </th>
                 `;
                 mjeseci.forEach(mj => {
-                    headerHTML += `<th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 12px;">${mj}</th>`;
+                    headerHTML += `<th style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 12px;">${mj}</th>`;
                 });
                 headerHTML += `
                     <th style="background: linear-gradient(135deg, #7c2d12, #451a03); color: white; padding: 12px; font-weight: 900; position: sticky; top: 0; z-index: 20;">
@@ -5602,12 +5602,12 @@
                 // Render godišnju rekapitulaciju po sortimentima
                 let recapHeaderHTML = `
                     <tr>
-                        <th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
+                        <th style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 12px; position: sticky; top: 0; z-index: 20;">
                             👷 Izvođač radova
                         </th>
                 `;
                 data.sortimentiNazivi.forEach(s => {
-                    recapHeaderHTML += `<th style="background: linear-gradient(135deg, #ea580c, #dc2626); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 10px;">${s}</th>`;
+                    recapHeaderHTML += `<th style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 10px;">${s}</th>`;
                 });
                 recapHeaderHTML += `</tr>`;
                 document.getElementById('primaci-izvodjaci-recap-header').innerHTML = recapHeaderHTML;
