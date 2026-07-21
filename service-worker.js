@@ -1,6 +1,6 @@
 // ========== Service Worker - Offline Support ==========
 
-const CACHE_VERSION = 'v12';
+const CACHE_VERSION = 'v13';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
 // Install — pre-keširaj samo offline.html (fallback koji se inače nikad ne
@@ -86,7 +86,11 @@ self.addEventListener('fetch', (event) => {
 });
 
 function _cacheIfOk(response, request) {
-    if (response && response.status === 200) {
+    // status 200 = normalan (isti-origin) odgovor. type 'opaque' = cross-origin
+    // no-cors odgovor (npr. OSM tile <img>) — status je UVIJEK 0 po spec-u bez
+    // obzira na stvarni HTTP status, ali Cache API dozvoljava da se ipak snimi
+    // i posluži offline (standardan pristup za offline tile keširanje).
+    if (response && (response.status === 200 || response.type === 'opaque')) {
         caches.open(CACHE_NAME).then(c => c.put(request, response));
     }
 }
