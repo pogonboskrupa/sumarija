@@ -30,16 +30,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            min-width: 48px;
-            min-height: 48px;
-            border-radius: 50%;
+            gap: 8px;
+            min-height: 53px;
+            padding: 8px 20px;
+            border-radius: 30px;
             background: #eff6ff;
             border: 2px solid #93c5fd;
             cursor: pointer;
             transition: background 0.15s ease;
         }
         .cloud-sync-btn:hover { background: #dbeafe; }
-        .cloud-sync-btn #check-data-icon { font-size: 26px; line-height: 1; }
+        .cloud-sync-btn .cloud-sync-label { font-size: 15px; font-weight: 700; color: #1e40af; white-space: nowrap; }
+        .cloud-sync-btn #check-data-icon { font-size: 29px; line-height: 1; }
         .user-menu { position: relative; }
         .user-menu-button { background: #f3f4f6; color: #374151; padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .user-menu-button:hover { background: #e5e7eb; }
