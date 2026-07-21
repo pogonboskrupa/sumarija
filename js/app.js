@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.60';
+        const APP_VERSION = '1.4.61';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6618,13 +6618,13 @@
 
                 // Generiši HTML tabelu
                 let html = `
-                    <div style="padding: 16px;">
-                        <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div style="padding: 16px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; min-height: 0;">
+                        <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; flex-shrink: 0;">
                             <div style="color: #0891b2; font-weight: 600;">
                                 📊 Ukupno ${allData.length} otprema u ${year}. godini
                             </div>
                         </div>
-                        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <div style="flex: 1; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch;">
                             <table style="width: 100%; border-collapse: collapse; font-size: 13px;" id="kupac-details-table">
                                 <thead>
                                     <tr style="background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);">
