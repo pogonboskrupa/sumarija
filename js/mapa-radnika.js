@@ -3,8 +3,12 @@
 // radio su istaknuti (zeleno, jače popunjeno), ostali su blijedi/neutralni
 // radi orijentacije. Klik na ISTAKNUTI odjel → popup sa NJEGOVIM podacima za
 // taj odjel (m³ po sortimentu, zadnji datum); klik na neistaknuti odjel ne radi
-// ništa (nema podataka radnika za taj odjel). Dugme "Moja lokacija" → GPS pin
-// (radi i offline).
+// ništa (nema podataka radnika za taj odjel).
+//
+// Dugmad ("📍 Moja lokacija", "⏺️ Snimi trag", "🗑️ Obriši tragove") su
+// UNUTAR mape kao Leaflet custom control (gornji desni ugao), ne u zaglavlju
+// stranice. Snimljeni trag se čuva u localStorage (po korisniku) i ostaje
+// vidljiv i nakon zatvaranja/ponovnog otvaranja mape.
 //
 // Dizajn: zaseban, lagan Leaflet instance (svoj container #radnik-mapa-map),
 // NE dira postojeći admin karta-odjela.js singleton.
@@ -15,6 +19,12 @@
     var GEOJSON_URL = 'data/odjeli.geojson';
     // Lokacija Šumarije Bosanska Krupa (default centar dok GPS ne stigne)
     var SUMARIJA_LATLNG = [44.883425, 16.154427];
+
+    // Filter tačaka trага — ne dodavaj novu tačku ako je bliže od MIN_DIST_M
+    // metara ILI je prošlo manje od MIN_TIME_MS od zadnje tačke (GPS na terenu
+    // zna "drhtati" u mjestu — bez ovoga bi se localStorage brzo napunio).
+    var TRAG_MIN_DIST_M = 8;
+    var TRAG_MIN_TIME_MS = 3000;
 
     // ---- Ključ helperi — OGLEDALO js/karta-odjela.js (_normKey/_labelKey).
     // Namjerno duplirano da se ne dira radni admin map modul. Sheet ODJEL kolona
@@ -42,6 +52,18 @@
     var _locMarker = null;
     var _locCircle = null;
     var _odjeliByKey = null; // labelKey/normKey -> radnikov odjel objekat
+
+    // ---- Snimanje traga ----
+    var _recording = false;
+    var _watchId = null;
+    var _currentTrackPoints = []; // [[lat,lng], ...]
+    var _currentTrackPolyline = null;
+    var _savedTrackLayers = [];   // L.polyline instance za već sačuvane tragove
+    var _lastTragTs = 0;
+    var _tragStartIso = null;
+
+    var _locBtnEl = null;
+    var _tragBtnEl = null;
 
     function _fmt(n) {
         if (n == null || isNaN(n)) return '—';
@@ -141,13 +163,12 @@
 
     // ---- MOJA LOKACIJA (GPS) ----
     function _locateMe() {
-        var btn = document.getElementById('radnik-mapa-loc-btn');
         if (!navigator.geolocation) {
             alert('Vaš uređaj ne podržava geolokaciju.');
             return;
         }
         if (!_map) return;
-        if (btn) { btn.disabled = true; btn.textContent = '📍 Tražim...'; }
+        if (_locBtnEl) { _locBtnEl.disabled = true; _locBtnEl.textContent = '📍 Tražim...'; }
 
         navigator.geolocation.getCurrentPosition(
             function(pos) {
@@ -162,10 +183,10 @@
                     radius: 9, color: '#1d4ed8', fillColor: '#3b82f6', fillOpacity: 0.95, weight: 3
                 }).bindTooltip('📍 Vi ste ovdje', { permanent: true, direction: 'top', offset: [0, -8] }).addTo(_map);
                 _map.setView(ll, 15);
-                if (btn) { btn.disabled = false; btn.textContent = '📍 Moja lokacija'; }
+                if (_locBtnEl) { _locBtnEl.disabled = false; _locBtnEl.textContent = '📍 Moja lokacija'; }
             },
             function(err) {
-                if (btn) { btn.disabled = false; btn.textContent = '📍 Moja lokacija'; }
+                if (_locBtnEl) { _locBtnEl.disabled = false; _locBtnEl.textContent = '📍 Moja lokacija'; }
                 var msg = err.code === 1
                     ? 'Pristup lokaciji je odbijen. Dozvolite lokaciju u postavkama uređaja/browsera.'
                     : (err.code === 3 ? 'Isteklo vrijeme čekanja na GPS signal. Pokušajte ponovo na otvorenom.' : 'Nije moguće dobiti lokaciju.');
@@ -174,7 +195,146 @@
             { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
         );
     }
-    window.mapaRadnikaLocateMe = _locateMe;
+
+    // ---- SNIMANJE TRAGA ----
+    function _tragStorageKey() {
+        var uname = (window.currentUser && window.currentUser.username) || 'anon';
+        return 'mapa_radnika_tragovi_' + uname;
+    }
+
+    function _loadSavedTracks() {
+        try {
+            var raw = localStorage.getItem(_tragStorageKey());
+            return raw ? JSON.parse(raw) : [];
+        } catch (_) { return []; }
+    }
+
+    function _saveTracks(tracks) {
+        try { localStorage.setItem(_tragStorageKey(), JSON.stringify(tracks)); } catch (_) {}
+    }
+
+    function _drawSavedTracks() {
+        _savedTrackLayers.forEach(function(l) { _map.removeLayer(l); });
+        _savedTrackLayers = [];
+        _loadSavedTracks().forEach(function(t) {
+            if (!t.points || t.points.length < 2) return;
+            var pl = L.polyline(t.points, { color: '#7c3aed', weight: 3, opacity: 0.6, dashArray: '6 6' }).addTo(_map);
+            pl.bindTooltip('Trag — ' + (t.start ? new Date(t.start).toLocaleString('bs-BA') : '?'), { sticky: true });
+            _savedTrackLayers.push(pl);
+        });
+    }
+
+    // Haversine distanca u metrima
+    function _distM(a, b) {
+        var R = 6371000;
+        var dLat = (b[0] - a[0]) * Math.PI / 180;
+        var dLng = (b[1] - a[1]) * Math.PI / 180;
+        var s = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(a[0] * Math.PI / 180) * Math.cos(b[0] * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+    }
+
+    function _onTragPosition(pos) {
+        var ll = [pos.coords.latitude, pos.coords.longitude];
+        var now = Date.now();
+        var last = _currentTrackPoints[_currentTrackPoints.length - 1];
+        if (last) {
+            var elapsed = now - _lastTragTs;
+            if (elapsed < TRAG_MIN_TIME_MS && _distM(last, ll) < TRAG_MIN_DIST_M) return;
+        }
+        _lastTragTs = now;
+        _currentTrackPoints.push(ll);
+        if (!_currentTrackPolyline) {
+            _currentTrackPolyline = L.polyline([ll], { color: '#dc2626', weight: 4, opacity: 0.85 }).addTo(_map);
+        } else {
+            _currentTrackPolyline.addLatLng(ll);
+        }
+    }
+
+    function _startTrag() {
+        if (!navigator.geolocation) {
+            alert('Vaš uređaj ne podržava geolokaciju.');
+            return;
+        }
+        _currentTrackPoints = [];
+        _lastTragTs = 0;
+        _tragStartIso = new Date().toISOString();
+        if (_currentTrackPolyline) { _map.removeLayer(_currentTrackPolyline); _currentTrackPolyline = null; }
+
+        _watchId = navigator.geolocation.watchPosition(_onTragPosition, function(err) {
+            console.error('[MapaRadnika] watchPosition greška:', err);
+        }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+
+        _recording = true;
+        if (_tragBtnEl) {
+            _tragBtnEl.textContent = '⏹️ Zaustavi snimanje';
+            _tragBtnEl.classList.add('recording');
+        }
+    }
+
+    function _stopTrag() {
+        if (_watchId != null) { navigator.geolocation.clearWatch(_watchId); _watchId = null; }
+        _recording = false;
+        if (_tragBtnEl) {
+            _tragBtnEl.textContent = '⏺️ Snimi trag';
+            _tragBtnEl.classList.remove('recording');
+        }
+
+        if (_currentTrackPoints.length >= 2) {
+            var tracks = _loadSavedTracks();
+            tracks.push({
+                start: _tragStartIso || new Date().toISOString(),
+                end: new Date().toISOString(),
+                points: _currentTrackPoints
+            });
+            _saveTracks(tracks);
+        }
+        if (_currentTrackPolyline) { _map.removeLayer(_currentTrackPolyline); _currentTrackPolyline = null; }
+        _currentTrackPoints = [];
+        _drawSavedTracks();
+    }
+
+    function _toggleTrag() {
+        if (_recording) _stopTrag();
+        else _startTrag();
+    }
+
+    function _clearTracks() {
+        if (!confirm('Obrisati sve sačuvane tragove? Ova radnja se ne može poništiti.')) return;
+        _saveTracks([]);
+        _drawSavedTracks();
+    }
+
+    // ---- Leaflet control (dugmad UNUTAR mape, gornji desni ugao) ----
+    function _addControls() {
+        var Ctrl = L.Control.extend({
+            options: { position: 'topright' },
+            onAdd: function() {
+                var div = L.DomUtil.create('div', 'radnik-mapa-controls');
+                L.DomEvent.disableClickPropagation(div);
+                L.DomEvent.disableScrollPropagation(div);
+
+                _locBtnEl = L.DomUtil.create('button', 'rm-loc-btn', div);
+                _locBtnEl.type = 'button';
+                _locBtnEl.textContent = '📍 Moja lokacija';
+                L.DomEvent.on(_locBtnEl, 'click', _locateMe);
+
+                _tragBtnEl = L.DomUtil.create('button', 'rm-trag-btn', div);
+                _tragBtnEl.type = 'button';
+                _tragBtnEl.textContent = '⏺️ Snimi trag';
+                L.DomEvent.on(_tragBtnEl, 'click', _toggleTrag);
+
+                var clearBtn = L.DomUtil.create('button', 'rm-clear-btn', div);
+                clearBtn.type = 'button';
+                clearBtn.textContent = '🗑️ Obriši tragove';
+                L.DomEvent.on(clearBtn, 'click', _clearTracks);
+
+                return div;
+            }
+        });
+        _map.addControl(new Ctrl());
+    }
 
     // ---- INICIJALIZACIJA ----
     // type: 'primac' | 'otpremac'
@@ -190,6 +350,8 @@
                 attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                 maxZoom: 18
             }).addTo(_map);
+            _addControls();
+            _drawSavedTracks();
         }
         // Leaflet mora preračunati veličinu nakon što tab postane vidljiv
         setTimeout(function() { if (_map) _map.invalidateSize(); }, 100);
