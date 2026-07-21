@@ -161,6 +161,10 @@
                     </div>
                 </div>
                 <div class="header-right">
+                    <button id="check-data-btn" class="cloud-sync-btn" onclick="checkForNewData(event)" title="Osvježi sve prikaze u pozadini (za offline pristup)">
+                        <span id="check-data-icon">☁️</span>
+                        <span id="check-data-dot" style="display:none;position:absolute;top:2px;right:2px;width:10px;height:10px;background:#dc2626;border-radius:50%;border:2px solid white;"></span>
+                    </button>
                     <div class="header-user">
                         <div class="header-user-name" id="user-name"></div>
                         <div class="header-user-role" id="user-role"></div>
@@ -175,10 +179,6 @@
                             <span>Android</span>
                         </button>
                     </div>
-                    <button id="check-data-btn" class="user-menu-button" onclick="checkForNewData(event)" title="Osvježi sve prikaze u pozadini (za offline pristup)" style="position:relative;margin-right:6px;">
-                        <span id="check-data-icon">☁️</span>
-                        <span id="check-data-dot" style="display:none;position:absolute;top:4px;right:4px;width:9px;height:9px;background:#dc2626;border-radius:50%;border:1.5px solid white;"></span>
-                    </button>
                     <div class="user-menu">
                         <button class="user-menu-button" onclick="toggleUserMenu(event)">
                             <span>⚙️</span>

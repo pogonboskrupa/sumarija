@@ -25,6 +25,21 @@
         .header-user { text-align: right; }
         .header-user-name { font-size: 13px; font-weight: 600; color: #1f2937; }
         .header-user-role { font-size: 11px; color: #4b5563; }
+        .cloud-sync-btn {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 48px;
+            min-height: 48px;
+            border-radius: 50%;
+            background: #eff6ff;
+            border: 2px solid #93c5fd;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .cloud-sync-btn:hover { background: #dbeafe; }
+        .cloud-sync-btn #check-data-icon { font-size: 26px; line-height: 1; }
         .user-menu { position: relative; }
         .user-menu-button { background: #f3f4f6; color: #374151; padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .user-menu-button:hover { background: #e5e7eb; }
