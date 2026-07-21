@@ -6,11 +6,12 @@ const SYNC_CONFIG = {
     DELTA_PRIMKA_ENDPOINT: null, // Set dynamically: buildApiUrl('delta_primka')
     DELTA_OTPREMA_ENDPOINT: null, // Set dynamically: buildApiUrl('delta_otprema')
 
-    // Smart scheduling
-    PEAK_HOURS_START: 7,  // 07:00
-    PEAK_HOURS_END: 9,    // 09:00
-    PEAK_CHECK_INTERVAL: 2 * 60 * 1000,  // 2 min tijekom peak hours
-    NORMAL_CHECK_INTERVAL: 2 * 60 * 60 * 1000,  // 2h van peak hours
+    // Smart scheduling — provjera SAMO radnim danima (pon-pet) 07:00-14:00
+    // (stvarno radno vrijeme unosa podataka; van tog prozora nema periodičnog
+    // pollinga, samo instant provjera pri otvaranju app-a i dalje radi uvijek)
+    WORK_HOURS_START: 7,   // 07:00
+    WORK_HOURS_END: 14,    // 14:00
+    CHECK_INTERVAL: 15 * 60 * 1000,  // 15 min tokom radnog prozora
 
     // Retry & timeout
     FETCH_TIMEOUT: 30000,  // 30s timeout
@@ -20,7 +21,6 @@ const SYNC_CONFIG = {
 
 let syncIntervalId = null;
 let lastSyncTimestamp = 0;
-let peakHoursUpdateDone = false;
 
 // Performance metrics
 const syncMetrics = {
@@ -242,61 +242,42 @@ async function performDeltaSync() {
     }
 }
 
-// Smart scheduling: češće 07-09h, rijetko van toga
-function isPeakHours() {
+// Radni prozor: pon-pet, 07:00-14:00 — jedino vrijeme kad se stvarno unose
+// novi podaci. Van njega periodični polling se preskače (instant provjera
+// pri otvaranju app-a i dalje radi uvijek, bez obzira na dan/sat).
+function isWorkingWindow() {
     const now = new Date();
     const hour = now.getHours();
     const isWeekday = now.getDay() >= 1 && now.getDay() <= 5; // Mon-Fri
-    return isWeekday && hour >= SYNC_CONFIG.PEAK_HOURS_START && hour < SYNC_CONFIG.PEAK_HOURS_END;
+    return isWeekday && hour >= SYNC_CONFIG.WORK_HOURS_START && hour < SYNC_CONFIG.WORK_HOURS_END;
 }
 
 function startSmartSync() {
-    const now = new Date();
-    const dayOfWeek = now.getDay(); // 0=Sunday, 6=Saturday
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-
-    // Vikend: ISKLJUČI data sync (nema unosa)
-    if (isWeekend) {
-        console.log('[SYNC] Smart sync SKIPPED (weekend - no data entry expected)');
-        return;
-    }
-
     // Stop existing interval
     if (syncIntervalId) {
         clearInterval(syncIntervalId);
     }
 
-    // Reset peak hours flag at start of day
-    if (now.getHours() < SYNC_CONFIG.PEAK_HOURS_START) {
-        peakHoursUpdateDone = false;
-    }
-
     function scheduleNextCheck() {
-        const interval = isPeakHours() ? SYNC_CONFIG.PEAK_CHECK_INTERVAL : SYNC_CONFIG.NORMAL_CHECK_INTERVAL;
-        console.log(`[SYNC] Next check in ${interval / 1000 / 60} min (${isPeakHours() ? 'PEAK' : 'NORMAL'} hours)`);
+        console.log(`[SYNC] Next check in ${SYNC_CONFIG.CHECK_INTERVAL / 1000 / 60} min (interval uvijek radi na 15 min; performDeltaSync se preskače van radnog prozora 07-14h pon-pet)`);
 
         syncIntervalId = setInterval(async () => {
+            if (!isWorkingWindow()) {
+                console.log('[SYNC] Van radnog prozora (07-14h pon-pet) — provjera preskočena');
+                return;
+            }
+
             const result = await performDeltaSync();
-
-            // If we got update during peak hours, mark as done
-            if (isPeakHours() && result.updated) {
-                peakHoursUpdateDone = true;
-                console.log('[SYNC] Peak hours update done, reducing frequency');
-            }
-
-            // If peak hours ended, reset flag for tomorrow
-            if (!isPeakHours()) {
-                peakHoursUpdateDone = false;
-            }
 
             // Trigger UI refresh if data updated
             if (result.updated && window.onDataSyncUpdate) {
                 window.onDataSyncUpdate(result);
             }
-        }, interval);
+        }, SYNC_CONFIG.CHECK_INTERVAL);
     }
 
-    // Initial check
+    // Initial check — radi UVIJEK bez obzira na dan/sat, korisnik treba
+    // vidjeti najnovije podatke čim otvori app (catch-up)
     performDeltaSync().then(result => {
         if (result.updated && window.onDataSyncUpdate) {
             window.onDataSyncUpdate(result);
