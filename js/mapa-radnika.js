@@ -1,11 +1,13 @@
 // ========== MAPA ODJELA — RADNIK (primač / otpremač) ==========
-// Prikazuje SAMO odjele u kojima je ulogovani radnik radio, na Leaflet mapi.
-// Klik na odjel → popup sa NJEGOVIM podacima za taj odjel (m³ po sortimentu,
-// zadnji datum). Dugme "Moja lokacija" → GPS pin (radi i offline).
+// Prikazuje SVE odjele na Leaflet mapi — odjeli u kojima je ulogovani radnik
+// radio su istaknuti (zeleno, jače popunjeno), ostali su blijedi/neutralni
+// radi orijentacije. Klik na ISTAKNUTI odjel → popup sa NJEGOVIM podacima za
+// taj odjel (m³ po sortimentu, zadnji datum); klik na neistaknuti odjel ne radi
+// ništa (nema podataka radnika za taj odjel). Dugme "Moja lokacija" → GPS pin
+// (radi i offline).
 //
 // Dizajn: zaseban, lagan Leaflet instance (svoj container #radnik-mapa-map),
-// NE dira postojeći admin karta-odjela.js singleton. Iscrtava samo radnikove
-// odjele (Leaflet `filter`), pa je lagan i na slabijim uređajima.
+// NE dira postojeći admin karta-odjela.js singleton.
 
 (function() {
     'use strict';
@@ -91,27 +93,34 @@
     function _renderLayer(geojson) {
         if (_layer) { _map.removeLayer(_layer); _layer = null; }
 
+        var radnikLayers = []; // samo poligoni gdje je radnik radio — za fitBounds
+
         _layer = L.geoJSON(geojson, {
-            // Iscrtaj SAMO radnikove odjele (labelKey ILI normKey match — normKey
-            // pokriva slučaj kad radnikov zapis ima /N a poligon je bazni odjel)
-            filter: function(feature) {
+            // Iscrtaj SVE odjele — radnikovi su istaknuti (zeleno), ostali blijedo/neutralno
+            style: function(feature) {
                 var k = _featureKeys(feature);
-                return _odjeliByKey.has(k.lk) || _odjeliByKey.has(k.nk);
-            },
-            style: function() {
-                return { color: '#047857', weight: 2, fillColor: '#10b981', fillOpacity: 0.35 };
+                var radio = _odjeliByKey.has(k.lk) || _odjeliByKey.has(k.nk);
+                return radio
+                    ? { color: '#047857', weight: 2, fillColor: '#10b981', fillOpacity: 0.45 }
+                    : { color: '#94a3b8', weight: 1, fillColor: '#cbd5e1', fillOpacity: 0.08 };
             },
             onEachFeature: function(feature, lyr) {
                 var p = feature.properties || {};
                 var k = _featureKeys(feature);
                 var o = _odjeliByKey.get(k.lk) || _odjeliByKey.get(k.nk);
+                var radio = !!o;
 
                 lyr.bindTooltip(String(p.odjel || p.name || '?'), {
                     permanent: false, direction: 'center', className: 'karta-tooltip'
                 });
-                lyr.on('mouseover', function() { this.setStyle({ fillOpacity: 0.6, weight: 3 }); });
-                lyr.on('mouseout', function() { this.setStyle({ fillOpacity: 0.35, weight: 2 }); });
-                if (o) {
+                lyr.on('mouseover', function() {
+                    this.setStyle(radio ? { fillOpacity: 0.7, weight: 3 } : { fillOpacity: 0.2, weight: 1.5 });
+                });
+                lyr.on('mouseout', function() {
+                    this.setStyle(radio ? { fillOpacity: 0.45, weight: 2 } : { fillOpacity: 0.08, weight: 1 });
+                });
+                if (radio) {
+                    radnikLayers.push(lyr);
                     lyr.on('click', function() {
                         this.bindPopup(_popupHtml(o), { maxWidth: 320 }).openPopup();
                     });
@@ -119,11 +128,15 @@
             }
         }).addTo(_map);
 
-        // Zoomiraj na radnikove odjele
+        // Zoomiraj na radnikove odjele (ne na cijelu mapu svih odjela)
         try {
-            var b = _layer.getBounds();
-            if (b.isValid()) _map.fitBounds(b, { padding: [30, 30], maxZoom: 14 });
+            if (radnikLayers.length) {
+                var b = L.featureGroup(radnikLayers).getBounds();
+                if (b.isValid()) _map.fitBounds(b, { padding: [30, 30], maxZoom: 14 });
+            }
         } catch (_) {}
+
+        return radnikLayers.length;
     }
 
     // ---- MOJA LOKACIJA (GPS) ----
@@ -211,13 +224,12 @@
             });
 
             var geojson = await _loadGeojson();
-            _renderLayer(geojson);
+            var brojIstaknuto = _renderLayer(geojson);
 
-            var brojNaMapi = _layer ? _layer.getLayers().length : 0;
             if (status) {
                 status.textContent = odjeli.length
-                    ? (odjeli.length + ' odjela · ' + brojNaMapi + ' na mapi')
-                    : 'Nema odjela za prikaz';
+                    ? (odjeli.length + ' odjela · ' + brojIstaknuto + ' istaknuto na mapi')
+                    : 'Nema odjela za prikaz — svi ostali odjeli su ipak vidljivi na mapi';
             }
             if (typeof markTabRendered === 'function') markTabRendered(tabId);
         } catch (e) {
