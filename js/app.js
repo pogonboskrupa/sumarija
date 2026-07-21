@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.61';
+        const APP_VERSION = '1.4.62';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6624,7 +6624,7 @@
                                 📊 Ukupno ${allData.length} otprema u ${year}. godini
                             </div>
                         </div>
-                        <div style="flex: 1; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch;">
+                        <div class="kupci-table-wrapper" style="flex: 1; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; margin: 0; padding: 0;">
                             <table style="width: 100%; border-collapse: collapse; font-size: 13px;" id="kupac-details-table">
                                 <thead>
                                     <tr style="background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);">
@@ -6677,6 +6677,11 @@
                 `;
 
                 bodyElem.innerHTML = html;
+
+                // Modal je van #app-screen (izvan MutationObserver-a u drag-scroll.js),
+                // pa se click-and-drag horizontalni skrol mora ručno (re)inicijalizovati
+                // svaki put kad se sadržaj modala popuni novim podacima.
+                if (typeof window.initDragScroll === 'function') window.initDragScroll();
 
             } catch (error) {
                 console.error('Error loading kupac details:', error);
