@@ -63,6 +63,7 @@
     <script src="js/charts.js" defer></script>
     <script src="js/godisnji-plan.js" defer></script>
     <script src="js/karta-odjela.js" defer></script>
+    <script src="js/mapa-radnika.js" defer></script>
     <script src="js/notifications.js" defer></script>
 
     <style>
@@ -1299,6 +1300,20 @@
                     <button class="btn btn-secondary" onclick="nextPageOtpremacOdjeli()" id="otpremac-odjeli-next">Sledeća →</button>
                 </div>
             </div>
+        </div>
+
+        <!-- RADNIK MAPA ODJELA (primač / otpremač — samo njegovi odjeli) -->
+        <div id="radnik-mapa-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>🗺️ Mapa odjela</h1>
+                    <p>Odjeli u kojima ste radili — kliknite na odjel za vaše podatke. <span id="radnik-mapa-status" style="color:#047857;font-weight:600;"></span></p>
+                </div>
+                <div class="page-header-right">
+                    <button id="radnik-mapa-loc-btn" class="btn btn-primary" onclick="mapaRadnikaLocateMe()">📍 Moja lokacija</button>
+                </div>
+            </div>
+            <div id="radnik-mapa-map" class="radnik-mapa-map"></div>
         </div>
 
         <!-- ADD SJECA FORM (For Primači) -->
@@ -2994,6 +3009,11 @@
                   #karta-odjela-map { width:100%; height:calc(100vh - 220px); min-height:400px; background:#f1f5f9; }
                   @media (max-width:1024px) { #karta-odjela-map { height:calc(100vh - 200px); min-height:320px; } }
                   @media (max-width:640px)  { #karta-odjela-map { height:calc(100vh - 230px); min-height:260px; } }
+
+                  /* Radnik mapa odjela — isti raspored kao admin mapa */
+                  #radnik-mapa-map { width:100%; height:calc(100vh - 240px); min-height:380px; background:#f1f5f9; border-radius:12px; overflow:hidden; }
+                  @media (max-width:1024px) { #radnik-mapa-map { height:calc(100vh - 220px); min-height:320px; } }
+                  @media (max-width:640px)  { #radnik-mapa-map { height:calc(100vh - 250px); min-height:260px; } }
 
                   /* ── MAPA FOKUS MODE ── */
                   body.mapa-fokus .header { padding:4px 16px !important; min-height:0 !important; }

@@ -36,6 +36,8 @@
                 'izvjestaji': 'izvjestaji-content',
                 'izvjestaji-primac': 'izvjestaji-primac-content',
                 'izvjestaji-otpremac': 'izvjestaji-otpremac-content',
+                'primac-mapa': 'radnik-mapa-content',
+                'otpremac-mapa': 'radnik-mapa-content',
                 'kubikator': 'kubikator-content',
                 'godisnji-plan': 'godisnji-plan-content',
                 'karta-odjela': 'karta-odjela-content',
@@ -113,6 +115,12 @@
                 loadPrimacOdjeli();
             } else if (tab === 'otpremac-odjeli') {
                 loadOtpremacOdjeli();
+            } else if (tab === 'primac-mapa') {
+                document.getElementById('radnik-mapa-content').classList.remove('hidden');
+                if (typeof initMapaRadnika === 'function') initMapaRadnika('primac');
+            } else if (tab === 'otpremac-mapa') {
+                document.getElementById('radnik-mapa-content').classList.remove('hidden');
+                if (typeof initMapaRadnika === 'function') initMapaRadnika('otpremac');
             } else if (tab === 'add-sjeca') {
                 showAddSjecaForm();
             } else if (tab === 'add-otprema') {
