@@ -165,7 +165,7 @@
     var _labelStyleEl = null;
     function _updateLabelSizes() {
         var z = _map ? _map.getZoom() : 12;
-        var mobile = window.innerWidth <= 640;
+        var mobile = window.innerWidth <= 1024;
         var size =
             z >= 16 ? (mobile ? 26 : 15) :
             z >= 15 ? (mobile ? 22 : 13) :

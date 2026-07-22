@@ -3024,7 +3024,7 @@
                      mod (ispod) aktivira. */
                   #radnik-mapa-map { position:relative; width:100%; height:calc(100vh - 240px - 112px); min-height:280px; background:#f1f5f9; border-radius:12px; overflow:hidden; }
                   @media (max-width:1024px) { #radnik-mapa-map { height:calc(100vh - 220px - 112px); min-height:240px; } }
-                  @media (max-width:640px)  { #radnik-mapa-map { height:calc(100vh - 250px - 280px); min-height:180px; } }
+                  @media (max-width:1024px)  { #radnik-mapa-map { height:calc(100vh - 250px - 280px); min-height:180px; } }
 
                   /* ── PUNI EKRAN (AlpineQuest-stil) — aktivira se ulaskom u Mapa odjela,
                      uklanja se klikom na "Zatvori" (ili automatski pri prelasku na bilo
@@ -3034,9 +3034,14 @@
                   body.radnik-mapa-fullscreen .header,
                   body.radnik-mapa-fullscreen .tabs-container,
                   body.radnik-mapa-fullscreen .sidebar { display:none !important; }
+                  /* overflow:hidden na body — garantuje da gornja/donja traka + mapa
+                     NIKAD ne stvore page-level scroll, bez obzira koliko su velike;
+                     mapa (flex:1, min-height:0) će se jednostavno smanjiti da stane
+                     u preostali prostor umjesto da forsira skrolanje. */
+                  body.radnik-mapa-fullscreen { overflow:hidden !important; }
                   body.radnik-mapa-fullscreen #radnik-mapa-content {
                       position:fixed !important; inset:0 !important; z-index:9999;
-                      display:flex !important; flex-direction:column;
+                      display:flex !important; flex-direction:column; overflow:hidden;
                       margin:0 !important; max-width:none !important;
                       padding:0 0 calc(112px + env(safe-area-inset-bottom)) 0 !important;
                       background:#fff; box-sizing:border-box;
@@ -3048,7 +3053,13 @@
                       flex:1 1 auto !important; width:100% !important; height:auto !important;
                       min-height:0; border-radius:0 !important;
                   }
-                  @media (max-width:640px) {
+                  /* Prag namjerno 1024px (ne 640px) — testni uređaj (i mnogi Android
+                     tableti/veći telefoni u landscape-u) imaju CSS viewport širinu
+                     preko 640px, pa su ranije (v1.4.89/90) sve "mobilne" izmjene ovdje
+                     ostajale NEPRIMIJENJENE na takvim uređajima (umjesto toga se
+                     primjenjivalo "desktop" smanjenje ispod, @media min-width:1025px),
+                     što je pravi razlog "i dalje isto" žalbe. */
+                  @media (max-width:1024px) {
                       body.radnik-mapa-fullscreen #radnik-mapa-content {
                           padding-bottom:calc(280px + env(safe-area-inset-bottom)) !important;
                       }
@@ -3112,11 +3123,13 @@
                       .rm-bar-btn { font-size:28px; min-height:184px; }
                       .rm-bar-icon { font-size:64px; }
                   }
-                  /* Donja traka je namjerno velika radi dodira na terenu (mobilni) —
-                     na desktopu (miš, veliki ekran) je prevelika, pa se ovdje smanjuje
-                     nazad na razumnu veličinu. Prag 641px prati postojeću mobilnu
-                     granicu (@media max-width:640px) korištenu svuda u ovom modulu. */
-                  @media (min-width:641px) {
+                  /* Donja traka je namjerno velika radi dodira na terenu (mobilni/tablet
+                     na terenu) — na PRAVOM desktopu (miš, veliki ekran) je prevelika,
+                     pa se ovdje smanjuje. Prag podignut na 1025px (v1.4.92) — testni
+                     Android uređaj ima CSS viewport širinu preko 640px, pa je ranija
+                     granica od 641px pogrešno tretirala takve (dodirne) uređaje kao
+                     "desktop" i smanjivala im traku umjesto da je uveća. */
+                  @media (min-width:1025px) {
                       .radnik-mapa-bottombar { padding:8px 8px calc(8px + env(safe-area-inset-bottom)) 8px; }
                       .rm-bar-btn { min-height:56px; font-size:13px; gap:4px; border-radius:12px; margin:0 4px; }
                       .rm-bar-icon { font-size:22px; }
@@ -3162,7 +3175,7 @@
                       margin-top:6px; border-top:2px solid #10b981; padding-top:5px;
                       font-weight:800; color:#047857; display:flex; justify-content:flex-start; gap:8px; font-size:14px;
                   }
-                  @media (max-width:640px) {
+                  @media (max-width:1024px) {
                       .rm-info-panel { padding:18px 46px 18px 20px; }
                       .rm-popup-title { font-size:21px; }
                       .rm-popup-datum { font-size:15px; margin-bottom:12px; }
