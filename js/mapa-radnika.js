@@ -86,23 +86,26 @@
         }
     }
 
-    // Popup: samo radnikovi podaci za taj odjel (nenulti sortimenti + ukupno)
+    // Popup: samo radnikovi podaci za taj odjel (nenulti sortimenti + ukupno).
+    // Klasa "rm-odjel-popup" (umjesto inline min/max-width) — omogućava CSS
+    // media-query da uveća tekst/razmak na mobilnom (index.html), gdje je
+    // sitan popup tekst inače teško čitljiv na terenu.
     function _popupHtml(o) {
         var grupne = { 'UKUPNO Č+L': 1, 'Σ ČETINARI': 1, 'LIŠĆARI': 1 };
         var sort = o.sortimenti || {};
         var rows = Object.keys(sort)
             .filter(function(s) { return (sort[s] || 0) > 0 && !grupne[s]; })
             .map(function(s) {
-                return '<tr><td style="padding:2px 10px 2px 0;color:#374151;">' + s +
-                    '</td><td style="text-align:right;font-weight:600;color:#164e63;">' + _fmt(sort[s]) + '</td></tr>';
+                return '<tr><td class="rm-popup-label">' + s +
+                    '</td><td class="rm-popup-val">' + _fmt(sort[s]) + '</td></tr>';
             }).join('');
-        return '<div style="min-width:210px;max-width:280px;">' +
-            '<div style="font-weight:700;color:#047857;font-size:15px;margin-bottom:2px;">📁 Odjel ' + (o.odjel || '?') + '</div>' +
-            '<div style="font-size:11px;color:#6b7280;margin-bottom:8px;">Zadnji unos: ' + (o.zadnjiDatum || '—') + '</div>' +
-            '<table style="font-size:12px;border-collapse:collapse;width:100%;">' +
+        return '<div class="rm-odjel-popup">' +
+            '<div class="rm-popup-title">📁 Odjel ' + (o.odjel || '?') + '</div>' +
+            '<div class="rm-popup-datum">Zadnji unos: ' + (o.zadnjiDatum || '—') + '</div>' +
+            '<table class="rm-popup-table">' +
             (rows || '<tr><td colspan="2" style="color:#9ca3af;">Nema sortimenata</td></tr>') +
             '</table>' +
-            '<div style="margin-top:6px;border-top:2px solid #10b981;padding-top:5px;font-weight:800;color:#047857;display:flex;justify-content:space-between;">' +
+            '<div class="rm-popup-total">' +
             '<span>UKUPNO</span><span>' + _fmt(o.ukupno) + '</span></div>' +
             '</div>';
     }
@@ -146,7 +149,10 @@
                 if (radio) {
                     radnikLayers.push(lyr);
                     lyr.on('click', function() {
-                        this.bindPopup(_popupHtml(o), { maxWidth: 320 }).openPopup();
+                        // maxWidth se računa u odnosu na širinu ekrana da popup
+                        // uvijek stane na malim mobilnim ekranima bez sažimanja
+                        var mw = Math.max(240, Math.min(320, window.innerWidth - 40));
+                        this.bindPopup(_popupHtml(o), { maxWidth: mw, minWidth: 220, autoPan: true, autoPanPadding: [20, 20] }).openPopup();
                     });
                 }
             }
