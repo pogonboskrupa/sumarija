@@ -59,6 +59,7 @@
     var _recentSet = null;   // Set referenci na zadnja 3 odjela (samo za primača) — vidi initMapaRadnika
     var _allLayers = [];     // SVI polygon layer-i (radio i ne-radio) — za "Prikaži odjele" grupisanje po odsjeku
     var _labelMarkers = [];  // trajne oznake brojeva odjela (checkbox "Prikaži odjele")
+    var _autoFitDone = false; // spriječi da automatski fitBounds "otme" pogled nakon prvog prikaza/kad postoji sačuvan pogled
 
     // ---- Snimanje traga ----
     var _recording = false;
@@ -284,13 +285,19 @@
             }
         }).addTo(_map);
 
-        // Zoomiraj na radnikove odjele (ne na cijelu mapu svih odjela)
-        try {
-            if (radnikLayers.length) {
-                var b = L.featureGroup(radnikLayers).getBounds();
-                if (b.isValid()) _map.fitBounds(b, { padding: [30, 30], maxZoom: 14 });
-            }
-        } catch (_) {}
+        // Zoomiraj na radnikove odjele (ne na cijelu mapu svih odjela) — SAMO
+        // pri prvom prikazu bez sačuvanog pogleda; nakon toga (ili ako je
+        // pogled vraćen iz localStorage) se ne dira, da naknadni refresh
+        // podataka ne "otme" korisnikov ručni pan/zoom.
+        if (!_autoFitDone) {
+            try {
+                if (radnikLayers.length) {
+                    var b = L.featureGroup(radnikLayers).getBounds();
+                    if (b.isValid()) _map.fitBounds(b, { padding: [30, 30], maxZoom: 14 });
+                }
+            } catch (_) {}
+            _autoFitDone = true;
+        }
 
         // Ako je "Prikaži odjele" bio uključen prije osvježavanja podataka,
         // ponovo iscrtaj oznake nad svježim slojem (inače bi ostale ugašene).
@@ -350,6 +357,26 @@
 
     function _saveTracks(tracks) {
         try { localStorage.setItem(_tragStorageKey(), JSON.stringify(tracks)); } catch (_) {}
+    }
+
+    // ---- PAMTI ZADNJI POGLED (centar + zoom) — po korisniku, preživljava
+    // zatvaranje/ponovno otvaranje aplikacije, ne samo tab. ----
+    function _mapViewStorageKey() {
+        var uname = (window.currentUser && window.currentUser.username) || 'anon';
+        return 'mapa_radnika_view_' + uname;
+    }
+    function _loadMapView() {
+        try {
+            var raw = localStorage.getItem(_mapViewStorageKey());
+            return raw ? JSON.parse(raw) : null;
+        } catch (_) { return null; }
+    }
+    function _saveMapView() {
+        if (!_map) return;
+        try {
+            var c = _map.getCenter();
+            localStorage.setItem(_mapViewStorageKey(), JSON.stringify({ lat: c.lat, lng: c.lng, zoom: _map.getZoom() }));
+        } catch (_) {}
     }
 
     function _drawSavedTracks() {
@@ -471,6 +498,14 @@
         var bar = document.getElementById('radnik-mapa-bottombar');
         if (bar) bar.style.display = 'none';
     }
+    // Sigurnosna mreža — gornja/donja traka moraju biti UVIJEK prisutne dok
+    // se gleda Mapa odjela. Rotacija ekrana/promjena veličine prozora ne
+    // smije ih ostaviti sakrivenim (npr. ako je browser u međuvremenu
+    // resetovao inline style) — ponovo primijeni klasu/display na svaki
+    // resize dok je fullscreen mod aktivan.
+    window.addEventListener('resize', function() {
+        if (document.body.classList.contains('radnik-mapa-fullscreen')) _enterMapaFullscreen();
+    });
     // Poziva se iz switchTab (js/ui.js) kad se prelazi na BILO KOJI drugi tab —
     // sigurnosna mreža za slučaj da korisnik ode s mape mimo "Zatvori" dugmeta.
     window.exitMapaRadnikaFullscreenIfActive = function(nextTab) {
@@ -506,11 +541,22 @@
         _enterMapaFullscreen();
 
         if (!_map) {
+            // Zadnji pogled (centar+zoom) iz localStorage — ako postoji, mapa se
+            // otvara TAMO gdje je radnik zadnji put gledao (umjesto uvijek na
+            // Šumariju), i _renderLayer() neće raditi automatski fitBounds
+            // preko njega (vidi _autoFitDone niže).
+            var savedView = _loadMapView();
+            _autoFitDone = !!savedView;
             // zoomControl:false + ručno dodat na 'bottomleft' — gornji dio mape
             // je rezervisan za fiksni info panel (#radnik-mapa-info-panel), pa
             // zoom dugmad ne smiju stajati na uobičajenom 'topleft' mjestu.
-            _map = L.map('radnik-mapa-map', { center: SUMARIJA_LATLNG, zoom: 11, zoomControl: false });
+            _map = L.map('radnik-mapa-map', {
+                center: savedView ? [savedView.lat, savedView.lng] : SUMARIJA_LATLNG,
+                zoom: savedView ? savedView.zoom : 11,
+                zoomControl: false
+            });
             L.control.zoom({ position: 'bottomleft' }).addTo(_map);
+            _map.on('moveend', _saveMapView);
             _osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                 maxZoom: 18
