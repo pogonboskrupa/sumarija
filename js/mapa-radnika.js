@@ -492,16 +492,36 @@
     // (izvan .container "contain:layout" konteksta koji bi inače slomio njeno
     // position:fixed), pa se vidljivost mora ručno sinhronizovati sa ulaskom/
     // izlaskom iz mape — nije više dio [id$="-content"] hide/show mehanizma.
+    // "Desktop prikaz"/"Android prikaz" (toggleDesktopView/toggleAndroidView,
+    // js/ui.js) OBA postavljaju <meta viewport content="width=1200,
+    // initial-scale=0.5,...">. To je fizičko, browser-nivo skaliranje CIJELE
+    // stranice na 50% — NIKAKAV CSS font-size/padding to ne može nadjačati
+    // (upravo to je pravi razlog zašto su barovi "uvijek maleni" bez obzira
+    // koliko puta se CSS uveća). Mapa odjela je terenski alat — mora se
+    // prikazati u punoj, nativnoj rezoluciji ekrana bez obzira na taj globalni
+    // toggle, pa ga ovdje eksplicitno privremeno poništavamo.
     function _enterMapaFullscreen() {
         document.body.classList.add('radnik-mapa-fullscreen');
         var bar = document.getElementById('radnik-mapa-bottombar');
         if (bar) bar.style.display = 'flex';
+        var viewport = document.querySelector('meta[name=viewport]');
+        if (viewport) viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
         setTimeout(function() { if (_map) _map.invalidateSize(); }, 50);
     }
     function _exitMapaFullscreen() {
         document.body.classList.remove('radnik-mapa-fullscreen');
         var bar = document.getElementById('radnik-mapa-bottombar');
         if (bar) bar.style.display = 'none';
+        // Vrati viewport na korisnikovu preferencu (Desktop/Android prikaz) ako
+        // je bila uključena prije ulaska na mapu.
+        var viewport = document.querySelector('meta[name=viewport]');
+        if (viewport) {
+            var wantsWide = document.body.classList.contains('force-desktop-view') ||
+                document.body.classList.contains('force-android-view');
+            viewport.setAttribute('content', wantsWide
+                ? 'width=1200, initial-scale=0.5, user-scalable=yes'
+                : 'width=device-width, initial-scale=1.0');
+        }
     }
     // Sigurnosna mreža — gornja/donja traka moraju biti UVIJEK prisutne dok
     // se gleda Mapa odjela. Rotacija ekrana/promjena veličine prozora ne
