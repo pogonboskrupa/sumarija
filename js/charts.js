@@ -359,16 +359,24 @@
                 return false;
             });
 
-            // Group by day
+            // Group by day — i istovremeno po odjel+izvođač (za tooltip detalje,
+            // pošto jedan dan može imati unose iz više odjela/izvođača)
             const dailyData = {};
+            const dailyDetails = {}; // day -> { "odjel|izvodjac" -> ukupno }
             filteredUnosi.forEach(u => {
                 const dateParts = u.datum.split('.');
                 if (dateParts.length >= 3) {
                     const day = parseInt(dateParts[0]);
                     if (!dailyData[day]) {
                         dailyData[day] = 0;
+                        dailyDetails[day] = {};
                     }
                     dailyData[day] += u.ukupno || 0;
+
+                    const odjel = u.odjel || '—';
+                    const izvodjac = u.izvodjac || '—';
+                    const key = odjel + '|' + izvodjac;
+                    dailyDetails[day][key] = (dailyDetails[day][key] || 0) + (u.ukupno || 0);
                 }
             });
 
@@ -378,13 +386,20 @@
             // Prepare data for chart - only days with data
             const labels = [];
             const values = [];
+            const pointDetails = []; // paralelan niz sa labels/values — za tooltip
 
             for (let day = 1; day <= daysInMonth; day++) {
                 if (dailyData[day] && dailyData[day] > 0) {
                     labels.push(day + '.');
                     values.push(dailyData[day]);
+                    pointDetails.push(Object.keys(dailyDetails[day]).map(function(key) {
+                        const parts = key.split('|');
+                        return { odjel: parts[0], izvodjac: parts[1], ukupno: dailyDetails[day][key] };
+                    }));
                 }
             }
+
+            const glagol = (canvasId === 'otpremac-daily-chart') ? 'otpremio' : 'primio';
 
             // If no data, show message
             if (values.length === 0) {
@@ -446,7 +461,12 @@
                             },
                             callbacks: {
                                 label: function(context) {
-                                    return 'Ukupno: ' + context.parsed.y.toFixed(2) + ' m³';
+                                    var lines2 = ['Ukupno: ' + context.parsed.y.toFixed(2) + ' m³'];
+                                    var details = pointDetails[context.dataIndex] || [];
+                                    details.forEach(function(d) {
+                                        lines2.push('📁 Odjel ' + d.odjel + ' · 👷 ' + d.izvodjac + ' — ' + glagol + ' ' + d.ukupno.toFixed(2) + ' m³');
+                                    });
+                                    return lines2;
                                 }
                             }
                         }
@@ -924,9 +944,15 @@
                 const monthSelector = document.getElementById('primac-daily-month-select');
                 const currentMonth = new Date().getMonth() + 1;
 
-                // Set default value to current month if not already set
-                if (monthSelector && !monthSelector.value) {
+                // Postavi na tekući mjesec SAMO jednom (prvi render) — select uvijek
+                // ima .value (browser default je prva opcija/Januar), pa provjera
+                // "!monthSelector.value" nikad nije bila tačna i default se nikad
+                // nije primjenjivao. Zastavica u dataset-u pamti da je default već
+                // postavljen, tako da naredni pozivi (npr. kad korisnik ručno
+                // promijeni mjesec preko onchange) ne prepisuju njegov izbor.
+                if (monthSelector && !monthSelector.dataset.defaulted) {
                     monthSelector.value = currentMonth;
+                    monthSelector.dataset.defaulted = '1';
                 }
 
                 const selectedMonth = monthSelector ? monthSelector.value : currentMonth;
@@ -1036,9 +1062,10 @@
                 const monthSelector = document.getElementById('otpremac-daily-month-select');
                 const currentMonth = new Date().getMonth() + 1;
 
-                // Set default value to current month if not already set
-                if (monthSelector && !monthSelector.value) {
+                // Postavi na tekući mjesec SAMO jednom — vidi komentar u primac grani
+                if (monthSelector && !monthSelector.dataset.defaulted) {
                     monthSelector.value = currentMonth;
+                    monthSelector.dataset.defaulted = '1';
                 }
 
                 const selectedMonth = monthSelector ? monthSelector.value : currentMonth;
