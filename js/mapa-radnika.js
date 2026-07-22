@@ -125,14 +125,15 @@
         var radnikLayers = []; // samo poligoni gdje je radnik radio — za fitBounds
 
         _layer = L.geoJSON(geojson, {
-            // Iscrtaj SVE odjele — radnikovi su istaknuti (zeleno), ostali blijedo/neutralno
+            // Iscrtaj SVE odjele — ispuna razlikuje istaknute (zeleno) od ostalih
+            // (blijedo/neutralno), ali rub (linija) je za SVE odjele žut i podebljan
+            // radi bolje vidljivosti granica na terenu.
             style: function(feature) {
                 var k = _featureKeys(feature);
                 var radio = _odjeliByKey.has(k.lk) || _odjeliByKey.has(k.nk);
-                // Rubovi poligona podebljani 30% (2→2.6 / 1→1.3) radi bolje vidljivosti
                 return radio
-                    ? { color: '#047857', weight: 2.6, fillColor: '#10b981', fillOpacity: 0.45 }
-                    : { color: '#94a3b8', weight: 1.3, fillColor: '#cbd5e1', fillOpacity: 0.08 };
+                    ? { color: '#facc15', weight: 3.5, fillColor: '#10b981', fillOpacity: 0.45 }
+                    : { color: '#facc15', weight: 2.2, fillColor: '#cbd5e1', fillOpacity: 0.08 };
             },
             onEachFeature: function(feature, lyr) {
                 var p = feature.properties || {};
@@ -144,10 +145,10 @@
                     permanent: false, direction: 'center', className: 'karta-tooltip'
                 });
                 lyr.on('mouseover', function() {
-                    this.setStyle(radio ? { fillOpacity: 0.7, weight: 3.9 } : { fillOpacity: 0.2, weight: 1.95 });
+                    this.setStyle(radio ? { fillOpacity: 0.7, weight: 5 } : { fillOpacity: 0.2, weight: 3.2 });
                 });
                 lyr.on('mouseout', function() {
-                    this.setStyle(radio ? { fillOpacity: 0.45, weight: 2.6 } : { fillOpacity: 0.08, weight: 1.3 });
+                    this.setStyle(radio ? { fillOpacity: 0.45, weight: 3.5 } : { fillOpacity: 0.08, weight: 2.2 });
                 });
                 if (radio) {
                     radnikLayers.push(lyr);
