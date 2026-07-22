@@ -56,6 +56,7 @@
     var _locMarker = null;
     var _locCircle = null;
     var _odjeliByKey = null; // labelKey/normKey -> radnikov odjel objekat
+    var _recentSet = null;   // Set referenci na zadnja 3 odjela (samo za primača) — vidi initMapaRadnika
 
     // ---- Snimanje traga ----
     var _recording = false;
@@ -140,12 +141,16 @@
         }).addTo(_map);
 
         _layer = L.geoJSON(geojson, {
-            // Ispuna razlikuje istaknute (zeleno) od ostalih (blijedo/neutralno);
-            // rub je crn i tanji od žutog haloa ispod njega (halo proviruje sa obje
-            // strane crne linije — "outline" efekat, čitljivo na svakoj podlozi).
+            // Ispuna razlikuje istaknute (zeleno), zadnja 3 odjela primača (crveno)
+            // i ostale (blijedo/neutralno); rub je crn i tanji od žutog haloa ispod
+            // njega (halo proviruje sa obje strane crne linije — "outline" efekat,
+            // čitljivo na svakoj podlozi).
             style: function(feature) {
                 var k = _featureKeys(feature);
-                var radio = _odjeliByKey.has(k.lk) || _odjeliByKey.has(k.nk);
+                var o = _odjeliByKey.get(k.lk) || _odjeliByKey.get(k.nk);
+                var radio = !!o;
+                var recent = radio && _recentSet && _recentSet.has(o);
+                if (recent) return { color: '#111827', weight: 2.5, fillColor: '#dc2626', fillOpacity: 0.5 };
                 return radio
                     ? { color: '#111827', weight: 2.5, fillColor: '#10b981', fillOpacity: 0.45 }
                     : { color: '#111827', weight: 1.8, fillColor: '#cbd5e1', fillOpacity: 0.08 };
@@ -155,15 +160,16 @@
                 var k = _featureKeys(feature);
                 var o = _odjeliByKey.get(k.lk) || _odjeliByKey.get(k.nk);
                 var radio = !!o;
+                var recent = radio && _recentSet && _recentSet.has(o);
 
                 lyr.bindTooltip(String(p.odjel || p.name || '?'), {
                     permanent: false, direction: 'center', className: 'karta-tooltip'
                 });
                 lyr.on('mouseover', function() {
-                    this.setStyle(radio ? { fillOpacity: 0.7, weight: 4 } : { fillOpacity: 0.2, weight: 2.8 });
+                    this.setStyle(recent ? { fillOpacity: 0.8, weight: 4 } : (radio ? { fillOpacity: 0.7, weight: 4 } : { fillOpacity: 0.2, weight: 2.8 }));
                 });
                 lyr.on('mouseout', function() {
-                    this.setStyle(radio ? { fillOpacity: 0.45, weight: 2.5 } : { fillOpacity: 0.08, weight: 1.8 });
+                    this.setStyle(recent ? { fillOpacity: 0.5, weight: 2.5 } : (radio ? { fillOpacity: 0.45, weight: 2.5 } : { fillOpacity: 0.08, weight: 1.8 }));
                 });
                 if (radio) {
                     radnikLayers.push(lyr);
@@ -417,6 +423,21 @@
             var url = buildApiUrl(endpoint, { limit: 300 });
             var data = await fetchWithCache(url, cacheKey);
             var odjeli = (data && data.odjeli) || [];
+
+            // Zadnja 3 odjela (API već vraća niz sortiran najnovije-prvo po
+            // zadnjiDatum — vidi handlePrimacOdjeli u apps-script/api-handlers.gs)
+            // — zabilježi reference PRIJE ubacivanja u _odjeliByKey Mapu, jer se
+            // tamo poredak niza gubi. Samo za primača (po eksplicitnom zahtjevu).
+            _recentSet = new Set();
+            if (type === 'primac') {
+                odjeli.slice(0, 3).forEach(function(o) { _recentSet.add(o); });
+            }
+            var legendExtra = document.getElementById('radnik-mapa-legend-extra');
+            if (legendExtra) {
+                legendExtra.innerHTML = (type === 'primac' && _recentSet.size)
+                    ? ' · <strong style="color:#dc2626;">crveno</strong> = zadnja 3 odjela.'
+                    : '';
+            }
 
             _odjeliByKey = new Map();
             odjeli.forEach(function(o) {
