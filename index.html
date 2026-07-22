@@ -1322,6 +1322,7 @@
                     <button type="button" class="rm-info-panel-close" onclick="mapaRadnikaCloseInfoPanel()" aria-label="Zatvori">✕</button>
                     <div id="radnik-mapa-info-panel-body"></div>
                 </div>
+                <button type="button" id="radnik-mapa-sat-btn" class="rm-sat-btn" onclick="mapaRadnikaToggleSat()">🛰️ Satelit</button>
             </div>
         </div>
 
@@ -3064,20 +3065,20 @@
                      iako je i sama traka tanja (manji padding) nego prije. */
                   body.radnik-mapa-fullscreen #radnik-mapa-content .page-header {
                       position:absolute; top:0; left:0; right:0; z-index:1500;
-                      margin:0; padding:6px 10px; flex-wrap:wrap; row-gap:4px;
+                      margin:0; padding:5px 8px; flex-wrap:wrap; row-gap:3px;
                       background:rgba(255,255,255,.78);
                       backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
                       border-bottom:1px solid rgba(255,255,255,.5);
                       box-shadow:0 2px 14px rgba(0,0,0,.12);
                   }
-                  #radnik-mapa-content .page-header-left h1 { font-size:13px !important; margin-bottom:1px; }
-                  #radnik-mapa-content .page-header-left p { font-size:10px !important; line-height:1.3; }
-                  .btn-zatvori-mapu { padding:4px 9px; font-size:10px; }
+                  #radnik-mapa-content .page-header-left h1 { font-size:10px !important; margin-bottom:1px; }
+                  #radnik-mapa-content .page-header-left p { font-size:8px !important; line-height:1.3; }
+                  .btn-zatvori-mapu { padding:3px 7px; font-size:8px; }
                   .rm-labels-toggle {
-                      font-size:10px; padding:3px 7px; gap:4px;
+                      font-size:8px; padding:2px 5px; gap:3px;
                       background:rgba(255,255,255,.6); backdrop-filter:blur(4px);
                   }
-                  .rm-labels-toggle input[type="checkbox"] { width:11px; height:11px; }
+                  .rm-labels-toggle input[type="checkbox"] { width:8px; height:8px; }
                   /* Checkbox + Zatvori ne smiju forsirati horizontalni scroll ako
                      zajedno ne stanu u red — prelamaju se u novi red. */
                   #radnik-mapa-content .page-header-right { flex-wrap:wrap; row-gap:6px; }
@@ -3185,10 +3186,10 @@
                       /* top:64px (ne 10px) — gornja traka je od v1.4.104 poluprozirna i
                          LEBDI preko mape (position:absolute, ista tehnika), pa panel mora
                          startovati ISPOD nje da se naslov/dugme zatvori ne sakriju iza trake. */
-                      position:absolute; top:64px; left:10px; z-index:1200;
+                      position:absolute; top:46px; left:10px; z-index:1200;
                       width:50%; min-width:220px; max-width:calc(100% - 20px);
                       background:#fff; border-radius:14px; padding:14px 40px 14px 16px;
-                      box-shadow:0 10px 28px rgba(0,0,0,.28); max-height:calc(65% - 54px); overflow-y:auto;
+                      box-shadow:0 10px 28px rgba(0,0,0,.28); max-height:calc(65% - 36px); overflow-y:auto;
                   }
                   .rm-info-panel.hidden { display:none; }
                   .rm-info-panel-close {
@@ -3197,6 +3198,16 @@
                       cursor:pointer; font-family:inherit;
                   }
                   .rm-info-panel-close:active { background:#e5e7eb; }
+                  /* Prekidač OSM/Satelit — gornji desni ugao mape, ispod plutajuće
+                     trake (isto "staklo" — poluprozirna pozadina + blur). */
+                  .rm-sat-btn {
+                      position:absolute; top:52px; right:10px; z-index:1000;
+                      background:rgba(255,255,255,.85); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+                      border:1px solid rgba(209,213,219,.8); border-radius:8px;
+                      padding:6px 10px; font-size:12px; font-weight:700; color:#374151;
+                      cursor:pointer; font-family:inherit; box-shadow:0 2px 8px rgba(0,0,0,.15);
+                  }
+                  .rm-sat-btn:active { background:#e5e7eb; }
                   /* "Prikaži odjele" trajne oznake brojeva — font-size/padding/visibility
                      kontroliše js/mapa-radnika.js _updateLabelSizes() (zoom-zavisno,
                      injektovani <style id="rm-label-zoom-style">), ovdje ostaje samo

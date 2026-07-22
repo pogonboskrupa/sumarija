@@ -73,6 +73,8 @@
     var _locBtnEl = null;
     var _tragBtnEl = null;
     var _osmLayer = null; // referenca na osnovni OSM tile sloj
+    var _satLayer = null; // ArcGIS satelitski sloj (isti izvor kao admin karta-odjela.js)
+    var _isSat = false;
 
     function _fmt(n) {
         if (n == null || isNaN(n)) return '—';
@@ -311,6 +313,29 @@
 
         return radnikLayers.length;
     }
+
+    // ---- OSM / SATELIT ----
+    // Isti izvor kao admin karta (js/karta-odjela.js toggleMapaSat) — ArcGIS
+    // World_Imagery, kreiran lijeno (tek pri prvom prebacivanju na satelit).
+    function _toggleSat() {
+        if (!_map) return;
+        _isSat = !_isSat;
+        if (_isSat) {
+            if (_osmLayer) _map.removeLayer(_osmLayer);
+            if (!_satLayer) {
+                _satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: '© Esri', maxZoom: 19
+                });
+            }
+            _satLayer.addTo(_map);
+        } else {
+            if (_satLayer) _map.removeLayer(_satLayer);
+            if (_osmLayer) _osmLayer.addTo(_map);
+        }
+        var btn = document.getElementById('radnik-mapa-sat-btn');
+        if (btn) btn.textContent = _isSat ? '🗺️ OSM' : '🛰️ Satelit';
+    }
+    window.mapaRadnikaToggleSat = _toggleSat;
 
     // ---- MOJA LOKACIJA (GPS) ----
     function _locateMe() {
