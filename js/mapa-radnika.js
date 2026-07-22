@@ -165,7 +165,12 @@
     var _labelStyleEl = null;
     function _updateLabelSizes() {
         var z = _map ? _map.getZoom() : 12;
-        var mobile = window.innerWidth <= 1024;
+        // window.innerWidth NIJE pouzdan ovdje — "Desktop prikaz" (toggleDesktopView,
+        // js/ui.js) postavlja <meta name="viewport" content="width=1200,...">, pa
+        // innerWidth prijavljuje ~1200 čak i na malom telefonu. Ako je taj mod
+        // uključen, tretiraj kao "mobilno" (veće oznake) bez obzira na (nepouzdanu)
+        // prijavljenu širinu — Mapa odjela je terenski alat, ne pravi desktop prikaz.
+        var mobile = document.body.classList.contains('force-desktop-view') || window.innerWidth <= 1024;
         var size =
             z >= 16 ? (mobile ? 26 : 15) :
             z >= 15 ? (mobile ? 22 : 13) :

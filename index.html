@@ -3043,43 +3043,39 @@
                       position:fixed !important; inset:0 !important; z-index:9999;
                       display:flex !important; flex-direction:column; overflow:hidden;
                       margin:0 !important; max-width:none !important;
-                      padding:0 0 calc(112px + env(safe-area-inset-bottom)) 0 !important;
+                      padding:0 0 calc(280px + env(safe-area-inset-bottom)) 0 !important;
                       background:#fff; box-sizing:border-box;
                   }
+                  /* Gornja traka (naslov/legenda/checkbox/Zatvori) — UVIJEK velika kad
+                     je Mapa odjela u punom ekranu, BEZ OBZIRA na širinu ekrana. Ranije
+                     (v1.4.90-93) je ovo bilo iza @media (max-width:1024px), što je
+                     radilo na pravim uskim ekranima ALI ne i kad je uključen "Desktop
+                     prikaz" (toggleDesktopView, js/ui.js) — taj mod postavlja
+                     <meta name="viewport" content="width=1200,...">, pa CSS layout
+                     viewport postaje 1200px ČAK I na malom telefonu, i max-width:1024
+                     više nikad ne pogađa. Ovo je pravi uzrok "i dalje nešto koči
+                     povećanje" žalbe. Rješenje: veličina zavisi SAMO od
+                     .radnik-mapa-fullscreen klase, ne od širine ekrana; "pravi"
+                     desktop (miš, veliki ekran, BEZ prisilnog viewport override-a)
+                     dobija manju verziju niže, eksplicitno isključujući force-desktop-view. */
                   body.radnik-mapa-fullscreen #radnik-mapa-content .page-header {
-                      flex:0 0 auto; margin:0; padding:14px 16px 10px 16px;
+                      flex:0 0 auto; margin:0; padding:32px 32px 24px 32px;
                   }
+                  #radnik-mapa-content .page-header-left h1 { font-size:44px !important; }
+                  #radnik-mapa-content .page-header-left p { font-size:28px !important; line-height:1.4; }
+                  .btn-zatvori-mapu { padding:24px 40px; font-size:32px; }
+                  .rm-labels-toggle { font-size:30px; padding:20px 28px; gap:16px; }
+                  .rm-labels-toggle input[type="checkbox"] { width:36px; height:36px; }
+                  /* Checkbox + Zatvori ne smiju forsirati horizontalni scroll ako
+                     zajedno ne stanu u red — prelamaju se u novi red. */
+                  #radnik-mapa-content .page-header-right { flex-wrap:wrap; row-gap:10px; }
+                  /* Tvrda garancija — ni pod kojim uslovima horizontalni scroll
+                     unutar zaglavlja Mape odjela (traka se nikad ne "skrola" lijevo-desno). */
+                  #radnik-mapa-content .page-header { overflow-x:hidden; max-width:100%; }
                   body.radnik-mapa-fullscreen #radnik-mapa-map {
                       flex:1 1 auto !important; width:100% !important; height:auto !important;
                       min-height:0; border-radius:0 !important;
                   }
-                  /* Prag namjerno 1024px (ne 640px) — testni uređaj (i mnogi Android
-                     tableti/veći telefoni u landscape-u) imaju CSS viewport širinu
-                     preko 640px, pa su ranije (v1.4.89/90) sve "mobilne" izmjene ovdje
-                     ostajale NEPRIMIJENJENE na takvim uređajima (umjesto toga se
-                     primjenjivalo "desktop" smanjenje ispod, @media min-width:1025px),
-                     što je pravi razlog "i dalje isto" žalbe. */
-                  @media (max-width:1024px) {
-                      body.radnik-mapa-fullscreen #radnik-mapa-content {
-                          padding-bottom:calc(280px + env(safe-area-inset-bottom)) !important;
-                      }
-                      /* Gornja traka (naslov/legenda/checkbox/Zatvori) — duplo uvećana
-                         (v1.4.90) na zahtjev korisnika, preko prethodnog mobilnog bump-a. */
-                      body.radnik-mapa-fullscreen #radnik-mapa-content .page-header {
-                          padding:32px 32px 24px 32px;
-                      }
-                      #radnik-mapa-content .page-header-left h1 { font-size:44px !important; }
-                      #radnik-mapa-content .page-header-left p { font-size:28px !important; line-height:1.4; }
-                      .btn-zatvori-mapu { padding:24px 40px; font-size:32px; }
-                      .rm-labels-toggle { font-size:30px; padding:20px 28px; gap:16px; }
-                      .rm-labels-toggle input[type="checkbox"] { width:36px; height:36px; }
-                      /* Checkbox + Zatvori ne smiju forsirati horizontalni scroll ako
-                         zajedno ne stanu u red na užem ekranu — prelamaju se u novi red. */
-                      #radnik-mapa-content .page-header-right { flex-wrap:wrap; row-gap:10px; }
-                  }
-                  /* Tvrda garancija — ni pod kojim uslovima horizontalni scroll
-                     unutar zaglavlja Mape odjela (traka se nikad ne "skrola" lijevo-desno). */
-                  #radnik-mapa-content .page-header { overflow-x:hidden; max-width:100%; }
 
                   /* "✕ Zatvori" dugme u zaglavlju — vraća na radnikov početni tab.
                      Van Leaflet mape, pa dodir na mapu ne ometa dolazak do njega. */
@@ -3129,21 +3125,30 @@
                       .rm-bar-btn { font-size:28px; min-height:184px; }
                       .rm-bar-icon { font-size:64px; }
                   }
-                  /* Donja traka je namjerno velika radi dodira na terenu (mobilni/tablet
-                     na terenu) — na PRAVOM desktopu (miš, veliki ekran) je prevelika,
-                     pa se ovdje smanjuje. Prag podignut na 1025px (v1.4.92) — testni
-                     Android uređaj ima CSS viewport širinu preko 640px, pa je ranija
-                     granica od 641px pogrešno tretirala takve (dodirne) uređaje kao
-                     "desktop" i smanjivala im traku umjesto da je uveća. */
+                  /* Donja (i gornja) traka su namjerno velike radi dodira na terenu —
+                     smanjuju se SAMO na pravom desktopu (miš, veliki ekran, širina
+                     ekrana STVARNO preko 1024px). Bitno: `body:not(.force-desktop-view)`
+                     isključuje slučaj kad je korisnik uključio "Desktop prikaz"
+                     (toggleDesktopView, js/ui.js) — taj mod postavlja
+                     <meta name="viewport" content="width=1200,...">, pa CSS layout
+                     viewport postaje 1200px ČAK I na malom telefonu, pa bi ova grana
+                     bez ovog isključenja pogrešno smanjivala traku na terenu (pravi
+                     uzrok "i dalje nešto koči povećanje" žalbe). */
                   @media (min-width:1025px) {
-                      .radnik-mapa-bottombar { padding:8px 8px calc(8px + env(safe-area-inset-bottom)) 8px; }
-                      .rm-bar-btn { min-height:56px; font-size:13px; gap:4px; border-radius:12px; margin:0 4px; }
-                      .rm-bar-icon { font-size:22px; }
+                      body:not(.force-desktop-view) .radnik-mapa-bottombar { padding:8px 8px calc(8px + env(safe-area-inset-bottom)) 8px; }
+                      body:not(.force-desktop-view) .rm-bar-btn { min-height:56px; font-size:13px; gap:4px; border-radius:12px; margin:0 4px; }
+                      body:not(.force-desktop-view) .rm-bar-icon { font-size:22px; }
+                      body:not(.force-desktop-view) #radnik-mapa-content .page-header-left h1 { font-size:24px !important; }
+                      body:not(.force-desktop-view) #radnik-mapa-content .page-header-left p { font-size:14px !important; }
+                      body:not(.force-desktop-view) .btn-zatvori-mapu { padding:10px 18px; font-size:14px; }
+                      body:not(.force-desktop-view) .rm-labels-toggle { font-size:12px; padding:6px 10px; gap:5px; }
+                      body:not(.force-desktop-view) .rm-labels-toggle input[type="checkbox"] { width:auto; height:auto; }
+                      body.radnik-mapa-fullscreen:not(.force-desktop-view) #radnik-mapa-content .page-header { padding:14px 16px 10px 16px; }
                       /* Manja traka na desktopu oslobađa prostor — smanji rezervisani
-                         razmak za nju (fallback prikaz i puni-ekran padding) sa ~112px
+                         razmak za nju (fallback prikaz i puni-ekran padding) sa ~280px
                          na ~80px, inače ostaje prazan razmak ispod smanjene trake. */
-                      #radnik-mapa-map { height:calc(100vh - 240px - 80px); }
-                      body.radnik-mapa-fullscreen #radnik-mapa-content { padding-bottom:calc(80px + env(safe-area-inset-bottom)) !important; }
+                      body:not(.force-desktop-view) #radnik-mapa-map { height:calc(100vh - 240px - 80px); }
+                      body.radnik-mapa-fullscreen:not(.force-desktop-view) #radnik-mapa-content { padding-bottom:calc(80px + env(safe-area-inset-bottom)) !important; }
                   }
 
                   /* Info panel s podacima odjela (klik na istaknuti odjel) — FIKSIRAN
