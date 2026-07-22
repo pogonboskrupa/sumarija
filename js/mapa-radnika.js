@@ -168,7 +168,7 @@
                 if (area > bestArea) { bestArea = area; bestLyr = lyr; }
             });
             var center = bestLyr.getBounds().getCenter();
-            var tip = L.tooltip({ permanent: true, direction: 'center', className: 'karta-tooltip', interactive: false, opacity: 1 })
+            var tip = L.tooltip({ permanent: true, direction: 'center', className: 'karta-tooltip rm-odjel-label', interactive: false, opacity: 1 })
                 .setContent(grp.label).setLatLng(center).addTo(_map);
             _labelMarkers.push(tip);
         });

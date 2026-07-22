@@ -3097,6 +3097,20 @@
                       .rm-bar-btn { font-size:13px; min-height:84px; }
                       .rm-bar-icon { font-size:30px; }
                   }
+                  /* Donja traka je namjerno velika radi dodira na terenu (mobilni) —
+                     na desktopu (miš, veliki ekran) je prevelika, pa se ovdje smanjuje
+                     nazad na razumnu veličinu. Prag 641px prati postojeću mobilnu
+                     granicu (@media max-width:640px) korištenu svuda u ovom modulu. */
+                  @media (min-width:641px) {
+                      .radnik-mapa-bottombar { padding:8px 8px calc(8px + env(safe-area-inset-bottom)) 8px; }
+                      .rm-bar-btn { min-height:56px; font-size:13px; gap:4px; border-radius:12px; margin:0 4px; }
+                      .rm-bar-icon { font-size:22px; }
+                      /* Manja traka na desktopu oslobađa prostor — smanji rezervisani
+                         razmak za nju (fallback prikaz i puni-ekran padding) sa ~112px
+                         na ~80px, inače ostaje prazan razmak ispod smanjene trake. */
+                      #radnik-mapa-map { height:calc(100vh - 240px - 80px); }
+                      body.radnik-mapa-fullscreen #radnik-mapa-content { padding-bottom:calc(80px + env(safe-area-inset-bottom)) !important; }
+                  }
 
                   /* Info panel s podacima odjela (klik na istaknuti odjel) — FIKSIRAN
                      u gornjem dijelu mape (ne Leaflet popup vezan za tačku klika), da
@@ -3132,6 +3146,10 @@
                       .rm-popup-chip-label { font-size:11px; }
                       .rm-popup-chip-val { font-size:16px; }
                       .rm-popup-total { font-size:16px; padding-top:8px; }
+                      /* Trajne oznake brojeva odjela ("Prikaži odjele") — na desktopu
+                         (naslijeđeni Leaflet default ~12px) su čitljive, ali na malom
+                         mobilnom ekranu su presitne; uvećaj samo na mobilnom. */
+                      .rm-odjel-label { font-size:15px !important; padding:3px 8px !important; }
                   }
 
                   /* ── MAPA FOKUS MODE ── */
