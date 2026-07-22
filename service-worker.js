@@ -1,6 +1,6 @@
 // ========== Service Worker - Offline Support ==========
 
-const CACHE_VERSION = 'v13';
+const CACHE_VERSION = 'v14';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
 // Install — pre-keširaj samo offline.html (fallback koji se inače nikad ne
@@ -35,10 +35,12 @@ self.addEventListener('fetch', (event) => {
     // Google Apps Script — ne interceptuj (fetchWithCache u app.js ima stale fallback)
     if (url.hostname === 'script.google.com') return;
 
-    // Stranice (navigate) — network-first, fallback na cached ili offline.html
+    // Stranice (navigate) — network-first, fallback na cached ili offline.html.
+    // {cache:'reload'} zaobilazi browserov HTTP keš da se index.html stvarno
+    // provjeri na mreži pri svakom otvaranju (isti razlog kao kod JS/CSS ispod).
     if (request.mode === 'navigate') {
         event.respondWith(
-            fetch(request)
+            fetch(request, { cache: 'reload' })
                 .then(resp => { _cacheIfOk(resp.clone(), request); return resp; })
                 .catch(() => caches.match(request)
                     .then(c => c || caches.match('offline.html')))
@@ -62,11 +64,15 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // JS, CSS, slike — stale-while-revalidate
+    // JS, CSS, slike — stale-while-revalidate. Bitno: revalidate fetch mora
+    // zaobići browserov HTTP keš ({cache:'reload'}), inače "svježa" pozadinska
+    // provjera zna sama pogoditi HTTP keš i vratiti isti stari (istekli)
+    // odgovor umjesto stvarno novog sa mreže — što bi značilo da nova verzija
+    // nikad ne stigne u Cache Storage ni nakon više reload-ova.
     if (/\.(js|css|png|jpg|svg|ico|woff2?)$/.test(url.pathname)) {
         event.respondWith(
             caches.match(request).then(cached => {
-                const network = fetch(request).then(resp => { _cacheIfOk(resp.clone(), request); return resp; })
+                const network = fetch(request, { cache: 'reload' }).then(resp => { _cacheIfOk(resp.clone(), request); return resp; })
                     .catch(() => cached || new Response('', { status: 503 }));
                 return cached || network;
             })
