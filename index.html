@@ -3128,6 +3128,10 @@
                       cursor:pointer; font-family:inherit;
                   }
                   .rm-info-panel-close:active { background:#e5e7eb; }
+                  /* "Prikaži odjele" trajne oznake brojeva — 2.5x veće od naslijeđenog
+                     Leaflet default-a (~12px) na svim ekranima, radi vidljivosti na
+                     terenu (fiksna veličina, ne mijenja se sa zumom mape). */
+                  .rm-odjel-label { font-size:30px !important; font-weight:800 !important; padding:6px 14px !important; border-radius:8px !important; }
                   .rm-popup-title { font-weight:700; color:#047857; font-size:15px; margin-bottom:2px; }
                   .rm-popup-datum { font-size:11px; color:#6b7280; margin-bottom:8px; }
                   .rm-popup-grid { display:flex; flex-wrap:wrap; gap:6px; margin:2px 0 8px; }
@@ -3149,7 +3153,7 @@
                       /* Trajne oznake brojeva odjela ("Prikaži odjele") — na desktopu
                          (naslijeđeni Leaflet default ~12px) su čitljive, ali na malom
                          mobilnom ekranu su presitne; uvećaj samo na mobilnom. */
-                      .rm-odjel-label { font-size:15px !important; padding:3px 8px !important; }
+                      .rm-odjel-label { font-size:38px !important; padding:8px 18px !important; }
                   }
 
                   /* ── MAPA FOKUS MODE ── */
