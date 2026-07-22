@@ -3010,11 +3010,12 @@
                   @media (max-width:1024px) { #karta-odjela-map { height:calc(100vh - 200px); min-height:320px; } }
                   @media (max-width:640px)  { #karta-odjela-map { height:calc(100vh - 230px); min-height:260px; } }
 
-                  /* Radnik mapa odjela — visina umanjena za donju traku dugmadi (~72-80px).
-                     Ovo je fallback prikaz PRIJE nego se puni-ekran mod (ispod) aktivira. */
-                  #radnik-mapa-map { width:100%; height:calc(100vh - 240px - 74px); min-height:320px; background:#f1f5f9; border-radius:12px; overflow:hidden; }
-                  @media (max-width:1024px) { #radnik-mapa-map { height:calc(100vh - 220px - 74px); min-height:280px; } }
-                  @media (max-width:640px)  { #radnik-mapa-map { height:calc(100vh - 250px - 80px); min-height:220px; } }
+                  /* Radnik mapa odjela — visina umanjena za donju traku dugmadi (~96-104px,
+                     uvećana traka). Ovo je fallback prikaz PRIJE nego se puni-ekran mod
+                     (ispod) aktivira. */
+                  #radnik-mapa-map { width:100%; height:calc(100vh - 240px - 96px); min-height:300px; background:#f1f5f9; border-radius:12px; overflow:hidden; }
+                  @media (max-width:1024px) { #radnik-mapa-map { height:calc(100vh - 220px - 96px); min-height:260px; } }
+                  @media (max-width:640px)  { #radnik-mapa-map { height:calc(100vh - 250px - 104px); min-height:200px; } }
 
                   /* ── PUNI EKRAN (AlpineQuest-stil) — aktivira se ulaskom u Mapa odjela,
                      uklanja se klikom na "Zatvori" (ili automatski pri prelasku na bilo
@@ -3028,7 +3029,7 @@
                       position:fixed !important; inset:0 !important; z-index:9999;
                       display:flex !important; flex-direction:column;
                       margin:0 !important; max-width:none !important;
-                      padding:0 0 calc(74px + env(safe-area-inset-bottom)) 0 !important;
+                      padding:0 0 calc(96px + env(safe-area-inset-bottom)) 0 !important;
                       background:#fff; box-sizing:border-box;
                   }
                   body.radnik-mapa-fullscreen #radnik-mapa-content .page-header {
@@ -3040,7 +3041,7 @@
                   }
                   @media (max-width:640px) {
                       body.radnik-mapa-fullscreen #radnik-mapa-content {
-                          padding-bottom:calc(80px + env(safe-area-inset-bottom)) !important;
+                          padding-bottom:calc(104px + env(safe-area-inset-bottom)) !important;
                       }
                   }
 
@@ -3056,28 +3057,36 @@
 
                   /* Donja fiksna traka — Moja lokacija / Snimi trag / Obriši tragove.
                      IZVAN Leaflet mape (obična HTML dugmad, ne Leaflet control), pa
-                     ih dodir/pan gesta na mapi ne blokira. */
+                     ih dodir/pan gesta na mapi ne blokira. Uvećana (v1.4.74) — ranija
+                     verzija je bila presitna za čitanje/dodir na terenu. */
                   .radnik-mapa-bottombar {
                       position:fixed; left:0; right:0; bottom:0; z-index:10001;
                       display:flex;
-                      background:rgba(255,255,255,.97); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-                      box-shadow:0 -4px 16px rgba(0,0,0,.14);
-                      border-top:1px solid #e5e7eb;
-                      padding:8px 8px calc(8px + env(safe-area-inset-bottom)) 8px;
+                      background:rgba(255,255,255,.98); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+                      box-shadow:0 -6px 20px rgba(0,0,0,.18);
+                      border-top:2px solid #e5e7eb;
+                      padding:12px 10px calc(12px + env(safe-area-inset-bottom)) 10px;
                   }
                   .rm-bar-btn {
                       flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
-                      gap:3px; min-height:58px; border:none; border-radius:12px; margin:0 4px;
-                      font-size:11px; font-weight:700; cursor:pointer; font-family:inherit;
-                      color:#fff; transition:transform .1s ease, filter .15s ease;
+                      gap:6px; min-height:78px; border:none; border-radius:16px; margin:0 5px;
+                      font-size:14px; font-weight:800; cursor:pointer; font-family:inherit;
+                      letter-spacing:.2px;
+                      color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25);
+                      box-shadow:0 3px 8px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.25);
+                      transition:transform .1s ease, filter .15s ease;
                   }
-                  .rm-bar-icon { font-size:22px; line-height:1; }
+                  .rm-bar-icon { font-size:30px; line-height:1; }
                   .rm-bar-btn:active { transform:scale(.94); filter:brightness(.9); }
                   .rm-bar-btn:disabled { opacity:.6; cursor:default; transform:none; }
-                  .rm-bar-loc { background:linear-gradient(180deg,#3b82f6,#2563eb); }
-                  .rm-bar-trag { background:linear-gradient(180deg,#10b981,#059669); }
-                  .rm-bar-trag.recording { background:linear-gradient(180deg,#f87171,#dc2626); }
-                  .rm-bar-clear { background:linear-gradient(180deg,#9ca3af,#6b7280); }
+                  .rm-bar-loc { background:linear-gradient(180deg,#2563eb,#1d4ed8); }
+                  .rm-bar-trag { background:linear-gradient(180deg,#059669,#047857); }
+                  .rm-bar-trag.recording { background:linear-gradient(180deg,#ef4444,#dc2626); }
+                  .rm-bar-clear { background:linear-gradient(180deg,#6b7280,#4b5563); }
+                  @media (max-width:360px) {
+                      .rm-bar-btn { font-size:12px; min-height:72px; }
+                      .rm-bar-icon { font-size:26px; }
+                  }
 
                   /* Popup sa podacima odjela (klik na istaknuti odjel) — čitljivo
                      i na mobilnom (veći tekst/razmak, ne oslanja se samo na inline
