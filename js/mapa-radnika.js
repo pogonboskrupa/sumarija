@@ -5,10 +5,13 @@
 // taj odjel (m³ po sortimentu, zadnji datum); klik na neistaknuti odjel ne radi
 // ništa (nema podataka radnika za taj odjel).
 //
-// Dugmad ("📍 Moja lokacija", "⏺️ Snimi trag", "🗑️ Obriši tragove") su
-// UNUTAR mape kao Leaflet custom control (gornji desni ugao), ne u zaglavlju
-// stranice. Snimljeni trag se čuva u localStorage (po korisniku) i ostaje
-// vidljiv i nakon zatvaranja/ponovnog otvaranja mape.
+// Dugmad ("📍 Moja lokacija", "⏺️ Snimi trag", "🗑️ Obriši tragove") su u
+// FIKSNOJ DONJOJ TRACI IZVAN Leaflet kontejnera (obična HTML dugmad u
+// index.html, ne Leaflet control) — dodir/pan gesta na mapi ih ne blokira.
+// "✕ Zatvori" dugme u zaglavlju vraća na radnikov početni tab
+// (primac-personal / otpremac-personal). Snimljeni trag se čuva u
+// localStorage (po korisniku) i ostaje vidljiv i nakon zatvaranja/ponovnog
+// otvaranja mape.
 //
 // Dizajn: zaseban, lagan Leaflet instance (svoj container #radnik-mapa-map),
 // NE dira postojeći admin karta-odjela.js singleton.
@@ -314,39 +317,28 @@
         _drawSavedTracks();
     }
 
-    // ---- Leaflet control (dugmad UNUTAR mape, gornji desni ugao) ----
-    function _addControls() {
-        var Ctrl = L.Control.extend({
-            options: { position: 'topright' },
-            onAdd: function() {
-                var div = L.DomUtil.create('div', 'radnik-mapa-controls');
-                L.DomEvent.disableClickPropagation(div);
-                L.DomEvent.disableScrollPropagation(div);
-
-                _locBtnEl = L.DomUtil.create('button', 'rm-loc-btn', div);
-                _locBtnEl.type = 'button';
-                _locBtnEl.textContent = '📍 Moja lokacija';
-                L.DomEvent.on(_locBtnEl, 'click', _locateMe);
-
-                _tragBtnEl = L.DomUtil.create('button', 'rm-trag-btn', div);
-                _tragBtnEl.type = 'button';
-                _tragBtnEl.textContent = '⏺️ Snimi trag';
-                L.DomEvent.on(_tragBtnEl, 'click', _toggleTrag);
-
-                var clearBtn = L.DomUtil.create('button', 'rm-clear-btn', div);
-                clearBtn.type = 'button';
-                clearBtn.textContent = '🗑️ Obriši tragove';
-                L.DomEvent.on(clearBtn, 'click', _clearTracks);
-
-                return div;
-            }
-        });
-        _map.addControl(new Ctrl());
+    // ---- Dugmad — obična HTML dugmad IZVAN Leaflet kontejnera (donja traka
+    // u index.html, #radnik-mapa-content), NE Leaflet control. Ranije su ova
+    // dugmad bila Leaflet L.Control POVRH mape — dodir na mapu (pan gesta) je
+    // hvatao dodir i oko/na dugmadima, pa je do njih bilo teško doći. Obična
+    // DOM dugmad van #radnik-mapa-map rješavaju to jer ih Leaflet ne "vidi".
+    function _bindBarButtons() {
+        _locBtnEl = document.getElementById('radnik-mapa-loc-btn');
+        _tragBtnEl = document.getElementById('radnik-mapa-trag-btn');
     }
+    window.mapaRadnikaLocateMe = _locateMe;
+    window.mapaRadnikaToggleTrag = _toggleTrag;
+    window.mapaRadnikaClearTracks = _clearTracks;
+    window.closeMapaRadnika = function() {
+        var home = (_workerType === 'otpremac') ? 'otpremac-personal' : 'primac-personal';
+        if (typeof switchTab === 'function') switchTab(home);
+    };
 
     // ---- INICIJALIZACIJA ----
     // type: 'primac' | 'otpremac'
+    var _workerType = null;
     window.initMapaRadnika = async function(type) {
+        _workerType = type;
         var mapDiv = document.getElementById('radnik-mapa-map');
         if (!mapDiv) return;
         var content = document.getElementById('radnik-mapa-content');
@@ -358,7 +350,7 @@
                 attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                 maxZoom: 18
             }).addTo(_map);
-            _addControls();
+            _bindBarButtons();
             _drawSavedTracks();
         }
         // Leaflet mora preračunati veličinu nakon što tab postane vidljiv
