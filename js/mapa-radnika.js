@@ -98,18 +98,21 @@
     function _popupHtml(o) {
         var grupne = { 'UKUPNO Č+L': 1, 'Σ ČETINARI': 1, 'LIŠĆARI': 1 };
         var sort = o.sortimenti || {};
-        var rows = Object.keys(sort)
+        // Horizontalne kartice ("chips") umjesto uske vertikalne tabele — više
+        // sortimenata stane u vidno polje odjednom, količina je istaknuta
+        // (veliki podebljan font) unutar svake kartice.
+        var chips = Object.keys(sort)
             .filter(function(s) { return (sort[s] || 0) > 0 && !grupne[s]; })
             .map(function(s) {
-                return '<tr><td class="rm-popup-label">' + s +
-                    '</td><td class="rm-popup-val">' + _fmt(sort[s]) + '</td></tr>';
+                return '<div class="rm-popup-chip"><span class="rm-popup-chip-label">' + s +
+                    '</span><span class="rm-popup-chip-val">' + _fmt(sort[s]) + '</span></div>';
             }).join('');
         return '<div class="rm-odjel-popup">' +
             '<div class="rm-popup-title">📁 Odjel ' + (o.odjel || '?') + '</div>' +
             '<div class="rm-popup-datum">Zadnji unos: ' + (o.zadnjiDatum || '—') + '</div>' +
-            '<table class="rm-popup-table">' +
-            (rows || '<tr><td colspan="2" style="color:#9ca3af;">Nema sortimenata</td></tr>') +
-            '</table>' +
+            '<div class="rm-popup-grid">' +
+            (chips || '<span style="color:#9ca3af;font-size:12px;">Nema sortimenata</span>') +
+            '</div>' +
             '<div class="rm-popup-total">' +
             '<span>UKUPNO</span><span>' + _fmt(o.ukupno) + '</span></div>' +
             '</div>';
@@ -175,9 +178,11 @@
                     radnikLayers.push(lyr);
                     lyr.on('click', function() {
                         // maxWidth se računa u odnosu na širinu ekrana da popup
-                        // uvijek stane na malim mobilnim ekranima bez sažimanja
-                        var mw = Math.max(240, Math.min(320, window.innerWidth - 40));
-                        this.bindPopup(_popupHtml(o), { maxWidth: mw, minWidth: 220, autoPan: true, autoPanPadding: [20, 20] }).openPopup();
+                        // uvijek stane na malim mobilnim ekranima bez sažimanja;
+                        // šire nego ranije da chip-grid stvarno stane horizontalno
+                        // (2-3 kartice u redu) umjesto uske vertikalne liste.
+                        var mw = Math.max(260, Math.min(420, window.innerWidth - 24));
+                        this.bindPopup(_popupHtml(o), { maxWidth: mw, minWidth: 240, autoPan: true, autoPanPadding: [20, 20] }).openPopup();
                     });
                 }
             }
