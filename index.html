@@ -3073,7 +3073,13 @@
                       .btn-zatvori-mapu { padding:24px 40px; font-size:32px; }
                       .rm-labels-toggle { font-size:30px; padding:20px 28px; gap:16px; }
                       .rm-labels-toggle input[type="checkbox"] { width:36px; height:36px; }
+                      /* Checkbox + Zatvori ne smiju forsirati horizontalni scroll ako
+                         zajedno ne stanu u red na užem ekranu — prelamaju se u novi red. */
+                      #radnik-mapa-content .page-header-right { flex-wrap:wrap; row-gap:10px; }
                   }
+                  /* Tvrda garancija — ni pod kojim uslovima horizontalni scroll
+                     unutar zaglavlja Mape odjela (traka se nikad ne "skrola" lijevo-desno). */
+                  #radnik-mapa-content .page-header { overflow-x:hidden; max-width:100%; }
 
                   /* "✕ Zatvori" dugme u zaglavlju — vraća na radnikov početni tab.
                      Van Leaflet mape, pa dodir na mapu ne ometa dolazak do njega. */
@@ -3097,17 +3103,17 @@
                      čitanje/dodir na terenu. */
                   .radnik-mapa-bottombar {
                       position:fixed; left:0; right:0; bottom:0; z-index:10001;
-                      display:flex;
+                      display:flex; overflow-x:hidden;
                       background:rgba(255,255,255,.98); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
                       box-shadow:0 -8px 24px rgba(0,0,0,.2);
                       border-top:2px solid #e5e7eb;
                       padding:36px 10px calc(36px + env(safe-area-inset-bottom)) 10px;
                   }
                   .rm-bar-btn {
-                      flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+                      flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
                       gap:14px; min-height:208px; border:none; border-radius:18px; margin:0 5px;
                       font-size:36px; font-weight:800; cursor:pointer; font-family:inherit;
-                      letter-spacing:.2px;
+                      letter-spacing:.2px; text-align:center; overflow-wrap:break-word; word-break:break-word;
                       color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25);
                       box-shadow:0 3px 8px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.25);
                       transition:transform .1s ease, filter .15s ease;
