@@ -3092,17 +3092,23 @@
 
                   /* "✕ Zatvori" dugme u zaglavlju — vraća na radnikov početni tab.
                      Van Leaflet mape, pa dodir na mapu ne ometa dolazak do njega. */
+                  /* NAPOMENA (v1.4.103): padding/font-size su NAMJERNO uklonjeni odavde —
+                     ova deklaracija je bila FIZIČKI ISPOD sizing override-a (linija
+                     ~3079-3081) pa je (kod jednake specifičnosti) UVIJEK pobjeđivala u
+                     cascade-u, poništavajući svako smanjivanje zaglavlja. Veličina se
+                     sad definiše ISKLJUČIVO na jednom mjestu (linija ~3079-3081); ovdje
+                     ostaje samo vizuelni stil (boja/border/radius) koji se ne kosi. */
                   .btn-zatvori-mapu {
                       background:#f3f4f6; color:#374151; border:none; border-radius:10px;
-                      padding:10px 18px; font-size:14px; font-weight:700; cursor:pointer;
+                      font-weight:700; cursor:pointer;
                       font-family:inherit; transition:background .15s ease;
                   }
                   .btn-zatvori-mapu:hover { background:#e5e7eb; }
                   .btn-zatvori-mapu:active { background:#d1d5db; }
                   .rm-labels-toggle {
-                      display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600;
+                      display:flex; align-items:center; font-weight:600;
                       color:#374151; cursor:pointer; background:white; border:1px solid #d1d5db;
-                      border-radius:6px; padding:6px 10px;
+                      border-radius:6px;
                   }
 
                   /* Donja fiksna traka — Moja lokacija / Snimi trag / Obriši tragove.
@@ -3154,12 +3160,14 @@
                       body:not(.force-desktop-view) .radnik-mapa-bottombar { padding:8px 8px calc(8px + env(safe-area-inset-bottom)) 8px; }
                       body:not(.force-desktop-view) .rm-bar-btn { min-height:56px; font-size:13px; gap:4px; border-radius:12px; margin:0 4px; }
                       body:not(.force-desktop-view) .rm-bar-icon { font-size:22px; }
-                      body:not(.force-desktop-view) #radnik-mapa-content .page-header-left h1 { font-size:24px !important; }
-                      body:not(.force-desktop-view) #radnik-mapa-content .page-header-left p { font-size:14px !important; }
-                      body:not(.force-desktop-view) .btn-zatvori-mapu { padding:10px 18px; font-size:14px; }
-                      body:not(.force-desktop-view) .rm-labels-toggle { font-size:12px; padding:6px 10px; gap:5px; }
-                      body:not(.force-desktop-view) .rm-labels-toggle input[type="checkbox"] { width:auto; height:auto; }
-                      body.radnik-mapa-fullscreen:not(.force-desktop-view) #radnik-mapa-content .page-header { padding:14px 16px 10px 16px; }
+                      /* NAPOMENA (v1.4.103): h1/p/checkbox/Zatvori override-i su OVDJE
+                         ranije postavljali VEĆE vrijednosti (24px/14px/...) nego
+                         "terensku" bazu — nakon više krugova smanjivanja zaglavlja
+                         (v1.4.99-102) baza je postala manja od ovoga, pa je ovaj blok
+                         (koji se primjenjuje na svakom ekranu širem od 1024px, uklj.
+                         tablete na terenu) NADJAČAVAO korisnikovo poslednje smanjenje —
+                         izgledalo je kao da izmjene "ne rade". Uklonjeno; zaglavlje sad
+                         zadržava istu (terensku) veličinu na svim širinama. */
                       /* Manja traka na desktopu oslobađa prostor — smanji rezervisani
                          razmak za nju (fallback prikaz i puni-ekran padding) sa ~60px
                          na ~80px — na pravom desktopu je razmak čak i veći nego na
