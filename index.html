@@ -1310,7 +1310,7 @@
                     <p>Svi odjeli — <strong style="color:#047857;">zeleno</strong> označava gdje ste radili (kliknite za vaše podatke).<span id="radnik-mapa-legend-extra"></span> <span id="radnik-mapa-status" style="color:#047857;font-weight:600;"></span></p>
                 </div>
                 <div class="page-header-right">
-                    <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#374151;cursor:pointer;background:white;border:1px solid #d1d5db;border-radius:6px;padding:6px 10px;">
+                    <label class="rm-labels-toggle">
                         <input id="radnik-mapa-labels-toggle" type="checkbox" onchange="mapaRadnikaToggleLabels()" style="cursor:pointer;margin:0;" />
                         🏷️ Prikaži odjele
                     </label>
@@ -3024,7 +3024,7 @@
                      mod (ispod) aktivira. */
                   #radnik-mapa-map { position:relative; width:100%; height:calc(100vh - 240px - 112px); min-height:280px; background:#f1f5f9; border-radius:12px; overflow:hidden; }
                   @media (max-width:1024px) { #radnik-mapa-map { height:calc(100vh - 220px - 112px); min-height:240px; } }
-                  @media (max-width:640px)  { #radnik-mapa-map { height:calc(100vh - 250px - 120px); min-height:180px; } }
+                  @media (max-width:640px)  { #radnik-mapa-map { height:calc(100vh - 250px - 148px); min-height:180px; } }
 
                   /* ── PUNI EKRAN (AlpineQuest-stil) — aktivira se ulaskom u Mapa odjela,
                      uklanja se klikom na "Zatvori" (ili automatski pri prelasku na bilo
@@ -3050,8 +3050,19 @@
                   }
                   @media (max-width:640px) {
                       body.radnik-mapa-fullscreen #radnik-mapa-content {
-                          padding-bottom:calc(120px + env(safe-area-inset-bottom)) !important;
+                          padding-bottom:calc(148px + env(safe-area-inset-bottom)) !important;
                       }
+                      /* Gornja traka (naslov/legenda/checkbox/Zatvori) je koristila
+                         opšti mobilni page-header shrink (18px/12px) — presitno za
+                         ovaj ekran, pa se ovdje eksplicitno uvećava. */
+                      body.radnik-mapa-fullscreen #radnik-mapa-content .page-header {
+                          padding:16px 16px 12px 16px;
+                      }
+                      #radnik-mapa-content .page-header-left h1 { font-size:22px !important; }
+                      #radnik-mapa-content .page-header-left p { font-size:14px !important; line-height:1.4; }
+                      .btn-zatvori-mapu { padding:12px 20px; font-size:16px; }
+                      .rm-labels-toggle { font-size:15px; padding:10px 14px; gap:8px; }
+                      .rm-labels-toggle input[type="checkbox"] { width:18px; height:18px; }
                   }
 
                   /* "✕ Zatvori" dugme u zaglavlju — vraća na radnikov početni tab.
@@ -3063,6 +3074,11 @@
                   }
                   .btn-zatvori-mapu:hover { background:#e5e7eb; }
                   .btn-zatvori-mapu:active { background:#d1d5db; }
+                  .rm-labels-toggle {
+                      display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600;
+                      color:#374151; cursor:pointer; background:white; border:1px solid #d1d5db;
+                      border-radius:6px; padding:6px 10px;
+                  }
 
                   /* Donja fiksna traka — Moja lokacija / Snimi trag / Obriši tragove.
                      IZVAN Leaflet mape (obična HTML dugmad, ne Leaflet control), pa
@@ -3075,18 +3091,18 @@
                       background:rgba(255,255,255,.98); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
                       box-shadow:0 -8px 24px rgba(0,0,0,.2);
                       border-top:2px solid #e5e7eb;
-                      padding:15px 10px calc(15px + env(safe-area-inset-bottom)) 10px;
+                      padding:18px 10px calc(18px + env(safe-area-inset-bottom)) 10px;
                   }
                   .rm-bar-btn {
                       flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
-                      gap:7px; min-height:92px; border:none; border-radius:18px; margin:0 5px;
-                      font-size:16px; font-weight:800; cursor:pointer; font-family:inherit;
+                      gap:7px; min-height:104px; border:none; border-radius:18px; margin:0 5px;
+                      font-size:18px; font-weight:800; cursor:pointer; font-family:inherit;
                       letter-spacing:.2px;
                       color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25);
                       box-shadow:0 3px 8px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.25);
                       transition:transform .1s ease, filter .15s ease;
                   }
-                  .rm-bar-icon { font-size:34px; line-height:1; }
+                  .rm-bar-icon { font-size:38px; line-height:1; }
                   .rm-bar-btn:active { transform:scale(.94); filter:brightness(.9); }
                   .rm-bar-btn:disabled { opacity:.6; cursor:default; transform:none; }
                   .rm-bar-loc { background:linear-gradient(180deg,#2563eb,#1d4ed8); }
@@ -3094,8 +3110,8 @@
                   .rm-bar-trag.recording { background:linear-gradient(180deg,#ef4444,#dc2626); }
                   .rm-bar-clear { background:linear-gradient(180deg,#6b7280,#4b5563); }
                   @media (max-width:360px) {
-                      .rm-bar-btn { font-size:13px; min-height:84px; }
-                      .rm-bar-icon { font-size:30px; }
+                      .rm-bar-btn { font-size:14px; min-height:92px; }
+                      .rm-bar-icon { font-size:32px; }
                   }
                   /* Donja traka je namjerno velika radi dodira na terenu (mobilni) —
                      na desktopu (miš, veliki ekran) je prevelika, pa se ovdje smanjuje
