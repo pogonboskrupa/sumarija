@@ -56,6 +56,14 @@
             if (typeof window.exitMapaRadnikaFullscreenIfActive === 'function') {
                 window.exitMapaRadnikaFullscreenIfActive(tab);
             }
+            // I obrnuto — ako se ULAZI na Mapu odjela, osiguraj da je donja
+            // traka vidljiva ODMAH, prije eventualnog ranog "return" ispod
+            // (svjež keš → instant prikaz preskače granu koja poziva
+            // initMapaRadnika, pa bi traka inače ostala sakrivena od
+            // prethodnog izlaska s taba).
+            if (typeof window.enterMapaRadnikaFullscreenIfActive === 'function') {
+                window.enterMapaRadnikaFullscreenIfActive(tab);
+            }
 
             // Update tab buttons - set active on all matching tabs (sidebar + mobile)
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));

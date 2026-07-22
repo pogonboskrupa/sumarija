@@ -364,6 +364,14 @@
     window.exitMapaRadnikaFullscreenIfActive = function(nextTab) {
         if (nextTab !== 'primac-mapa' && nextTab !== 'otpremac-mapa') _exitMapaFullscreen();
     };
+    // Poziva se iz switchTab i kad se ponovo ulazi na Mapu odjela preko
+    // "instant cache" grane (svjež keš → switchTab se vrati prije nego što
+    // stigne do initMapaRadnika poziva) — bez ovoga donja traka ostaje
+    // display:none od prethodnog izlaska jer se _enterMapaFullscreen() nikad
+    // ne pozove ponovo.
+    window.enterMapaRadnikaFullscreenIfActive = function(tab) {
+        if (tab === 'primac-mapa' || tab === 'otpremac-mapa') _enterMapaFullscreen();
+    };
 
     window.mapaRadnikaLocateMe = _locateMe;
     window.mapaRadnikaToggleTrag = _toggleTrag;
