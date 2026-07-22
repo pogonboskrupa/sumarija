@@ -3024,7 +3024,7 @@
                      mod (ispod) aktivira. */
                   #radnik-mapa-map { position:relative; width:100%; height:calc(100vh - 240px - 112px); min-height:280px; background:#f1f5f9; border-radius:12px; overflow:hidden; }
                   @media (max-width:1024px) { #radnik-mapa-map { height:calc(100vh - 220px - 112px); min-height:240px; } }
-                  @media (max-width:1024px)  { #radnik-mapa-map { height:calc(100vh - 250px - 148px); min-height:180px; } }
+                  @media (max-width:1024px)  { #radnik-mapa-map { height:calc(100vh - 250px - 60px); min-height:180px; } }
 
                   /* ── PUNI EKRAN (AlpineQuest-stil) — aktivira se ulaskom u Mapa odjela,
                      uklanja se klikom na "Zatvori" (ili automatski pri prelasku na bilo
@@ -3040,10 +3040,14 @@
                      u preostali prostor umjesto da forsira skrolanje. */
                   body.radnik-mapa-fullscreen { overflow:hidden !important; }
                   body.radnik-mapa-fullscreen #radnik-mapa-content {
-                      position:fixed !important; inset:0 !important; z-index:9999;
+                      /* z-index:9999 je bio NIŽI od .header/.tabs-container (z-index:10000,
+                         css/main.css) — da display:none sakrivanje ikad zakasni/omane,
+                         ostali tabovi bi se vidjeli PREKO mape. 10500 garantuje da je
+                         mapa uvijek iznad, bez obzira na hide pravilo ispod. */
+                      position:fixed !important; inset:0 !important; z-index:10500;
                       display:flex !important; flex-direction:column; overflow:hidden;
                       margin:0 !important; max-width:none !important;
-                      padding:0 0 calc(148px + env(safe-area-inset-bottom)) 0 !important;
+                      padding:0 0 calc(60px + env(safe-area-inset-bottom)) 0 !important;
                       background:#fff; box-sizing:border-box;
                   }
                   /* Gornja traka (naslov/legenda/checkbox/Zatvori) — UVIJEK ista veličina
@@ -3057,13 +3061,13 @@
                      da se uopšte prikaže). Vraćeno na razumnu, stvarno upotrebljivu
                      veličinu za telefon (ranije v1.4.89 vrijednosti). */
                   body.radnik-mapa-fullscreen #radnik-mapa-content .page-header {
-                      flex:0 0 auto; margin:0; padding:16px 16px 12px 16px;
+                      flex:0 0 auto; margin:0; padding:6px 6px 5px 6px;
                   }
-                  #radnik-mapa-content .page-header-left h1 { font-size:22px !important; }
-                  #radnik-mapa-content .page-header-left p { font-size:14px !important; line-height:1.4; }
-                  .btn-zatvori-mapu { padding:12px 20px; font-size:16px; }
-                  .rm-labels-toggle { font-size:15px; padding:10px 14px; gap:8px; }
-                  .rm-labels-toggle input[type="checkbox"] { width:18px; height:18px; }
+                  #radnik-mapa-content .page-header-left h1 { font-size:9px !important; }
+                  #radnik-mapa-content .page-header-left p { font-size:6px !important; line-height:1.4; }
+                  .btn-zatvori-mapu { padding:5px 8px; font-size:6px; }
+                  .rm-labels-toggle { font-size:6px; padding:4px 6px; gap:3px; }
+                  .rm-labels-toggle input[type="checkbox"] { width:7px; height:7px; }
                   /* Checkbox + Zatvori ne smiju forsirati horizontalni scroll ako
                      zajedno ne stanu u red — prelamaju se u novi red. */
                   #radnik-mapa-content .page-header-right { flex-wrap:wrap; row-gap:10px; }
@@ -3096,23 +3100,26 @@
                      (v1.4.74, v1.4.75) — ranija verzija je bila presitna za
                      čitanje/dodir na terenu. */
                   .radnik-mapa-bottombar {
-                      position:fixed; left:0; right:0; bottom:0; z-index:10001;
+                      /* Mora biti iznad #radnik-mapa-content (z-index:10500) — sibling
+                         element van njega, pa niži z-index ovdje znači da bi ga mapa
+                         prekrila (nevidljiva donja traka). */
+                      position:fixed; left:0; right:0; bottom:0; z-index:10600;
                       display:flex; overflow-x:hidden;
                       background:rgba(255,255,255,.98); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
                       box-shadow:0 -8px 24px rgba(0,0,0,.2);
                       border-top:2px solid #e5e7eb;
-                      padding:18px 10px calc(18px + env(safe-area-inset-bottom)) 10px;
+                      padding:7px 10px calc(7px + env(safe-area-inset-bottom)) 10px;
                   }
                   .rm-bar-btn {
                       flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-                      gap:7px; min-height:104px; border:none; border-radius:18px; margin:0 5px;
-                      font-size:18px; font-weight:800; cursor:pointer; font-family:inherit;
+                      gap:3px; min-height:42px; border:none; border-radius:10px; margin:0 5px;
+                      font-size:7px; font-weight:800; cursor:pointer; font-family:inherit;
                       letter-spacing:.2px; text-align:center; overflow-wrap:break-word;
                       color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25);
                       box-shadow:0 3px 8px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.25);
                       transition:transform .1s ease, filter .15s ease;
                   }
-                  .rm-bar-icon { font-size:38px; line-height:1; }
+                  .rm-bar-icon { font-size:15px; line-height:1; }
                   .rm-bar-btn:active { transform:scale(.94); filter:brightness(.9); }
                   .rm-bar-btn:disabled { opacity:.6; cursor:default; transform:none; }
                   .rm-bar-loc { background:linear-gradient(180deg,#2563eb,#1d4ed8); }
@@ -3120,8 +3127,8 @@
                   .rm-bar-trag.recording { background:linear-gradient(180deg,#ef4444,#dc2626); }
                   .rm-bar-clear { background:linear-gradient(180deg,#6b7280,#4b5563); }
                   @media (max-width:360px) {
-                      .rm-bar-btn { font-size:14px; min-height:92px; }
-                      .rm-bar-icon { font-size:32px; }
+                      .rm-bar-btn { font-size:6px; min-height:37px; }
+                      .rm-bar-icon { font-size:13px; }
                   }
                   /* Donja (i gornja) traka su namjerno velike radi dodira na terenu —
                      smanjuju se SAMO na pravom desktopu (miš, veliki ekran, širina
@@ -3143,8 +3150,11 @@
                       body:not(.force-desktop-view) .rm-labels-toggle input[type="checkbox"] { width:auto; height:auto; }
                       body.radnik-mapa-fullscreen:not(.force-desktop-view) #radnik-mapa-content .page-header { padding:14px 16px 10px 16px; }
                       /* Manja traka na desktopu oslobađa prostor — smanji rezervisani
-                         razmak za nju (fallback prikaz i puni-ekran padding) sa ~148px
-                         na ~80px, inače ostaje prazan razmak ispod smanjene trake. */
+                         razmak za nju (fallback prikaz i puni-ekran padding) sa ~60px
+                         na ~80px — na pravom desktopu je razmak čak i veći nego na
+                         terenskoj (mobilnoj) verziji, jer je ova sad manja od 2,5x
+                         smanjenja (v1.4.97); nije greška, samo ostaje dovoljno
+                         prostora oko manjih desktop dugmadi. */
                       body:not(.force-desktop-view) #radnik-mapa-map { height:calc(100vh - 240px - 80px); }
                       body.radnik-mapa-fullscreen:not(.force-desktop-view) #radnik-mapa-content { padding-bottom:calc(80px + env(safe-area-inset-bottom)) !important; }
                   }
