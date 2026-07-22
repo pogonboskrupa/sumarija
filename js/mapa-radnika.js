@@ -51,6 +51,7 @@
 
     var _map = null;
     var _layer = null;
+    var _haloLayer = null; // žuti "halo" ispod crne linije (crtan prvi, ispod _layer)
     var _geojson = null;
     var _locMarker = null;
     var _locCircle = null;
@@ -121,19 +122,33 @@
 
     function _renderLayer(geojson) {
         if (_layer) { _map.removeLayer(_layer); _layer = null; }
+        if (_haloLayer) { _map.removeLayer(_haloLayer); _haloLayer = null; }
 
         var radnikLayers = []; // samo poligoni gdje je radnik radio — za fitBounds
 
+        // "Halo" efekat — crna linija sa žutim obrubom (najbolja vidljivost na
+        // terenu bez obzira na pozadinu karte). Tehnika: DVA sloja iste
+        // geometrije — donji, širi, žut i BEZ ispune (samo halo), i gornji,
+        // uži, crn, koji nosi stvarnu ispunu i sve interakcije (klik/hover/popup).
+        _haloLayer = L.geoJSON(geojson, {
+            interactive: false, // halo ne smije hvatati klik/hover — to radi gornji sloj
+            style: function(feature) {
+                var k = _featureKeys(feature);
+                var radio = _odjeliByKey.has(k.lk) || _odjeliByKey.has(k.nk);
+                return { color: '#facc15', weight: radio ? 7 : 4.5, fill: false, opacity: 0.95 };
+            }
+        }).addTo(_map);
+
         _layer = L.geoJSON(geojson, {
-            // Iscrtaj SVE odjele — ispuna razlikuje istaknute (zeleno) od ostalih
-            // (blijedo/neutralno), ali rub (linija) je za SVE odjele žut i podebljan
-            // radi bolje vidljivosti granica na terenu.
+            // Ispuna razlikuje istaknute (zeleno) od ostalih (blijedo/neutralno);
+            // rub je crn i tanji od žutog haloa ispod njega (halo proviruje sa obje
+            // strane crne linije — "outline" efekat, čitljivo na svakoj podlozi).
             style: function(feature) {
                 var k = _featureKeys(feature);
                 var radio = _odjeliByKey.has(k.lk) || _odjeliByKey.has(k.nk);
                 return radio
-                    ? { color: '#facc15', weight: 3.5, fillColor: '#10b981', fillOpacity: 0.45 }
-                    : { color: '#facc15', weight: 2.2, fillColor: '#cbd5e1', fillOpacity: 0.08 };
+                    ? { color: '#111827', weight: 2.5, fillColor: '#10b981', fillOpacity: 0.45 }
+                    : { color: '#111827', weight: 1.8, fillColor: '#cbd5e1', fillOpacity: 0.08 };
             },
             onEachFeature: function(feature, lyr) {
                 var p = feature.properties || {};
@@ -145,10 +160,10 @@
                     permanent: false, direction: 'center', className: 'karta-tooltip'
                 });
                 lyr.on('mouseover', function() {
-                    this.setStyle(radio ? { fillOpacity: 0.7, weight: 5 } : { fillOpacity: 0.2, weight: 3.2 });
+                    this.setStyle(radio ? { fillOpacity: 0.7, weight: 4 } : { fillOpacity: 0.2, weight: 2.8 });
                 });
                 lyr.on('mouseout', function() {
-                    this.setStyle(radio ? { fillOpacity: 0.45, weight: 3.5 } : { fillOpacity: 0.08, weight: 2.2 });
+                    this.setStyle(radio ? { fillOpacity: 0.45, weight: 2.5 } : { fillOpacity: 0.08, weight: 1.8 });
                 });
                 if (radio) {
                     radnikLayers.push(lyr);
