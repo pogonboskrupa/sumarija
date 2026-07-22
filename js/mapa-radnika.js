@@ -5,15 +5,10 @@
 // taj odjel (m³ po sortimentu, zadnji datum); klik na neistaknuti odjel ne radi
 // ništa (nema podataka radnika za taj odjel).
 //
-// Dugmad ("📍 Moja lokacija", "⏺️ Snimi trag", "🗑️ Obriši tragove",
-// "🗂️ Učitaj kartu") su UNUTAR mape kao Leaflet custom control (gornji desni
-// ugao), ne u zaglavlju stranice. Snimljeni trag se čuva u localStorage (po
-// korisniku) i ostaje vidljiv i nakon zatvaranja/ponovnog otvaranja mape.
-// "Učitaj kartu" omogućava učitavanje prilagođene offline karte iz .mbtiles/
-// .sqlite fajla (WASM SQLite preko sql.js, lazy-loaded sa CDN-a tek kad se
-// prvi put koristi) — tajlovi se čitaju direktno iz baze (TMS→XYZ y-flip),
-// fajl se čuva u IndexedDB (po korisniku) pa ostaje učitan i nakon
-// zatvaranja/ponovnog otvaranja app-a, bez potrebe za ponovnim odabirom.
+// Dugmad ("📍 Moja lokacija", "⏺️ Snimi trag", "🗑️ Obriši tragove") su
+// UNUTAR mape kao Leaflet custom control (gornji desni ugao), ne u zaglavlju
+// stranice. Snimljeni trag se čuva u localStorage (po korisniku) i ostaje
+// vidljiv i nakon zatvaranja/ponovnog otvaranja mape.
 //
 // Dizajn: zaseban, lagan Leaflet instance (svoj container #radnik-mapa-map),
 // NE dira postojeći admin karta-odjela.js singleton.
@@ -69,16 +64,7 @@
 
     var _locBtnEl = null;
     var _tragBtnEl = null;
-    var _kartaBtnEl = null;
-
-    // ---- Učitaj kartu (MBTiles / SQLite) ----
-    var _osmLayer = null;      // referenca na default OSM tile sloj (za povratak)
-    var _mbtilesLayer = null;  // trenutno aktivan prilagođeni tile sloj (ako je učitan)
-    var _mbtilesDb = null;     // sql.js Database instanca
-    var _mbtilesName = null;   // ime učitanog fajla (za prikaz u dugmetu)
-    var _sqlJsPromise = null;
-    // 1x1 providan PNG — placeholder za tajlove van pokrivenosti učitane karte
-    var _BLANK_TILE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+    var _osmLayer = null; // referenca na osnovni OSM tile sloj
 
     function _fmt(n) {
         if (n == null || isNaN(n)) return '—';
@@ -322,173 +308,6 @@
         _drawSavedTracks();
     }
 
-    // Lazy-load sql.js (WASM SQLite) — isti obrazac kao window.loadChartJs
-    // (index.html) — učitava se samo kad korisnik prvi put učita MBTiles/SQLite
-    // kartu, ne za svakog korisnika unaprijed.
-    function _loadSqlJs() {
-        if (_sqlJsPromise) return _sqlJsPromise;
-        _sqlJsPromise = new Promise(function(resolve, reject) {
-            if (window.initSqlJs) { resolve(window.initSqlJs); return; }
-            var script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js';
-            script.onload = function() { resolve(window.initSqlJs); };
-            script.onerror = function() { reject(new Error('Neuspješno učitavanje sql.js biblioteke (provjerite internet konekciju).')); };
-            document.head.appendChild(script);
-        }).then(function(initSqlJs) {
-            return initSqlJs({
-                locateFile: function(f) { return 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/' + f; }
-            });
-        });
-        return _sqlJsPromise;
-    }
-
-    function _mbtilesMetaKey() {
-        var uname = (window.currentUser && window.currentUser.username) || 'anon';
-        return 'mbtiles_radnik_' + uname;
-    }
-
-    // Kreiraj Leaflet tile sloj koji tajlove čita direktno iz učitane
-    // MBTiles/SQLite baze (umjesto sa mreže). MBTiles koristi TMS red-šemu
-    // (obrnuto od standardnog XYZ-a) — otud y-flip konverzija ispod.
-    function _createMbtilesLayer(db, format) {
-        var MbtilesLayer = L.TileLayer.extend({
-            createTile: function(coords, done) {
-                var tile = document.createElement('img');
-                var tmsRow = Math.pow(2, coords.z) - 1 - coords.y;
-                try {
-                    var stmt = db.prepare('SELECT tile_data FROM tiles WHERE zoom_level=? AND tile_column=? AND tile_row=?');
-                    stmt.bind([coords.z, coords.x, tmsRow]);
-                    if (stmt.step()) {
-                        var data = stmt.getAsObject().tile_data;
-                        var blob = new Blob([data], { type: 'image/' + format });
-                        var url = URL.createObjectURL(blob);
-                        tile.onload = function() { URL.revokeObjectURL(url); done(null, tile); };
-                        tile.onerror = function() { URL.revokeObjectURL(url); done(null, tile); };
-                        tile.src = url;
-                    } else {
-                        tile.onload = function() { done(null, tile); };
-                        tile.src = _BLANK_TILE;
-                    }
-                    stmt.free();
-                } catch (e) {
-                    console.error('[MapaRadnika] mbtiles tile greška:', e);
-                    tile.src = _BLANK_TILE;
-                    done(null, tile);
-                }
-                return tile;
-            }
-        });
-        return new MbtilesLayer('', { maxZoom: 19, minZoom: 0, tileSize: 256 });
-    }
-
-    function _mbtilesMetaValue(db, name) {
-        try {
-            var res = db.exec("SELECT value FROM metadata WHERE name='" + name + "'");
-            return (res[0] && res[0].values[0] && res[0].values[0][0]) || null;
-        } catch (_) { return null; }
-    }
-
-    async function _openMbtilesFromBuffer(buffer, filename) {
-        var status = document.getElementById('radnik-mapa-status');
-        try {
-            if (status) status.textContent = '⏳ Učitavam kartu (sql.js)...';
-            var SQL = await _loadSqlJs();
-            var db = new SQL.Database(new Uint8Array(buffer));
-            // Provjeri da fajl stvarno ima "tiles" tabelu (osnovna validacija)
-            db.exec("SELECT 1 FROM tiles LIMIT 1");
-
-            var format = _mbtilesMetaValue(db, 'format') || 'png';
-            _mbtilesDb = db;
-            _mbtilesName = filename;
-
-            if (_mbtilesLayer) { _map.removeLayer(_mbtilesLayer); _mbtilesLayer = null; }
-            if (_osmLayer && _map.hasLayer(_osmLayer)) _map.removeLayer(_osmLayer);
-            _mbtilesLayer = _createMbtilesLayer(db, format);
-            _mbtilesLayer.addTo(_map);
-            // Podigni odjele/tragove iznad novog tile sloja
-            if (_layer) _layer.bringToFront();
-
-            var bounds = _mbtilesMetaValue(db, 'bounds');
-            if (bounds) {
-                var parts = bounds.split(',').map(parseFloat);
-                if (parts.length === 4 && parts.every(function(n) { return !isNaN(n); })) {
-                    _map.fitBounds([[parts[1], parts[0]], [parts[3], parts[2]]]);
-                }
-            }
-
-            if (_kartaBtnEl) _kartaBtnEl.textContent = '🗺️ ' + filename + ' ✖';
-            if (status) status.textContent = 'Učitana prilagođena karta: ' + filename;
-        } catch (e) {
-            console.error('[MapaRadnika] MBTiles greška:', e);
-            if (status) status.textContent = 'Greška pri učitavanju karte: ' + e.message;
-            alert('Nije moguće učitati fajl kao MBTiles/SQLite kartu: ' + e.message);
-        }
-    }
-
-    async function _tryLoadSavedMbtiles() {
-        try {
-            var saved = await window.IDBHelper.getMeta(_mbtilesMetaKey());
-            if (saved && saved.buffer && saved.name) {
-                await _openMbtilesFromBuffer(saved.buffer, saved.name);
-            }
-        } catch (e) {
-            console.error('[MapaRadnika] Učitavanje sačuvane karte nije uspjelo:', e);
-        }
-    }
-
-    function _removeMbtiles() {
-        if (_mbtilesLayer) { _map.removeLayer(_mbtilesLayer); _mbtilesLayer = null; }
-        if (_mbtilesDb) { try { _mbtilesDb.close(); } catch (_) {} _mbtilesDb = null; }
-        _mbtilesName = null;
-        if (_osmLayer) _osmLayer.addTo(_map);
-        if (_kartaBtnEl) _kartaBtnEl.textContent = '🗂️ Učitaj kartu';
-        try { window.IDBHelper.setMeta(_mbtilesMetaKey(), null); } catch (_) {}
-        var status = document.getElementById('radnik-mapa-status');
-        if (status) status.textContent = 'Vraćena podrazumijevana OpenStreetMap karta.';
-    }
-
-    function _handleFileSelected(file) {
-        if (!file) return;
-        var status = document.getElementById('radnik-mapa-status');
-        if (status) status.textContent = '⏳ Čitam fajl (' + (file.size / 1024 / 1024).toFixed(1) + ' MB)...';
-        var reader = new FileReader();
-        reader.onload = async function() {
-            var buffer = reader.result;
-            await _openMbtilesFromBuffer(buffer, file.name);
-            // Sačuvaj u IndexedDB da ostane dostupna i nakon zatvaranja app-a
-            try { await window.IDBHelper.setMeta(_mbtilesMetaKey(), { buffer: buffer, name: file.name }); } catch (e) {
-                console.error('[MapaRadnika] Snimanje karte u IndexedDB nije uspjelo:', e);
-            }
-        };
-        reader.onerror = function() {
-            if (status) status.textContent = 'Greška pri čitanju fajla.';
-        };
-        reader.readAsArrayBuffer(file);
-    }
-
-    function _triggerUcitajKartu() {
-        if (_mbtilesLayer) {
-            if (confirm('Ukloniti učitanu kartu "' + _mbtilesName + '" i vratiti se na standardnu OpenStreetMap kartu?')) {
-                _removeMbtiles();
-            }
-            return;
-        }
-        var input = document.getElementById('radnik-mapa-file-input');
-        if (!input) {
-            input = document.createElement('input');
-            input.type = 'file';
-            input.id = 'radnik-mapa-file-input';
-            input.accept = '.mbtiles,.sqlite,.sqlite3,.db';
-            input.style.display = 'none';
-            document.body.appendChild(input);
-            input.addEventListener('change', function() {
-                _handleFileSelected(input.files && input.files[0]);
-                input.value = '';
-            });
-        }
-        input.click();
-    }
-
     // ---- Leaflet control (dugmad UNUTAR mape, gornji desni ugao) ----
     function _addControls() {
         var Ctrl = L.Control.extend({
@@ -513,11 +332,6 @@
                 clearBtn.textContent = '🗑️ Obriši tragove';
                 L.DomEvent.on(clearBtn, 'click', _clearTracks);
 
-                _kartaBtnEl = L.DomUtil.create('button', 'rm-karta-btn', div);
-                _kartaBtnEl.type = 'button';
-                _kartaBtnEl.textContent = '🗂️ Učitaj kartu';
-                L.DomEvent.on(_kartaBtnEl, 'click', _triggerUcitajKartu);
-
                 return div;
             }
         });
@@ -540,7 +354,6 @@
             }).addTo(_map);
             _addControls();
             _drawSavedTracks();
-            _tryLoadSavedMbtiles();
         }
         // Leaflet mora preračunati veličinu nakon što tab postane vidljiv
         setTimeout(function() { if (_map) _map.invalidateSize(); }, 100);
