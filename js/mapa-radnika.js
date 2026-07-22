@@ -156,6 +156,32 @@
     // grupi (heuristika za "centar" grupe odsjeka) i postavi JEDNU trajnu
     // oznaku tamo — umjesto jedne oznake po odsjeku (što bi napravilo gomilu
     // duplih brojeva na istom mjestu za odjele sa više odsjeka).
+    // Zoom-zavisna veličina oznake (isti obrazac kao js/karta-odjela.js
+    // _updateLabelSizes — injektuje jedan <style> u <head> koji cilja klasu
+    // umjesto da mijenja svaki marker pojedinačno). Cilja SAMO .rm-odjel-label
+    // (ne .karta-tooltip generalno — tu klasu dijeli i hover tooltip u ovom
+    // modulu i cijela admin karta, ne smiju biti pogođeni odavde).
+    var _labelStyleEl = null;
+    function _updateLabelSizes() {
+        var z = _map ? _map.getZoom() : 12;
+        var mobile = window.innerWidth <= 640;
+        var size =
+            z >= 16 ? (mobile ? 19 : 15) :
+            z >= 15 ? (mobile ? 17 : 13) :
+            z >= 14 ? (mobile ? 14 : 11) :
+            z >= 13 ? (mobile ? 12 : 9)  :
+            z >= 12 ? (mobile ? 9  : 7)  :
+            z >= 11 ? (mobile ? 6  : 5)  : 0;
+        var vis = size > 0 ? 'visible' : 'hidden';
+        if (!_labelStyleEl) {
+            _labelStyleEl = document.createElement('style');
+            _labelStyleEl.id = 'rm-label-zoom-style';
+            document.head.appendChild(_labelStyleEl);
+        }
+        _labelStyleEl.textContent =
+            '.rm-odjel-label { font-size:' + size + 'px !important; visibility:' + vis + '; padding:' + (size > 0 ? '3px 8px' : '0') + ' !important; }';
+    }
+
     function _clearLabels() {
         _labelMarkers.forEach(function(m) { _map.removeLayer(m); });
         _labelMarkers = [];
@@ -490,6 +516,10 @@
             }).addTo(_map);
             // Klik na praznu mapu (van poligona) zatvara info panel
             _map.on('click', _hideInfoPanel);
+            // Veličina "Prikaži odjele" oznaka prati zoom mape (manje odzumirano,
+            // veće približeno) — vidi _updateLabelSizes.
+            _map.on('zoomend', _updateLabelSizes);
+            _updateLabelSizes();
             // Bez ovoga Leaflet hvata touch/scroll geste unutar panela kao
             // pan/zoom mape — skrolanje prstom kroz duži spisak sortimenata
             // (kad odjel ima puno njih) nikad ne bi stiglo do panela, pa bi

@@ -3128,10 +3128,11 @@
                       cursor:pointer; font-family:inherit;
                   }
                   .rm-info-panel-close:active { background:#e5e7eb; }
-                  /* "Prikaži odjele" trajne oznake brojeva — 2.5x veće od naslijeđenog
-                     Leaflet default-a (~12px) na svim ekranima, radi vidljivosti na
-                     terenu (fiksna veličina, ne mijenja se sa zumom mape). */
-                  .rm-odjel-label { font-size:30px !important; font-weight:800 !important; padding:6px 14px !important; border-radius:8px !important; }
+                  /* "Prikaži odjele" trajne oznake brojeva — font-size/padding/visibility
+                     kontroliše js/mapa-radnika.js _updateLabelSizes() (zoom-zavisno,
+                     injektovani <style id="rm-label-zoom-style">), ovdje ostaje samo
+                     ono što se NE mijenja sa zumom. */
+                  .rm-odjel-label { font-weight:800 !important; border-radius:8px !important; }
                   .rm-popup-title { font-weight:700; color:#047857; font-size:15px; margin-bottom:2px; }
                   .rm-popup-datum { font-size:11px; color:#6b7280; margin-bottom:8px; }
                   .rm-popup-row-label { font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:.4px; margin:6px 0 3px; }
@@ -3153,10 +3154,6 @@
                       .rm-popup-chip-label { font-size:11px; }
                       .rm-popup-chip-val { font-size:16px; }
                       .rm-popup-total { font-size:16px; padding-top:8px; }
-                      /* Trajne oznake brojeva odjela ("Prikaži odjele") — na desktopu
-                         (naslijeđeni Leaflet default ~12px) su čitljive, ali na malom
-                         mobilnom ekranu su presitne; uvećaj samo na mobilnom. */
-                      .rm-odjel-label { font-size:38px !important; padding:8px 18px !important; }
                   }
 
                   /* ── MAPA FOKUS MODE ── */
