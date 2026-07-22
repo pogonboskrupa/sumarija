@@ -326,10 +326,34 @@
         _locBtnEl = document.getElementById('radnik-mapa-loc-btn');
         _tragBtnEl = document.getElementById('radnik-mapa-trag-btn');
     }
+
+    // ---- Puni ekran (AlpineQuest-stil) — vidi CSS "body.radnik-mapa-fullscreen"
+    // u index.html. Donja traka je poseban element van #radnik-mapa-content
+    // (izvan .container "contain:layout" konteksta koji bi inače slomio njeno
+    // position:fixed), pa se vidljivost mora ručno sinhronizovati sa ulaskom/
+    // izlaskom iz mape — nije više dio [id$="-content"] hide/show mehanizma.
+    function _enterMapaFullscreen() {
+        document.body.classList.add('radnik-mapa-fullscreen');
+        var bar = document.getElementById('radnik-mapa-bottombar');
+        if (bar) bar.style.display = 'flex';
+        setTimeout(function() { if (_map) _map.invalidateSize(); }, 50);
+    }
+    function _exitMapaFullscreen() {
+        document.body.classList.remove('radnik-mapa-fullscreen');
+        var bar = document.getElementById('radnik-mapa-bottombar');
+        if (bar) bar.style.display = 'none';
+    }
+    // Poziva se iz switchTab (js/ui.js) kad se prelazi na BILO KOJI drugi tab —
+    // sigurnosna mreža za slučaj da korisnik ode s mape mimo "Zatvori" dugmeta.
+    window.exitMapaRadnikaFullscreenIfActive = function(nextTab) {
+        if (nextTab !== 'primac-mapa' && nextTab !== 'otpremac-mapa') _exitMapaFullscreen();
+    };
+
     window.mapaRadnikaLocateMe = _locateMe;
     window.mapaRadnikaToggleTrag = _toggleTrag;
     window.mapaRadnikaClearTracks = _clearTracks;
     window.closeMapaRadnika = function() {
+        _exitMapaFullscreen();
         var home = (_workerType === 'otpremac') ? 'otpremac-personal' : 'primac-personal';
         if (typeof switchTab === 'function') switchTab(home);
     };
@@ -343,6 +367,7 @@
         if (!mapDiv) return;
         var content = document.getElementById('radnik-mapa-content');
         if (content) content.classList.remove('hidden');
+        _enterMapaFullscreen();
 
         if (!_map) {
             _map = L.map('radnik-mapa-map', { center: SUMARIJA_LATLNG, zoom: 11, zoomControl: true });

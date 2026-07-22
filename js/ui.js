@@ -48,6 +48,15 @@
             // Prati aktivni tab za sprečavanje bleeding-a kod async operacija
             window.currentTab = tab;
 
+            // Izađi iz punog ekrana Mape odjela (radnik) ako se prelazi na bilo
+            // koji drugi tab — sigurnosna mreža za slučaj da korisnik ode s mape
+            // mimo "Zatvori" dugmeta (npr. browser back). Postavljeno OVDJE, prije
+            // eventualnog ranog "return" ispod (svjež keš → instant prikaz), da se
+            // uvijek izvrši bez obzira na tu granu.
+            if (typeof window.exitMapaRadnikaFullscreenIfActive === 'function') {
+                window.exitMapaRadnikaFullscreenIfActive(tab);
+            }
+
             // Update tab buttons - set active on all matching tabs (sidebar + mobile)
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
 

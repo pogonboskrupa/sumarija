@@ -1314,17 +1314,6 @@
                 </div>
             </div>
             <div id="radnik-mapa-map" class="radnik-mapa-map"></div>
-            <div class="radnik-mapa-bottombar">
-                <button id="radnik-mapa-loc-btn" class="rm-bar-btn rm-bar-loc" onclick="mapaRadnikaLocateMe()">
-                    <span class="rm-bar-icon">📍</span><span>Moja lokacija</span>
-                </button>
-                <button id="radnik-mapa-trag-btn" class="rm-bar-btn rm-bar-trag" onclick="mapaRadnikaToggleTrag()">
-                    <span class="rm-bar-icon">⏺️</span><span>Snimi trag</span>
-                </button>
-                <button class="rm-bar-btn rm-bar-clear" onclick="mapaRadnikaClearTracks()">
-                    <span class="rm-bar-icon">🗑️</span><span>Obriši tragove</span>
-                </button>
-            </div>
         </div>
 
         <!-- ADD SJECA FORM (For Primači) -->
@@ -3021,10 +3010,39 @@
                   @media (max-width:1024px) { #karta-odjela-map { height:calc(100vh - 200px); min-height:320px; } }
                   @media (max-width:640px)  { #karta-odjela-map { height:calc(100vh - 230px); min-height:260px; } }
 
-                  /* Radnik mapa odjela — visina umanjena za donju traku dugmadi (~72-80px) */
+                  /* Radnik mapa odjela — visina umanjena za donju traku dugmadi (~72-80px).
+                     Ovo je fallback prikaz PRIJE nego se puni-ekran mod (ispod) aktivira. */
                   #radnik-mapa-map { width:100%; height:calc(100vh - 240px - 74px); min-height:320px; background:#f1f5f9; border-radius:12px; overflow:hidden; }
                   @media (max-width:1024px) { #radnik-mapa-map { height:calc(100vh - 220px - 74px); min-height:280px; } }
                   @media (max-width:640px)  { #radnik-mapa-map { height:calc(100vh - 250px - 80px); min-height:220px; } }
+
+                  /* ── PUNI EKRAN (AlpineQuest-stil) — aktivira se ulaskom u Mapa odjela,
+                     uklanja se klikom na "Zatvori" (ili automatski pri prelasku na bilo
+                     koji drugi tab). Sakriva sav ostali chrome (zaglavlje, tabovi,
+                     sidebar) tako da mapa + donja traka ispune cijeli ekran, kao
+                     zaseban "mapa mod" ekran umjesto obične stranice u appu. ── */
+                  body.radnik-mapa-fullscreen .header,
+                  body.radnik-mapa-fullscreen .tabs-container,
+                  body.radnik-mapa-fullscreen .sidebar { display:none !important; }
+                  body.radnik-mapa-fullscreen #radnik-mapa-content {
+                      position:fixed !important; inset:0 !important; z-index:9999;
+                      display:flex !important; flex-direction:column;
+                      margin:0 !important; max-width:none !important;
+                      padding:0 0 calc(74px + env(safe-area-inset-bottom)) 0 !important;
+                      background:#fff; box-sizing:border-box;
+                  }
+                  body.radnik-mapa-fullscreen #radnik-mapa-content .page-header {
+                      flex:0 0 auto; margin:0; padding:14px 16px 10px 16px;
+                  }
+                  body.radnik-mapa-fullscreen #radnik-mapa-map {
+                      flex:1 1 auto !important; width:100% !important; height:auto !important;
+                      min-height:0; border-radius:0 !important;
+                  }
+                  @media (max-width:640px) {
+                      body.radnik-mapa-fullscreen #radnik-mapa-content {
+                          padding-bottom:calc(80px + env(safe-area-inset-bottom)) !important;
+                      }
+                  }
 
                   /* "✕ Zatvori" dugme u zaglavlju — vraća na radnikov početni tab.
                      Van Leaflet mape, pa dodir na mapu ne ometa dolazak do njega. */
@@ -3322,6 +3340,24 @@
             </div>
         </div>
     </div>
+<!-- Mapa odjela (radnik) — donja traka dugmadi. Namjerno IZVAN #radnik-mapa-content
+     (koji nosi .container klasu sa "contain:layout" — to pravi novi containing
+     block za position:fixed potomke, pa bi fiksirana traka bila "fiksna" u
+     odnosu na taj div umjesto na ekran). Ovdje, kao direktno dijete <body>-a
+     (bez ijednog transform/contain pretka), position:fixed je uvijek u odnosu
+     na pravi viewport — traka ostaje vidljiva bez obzira na sadržaj/skrol. -->
+<div id="radnik-mapa-bottombar" class="radnik-mapa-bottombar" style="display:none;">
+    <button id="radnik-mapa-loc-btn" class="rm-bar-btn rm-bar-loc" onclick="mapaRadnikaLocateMe()">
+        <span class="rm-bar-icon">📍</span><span>Moja lokacija</span>
+    </button>
+    <button id="radnik-mapa-trag-btn" class="rm-bar-btn rm-bar-trag" onclick="mapaRadnikaToggleTrag()">
+        <span class="rm-bar-icon">⏺️</span><span>Snimi trag</span>
+    </button>
+    <button class="rm-bar-btn rm-bar-clear" onclick="mapaRadnikaClearTracks()">
+        <span class="rm-bar-icon">🗑️</span><span>Obriši tragove</span>
+    </button>
+</div>
+
 <!-- Globalni offline banner -->
 <!-- Baner: nova verzija aplikacije dostupna (klik = očisti asset keš + hard refresh) -->
 <div id="app-update-banner" style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:30002;background:#047857;color:white;padding:12px 18px;border-radius:14px;font-size:14px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.4);align-items:center;gap:12px;max-width:calc(100vw - 24px);">
