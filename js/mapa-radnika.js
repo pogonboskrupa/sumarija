@@ -97,24 +97,32 @@
     // Klasa "rm-odjel-popup" (umjesto inline min/max-width) — omogućava CSS
     // media-query da uveća tekst/razmak na mobilnom (index.html), gdje je
     // sitan popup tekst inače teško čitljiv na terenu.
-    function _popupHtml(o) {
-        var grupne = { 'UKUPNO Č+L': 1, 'Σ ČETINARI': 1, 'LIŠĆARI': 1 };
-        var sort = o.sortimenti || {};
-        // Horizontalne kartice ("chips") umjesto uske vertikalne tabele — više
-        // sortimenata stane u vidno polje odjednom, količina je istaknuta
-        // (veliki podebljan font) unutar svake kartice.
-        var chips = Object.keys(sort)
-            .filter(function(s) { return (sort[s] || 0) > 0 && !grupne[s]; })
+    // Chips za jednu grupu (četinari/lišćari) — redoslijed iz KUBIKATOR_CETINARI/
+    // KUBIKATOR_LISCARI (js/kubikator.js, ista klasifikacija koja se već koristi
+    // za bojenje redova sortimenata u Izvještaju po odjelima).
+    function _chipsFor(sort, list, extraClass) {
+        return (list || []).filter(function(s) { return (sort[s] || 0) > 0; })
             .map(function(s) {
-                return '<div class="rm-popup-chip"><span class="rm-popup-chip-label">' + s +
+                return '<div class="rm-popup-chip ' + extraClass + '"><span class="rm-popup-chip-label">' + s +
                     '</span><span class="rm-popup-chip-val">' + _fmt(sort[s]) + '</span></div>';
             }).join('');
+    }
+
+    function _popupHtml(o) {
+        var sort = o.sortimenti || {};
+        // Dva odvojena reda — prvi red četinari, drugi red lišćari — umjesto
+        // jednog izmiješanog grida, po istoj klasifikaciji/bojama koje se već
+        // koriste u Izvještaju po odjelima (zeleno četinari, plavo lišćari).
+        var cChips = _chipsFor(sort, typeof KUBIKATOR_CETINARI !== 'undefined' ? KUBIKATOR_CETINARI : [], 'rm-chip-cetinar');
+        var lChips = _chipsFor(sort, typeof KUBIKATOR_LISCARI !== 'undefined' ? KUBIKATOR_LISCARI : [], 'rm-chip-liscar');
+        var rows =
+            (cChips ? '<div class="rm-popup-row-label">🌲 Četinari</div><div class="rm-popup-grid">' + cChips + '</div>' : '') +
+            (lChips ? '<div class="rm-popup-row-label">🍂 Lišćari</div><div class="rm-popup-grid">' + lChips + '</div>' : '') +
+            (!cChips && !lChips ? '<span style="color:#9ca3af;font-size:12px;">Nema sortimenata</span>' : '');
         return '<div class="rm-odjel-popup">' +
             '<div class="rm-popup-title">📁 Odjel ' + (o.odjel || '?') + '</div>' +
             '<div class="rm-popup-datum">Zadnji unos: ' + (o.zadnjiDatum || '—') + '</div>' +
-            '<div class="rm-popup-grid">' +
-            (chips || '<span style="color:#9ca3af;font-size:12px;">Nema sortimenata</span>') +
-            '</div>' +
+            rows +
             '<div class="rm-popup-total">' +
             '<span>UKUPNO</span><span>' + _fmt(o.ukupno) + '</span></div>' +
             '</div>';
@@ -482,6 +490,15 @@
             }).addTo(_map);
             // Klik na praznu mapu (van poligona) zatvara info panel
             _map.on('click', _hideInfoPanel);
+            // Bez ovoga Leaflet hvata touch/scroll geste unutar panela kao
+            // pan/zoom mape — skrolanje prstom kroz duži spisak sortimenata
+            // (kad odjel ima puno njih) nikad ne bi stiglo do panela, pa bi
+            // dio podataka ostao "nedostupan" ispod vidljivog dijela.
+            var infoPanelEl = document.getElementById('radnik-mapa-info-panel');
+            if (infoPanelEl) {
+                L.DomEvent.disableClickPropagation(infoPanelEl);
+                L.DomEvent.disableScrollPropagation(infoPanelEl);
+            }
             _bindBarButtons();
             _drawSavedTracks();
         }
