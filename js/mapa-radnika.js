@@ -166,20 +166,21 @@
         var z = _map ? _map.getZoom() : 12;
         var mobile = window.innerWidth <= 640;
         var size =
-            z >= 16 ? (mobile ? 19 : 15) :
-            z >= 15 ? (mobile ? 17 : 13) :
-            z >= 14 ? (mobile ? 14 : 11) :
-            z >= 13 ? (mobile ? 12 : 9)  :
-            z >= 12 ? (mobile ? 9  : 7)  :
-            z >= 11 ? (mobile ? 6  : 5)  : 0;
+            z >= 16 ? (mobile ? 26 : 15) :
+            z >= 15 ? (mobile ? 22 : 13) :
+            z >= 14 ? (mobile ? 19 : 11) :
+            z >= 13 ? (mobile ? 15 : 9)  :
+            z >= 12 ? (mobile ? 12 : 7)  :
+            z >= 11 ? (mobile ? 8  : 5)  : 0;
         var vis = size > 0 ? 'visible' : 'hidden';
         if (!_labelStyleEl) {
             _labelStyleEl = document.createElement('style');
             _labelStyleEl.id = 'rm-label-zoom-style';
             document.head.appendChild(_labelStyleEl);
         }
+        var pad = size <= 0 ? '0' : (mobile ? '5px 12px' : '3px 8px');
         _labelStyleEl.textContent =
-            '.rm-odjel-label { font-size:' + size + 'px !important; visibility:' + vis + '; padding:' + (size > 0 ? '3px 8px' : '0') + ' !important; }';
+            '.rm-odjel-label { font-size:' + size + 'px !important; visibility:' + vis + '; padding:' + pad + ' !important; }';
     }
 
     function _clearLabels() {
