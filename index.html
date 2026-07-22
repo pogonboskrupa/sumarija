@@ -3064,14 +3064,21 @@
                      se lomio u 2 reda, legenda u ~6 redova, mapa nije imala prostora
                      da se uopšte prikaže). Vraćeno na razumnu, stvarno upotrebljivu
                      veličinu za telefon (ranije v1.4.89 vrijednosti). */
+                  /* Cijelo zaglavlje (naslov+legenda LIJEVO, checkbox+Zatvori DESNO)
+                     tretirano kao JEDNA cjelina — ista, dosljedna skala umjesto da
+                     jedna strana ostane sitna a druga ne (naslov/legenda su bili
+                     prepolovljeni na 5px/3px dok su checkbox/Zatvori i dalje imali
+                     vidljiv "chrome" - padding/border/pozadinu - koji je vizuelno
+                     dominirao nad njihovim tekstom, pa se doimalo kao dva odvojena,
+                     nepovezana dijela). */
                   body.radnik-mapa-fullscreen #radnik-mapa-content .page-header {
-                      flex:0 0 auto; margin:0; padding:3px 3px 2px 3px;
+                      flex:0 0 auto; margin:0; padding:8px 8px 6px 8px;
                   }
-                  #radnik-mapa-content .page-header-left h1 { font-size:5px !important; }
-                  #radnik-mapa-content .page-header-left p { font-size:3px !important; line-height:1.4; }
-                  .btn-zatvori-mapu { padding:2px 4px; font-size:3px; }
-                  .rm-labels-toggle { font-size:3px; padding:2px 3px; gap:1px; }
-                  .rm-labels-toggle input[type="checkbox"] { width:4px; height:4px; }
+                  #radnik-mapa-content .page-header-left h1 { font-size:16px !important; }
+                  #radnik-mapa-content .page-header-left p { font-size:11px !important; line-height:1.4; }
+                  .btn-zatvori-mapu { padding:6px 10px; font-size:11px; }
+                  .rm-labels-toggle { font-size:11px; padding:5px 8px; gap:5px; }
+                  .rm-labels-toggle input[type="checkbox"] { width:14px; height:14px; }
                   /* Checkbox + Zatvori ne smiju forsirati horizontalni scroll ako
                      zajedno ne stanu u red — prelamaju se u novi red. */
                   #radnik-mapa-content .page-header-right { flex-wrap:wrap; row-gap:10px; }
