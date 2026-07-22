@@ -57,6 +57,8 @@
     var _locCircle = null;
     var _odjeliByKey = null; // labelKey/normKey -> radnikov odjel objekat
     var _recentSet = null;   // Set referenci na zadnja 3 odjela (samo za primača) — vidi initMapaRadnika
+    var _allLayers = [];     // SVI polygon layer-i (radio i ne-radio) — za "Prikaži odjele" grupisanje po odsjeku
+    var _labelMarkers = [];  // trajne oznake brojeva odjela (checkbox "Prikaži odjele")
 
     // ---- Snimanje traga ----
     var _recording = false;
@@ -140,10 +142,48 @@
         return { lk: _labelKey(s), nk: _normKey(s) };
     }
 
+    // ---- "PRIKAŽI ODJELE" — trajne oznake, jedna po grupi odsjeka ----
+    // Isti obrazac kao js/karta-odjela.js: grupiši sve poligone po _labelKey
+    // (gj+odjel, čuva /N razlike), nađi poligon s najvećom površinom u svakoj
+    // grupi (heuristika za "centar" grupe odsjeka) i postavi JEDNU trajnu
+    // oznaku tamo — umjesto jedne oznake po odsjeku (što bi napravilo gomilu
+    // duplih brojeva na istom mjestu za odjele sa više odsjeka).
+    function _clearLabels() {
+        _labelMarkers.forEach(function(m) { _map.removeLayer(m); });
+        _labelMarkers = [];
+    }
+    function _renderLabels() {
+        _clearLabels();
+        var groups = new Map();
+        _allLayers.forEach(function(lyr) {
+            var k = lyr._rmLabelKey;
+            if (!groups.has(k)) groups.set(k, { lyrs: [], label: lyr._rmLabel });
+            groups.get(k).lyrs.push(lyr);
+        });
+        groups.forEach(function(grp) {
+            var bestLyr = null, bestArea = -1;
+            grp.lyrs.forEach(function(lyr) {
+                var b = lyr.getBounds();
+                var area = (b.getNorth() - b.getSouth()) * (b.getEast() - b.getWest());
+                if (area > bestArea) { bestArea = area; bestLyr = lyr; }
+            });
+            var center = bestLyr.getBounds().getCenter();
+            var tip = L.tooltip({ permanent: true, direction: 'center', className: 'karta-tooltip', interactive: false, opacity: 1 })
+                .setContent(grp.label).setLatLng(center).addTo(_map);
+            _labelMarkers.push(tip);
+        });
+    }
+    window.mapaRadnikaToggleLabels = function() {
+        var cb = document.getElementById('radnik-mapa-labels-toggle');
+        if (cb && cb.checked) _renderLabels(); else _clearLabels();
+    };
+
     function _renderLayer(geojson) {
         if (_layer) { _map.removeLayer(_layer); _layer = null; }
         if (_haloLayer) { _map.removeLayer(_haloLayer); _haloLayer = null; }
         _hideInfoPanel(); // spriječi da ostane vidljiv panel sa zastarjelim odjelom
+        _clearLabels();
+        _allLayers = [];
 
         var radnikLayers = []; // samo poligoni gdje je radnik radio — za fitBounds
 
@@ -182,6 +222,10 @@
                 var radio = !!o;
                 var recent = radio && _recentSet && _recentSet.has(o);
 
+                lyr._rmLabelKey = k.lk;
+                lyr._rmLabel = String(p.odjel || p.name || '?');
+                _allLayers.push(lyr);
+
                 lyr.bindTooltip(String(p.odjel || p.name || '?'), {
                     permanent: false, direction: 'center', className: 'karta-tooltip'
                 });
@@ -212,6 +256,11 @@
                 if (b.isValid()) _map.fitBounds(b, { padding: [30, 30], maxZoom: 14 });
             }
         } catch (_) {}
+
+        // Ako je "Prikaži odjele" bio uključen prije osvježavanja podataka,
+        // ponovo iscrtaj oznake nad svježim slojem (inače bi ostale ugašene).
+        var labelsCb = document.getElementById('radnik-mapa-labels-toggle');
+        if (labelsCb && labelsCb.checked) _renderLabels();
 
         return radnikLayers.length;
     }

@@ -1310,6 +1310,10 @@
                     <p>Svi odjeli — <strong style="color:#047857;">zeleno</strong> označava gdje ste radili (kliknite za vaše podatke).<span id="radnik-mapa-legend-extra"></span> <span id="radnik-mapa-status" style="color:#047857;font-weight:600;"></span></p>
                 </div>
                 <div class="page-header-right">
+                    <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#374151;cursor:pointer;background:white;border:1px solid #d1d5db;border-radius:6px;padding:6px 10px;">
+                        <input id="radnik-mapa-labels-toggle" type="checkbox" onchange="mapaRadnikaToggleLabels()" style="cursor:pointer;margin:0;" />
+                        🏷️ Prikaži odjele
+                    </label>
                     <button class="btn-zatvori-mapu" onclick="closeMapaRadnika()">✕ Zatvori</button>
                 </div>
             </div>
