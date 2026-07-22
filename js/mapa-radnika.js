@@ -505,7 +505,7 @@
         var bar = document.getElementById('radnik-mapa-bottombar');
         if (bar) bar.style.display = 'flex';
         var viewport = document.querySelector('meta[name=viewport]');
-        if (viewport) viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
+        if (viewport) viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
         setTimeout(function() { if (_map) _map.invalidateSize(); }, 50);
     }
     function _exitMapaFullscreen() {
@@ -519,8 +519,8 @@
             var wantsWide = document.body.classList.contains('force-desktop-view') ||
                 document.body.classList.contains('force-android-view');
             viewport.setAttribute('content', wantsWide
-                ? 'width=1200, initial-scale=0.5, user-scalable=yes'
-                : 'width=device-width, initial-scale=1.0');
+                ? 'width=1200, initial-scale=0.5, user-scalable=yes, viewport-fit=cover'
+                : 'width=device-width, initial-scale=1.0, viewport-fit=cover');
         }
     }
     // Sigurnosna mreža — gornja/donja traka moraju biti UVIJEK prisutne dok

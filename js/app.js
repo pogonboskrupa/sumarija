@@ -2,7 +2,7 @@
         // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
         // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
         // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.97';
+        const APP_VERSION = '1.4.98';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1670,7 +1670,7 @@
                 }
                 let viewport = document.querySelector('meta[name=viewport]');
                 if (viewport) {
-                    viewport.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes');
+                    viewport.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes, viewport-fit=cover');
                 }
             }
 
@@ -1685,7 +1685,7 @@
                 }
                 let vpAndroid = document.querySelector('meta[name=viewport]');
                 if (vpAndroid) {
-                    vpAndroid.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes');
+                    vpAndroid.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes, viewport-fit=cover');
                 }
             }
 
@@ -12474,7 +12474,33 @@
             if (btn) btn.style.display = '';
         });
 
+        // iOS Safari NIKAD ne emituje 'beforeinstallprompt' (nema tu Chrome-ovu
+        // API), pa je dugme inače ostajalo trajno skriveno na iPhone/iPad-u —
+        // korisnici nisu imali nikakvo uputstvo kako "instalirati" app. Prikaži
+        // dugme i na iOS-u (osim ako je već pokrenuta kao instalirana app), i
+        // umjesto native prompt-a (koji na iOS-u ne postoji) prikaži uputstvo
+        // za ručno "Dodaj na Home Screen" preko Safari Share menija.
+        function isIosDevice() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        }
+        function isStandalonePwa() {
+            return window.navigator.standalone === true ||
+                (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+        }
+        function showIosInstallInstructions() {
+            alert('📲 Instalacija na iPhone/iPad:\n\n' +
+                '1. Dodirnite dugme "Podijeli" (kvadrat sa strelicom prema gore) u Safari traci.\n' +
+                '2. Odaberite "Dodaj na Home Screen" (Add to Home Screen).\n' +
+                '3. Dodirnite "Dodaj" u gornjem desnom uglu.\n\n' +
+                'Aplikacija će se pojaviti kao ikona na početnom ekranu i raditi bez adresne trake, kao instalirana aplikacija.');
+        }
+        if (isIosDevice() && !isStandalonePwa()) {
+            var iosInstallBtn = document.getElementById('pwa-install-btn');
+            if (iosInstallBtn) iosInstallBtn.style.display = '';
+        }
+
         function installPwa() {
+            if (isIosDevice()) { showIosInstallInstructions(); return; }
             if (!deferredPrompt) return;
             deferredPrompt.prompt();
             deferredPrompt.userChoice.then(function() {

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <!-- Desktop prikaz kao default - fiksna širina 1280px, omogućen zoom -->
-    <meta name="viewport" content="width=1280, user-scalable=yes, minimum-scale=0.2, maximum-scale=3.0">
+    <meta name="viewport" content="width=1280, user-scalable=yes, minimum-scale=0.2, maximum-scale=3.0, viewport-fit=cover">
     <!-- iOS optimizacije -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -99,12 +99,12 @@
         function setLoginViewport() {
             const meta = document.querySelector('meta[name="viewport"]');
             if (meta) meta.setAttribute('content',
-                'width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=3.0');
+                'width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=3.0, viewport-fit=cover');
         }
         function setAppViewport() {
             const meta = document.querySelector('meta[name="viewport"]');
             if (meta) meta.setAttribute('content',
-                'width=1280, user-scalable=yes, minimum-scale=0.2, maximum-scale=3.0');
+                'width=1280, user-scalable=yes, minimum-scale=0.2, maximum-scale=3.0, viewport-fit=cover');
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -3015,16 +3015,20 @@
                 <style>
                   /* Karta treba punu širinu — override main-content overflow */
                   body:has(#karta-odjela-content:not(.hidden)) .main-content { overflow-x: visible; }
-                  #karta-odjela-map { width:100%; height:calc(100vh - 220px); min-height:400px; background:#f1f5f9; }
-                  @media (max-width:1024px) { #karta-odjela-map { height:calc(100vh - 200px); min-height:320px; } }
-                  @media (max-width:640px)  { #karta-odjela-map { height:calc(100vh - 230px); min-height:260px; } }
+                  /* 100dvh fallback (dodat NAKON 100vh, isti obrazac kao css/login-optimized.css)
+                     — na iOS Safari 100vh uključuje prostor ispod dinamičke adresne trake,
+                     pa mapa zna biti viša od stvarno vidljivog ekrana bez ovoga. Browseri
+                     koji ne poznaju dvh ignorišu tu liniju i ostaju na 100vh fallback-u. */
+                  #karta-odjela-map { width:100%; height:calc(100vh - 220px); height:calc(100dvh - 220px); min-height:400px; background:#f1f5f9; }
+                  @media (max-width:1024px) { #karta-odjela-map { height:calc(100vh - 200px); height:calc(100dvh - 200px); min-height:320px; } }
+                  @media (max-width:640px)  { #karta-odjela-map { height:calc(100vh - 230px); height:calc(100dvh - 230px); min-height:260px; } }
 
                   /* Radnik mapa odjela — visina umanjena za donju traku dugmadi (~112-120px,
                      ponovo uvećana traka). Ovo je fallback prikaz PRIJE nego se puni-ekran
                      mod (ispod) aktivira. */
-                  #radnik-mapa-map { position:relative; width:100%; height:calc(100vh - 240px - 112px); min-height:280px; background:#f1f5f9; border-radius:12px; overflow:hidden; }
-                  @media (max-width:1024px) { #radnik-mapa-map { height:calc(100vh - 220px - 112px); min-height:240px; } }
-                  @media (max-width:1024px)  { #radnik-mapa-map { height:calc(100vh - 250px - 60px); min-height:180px; } }
+                  #radnik-mapa-map { position:relative; width:100%; height:calc(100vh - 240px - 112px); height:calc(100dvh - 240px - 112px); min-height:280px; background:#f1f5f9; border-radius:12px; overflow:hidden; }
+                  @media (max-width:1024px) { #radnik-mapa-map { height:calc(100vh - 220px - 112px); height:calc(100dvh - 220px - 112px); min-height:240px; } }
+                  @media (max-width:1024px)  { #radnik-mapa-map { height:calc(100vh - 250px - 60px); height:calc(100dvh - 250px - 60px); min-height:180px; } }
 
                   /* ── PUNI EKRAN (AlpineQuest-stil) — aktivira se ulaskom u Mapa odjela,
                      uklanja se klikom na "Zatvori" (ili automatski pri prelasku na bilo
@@ -3155,7 +3159,7 @@
                          terenskoj (mobilnoj) verziji, jer je ova sad manja od 2,5x
                          smanjenja (v1.4.97); nije greška, samo ostaje dovoljno
                          prostora oko manjih desktop dugmadi. */
-                      body:not(.force-desktop-view) #radnik-mapa-map { height:calc(100vh - 240px - 80px); }
+                      body:not(.force-desktop-view) #radnik-mapa-map { height:calc(100vh - 240px - 80px); height:calc(100dvh - 240px - 80px); }
                       body.radnik-mapa-fullscreen:not(.force-desktop-view) #radnik-mapa-content { padding-bottom:calc(80px + env(safe-area-inset-bottom)) !important; }
                   }
 
@@ -3215,13 +3219,13 @@
                   body.mapa-fokus #check-data-btn { display:none !important; }
                   body.mapa-fokus .header-content { min-height:0 !important; padding:4px 0 !important; }
                   body.mapa-fokus #karta-page-header { display:none !important; }
-                  body.mapa-fokus #karta-odjela-map { height:calc(100vh - 110px) !important; }
+                  body.mapa-fokus #karta-odjela-map { height:calc(100vh - 110px) !important; height:calc(100dvh - 110px) !important; }
                   body.mapa-fokus #mapa-modal { top:42px !important; }
                   @media (max-width:1024px) {
-                    body.mapa-fokus #karta-odjela-map { height:calc(100vh - 100px) !important; }
+                    body.mapa-fokus #karta-odjela-map { height:calc(100vh - 100px) !important; height:calc(100dvh - 100px) !important; }
                   }
                   @media (max-width:640px) {
-                    body.mapa-fokus #karta-odjela-map { height:calc(100vh - 120px) !important; }
+                    body.mapa-fokus #karta-odjela-map { height:calc(100vh - 120px) !important; height:calc(100dvh - 120px) !important; }
                     body.mapa-fokus #mapa-modal { top:38px !important; }
                   }
                   #karta-fokus-btn.active { background:#1e40af !important; color:white !important; border-color:#1e40af !important; }

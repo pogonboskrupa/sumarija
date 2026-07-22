@@ -442,9 +442,9 @@
 
             var viewport = document.querySelector('meta[name=viewport]');
             if (isDesktopView) {
-                viewport.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes');
+                viewport.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes, viewport-fit=cover');
             } else {
-                viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
+                viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
             }
 
             window.scrollTo(0, 0);
@@ -476,9 +476,9 @@
 
             var viewport = document.querySelector('meta[name=viewport]');
             if (isAndroid) {
-                viewport.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes');
+                viewport.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes, viewport-fit=cover');
             } else {
-                viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
+                viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
             }
 
             window.scrollTo(0, 0);
