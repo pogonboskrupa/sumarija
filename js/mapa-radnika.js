@@ -118,6 +118,22 @@
             '</div>';
     }
 
+    // Fiksni info panel (vidi index.html #radnik-mapa-info-panel) — dijete
+    // #radnik-mapa-map diva, prikazan/skriven preko klase "hidden", uvijek
+    // pozicioniran u gornjem dijelu mape bez obzira gdje je odjel kliknut.
+    function _showInfoPanel(o) {
+        var panel = document.getElementById('radnik-mapa-info-panel');
+        var body = document.getElementById('radnik-mapa-info-panel-body');
+        if (!panel || !body) return;
+        body.innerHTML = _popupHtml(o);
+        panel.classList.remove('hidden');
+    }
+    function _hideInfoPanel() {
+        var panel = document.getElementById('radnik-mapa-info-panel');
+        if (panel) panel.classList.add('hidden');
+    }
+    window.mapaRadnikaCloseInfoPanel = _hideInfoPanel;
+
     function _featureKeys(feature) {
         var p = feature.properties || {};
         var s = (p.gj || '') + ' ' + (p.odjel || p.name || '');
@@ -127,6 +143,7 @@
     function _renderLayer(geojson) {
         if (_layer) { _map.removeLayer(_layer); _layer = null; }
         if (_haloLayer) { _map.removeLayer(_haloLayer); _haloLayer = null; }
+        _hideInfoPanel(); // spriječi da ostane vidljiv panel sa zastarjelim odjelom
 
         var radnikLayers = []; // samo poligoni gdje je radnik radio — za fitBounds
 
@@ -176,13 +193,13 @@
                 });
                 if (radio) {
                     radnikLayers.push(lyr);
-                    lyr.on('click', function() {
-                        // maxWidth se računa u odnosu na širinu ekrana da popup
-                        // uvijek stane na malim mobilnim ekranima bez sažimanja;
-                        // šire nego ranije da chip-grid stvarno stane horizontalno
-                        // (2-3 kartice u redu) umjesto uske vertikalne liste.
-                        var mw = Math.max(260, Math.min(420, window.innerWidth - 24));
-                        this.bindPopup(_popupHtml(o), { maxWidth: mw, minWidth: 240, autoPan: true, autoPanPadding: [20, 20] }).openPopup();
+                    lyr.on('click', function(e) {
+                        // Fiksni info panel u gornjem dijelu mape (NE Leaflet popup
+                        // vezan za tačku klika) — pozicija je uvijek ista i predvidiva
+                        // bez obzira gdje se na odjelu klikne, cifre se nikad ne
+                        // isijeku/sakriju iza ruba ekrana ili donje trake.
+                        L.DomEvent.stopPropagation(e);
+                        _showInfoPanel(o);
                     });
                 }
             }
@@ -405,11 +422,17 @@
         _enterMapaFullscreen();
 
         if (!_map) {
-            _map = L.map('radnik-mapa-map', { center: SUMARIJA_LATLNG, zoom: 11, zoomControl: true });
+            // zoomControl:false + ručno dodat na 'bottomleft' — gornji dio mape
+            // je rezervisan za fiksni info panel (#radnik-mapa-info-panel), pa
+            // zoom dugmad ne smiju stajati na uobičajenom 'topleft' mjestu.
+            _map = L.map('radnik-mapa-map', { center: SUMARIJA_LATLNG, zoom: 11, zoomControl: false });
+            L.control.zoom({ position: 'bottomleft' }).addTo(_map);
             _osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                 maxZoom: 18
             }).addTo(_map);
+            // Klik na praznu mapu (van poligona) zatvara info panel
+            _map.on('click', _hideInfoPanel);
             _bindBarButtons();
             _drawSavedTracks();
         }

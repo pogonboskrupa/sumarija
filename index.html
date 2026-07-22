@@ -1313,7 +1313,12 @@
                     <button class="btn-zatvori-mapu" onclick="closeMapaRadnika()">✕ Zatvori</button>
                 </div>
             </div>
-            <div id="radnik-mapa-map" class="radnik-mapa-map"></div>
+            <div id="radnik-mapa-map" class="radnik-mapa-map">
+                <div id="radnik-mapa-info-panel" class="rm-info-panel hidden">
+                    <button type="button" class="rm-info-panel-close" onclick="mapaRadnikaCloseInfoPanel()" aria-label="Zatvori">✕</button>
+                    <div id="radnik-mapa-info-panel-body"></div>
+                </div>
+            </div>
         </div>
 
         <!-- ADD SJECA FORM (For Primači) -->
@@ -3013,7 +3018,7 @@
                   /* Radnik mapa odjela — visina umanjena za donju traku dugmadi (~112-120px,
                      ponovo uvećana traka). Ovo je fallback prikaz PRIJE nego se puni-ekran
                      mod (ispod) aktivira. */
-                  #radnik-mapa-map { width:100%; height:calc(100vh - 240px - 112px); min-height:280px; background:#f1f5f9; border-radius:12px; overflow:hidden; }
+                  #radnik-mapa-map { position:relative; width:100%; height:calc(100vh - 240px - 112px); min-height:280px; background:#f1f5f9; border-radius:12px; overflow:hidden; }
                   @media (max-width:1024px) { #radnik-mapa-map { height:calc(100vh - 220px - 112px); min-height:240px; } }
                   @media (max-width:640px)  { #radnik-mapa-map { height:calc(100vh - 250px - 120px); min-height:180px; } }
 
@@ -3089,10 +3094,22 @@
                       .rm-bar-icon { font-size:30px; }
                   }
 
-                  /* Popup sa podacima odjela (klik na istaknuti odjel) — čitljivo
-                     i na mobilnom (veći tekst/razmak, ne oslanja se samo na inline
-                     stilove pa CSS media-query može uvećati na malim ekranima) */
-                  .rm-odjel-popup { min-width:230px; }
+                  /* Info panel s podacima odjela (klik na istaknuti odjel) — FIKSIRAN
+                     u gornjem dijelu mape (ne Leaflet popup vezan za tačku klika), da
+                     pozicija uvijek bude predvidiva i pregledna bez obzira gdje se na
+                     odjelu klikne, i da cifre nikad ne budu isječene/skrivene. */
+                  .rm-info-panel {
+                      position:absolute; top:10px; left:10px; right:10px; z-index:1200;
+                      background:#fff; border-radius:14px; padding:14px 40px 14px 16px;
+                      box-shadow:0 10px 28px rgba(0,0,0,.28); max-height:65%; overflow-y:auto;
+                  }
+                  .rm-info-panel.hidden { display:none; }
+                  .rm-info-panel-close {
+                      position:absolute; top:8px; right:8px; width:30px; height:30px; border-radius:50%;
+                      border:none; background:#f3f4f6; color:#374151; font-size:15px; font-weight:700;
+                      cursor:pointer; font-family:inherit;
+                  }
+                  .rm-info-panel-close:active { background:#e5e7eb; }
                   .rm-popup-title { font-weight:700; color:#047857; font-size:15px; margin-bottom:2px; }
                   .rm-popup-datum { font-size:11px; color:#6b7280; margin-bottom:8px; }
                   .rm-popup-grid { display:flex; flex-wrap:wrap; gap:6px; margin:2px 0 8px; }
@@ -3104,14 +3121,13 @@
                       font-weight:800; color:#047857; display:flex; justify-content:space-between; font-size:14px;
                   }
                   @media (max-width:640px) {
+                      .rm-info-panel { padding:16px 44px 16px 18px; }
                       .rm-popup-title { font-size:17px; }
                       .rm-popup-datum { font-size:13px; margin-bottom:10px; }
                       .rm-popup-chip { padding:8px 12px; min-width:88px; }
                       .rm-popup-chip-label { font-size:11px; }
                       .rm-popup-chip-val { font-size:16px; }
                       .rm-popup-total { font-size:16px; padding-top:8px; }
-                      .leaflet-popup-content { margin:14px 16px; line-height:1.4; }
-                      .leaflet-popup-close-button { font-size:22px !important; padding:6px 8px !important; }
                   }
 
                   /* ── MAPA FOKUS MODE ── */
