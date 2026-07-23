@@ -422,7 +422,7 @@
         _loadSavedTracks().forEach(function(t) {
             if (!t.points || t.points.length < 2) return;
             var pl = L.polyline(t.points, { color: '#7c3aed', weight: 3, opacity: 0.6, dashArray: '6 6' }).addTo(_map);
-            pl.bindTooltip('Trag — ' + (t.start ? new Date(t.start).toLocaleString('bs-BA') : '?'), { sticky: true });
+            pl.bindTooltip((t.name || 'Trag') + ' — ' + (t.start ? new Date(t.start).toLocaleString('bs-BA') : '?'), { sticky: true });
             _savedTrackLayers.push(pl);
         });
     }
@@ -454,6 +454,33 @@
             _currentTrackPolyline.addLatLng(ll);
         }
     }
+
+    // ---- Modal za ime traga — prikazuje se PRIJE početka snimanja (ne pri
+    // kraju), datum/vrijeme je uvijek "sada" (readonly, ne unosi ga korisnik). ----
+    var _pendingTragName = '';
+    function _defaultTragName() {
+        return 'Trag ' + new Date().toLocaleString('bs-BA');
+    }
+    function _showTragNameModal() {
+        var modal = document.getElementById('trag-name-modal');
+        var input = document.getElementById('trag-name-input');
+        var datumEl = document.getElementById('trag-datum-prikaz');
+        if (!modal || !input) { _startTrag(); return; } // fallback ako modal nije u DOM-u
+        input.value = _defaultTragName();
+        if (datumEl) datumEl.textContent = '📅 ' + new Date().toLocaleString('bs-BA');
+        modal.classList.add('show');
+        setTimeout(function() { input.focus(); input.select(); }, 50);
+    }
+    window.closeTragNameModal = function() {
+        var modal = document.getElementById('trag-name-modal');
+        if (modal) modal.classList.remove('show');
+    };
+    window.confirmStartTrag = function() {
+        var input = document.getElementById('trag-name-input');
+        _pendingTragName = (input && input.value.trim()) || _defaultTragName();
+        window.closeTragNameModal();
+        _startTrag();
+    };
 
     function _startTrag() {
         if (!navigator.geolocation) {
@@ -487,27 +514,63 @@
         if (_currentTrackPoints.length >= 2) {
             var tracks = _loadSavedTracks();
             tracks.push({
+                name: _pendingTragName || 'Trag',
                 start: _tragStartIso || new Date().toISOString(),
                 end: new Date().toISOString(),
                 points: _currentTrackPoints
             });
             _saveTracks(tracks);
         }
+        _pendingTragName = '';
         if (_currentTrackPolyline) { _map.removeLayer(_currentTrackPolyline); _currentTrackPolyline = null; }
         _currentTrackPoints = [];
         _drawSavedTracks();
+        _renderTragoviList();
     }
 
     function _toggleTrag() {
         if (_recording) _stopTrag();
-        else _startTrag();
+        else _showTragNameModal();
     }
 
     function _clearTracks() {
         if (!confirm('Obrisati sve sačuvane tragove? Ova radnja se ne može poništiti.')) return;
         _saveTracks([]);
         _drawSavedTracks();
+        _renderTragoviList();
     }
+
+    // ---- Lista sačuvanih tragova (unutar "Tragovi" popup-a) sa pojedinačnim
+    // brisanjem — uvijek se ponovo iscrtava iz SVJEŽE učitanog niza (ne
+    // oslanja se na stare indekse), tako da se izbjegne bilo kakvo
+    // neslaganje sa localStorage stanjem. ----
+    function _renderTragoviList() {
+        var list = document.getElementById('radnik-mapa-tragovi-list');
+        if (!list) return;
+        var tracks = _loadSavedTracks();
+        if (!tracks.length) {
+            list.innerHTML = '<div class="rm-tragovi-empty">Nema sačuvanih tragova.</div>';
+            return;
+        }
+        list.innerHTML = tracks.map(function(t, i) {
+            var when = t.start ? new Date(t.start).toLocaleString('bs-BA') : '?';
+            var name = (t.name || 'Trag').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return '<div class="rm-tragovi-row">' +
+                '<span class="rm-tragovi-row-info">' + name + '<br><small>' + when + '</small></span>' +
+                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeleteTrag(' + i + ')" aria-label="Obriši trag">🗑️</button>' +
+                '</div>';
+        }).join('');
+    }
+    window.mapaRadnikaDeleteTrag = function(index) {
+        var tracks = _loadSavedTracks();
+        var t = tracks[index];
+        if (!t) return;
+        if (!confirm('Obrisati trag "' + (t.name || 'Trag') + '"?')) return;
+        tracks.splice(index, 1);
+        _saveTracks(tracks);
+        _drawSavedTracks();
+        _renderTragoviList();
+    };
 
     // ---- Dugmad — obična HTML dugmad IZVAN Leaflet kontejnera (donja traka
     // u index.html, #radnik-mapa-content), NE Leaflet control. Ranije su ova
@@ -534,8 +597,9 @@
         var bar = document.getElementById('radnik-mapa-bottombar');
         if (!menu) return;
         var willShow = menu.classList.contains('hidden');
-        if (willShow && bar) {
-            menu.style.bottom = (bar.getBoundingClientRect().height + 8) + 'px';
+        if (willShow) {
+            if (bar) menu.style.bottom = (bar.getBoundingClientRect().height + 8) + 'px';
+            _renderTragoviList();
         }
         menu.classList.toggle('hidden', !willShow);
     }

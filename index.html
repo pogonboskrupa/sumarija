@@ -3075,6 +3075,16 @@
                   .rm-tragovi-item:active { background:#f3f4f6; }
                   .rm-tragovi-checkbox { justify-content:flex-start; }
                   .rm-tragovi-checkbox input[type="checkbox"] { width:16px; height:16px; margin:0; cursor:pointer; }
+                  /* Lista sačuvanih tragova (v1.4.112) — scrollable, sa dugmetom
+                     za pojedinačno brisanje po redu. */
+                  .rm-tragovi-divider { height:1px; background:#e5e7eb; margin:4px 6px; }
+                  .rm-tragovi-list { max-height:180px; overflow-y:auto; }
+                  .rm-tragovi-row { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border-radius:8px; }
+                  .rm-tragovi-row:active { background:#f3f4f6; }
+                  .rm-tragovi-row-info { font-size:13px; color:#1f2937; }
+                  .rm-tragovi-row-info small { color:#6b7280; font-size:11px; }
+                  .rm-tragovi-delete { background:none; border:none; font-size:16px; cursor:pointer; padding:4px 8px; }
+                  .rm-tragovi-empty { padding:10px 12px; font-size:13px; color:#9ca3af; text-align:center; }
 
                   /* Donja fiksna traka — Moja lokacija / Tragovi / Zatvori.
                      IZVAN Leaflet mape (obična HTML dugmad, ne Leaflet control), pa
@@ -3468,6 +3478,23 @@
         <input id="radnik-mapa-labels-toggle" type="checkbox" onchange="mapaRadnikaToggleLabels()" />
         <span>🏷️ Prikaži odjele</span>
     </label>
+    <div class="rm-tragovi-divider"></div>
+    <div id="radnik-mapa-tragovi-list" class="rm-tragovi-list"></div>
+</div>
+<!-- Modal za ime traga — prikazuje se PRIJE početka snimanja -->
+<div class="modal-overlay" id="trag-name-modal" onclick="if(event.target===this) closeTragNameModal();">
+    <div class="modal" style="max-width:340px;">
+        <div class="modal-header"><div class="modal-title">⏺️ Novi trag</div></div>
+        <div class="modal-body">
+            <label style="display:block;font-size:12px;font-weight:600;color:#4b5563;margin-bottom:4px;">Ime traga</label>
+            <input type="text" id="trag-name-input" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;" />
+            <div id="trag-datum-prikaz" style="font-size:12px;color:#6b7280;margin-top:8px;"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeTragNameModal()">Otkaži</button>
+            <button class="btn btn-primary" onclick="confirmStartTrag()">Počni snimanje</button>
+        </div>
+    </div>
 </div>
 <div id="radnik-mapa-bottombar" class="radnik-mapa-bottombar" style="display:none;">
     <button id="radnik-mapa-loc-btn" class="rm-bar-btn rm-bar-loc" onclick="mapaRadnikaLocateMe()">
