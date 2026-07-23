@@ -652,11 +652,38 @@
         else _showTragNameModal();
     }
 
+    // Custom potvrda brisanja (zamjena za native browser confirm(), koji na
+    // nekim uređajima/prikazima izgleda kao dio adresne trake/linka umjesto
+    // dijela aplikacije — "pro" izgled, isti modal-overlay obrazac kao
+    // #trag-name-modal).
+    var _tragConfirmCallback = null;
+    function _showTragConfirm(message, onConfirm) {
+        var modal = document.getElementById('trag-confirm-modal');
+        var msgEl = document.getElementById('trag-confirm-message');
+        if (!modal || !msgEl) { if (confirm(message)) onConfirm(); return; } // fallback ako modal nije u DOM-u
+        msgEl.textContent = message;
+        _tragConfirmCallback = onConfirm;
+        modal.classList.add('show');
+    }
+    window.mapaRadnikaCancelTragConfirm = function() {
+        var modal = document.getElementById('trag-confirm-modal');
+        if (modal) modal.classList.remove('show');
+        _tragConfirmCallback = null;
+    };
+    window.mapaRadnikaConfirmTragDelete = function() {
+        var modal = document.getElementById('trag-confirm-modal');
+        if (modal) modal.classList.remove('show');
+        var cb = _tragConfirmCallback;
+        _tragConfirmCallback = null;
+        if (cb) cb();
+    };
+
     function _clearTracks() {
-        if (!confirm('Obrisati sve sačuvane tragove? Ova radnja se ne može poništiti.')) return;
-        _saveTracks([]);
-        _drawSavedTracks();
-        _renderTragoviList();
+        _showTragConfirm('Obrisati sve sačuvane tragove? Ova radnja se ne može poništiti.', function() {
+            _saveTracks([]);
+            _drawSavedTracks();
+            _renderTragoviList();
+        });
     }
 
     // ---- Lista sačuvanih tragova (unutar "Tragovi" popup-a) sa pojedinačnim
@@ -703,11 +730,13 @@
         var tracks = _loadSavedTracks();
         var t = tracks[index];
         if (!t) return;
-        if (!confirm('Obrisati trag "' + (t.name || 'Trag') + '"?')) return;
-        tracks.splice(index, 1);
-        _saveTracks(tracks);
-        _drawSavedTracks();
-        _renderTragoviList();
+        _showTragConfirm('Obrisati trag "' + (t.name || 'Trag') + '"?', function() {
+            var fresh = _loadSavedTracks(); // svježe učitano — index ostaje ispravan jer se lista ne mijenja dok je modal otvoren
+            fresh.splice(index, 1);
+            _saveTracks(fresh);
+            _drawSavedTracks();
+            _renderTragoviList();
+        });
     };
 
     // ---- Dugmad — obična HTML dugmad IZVAN Leaflet kontejnera (donja traka

@@ -3093,7 +3093,7 @@
                      ekranu Mape odjela, pa se ovaj modal renderovao ISPOD njih
                      (nevidljivo/neklikabilno — pravi razlog "Snimi trag se ne
                      aktivira"). Podignuto iznad svega u toj mapi. */
-                  #trag-name-modal.show { z-index:20000; }
+                  #trag-name-modal.show, #trag-confirm-modal.show { z-index:20000; }
 
                   /* Donja fiksna traka — Moja lokacija / Tragovi / Zatvori.
                      IZVAN Leaflet mape (obična HTML dugmad, ne Leaflet control), pa
@@ -3521,6 +3521,19 @@
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeTragNameModal()">Otkaži</button>
             <button class="btn btn-primary" onclick="confirmStartTrag()">Počni snimanje</button>
+        </div>
+    </div>
+</div>
+<!-- Custom potvrda brisanja traga — zamjena za native browser confirm() koji
+     na nekim uređajima/prikazima izgleda kao dio adresne trake/linka umjesto
+     dijela aplikacije. -->
+<div class="modal-overlay" id="trag-confirm-modal" onclick="if(event.target===this) mapaRadnikaCancelTragConfirm();">
+    <div class="modal" style="max-width:320px;">
+        <div class="modal-header"><div class="modal-title">🗑️ Potvrda brisanja</div></div>
+        <div class="modal-body" id="trag-confirm-message"></div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="mapaRadnikaCancelTragConfirm()">Otkaži</button>
+            <button class="btn btn-danger" onclick="mapaRadnikaConfirmTragDelete()">Obriši</button>
         </div>
     </div>
 </div>
