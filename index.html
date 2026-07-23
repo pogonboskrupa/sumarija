@@ -2978,7 +2978,7 @@
                         <div style="display:flex;align-items:center;gap:4px;">
                             <input id="karta-search" type="text" placeholder="Broj odjela..." oninput="searchKartaOdjel()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;width:110px;" />
                             <button onclick="searchKartaOdjel()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🔍</button>
-                            <button onclick="document.getElementById('karta-search').value='';searchKartaOdjel();" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">✕</button>
+                            <button onclick="clearKartaSearch()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">✕</button>
                         </div>
                         <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#374151;cursor:pointer;background:white;border:1px solid #d1d5db;border-radius:6px;padding:4px 10px;">
                             <input id="karta-otprema-toggle" type="checkbox" onchange="applyKartaFilter()" style="cursor:pointer;margin:0;" />
@@ -2989,14 +2989,16 @@
                         <button id="karta-odjel-ruta-btn" onclick="toggleOdjelRutaMode()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🔀 Ruta odjel→odjel</button>
                         <button onclick="resetKartaView()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">↺ Reset</button>
                         <button id="karta-fokus-btn" onclick="toggleMapaFokus()" title="Mapa u prvom planu" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">⛶ Fokus</button>
-                        <!-- Legenda -->
+                        <!-- Legenda — svaka boja je sad i checkbox: isključi je da sakriješ
+                             sve odjele tog statusa na mapi (kombinuje se sa GJ/status/
+                             pretraga/otprema filterima preko applyKartaFilter()). -->
                         <div style="display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;align-items:center;">
-                            <span style="font-size:11px;display:flex;align-items:center;gap:3px;"><span style="display:inline-block;width:12px;height:12px;background:#2563eb;border-radius:2px;"></span>Plan sječa 2027</span>
-                            <span style="font-size:11px;display:flex;align-items:center;gap:3px;"><span style="display:inline-block;width:12px;height:12px;background:#eab308;border-radius:2px;"></span>Planirano</span>
-                            <span style="font-size:11px;display:flex;align-items:center;gap:3px;"><span style="display:inline-block;width:12px;height:12px;background:#dc2626;border-radius:2px;"></span>U sječi</span>
-                            <span style="font-size:11px;display:flex;align-items:center;gap:3px;"><span style="display:inline-block;width:12px;height:12px;background:#16a34a;border-radius:2px;"></span>Posječeno</span>
-                            <span style="font-size:11px;display:flex;align-items:center;gap:3px;"><span style="display:inline-block;width:12px;height:12px;background:#7c3aed;border-radius:2px;"></span>Slučajni</span>
-                            <span style="font-size:11px;display:flex;align-items:center;gap:3px;"><span style="display:inline-block;width:12px;height:12px;background:#0891b2;border-radius:2px;"></span>Nekategorisan</span>
+                            <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" class="karta-legend-toggle" data-status="plan-2027" checked onchange="applyKartaFilter()" style="margin:0;cursor:pointer;" /><span style="display:inline-block;width:12px;height:12px;background:#2563eb;border-radius:2px;"></span>Plan sječa 2027</label>
+                            <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" class="karta-legend-toggle" data-status="planirano" checked onchange="applyKartaFilter()" style="margin:0;cursor:pointer;" /><span style="display:inline-block;width:12px;height:12px;background:#eab308;border-radius:2px;"></span>Planirano</label>
+                            <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" class="karta-legend-toggle" data-status="u-sjeci" checked onchange="applyKartaFilter()" style="margin:0;cursor:pointer;" /><span style="display:inline-block;width:12px;height:12px;background:#dc2626;border-radius:2px;"></span>U sječi</label>
+                            <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" class="karta-legend-toggle" data-status="posjeceno" checked onchange="applyKartaFilter()" style="margin:0;cursor:pointer;" /><span style="display:inline-block;width:12px;height:12px;background:#16a34a;border-radius:2px;"></span>Posječeno</label>
+                            <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" class="karta-legend-toggle" data-status="slucajni" checked onchange="applyKartaFilter()" style="margin:0;cursor:pointer;" /><span style="display:inline-block;width:12px;height:12px;background:#7c3aed;border-radius:2px;"></span>Slučajni</label>
+                            <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" class="karta-legend-toggle" data-status="prelazni" checked onchange="applyKartaFilter()" style="margin:0;cursor:pointer;" /><span style="display:inline-block;width:12px;height:12px;background:#0891b2;border-radius:2px;"></span>Nekategorisan</label>
                         </div>
                     </div>
                     <!-- Hint za ruta-mode -->

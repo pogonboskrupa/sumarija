@@ -866,22 +866,26 @@
   };
 
   // ---- PRETRAGA ----
+  // NAPOMENA: show/hide odluku sad u potpunosti radi applyKartaFilter() (jedini
+  // izvor istine za GJ/status/legenda-checkbox/otprema/pretraga filtere
+  // zajedno) — ranije je ova funkcija sama radila nezavisan add/removeLayer
+  // prolaz SAMO po tekstu pretrage, zaobilazeći sve ostale aktivne filtere
+  // (npr. otkačen checkbox u legendi bi ipak ponovo prikazao odjel čim se
+  // nešto ukuca u pretragu). Ovdje se sad samo dodaje "skoči na prvi
+  // pronađeni + kratko istakni" iznad zajedničkog filtriranja.
   window.searchKartaOdjel = function() {
+    applyKartaFilter();
     const term = (document.getElementById('karta-search') || {}).value || '';
     const q    = term.trim().toUpperCase();
-    if (!q) { _allFeatures.forEach(l => { if (!_map.hasLayer(l)) l.addTo(_map); }); return; }
+    if (!q) return;
 
     let found = null;
     _allFeatures.forEach(lyr => {
+      if (found || !_map.hasLayer(lyr)) return; // samo među odjelima koji su i dalje vidljivi (prošli sve filtere)
       const p = lyr._kartaProps || {};
       const o = String(p.odjel || p.name || '').trim().toUpperCase();
       const g = String(p.gj || '').trim().toUpperCase();
-      if (o === q || o.startsWith(q) || g.includes(q)) {
-        if (!_map.hasLayer(lyr)) lyr.addTo(_map);
-        if (!found) found = lyr;
-      } else {
-        if (_map.hasLayer(lyr)) _map.removeLayer(lyr);
-      }
+      if (o === q || o.startsWith(q) || g.includes(q)) found = lyr;
     });
 
     if (found) {
@@ -905,6 +909,12 @@
     const q   = ((document.getElementById('karta-search')       || {}).value || '').trim().toUpperCase();
     _otpremaMode = (document.getElementById('karta-otprema-toggle') || {}).checked || false;
 
+    // Legenda checkboxovi — isključi boju/status da sakriješ sve odjele tog
+    // statusa. "bez-plana" nema checkbox u legendi pa uvijek prolazi
+    // (nije predstavljen tamo, ne treba ga moći sakriti odavde).
+    const legendOn = {};
+    document.querySelectorAll('.karta-legend-toggle').forEach(cb => { legendOn[cb.dataset.status] = cb.checked; });
+
     let otpremaBroj = 0;
     _allFeatures.forEach(lyr => {
       const p   = lyr._kartaProps || {};
@@ -912,11 +922,12 @@
       const gjM = gjF === 'sve' || lyr._kartaGj === gjF;
       const stM = stF === 'sve' || lyr._kartaStatus === stF;
       const qM  = !q || o.startsWith(q) || String(p.gj||'').toUpperCase().includes(q);
+      const legendM = lyr._kartaStatus === 'bez-plana' || legendOn[lyr._kartaStatus] !== false;
       // U režimu otpreme prikaži SAMO odjele s otpremom u tekućem mjesecu
       // (uključujući bez-plana/slučajne/prelazne) — ostali se sakriju.
       const otM = !_otpremaMode || (lyr._kartaOtpremaMjesec > 0);
 
-      if (gjM && stM && qM && otM) {
+      if (gjM && stM && qM && legendM && otM) {
         if (!_map.hasLayer(lyr)) lyr.addTo(_map);
         if (_otpremaMode) { lyr.setStyle(_getOtpremaStyle(lyr._kartaStatus)); otpremaBroj++; }
         else if (_layer)  { _layer.resetStyle(lyr); }
