@@ -1313,6 +1313,8 @@
                     <div id="radnik-mapa-info-panel-body"></div>
                 </div>
                 <button type="button" id="radnik-mapa-sat-btn" class="rm-sat-btn" onclick="mapaRadnikaToggleSat()">🛰️ Satelit</button>
+                <button type="button" id="radnik-mapa-nearest-btn" class="rm-map-btn" onclick="mapaRadnikaRouteNearest()">🧭 Najbliži odjel</button>
+                <button type="button" id="radnik-mapa-offline-btn" class="rm-map-btn" onclick="mapaRadnikaDownloadOffline()">⬇️ Offline</button>
             </div>
         </div>
 
@@ -3187,14 +3189,20 @@
                      prelomi u 2 reda). Mapa se ovdje uvijek završava tačno gdje
                      počinje donja traka (zaseban fixed element ispod), pa nema rizika
                      od preklapanja ni s te strane. */
-                  .rm-sat-btn {
-                      position:absolute; bottom:10px; right:10px; z-index:1000;
+                  .rm-sat-btn, .rm-map-btn {
+                      position:absolute; z-index:1000;
                       background:rgba(255,255,255,.85); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
                       border:1px solid rgba(209,213,219,.8); border-radius:8px;
                       padding:6px 10px; font-size:12px; font-weight:700; color:#374151;
                       cursor:pointer; font-family:inherit; box-shadow:0 2px 8px rgba(0,0,0,.15);
                   }
-                  .rm-sat-btn:active { background:#e5e7eb; }
+                  .rm-sat-btn { bottom:10px; right:10px; }
+                  .rm-sat-btn:active, .rm-map-btn:active { background:#e5e7eb; }
+                  .rm-map-btn:disabled { opacity:.6; cursor:default; }
+                  /* Zaglavlje je uklonjeno (v1.4.111) — gornji lijevi ugao je slobodan
+                     za dodatna dugmad (najbliži odjel / offline preuzimanje). */
+                  #radnik-mapa-nearest-btn { top:10px; left:10px; }
+                  #radnik-mapa-offline-btn { top:48px; left:10px; }
                   /* "Moja lokacija" ikonica — samo plava tačka, BEZ teksta "Vi ste ovdje"
                      i BEZ konusa smjera gledanja (isprobano pa ugašeno na zahtjev). */
                   .rm-loc-wrap { position:relative; width:40px; height:40px; }
