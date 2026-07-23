@@ -494,6 +494,20 @@
 
         _watchId = navigator.geolocation.watchPosition(_onTragPosition, function(err) {
             console.error('[MapaRadnika] watchPosition greška:', err);
+            // Bez ovoga dugme ostaje "Zaustavi snimanje" (optimistički postavljeno
+            // ispod) čak i kad watchPosition stvarno nikad nije uspio (npr. dozvola
+            // odbijena) — korisnik vidi "snima" a ništa se ne snima, bez objašnjenja
+            // zašto. Vrati UI u prvobitno stanje i objasni razlog.
+            if (_watchId != null) { navigator.geolocation.clearWatch(_watchId); _watchId = null; }
+            _recording = false;
+            if (_tragBtnEl) {
+                _tragBtnEl.textContent = '⏺️ Snimi trag';
+                _tragBtnEl.classList.remove('recording');
+            }
+            var msg = err.code === 1
+                ? 'Pristup lokaciji je odbijen. Dozvolite lokaciju u postavkama uređaja/browsera da bi snimanje traga radilo.'
+                : (err.code === 3 ? 'Isteklo vrijeme čekanja na GPS signal. Pokušajte ponovo na otvorenom.' : 'Nije moguće pratiti lokaciju za snimanje traga.');
+            alert(msg);
         }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
 
         _recording = true;
