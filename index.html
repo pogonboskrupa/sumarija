@@ -3085,6 +3085,12 @@
                   .rm-tragovi-row-info small { color:#6b7280; font-size:11px; }
                   .rm-tragovi-delete { background:none; border:none; font-size:16px; cursor:pointer; padding:4px 8px; }
                   .rm-tragovi-empty { padding:10px 12px; font-size:13px; color:#9ca3af; text-align:center; }
+                  /* .modal-overlay (css/main.css) je z-index:1000 — daleko ispod
+                     #radnik-mapa-content/bottombar/tragovi-menu (10500-10600) u punom
+                     ekranu Mape odjela, pa se ovaj modal renderovao ISPOD njih
+                     (nevidljivo/neklikabilno — pravi razlog "Snimi trag se ne
+                     aktivira"). Podignuto iznad svega u toj mapi. */
+                  #trag-name-modal.show { z-index:20000; }
 
                   /* Donja fiksna traka — Moja lokacija / Tragovi / Zatvori.
                      IZVAN Leaflet mape (obična HTML dugmad, ne Leaflet control), pa
