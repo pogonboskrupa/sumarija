@@ -338,6 +338,55 @@
     window.mapaRadnikaToggleSat = _toggleSat;
 
     // ---- MOJA LOKACIJA (GPS) ----
+    // Ikonica lokacije — plava tačka + poluprozirni "konus" koji pokazuje
+    // smjer u kom je telefon okrenut (kompas), bez teksta "Vi ste ovdje".
+    // Konus se rotira preko CSS transform-a na osnovu heading vrijednosti
+    // (0° = sjever, raste u smjeru kazaljke — isti smjer kao CSS rotate()).
+    function _locIconHtml() {
+        return '<div class="rm-loc-wrap">' +
+            '<div class="rm-loc-cone" id="rm-loc-cone" style="display:none;"></div>' +
+            '<div class="rm-loc-dot"></div>' +
+            '</div>';
+    }
+    function _updateLocHeading(heading) {
+        if (!_locMarker) return;
+        var el = _locMarker.getElement && _locMarker.getElement();
+        var cone = el && el.querySelector('.rm-loc-cone');
+        if (!cone) return;
+        cone.style.display = '';
+        cone.style.transform = 'rotate(' + heading + 'deg)';
+    }
+    var _headingBound = false;
+    function _bindHeadingListener() {
+        if (_headingBound) return;
+        _headingBound = true;
+        function handleOrientation(e) {
+            var heading = null;
+            if (typeof e.webkitCompassHeading === 'number') {
+                heading = e.webkitCompassHeading; // iOS Safari — već u smjeru kazaljke od sjevera
+            } else if (typeof e.alpha === 'number') {
+                // Android 'deviceorientationabsolute': alpha raste suprotno od kazaljke
+                // od sjevera — pretvori u kompas heading (u smjeru kazaljke).
+                heading = 360 - e.alpha;
+            }
+            if (heading == null || isNaN(heading)) return;
+            _updateLocHeading(heading);
+        }
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            // iOS 13+ zahtijeva eksplicitnu dozvolu — mora se pozvati iz user-gesture
+            // handlera (dugme "Moja lokacija" je taj gesture).
+            DeviceOrientationEvent.requestPermission().then(function(state) {
+                if (state === 'granted') {
+                    window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+                    window.addEventListener('deviceorientation', handleOrientation, true);
+                }
+            }).catch(function() {});
+        } else {
+            window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+            window.addEventListener('deviceorientation', handleOrientation, true);
+        }
+    }
+
     function _locateMe() {
         if (!navigator.geolocation) {
             alert('Vaš uređaj ne podržava geolokaciju.');
@@ -345,6 +394,7 @@
         }
         if (!_map) return;
         if (_locBtnEl) { _locBtnEl.disabled = true; _locBtnEl.textContent = '📍 Tražim...'; }
+        _bindHeadingListener();
 
         navigator.geolocation.getCurrentPosition(
             function(pos) {
@@ -355,9 +405,10 @@
                     radius: pos.coords.accuracy || 30,
                     color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.12, weight: 1
                 }).addTo(_map);
-                _locMarker = L.circleMarker(ll, {
-                    radius: 9, color: '#1d4ed8', fillColor: '#3b82f6', fillOpacity: 0.95, weight: 3
-                }).bindTooltip('📍 Vi ste ovdje', { permanent: true, direction: 'top', offset: [0, -8] }).addTo(_map);
+                _locMarker = L.marker(ll, {
+                    icon: L.divIcon({ className: 'rm-loc-icon', html: _locIconHtml(), iconSize: [40, 40], iconAnchor: [20, 20] }),
+                    interactive: false
+                }).addTo(_map);
                 _map.setView(ll, 15);
                 if (_locBtnEl) { _locBtnEl.disabled = false; _locBtnEl.textContent = '📍 Moja lokacija'; }
             },

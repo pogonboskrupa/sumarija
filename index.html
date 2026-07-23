@@ -3214,6 +3214,18 @@
                       cursor:pointer; font-family:inherit; box-shadow:0 2px 8px rgba(0,0,0,.15);
                   }
                   .rm-sat-btn:active { background:#e5e7eb; }
+                  /* "Moja lokacija" ikonica — plava tačka + konus koji pokazuje smjer
+                     u kom je telefon okrenut (kompas), BEZ teksta "Vi ste ovdje". */
+                  .rm-loc-wrap { position:relative; width:40px; height:40px; }
+                  .rm-loc-cone {
+                      position:absolute; top:0; left:0; width:40px; height:40px;
+                      background:conic-gradient(from -30deg at 50% 50%, rgba(37,99,235,.4) 0deg, rgba(37,99,235,.4) 60deg, transparent 61deg, transparent 360deg);
+                      transform-origin:50% 50%; pointer-events:none;
+                  }
+                  .rm-loc-dot {
+                      position:absolute; top:15px; left:15px; width:10px; height:10px; border-radius:50%;
+                      background:#3b82f6; border:2.5px solid #fff; box-shadow:0 0 0 1.5px #1d4ed8;
+                  }
                   /* "Prikaži odjele" trajne oznake brojeva — font-size/padding/visibility
                      kontroliše js/mapa-radnika.js _updateLabelSizes() (zoom-zavisno,
                      injektovani <style id="rm-label-zoom-style">), ovdje ostaje samo
