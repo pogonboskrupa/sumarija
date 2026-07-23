@@ -519,6 +519,36 @@
         _tragBtnEl = document.getElementById('radnik-mapa-trag-btn');
     }
 
+    // ---- "Tragovi" popup — otvara se preko srednjeg dugmeta u donjoj traci,
+    // sadrži Snimi trag / Obriši tragove / Prikaži odjele (sve što je ranije
+    // bilo razbacano po zaglavlju i traci, sad na jednom mjestu). Pozicija
+    // (bottom) se računa dinamički iz stvarne visine donje trake — traka
+    // nema fiksnu visinu (safe-area-inset, breakpoint override-i), pa
+    // hardkodovan CSS offset ne bi bio pouzdan na svim uređajima.
+    function _hideTragoviMenu() {
+        var menu = document.getElementById('radnik-mapa-tragovi-menu');
+        if (menu) menu.classList.add('hidden');
+    }
+    function _toggleTragoviMenu() {
+        var menu = document.getElementById('radnik-mapa-tragovi-menu');
+        var bar = document.getElementById('radnik-mapa-bottombar');
+        if (!menu) return;
+        var willShow = menu.classList.contains('hidden');
+        if (willShow && bar) {
+            menu.style.bottom = (bar.getBoundingClientRect().height + 8) + 'px';
+        }
+        menu.classList.toggle('hidden', !willShow);
+    }
+    // Klik van popup-a (i van dugmeta koje ga otvara) ga zatvara.
+    document.addEventListener('click', function(e) {
+        var menu = document.getElementById('radnik-mapa-tragovi-menu');
+        var btn = document.getElementById('radnik-mapa-tragovi-btn');
+        if (!menu || menu.classList.contains('hidden')) return;
+        if (menu.contains(e.target) || (btn && btn.contains(e.target))) return;
+        _hideTragoviMenu();
+    });
+    window.mapaRadnikaToggleTragoviMenu = _toggleTragoviMenu;
+
     // ---- Puni ekran (AlpineQuest-stil) — vidi CSS "body.radnik-mapa-fullscreen"
     // u index.html. Donja traka je poseban element van #radnik-mapa-content
     // (izvan .container "contain:layout" konteksta koji bi inače slomio njeno
@@ -544,6 +574,7 @@
         document.body.classList.remove('radnik-mapa-fullscreen');
         var bar = document.getElementById('radnik-mapa-bottombar');
         if (bar) bar.style.display = 'none';
+        _hideTragoviMenu();
         // Vrati viewport na korisnikovu preferencu (Desktop/Android prikaz) ako
         // je bila uključena prije ulaska na mapu.
         var viewport = document.querySelector('meta[name=viewport]');

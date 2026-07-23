@@ -1302,22 +1302,11 @@
             </div>
         </div>
 
-        <!-- RADNIK MAPA ODJELA (primač / otpremač — samo njegovi odjeli) -->
+        <!-- RADNIK MAPA ODJELA (primač / otpremač — samo njegovi odjeli) —
+             BEZ zaglavlja (uklonjeno na zahtjev, v1.4.111) — "Prikaži odjele"
+             i "Zatvori" su se preselili u donju traku (#radnik-mapa-bottombar
+             i #radnik-mapa-tragovi-menu, van ovog diva). -->
         <div id="radnik-mapa-content" class="container hidden">
-            <div class="page-header">
-                <div class="page-header-left">
-                    <h1>🗺️ Karta</h1>
-                    <span id="radnik-mapa-legend-extra" style="display:none;"></span>
-                    <span id="radnik-mapa-status" style="display:none;"></span>
-                </div>
-                <div class="page-header-right">
-                    <label class="rm-labels-toggle">
-                        <input id="radnik-mapa-labels-toggle" type="checkbox" onchange="mapaRadnikaToggleLabels()" style="cursor:pointer;margin:0;" />
-                        🏷️ Prikaži odjele
-                    </label>
-                    <button class="btn-zatvori-mapu" onclick="closeMapaRadnika()">✕ Zatvori</button>
-                </div>
-            </div>
             <div id="radnik-mapa-map" class="radnik-mapa-map">
                 <div id="radnik-mapa-info-panel" class="rm-info-panel hidden">
                     <button type="button" class="rm-info-panel-close" onclick="mapaRadnikaCloseInfoPanel()" aria-label="Zatvori">✕</button>
@@ -3056,63 +3045,38 @@
                       padding:0 0 calc(60px + env(safe-area-inset-bottom)) 0 !important;
                       background:#fff; box-sizing:border-box;
                   }
-                  /* Gornja traka — REDIZAJNIRANA (v1.4.104) kao moderna, poluprozirna
-                     "staklena" traka koja LEBDI preko mape (position:absolute, isti
-                     duh kao donja traka i info panel), umjesto punog neprozirnog
-                     bloka koji gura mapu dolje. Pošto je izvan flex toka,
-                     #radnik-mapa-map (flex:1) sad zauzima CIJELI preostali prostor —
-                     mapa se vidi ISPOD/OKO trake kroz providnu pozadinu, pa je ukupan
-                     "trošak" visine trake manji i prikaz djeluje prostranije,
-                     iako je i sama traka tanja (manji padding) nego prije. */
-                  body.radnik-mapa-fullscreen #radnik-mapa-content .page-header {
-                      position:absolute; top:0; left:0; right:0; z-index:1500;
-                      margin:0; padding:3px 6px; flex-wrap:wrap; row-gap:2px; gap:6px;
-                      background:rgba(255,255,255,.35);
-                      backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
-                      border-bottom:1px solid rgba(255,255,255,.5);
-                      box-shadow:0 2px 14px rgba(0,0,0,.12);
-                  }
-                  #radnik-mapa-content .page-header-left h1 { font-size:11px !important; margin:0; line-height:1.2; }
-                  #radnik-mapa-content .page-header-left p { font-size:8px !important; line-height:1.3; }
-                  .btn-zatvori-mapu { padding:2px 5px; font-size:8px; }
-                  .rm-labels-toggle {
-                      font-size:8px; padding:1px 4px; gap:2px;
-                      background:rgba(255,255,255,.6); backdrop-filter:blur(4px);
-                  }
-                  .rm-labels-toggle input[type="checkbox"] { width:7px; height:7px; }
-                  /* Checkbox + Zatvori ne smiju forsirati horizontalni scroll ako
-                     zajedno ne stanu u red — prelamaju se u novi red. */
-                  #radnik-mapa-content .page-header-right { flex-wrap:wrap; row-gap:3px; gap:4px; }
-                  /* Tvrda garancija — ni pod kojim uslovima horizontalni scroll
-                     unutar zaglavlja Mape odjela (traka se nikad ne "skrola" lijevo-desno). */
-                  #radnik-mapa-content .page-header { overflow-x:hidden; max-width:100%; }
+                  /* Zaglavlje je uklonjeno u potpunosti (v1.4.111) — "Prikaži odjele"
+                     i "Zatvori" su sad u donjoj traci / #radnik-mapa-tragovi-menu
+                     popup-u. Mapa (flex:1) zauzima cijeli prostor odmah od vrha. */
                   body.radnik-mapa-fullscreen #radnik-mapa-map {
                       flex:1 1 auto !important; width:100% !important; height:auto !important;
                       min-height:0; border-radius:0 !important;
                   }
 
-                  /* "✕ Zatvori" dugme u zaglavlju — vraća na radnikov početni tab.
-                     Van Leaflet mape, pa dodir na mapu ne ometa dolazak do njega. */
-                  /* NAPOMENA (v1.4.103): padding/font-size su NAMJERNO uklonjeni odavde —
-                     ova deklaracija je bila FIZIČKI ISPOD sizing override-a (linija
-                     ~3079-3081) pa je (kod jednake specifičnosti) UVIJEK pobjeđivala u
-                     cascade-u, poništavajući svako smanjivanje zaglavlja. Veličina se
-                     sad definiše ISKLJUČIVO na jednom mjestu (linija ~3079-3081); ovdje
-                     ostaje samo vizuelni stil (boja/border/radius) koji se ne kosi. */
-                  .btn-zatvori-mapu {
-                      background:rgba(55,65,81,.85); color:#fff; border:1.5px solid rgba(255,255,255,.55);
-                      border-radius:10px; font-weight:700; cursor:pointer;
-                      font-family:inherit; transition:background .15s ease;
+                  /* "Tragovi" popup (v1.4.111) — otvara se preko srednjeg dugmeta u
+                     donjoj traci, sadrži Snimi trag / Obriši tragove / Prikaži odjele.
+                     Pozicija (bottom) se računa u JS-u (_toggleTragoviMenu) na osnovu
+                     stvarne visine donje trake — traka nema fiksnu visinu (variraju
+                     safe-area-inset i breakpoint override-i), pa hardkodovan CSS
+                     offset ne bi bio pouzdan na svim uređajima. */
+                  .rm-tragovi-menu {
+                      position:fixed; left:10px; right:10px; z-index:10600;
+                      background:rgba(255,255,255,.97); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+                      border-radius:14px; box-shadow:0 -6px 24px rgba(0,0,0,.22);
+                      padding:6px; display:flex; flex-direction:column; gap:2px;
                   }
-                  .btn-zatvori-mapu:hover { background:rgba(75,85,99,.9); }
-                  .btn-zatvori-mapu:active { background:rgba(31,41,55,.9); }
-                  .rm-labels-toggle {
-                      display:flex; align-items:center; font-weight:600;
-                      color:#fff; cursor:pointer; background:rgba(55,65,81,.7); border:1.5px solid rgba(255,255,255,.55);
-                      border-radius:6px;
+                  .rm-tragovi-menu.hidden { display:none; }
+                  .rm-tragovi-item {
+                      display:flex; align-items:center; gap:10px; width:100%;
+                      background:none; border:none; border-radius:8px; padding:10px 12px;
+                      font-size:14px; font-weight:600; color:#1f2937; text-align:left;
+                      cursor:pointer; font-family:inherit;
                   }
+                  .rm-tragovi-item:active { background:#f3f4f6; }
+                  .rm-tragovi-checkbox { justify-content:flex-start; }
+                  .rm-tragovi-checkbox input[type="checkbox"] { width:16px; height:16px; margin:0; cursor:pointer; }
 
-                  /* Donja fiksna traka — Moja lokacija / Snimi trag / Obriši tragove.
+                  /* Donja fiksna traka — Moja lokacija / Tragovi / Zatvori.
                      IZVAN Leaflet mape (obična HTML dugmad, ne Leaflet control), pa
                      ih dodir/pan gesta na mapi ne blokira. Uvećana dva puta
                      (v1.4.74, v1.4.75) — ranija verzija je bila presitna za
@@ -3184,13 +3148,12 @@
                      pozicija uvijek bude predvidiva i pregledna bez obzira gdje se na
                      odjelu klikne, i da cifre nikad ne budu isječene/skrivene. */
                   .rm-info-panel {
-                      /* top:64px (ne 10px) — gornja traka je od v1.4.104 poluprozirna i
-                         LEBDI preko mape (position:absolute, ista tehnika), pa panel mora
-                         startovati ISPOD nje da se naslov/dugme zatvori ne sakriju iza trake. */
-                      position:absolute; top:34px; left:10px; z-index:1200;
+                      /* top:10px — zaglavlje je uklonjeno (v1.4.111), nema više šta da
+                         se izbjegava na vrhu mape. */
+                      position:absolute; top:10px; left:10px; z-index:1200;
                       width:50%; min-width:220px; max-width:calc(100% - 20px);
                       background:#fff; border-radius:14px; padding:14px 40px 14px 16px;
-                      box-shadow:0 10px 28px rgba(0,0,0,.28); max-height:calc(65% - 24px); overflow-y:auto;
+                      box-shadow:0 10px 28px rgba(0,0,0,.28); max-height:65%; overflow-y:auto;
                   }
                   .rm-info-panel.hidden { display:none; }
                   .rm-info-panel-close {
@@ -3494,15 +3457,27 @@
      odnosu na taj div umjesto na ekran). Ovdje, kao direktno dijete <body>-a
      (bez ijednog transform/contain pretka), position:fixed je uvijek u odnosu
      na pravi viewport — traka ostaje vidljiva bez obzira na sadržaj/skrol. -->
+<div id="radnik-mapa-tragovi-menu" class="rm-tragovi-menu hidden">
+    <button type="button" id="radnik-mapa-trag-btn" class="rm-tragovi-item" onclick="mapaRadnikaToggleTrag()">
+        <span>⏺️</span><span>Snimi trag</span>
+    </button>
+    <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaClearTracks()">
+        <span>🗑️</span><span>Obriši tragove</span>
+    </button>
+    <label class="rm-tragovi-item rm-tragovi-checkbox">
+        <input id="radnik-mapa-labels-toggle" type="checkbox" onchange="mapaRadnikaToggleLabels()" />
+        <span>🏷️ Prikaži odjele</span>
+    </label>
+</div>
 <div id="radnik-mapa-bottombar" class="radnik-mapa-bottombar" style="display:none;">
     <button id="radnik-mapa-loc-btn" class="rm-bar-btn rm-bar-loc" onclick="mapaRadnikaLocateMe()">
         <span class="rm-bar-icon">📍</span><span>Moja lokacija</span>
     </button>
-    <button id="radnik-mapa-trag-btn" class="rm-bar-btn rm-bar-trag" onclick="mapaRadnikaToggleTrag()">
-        <span class="rm-bar-icon">⏺️</span><span>Snimi trag</span>
+    <button id="radnik-mapa-tragovi-btn" class="rm-bar-btn rm-bar-trag" onclick="mapaRadnikaToggleTragoviMenu()">
+        <span class="rm-bar-icon">🗂️</span><span>Tragovi</span>
     </button>
-    <button class="rm-bar-btn rm-bar-clear" onclick="mapaRadnikaClearTracks()">
-        <span class="rm-bar-icon">🗑️</span><span>Obriši tragove</span>
+    <button class="rm-bar-btn rm-bar-clear" onclick="closeMapaRadnika()">
+        <span class="rm-bar-icon">✕</span><span>Zatvori</span>
     </button>
 </div>
 
