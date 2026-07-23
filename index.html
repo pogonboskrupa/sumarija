@@ -3067,8 +3067,8 @@
                   body.radnik-mapa-fullscreen #radnik-mapa-content .page-header {
                       position:absolute; top:0; left:0; right:0; z-index:1500;
                       margin:0; padding:3px 6px; flex-wrap:wrap; row-gap:2px; gap:6px;
-                      background:rgba(255,255,255,.78);
-                      backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+                      background:rgba(255,255,255,.35);
+                      backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
                       border-bottom:1px solid rgba(255,255,255,.5);
                       box-shadow:0 2px 14px rgba(0,0,0,.12);
                   }
@@ -3100,15 +3100,15 @@
                      sad definiše ISKLJUČIVO na jednom mjestu (linija ~3079-3081); ovdje
                      ostaje samo vizuelni stil (boja/border/radius) koji se ne kosi. */
                   .btn-zatvori-mapu {
-                      background:#f3f4f6; color:#374151; border:none; border-radius:10px;
-                      font-weight:700; cursor:pointer;
+                      background:rgba(55,65,81,.85); color:#fff; border:1.5px solid rgba(255,255,255,.55);
+                      border-radius:10px; font-weight:700; cursor:pointer;
                       font-family:inherit; transition:background .15s ease;
                   }
-                  .btn-zatvori-mapu:hover { background:#e5e7eb; }
-                  .btn-zatvori-mapu:active { background:#d1d5db; }
+                  .btn-zatvori-mapu:hover { background:rgba(75,85,99,.9); }
+                  .btn-zatvori-mapu:active { background:rgba(31,41,55,.9); }
                   .rm-labels-toggle {
                       display:flex; align-items:center; font-weight:600;
-                      color:#374151; cursor:pointer; background:white; border:1px solid #d1d5db;
+                      color:#fff; cursor:pointer; background:rgba(55,65,81,.7); border:1.5px solid rgba(255,255,255,.55);
                       border-radius:6px;
                   }
 
