@@ -281,11 +281,15 @@
                 if (radio) {
                     radnikLayers.push(lyr);
                     lyr.on('click', function(e) {
+                        L.DomEvent.stopPropagation(e);
+                        // Ako je u toku biranje tačke rute ("Vodi me do lokacije"),
+                        // klik na odjel broji se kao klik na tu tačku (ne otvara
+                        // info panel) — inače bi poligon "krao" klik od biranja rute.
+                        if (_handleRoutePickClick(e.latlng)) return;
                         // Fiksni info panel u gornjem dijelu mape (NE Leaflet popup
                         // vezan za tačku klika) — pozicija je uvijek ista i predvidiva
                         // bez obzira gdje se na odjelu klikne, cifre se nikad ne
                         // isijeku/sakriju iza ruba ekrana ili donje trake.
-                        L.DomEvent.stopPropagation(e);
                         _showInfoPanel(o);
                     });
                 }
@@ -337,108 +341,106 @@
     }
     window.mapaRadnikaToggleSat = _toggleSat;
 
-    // ---- RUTA DO NAJBLIŽEG (NEODRAĐENOG) ODJELA ----
-    // Isti OSRM javni servis i tehnika parsiranja rute kao admin karta
-    // (js/karta-odjela.js _drawRoute/_drawOdjelRuta) — samo je polazna tačka
-    // radnikova trenutna GPS lokacija umjesto Šumarije, a odredište je
-    // centar najbližeg poligona gdje radnik JOŠ NIJE radio.
+    // ---- "VODI ME DO LOKACIJE" — ruta preko OSRM (isti javni servis i
+    // tehnika parsiranja kao admin karta, js/karta-odjela.js _drawRoute) ----
+    // Podržava DVA načina, po korisnikovom zahtjevu:
+    //  1) Klik na dvije tačke na mapi (A pa B) → ruta između njih.
+    //  2) "📍 Moja lokacija" dugme na traci-savjetu za tačku A (trenutni GPS),
+    //     pa klik na mapu za odredište (B).
     var OSRM_URL = 'https://router.project-osrm.org/route/v1/driving';
-    var _nearestRouteLine = null;
-    function _isWorkedLayer(lyr) {
-        if (!_odjeliByKey || !lyr._rmLabelKey) return false;
-        if (_odjeliByKey.has(lyr._rmLabelKey)) return true;
-        return _odjeliByKey.has(_normKey(lyr._rmLabel));
+    var _routeLine = null;
+    var _routePickState = null; // null | 'awaiting-a' | 'awaiting-b'
+    var _routePointA = null;    // { lat, lng }
+    var _routeAMarker = null;
+
+    function _routeHintEl() { return document.getElementById('radnik-mapa-route-hint'); }
+    function _showRouteHint(html) {
+        var el = _routeHintEl();
+        if (!el) return;
+        el.innerHTML = html;
+        el.classList.remove('hidden');
     }
-    function _findNearestUnworkedOdjel(fromLat, fromLng) {
-        var best = null, bestDist = Infinity, bestCenter = null;
-        _allLayers.forEach(function(lyr) {
-            if (_isWorkedLayer(lyr)) return;
-            var center;
-            try { center = lyr.getBounds().getCenter(); } catch (_) { return; }
-            var d = _distM([fromLat, fromLng], [center.lat, center.lng]);
-            if (d < bestDist) { bestDist = d; best = lyr; bestCenter = center; }
-        });
-        return best ? { center: bestCenter, label: best._rmLabel } : null;
+    function _hideRouteHint() {
+        var el = _routeHintEl();
+        if (el) el.classList.add('hidden');
     }
-    window.mapaRadnikaRouteNearest = function() {
+    window.mapaRadnikaStartRoutePick = function() {
+        _hideTragoviMenu();
+        _routePickState = 'awaiting-a';
+        _routePointA = null;
+        if (_routeAMarker) { _map.removeLayer(_routeAMarker); _routeAMarker = null; }
+        if (_routeLine) { _map.removeLayer(_routeLine); _routeLine = null; }
+        _showRouteHint(
+            '<span>📍 Kliknite POLAZNU tačku na mapi</span>' +
+            '<span style="display:flex;gap:6px;">' +
+            '<button type="button" onclick="mapaRadnikaUseMyLocationAsA()">Moja lokacija</button>' +
+            '<button type="button" onclick="mapaRadnikaCancelRoutePick()">✕</button>' +
+            '</span>'
+        );
+    };
+    window.mapaRadnikaCancelRoutePick = function() {
+        _routePickState = null;
+        _routePointA = null;
+        if (_routeAMarker) { _map.removeLayer(_routeAMarker); _routeAMarker = null; }
+        _hideRouteHint();
+    };
+    window.mapaRadnikaUseMyLocationAsA = function() {
         if (!navigator.geolocation) { alert('Vaš uređaj ne podržava geolokaciju.'); return; }
-        if (!_map || !_allLayers.length) return;
-        var btn = document.getElementById('radnik-mapa-nearest-btn');
-        if (btn) { btn.disabled = true; btn.textContent = '🧭 Tražim...'; }
-        navigator.geolocation.getCurrentPosition(async function(pos) {
-            var fromLat = pos.coords.latitude, fromLng = pos.coords.longitude;
-            var nearest = _findNearestUnworkedOdjel(fromLat, fromLng);
-            if (btn) { btn.disabled = false; btn.textContent = '🧭 Najbliži odjel'; }
-            if (!nearest) { alert('Nema pronađenih odjela (svi su već odrađeni ili podaci nisu učitani).'); return; }
-            try {
-                var url = OSRM_URL + '/' + fromLng + ',' + fromLat + ';' + nearest.center.lng + ',' + nearest.center.lat + '?overview=full&geometries=geojson';
-                var resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
-                if (!resp.ok) throw new Error('Server rute nedostupan (HTTP ' + resp.status + ')');
-                var data = await resp.json();
-                if (data.code !== 'Ok' || !data.routes.length) throw new Error('Nema rute do tog odjela');
-                var route = data.routes[0];
-                var coords = route.geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
-                var distKm = (route.distance / 1000).toFixed(1);
-                var durMin = Math.round(route.duration / 60);
-                if (_nearestRouteLine) { _map.removeLayer(_nearestRouteLine); _nearestRouteLine = null; }
-                _nearestRouteLine = L.polyline(coords, { color: '#f97316', weight: 4, opacity: 0.85, dashArray: '8 4' })
-                    .bindTooltip('📁 Odjel ' + nearest.label + ' — ' + distKm + ' km · ~' + durMin + ' min', { permanent: true, direction: 'center', className: 'karta-tooltip' })
-                    .addTo(_map);
-                _map.fitBounds(_nearestRouteLine.getBounds(), { padding: [30, 30] });
-            } catch (e) {
-                alert('Greška pri učitavanju rute: ' + e.message);
-            }
+        _showRouteHint('<span>📍 Tražim lokaciju...</span>');
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            _setRoutePointA(pos.coords.latitude, pos.coords.longitude);
         }, function() {
-            if (btn) { btn.disabled = false; btn.textContent = '🧭 Najbliži odjel'; }
             alert('Nije moguće dobiti trenutnu lokaciju.');
+            window.mapaRadnikaCancelRoutePick();
         }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
     };
-
-    // ---- PREUZMI ZA OFFLINE (pločice trenutnog prikaza) ----
-    // Sekvencijalno fetch-uje sve tile URL-ove za trenutni prikaz mape (± par
-    // nivoa zuma) — Service Worker (v1.4.73+) ih automatski kešira (uklj.
-    // opaque OSM odgovore), pa nakon ovoga ostaju dostupni offline bez ikakve
-    // nove infrastrukture (nema MBTiles/sql.js — ta ideja je ranije eksplicitno
-    // odbačena kao previše kompleksna za ono što je stvarno potrebno).
-    function _lonLatToTile(lon, lat, z) {
-        var x = Math.floor((lon + 180) / 360 * Math.pow(2, z));
-        var latRad = lat * Math.PI / 180;
-        var y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * Math.pow(2, z));
-        return { x: x, y: y };
+    function _setRoutePointA(lat, lng) {
+        _routePointA = { lat: lat, lng: lng };
+        if (_routeAMarker) { _map.removeLayer(_routeAMarker); _routeAMarker = null; }
+        _routeAMarker = L.circleMarker([lat, lng], { radius: 8, color: '#1d4ed8', fillColor: '#3b82f6', fillOpacity: 0.9, weight: 2 }).addTo(_map);
+        _routePickState = 'awaiting-b';
+        _showRouteHint(
+            '<span>🏁 Kliknite ODREDIŠNU tačku na mapi</span>' +
+            '<span><button type="button" onclick="mapaRadnikaCancelRoutePick()">✕</button></span>'
+        );
     }
-    window.mapaRadnikaDownloadOffline = async function() {
-        if (!_map) return;
-        var btn = document.getElementById('radnik-mapa-offline-btn');
-        var bounds = _map.getBounds();
-        var zBase = _map.getZoom();
-        var zMin = Math.max(zBase - 1, 10);
-        var zMax = Math.min(zBase + 2, 18);
-        var subdomains = ['a', 'b', 'c'];
-
-        var tiles = [];
-        for (var z = zMin; z <= zMax; z++) {
-            var nw = _lonLatToTile(bounds.getWest(), bounds.getNorth(), z);
-            var se = _lonLatToTile(bounds.getEast(), bounds.getSouth(), z);
-            for (var x = nw.x; x <= se.x; x++) {
-                for (var y = nw.y; y <= se.y; y++) tiles.push({ z: z, x: x, y: y });
-            }
+    // Poziva se iz _map.on('click', ...) — vidi initMapaRadnika(). Vraća true
+    // ako je klik "potrošen" za biranje rute (pozivalac onda ne radi ništa
+    // drugo, npr. ne zatvara info panel).
+    function _handleRoutePickClick(latlng) {
+        if (_routePickState === 'awaiting-a') {
+            _setRoutePointA(latlng.lat, latlng.lng);
+            return true;
         }
-        if (!tiles.length) return;
-        if (tiles.length > 900 && !confirm('Ovo je ' + tiles.length + ' pločica — može potrajati i potrošiti dosta mobilnih podataka. Nastaviti?')) return;
-
-        if (btn) btn.disabled = true;
-        var done = 0, failed = 0;
-        for (var i = 0; i < tiles.length; i++) {
-            var t = tiles[i];
-            var url = _isSat
-                ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/' + t.z + '/' + t.y + '/' + t.x
-                : 'https://' + subdomains[(t.x + t.y) % subdomains.length] + '.tile.openstreetmap.org/' + t.z + '/' + t.x + '/' + t.y + '.png';
-            try { await fetch(url); done++; } catch (_) { failed++; }
-            if (btn) btn.textContent = '⬇️ ' + done + '/' + tiles.length;
+        if (_routePickState === 'awaiting-b') {
+            _routePickState = null;
+            _drawOsrmRoute(_routePointA, { lat: latlng.lat, lng: latlng.lng });
+            _hideRouteHint();
+            if (_routeAMarker) { _map.removeLayer(_routeAMarker); _routeAMarker = null; }
+            return true;
         }
-        if (btn) { btn.disabled = false; btn.textContent = '⬇️ Offline'; }
-        alert('Preuzeto ' + done + ' od ' + tiles.length + ' pločica' + (failed ? (' (' + failed + ' neuspješno)') : '') + ' za offline korištenje ove oblasti.');
-    };
+        return false;
+    }
+    async function _drawOsrmRoute(a, b) {
+        try {
+            var url = OSRM_URL + '/' + a.lng + ',' + a.lat + ';' + b.lng + ',' + b.lat + '?overview=full&geometries=geojson';
+            var resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
+            if (!resp.ok) throw new Error('Server rute nedostupan (HTTP ' + resp.status + ')');
+            var data = await resp.json();
+            if (data.code !== 'Ok' || !data.routes.length) throw new Error('Nema rute između te dvije tačke');
+            var route = data.routes[0];
+            var coords = route.geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
+            var distKm = (route.distance / 1000).toFixed(1);
+            var durMin = Math.round(route.duration / 60);
+            if (_routeLine) { _map.removeLayer(_routeLine); _routeLine = null; }
+            _routeLine = L.polyline(coords, { color: '#f97316', weight: 4, opacity: 0.85, dashArray: '8 4' })
+                .bindTooltip(distKm + ' km · ~' + durMin + ' min', { permanent: true, direction: 'center', className: 'karta-tooltip' })
+                .addTo(_map);
+            _map.fitBounds(_routeLine.getBounds(), { padding: [30, 30] });
+        } catch (e) {
+            alert('Greška pri učitavanju rute: ' + e.message);
+        }
+    }
 
     // ---- MOJA LOKACIJA (GPS) ----
     // Ikonica lokacije — samo plava tačka, bez teksta "Vi ste ovdje" i bez
@@ -775,6 +777,7 @@
         var bar = document.getElementById('radnik-mapa-bottombar');
         if (bar) bar.style.display = 'none';
         _hideTragoviMenu();
+        if (typeof window.mapaRadnikaCancelRoutePick === 'function') window.mapaRadnikaCancelRoutePick();
         // Vrati viewport na korisnikovu preferencu (Desktop/Android prikaz) ako
         // je bila uključena prije ulaska na mapu.
         var viewport = document.querySelector('meta[name=viewport]');
@@ -849,8 +852,12 @@
                 attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                 maxZoom: 18
             }).addTo(_map);
-            // Klik na praznu mapu (van poligona) zatvara info panel
-            _map.on('click', _hideInfoPanel);
+            // Klik na praznu mapu (van poligona) zatvara info panel — OSIM ako je
+            // klik "potrošen" za biranje tačke rute ("Vodi me do lokacije").
+            _map.on('click', function(e) {
+                if (_handleRoutePickClick(e.latlng)) return;
+                _hideInfoPanel();
+            });
             // Veličina "Prikaži odjele" oznaka prati zoom mape (manje odzumirano,
             // veće približeno) — vidi _updateLabelSizes.
             _map.on('zoomend', _updateLabelSizes);
