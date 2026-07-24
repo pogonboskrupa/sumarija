@@ -3088,12 +3088,13 @@
                   .rm-tragovi-row-info small { color:#6b7280; font-size:11px; }
                   .rm-tragovi-delete { background:none; border:none; font-size:16px; cursor:pointer; padding:4px 8px; }
                   .rm-tragovi-empty { padding:10px 12px; font-size:13px; color:#9ca3af; text-align:center; }
+                  .rm-tragovi-section-label { font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:.4px; padding:4px 12px 2px; }
                   /* .modal-overlay (css/main.css) je z-index:1000 — daleko ispod
                      #radnik-mapa-content/bottombar/tragovi-menu (10500-10600) u punom
                      ekranu Mape odjela, pa se ovaj modal renderovao ISPOD njih
                      (nevidljivo/neklikabilno — pravi razlog "Snimi trag se ne
                      aktivira"). Podignuto iznad svega u toj mapi. */
-                  #trag-name-modal.show, #trag-confirm-modal.show { z-index:20000; }
+                  #trag-name-modal.show, #trag-confirm-modal.show, #poligon-name-modal.show { z-index:20000; }
 
                   /* Donja fiksna traka — Moja lokacija / Tragovi / Zatvori.
                      IZVAN Leaflet mape (obična HTML dugmad, ne Leaflet control), pa
@@ -3506,8 +3507,14 @@
     <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartRoutePick()">
         <span>🧭</span><span>Vodi me do lokacije</span>
     </button>
+    <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartPoligon()">
+        <span>✏️</span><span>Označi poligon (dio za odraditi)</span>
+    </button>
     <div class="rm-tragovi-divider"></div>
     <div id="radnik-mapa-tragovi-list" class="rm-tragovi-list"></div>
+    <div class="rm-tragovi-divider"></div>
+    <div class="rm-tragovi-section-label">Poligoni</div>
+    <div id="radnik-mapa-poligoni-list" class="rm-tragovi-list"></div>
 </div>
 <!-- Modal za ime traga — prikazuje se PRIJE početka snimanja -->
 <div class="modal-overlay" id="trag-name-modal" onclick="if(event.target===this) closeTragNameModal();">
@@ -3534,6 +3541,20 @@
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="mapaRadnikaCancelTragConfirm()">Otkaži</button>
             <button class="btn btn-danger" onclick="mapaRadnikaConfirmTragDelete()">Obriši</button>
+        </div>
+    </div>
+</div>
+<!-- Modal za ime poligona — prikazuje se pri završetku crtanja ("Označi poligon") -->
+<div class="modal-overlay" id="poligon-name-modal" onclick="if(event.target===this) closePoligonNameModal();">
+    <div class="modal" style="max-width:340px;">
+        <div class="modal-header"><div class="modal-title">✏️ Novi poligon</div></div>
+        <div class="modal-body">
+            <label style="display:block;font-size:12px;font-weight:600;color:#4b5563;margin-bottom:4px;">Ime/opis dijela za odraditi</label>
+            <input type="text" id="poligon-name-input" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;" />
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closePoligonNameModal()">Otkaži</button>
+            <button class="btn btn-primary" onclick="confirmSavePoligon()">Sačuvaj</button>
         </div>
     </div>
 </div>

@@ -282,10 +282,12 @@
                     radnikLayers.push(lyr);
                     lyr.on('click', function(e) {
                         L.DomEvent.stopPropagation(e);
-                        // Ako je u toku biranje tačke rute ("Vodi me do lokacije"),
-                        // klik na odjel broji se kao klik na tu tačku (ne otvara
-                        // info panel) — inače bi poligon "krao" klik od biranja rute.
+                        // Ako je u toku biranje tačke rute ("Vodi me do lokacije") ili
+                        // crtanje poligona ("Označi poligon"), klik na odjel broji se
+                        // kao klik na tu tačku (ne otvara info panel) — inače bi
+                        // poligon "krao" klik od tih moda.
                         if (_handleRoutePickClick(e.latlng)) return;
+                        if (_handlePoligonClick(e.latlng)) return;
                         // Fiksni info panel u gornjem dijelu mape (NE Leaflet popup
                         // vezan za tačku klika) — pozicija je uvijek ista i predvidiva
                         // bez obzira gdje se na odjelu klikne, cifre se nikad ne
@@ -366,6 +368,7 @@
     }
     window.mapaRadnikaStartRoutePick = function() {
         _hideTragoviMenu();
+        if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon(); // samo jedan mod aktivan odjednom
         _routePickState = 'awaiting-a';
         _routePointA = null;
         if (_routeAMarker) { _map.removeLayer(_routeAMarker); _routeAMarker = null; }
@@ -441,6 +444,145 @@
             alert('Greška pri učitavanju rute: ' + e.message);
         }
     }
+
+    // ---- OZNAČI POLIGON — radnik klikom na mapu ocrtava dio (npr. unutar
+    // odjela) koji treba odraditi, imenuje ga, i on ostaje sačuvan/vidljiv na
+    // mapi (per-korisnik localStorage, isti obrazac kao sačuvani tragovi). ----
+    var _poligonDrawing = false;
+    var _poligonPoints = [];   // [[lat,lng], ...] — tačka u toku crtanja
+    var _poligonDrawLayer = null;
+    var _savedPoligonLayers = [];
+
+    function _poligonStorageKey() {
+        var uname = (window.currentUser && window.currentUser.username) || 'anon';
+        return 'mapa_radnika_poligoni_' + uname;
+    }
+    function _loadSavedPoligoni() {
+        try {
+            var raw = localStorage.getItem(_poligonStorageKey());
+            return raw ? JSON.parse(raw) : [];
+        } catch (_) { return []; }
+    }
+    function _savePoligoni(list) {
+        try { localStorage.setItem(_poligonStorageKey(), JSON.stringify(list)); } catch (_) {}
+    }
+    function _drawSavedPoligoni() {
+        _savedPoligonLayers.forEach(function(l) { _map.removeLayer(l); });
+        _savedPoligonLayers = [];
+        _loadSavedPoligoni().forEach(function(p) {
+            if (!p.points || p.points.length < 3) return;
+            var poly = L.polygon(p.points, { color: '#ea580c', weight: 2.5, fillColor: '#fb923c', fillOpacity: 0.3 }).addTo(_map);
+            poly.bindTooltip('✏️ ' + (p.name || 'Poligon'), { sticky: true });
+            _savedPoligonLayers.push(poly);
+        });
+    }
+    function _redrawPoligonDraw() {
+        if (_poligonDrawLayer) { _map.removeLayer(_poligonDrawLayer); _poligonDrawLayer = null; }
+        if (!_poligonPoints.length) return;
+        if (_poligonPoints.length < 2) {
+            _poligonDrawLayer = L.circleMarker(_poligonPoints[0], { radius: 6, color: '#ea580c', fillColor: '#fb923c', fillOpacity: 0.9 }).addTo(_map);
+            return;
+        }
+        _poligonDrawLayer = L.polygon(_poligonPoints, { color: '#ea580c', weight: 3, fillColor: '#fb923c', fillOpacity: 0.25, dashArray: '6 4' }).addTo(_map);
+    }
+    function _updatePoligonHint() {
+        var n = _poligonPoints.length;
+        _showRouteHint(
+            '<span>✏️ Označite tačke (' + n + (n >= 3 ? ', spremno)' : ', treba još)') + '</span>' +
+            '<span style="display:flex;gap:6px;">' +
+            (n > 0 ? '<button type="button" onclick="mapaRadnikaUndoPoligonPoint()">↩️</button>' : '') +
+            (n >= 3 ? '<button type="button" onclick="mapaRadnikaFinishPoligon()">✅ Završi</button>' : '') +
+            '<button type="button" onclick="mapaRadnikaCancelPoligon()">✕</button>' +
+            '</span>'
+        );
+    }
+    window.mapaRadnikaStartPoligon = function() {
+        _hideTragoviMenu();
+        window.mapaRadnikaCancelRoutePick(); // samo jedan mod (ruta/poligon) aktivan odjednom
+        _poligonDrawing = true;
+        _poligonPoints = [];
+        _redrawPoligonDraw();
+        _updatePoligonHint();
+    };
+    window.mapaRadnikaCancelPoligon = function() {
+        _poligonDrawing = false;
+        _poligonPoints = [];
+        if (_poligonDrawLayer) { _map.removeLayer(_poligonDrawLayer); _poligonDrawLayer = null; }
+        _hideRouteHint();
+    };
+    window.mapaRadnikaUndoPoligonPoint = function() {
+        if (!_poligonDrawing || !_poligonPoints.length) return;
+        _poligonPoints.pop();
+        _redrawPoligonDraw();
+        _updatePoligonHint();
+    };
+    window.mapaRadnikaFinishPoligon = function() {
+        if (!_poligonDrawing || _poligonPoints.length < 3) return;
+        var modal = document.getElementById('poligon-name-modal');
+        var input = document.getElementById('poligon-name-input');
+        if (!modal || !input) { _savePoligonNow('Poligon ' + new Date().toLocaleString('bs-BA')); return; }
+        input.value = 'Poligon ' + new Date().toLocaleString('bs-BA');
+        modal.classList.add('show');
+        setTimeout(function() { input.focus(); input.select(); }, 50);
+    };
+    window.closePoligonNameModal = function() {
+        var modal = document.getElementById('poligon-name-modal');
+        if (modal) modal.classList.remove('show');
+    };
+    window.confirmSavePoligon = function() {
+        var input = document.getElementById('poligon-name-input');
+        var name = (input && input.value.trim()) || ('Poligon ' + new Date().toLocaleString('bs-BA'));
+        window.closePoligonNameModal();
+        _savePoligonNow(name);
+    };
+    function _savePoligonNow(name) {
+        var list = _loadSavedPoligoni();
+        list.push({ name: name, created: new Date().toISOString(), points: _poligonPoints });
+        _savePoligoni(list);
+        _poligonDrawing = false;
+        if (_poligonDrawLayer) { _map.removeLayer(_poligonDrawLayer); _poligonDrawLayer = null; }
+        _poligonPoints = [];
+        _hideRouteHint();
+        _drawSavedPoligoni();
+        _renderPoligoniList();
+    }
+    // Poziva se iz istog centralnog map-click lanca kao _handleRoutePickClick.
+    function _handlePoligonClick(latlng) {
+        if (!_poligonDrawing) return false;
+        _poligonPoints.push([latlng.lat, latlng.lng]);
+        _redrawPoligonDraw();
+        _updatePoligonHint();
+        return true;
+    }
+    function _renderPoligoniList() {
+        var list = document.getElementById('radnik-mapa-poligoni-list');
+        if (!list) return;
+        var items = _loadSavedPoligoni();
+        if (!items.length) {
+            list.innerHTML = '<div class="rm-tragovi-empty">Nema označenih poligona.</div>';
+            return;
+        }
+        list.innerHTML = items.map(function(p, i) {
+            var when = p.created ? new Date(p.created).toLocaleString('bs-BA') : '?';
+            var name = (p.name || 'Poligon').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return '<div class="rm-tragovi-row">' +
+                '<span class="rm-tragovi-row-info">' + name + '<br><small>' + when + '</small></span>' +
+                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeletePoligon(' + i + ')" aria-label="Obriši poligon">🗑️</button>' +
+                '</div>';
+        }).join('');
+    }
+    window.mapaRadnikaDeletePoligon = function(index) {
+        var list = _loadSavedPoligoni();
+        var p = list[index];
+        if (!p) return;
+        _showTragConfirm('Obrisati poligon "' + (p.name || 'Poligon') + '"?', function() {
+            var fresh = _loadSavedPoligoni();
+            fresh.splice(index, 1);
+            _savePoligoni(fresh);
+            _drawSavedPoligoni();
+            _renderPoligoniList();
+        });
+    };
 
     // ---- MOJA LOKACIJA (GPS) ----
     // Ikonica lokacije — samo plava tačka, bez teksta "Vi ste ovdje" i bez
@@ -767,6 +909,7 @@
         if (willShow) {
             if (bar) menu.style.bottom = (bar.getBoundingClientRect().height + 8) + 'px';
             _renderTragoviList();
+            _renderPoligoniList();
         }
         menu.classList.toggle('hidden', !willShow);
     }
@@ -807,6 +950,7 @@
         if (bar) bar.style.display = 'none';
         _hideTragoviMenu();
         if (typeof window.mapaRadnikaCancelRoutePick === 'function') window.mapaRadnikaCancelRoutePick();
+        if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
         // Vrati viewport na korisnikovu preferencu (Desktop/Android prikaz) ako
         // je bila uključena prije ulaska na mapu.
         var viewport = document.querySelector('meta[name=viewport]');
@@ -882,9 +1026,11 @@
                 maxZoom: 18
             }).addTo(_map);
             // Klik na praznu mapu (van poligona) zatvara info panel — OSIM ako je
-            // klik "potrošen" za biranje tačke rute ("Vodi me do lokacije").
+            // klik "potrošen" za biranje tačke rute ("Vodi me do lokacije") ili
+            // crtanje poligona ("Označi poligon").
             _map.on('click', function(e) {
                 if (_handleRoutePickClick(e.latlng)) return;
+                if (_handlePoligonClick(e.latlng)) return;
                 _hideInfoPanel();
             });
             // Veličina "Prikaži odjele" oznaka prati zoom mape (manje odzumirano,
@@ -902,6 +1048,7 @@
             }
             _bindBarButtons();
             _drawSavedTracks();
+            _drawSavedPoligoni();
         }
         // Leaflet mora preračunati veličinu nakon što tab postane vidljiv
         setTimeout(function() { if (_map) _map.invalidateSize(); }, 100);
