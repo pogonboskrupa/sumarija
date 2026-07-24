@@ -3508,12 +3508,12 @@
         <span>🧭</span><span>Vodi me do lokacije</span>
     </button>
     <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartPoligon()">
-        <span>✏️</span><span>Označi poligon (dio za odraditi)</span>
+        <span>✏️</span><span>Označi površinu (završeno/ostalo/popraviti šumski red...)</span>
     </button>
     <div class="rm-tragovi-divider"></div>
     <div id="radnik-mapa-tragovi-list" class="rm-tragovi-list"></div>
     <div class="rm-tragovi-divider"></div>
-    <div class="rm-tragovi-section-label">Poligoni</div>
+    <div class="rm-tragovi-section-label">Površine</div>
     <div id="radnik-mapa-poligoni-list" class="rm-tragovi-list"></div>
 </div>
 <!-- Modal za ime traga — prikazuje se PRIJE početka snimanja -->
@@ -3547,9 +3547,9 @@
 <!-- Modal za ime poligona — prikazuje se pri završetku crtanja ("Označi poligon") -->
 <div class="modal-overlay" id="poligon-name-modal" onclick="if(event.target===this) closePoligonNameModal();">
     <div class="modal" style="max-width:340px;">
-        <div class="modal-header"><div class="modal-title">✏️ Novi poligon</div></div>
+        <div class="modal-header"><div class="modal-title">✏️ Nova površina</div></div>
         <div class="modal-body">
-            <label style="display:block;font-size:12px;font-weight:600;color:#4b5563;margin-bottom:4px;">Ime/opis dijela za odraditi</label>
+            <label style="display:block;font-size:12px;font-weight:600;color:#4b5563;margin-bottom:4px;">Ime/opis površine (završeno/ostalo/popraviti šumski red...)</label>
             <input type="text" id="poligon-name-input" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;" />
         </div>
         <div class="modal-footer">

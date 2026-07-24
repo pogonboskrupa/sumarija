@@ -472,7 +472,7 @@
         _loadSavedPoligoni().forEach(function(p) {
             if (!p.points || p.points.length < 3) return;
             var poly = L.polygon(p.points, { color: '#ea580c', weight: 2.5, fillColor: '#fb923c', fillOpacity: 0.3 }).addTo(_map);
-            poly.bindTooltip('✏️ ' + (p.name || 'Poligon'), { sticky: true });
+            poly.bindTooltip('✏️ ' + (p.name || 'Površina'), { sticky: true });
             _savedPoligonLayers.push(poly);
         });
     }
@@ -520,8 +520,8 @@
         if (!_poligonDrawing || _poligonPoints.length < 3) return;
         var modal = document.getElementById('poligon-name-modal');
         var input = document.getElementById('poligon-name-input');
-        if (!modal || !input) { _savePoligonNow('Poligon ' + new Date().toLocaleString('bs-BA')); return; }
-        input.value = 'Poligon ' + new Date().toLocaleString('bs-BA');
+        if (!modal || !input) { _savePoligonNow('Površina ' + new Date().toLocaleString('bs-BA')); return; }
+        input.value = 'Površina ' + new Date().toLocaleString('bs-BA');
         modal.classList.add('show');
         setTimeout(function() { input.focus(); input.select(); }, 50);
     };
@@ -531,7 +531,7 @@
     };
     window.confirmSavePoligon = function() {
         var input = document.getElementById('poligon-name-input');
-        var name = (input && input.value.trim()) || ('Poligon ' + new Date().toLocaleString('bs-BA'));
+        var name = (input && input.value.trim()) || ('Površina ' + new Date().toLocaleString('bs-BA'));
         window.closePoligonNameModal();
         _savePoligonNow(name);
     };
@@ -559,15 +559,15 @@
         if (!list) return;
         var items = _loadSavedPoligoni();
         if (!items.length) {
-            list.innerHTML = '<div class="rm-tragovi-empty">Nema označenih poligona.</div>';
+            list.innerHTML = '<div class="rm-tragovi-empty">Nema označenih površina.</div>';
             return;
         }
         list.innerHTML = items.map(function(p, i) {
             var when = p.created ? new Date(p.created).toLocaleString('bs-BA') : '?';
-            var name = (p.name || 'Poligon').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            var name = (p.name || 'Površina').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             return '<div class="rm-tragovi-row">' +
                 '<span class="rm-tragovi-row-info">' + name + '<br><small>' + when + '</small></span>' +
-                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeletePoligon(' + i + ')" aria-label="Obriši poligon">🗑️</button>' +
+                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeletePoligon(' + i + ')" aria-label="Obriši površinu">🗑️</button>' +
                 '</div>';
         }).join('');
     }
@@ -575,7 +575,7 @@
         var list = _loadSavedPoligoni();
         var p = list[index];
         if (!p) return;
-        _showTragConfirm('Obrisati poligon "' + (p.name || 'Poligon') + '"?', function() {
+        _showTragConfirm('Obrisati površinu "' + (p.name || 'Površina') + '"?', function() {
             var fresh = _loadSavedPoligoni();
             fresh.splice(index, 1);
             _savePoligoni(fresh);
