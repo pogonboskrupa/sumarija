@@ -320,28 +320,98 @@
         return radnikLayers.length;
     }
 
-    // ---- OSM / SATELIT ----
-    // Isti izvor kao admin karta (js/karta-odjela.js toggleMapaSat) — ArcGIS
-    // World_Imagery, kreiran lijeno (tek pri prvom prebacivanju na satelit).
+    // ---- OSM / SATELIT / TOPO ---- (v1.4.122: dodat treći sloj, ciklično dugme)
+    // Satelit: isti izvor kao admin karta (js/karta-odjela.js toggleMapaSat) —
+    // ArcGIS World_Imagery. Topo: OpenTopoMap (topografski/reljefni prikaz,
+    // koristan na terenu za konture/šumske puteve) — planirano da se kasnije
+    // zamijeni/dopuni Protomaps vektorskim slojem.
+    var _baseMode = 'osm'; // 'osm' | 'sat' | 'topo'
+    var _topoLayer = null;
     function _toggleSat() {
         if (!_map) return;
-        _isSat = !_isSat;
-        if (_isSat) {
-            if (_osmLayer) _map.removeLayer(_osmLayer);
+        if (_osmLayer) _map.removeLayer(_osmLayer);
+        if (_satLayer) _map.removeLayer(_satLayer);
+        if (_topoLayer) _map.removeLayer(_topoLayer);
+
+        _baseMode = _baseMode === 'osm' ? 'sat' : (_baseMode === 'sat' ? 'topo' : 'osm');
+        _isSat = _baseMode === 'sat'; // zadržano za _handleSat konzistentnost sa offline preuzimanjem niže
+
+        if (_baseMode === 'sat') {
             if (!_satLayer) {
                 _satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                     attribution: '© Esri', maxZoom: 19
                 });
             }
             _satLayer.addTo(_map);
+        } else if (_baseMode === 'topo') {
+            if (!_topoLayer) {
+                _topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenTopoMap (CC-BY-SA)', maxZoom: 17
+                });
+            }
+            _topoLayer.addTo(_map);
         } else {
-            if (_satLayer) _map.removeLayer(_satLayer);
             if (_osmLayer) _osmLayer.addTo(_map);
         }
         var btn = document.getElementById('radnik-mapa-sat-btn');
-        if (btn) btn.textContent = _isSat ? '🗺️ OSM' : '🛰️ Satelit';
+        if (btn) btn.textContent = _baseMode === 'osm' ? '🛰️ Satelit' : (_baseMode === 'sat' ? '⛰️ Topo' : '🗺️ OSM');
     }
     window.mapaRadnikaToggleSat = _toggleSat;
+
+    // ---- OFFLINE PREUZIMANJE (kvadratni extent koji pokriva SVE učitane
+    // odjele, ne samo trenutni viewport) — sekvencijalno fetch-uje tile
+    // pločice trenutno aktivnog sloja (OSM/Satelit/Topo); Service Worker
+    // (v1.4.73+) ih automatski kešira (uklj. opaque OSM/Topo odgovore), pa
+    // nakon ovoga ostaju dostupni offline. Planirano da se kasnije
+    // dopuni/zamijeni Protomaps vektorskim slojem.
+    function _squareBounds(bounds) {
+        var sw = bounds.getSouthWest(), ne = bounds.getNorthEast();
+        var latDiff = ne.lat - sw.lat, lngDiff = ne.lng - sw.lng;
+        var latPad = 0, lngPad = 0;
+        if (latDiff > lngDiff) lngPad = (latDiff - lngDiff) / 2;
+        else latPad = (lngDiff - latDiff) / 2;
+        return L.latLngBounds([sw.lat - latPad, sw.lng - lngPad], [ne.lat + latPad, ne.lng + lngPad]);
+    }
+    function _lonLatToTile(lon, lat, z) {
+        var x = Math.floor((lon + 180) / 360 * Math.pow(2, z));
+        var latRad = lat * Math.PI / 180;
+        var y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * Math.pow(2, z));
+        return { x: x, y: y };
+    }
+    function _tileUrl(t) {
+        var subdomains = ['a', 'b', 'c'];
+        var s = subdomains[(t.x + t.y) % subdomains.length];
+        if (_baseMode === 'sat') return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/' + t.z + '/' + t.y + '/' + t.x;
+        if (_baseMode === 'topo') return 'https://' + s + '.tile.opentopomap.org/' + t.z + '/' + t.x + '/' + t.y + '.png';
+        return 'https://' + s + '.tile.openstreetmap.org/' + t.z + '/' + t.x + '/' + t.y + '.png';
+    }
+    window.mapaRadnikaDownloadOffline = async function() {
+        if (!_map || !_allLayers.length) { alert('Odjeli još nisu učitani.'); return; }
+        var btn = document.getElementById('radnik-mapa-offline-btn');
+        var bounds = _squareBounds(L.featureGroup(_allLayers).getBounds());
+        var zMin = 11, zMax = 15;
+
+        var tiles = [];
+        for (var z = zMin; z <= zMax; z++) {
+            var nw = _lonLatToTile(bounds.getWest(), bounds.getNorth(), z);
+            var se = _lonLatToTile(bounds.getEast(), bounds.getSouth(), z);
+            for (var x = nw.x; x <= se.x; x++) {
+                for (var y = nw.y; y <= se.y; y++) tiles.push({ z: z, x: x, y: y });
+            }
+        }
+        if (!tiles.length) return;
+        var slojNaziv = _baseMode === 'sat' ? 'Satelit' : (_baseMode === 'topo' ? 'Topo' : 'OSM');
+        if (!confirm('Preuzeti ' + tiles.length + ' pločica (' + slojNaziv + ', zoom ' + zMin + '-' + zMax + ') za offline korištenje cijelog područja odjela? Ovo može potrajati i potrošiti mobilne podatke.')) return;
+
+        if (btn) btn.disabled = true;
+        var done = 0, failed = 0;
+        for (var i = 0; i < tiles.length; i++) {
+            try { await fetch(_tileUrl(tiles[i])); done++; } catch (_) { failed++; }
+            if (btn) btn.textContent = '⬇️ ' + done + '/' + tiles.length;
+        }
+        if (btn) { btn.disabled = false; btn.textContent = '⬇️ Offline'; }
+        alert('Preuzeto ' + done + ' od ' + tiles.length + ' pločica (' + slojNaziv + ') za offline korištenje.');
+    };
 
     // ---- "VODI ME DO LOKACIJE" — ruta preko OSRM (isti javni servis i
     // tehnika parsiranja kao admin karta, js/karta-odjela.js _drawRoute) ----
