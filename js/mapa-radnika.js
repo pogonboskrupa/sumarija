@@ -325,7 +325,7 @@
     // ArcGIS World_Imagery. Topo: OpenTopoMap (topografski/reljefni prikaz,
     // koristan na terenu za konture/šumske puteve) — planirano da se kasnije
     // zamijeni/dopuni Protomaps vektorskim slojem.
-    var _baseMode = 'osm'; // 'osm' | 'sat' | 'topo'
+    var _baseMode = 'topo'; // 'osm' | 'sat' | 'topo' — default TOPO (izohipse/konture, v1.4.124)
     var _topoLayer = null;
     function _toggleSat() {
         if (!_map) return;
@@ -1140,6 +1140,11 @@
             _osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                 maxZoom: 18
+            });
+            // Default sloj je TOPO (izohipse/konture) umjesto OSM — vidljivije na
+            // terenu (reljef, šumski putevi). _osmLayer se kreira ali NE dodaje.
+            _topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenTopoMap (CC-BY-SA)', maxZoom: 17
             }).addTo(_map);
             // Klik na praznu mapu (van poligona) zatvara info panel — OSIM ako je
             // klik "potrošen" za biranje tačke rute ("Vodi me do lokacije") ili

@@ -847,7 +847,7 @@
 
   // ---- OSM / SATELIT / TOPO ---- (v1.4.122: dodat treći sloj, ciklično dugme,
   // isti obrazac kao js/mapa-radnika.js)
-  let _baseMode = 'osm'; // 'osm' | 'sat' | 'topo'
+  let _baseMode = 'topo'; // 'osm' | 'sat' | 'topo' — default TOPO (izohipse/konture, v1.4.124)
   let _topoLayer = null;
   window.toggleMapaSat = function() {
     if (_osmLayer) _map.removeLayer(_osmLayer);
@@ -1272,7 +1272,12 @@
         attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         maxZoom:18,
       });
-      _osmLayer.addTo(_map);
+      // Default sloj je TOPO (izohipse/konture) umjesto OSM — _osmLayer se
+      // kreira ali NE dodaje na mapu.
+      _topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenTopoMap (CC-BY-SA)', maxZoom: 17
+      });
+      _topoLayer.addTo(_map);
 
       // Zoom-responsive labeli
       _map.on('zoomend', _updateLabelSizes);
