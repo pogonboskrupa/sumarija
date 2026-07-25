@@ -38,6 +38,7 @@
                 'izvjestaji-otpremac': 'izvjestaji-otpremac-content',
                 'primac-mapa': 'radnik-mapa-content',
                 'otpremac-mapa': 'radnik-mapa-content',
+                'poslovodja-mapa': 'radnik-mapa-content',
                 'kubikator': 'kubikator-content',
                 'godisnji-plan': 'godisnji-plan-content',
                 'karta-odjela': 'karta-odjela-content',
@@ -138,6 +139,9 @@
             } else if (tab === 'otpremac-mapa') {
                 document.getElementById('radnik-mapa-content').classList.remove('hidden');
                 if (typeof initMapaRadnika === 'function') initMapaRadnika('otpremac');
+            } else if (tab === 'poslovodja-mapa') {
+                document.getElementById('radnik-mapa-content').classList.remove('hidden');
+                if (typeof initMapaRadnika === 'function') initMapaRadnika('poslovodja');
             } else if (tab === 'add-sjeca') {
                 showAddSjecaForm();
             } else if (tab === 'add-otprema') {

@@ -973,7 +973,7 @@
     // Poziva se iz switchTab (js/ui.js) kad se prelazi na BILO KOJI drugi tab —
     // sigurnosna mreža za slučaj da korisnik ode s mape mimo "Zatvori" dugmeta.
     window.exitMapaRadnikaFullscreenIfActive = function(nextTab) {
-        if (nextTab !== 'primac-mapa' && nextTab !== 'otpremac-mapa') _exitMapaFullscreen();
+        if (nextTab !== 'primac-mapa' && nextTab !== 'otpremac-mapa' && nextTab !== 'poslovodja-mapa') _exitMapaFullscreen();
     };
     // Poziva se iz switchTab i kad se ponovo ulazi na Mapu odjela preko
     // "instant cache" grane (svjež keš → switchTab se vrati prije nego što
@@ -981,7 +981,7 @@
     // display:none od prethodnog izlaska jer se _enterMapaFullscreen() nikad
     // ne pozove ponovo.
     window.enterMapaRadnikaFullscreenIfActive = function(tab) {
-        if (tab === 'primac-mapa' || tab === 'otpremac-mapa') _enterMapaFullscreen();
+        if (tab === 'primac-mapa' || tab === 'otpremac-mapa' || tab === 'poslovodja-mapa') _enterMapaFullscreen();
     };
 
     window.mapaRadnikaLocateMe = _locateMe;
@@ -989,7 +989,9 @@
     window.mapaRadnikaClearTracks = _clearTracks;
     window.closeMapaRadnika = function() {
         _exitMapaFullscreen();
-        var home = (_workerType === 'otpremac') ? 'otpremac-personal' : 'primac-personal';
+        var home = _workerType === 'otpremac' ? 'otpremac-personal'
+            : _workerType === 'poslovodja' ? 'poslovodja-sjeca'
+            : 'primac-personal';
         if (typeof switchTab === 'function') switchTab(home);
     };
 
@@ -1054,17 +1056,41 @@
         setTimeout(function() { if (_map) _map.invalidateSize(); }, 100);
 
         var status = document.getElementById('radnik-mapa-status');
-        var endpoint = (type === 'otpremac') ? 'otpremac-odjeli' : 'primac-odjeli';
-        var tabId = (type === 'otpremac') ? 'otpremac-mapa' : 'primac-mapa';
+        // poslovođa nema svoje primke/otpreme (ne radi lično) — koristi se isti
+        // 'stanje-zaliha' endpoint koji već poslužuje "Stanje zaliha" tab, VEĆ
+        // backend-filtriran po POSLOVOĐA polju (apps-script/api-handlers.gs
+        // handleStanjeZaliha) — vraća SVE odjele njegovih radilišta, bez potrebe
+        // za dodatnim client-side filtriranjem po radilištu.
+        var isPoslovodja = (type === 'poslovodja');
+        var endpoint = isPoslovodja ? 'stanje-zaliha' : (type === 'otpremac' ? 'otpremac-odjeli' : 'primac-odjeli');
+        var tabId = isPoslovodja ? 'poslovodja-mapa' : (type === 'otpremac' ? 'otpremac-mapa' : 'primac-mapa');
         // Zaseban keš (viši limit) da mapa prikaže SVE radnikove odjele, ne samo top 15
         var cacheKey = 'cache_' + type + '_odjeli_mapa';
 
         if (status) status.textContent = navigator.onLine ? '⏳ Učitavam...' : '📦 Keširano...';
 
         try {
-            var url = buildApiUrl(endpoint, { limit: 300 });
+            var poslovodjaName = (window.currentUser && window.currentUser.fullName) || '';
+            var url = isPoslovodja
+                ? buildApiUrl(endpoint, { poslovodja: poslovodjaName })
+                : buildApiUrl(endpoint, { limit: 300 });
             var data = await fetchWithCache(url, cacheKey);
             var odjeli = (data && data.odjeli) || [];
+            // Normalizuj 'stanje-zaliha' oblik ({odjel, sjeca:{...}, ukupnoSjeca,
+            // zadnjaOtprema, radiliste, ...}) na isti oblik koji ostatak ove
+            // funkcije (i _popupHtml/_chipsFor niže) očekuje: {odjel, sortimenti,
+            // ukupno, zadnjiDatum} — "sjeca" (posječeno do sada) je dosljedno sa
+            // onim što primačev popup već prikazuje.
+            if (isPoslovodja) {
+                odjeli = odjeli.map(function(o) {
+                    return {
+                        odjel: o.odjel,
+                        sortimenti: o.sjeca || {},
+                        ukupno: o.ukupnoSjeca || 0,
+                        zadnjiDatum: o.zadnjaOtprema || ''
+                    };
+                });
+            }
 
             // Zadnja 3 odjela (API već vraća niz sortiran najnovije-prvo po
             // zadnjiDatum — vidi handlePrimacOdjeli u apps-script/api-handlers.gs)
