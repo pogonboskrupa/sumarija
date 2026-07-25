@@ -661,29 +661,72 @@
         return '<div class="rm-loc-wrap"><div class="rm-loc-dot"></div></div>';
     }
 
+    // Iscrtava/ažurira plavu tačku + krug preciznosti GPS signala (radijus =
+    // pos.coords.accuracy u metrima, sa tooltip-om "±Xm" — bez ovoga krug je
+    // bio nevidljivo "tih" podatak, korisnik nije mogao SAZNATI koliko je
+    // signal precizan, samo naslutiti iz veličine kruga).
+    function _updateLocDisplay(pos) {
+        var ll = [pos.coords.latitude, pos.coords.longitude];
+        var acc = pos.coords.accuracy || 30;
+        if (_locMarker) { _map.removeLayer(_locMarker); _locMarker = null; }
+        if (_locCircle) { _map.removeLayer(_locCircle); _locCircle = null; }
+        _locCircle = L.circle(ll, {
+            radius: acc,
+            color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.12, weight: 1
+        }).bindTooltip('±' + Math.round(acc) + ' m preciznost', { direction: 'top', className: 'karta-tooltip' }).addTo(_map);
+        _locMarker = L.marker(ll, {
+            icon: L.divIcon({ className: 'rm-loc-icon', html: _locIconHtml(), iconSize: [40, 40], iconAnchor: [20, 20] }),
+            interactive: false
+        }).addTo(_map);
+        return ll;
+    }
+
+    // ---- "PRATI ME" (follow mode) — kontinuirano praćenje umjesto
+    // jednokratnog centriranja. Tapni "Moja lokacija" da uključiš, tapni
+    // ponovo (ili ručno pomjeri mapu) da isključiš — isto ponašanje kao
+    // navigacione aplikacije (ručni pan prekida automatsko centriranje). ----
+    var _followMode = false;
+    var _followWatchId = null;
+    function _stopFollowOnManualPan() {
+        if (_followMode) _stopFollow();
+    }
+    function _startFollow() {
+        _followMode = true;
+        if (_locBtnEl) { _locBtnEl.textContent = '🎯 Prati me (uključeno)'; _locBtnEl.classList.add('following'); }
+        _followWatchId = navigator.geolocation.watchPosition(function(pos) {
+            var ll = _updateLocDisplay(pos);
+            if (_map) _map.panTo(ll, { animate: true });
+        }, function(err) {
+            console.error('[MapaRadnika] praćenje lokacije — greška:', err);
+        }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 });
+        if (_map) _map.on('dragstart', _stopFollowOnManualPan);
+    }
+    function _stopFollow() {
+        if (_followWatchId != null) { navigator.geolocation.clearWatch(_followWatchId); _followWatchId = null; }
+        _followMode = false;
+        if (_map) _map.off('dragstart', _stopFollowOnManualPan);
+        if (_locBtnEl) { _locBtnEl.textContent = '📍 Moja lokacija'; _locBtnEl.classList.remove('following'); }
+    }
+
     function _locateMe() {
         if (!navigator.geolocation) {
             alert('Vaš uređaj ne podržava geolokaciju.');
             return;
         }
         if (!_map) return;
+
+        // Drugi tap dok je "Prati me" aktivno — isključi praćenje (toggle,
+        // isti obrazac kao Snimi trag).
+        if (_followMode) { _stopFollow(); return; }
+
         if (_locBtnEl) { _locBtnEl.disabled = true; _locBtnEl.textContent = '📍 Tražim...'; }
 
         navigator.geolocation.getCurrentPosition(
             function(pos) {
-                var ll = [pos.coords.latitude, pos.coords.longitude];
-                if (_locMarker) { _map.removeLayer(_locMarker); _locMarker = null; }
-                if (_locCircle) { _map.removeLayer(_locCircle); _locCircle = null; }
-                _locCircle = L.circle(ll, {
-                    radius: pos.coords.accuracy || 30,
-                    color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.12, weight: 1
-                }).addTo(_map);
-                _locMarker = L.marker(ll, {
-                    icon: L.divIcon({ className: 'rm-loc-icon', html: _locIconHtml(), iconSize: [40, 40], iconAnchor: [20, 20] }),
-                    interactive: false
-                }).addTo(_map);
+                var ll = _updateLocDisplay(pos);
                 _map.setView(ll, 15);
-                if (_locBtnEl) { _locBtnEl.disabled = false; _locBtnEl.textContent = '📍 Moja lokacija'; }
+                if (_locBtnEl) _locBtnEl.disabled = false;
+                _startFollow();
             },
             function(err) {
                 if (_locBtnEl) { _locBtnEl.disabled = false; _locBtnEl.textContent = '📍 Moja lokacija'; }
@@ -1021,6 +1064,7 @@
         _hideTragoviMenu();
         if (typeof window.mapaRadnikaCancelRoutePick === 'function') window.mapaRadnikaCancelRoutePick();
         if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
+        _stopFollow(); // ne ostavljaj GPS watchPosition da radi u pozadini nakon izlaska s mape
         // Vrati viewport na korisnikovu preferencu (Desktop/Android prikaz) ako
         // je bila uključena prije ulaska na mapu.
         var viewport = document.querySelector('meta[name=viewport]');

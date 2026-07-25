@@ -3127,6 +3127,10 @@
                   .rm-bar-btn:active { transform:scale(.94); filter:brightness(.9); }
                   .rm-bar-btn:disabled { opacity:.6; cursor:default; transform:none; }
                   .rm-bar-loc { background:linear-gradient(180deg,#2563eb,#1d4ed8); }
+                  /* "Prati me" aktivno — zeleno umjesto plavo, ista "aktivno stanje"
+                     boja koja se već koristi drugdje u appu (npr. "radio" odjeli). */
+                  .rm-bar-loc.following { background:linear-gradient(180deg,#059669,#047857); animation:rm-follow-pulse 2s ease-in-out infinite; }
+                  @keyframes rm-follow-pulse { 0%,100% { filter:brightness(1); } 50% { filter:brightness(1.15); } }
                   .rm-bar-trag { background:linear-gradient(180deg,#059669,#047857); }
                   .rm-bar-trag.recording { background:linear-gradient(180deg,#ef4444,#dc2626); }
                   .rm-bar-clear { background:linear-gradient(180deg,#6b7280,#4b5563); }
