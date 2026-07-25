@@ -221,6 +221,14 @@
         if (cb && cb.checked) _renderLabels(); else _clearLabels();
     };
 
+    // Poslovođa vidi SAMO odjele svog radilišta (na zahtjev) — primač/
+    // otpremač i dalje vide SVE odjele (istaknuti su samo oni gdje su radili).
+    function _shouldShowFeature(feature) {
+        if (_workerType !== 'poslovodja') return true;
+        var k = _featureKeys(feature);
+        return _odjeliByKey.has(k.lk) || _odjeliByKey.has(k.nk);
+    }
+
     function _renderLayer(geojson) {
         if (_layer) { _map.removeLayer(_layer); _layer = null; }
         if (_haloLayer) { _map.removeLayer(_haloLayer); _haloLayer = null; }
@@ -235,6 +243,7 @@
         // geometrije — donji, širi, žut i BEZ ispune (samo halo), i gornji,
         // uži, crn, koji nosi stvarnu ispunu i sve interakcije (klik/hover/popup).
         _haloLayer = L.geoJSON(geojson, {
+            filter: _shouldShowFeature,
             interactive: false, // halo ne smije hvatati klik/hover — to radi gornji sloj
             style: function(feature) {
                 var k = _featureKeys(feature);
@@ -244,6 +253,7 @@
         }).addTo(_map);
 
         _layer = L.geoJSON(geojson, {
+            filter: _shouldShowFeature,
             // Ispuna razlikuje istaknute (zeleno), zadnja 3 odjela primača (crveno)
             // i ostale (blijedo/neutralno); rub je crn i tanji od žutog haloa ispod
             // njega (halo proviruje sa obje strane crne linije — "outline" efekat,
