@@ -1428,12 +1428,53 @@
         if (t < 0 || t > 1 || u < 0 || u > 1) return null;
         return t;
     }
+    // Dio granice odjela (jedan ili više lanaca tačaka) koji leži NA JEDNOJ
+    // STRANI zadate p-projekcije (limitProj) — koristi se da PRVA i ZADNJA
+    // linija prate STVARNU (često krivudavu) granicu odjela umjesto kratkog
+    // pravog isječka (vidi poziv niže). "wantBelow" bira stranu: true = dio
+    // granice sa projekcijom <= limitProj (kraj odjela na strani minProj-a),
+    // false = >= limitProj (kraj na strani maxProj-a). Sječe ivice ring-a
+    // tačno na limitProj (linearna interpolacija) da se lanac lijepo spoji sa
+    // pravom linijom koju zamjenjuje.
+    function _boundaryCapChains(ringsXY, p, limitProj, wantBelow) {
+        function proj(pt) { return pt.x * p.x + pt.y * p.y; }
+        function isIn(val) { return wantBelow ? val <= limitProj : val >= limitProj; }
+        var chains = [];
+        ringsXY.forEach(function(ring) {
+            var n = ring.length;
+            if (n < 2) return;
+            var current = null;
+            for (var i = 0; i < n; i++) {
+                var a = ring[i], b = ring[(i + 1) % n];
+                var aIn = isIn(proj(a)), bIn = isIn(proj(b));
+                if (aIn && bIn) {
+                    if (!current) current = [a];
+                    current.push(b);
+                } else if (aIn && !bIn) {
+                    var t1 = (limitProj - proj(a)) / (proj(b) - proj(a));
+                    var cross1 = { x: a.x + (b.x - a.x) * t1, y: a.y + (b.y - a.y) * t1 };
+                    if (!current) current = [a];
+                    current.push(cross1);
+                    if (current.length > 1) chains.push(current);
+                    current = null;
+                } else if (!aIn && bIn) {
+                    var t2 = (limitProj - proj(a)) / (proj(b) - proj(a));
+                    current = [{ x: a.x + (b.x - a.x) * t2, y: a.y + (b.y - a.y) * t2 }];
+                }
+            }
+            if (current && current.length > 1) chains.push(current);
+        });
+        return chains;
+    }
     // Generiše paralelne linije preko geometrije odjela (ringsXY — niz
     // prstenova, svaki niz {x,y} tačaka u lokalnim metrima), na datom azimutu
     // (0-359°, 0=sjever) i razmaku (metri). Vraća niz { index, segments }
-    // (segments = niz [[x,y],[x,y]] parova u LOKALNIM koordinatama — pozivalac
-    // ih vraća u lat/lng preko _fromLocalXY), sortiran po index-u (rastuće,
-    // deterministički za istu geometriju+azimut+razmak).
+    // (segments = niz lanaca tačaka u LOKALNIM koordinatama — svaki lanac ima
+    // BAR 2 tačke, pozivalac ih vraća u lat/lng preko _fromLocalXY), sortiran
+    // po index-u (rastuće, deterministički za istu geometriju+azimut+razmak).
+    // PRVA i ZADNJA linija (najbliže rubovima odjela duž p-ose) prate STVARNU
+    // granicu odjela (može biti krivudava — vidi _boundaryCapChains) umjesto
+    // kratkog pravog isječka; sve OSTALE (unutrašnje) linije ostaju prave.
     function _generateSjeceLinesXY(ringsXY, azimuthDeg, spacingM) {
         var azRad = azimuthDeg * Math.PI / 180;
         var d = { x: Math.sin(azRad), y: Math.cos(azRad) };   // smjer linije (niz padinu)
@@ -1491,6 +1532,21 @@
                 segments.push([pt0, pt1]);
             }
             if (segments.length) result.push({ k: k, segments: segments });
+        }
+        // Zamijeni PRVU i ZADNJU liniju (result[0]/result[result.length-1] —
+        // krajevi po p-osi, ne nužno kStart/kEnd ako su ti k-ovi degenerisano
+        // prazni) stvarnom granicom odjela na toj strani, ako je granica
+        // pronađena (fallback ostaje prava linija ako je cap prazan/degenerisan).
+        if (result.length) {
+            var first = result[0];
+            var firstCap = _boundaryCapChains(ringsXY, p, first.k * spacingM, true);
+            if (firstCap.length) first.segments = firstCap;
+
+            var last = result[result.length - 1];
+            if (last !== first) {
+                var lastCap = _boundaryCapChains(ringsXY, p, last.k * spacingM, false);
+                if (lastCap.length) last.segments = lastCap;
+            }
         }
         // Prikazni broj linije — sekvencijalno od 1, redoslijed FIKSIRAN kStart-om
         // (deterministički za iste ulaze, isti na svakom telefonu).
@@ -1594,15 +1650,36 @@
         _sjeceLayers.forEach(function(l) { _map.removeLayer(l); });
         _sjeceLayers = [];
     }
+    // Pretvori generisane linije (lokalne x,y) u lat/lng — segment je ovdje
+    // LANAC tačaka (BAR 2), ne nužno samo dvije: prva/zadnja linija znaju
+    // pratiti stvarnu (krivudavu) granicu odjela, pa imaju više tačaka
+    // (vidi _boundaryCapChains); unutrašnje linije su i dalje obični 2-tačka
+    // pravi segmenti.
+    function _sjeceLinesToLatLng(linesXY, lat0, lng0) {
+        return linesXY.map(function(line) {
+            return {
+                index: line.index,
+                segments: line.segments.map(function(chain) {
+                    return chain.map(function(pt) {
+                        var ll = _fromLocalXY(pt.x, pt.y, lat0, lng0);
+                        return { lat: ll.lat, lng: ll.lng, x: pt.x, y: pt.y };
+                    });
+                })
+            };
+        });
+    }
     function _drawSjeceLines() {
         _clearSjeceLayers();
         _sjeceLines.forEach(function(line) {
             var longest = null, longestLen = -1;
-            line.segments.forEach(function(seg) {
-                var latlngs = [[seg[0].lat, seg[0].lng], [seg[1].lat, seg[1].lng]];
+            line.segments.forEach(function(chain) {
+                var latlngs = chain.map(function(pt) { return [pt.lat, pt.lng]; });
                 var poly = L.polyline(latlngs, { color: '#dc2626', weight: 3, dashArray: '10 6', opacity: 0.9 }).addTo(_map);
                 _sjeceLayers.push(poly);
-                var len = Math.hypot(seg[1].x - seg[0].x, seg[1].y - seg[0].y);
+                var len = 0;
+                for (var i = 1; i < chain.length; i++) {
+                    len += Math.hypot(chain[i].x - chain[i - 1].x, chain[i].y - chain[i - 1].y);
+                }
                 if (len > longestLen) { longestLen = len; longest = poly; }
             });
             if (longest) {
@@ -1623,28 +1700,47 @@
         if (!collected) { _notify('showError', 'Geometrija odjela nije dostupna.'); return; }
 
         var linesXY = _generateSjeceLinesXY(collected.ringsXY, azimuth, spacing);
-        _sjeceLines = linesXY.map(function(line) {
-            return {
-                index: line.index,
-                segments: line.segments.map(function(seg) {
-                    var a = _fromLocalXY(seg[0].x, seg[0].y, collected.lat0, collected.lng0);
-                    var b = _fromLocalXY(seg[1].x, seg[1].y, collected.lat0, collected.lng0);
-                    return [
-                        { lat: a.lat, lng: a.lng, x: seg[0].x, y: seg[0].y },
-                        { lat: b.lat, lng: b.lng, x: seg[1].x, y: seg[1].y }
-                    ];
-                })
-            };
-        });
+        _sjeceLines = _sjeceLinesToLatLng(linesXY, collected.lat0, collected.lng0);
         _drawSjeceLines();
         _saveSjeceConfig({ odjelKey: _sjeceOdjelKey, odjelLabel: _sjeceOdjelLabel, azimuth: azimuth, spacing: spacing });
         _notify('showSuccess', 'Sječačke linije generisane', _sjeceLines.length + ' linija, razmak ' + spacing + ' m.');
+        // Panel se sklanja nakon generisanja — nazad se ide preko spiska
+        // "Sječačke linije" u Ostalo tabu (vidi _renderSjeceList/✏️ Uredi).
+        if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
+        _renderSjeceList();
     };
     window.mapaRadnikaUkloniSjeceLinije = function() {
         _sjeceLines = [];
         _clearSjeceLayers();
         _saveSjeceConfig(null);
+        _sjeceOdjelKey = null;
+        _sjeceOdjelLabel = '';
+        _updateSjecePanel();
+        _renderSjeceList();
     };
+    // Spisak u Ostalo popup-u — jedan red sa trenutnom konfiguracijom (ako
+    // postoji), sa "✏️ Uredi" (ponovo otvara panel, predpopunjen) i "🗑️"
+    // (isto kao Ukloni linije). Ovo je JEDINI način da se panel ponovo otvori
+    // nakon što se zatvorio pri generisanju.
+    function _renderSjeceList() {
+        var list = document.getElementById('radnik-mapa-sjece-list');
+        if (!list) return;
+        if (!_sjeceLines.length) {
+            list.innerHTML = '<div class="rm-tragovi-empty">Nema generisanih linija.</div>';
+            return;
+        }
+        var info = 'Odjel ' + (_sjeceOdjelLabel || '?') + ' — ' + _sjeceLines.length + ' linija';
+        var cfg = _loadSjeceConfig();
+        if (cfg) info += ' (' + cfg.azimuth + '°, ' + cfg.spacing + ' m)';
+        list.innerHTML =
+            '<div class="rm-tragovi-row">' +
+            '<span class="rm-tragovi-row-info">📏 ' + info + '</span>' +
+            '<span style="display:flex;gap:4px;">' +
+            '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaStartSjeceLinije()" aria-label="Uredi sječačke linije">✏️</button>' +
+            '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaUkloniSjeceLinije()" aria-label="Ukloni sječačke linije">🗑️</button>' +
+            '</span>' +
+            '</div>';
+    }
     // Pri otvaranju mape, ako postoji sačuvana konfiguracija (odjel+azimut+
     // razmak), automatski regeneriši i prikaži linije bez ponovnog unosa —
     // geometrija se lako ponovo izračuna (ne čuvamo je samu, samo konfiguraciju).
@@ -1656,20 +1752,9 @@
         var collected = _collectOdjelRingsXY(_sjeceOdjelKey);
         if (!collected) return;
         var linesXY = _generateSjeceLinesXY(collected.ringsXY, cfg.azimuth, cfg.spacing);
-        _sjeceLines = linesXY.map(function(line) {
-            return {
-                index: line.index,
-                segments: line.segments.map(function(seg) {
-                    var a = _fromLocalXY(seg[0].x, seg[0].y, collected.lat0, collected.lng0);
-                    var b = _fromLocalXY(seg[1].x, seg[1].y, collected.lat0, collected.lng0);
-                    return [
-                        { lat: a.lat, lng: a.lng, x: seg[0].x, y: seg[0].y },
-                        { lat: b.lat, lng: b.lng, x: seg[1].x, y: seg[1].y }
-                    ];
-                })
-            };
-        });
+        _sjeceLines = _sjeceLinesToLatLng(linesXY, collected.lat0, collected.lng0);
         _drawSjeceLines();
+        _renderSjeceList();
     }
     // Kompas za azimut — hvata JEDAN heading i upisuje ga u polje (za razliku
     // od Explorer kompasa koji kontinuirano prati; ovdje treba samo trenutna
@@ -2100,6 +2185,7 @@
             if (bar) menu.style.bottom = (bar.getBoundingClientRect().height + 8) + 'px';
             _renderPoligoniList();
             _refreshOfflineToggle();
+            _renderSjeceList();
         }
         menu.classList.toggle('hidden', !willShow);
     }
