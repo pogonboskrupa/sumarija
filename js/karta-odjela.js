@@ -879,15 +879,42 @@
     if (btn) btn.textContent = _baseMode === 'osm' ? '🛰️ Satelit' : (_baseMode === 'sat' ? '⛰️ Topo' : '🗺️ OSM');
   };
 
-  // ---- OFFLINE PREUZIMANJE (kvadratni extent koji pokriva SVE učitane
-  // odjele) — isti obrazac kao js/mapa-radnika.js mapaRadnikaDownloadOffline. ----
-  function _squareBoundsKarta(bounds) {
-    const sw = bounds.getSouthWest(), ne = bounds.getNorthEast();
-    const latDiff = ne.lat - sw.lat, lngDiff = ne.lng - sw.lng;
-    let latPad = 0, lngPad = 0;
-    if (latDiff > lngDiff) lngPad = (latDiff - lngDiff) / 2;
-    else latPad = (lngDiff - latDiff) / 2;
-    return L.latLngBounds([sw.lat - latPad, sw.lng - lngPad], [ne.lat + latPad, ne.lng + lngPad]);
+  // ---- OFFLINE PREUZIMANJE — SAMO PLOČICE KOJE POKRIVAJU POLIGONE ----
+  // Isti obrazac kao js/mapa-radnika.js mapaRadnikaDownloadOffline: umjesto
+  // jednog velikog kvadrata oko svih odjela, pločice se biraju po SVAKOM odjelu
+  // posebno (okvir + rezerva), pa se ne skida rijeka/njive/susjedne općine.
+  // Ovdje se uzimaju SAMO odjeli koji su trenutno vidljivi (prošli filtere
+  // legende/GJ/pretrage) — admin tako sam bira opseg postojećim filterima.
+  const OFFLINE_BUFFER_M_KARTA = 200;
+  const OFFLINE_Z_MIN_KARTA = 11, OFFLINE_Z_MAX_KARTA = 15;
+
+  function _tilesForBoundsListKarta(boundsList, zMin, zMax, bufferM) {
+    const seen = {};
+    const tiles = [];
+    boundsList.forEach(b => {
+      const latBuf = bufferM / 111320;
+      const midLat = (b.getNorth() + b.getSouth()) / 2;
+      const lngBuf = bufferM / (111320 * Math.cos(midLat * Math.PI / 180));
+      const w = b.getWest() - lngBuf, e = b.getEast() + lngBuf;
+      const s = b.getSouth() - latBuf, n = b.getNorth() + latBuf;
+      for (let z = zMin; z <= zMax; z++) {
+        const nw = _lonLatToTileKarta(w, n, z);
+        const se = _lonLatToTileKarta(e, s, z);
+        for (let x = nw.x; x <= se.x; x++) {
+          for (let y = nw.y; y <= se.y; y++) {
+            const k = `${z}/${x}/${y}`;
+            if (seen[k]) continue;
+            seen[k] = 1;
+            tiles.push({ z, x, y });
+          }
+        }
+      }
+    });
+    return tiles;
+  }
+  function _offlineSizeMbKarta(brojPlocica, mode) {
+    const kbPo = mode === 'sat' ? 25 : 15;
+    return Math.round(brojPlocica * kbPo / 1024);
   }
   function _lonLatToTileKarta(lon, lat, z) {
     const x = Math.floor((lon + 180) / 360 * Math.pow(2, z));
@@ -905,20 +932,17 @@
   window.downloadKartaOffline = async function() {
     if (!_map || !_allFeatures.length) { alert('Odjeli još nisu učitani.'); return; }
     const btn = document.getElementById('karta-offline-btn');
-    const bounds = _squareBoundsKarta(L.featureGroup(_allFeatures).getBounds());
-    const zMin = 11, zMax = 15;
-
-    const tiles = [];
-    for (let z = zMin; z <= zMax; z++) {
-      const nw = _lonLatToTileKarta(bounds.getWest(), bounds.getNorth(), z);
-      const se = _lonLatToTileKarta(bounds.getEast(), bounds.getSouth(), z);
-      for (let x = nw.x; x <= se.x; x++) {
-        for (let y = nw.y; y <= se.y; y++) tiles.push({ z, x, y });
-      }
-    }
+    // Samo vidljivi odjeli (prošli sve aktivne filtere); ako je filter sakrio
+    // sve, padni nazad na sve učitane da dugme nikad ne bude "mrtvo".
+    let vidljivi = _allFeatures.filter(lyr => _map.hasLayer(lyr));
+    if (!vidljivi.length) vidljivi = _allFeatures;
+    const boundsList = vidljivi.map(lyr => lyr.getBounds());
+    const tiles = _tilesForBoundsListKarta(boundsList, OFFLINE_Z_MIN_KARTA, OFFLINE_Z_MAX_KARTA, OFFLINE_BUFFER_M_KARTA);
     if (!tiles.length) return;
     const slojNaziv = _baseMode === 'sat' ? 'Satelit' : (_baseMode === 'topo' ? 'Topo' : 'OSM');
-    if (!confirm(`Preuzeti ${tiles.length} pločica (${slojNaziv}, zoom ${zMin}-${zMax}) za offline korištenje cijelog područja odjela? Ovo može potrajati i potrošiti mobilne podatke.`)) return;
+    if (!confirm(`Preuzeti ${tiles.length} pločica (~${_offlineSizeMbKarta(tiles.length, _baseMode)} MB, ${slojNaziv}, zoom ${OFFLINE_Z_MIN_KARTA}-${OFFLINE_Z_MAX_KARTA})?\n\n` +
+      `Skida se samo područje oko odjela (${vidljivi.length} poligona, +${OFFLINE_BUFFER_M_KARTA} m rezerve), ne cijeli kvadrat oko njih. ` +
+      `Može potrajati i potrošiti mobilne podatke.`)) return;
 
     if (btn) btn.disabled = true;
     let done = 0, failed = 0;

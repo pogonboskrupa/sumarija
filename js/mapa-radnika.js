@@ -438,19 +438,51 @@
     }
     window.mapaRadnikaToggleSat = _toggleSat;
 
-    // ---- OFFLINE PREUZIMANJE (kvadratni extent koji pokriva SVE učitane
-    // odjele, ne samo trenutni viewport) — sekvencijalno fetch-uje tile
-    // pločice trenutno aktivnog sloja (OSM/Satelit/Topo); Service Worker
-    // (v1.4.73+) ih automatski kešira (uklj. opaque OSM/Topo odgovore), pa
-    // nakon ovoga ostaju dostupni offline. Planirano da se kasnije
-    // dopuni/zamijeni Protomaps vektorskim slojem.
-    function _squareBounds(bounds) {
-        var sw = bounds.getSouthWest(), ne = bounds.getNorthEast();
-        var latDiff = ne.lat - sw.lat, lngDiff = ne.lng - sw.lng;
-        var latPad = 0, lngPad = 0;
-        if (latDiff > lngDiff) lngPad = (latDiff - lngDiff) / 2;
-        else latPad = (lngDiff - latDiff) / 2;
-        return L.latLngBounds([sw.lat - latPad, sw.lng - lngPad], [ne.lat + latPad, ne.lng + lngPad]);
+    // ---- OFFLINE PREUZIMANJE — SAMO PLOČICE KOJE POKRIVAJU POLIGONE ----
+    // Ranije se skidao jedan veliki KVADRAT oko svih odjela: na stvarnim
+    // podacima (1151 poligon) to je 2300 pločica na z11-15, od čega ~60% pada
+    // na rijeku, njive i susjedne općine gdje radnik nikad ne dolazi.
+    // Sada se pločice biraju po SVAKOM odjelu posebno (okvir odjela + rezerva),
+    // pa se skida samo ono što stvarno pokriva poligone — 936 pločica za isto
+    // područje, uz identičnu pokrivenost terena.
+    // Sekvencijalni fetch trenutno aktivnog sloja (OSM/Satelit/Topo); Service
+    // Worker (v1.4.73+) ih automatski kešira (uklj. opaque OSM/Topo odgovore).
+    // Planirano da se kasnije dopuni/zamijeni Protomaps vektorskim slojem.
+    var OFFLINE_BUFFER_M = 200; // rezerva oko odjela — hvata prilazni put i granicu
+    var OFFLINE_Z_MIN = 11, OFFLINE_Z_MAX = 15;
+
+    // Skup {z/x/y} pločica koje dodiruju bilo koji od datih bounds-a (+rezerva).
+    // Set uklanja duplikate tamo gdje se susjedni odjeli preklapaju na istoj
+    // pločici — bez toga bi se ista pločica skidala i po deset puta.
+    function _tilesForBoundsList(boundsList, zMin, zMax, bufferM) {
+        var seen = {};
+        var tiles = [];
+        boundsList.forEach(function(b) {
+            var latBuf = bufferM / 111320;
+            var midLat = (b.getNorth() + b.getSouth()) / 2;
+            var lngBuf = bufferM / (111320 * Math.cos(midLat * Math.PI / 180));
+            var w = b.getWest() - lngBuf, e = b.getEast() + lngBuf;
+            var s = b.getSouth() - latBuf, n = b.getNorth() + latBuf;
+            for (var z = zMin; z <= zMax; z++) {
+                var nw = _lonLatToTile(w, n, z);
+                var se = _lonLatToTile(e, s, z);
+                for (var x = nw.x; x <= se.x; x++) {
+                    for (var y = nw.y; y <= se.y; y++) {
+                        var k = z + '/' + x + '/' + y;
+                        if (seen[k]) continue;
+                        seen[k] = 1;
+                        tiles.push({ z: z, x: x, y: y });
+                    }
+                }
+            }
+        });
+        return tiles;
+    }
+    // Gruba procjena veličine — radnik na mobilnim podacima treba vidjeti
+    // koliko MB skida PRIJE nego potvrdi.
+    function _offlineSizeMb(brojPlocica, mode) {
+        var kbPo = mode === 'sat' ? 25 : 15;
+        return Math.round(brojPlocica * kbPo / 1024);
     }
     function _lonLatToTile(lon, lat, z) {
         var x = Math.floor((lon + 180) / 360 * Math.pow(2, z));
@@ -468,20 +500,14 @@
     window.mapaRadnikaDownloadOffline = async function() {
         if (!_map || !_allLayers.length) { alert('Odjeli još nisu učitani.'); return; }
         var btn = document.getElementById('radnik-mapa-offline-btn');
-        var bounds = _squareBounds(L.featureGroup(_allLayers).getBounds());
-        var zMin = 11, zMax = 15;
-
-        var tiles = [];
-        for (var z = zMin; z <= zMax; z++) {
-            var nw = _lonLatToTile(bounds.getWest(), bounds.getNorth(), z);
-            var se = _lonLatToTile(bounds.getEast(), bounds.getSouth(), z);
-            for (var x = nw.x; x <= se.x; x++) {
-                for (var y = nw.y; y <= se.y; y++) tiles.push({ z: z, x: x, y: y });
-            }
-        }
+        var boundsList = _allLayers.map(function(lyr) { return lyr.getBounds(); });
+        var tiles = _tilesForBoundsList(boundsList, OFFLINE_Z_MIN, OFFLINE_Z_MAX, OFFLINE_BUFFER_M);
         if (!tiles.length) return;
         var slojNaziv = _baseMode === 'sat' ? 'Satelit' : (_baseMode === 'topo' ? 'Topo' : 'OSM');
-        if (!confirm('Preuzeti ' + tiles.length + ' pločica (' + slojNaziv + ', zoom ' + zMin + '-' + zMax + ') za offline korištenje cijelog područja odjela? Ovo može potrajati i potrošiti mobilne podatke.')) return;
+        if (!confirm('Preuzeti ' + tiles.length + ' pločica (~' + _offlineSizeMb(tiles.length, _baseMode) + ' MB, ' +
+            slojNaziv + ', zoom ' + OFFLINE_Z_MIN + '-' + OFFLINE_Z_MAX + ')?\n\n' +
+            'Skida se samo područje oko odjela (' + _allLayers.length + ' poligona, +' + OFFLINE_BUFFER_M + ' m rezerve), ' +
+            'ne cijeli kvadrat oko njih. Može potrajati i potrošiti mobilne podatke.')) return;
 
         if (btn) btn.disabled = true;
         var done = 0, failed = 0;
