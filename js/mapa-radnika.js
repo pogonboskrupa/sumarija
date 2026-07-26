@@ -146,6 +146,17 @@
         return v === 0 ? '—' : v.toLocaleString('de-DE') + ' m³';
     }
 
+    // Poruke korisniku kroz aplikacijski toast (js/utils.js showSuccess/showError/
+    // showWarning/showInfo) umjesto native alert() — alert() UVIJEK prikazuje ime
+    // domene/browsera ("stranica kaže..."/"github.io says"), što izgleda kao dio
+    // browsera, ne aplikacije, i ne može se prilagoditi iz JS-a. Fallback na
+    // alert() samo ako toast sistem baš nije učitan (npr. vrlo rani poziv prije
+    // ostatka app.js-a).
+    function _notify(type, title, msg) {
+        if (typeof window[type] === 'function') window[type](title, msg);
+        else alert(title + (msg ? ': ' + msg : ''));
+    }
+
     async function _loadGeojson() {
         if (_geojson) return _geojson;
         try {
@@ -559,30 +570,30 @@
         _downloadOfflineNow();
     };
 
-    // Toast ako postoji globalni sistem (js/utils.js), inače alert() fallback —
-    // ovaj modul je učitan i prije toast-container inicijalizacije u nekim
-    // ranim tab-otvaranjima, pa se ne smije osloniti samo na showToast.
-    function _offlineToast(type, title, msg) {
-        if (typeof window[type] === 'function') window[type](title, msg);
-        else alert(title + (msg ? ': ' + msg : ''));
-    }
-
-    async function _downloadOfflineNow() {
-        if (!_map || !_allLayers.length) { _offlineToast('showWarning', 'Odjeli još nisu učitani'); return; }
-        var cb = document.getElementById('radnik-mapa-offline-toggle');
-        var st = document.getElementById('radnik-mapa-offline-status');
+    function _downloadOfflineNow() {
+        if (!_map || !_allLayers.length) { _notify('showWarning', 'Odjeli još nisu učitani'); return; }
         var mode = _baseMode;
         var boundsList = _allLayers.map(function(lyr) { return lyr.getBounds(); });
         var tiles = _tilesForBoundsList(boundsList, OFFLINE_Z_MIN, OFFLINE_Z_MAX, OFFLINE_BUFFER_M);
         if (!tiles.length) return;
-        if (!confirm('Preuzeti ' + tiles.length + ' pločica (~' + _offlineSizeMb(tiles.length, mode) + ' MB, ' +
-            _slojNaziv(mode) + ', zoom ' + OFFLINE_Z_MIN + '-' + OFFLINE_Z_MAX + ')?\n\n' +
+        _showTragConfirm(
+            'Preuzeti ' + tiles.length + ' pločica (~' + _offlineSizeMb(tiles.length, mode) + ' MB, ' +
+            _slojNaziv(mode) + ', zoom ' + OFFLINE_Z_MIN + '-' + OFFLINE_Z_MAX + ')? ' +
             'Skida se samo područje oko odjela (' + _allLayers.length + ' poligona, +' + OFFLINE_BUFFER_M + ' m rezerve), ' +
-            'ne cijeli kvadrat oko njih. Može potrajati i potrošiti mobilne podatke.')) {
-            _refreshOfflineToggle();
-            return;
-        }
+            'ne cijeli kvadrat oko njih. Može potrajati i potrošiti mobilne podatke.',
+            function() { _doOfflineDownload(tiles, mode); },
+            { title: '⬇️ Izvanmrežni prikaz karte', confirmLabel: 'Preuzmi' }
+        );
+        // Ako korisnik otkaže, checkbox mora ostati u stanju PRIJE dodira (jer
+        // je onclick već preventDefault-ovao promjenu) — _refreshOfflineToggle
+        // se ovdje ne poziva na "otkaži" jer trag-confirm-modal nema poseban
+        // cancel-callback (samo zatvara modal); stanje ostaje netaknuto, što je
+        // ionako tačno stanje ekrana prije ovog poziva.
+    }
 
+    async function _doOfflineDownload(tiles, mode) {
+        var cb = document.getElementById('radnik-mapa-offline-toggle');
+        var st = document.getElementById('radnik-mapa-offline-status');
         if (cb) cb.disabled = true;
         if (st) st.classList.remove('rm-fade-out'); // vidljivo tokom cijelog preuzimanja, ne samo nakon refresha
         if (_offlineStatusTimer) clearTimeout(_offlineStatusTimer);
@@ -596,10 +607,10 @@
         // ne smije prikazivati kvačicu kao da je sve spremno za teren.
         if (done >= tiles.length * 0.9) {
             _setOfflineInfo(mode, { datum: new Date().toLocaleDateString('bs-BA'), plocica: done });
-            _offlineToast('showSuccess', 'Karta preuzeta', done + ' od ' + tiles.length + ' pločica (' + _slojNaziv(mode) + ')');
+            _notify('showSuccess', 'Karta preuzeta', done + ' od ' + tiles.length + ' pločica (' + _slojNaziv(mode) + ')');
         } else {
             _setOfflineInfo(mode, null);
-            _offlineToast('showError', 'Preuzimanje nepotpuno', 'Preuzeto samo ' + done + ' od ' + tiles.length + ' pločica — pokušajte ponovo uz bolju vezu.');
+            _notify('showError', 'Preuzimanje nepotpuno', 'Preuzeto samo ' + done + ' od ' + tiles.length + ' pločica — pokušajte ponovo uz bolju vezu.');
         }
         _refreshOfflineToggle();
     }
@@ -650,12 +661,12 @@
         _hideRouteHint();
     };
     window.mapaRadnikaUseMyLocationAsA = function() {
-        if (!navigator.geolocation) { alert('Vaš uređaj ne podržava geolokaciju.'); return; }
+        if (!navigator.geolocation) { _notify('showError', 'Vaš uređaj ne podržava geolokaciju.'); return; }
         _showRouteHint('<span>📍 Tražim lokaciju...</span>');
         navigator.geolocation.getCurrentPosition(function(pos) {
             _setRoutePointA(pos.coords.latitude, pos.coords.longitude);
         }, function() {
-            alert('Nije moguće dobiti trenutnu lokaciju.');
+            _notify('showError', 'Nije moguće dobiti trenutnu lokaciju.');
             window.mapaRadnikaCancelRoutePick();
         }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
     };
@@ -703,7 +714,7 @@
                 .addTo(_map);
             _map.fitBounds(_routeLine.getBounds(), { padding: [30, 30] });
         } catch (e) {
-            alert('Greška pri učitavanju rute: ' + e.message);
+            _notify('showError', 'Greška pri učitavanju rute', e.message);
         }
     }
 
@@ -910,11 +921,11 @@
     // Centrira mapu na trenutnu GPS lokaciju — nišan ostaje u centru ekrana
     // (crtan preko mape), korisnik može dalje fino pomjeriti mapu prije potvrde.
     window.mapaRadnikaCenterTackaOnMyLocation = function() {
-        if (!navigator.geolocation) { alert('Vaš uređaj ne podržava geolokaciju.'); return; }
+        if (!navigator.geolocation) { _notify('showError', 'Vaš uređaj ne podržava geolokaciju.'); return; }
         navigator.geolocation.getCurrentPosition(function(pos) {
             if (_map) _map.setView([pos.coords.latitude, pos.coords.longitude], Math.max(_map.getZoom(), 15));
         }, function() {
-            alert('Nije moguće dobiti trenutnu lokaciju.');
+            _notify('showError', 'Nije moguće dobiti trenutnu lokaciju.');
         }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
     };
     window.mapaRadnikaConfirmTackaHere = function() {
@@ -980,11 +991,11 @@
         var t = _loadSavedTacke()[index];
         if (!t) return;
         if (_map) _map.closePopup();
-        if (!navigator.geolocation) { alert('Vaš uređaj ne podržava geolokaciju.'); return; }
+        if (!navigator.geolocation) { _notify('showError', 'Vaš uređaj ne podržava geolokaciju.'); return; }
         navigator.geolocation.getCurrentPosition(function(pos) {
             _drawOsrmRoute({ lat: pos.coords.latitude, lng: pos.coords.longitude }, { lat: t.lat, lng: t.lng });
         }, function() {
-            alert('Nije moguće dobiti trenutnu lokaciju.');
+            _notify('showError', 'Nije moguće dobiti trenutnu lokaciju.');
         }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
     };
     window.mapaRadnikaDeleteTacka = function(index) {
@@ -1077,7 +1088,7 @@
 
     function _locateMe() {
         if (!navigator.geolocation) {
-            alert('Vaš uređaj ne podržava geolokaciju.');
+            _notify('showError', 'Vaš uređaj ne podržava geolokaciju.');
             return;
         }
         if (!_map) return;
@@ -1100,7 +1111,7 @@
                 var msg = err.code === 1
                     ? 'Pristup lokaciji je odbijen. Dozvolite lokaciju u postavkama uređaja/browsera.'
                     : (err.code === 3 ? 'Isteklo vrijeme čekanja na GPS signal. Pokušajte ponovo na otvorenom.' : 'Nije moguće dobiti lokaciju.');
-                alert(msg);
+                _notify('showError', msg);
             },
             { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
         );
@@ -1211,7 +1222,7 @@
 
     function _startTrag() {
         if (!navigator.geolocation) {
-            alert('Vaš uređaj ne podržava geolokaciju.');
+            _notify('showError', 'Vaš uređaj ne podržava geolokaciju.');
             return;
         }
         _currentTrackPoints = [];
@@ -1234,7 +1245,7 @@
             var msg = err.code === 1
                 ? 'Pristup lokaciji je odbijen. Dozvolite lokaciju u postavkama uređaja/browsera da bi snimanje traga radilo.'
                 : (err.code === 3 ? 'Isteklo vrijeme čekanja na GPS signal. Pokušajte ponovo na otvorenom.' : 'Nije moguće pratiti lokaciju za snimanje traga.');
-            alert(msg);
+                _notify('showError', msg);
         }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
 
         _recording = true;
@@ -1274,16 +1285,24 @@
         else _showTragNameModal();
     }
 
-    // Custom potvrda brisanja (zamjena za native browser confirm(), koji na
-    // nekim uređajima/prikazima izgleda kao dio adresne trake/linka umjesto
-    // dijela aplikacije — "pro" izgled, isti modal-overlay obrazac kao
-    // #trag-name-modal).
+    // Opća custom potvrda (zamjena za native browser confirm(), koji uvijek
+    // prikazuje ime domene/browsera umjesto aplikacije — "pro" izgled, isti
+    // modal-overlay obrazac kao #trag-name-modal). Koristi se za SVE potvrde
+    // u ovom modulu, ne samo brisanje tragova — otud opcioni naslov/labela.
     var _tragConfirmCallback = null;
-    function _showTragConfirm(message, onConfirm) {
+    function _showTragConfirm(message, onConfirm, opts) {
+        opts = opts || {};
         var modal = document.getElementById('trag-confirm-modal');
         var msgEl = document.getElementById('trag-confirm-message');
+        var titleEl = document.getElementById('trag-confirm-title');
+        var btnEl = document.getElementById('trag-confirm-btn');
         if (!modal || !msgEl) { if (confirm(message)) onConfirm(); return; } // fallback ako modal nije u DOM-u
         msgEl.textContent = message;
+        if (titleEl) titleEl.textContent = opts.title || '🗑️ Potvrda brisanja';
+        if (btnEl) {
+            btnEl.textContent = opts.confirmLabel || 'Obriši';
+            btnEl.className = opts.confirmLabel ? 'btn btn-primary' : 'btn btn-danger';
+        }
         _tragConfirmCallback = onConfirm;
         modal.classList.add('show');
     }
@@ -1676,6 +1695,42 @@
             if (status) status.textContent = 'Greška: ' + e.message;
         }
     };
+
+    // ---- Modali sa unosom teksta (Tačka/Trag/Površina) i mobilna tastatura ----
+    // Overlay je position:fixed preko cijelog layout viewport-a i centrira
+    // svoj sadržaj (align-items:center) — kad se otvori mobilna tastatura,
+    // VIZUELNI viewport se smanji, ali layout viewport (na kojem je overlay
+    // fiksiran) ostaje pun ekran, pa centrirani modal završi napola ISPOD
+    // tastature (dugmad u footeru postanu nedodirljiva/nevidljiva — upravo
+    // ovaj bug je prijavljen za "Nova tačka"). VisualViewport API javlja
+    // stvarnu vidljivu visinu; ograničimo overlay na nju dok je otvoren, pa
+    // "centrirano" znači centrirano u ONOME što se stvarno vidi.
+    var INPUT_MODAL_IDS = ['tacka-name-modal', 'trag-name-modal', 'poligon-name-modal'];
+    function _resizeInputModalsForKeyboard() {
+        if (!window.visualViewport) return;
+        var h = window.visualViewport.height;
+        INPUT_MODAL_IDS.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el && el.classList.contains('show')) { el.style.height = h + 'px'; }
+        });
+    }
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', _resizeInputModalsForKeyboard);
+    }
+    // Reset visine (na punu, default iz CSS-a) svaki put kad se neki od ovih
+    // modala otvori — spriječi da ostane "zaglavljena" visina od PRETHODNOG
+    // otvaranja tastature ako se sljedeći put modal otvori dok je tastatura
+    // (iz nekog drugog razloga, npr. prebacivanja aplikacija) već drugačija.
+    INPUT_MODAL_IDS.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        new MutationObserver(function() {
+            if (el.classList.contains('show')) {
+                el.style.height = '';
+                _resizeInputModalsForKeyboard();
+            }
+        }).observe(el, { attributes: true, attributeFilter: ['class'] });
+    });
 
     console.log('[MapaRadnika] modul učitan');
 })();

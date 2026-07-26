@@ -3114,6 +3114,13 @@
                       font-size:30px; z-index:1100; pointer-events:none;
                       filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));
                   }
+                  /* Modali sa unosom teksta — kad se overlay-u JS-om (na otvaranje
+                     mobilne tastature) postavi inline visina na stvarni vidljivi
+                     viewport (vidi _resizeInputModalsForKeyboard, js/mapa-radnika.js),
+                     sadržaj mora ostati unutar te visine bez izlaska ispod nje. */
+                  #tacka-name-modal .modal, #trag-name-modal .modal, #poligon-name-modal .modal {
+                      max-height:100%; overflow-y:auto; box-sizing:border-box;
+                  }
                   /* Status ispod "Izvanmrežni prikaz karte" (kad/koliko je skinuto) */
                   .rm-tragovi-hint {
                       font-size:11px; color:#6b7280; padding:0 12px 6px 34px;
@@ -3591,13 +3598,16 @@
 <!-- Custom potvrda brisanja traga — zamjena za native browser confirm() koji
      na nekim uređajima/prikazima izgleda kao dio adresne trake/linka umjesto
      dijela aplikacije. -->
+<!-- Opća potvrda (naslov/tekst/dugme se popunjavaju iz JS-a, vidi
+     _showTragConfirm u js/mapa-radnika.js) — zamjena za native confirm()
+     koji uvijek prikazuje ime domene/browsera, ne aplikacije. -->
 <div class="modal-overlay" id="trag-confirm-modal" onclick="if(event.target===this) mapaRadnikaCancelTragConfirm();">
     <div class="modal" style="max-width:320px;">
-        <div class="modal-header"><div class="modal-title">🗑️ Potvrda brisanja</div></div>
+        <div class="modal-header"><div class="modal-title" id="trag-confirm-title">🗑️ Potvrda brisanja</div></div>
         <div class="modal-body" id="trag-confirm-message"></div>
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="mapaRadnikaCancelTragConfirm()">Otkaži</button>
-            <button class="btn btn-danger" onclick="mapaRadnikaConfirmTragDelete()">Obriši</button>
+            <button class="btn btn-danger" id="trag-confirm-btn" onclick="mapaRadnikaConfirmTragDelete()">Obriši</button>
         </div>
     </div>
 </div>
