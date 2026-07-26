@@ -1140,6 +1140,200 @@
         }).join('');
     }
 
+    // ---- USLIKAJ FOTOGRAFIJU — foto se snimi na trenutnoj GPS lokaciji,
+    // imenuje se (isti obrazac kao Tačka/Trag), i čuva se PO KORISNIKU u
+    // IndexedDB (window.IDBHelper, idb-helper.js) — NE u localStorage, jer
+    // fotografije (čak i komprimovane) lako pređu localStorage kvotu (5-10MB)
+    // koju dijele svi ostali podaci aplikacije (isti razlog zbog kojeg su
+    // primke/otprema ranije premještene u IndexedDB, vidi js/app.js).
+    // Dijeljenje ide kroz Web Share API (native meni telefona — WhatsApp,
+    // Viber, SMS, email...) — korisnik sam bira poslovođu kao kontakt; nema
+    // upload-a na server niti novog backend endpointa.
+    var _fotoMarkers = [];
+    var _pendingFotoDataUrl = null;
+    var _pendingFotoLatLng = null;
+
+    function _fotoStorageKey() {
+        return 'mapa_radnika_foto_' + (_currentUserObj().username || 'anon');
+    }
+    async function _loadSavedFoto() {
+        if (!window.IDBHelper) return [];
+        try { return (await window.IDBHelper.getMeta(_fotoStorageKey())) || []; }
+        catch (e) { return []; }
+    }
+    async function _saveFoto(list) {
+        if (!window.IDBHelper) { _notify('showError', 'Čuvanje fotografija nije dostupno na ovom uređaju.'); return; }
+        try { await window.IDBHelper.setMeta(_fotoStorageKey(), list); }
+        catch (e) { _notify('showError', 'Greška pri čuvanju fotografije', e.message); }
+    }
+    // Downscale + JPEG kompresija na canvas-u prije čuvanja — kamera fotografije
+    // znaju biti 4000×3000+ (nekoliko MB), što bi brzo napunilo IndexedDB i
+    // usporilo dijeljenje; 1600px najduža strana je i dalje sasvim čitljivo.
+    function _compressImage(file, maxDim, quality) {
+        return new Promise(function(resolve, reject) {
+            var img = new Image();
+            var url = URL.createObjectURL(file);
+            img.onload = function() {
+                URL.revokeObjectURL(url);
+                var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+                var cw = Math.round(img.width * scale), ch = Math.round(img.height * scale);
+                var canvas = document.createElement('canvas');
+                canvas.width = cw; canvas.height = ch;
+                canvas.getContext('2d').drawImage(img, 0, 0, cw, ch);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.onerror = function() { URL.revokeObjectURL(url); reject(new Error('Neispravna slika.')); };
+            img.src = url;
+        });
+    }
+    window.mapaRadnikaTakePhoto = function() {
+        _hideTragoviMenu();
+        var input = document.getElementById('radnik-mapa-photo-input');
+        if (input) input.click();
+    };
+    window.mapaRadnikaPhotoSelected = async function(e) {
+        var file = e.target.files && e.target.files[0];
+        e.target.value = ''; // reset — isti fajl može ponovo okinuti change ako se opet odabere
+        if (!file) return;
+        try {
+            var posPromise = new Promise(function(resolve) {
+                if (!navigator.geolocation) { resolve(null); return; }
+                navigator.geolocation.getCurrentPosition(
+                    function(pos) { resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
+                    function() { resolve(null); }, // GPS ne uspije — foto se ipak čuva, samo bez lokacije/markera
+                    { enableHighAccuracy: true, timeout: 12000, maximumAge: 5000 }
+                );
+            });
+            var results = await Promise.all([_compressImage(file, 1600, 0.72), posPromise]);
+            _pendingFotoDataUrl = results[0];
+            _pendingFotoLatLng = results[1];
+        } catch (err) {
+            _notify('showError', 'Greška pri obradi fotografije', err.message);
+            return;
+        }
+        _showFotoNameModal();
+    };
+    function _showFotoNameModal() {
+        var modal = document.getElementById('foto-name-modal');
+        var input = document.getElementById('foto-name-input');
+        var preview = document.getElementById('foto-name-preview');
+        var gpsStatus = document.getElementById('foto-name-gps-status');
+        if (!modal || !input) { _saveFotoNow('Foto ' + new Date().toLocaleString('bs-BA')); return; }
+        input.value = 'Foto ' + new Date().toLocaleString('bs-BA');
+        if (preview) preview.src = _pendingFotoDataUrl;
+        if (gpsStatus) gpsStatus.textContent = _pendingFotoLatLng ? '📍 Lokacija zabilježena' : '⚠️ Lokacija nije dostupna — foto se čuva bez oznake na mapi';
+        modal.classList.add('show');
+        setTimeout(function() { input.focus(); input.select(); }, 50);
+    }
+    window.closeFotoNameModal = function() {
+        var modal = document.getElementById('foto-name-modal');
+        if (modal) modal.classList.remove('show');
+        _pendingFotoDataUrl = null;
+        _pendingFotoLatLng = null;
+    };
+    window.confirmSaveFoto = function() {
+        var input = document.getElementById('foto-name-input');
+        var name = (input && input.value.trim()) || ('Foto ' + new Date().toLocaleString('bs-BA'));
+        var modal = document.getElementById('foto-name-modal');
+        if (modal) modal.classList.remove('show');
+        _saveFotoNow(name);
+    };
+    async function _saveFotoNow(name) {
+        if (!_pendingFotoDataUrl) return;
+        var list = await _loadSavedFoto();
+        list.push({
+            name: name,
+            created: new Date().toISOString(),
+            dataUrl: _pendingFotoDataUrl,
+            lat: _pendingFotoLatLng ? _pendingFotoLatLng.lat : null,
+            lng: _pendingFotoLatLng ? _pendingFotoLatLng.lng : null
+        });
+        await _saveFoto(list);
+        _pendingFotoDataUrl = null;
+        _pendingFotoLatLng = null;
+        await _drawSavedFoto();
+        await _renderFotoList();
+    }
+    async function _drawSavedFoto() {
+        _fotoMarkers.forEach(function(m) { _map.removeLayer(m); });
+        _fotoMarkers = [];
+        var list = await _loadSavedFoto();
+        list.forEach(function(f, i) {
+            if (f.lat == null || f.lng == null) return; // nema lokacije — ostaje u spisku, bez markera na mapi
+            var safeName = String(f.name || 'Foto').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            var marker = L.marker([f.lat, f.lng], {
+                icon: L.divIcon({ className: 'rm-foto-marker-icon', html: '📷', iconSize: [30, 30], iconAnchor: [15, 15] })
+            }).bindPopup(
+                '<div class="rm-foto-popup">' +
+                '<div class="rm-foto-popup-title">📷 ' + safeName + '</div>' +
+                '<img class="rm-foto-popup-img" src="' + f.dataUrl + '" />' +
+                '<button type="button" class="rm-tacka-popup-route" onclick="mapaRadnikaShareFoto(' + i + ')">📤 Podijeli</button>' +
+                '<button type="button" class="rm-tacka-popup-delete" onclick="mapaRadnikaDeleteFoto(' + i + ')">🗑️ Obriši</button>' +
+                '</div>'
+            ).addTo(_map);
+            _fotoMarkers.push(marker);
+        });
+    }
+    // Web Share API sa fajlom — otvara telefonov standardni meni za dijeljenje
+    // (WhatsApp, Viber, SMS, email...), korisnik sam bira poslovođu kao kontakt.
+    window.mapaRadnikaShareFoto = async function(index) {
+        var list = await _loadSavedFoto();
+        var f = list[index];
+        if (!f) return;
+        if (_map) _map.closePopup();
+        try {
+            var resp = await fetch(f.dataUrl);
+            var blob = await resp.blob();
+            var file = new File([blob], (f.name || 'foto').replace(/[^\w\-]+/g, '_') + '.jpg', { type: 'image/jpeg' });
+            var text = (f.name || 'Fotografija') + (f.lat != null ? (' — ' + f.lat.toFixed(5) + ', ' + f.lng.toFixed(5)) : '');
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file], title: f.name || 'Fotografija', text: text });
+            } else if (navigator.share) {
+                // Stariji browseri ne podržavaju dijeljenje fajlova — podijeli bar opis/koordinate.
+                await navigator.share({ title: f.name || 'Fotografija', text: text });
+            } else {
+                _notify('showWarning', 'Dijeljenje nije podržano na ovom uređaju/browseru.');
+            }
+        } catch (err) {
+            if (err && err.name === 'AbortError') return; // korisnik zatvorio share meni — nije greška
+            _notify('showError', 'Greška pri dijeljenju fotografije', err.message);
+        }
+    };
+    window.mapaRadnikaDeleteFoto = function(index) {
+        _loadSavedFoto().then(function(list) {
+            var f = list[index];
+            if (!f) return;
+            if (_map) _map.closePopup();
+            _showTragConfirm('Obrisati fotografiju "' + (f.name || 'Foto') + '"?', async function() {
+                var fresh = await _loadSavedFoto();
+                fresh.splice(index, 1);
+                await _saveFoto(fresh);
+                await _drawSavedFoto();
+                await _renderFotoList();
+            });
+        });
+    };
+    async function _renderFotoList() {
+        var list = document.getElementById('radnik-mapa-foto-list');
+        if (!list) return;
+        var items = await _loadSavedFoto();
+        if (!items.length) {
+            list.innerHTML = '<div class="rm-tragovi-empty">Nema sačuvanih fotografija.</div>';
+            return;
+        }
+        list.innerHTML = items.map(function(f, i) {
+            var when = f.created ? new Date(f.created).toLocaleString('bs-BA') : '?';
+            var name = (f.name || 'Foto').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return '<div class="rm-tragovi-row">' +
+                '<span class="rm-tragovi-row-info">📷 ' + name + '<br><small>' + when + '</small></span>' +
+                '<span style="display:flex;gap:4px;">' +
+                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaShareFoto(' + i + ')" aria-label="Podijeli fotografiju">📤</button>' +
+                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeleteFoto(' + i + ')" aria-label="Obriši fotografiju">🗑️</button>' +
+                '</span>' +
+                '</div>';
+        }).join('');
+    }
+
     // ---- MOJA LOKACIJA (GPS) ----
     // Ikonica lokacije — samo plava tačka, bez teksta "Vi ste ovdje" i bez
     // konusa smjera gledanja (isprobano pa ugašeno na korisnikov zahtjev).
@@ -1524,6 +1718,7 @@
             if (bar) menu.style.bottom = (bar.getBoundingClientRect().height + 8) + 'px';
             _renderTragoviList();
             _renderTackeList();
+            _renderFotoList();
         }
         menu.classList.toggle('hidden', !willShow);
     }
@@ -1693,6 +1888,7 @@
             _drawSavedTracks();
             _drawSavedPoligoni();
             _drawSavedTacke();
+            _drawSavedFoto();
         }
         // Leaflet mora preračunati veličinu nakon što tab postane vidljiv
         setTimeout(function() { if (_map) _map.invalidateSize(); }, 100);
@@ -1815,7 +2011,7 @@
     // ovaj bug je prijavljen za "Nova tačka"). VisualViewport API javlja
     // stvarnu vidljivu visinu; ograničimo overlay na nju dok je otvoren, pa
     // "centrirano" znači centrirano u ONOME što se stvarno vidi.
-    var INPUT_MODAL_IDS = ['tacka-name-modal', 'trag-name-modal', 'poligon-name-modal'];
+    var INPUT_MODAL_IDS = ['tacka-name-modal', 'trag-name-modal', 'poligon-name-modal', 'foto-name-modal'];
     function _resizeInputModalsForKeyboard() {
         if (!window.visualViewport) return;
         var h = window.visualViewport.height;

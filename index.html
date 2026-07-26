@@ -3119,6 +3119,11 @@
                   }
                   .rm-tacka-popup-route { border:none; background:#f97316; color:#fff; }
                   .rm-tacka-popup-delete { border:1px solid #d1d5db; background:#fff; color:#b91c1c; margin-bottom:0; }
+                  /* Popup na klik na markiranu fotografiju (isti obrazac kao rm-tacka-popup) */
+                  .rm-foto-popup { min-width:180px; }
+                  .rm-foto-popup-title { font-weight:700; margin-bottom:6px; color:#1f2937; }
+                  .rm-foto-popup-img { width:100%; border-radius:8px; margin-bottom:8px; display:block; }
+                  .rm-foto-marker-icon { font-size:22px; filter:drop-shadow(0 1px 3px rgba(0,0,0,.5)); text-align:center; }
                   /* Nišan za biranje tačke — fiksno u centru mape preko tile-a,
                      pointer-events:none da ne ometa pan/zoom gestove ispod sebe. */
                   .rm-tacka-crosshair {
@@ -3171,7 +3176,7 @@
                      ekranu Mape odjela, pa se ovaj modal renderovao ISPOD njih
                      (nevidljivo/neklikabilno — pravi razlog "Snimi trag se ne
                      aktivira"). Podignuto iznad svega u toj mapi. */
-                  #trag-name-modal.show, #trag-confirm-modal.show, #poligon-name-modal.show, #tacka-name-modal.show { z-index:20000; }
+                  #trag-name-modal.show, #trag-confirm-modal.show, #poligon-name-modal.show, #tacka-name-modal.show, #foto-name-modal.show { z-index:20000; }
 
                   /* Donja fiksna traka — Moja lokacija / Tragovi / Zatvori.
                      IZVAN Leaflet mape (obična HTML dugmad, ne Leaflet control), pa
@@ -3598,11 +3603,37 @@
     <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartTacka()">
         <span>📍</span><span>Tačka</span>
     </button>
+    <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaTakePhoto()">
+        <span>📷</span><span>Uslikaj fotografiju</span>
+    </button>
     <div class="rm-tragovi-divider"></div>
     <div id="radnik-mapa-tragovi-list" class="rm-tragovi-list"></div>
     <div class="rm-tragovi-divider"></div>
     <div class="rm-tragovi-section-label">Tačke</div>
     <div id="radnik-mapa-tacke-list" class="rm-tragovi-list"></div>
+    <div class="rm-tragovi-divider"></div>
+    <div class="rm-tragovi-section-label">Fotografije</div>
+    <div id="radnik-mapa-foto-list" class="rm-tragovi-list"></div>
+</div>
+<!-- Skriveni file input — "capture=environment" otvara zadnju kameru direktno
+     na mobilnom umjesto galerije. Klik pokreće JS (mapaRadnikaTakePhoto). -->
+<input type="file" id="radnik-mapa-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="mapaRadnikaPhotoSelected(event)" />
+<!-- Modal za ime fotografije — prikazuje se nakon slikanja/odabira fajla,
+     prije čuvanja. Prikazuje i malu pregled sličicu. -->
+<div class="modal-overlay" id="foto-name-modal" onclick="if(event.target===this) closeFotoNameModal();">
+    <div class="modal" style="max-width:340px;">
+        <div class="modal-header"><div class="modal-title">📷 Nova fotografija</div></div>
+        <div class="modal-body">
+            <img id="foto-name-preview" style="width:100%;border-radius:8px;margin-bottom:10px;display:block;" />
+            <label style="display:block;font-size:12px;font-weight:600;color:#4b5563;margin-bottom:4px;">Ime fotografije</label>
+            <input type="text" id="foto-name-input" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;" />
+            <div id="foto-name-gps-status" style="font-size:12px;color:#6b7280;margin-top:8px;"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeFotoNameModal()">Otkaži</button>
+            <button class="btn btn-primary" onclick="confirmSaveFoto()">Sačuvaj</button>
+        </div>
+    </div>
 </div>
 <!-- Modal za ime tačke — prikazuje se nakon što je tačka odabrana (klik na
      mapu ili "Moja lokacija"), isti obrazac kao poligon-name-modal. -->
