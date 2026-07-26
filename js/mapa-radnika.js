@@ -55,10 +55,16 @@
     // dohvata se cijelo stanje zaliha i filtrira po RADILIŠTE polju odjela.
     // Ključevi su normalizovani (velika slova, bez dijakritika, dijelovi imena
     // sortirani) da "Jasmin Porić" i "Porić Jasmin" oba matchuju.
+    // Svako pravilo je { radiliste: '<NAZIV>' } — cijelo radilište — ili
+    // { radiliste: '<NAZIV>', odjeli: ['21'] } kad poslovođa sa tog radilišta
+    // vodi SAMO navedene odjele.
     var POSLOVODJA_RADILISTA_KARTA = {
-        'JASMIN PORIC': ['RADICKE UVALE'],
-        'HADZIPASIC IRFAN': ['TURSKE VODE'],
-        'HARBAS MEHMEDALIJA': ['BJELAJSKE UVALE']
+        'JASMIN PORIC': [{ radiliste: 'RADICKE UVALE' }],
+        'HADZIPASIC IRFAN': [{ radiliste: 'TURSKE VODE' }],
+        'HARBAS MEHMEDALIJA': [
+            { radiliste: 'BJELAJSKE UVALE' },
+            { radiliste: 'VOJSKOVA', odjeli: ['21'] }
+        ]
     };
     // Uppercase + bez dijakritika (Č/Ć→C, Š→S, Ž→Z, Đ→DJ) — isti pristup kao
     // _normKey, ali bez strip-anja odjel sufiksa (ovdje su imena/radilišta).
@@ -69,14 +75,42 @@
             .replace(/\s+/g, ' ').trim();
     }
     function _sortedName(s) { return _plainUp(s).split(' ').sort().join(' '); }
-    // Vraća niz normalizovanih naziva radilišta za dato ime poslovođe ([] ako
-    // nije u mapi — tada se ne filtrira po radilištu, vidi initMapaRadnika).
+    // Vraća niz pravila za dato ime poslovođe ([] ako nije u mapi — tada se ne
+    // filtrira po radilištu, vidi initMapaRadnika).
     function _radilistaZaPoslovodju(fullName) {
         var key = _sortedName(fullName);
         for (var k in POSLOVODJA_RADILISTA_KARTA) {
             if (_sortedName(k) === key) return POSLOVODJA_RADILISTA_KARTA[k];
         }
         return [];
+    }
+    // Broj odjela iz punog "GJ odjel" stringa ("Vojskova 21" → "21"); _normKey
+    // dodatno skida P sufiks i /N pododsjek, pa "21", "21P" i "21/1" matchuju.
+    function _brojOdjela(puniNaziv) {
+        var parts = _plainUp(puniNaziv).split(' ');
+        return _normKey(parts[parts.length - 1] || '');
+    }
+    // Da li odjel (jedan zapis iz stanje-zaliha) prolazi pravila poslovođe
+    function _odjelProlaziPravila(o, pravila) {
+        var r = _plainUp(o && o.radiliste);
+        for (var i = 0; i < pravila.length; i++) {
+            if (_plainUp(pravila[i].radiliste) !== r) continue;
+            if (!pravila[i].odjeli) return true; // cijelo radilište
+            var broj = _brojOdjela(o && o.odjel);
+            for (var j = 0; j < pravila[i].odjeli.length; j++) {
+                if (_normKey(pravila[i].odjeli[j]) === broj) return true;
+            }
+        }
+        return false;
+    }
+
+    // currentUser je modul-scoped `let` u js/app.js IIFE-u i NIJE na window-u,
+    // pa se ime poslovođe mora čitati iz localStorage ('sumarija_user', upisuje
+    // ga prijava/auto-login) — window.currentUser je uvijek undefined.
+    function _currentUserObj() {
+        if (window.currentUser) return window.currentUser;
+        try { return JSON.parse(localStorage.getItem('sumarija_user') || 'null') || {}; }
+        catch (e) { return {}; }
     }
 
     var _map = null;
@@ -1238,21 +1272,21 @@
         if (status) status.textContent = navigator.onLine ? '⏳ Učitavam...' : '📦 Keširano...';
 
         try {
-            var poslovodjaName = (window.currentUser && window.currentUser.fullName) || '';
-            var mojaRadilista = isPoslovodja ? _radilistaZaPoslovodju(poslovodjaName) : [];
+            var poslovodjaName = _currentUserObj().fullName || '';
+            var mojaPravila = isPoslovodja ? _radilistaZaPoslovodju(poslovodjaName) : [];
+            if (isPoslovodja) {
+                console.log('[MapaRadnika] poslovođa:', poslovodjaName, '→ pravila:', JSON.stringify(mojaPravila));
+            }
             var url = isPoslovodja
                 ? buildApiUrl(endpoint)          // svi odjeli — filtriramo ispod po radilištu
                 : buildApiUrl(endpoint, { limit: 300 });
             var data = await fetchWithCache(url, cacheKey);
             var odjeli = (data && data.odjeli) || [];
 
-            // Hardkodirano filtriranje po radilištu (ako je poslovođa u mapi;
-            // ako nije — ne filtriraj, da mu karta ne ostane prazna).
-            if (isPoslovodja && mojaRadilista.length) {
-                var dozvoljena = mojaRadilista.map(_plainUp);
-                odjeli = odjeli.filter(function(o) {
-                    return dozvoljena.indexOf(_plainUp(o && o.radiliste)) !== -1;
-                });
+            // Hardkodirano filtriranje po radilištu/odjelu (ako je poslovođa u
+            // mapi; ako nije — ne filtriraj, da mu karta ne ostane prazna).
+            if (isPoslovodja && mojaPravila.length) {
+                odjeli = odjeli.filter(function(o) { return _odjelProlaziPravila(o, mojaPravila); });
             }
             // Normalizuj 'stanje-zaliha' oblik ({odjel, sjeca:{...}, otprema:{...},
             // ukupnoSjeca, ukupnoOtprema, zadnjaOtprema, radiliste, ...}) na oblik
