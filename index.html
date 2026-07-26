@@ -1317,6 +1317,11 @@
                      dugme (offline preuzimanje je premješteno u "Ostalo" popup). -->
                 <button type="button" id="radnik-mapa-close-btn" class="rm-sat-btn rm-close-btn" onclick="closeMapaRadnika()">✕ Zatvori</button>
                 <div id="radnik-mapa-route-hint" class="rm-route-hint hidden"></div>
+                <!-- Nišan za "Tačka" — fiksno u centru EKRANA (ne Leaflet marker vezan
+                     za koordinatu). Korisnik pomjeri mapu ispod njega; stvarna
+                     koordinata pri potvrdi je uvijek _map.getCenter(). Vidi
+                     mapaRadnikaStartTacka u js/mapa-radnika.js. -->
+                <div id="radnik-mapa-tacka-crosshair" class="rm-tacka-crosshair hidden">🎯</div>
             </div>
         </div>
 
@@ -3102,6 +3107,13 @@
                   }
                   .rm-tacka-popup-route { border:none; background:#f97316; color:#fff; }
                   .rm-tacka-popup-delete { border:1px solid #d1d5db; background:#fff; color:#b91c1c; margin-bottom:0; }
+                  /* Nišan za biranje tačke — fiksno u centru mape preko tile-a,
+                     pointer-events:none da ne ometa pan/zoom gestove ispod sebe. */
+                  .rm-tacka-crosshair {
+                      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+                      font-size:30px; z-index:1100; pointer-events:none;
+                      filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));
+                  }
                   /* Status ispod "Izvanmrežni prikaz karte" (kad/koliko je skinuto) */
                   .rm-tragovi-hint {
                       font-size:11px; color:#6b7280; padding:0 12px 6px 34px;
