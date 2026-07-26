@@ -1,8 +1,8 @@
-        // VERSION INFO — semantičko verzionisanje (major.minor.patch), izvor istine
-        // je fajl VERSION u root-u repozitorija. Ručno se povećava (patch+1) uz SVAKI
-        // novi commit (ne samo pri merge-u u main) — nema CI koraka, ovo se ažurira
-        // direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '1.4.134';
+        // VERSION INFO — od v2.0 format je major.minor (npr. 2.0, 2.1, 2.2, ...),
+        // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
+        // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
+        // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
+        const APP_VERSION = '2.0';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -35,8 +35,11 @@
                 const r = await fetch('VERSION?ts=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(10000) });
                 if (!r.ok) return;
                 const serverVer = (await r.text()).trim();
-                // Validan semver i različit od upečene verzije → nova verzija je deployana
-                if (/^\d+\.\d+\.\d+$/.test(serverVer) && serverVer !== APP_VERSION) {
+                // Validan broj verzije (major.minor, npr. "2.1") i različit od
+                // upečene verzije → nova verzija je deployana. Prihvata i stari
+                // major.minor.patch format (npr. "1.4.134") radi kompatibilnosti
+                // ako neki keširan klijent još uvijek šalje taj oblik.
+                if (/^\d+\.\d+(\.\d+)?$/.test(serverVer) && serverVer !== APP_VERSION) {
                     console.log(`[UPDATE] Nova verzija dostupna: ${serverVer} (trenutna: ${APP_VERSION})`);
                     _showUpdateBanner(serverVer);
                 }
