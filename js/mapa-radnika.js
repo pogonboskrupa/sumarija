@@ -969,12 +969,24 @@
         _drawSavedTacke();
         _renderTackeList();
     }
+    // Radijus tačke srazmjeran zumu — isti obrazac kao _updateLabelSizes
+    // (veće približeno, manje odzumirano), samo za L.circleMarker (setRadius),
+    // ne CSS, jer je r atribut SVG kruga koji Leaflet crta.
+    function _tackaRadiusForZoom() {
+        var z = _map ? _map.getZoom() : 13;
+        return z >= 16 ? 8 : z >= 15 ? 7 : z >= 14 ? 6 : z >= 13 ? 5 : z >= 12 ? 4 : 3;
+    }
+    function _updateTackaSizes() {
+        var r = _tackaRadiusForZoom();
+        _tackaMarkers.forEach(function(m) { m.setRadius(r); });
+    }
     function _drawSavedTacke() {
         _tackaMarkers.forEach(function(m) { _map.removeLayer(m); });
         _tackaMarkers = [];
+        var r = _tackaRadiusForZoom();
         _loadSavedTacke().forEach(function(t, i) {
             var safeName = String(t.name || 'Tačka').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            var marker = L.circleMarker([t.lat, t.lng], { radius: 9, color: '#6d28d9', weight: 2, fillColor: '#a78bfa', fillOpacity: 0.9 })
+            var marker = L.circleMarker([t.lat, t.lng], { radius: r, color: '#6d28d9', weight: 2, fillColor: '#a78bfa', fillOpacity: 0.9 })
                 .bindTooltip(safeName, { permanent: false, direction: 'top', className: 'karta-tooltip' })
                 .bindPopup(
                     '<div class="rm-tacka-popup">' +
@@ -1079,6 +1091,11 @@
         }, function() {
             _notify('showError', 'Nije moguće pratiti lokaciju za navigaciju do tačke.');
         }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+        // Kompas se uključuje automatski (poziv je i dalje unutar istog klika
+        // na "Vodi me do tačke", pa iOS-ov requestPermission() i dalje broji
+        // kao gest korisnika). Dugme ostaje vidljivo kao ručni retry ako
+        // korisnik prvi put odbije dozvolu ili automatsko uključivanje ne uspije.
+        window.mapaRadnikaEnableExplorerCompass();
     }
     // Klik na "🧭 Vodi me do tačke" (popup na mapi ili spisak u Tragovi popup-u).
     window.mapaRadnikaRouteToTacka = function(index) {
@@ -1661,6 +1678,7 @@
             // Veličina "Prikaži odjele" oznaka prati zoom mape (manje odzumirano,
             // veće približeno) — vidi _updateLabelSizes.
             _map.on('zoomend', _updateLabelSizes);
+            _map.on('zoomend', _updateTackaSizes);
             _updateLabelSizes();
             // Bez ovoga Leaflet hvata touch/scroll geste unutar panela kao
             // pan/zoom mape — skrolanje prstom kroz duži spisak sortimenata
