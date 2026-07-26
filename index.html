@@ -1334,6 +1334,33 @@
                     <div class="rm-explorer-dir" id="radnik-mapa-explorer-dir"></div>
                     <button type="button" class="rm-explorer-compass-btn" id="radnik-mapa-explorer-compass-btn" onclick="mapaRadnikaEnableExplorerCompass()">🧭 Uključi kompas</button>
                 </div>
+                <!-- "Sječačke linije" panel — linije okomite na izohipse (niz
+                     padinu), na zadatom razmaku. Bez sinhronizacije: isti odjel +
+                     isti azimut + isti razmak = identičan set linija na svakom
+                     telefonu (dogovor na terenu). Vidi mapaRadnikaStartSjeceLinije
+                     u js/mapa-radnika.js. -->
+                <div id="radnik-mapa-sjece-panel" class="rm-sjece-panel hidden">
+                    <button type="button" class="rm-explorer-close" onclick="mapaRadnikaCloseSjecePanel()" aria-label="Zatvori">✕</button>
+                    <div class="rm-sjece-title">📏 Sječačke linije</div>
+                    <div class="rm-sjece-row">
+                        <span class="rm-sjece-label">Odjel:</span>
+                        <span id="sjece-odjel-label" class="rm-sjece-value">— (izaberite odjel)</span>
+                    </div>
+                    <button type="button" id="sjece-pick-btn" class="rm-sjece-btn" onclick="mapaRadnikaSjecePickOdjel()">📍 Izaberi odjel</button>
+                    <div class="rm-sjece-row">
+                        <span class="rm-sjece-label">Azimut (°):</span>
+                        <input type="number" id="sjece-azimuth-input" class="rm-sjece-input" min="0" max="359" placeholder="npr. 135" oninput="mapaRadnikaSjeceInputChanged()" />
+                        <button type="button" class="rm-sjece-btn-small" onclick="mapaRadnikaCaptureAzimuthForSjece()">🧭 Uhvati</button>
+                    </div>
+                    <div class="rm-sjece-row">
+                        <span class="rm-sjece-label">Razmak (m):</span>
+                        <input type="number" id="sjece-spacing-input" class="rm-sjece-input" min="1" value="50" oninput="mapaRadnikaSjeceInputChanged()" />
+                    </div>
+                    <div class="rm-sjece-actions">
+                        <button type="button" id="sjece-generate-btn" class="rm-sjece-btn rm-sjece-btn-primary" onclick="mapaRadnikaGenerisiSjeceLinije()" disabled>▶️ Generiši</button>
+                        <button type="button" class="rm-sjece-btn" onclick="mapaRadnikaUkloniSjeceLinije()">🗑️ Ukloni linije</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -3158,6 +3185,38 @@
                       padding:7px 14px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;
                   }
                   .rm-explorer-compass-btn.hidden { display:none; }
+                  /* "Sječačke linije" panel — isti pozicioni obrazac kao .rm-explorer
+                     (kartica pri vrhu mape), ali svijetla pozadina (ima input polja,
+                     tamna pozadina bi otežala čitanje teksta u input-ima na suncu). */
+                  .rm-sjece-panel {
+                      position:absolute; top:10px; left:10px; right:10px; z-index:1400;
+                      background:rgba(255,255,255,.97); color:#1f2937; border-radius:14px;
+                      padding:14px; box-shadow:0 6px 24px rgba(0,0,0,.3);
+                  }
+                  .rm-sjece-panel.hidden { display:none; }
+                  .rm-sjece-title { font-size:15px; font-weight:800; margin-bottom:10px; padding-right:32px; }
+                  .rm-sjece-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+                  .rm-sjece-label { font-size:13px; font-weight:600; color:#4b5563; white-space:nowrap; }
+                  .rm-sjece-value { font-size:13px; font-weight:700; color:#1f2937; }
+                  .rm-sjece-input {
+                      flex:1; min-width:0; padding:8px 10px; border:1px solid #d1d5db; border-radius:8px;
+                      font-size:15px; font-family:inherit; box-sizing:border-box;
+                  }
+                  .rm-sjece-btn {
+                      width:100%; padding:9px 12px; margin-bottom:8px; border-radius:8px;
+                      border:1px solid #d1d5db; background:#f3f4f6; color:#1f2937;
+                      font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;
+                  }
+                  .rm-sjece-btn-small {
+                      padding:8px 10px; border-radius:8px; border:1px solid #d1d5db;
+                      background:#f3f4f6; color:#1f2937; font-size:12px; font-weight:700;
+                      cursor:pointer; font-family:inherit; white-space:nowrap;
+                  }
+                  .rm-sjece-actions { display:flex; flex-direction:column; gap:0; margin-top:2px; }
+                  .rm-sjece-btn-primary {
+                      background:#dc2626; color:#fff; border-color:#dc2626;
+                  }
+                  .rm-sjece-btn-primary:disabled { background:#e5e7eb; color:#9ca3af; border-color:#e5e7eb; cursor:default; }
                   /* Modali sa unosom teksta — kad se overlay-u JS-om (na otvaranje
                      mobilne tastature) postavi inline visina na stvarni vidljivi
                      viewport (vidi _resizeInputModalsForKeyboard, js/mapa-radnika.js),
@@ -3723,6 +3782,9 @@
     </button>
     <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartPoligon()">
         <span>✏️</span><span>Označi površinu (završeno/ostalo/popraviti šumski red...)</span>
+    </button>
+    <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartSjeceLinije()">
+        <span>📏</span><span>Sječačke linije</span>
     </button>
     <div class="rm-tragovi-divider"></div>
     <div class="rm-tragovi-section-label">Površine</div>

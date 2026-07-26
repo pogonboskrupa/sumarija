@@ -369,24 +369,34 @@
                 lyr.on('mouseout', function() {
                     this.setStyle(recent ? { fillOpacity: 0.5, weight: 2.5 } : (radio ? { fillOpacity: 0.45, weight: 2.5 } : { fillOpacity: 0.08, weight: 1.8 }));
                 });
-                if (radio) {
-                    radnikLayers.push(lyr);
-                    lyr.on('click', function(e) {
-                        L.DomEvent.stopPropagation(e);
-                        // Ako je u toku biranje tačke rute ("Vodi me do lokacije") ili
-                        // crtanje poligona ("Označi poligon"), klik na odjel broji se
-                        // kao klik na tu tačku (ne otvara info panel) — inače bi
-                        // poligon "krao" klik od tih moda. ("Tačka" ne koristi klik na
-                        // mapu — vidi nišan u centru ekrana, mapaRadnikaStartTacka.)
-                        if (_handleRoutePickClick(e.latlng)) return;
-                        if (_handlePoligonClick(e.latlng)) return;
+                if (radio) radnikLayers.push(lyr);
+                // Klik se veže na SVAKI odjel (radio ili ne) — "Sječačke linije"
+                // biranje odjela (_handleSjeceOdjelClick) mora moći pogoditi bilo
+                // koji odjel, ne samo istaknute. Za neistaknute, van sjece-picking
+                // moda, ponašanje ostaje isto kao ranije (klik ne otvara ništa,
+                // samo zatvori eventualni otvoren info panel — inače bi bez ovoga
+                // taj klik bubble-ovao do _map.on('click',...) koji to radi).
+                lyr.on('click', function(e) {
+                    L.DomEvent.stopPropagation(e);
+                    // Ako je u toku biranje tačke rute ("Vodi me do lokacije"),
+                    // crtanje poligona ("Označi poligon") ili biranje odjela za
+                    // sječačke linije, klik na odjel broji se kao klik za tu
+                    // radnju (ne otvara info panel) — inače bi poligon "krao"
+                    // klik od tih moda. ("Tačka" ne koristi klik na mapu — vidi
+                    // nišan u centru ekrana, mapaRadnikaStartTacka.)
+                    if (_handleRoutePickClick(e.latlng)) return;
+                    if (_handlePoligonClick(e.latlng)) return;
+                    if (_handleSjeceOdjelClick(e.latlng, feature)) return;
+                    if (radio) {
                         // Fiksni info panel u gornjem dijelu mape (NE Leaflet popup
                         // vezan za tačku klika) — pozicija je uvijek ista i predvidiva
                         // bez obzira gdje se na odjelu klikne, cifre se nikad ne
                         // isijeku/sakriju iza ruba ekrana ili donje trake.
                         _showInfoPanel(o);
-                    });
-                }
+                        return;
+                    }
+                    _hideInfoPanel(); // isto ponašanje kao ranije (bubbling do map click handlera)
+                });
             }
         }).addTo(_map);
 
@@ -643,6 +653,7 @@
         if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon(); // samo jedan mod aktivan odjednom
         if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
         if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
+        if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
         _routePickState = 'awaiting-a';
         _routePointA = null;
         if (_routeAMarker) { _map.removeLayer(_routeAMarker); _routeAMarker = null; }
@@ -775,6 +786,7 @@
         window.mapaRadnikaCancelRoutePick(); // samo jedan mod (ruta/poligon/tačka) aktivan odjednom
         if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
         if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
+        if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
         _poligonDrawing = true;
         _poligonPoints = [];
         _redrawPoligonDraw();
@@ -905,6 +917,7 @@
         if (typeof window.mapaRadnikaCancelRoutePick === 'function') window.mapaRadnikaCancelRoutePick();
         if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
         if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
+        if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
         _tackaPicking = true;
         _showTackaCrosshair();
         _showRouteHint(
@@ -1333,6 +1346,361 @@
                 '</div>';
         }).join('');
     }
+
+    // ---- SJEČAČKE LINIJE — linije za obilježavanje sječe, OKOMITE na
+    // izohipse (niz padinu — "fall line"), na razmaku koji radnik zada
+    // (obično ~50m). App nema stvaran izvor podataka o izohipsama (Topo sloj
+    // je čisti raster, bez geometrije) — smjer zato UNOSI/HVATA radnik sam
+    // (kompas telefona ili ručni unos ugla).
+    //
+    // KLJUČNA DIZAJN-ODLUKA (više radnika, BEZ interneta na terenu): nema
+    // nikakve sinhronizacije podataka. Linije se generišu isključivo iz (1)
+    // granice odjela — već identična na svim telefonima jer dolazi iz istog
+    // offline-keširanog data/odjeli.geojson, i (2) dva broja koje radnici
+    // izgovore jedni drugima na terenu — azimut i razmak. Isti odjel + ista
+    // dva broja = matematički IDENTIČAN, deterministički numerisan set
+    // linija na svakom telefonu, bez ijednog bajta prenesenih podataka.
+    var _sjeceOdjelKey = null;   // labelKey izabranog odjela (_featureKeys().lk)
+    var _sjeceOdjelLabel = '';   // prikazni naziv (npr. "73" ili "59/1")
+    var _sjecePicking = false;   // čeka klik na odjel-poligon
+    var _sjeceLines = [];        // rezultat _generateSjeceLines
+    var _sjeceLayers = [];       // Leaflet polyline-ovi trenutno iscrtanih linija
+
+    function _sjeceConfigKey() {
+        return 'mapa_radnika_sjece_' + (_currentUserObj().username || 'anon');
+    }
+    function _loadSjeceConfig() {
+        try { return JSON.parse(localStorage.getItem(_sjeceConfigKey()) || 'null'); }
+        catch (e) { return null; }
+    }
+    function _saveSjeceConfig(cfg) {
+        try {
+            if (cfg) localStorage.setItem(_sjeceConfigKey(), JSON.stringify(cfg));
+            else localStorage.removeItem(_sjeceConfigKey());
+        } catch (e) {}
+    }
+
+    // ---- Čista geometrija (bez Leaflet/DOM zavisnosti — lako provjerljivo) ----
+
+    // Ravna (lokalna) projekcija oko referentne tačke — na skali jednog
+    // odjela (stotine metara) dovoljno precizna, mnogo jednostavnija i brža
+    // od prave geodetske projekcije.
+    function _toLocalXY(lat, lng, lat0, lng0) {
+        var mPerDegLat = 111320;
+        var mPerDegLng = 111320 * Math.cos(lat0 * Math.PI / 180);
+        return { x: (lng - lng0) * mPerDegLng, y: (lat - lat0) * mPerDegLat };
+    }
+    function _fromLocalXY(x, y, lat0, lng0) {
+        var mPerDegLat = 111320;
+        var mPerDegLng = 111320 * Math.cos(lat0 * Math.PI / 180);
+        return { lat: lat0 + y / mPerDegLat, lng: lng0 + x / mPerDegLng };
+    }
+
+    // Even-odd (ray-casting) test PREKO SVIH prstenova zajedno — ispravno
+    // tretira i rupe (holes) i višedijelne (MultiPolygon) odjele bez posebne
+    // logike: to je standardno matematičko svojstvo even-odd pravila kad se
+    // svaki prsten tretira kao još jedna "ivica koja se prelazi".
+    function _pointInRings(pt, ringsXY) {
+        var inside = false;
+        for (var r = 0; r < ringsXY.length; r++) {
+            var ring = ringsXY[r];
+            var n = ring.length;
+            for (var i = 0, j = n - 1; i < n; j = i++) {
+                var xi = ring[i].x, yi = ring[i].y;
+                var xj = ring[j].x, yj = ring[j].y;
+                var intersect = ((yi > pt.y) !== (yj > pt.y)) &&
+                    (pt.x < (xj - xi) * (pt.y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+        }
+        return inside;
+    }
+    // Presjek duži p1->p2 sa duži p3->p4 — vraća parametar t (0..1, duž
+    // p1->p2) ili null ako nema presjeka NA OBJE duži (standardna
+    // parametarska formula za presjek dvije duži).
+    function _segIntersectT(p1, p2, p3, p4) {
+        var d1x = p2.x - p1.x, d1y = p2.y - p1.y;
+        var d2x = p4.x - p3.x, d2y = p4.y - p3.y;
+        var denom = d1x * d2y - d1y * d2x;
+        if (Math.abs(denom) < 1e-9) return null; // paralelne duži
+        var t = ((p3.x - p1.x) * d2y - (p3.y - p1.y) * d2x) / denom;
+        var u = ((p3.x - p1.x) * d1y - (p3.y - p1.y) * d1x) / denom;
+        if (t < 0 || t > 1 || u < 0 || u > 1) return null;
+        return t;
+    }
+    // Generiše paralelne linije preko geometrije odjela (ringsXY — niz
+    // prstenova, svaki niz {x,y} tačaka u lokalnim metrima), na datom azimutu
+    // (0-359°, 0=sjever) i razmaku (metri). Vraća niz { index, segments }
+    // (segments = niz [[x,y],[x,y]] parova u LOKALNIM koordinatama — pozivalac
+    // ih vraća u lat/lng preko _fromLocalXY), sortiran po index-u (rastuće,
+    // deterministički za istu geometriju+azimut+razmak).
+    function _generateSjeceLinesXY(ringsXY, azimuthDeg, spacingM) {
+        var azRad = azimuthDeg * Math.PI / 180;
+        var d = { x: Math.sin(azRad), y: Math.cos(azRad) };   // smjer linije (niz padinu)
+        var p = { x: d.y, y: -d.x };                           // okomito na d (duž koje se linijeređaju)
+
+        var allPts = [];
+        ringsXY.forEach(function(ring) { ring.forEach(function(pt) { allPts.push(pt); }); });
+        if (!allPts.length) return [];
+
+        var minProj = Infinity, maxProj = -Infinity;
+        var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        allPts.forEach(function(pt) {
+            var proj = pt.x * p.x + pt.y * p.y;
+            if (proj < minProj) minProj = proj;
+            if (proj > maxProj) maxProj = proj;
+            if (pt.x < minX) minX = pt.x;
+            if (pt.x > maxX) maxX = pt.x;
+            if (pt.y < minY) minY = pt.y;
+            if (pt.y > maxY) maxY = pt.y;
+        });
+
+        var diag = Math.sqrt(Math.pow(maxX - minX, 2) + Math.pow(maxY - minY, 2));
+        var halfLen = diag * 2 + spacingM; // sigurno predugo — oba kraja garantovano van geometrije
+
+        var kStart = Math.ceil(minProj / spacingM);
+        var kEnd = Math.floor(maxProj / spacingM);
+
+        var result = [];
+        for (var k = kStart; k <= kEnd; k++) {
+            var originProj = k * spacingM;
+            var basePt = { x: p.x * originProj, y: p.y * originProj };
+            var segA = { x: basePt.x - d.x * halfLen, y: basePt.y - d.y * halfLen };
+            var segB = { x: basePt.x + d.x * halfLen, y: basePt.y + d.y * halfLen };
+
+            var ts = [];
+            ringsXY.forEach(function(ring) {
+                var n = ring.length;
+                for (var i = 0, j = n - 1; i < n; j = i++) {
+                    var t = _segIntersectT(segA, segB, ring[j], ring[i]);
+                    if (t != null) ts.push(t);
+                }
+            });
+            if (ts.length < 2) continue;
+            ts.sort(function(a, b) { return a - b; });
+
+            var segments = [];
+            for (var m = 0; m < ts.length - 1; m++) {
+                var t0 = ts[m], t1 = ts[m + 1];
+                if (t1 - t0 < 1e-6) continue; // zanemarljivo kratak interval (dodir ivice/tjeme)
+                var midT = (t0 + t1) / 2;
+                var midPt = { x: segA.x + (segB.x - segA.x) * midT, y: segA.y + (segB.y - segA.y) * midT };
+                if (!_pointInRings(midPt, ringsXY)) continue;
+                var pt0 = { x: segA.x + (segB.x - segA.x) * t0, y: segA.y + (segB.y - segA.y) * t0 };
+                var pt1 = { x: segA.x + (segB.x - segA.x) * t1, y: segA.y + (segB.y - segA.y) * t1 };
+                segments.push([pt0, pt1]);
+            }
+            if (segments.length) result.push({ k: k, segments: segments });
+        }
+        // Prikazni broj linije — sekvencijalno od 1, redoslijed FIKSIRAN kStart-om
+        // (deterministički za iste ulaze, isti na svakom telefonu).
+        result.forEach(function(line, idx) { line.index = idx + 1; });
+        return result;
+    }
+
+    // ---- UI/state — reuse istog obrasca kao "Vodi me do lokacije"/"Označi
+    // površinu" (pick-mod preko klika na mapu/poligon, traka-savjet). ----
+    function _sjecePanelEl() { return document.getElementById('radnik-mapa-sjece-panel'); }
+    function _updateSjecePanel() {
+        var panel = _sjecePanelEl();
+        if (!panel) return;
+        var odjelEl = document.getElementById('sjece-odjel-label');
+        var pickBtn = document.getElementById('sjece-pick-btn');
+        var genBtn = document.getElementById('sjece-generate-btn');
+        var az = document.getElementById('sjece-azimuth-input');
+        var sp = document.getElementById('sjece-spacing-input');
+        if (odjelEl) odjelEl.textContent = _sjeceOdjelLabel ? ('Odjel ' + _sjeceOdjelLabel) : '— (izaberite odjel)';
+        if (pickBtn) pickBtn.textContent = _sjecePicking ? '📍 Kliknite na odjel na mapi...' : '📍 Izaberi odjel';
+        if (genBtn) {
+            var azOk = az && az.value !== '' && !isNaN(parseFloat(az.value));
+            var spOk = sp && sp.value !== '' && parseFloat(sp.value) > 0;
+            genBtn.disabled = !(_sjeceOdjelKey && azOk && spOk);
+        }
+    }
+    window.mapaRadnikaStartSjeceLinije = function() {
+        _hideOstaloMenu();
+        if (typeof window.mapaRadnikaCancelRoutePick === 'function') window.mapaRadnikaCancelRoutePick();
+        if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
+        if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
+        if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
+        var panel = _sjecePanelEl();
+        if (panel) panel.classList.remove('hidden');
+        var cfg = _loadSjeceConfig();
+        if (cfg) {
+            var az = document.getElementById('sjece-azimuth-input');
+            var sp = document.getElementById('sjece-spacing-input');
+            if (az && !az.value) az.value = cfg.azimuth;
+            if (sp && !sp.value) sp.value = cfg.spacing;
+        }
+        _updateSjecePanel();
+    };
+    window.mapaRadnikaCloseSjecePanel = function() {
+        _sjecePicking = false;
+        var panel = _sjecePanelEl();
+        if (panel) panel.classList.add('hidden');
+    };
+    window.mapaRadnikaSjecePickOdjel = function() {
+        _sjecePicking = true;
+        _updateSjecePanel();
+    };
+    window.mapaRadnikaSjeceInputChanged = _updateSjecePanel;
+    // Poziva se iz istog centralnog lanca klika na odjel-poligone (onEachFeature)
+    // kao _handleRoutePickClick/_handlePoligonClick. Vraća true ako je klik
+    // "potrošen" za biranje odjela (pozivalac onda ne otvara info panel).
+    function _handleSjeceOdjelClick(latlng, feature) {
+        if (!_sjecePicking) return false;
+        var k = _featureKeys(feature);
+        _sjeceOdjelKey = k.lk;
+        var p = feature.properties || {};
+        _sjeceOdjelLabel = String(p.odjel || p.name || k.lk);
+        _sjecePicking = false;
+        _updateSjecePanel();
+        return true;
+    }
+    // Skupi SVE prstenove (outer+holes, iz SVIH GeoJSON feature-a koji dijele
+    // isti labelKey — odjel zna biti "rasparčan" na više odvojenih feature-a,
+    // vidi _featureKeys/_rmLabelKey) za izabrani odjel, projektuj u lokalne
+    // metre oko zajedničkog centroida.
+    function _collectOdjelRingsXY(odjelKey) {
+        if (!_geojson || !_geojson.features) return null;
+        var feats = _geojson.features.filter(function(f) { return _featureKeys(f).lk === odjelKey; });
+        if (!feats.length) return null;
+
+        var allLatLng = [];
+        var rawRings = []; // niz [[lat,lng],...]
+        feats.forEach(function(f) {
+            var g = f.geometry;
+            if (!g) return;
+            var polys = g.type === 'MultiPolygon' ? g.coordinates : (g.type === 'Polygon' ? [g.coordinates] : []);
+            polys.forEach(function(poly) {
+                poly.forEach(function(ring) {
+                    if (ring.length < 3) return;
+                    var latLngRing = ring.map(function(c) { return { lat: c[1], lng: c[0] }; });
+                    rawRings.push(latLngRing);
+                    allLatLng = allLatLng.concat(latLngRing);
+                });
+            });
+        });
+        if (!rawRings.length) return null;
+
+        var lat0 = allLatLng.reduce(function(s, p) { return s + p.lat; }, 0) / allLatLng.length;
+        var lng0 = allLatLng.reduce(function(s, p) { return s + p.lng; }, 0) / allLatLng.length;
+        var ringsXY = rawRings.map(function(ring) {
+            return ring.map(function(p) { return _toLocalXY(p.lat, p.lng, lat0, lng0); });
+        });
+        return { ringsXY: ringsXY, lat0: lat0, lng0: lng0 };
+    }
+    function _clearSjeceLayers() {
+        _sjeceLayers.forEach(function(l) { _map.removeLayer(l); });
+        _sjeceLayers = [];
+    }
+    function _drawSjeceLines() {
+        _clearSjeceLayers();
+        _sjeceLines.forEach(function(line) {
+            var longest = null, longestLen = -1;
+            line.segments.forEach(function(seg) {
+                var latlngs = [[seg[0].lat, seg[0].lng], [seg[1].lat, seg[1].lng]];
+                var poly = L.polyline(latlngs, { color: '#dc2626', weight: 3, dashArray: '10 6', opacity: 0.9 }).addTo(_map);
+                _sjeceLayers.push(poly);
+                var len = Math.hypot(seg[1].x - seg[0].x, seg[1].y - seg[0].y);
+                if (len > longestLen) { longestLen = len; longest = poly; }
+            });
+            if (longest) {
+                longest.bindTooltip('Linija ' + line.index, { permanent: true, direction: 'center', className: 'karta-tooltip' });
+            }
+        });
+    }
+    window.mapaRadnikaGenerisiSjeceLinije = function() {
+        if (!_sjeceOdjelKey) { _notify('showWarning', 'Prvo izaberite odjel.'); return; }
+        var azEl = document.getElementById('sjece-azimuth-input');
+        var spEl = document.getElementById('sjece-spacing-input');
+        var azimuth = azEl ? parseFloat(azEl.value) : NaN;
+        var spacing = spEl ? parseFloat(spEl.value) : NaN;
+        if (isNaN(azimuth) || azimuth < 0 || azimuth > 359) { _notify('showWarning', 'Unesite ispravan azimut (0-359°).'); return; }
+        if (isNaN(spacing) || spacing <= 0) { _notify('showWarning', 'Unesite ispravan razmak u metrima.'); return; }
+
+        var collected = _collectOdjelRingsXY(_sjeceOdjelKey);
+        if (!collected) { _notify('showError', 'Geometrija odjela nije dostupna.'); return; }
+
+        var linesXY = _generateSjeceLinesXY(collected.ringsXY, azimuth, spacing);
+        _sjeceLines = linesXY.map(function(line) {
+            return {
+                index: line.index,
+                segments: line.segments.map(function(seg) {
+                    var a = _fromLocalXY(seg[0].x, seg[0].y, collected.lat0, collected.lng0);
+                    var b = _fromLocalXY(seg[1].x, seg[1].y, collected.lat0, collected.lng0);
+                    return [
+                        { lat: a.lat, lng: a.lng, x: seg[0].x, y: seg[0].y },
+                        { lat: b.lat, lng: b.lng, x: seg[1].x, y: seg[1].y }
+                    ];
+                })
+            };
+        });
+        _drawSjeceLines();
+        _saveSjeceConfig({ odjelKey: _sjeceOdjelKey, odjelLabel: _sjeceOdjelLabel, azimuth: azimuth, spacing: spacing });
+        _notify('showSuccess', 'Sječačke linije generisane', _sjeceLines.length + ' linija, razmak ' + spacing + ' m.');
+    };
+    window.mapaRadnikaUkloniSjeceLinije = function() {
+        _sjeceLines = [];
+        _clearSjeceLayers();
+        _saveSjeceConfig(null);
+    };
+    // Pri otvaranju mape, ako postoji sačuvana konfiguracija (odjel+azimut+
+    // razmak), automatski regeneriši i prikaži linije bez ponovnog unosa —
+    // geometrija se lako ponovo izračuna (ne čuvamo je samu, samo konfiguraciju).
+    function _restoreSjeceIfSaved() {
+        var cfg = _loadSjeceConfig();
+        if (!cfg || !cfg.odjelKey) return;
+        _sjeceOdjelKey = cfg.odjelKey;
+        _sjeceOdjelLabel = cfg.odjelLabel || cfg.odjelKey;
+        var collected = _collectOdjelRingsXY(_sjeceOdjelKey);
+        if (!collected) return;
+        var linesXY = _generateSjeceLinesXY(collected.ringsXY, cfg.azimuth, cfg.spacing);
+        _sjeceLines = linesXY.map(function(line) {
+            return {
+                index: line.index,
+                segments: line.segments.map(function(seg) {
+                    var a = _fromLocalXY(seg[0].x, seg[0].y, collected.lat0, collected.lng0);
+                    var b = _fromLocalXY(seg[1].x, seg[1].y, collected.lat0, collected.lng0);
+                    return [
+                        { lat: a.lat, lng: a.lng, x: seg[0].x, y: seg[0].y },
+                        { lat: b.lat, lng: b.lng, x: seg[1].x, y: seg[1].y }
+                    ];
+                })
+            };
+        });
+        _drawSjeceLines();
+    }
+    // Kompas za azimut — hvata JEDAN heading i upisuje ga u polje (za razliku
+    // od Explorer kompasa koji kontinuirano prati; ovdje treba samo trenutna
+    // vrijednost dok radnik stoji okrenut niz padinu).
+    function _sjeceAzimuthOrientationHandler(e) {
+        var heading = null;
+        if (typeof e.webkitCompassHeading === 'number') heading = e.webkitCompassHeading;
+        else if (typeof e.alpha === 'number') heading = (360 - e.alpha) % 360;
+        if (heading == null || isNaN(heading)) return;
+        var eventName = ('ondeviceorientationabsolute' in window) ? 'deviceorientationabsolute' : 'deviceorientation';
+        window.removeEventListener(eventName, _sjeceAzimuthOrientationHandler);
+        var azEl = document.getElementById('sjece-azimuth-input');
+        if (azEl) azEl.value = Math.round(heading);
+        _updateSjecePanel();
+    }
+    window.mapaRadnikaCaptureAzimuthForSjece = function() {
+        function attach() {
+            var eventName = ('ondeviceorientationabsolute' in window) ? 'deviceorientationabsolute' : 'deviceorientation';
+            window.addEventListener(eventName, _sjeceAzimuthOrientationHandler);
+        }
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission().then(function(state) {
+                if (state === 'granted') attach();
+                else _notify('showWarning', 'Pristup kompasu je odbijen.');
+            }).catch(function() { _notify('showError', 'Nije moguće aktivirati kompas.'); });
+        } else if (typeof DeviceOrientationEvent !== 'undefined') {
+            attach();
+        } else {
+            _notify('showWarning', 'Vaš uređaj ne podržava kompas — unesite azimut ručno.');
+        }
+    };
 
     // ---- MOJA LOKACIJA (GPS) ----
     // Ikonica lokacije — samo plava tačka, bez teksta "Vi ste ovdje" i bez
@@ -1780,6 +2148,7 @@
         if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
         if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
         if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
+        if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
         _stopFollow(); // ne ostavljaj GPS watchPosition da radi u pozadini nakon izlaska s mape
         // Vrati viewport na korisnikovu preferencu (Desktop/Android prikaz) ako
         // je bila uključena prije ulaska na mapu.
@@ -1988,6 +2357,11 @@
 
             var geojson = await _loadGeojson();
             var brojIstaknuto = _renderLayer(geojson);
+            // Sačuvana konfiguracija sječačkih linija (odjel+azimut+razmak) —
+            // regeneriši i prikaži bez ponovnog unosa (geometrija se lako
+            // ponovo izračuna, ne čuvamo je samu). Mora ići NAKON _renderLayer
+            // jer zavisi od _geojson (učitanog u _loadGeojson() iznad).
+            _restoreSjeceIfSaved();
 
             if (status) {
                 var sufiks = isPoslovodja ? ' (vaša radilišta)' : '';
