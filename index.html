@@ -1313,7 +1313,9 @@
                     <div id="radnik-mapa-info-panel-body"></div>
                 </div>
                 <button type="button" id="radnik-mapa-sat-btn" class="rm-sat-btn" onclick="mapaRadnikaToggleSat()">🗺️ OSM</button>
-                <button type="button" id="radnik-mapa-offline-btn" class="rm-sat-btn rm-offline-btn" onclick="mapaRadnikaDownloadOffline()">⬇️ Offline</button>
+                <!-- "Zatvori" stoji na mjestu gdje je ranije bilo "⬇️ Offline"
+                     dugme (offline preuzimanje je premješteno u "Ostalo" popup). -->
+                <button type="button" id="radnik-mapa-close-btn" class="rm-sat-btn rm-close-btn" onclick="closeMapaRadnika()">✕ Zatvori</button>
                 <div id="radnik-mapa-route-hint" class="rm-route-hint hidden"></div>
             </div>
         </div>
@@ -3091,6 +3093,8 @@
                   .rm-tragovi-delete { background:none; border:none; font-size:16px; cursor:pointer; padding:4px 8px; }
                   .rm-tragovi-empty { padding:10px 12px; font-size:13px; color:#9ca3af; text-align:center; }
                   .rm-tragovi-section-label { font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:.4px; padding:4px 12px 2px; }
+                  /* Status ispod "Izvanmrežni prikaz karte" (kad/koliko je skinuto) */
+                  .rm-tragovi-hint { font-size:11px; color:#6b7280; padding:0 12px 6px 34px; }
                   /* .modal-overlay (css/main.css) je z-index:1000 — daleko ispod
                      #radnik-mapa-content/bottombar/tragovi-menu (10500-10600) u punom
                      ekranu Mape odjela, pa se ovaj modal renderovao ISPOD njih
@@ -3204,9 +3208,14 @@
                   }
                   .rm-sat-btn:active { background:#e5e7eb; }
                   .rm-sat-btn:disabled { opacity:.6; cursor:default; }
-                  /* Offline dugme — gornji lijevi ugao (zaglavlje uklonjeno, prostor
-                     slobodan); traka-savjet (ispod) je poviše nje kad je aktivna. */
-                  .rm-offline-btn { bottom:auto; right:auto; top:10px; left:10px; }
+                  /* "Zatvori" — gornji lijevi ugao (mjesto ranijeg ⬇️ Offline dugmeta,
+                     zaglavlje je uklonjeno pa je prostor slobodan); traka-savjet
+                     (ispod) je poviše njega kad je aktivna. Crveni obrub da se
+                     razlikuje od neutralnog prekidača slojeva u desnom uglu. */
+                  .rm-close-btn {
+                      bottom:auto; right:auto; top:10px; left:10px;
+                      color:#b91c1c; border-color:rgba(185,28,28,.45);
+                  }
                   /* Traka-savjet dok se bira tačka rute ("Vodi me do lokacije") —
                      gornji dio mape (zaglavlje je uklonjeno, prostor slobodan). */
                   .rm-route-hint {
@@ -3515,21 +3524,8 @@
     <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaClearTracks()">
         <span>🗑️</span><span>Obriši tragove</span>
     </button>
-    <label class="rm-tragovi-item rm-tragovi-checkbox">
-        <input id="radnik-mapa-labels-toggle" type="checkbox" onchange="mapaRadnikaToggleLabels()" />
-        <span>🏷️ Prikaži odjele</span>
-    </label>
-    <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartRoutePick()">
-        <span>🧭</span><span>Vodi me do lokacije</span>
-    </button>
-    <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartPoligon()">
-        <span>✏️</span><span>Označi površinu (završeno/ostalo/popraviti šumski red...)</span>
-    </button>
     <div class="rm-tragovi-divider"></div>
     <div id="radnik-mapa-tragovi-list" class="rm-tragovi-list"></div>
-    <div class="rm-tragovi-divider"></div>
-    <div class="rm-tragovi-section-label">Površine</div>
-    <div id="radnik-mapa-poligoni-list" class="rm-tragovi-list"></div>
 </div>
 <!-- Modal za ime traga — prikazuje se PRIJE početka snimanja -->
 <div class="modal-overlay" id="trag-name-modal" onclick="if(event.target===this) closeTragNameModal();">
@@ -3580,9 +3576,31 @@
     <button id="radnik-mapa-tragovi-btn" class="rm-bar-btn rm-bar-trag" onclick="mapaRadnikaToggleTragoviMenu()">
         <span class="rm-bar-icon">🗂️</span><span>Tragovi</span>
     </button>
-    <button class="rm-bar-btn rm-bar-clear" onclick="closeMapaRadnika()">
-        <span class="rm-bar-icon">✕</span><span>Zatvori</span>
+    <button id="radnik-mapa-ostalo-btn" class="rm-bar-btn rm-bar-clear" onclick="mapaRadnikaToggleOstaloMenu()">
+        <span class="rm-bar-icon">⚙️</span><span>Ostalo</span>
     </button>
+</div>
+
+<!-- "Ostalo" popup — isti obrazac/stil kao "Tragovi" popup iznad -->
+<div id="radnik-mapa-ostalo-menu" class="rm-tragovi-menu hidden">
+    <label class="rm-tragovi-item rm-tragovi-checkbox">
+        <input id="radnik-mapa-offline-toggle" type="checkbox" onclick="mapaRadnikaToggleOffline(event)" />
+        <span>🗺️ Izvanmrežni prikaz karte</span>
+    </label>
+    <div id="radnik-mapa-offline-status" class="rm-tragovi-hint"></div>
+    <label class="rm-tragovi-item rm-tragovi-checkbox">
+        <input id="radnik-mapa-labels-toggle" type="checkbox" onchange="mapaRadnikaToggleLabels()" />
+        <span>🏷️ Prikaži odjele</span>
+    </label>
+    <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartRoutePick()">
+        <span>🧭</span><span>Vodi me do lokacije</span>
+    </button>
+    <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartPoligon()">
+        <span>✏️</span><span>Označi površinu (završeno/ostalo/popraviti šumski red...)</span>
+    </button>
+    <div class="rm-tragovi-divider"></div>
+    <div class="rm-tragovi-section-label">Površine</div>
+    <div id="radnik-mapa-poligoni-list" class="rm-tragovi-list"></div>
 </div>
 
 <!-- Globalni offline banner -->

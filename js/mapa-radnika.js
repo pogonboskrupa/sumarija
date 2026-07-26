@@ -435,6 +435,9 @@
         }
         var btn = document.getElementById('radnik-mapa-sat-btn');
         if (btn) btn.textContent = _baseMode === 'osm' ? '🛰️ Satelit' : (_baseMode === 'sat' ? '⛰️ Topo' : '🗺️ OSM');
+        // Svaki sloj se skida odvojeno — kvačica "Izvanmrežni prikaz karte" mora
+        // odmah pokazati stanje NOVOG sloja, ne prethodnog.
+        if (typeof _refreshOfflineToggle === 'function') _refreshOfflineToggle();
     }
     window.mapaRadnikaToggleSat = _toggleSat;
 
@@ -497,27 +500,90 @@
         if (_baseMode === 'topo') return 'https://' + s + '.tile.opentopomap.org/' + t.z + '/' + t.x + '/' + t.y + '.png';
         return 'https://' + s + '.tile.openstreetmap.org/' + t.z + '/' + t.x + '/' + t.y + '.png';
     }
-    window.mapaRadnikaDownloadOffline = async function() {
+    // Zabilješka o skinutoj karti — po sloju (OSM/Satelit/Topo se skidaju
+    // odvojeno), da checkbox "Izvanmrežni prikaz karte" pokazuje STVARNO stanje
+    // za sloj koji je trenutno prikazan, a ne jedno zajedničko "skinuto".
+    function _offlineFlagKey(mode) { return 'mapa_radnika_offline_' + (mode || _baseMode); }
+    function _offlineInfo(mode) {
+        try { return JSON.parse(localStorage.getItem(_offlineFlagKey(mode)) || 'null'); }
+        catch (e) { return null; }
+    }
+    function _setOfflineInfo(mode, info) {
+        try {
+            if (info) localStorage.setItem(_offlineFlagKey(mode), JSON.stringify(info));
+            else localStorage.removeItem(_offlineFlagKey(mode));
+        } catch (e) {}
+    }
+    function _slojNaziv(mode) {
+        return mode === 'sat' ? 'Satelit' : (mode === 'topo' ? 'Topo' : 'OSM');
+    }
+    // Uskladi checkbox + status tekst sa zabilježenim stanjem za tekući sloj.
+    // Poziva se pri otvaranju "Ostalo" popup-a i nakon promjene sloja/preuzimanja.
+    function _refreshOfflineToggle() {
+        var cb = document.getElementById('radnik-mapa-offline-toggle');
+        var st = document.getElementById('radnik-mapa-offline-status');
+        var info = _offlineInfo(_baseMode);
+        if (cb) cb.checked = !!info;
+        if (st) {
+            st.textContent = info
+                ? 'Skinuto ' + info.datum + ' · ' + info.plocica + ' pločica (' + _slojNaziv(_baseMode) + ')'
+                : 'Nije skinuto za sloj ' + _slojNaziv(_baseMode) + ' — uključite da preuzmete.';
+        }
+    }
+    window.mapaRadnikaRefreshOfflineToggle = _refreshOfflineToggle;
+
+    // Checkbox umjesto ranijeg "⬇️ Offline" dugmeta: štiklirano = karta za
+    // tekući sloj je skinuta. Sam checkbox NIKAD ne mijenja stanje direktno
+    // (preventDefault) — stanje diktira ishod preuzimanja/brisanja, inače bi
+    // kvačica lagala kad korisnik otkaže dijalog ili preuzimanje padne.
+    window.mapaRadnikaToggleOffline = function(e) {
+        if (e && e.preventDefault) e.preventDefault();
+        var info = _offlineInfo(_baseMode);
+        if (info) {
+            // _showTragConfirm koristi textContent — poruka mora biti čist tekst
+            _showTragConfirm(
+                'Karta (' + _slojNaziv(_baseMode) + ') je skinuta ' + info.datum +
+                '. Skinuti ponovo i osvježiti pločice?',
+                function() { _downloadOfflineNow(); }
+            );
+            return;
+        }
+        _downloadOfflineNow();
+    };
+
+    async function _downloadOfflineNow() {
         if (!_map || !_allLayers.length) { alert('Odjeli još nisu učitani.'); return; }
-        var btn = document.getElementById('radnik-mapa-offline-btn');
+        var cb = document.getElementById('radnik-mapa-offline-toggle');
+        var st = document.getElementById('radnik-mapa-offline-status');
+        var mode = _baseMode;
         var boundsList = _allLayers.map(function(lyr) { return lyr.getBounds(); });
         var tiles = _tilesForBoundsList(boundsList, OFFLINE_Z_MIN, OFFLINE_Z_MAX, OFFLINE_BUFFER_M);
         if (!tiles.length) return;
-        var slojNaziv = _baseMode === 'sat' ? 'Satelit' : (_baseMode === 'topo' ? 'Topo' : 'OSM');
-        if (!confirm('Preuzeti ' + tiles.length + ' pločica (~' + _offlineSizeMb(tiles.length, _baseMode) + ' MB, ' +
-            slojNaziv + ', zoom ' + OFFLINE_Z_MIN + '-' + OFFLINE_Z_MAX + ')?\n\n' +
+        if (!confirm('Preuzeti ' + tiles.length + ' pločica (~' + _offlineSizeMb(tiles.length, mode) + ' MB, ' +
+            _slojNaziv(mode) + ', zoom ' + OFFLINE_Z_MIN + '-' + OFFLINE_Z_MAX + ')?\n\n' +
             'Skida se samo područje oko odjela (' + _allLayers.length + ' poligona, +' + OFFLINE_BUFFER_M + ' m rezerve), ' +
-            'ne cijeli kvadrat oko njih. Može potrajati i potrošiti mobilne podatke.')) return;
-
-        if (btn) btn.disabled = true;
-        var done = 0, failed = 0;
-        for (var i = 0; i < tiles.length; i++) {
-            try { await fetch(_tileUrl(tiles[i])); done++; } catch (_) { failed++; }
-            if (btn) btn.textContent = '⬇️ ' + done + '/' + tiles.length;
+            'ne cijeli kvadrat oko njih. Može potrajati i potrošiti mobilne podatke.')) {
+            _refreshOfflineToggle();
+            return;
         }
-        if (btn) { btn.disabled = false; btn.textContent = '⬇️ Offline'; }
-        alert('Preuzeto ' + done + ' od ' + tiles.length + ' pločica (' + slojNaziv + ') za offline korištenje.');
-    };
+
+        if (cb) cb.disabled = true;
+        var done = 0;
+        for (var i = 0; i < tiles.length; i++) {
+            try { await fetch(_tileUrl(tiles[i])); done++; } catch (_) {}
+            if (st) st.textContent = 'Preuzimam... ' + done + '/' + tiles.length;
+        }
+        if (cb) cb.disabled = false;
+        // Zabilježi samo ako je preuzeta bar velika većina — pola skinute karte
+        // ne smije prikazivati kvačicu kao da je sve spremno za teren.
+        if (done >= tiles.length * 0.9) {
+            _setOfflineInfo(mode, { datum: new Date().toLocaleDateString('bs-BA'), plocica: done });
+        } else {
+            _setOfflineInfo(mode, null);
+            alert('Preuzeto samo ' + done + ' od ' + tiles.length + ' pločica — pokušajte ponovo uz bolju vezu.');
+        }
+        _refreshOfflineToggle();
+    }
 
     // ---- "VODI ME DO LOKACIJE" — ruta preko OSRM (isti javni servis i
     // tehnika parsiranja kao admin karta, js/karta-odjela.js _drawRoute) ----
@@ -543,7 +609,7 @@
         if (el) el.classList.add('hidden');
     }
     window.mapaRadnikaStartRoutePick = function() {
-        _hideTragoviMenu();
+        _hideOstaloMenu(); // pokreće se iz "Ostalo" popup-a
         if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon(); // samo jedan mod aktivan odjednom
         _routePickState = 'awaiting-a';
         _routePointA = null;
@@ -673,7 +739,7 @@
         );
     }
     window.mapaRadnikaStartPoligon = function() {
-        _hideTragoviMenu();
+        _hideOstaloMenu(); // pokreće se iz "Ostalo" popup-a
         window.mapaRadnikaCancelRoutePick(); // samo jedan mod (ruta/poligon) aktivan odjednom
         _poligonDrawing = true;
         _poligonPoints = [];
@@ -1110,14 +1176,20 @@
         _tragBtnEl = document.getElementById('radnik-mapa-trag-btn');
     }
 
-    // ---- "Tragovi" popup — otvara se preko srednjeg dugmeta u donjoj traci,
-    // sadrži Snimi trag / Obriši tragove / Prikaži odjele (sve što je ranije
-    // bilo razbacano po zaglavlju i traci, sad na jednom mjestu). Pozicija
+    // ---- Popup meniji donje trake ----
+    // "Tragovi" (srednje dugme): Snimi trag / Obriši tragove + spisak tragova.
+    // "Ostalo" (desno dugme): Izvanmrežni prikaz karte / Prikaži odjele /
+    // Vodi me do lokacije / Označi površinu + spisak površina.
+    // Otvoren je uvijek najviše jedan. Pozicija
     // (bottom) se računa dinamički iz stvarne visine donje trake — traka
     // nema fiksnu visinu (safe-area-inset, breakpoint override-i), pa
     // hardkodovan CSS offset ne bi bio pouzdan na svim uređajima.
     function _hideTragoviMenu() {
         var menu = document.getElementById('radnik-mapa-tragovi-menu');
+        if (menu) menu.classList.add('hidden');
+    }
+    function _hideOstaloMenu() {
+        var menu = document.getElementById('radnik-mapa-ostalo-menu');
         if (menu) menu.classList.add('hidden');
     }
     function _toggleTragoviMenu() {
@@ -1126,21 +1198,38 @@
         if (!menu) return;
         var willShow = menu.classList.contains('hidden');
         if (willShow) {
+            _hideOstaloMenu(); // samo jedan popup otvoren odjednom
             if (bar) menu.style.bottom = (bar.getBoundingClientRect().height + 8) + 'px';
             _renderTragoviList();
+        }
+        menu.classList.toggle('hidden', !willShow);
+    }
+    function _toggleOstaloMenu() {
+        var menu = document.getElementById('radnik-mapa-ostalo-menu');
+        var bar = document.getElementById('radnik-mapa-bottombar');
+        if (!menu) return;
+        var willShow = menu.classList.contains('hidden');
+        if (willShow) {
+            _hideTragoviMenu();
+            if (bar) menu.style.bottom = (bar.getBoundingClientRect().height + 8) + 'px';
             _renderPoligoniList();
+            _refreshOfflineToggle();
         }
         menu.classList.toggle('hidden', !willShow);
     }
     // Klik van popup-a (i van dugmeta koje ga otvara) ga zatvara.
     document.addEventListener('click', function(e) {
-        var menu = document.getElementById('radnik-mapa-tragovi-menu');
-        var btn = document.getElementById('radnik-mapa-tragovi-btn');
-        if (!menu || menu.classList.contains('hidden')) return;
-        if (menu.contains(e.target) || (btn && btn.contains(e.target))) return;
-        _hideTragoviMenu();
+        [['radnik-mapa-tragovi-menu', 'radnik-mapa-tragovi-btn', _hideTragoviMenu],
+         ['radnik-mapa-ostalo-menu',  'radnik-mapa-ostalo-btn',  _hideOstaloMenu]].forEach(function(cfg) {
+            var menu = document.getElementById(cfg[0]);
+            var btn = document.getElementById(cfg[1]);
+            if (!menu || menu.classList.contains('hidden')) return;
+            if (menu.contains(e.target) || (btn && btn.contains(e.target))) return;
+            cfg[2]();
+        });
     });
     window.mapaRadnikaToggleTragoviMenu = _toggleTragoviMenu;
+    window.mapaRadnikaToggleOstaloMenu = _toggleOstaloMenu;
 
     // ---- Puni ekran (AlpineQuest-stil) — vidi CSS "body.radnik-mapa-fullscreen"
     // u index.html. Donja traka je poseban element van #radnik-mapa-content
@@ -1168,6 +1257,7 @@
         var bar = document.getElementById('radnik-mapa-bottombar');
         if (bar) bar.style.display = 'none';
         _hideTragoviMenu();
+        _hideOstaloMenu();
         if (typeof window.mapaRadnikaCancelRoutePick === 'function') window.mapaRadnikaCancelRoutePick();
         if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
         _stopFollow(); // ne ostavljaj GPS watchPosition da radi u pozadini nakon izlaska s mape
