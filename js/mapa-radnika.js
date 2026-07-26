@@ -111,23 +111,36 @@
             }).join('');
     }
 
-    function _popupHtml(o) {
-        var sort = o.sortimenti || {};
-        // Dva odvojena reda — prvi red četinari, drugi red lišćari — umjesto
-        // jednog izmiješanog grida, po istoj klasifikaciji/bojama koje se već
-        // koriste u Izvještaju po odjelima (zeleno četinari, plavo lišćari).
+    // Jedna sekcija (npr. "Sječa" ili "Otprema") — dva odvojena reda: prvi red
+    // četinari, drugi red lišćari, po istoj klasifikaciji/bojama koje se već
+    // koriste u Izvještaju po odjelima (zeleno četinari, plavo lišćari).
+    function _sectionHtml(naslov, sort, ukupno) {
+        sort = sort || {};
         var cChips = _chipsFor(sort, typeof KUBIKATOR_CETINARI !== 'undefined' ? KUBIKATOR_CETINARI : [], 'rm-chip-cetinar');
         var lChips = _chipsFor(sort, typeof KUBIKATOR_LISCARI !== 'undefined' ? KUBIKATOR_LISCARI : [], 'rm-chip-liscar');
         var rows =
             (cChips ? '<div class="rm-popup-row-label">🌲 Četinari</div><div class="rm-popup-grid">' + cChips + '</div>' : '') +
             (lChips ? '<div class="rm-popup-row-label">🍂 Lišćari</div><div class="rm-popup-grid">' + lChips + '</div>' : '') +
             (!cChips && !lChips ? '<span style="color:#9ca3af;font-size:12px;">Nema sortimenata</span>' : '');
+        return '<div class="rm-popup-section">' +
+            '<div class="rm-popup-section-title">' + naslov + '</div>' +
+            rows +
+            '<div class="rm-popup-total"><span>UKUPNO</span><span>' + _fmt(ukupno) + '</span></div>' +
+            '</div>';
+    }
+
+    // Poslovođa vidi OBJE sekcije (sječa + otprema) — primač samo sječu, otpremač
+    // samo otpremu (njihovi endpointi ionako vraćaju samo taj jedan skup).
+    function _popupHtml(o) {
+        var sekcije = o.sekcije || [{
+            naslov: _workerType === 'otpremac' ? '🚚 Otprema' : '🪓 Sječa',
+            sort: o.sortimenti,
+            ukupno: o.ukupno
+        }];
         return '<div class="rm-odjel-popup">' +
             '<div class="rm-popup-title">📁 Odjel ' + (o.odjel || '?') + '</div>' +
             '<div class="rm-popup-datum">Zadnji unos: ' + (o.zadnjiDatum || '—') + '</div>' +
-            rows +
-            '<div class="rm-popup-total">' +
-            '<span>UKUPNO</span><span>' + _fmt(o.ukupno) + '</span></div>' +
+            sekcije.map(function(s) { return _sectionHtml(s.naslov, s.sort, s.ukupno); }).join('') +
             '</div>';
     }
 
@@ -1198,20 +1211,31 @@
                 : buildApiUrl(endpoint, { limit: 300 });
             var data = await fetchWithCache(url, cacheKey);
             var odjeli = (data && data.odjeli) || [];
-            // Normalizuj 'stanje-zaliha' oblik ({odjel, sjeca:{...}, ukupnoSjeca,
-            // zadnjaOtprema, radiliste, ...}) na isti oblik koji ostatak ove
-            // funkcije (i _popupHtml/_chipsFor niže) očekuje: {odjel, sortimenti,
-            // ukupno, zadnjiDatum} — "sjeca" (posječeno do sada) je dosljedno sa
-            // onim što primačev popup već prikazuje.
+            // Normalizuj 'stanje-zaliha' oblik ({odjel, sjeca:{...}, otprema:{...},
+            // ukupnoSjeca, ukupnoOtprema, zadnjaOtprema, radiliste, ...}) na oblik
+            // koji ostatak ove funkcije očekuje. Poslovođa dobija OBJE sekcije
+            // (sječa + otprema) u popup-u — za razliku od primača (samo sječa) i
+            // otpremača (samo otprema).
+            //
+            // Istaknuti (obojeni) su SAMO odjeli gdje stvarno IMA sječe ili otpreme
+            // — stanje-zaliha vraća i odjele sa samo planiranim (projektnim)
+            // količinama, a oni nisu "rađeni" pa se ne boje.
             if (isPoslovodja) {
-                odjeli = odjeli.map(function(o) {
-                    return {
-                        odjel: o.odjel,
-                        sortimenti: o.sjeca || {},
-                        ukupno: o.ukupnoSjeca || 0,
-                        zadnjiDatum: o.zadnjaOtprema || ''
-                    };
-                });
+                odjeli = odjeli
+                    .filter(function(o) { return (o.ukupnoSjeca || 0) > 0 || (o.ukupnoOtprema || 0) > 0; })
+                    .map(function(o) {
+                        return {
+                            odjel: o.odjel,
+                            radiliste: o.radiliste || '',
+                            sortimenti: o.sjeca || {},
+                            ukupno: o.ukupnoSjeca || 0,
+                            zadnjiDatum: o.zadnjaOtprema || '',
+                            sekcije: [
+                                { naslov: '🪓 Sječa',  sort: o.sjeca   || {}, ukupno: o.ukupnoSjeca   || 0 },
+                                { naslov: '🚚 Otprema', sort: o.otprema || {}, ukupno: o.ukupnoOtprema || 0 }
+                            ]
+                        };
+                    });
             }
 
             // Zadnja 3 odjela (API već vraća niz sortiran najnovije-prvo po
@@ -1224,8 +1248,9 @@
             }
             var legendExtra = document.getElementById('radnik-mapa-legend-extra');
             if (legendExtra) {
-                legendExtra.innerHTML = (type === 'primac' && _recentSet.size)
-                    ? ' · <strong style="color:#dc2626;">crveno</strong> = zadnja 3 odjela.'
+                legendExtra.innerHTML =
+                    (type === 'primac' && _recentSet.size) ? ' · <strong style="color:#dc2626;">crveno</strong> = zadnja 3 odjela.'
+                    : isPoslovodja ? ' · <strong style="color:#047857;">zeleno</strong> = odjeli vaših radilišta sa sječom/otpremom.'
                     : '';
             }
 
@@ -1249,8 +1274,9 @@
             var brojIstaknuto = _renderLayer(geojson);
 
             if (status) {
+                var sufiks = isPoslovodja ? ' (vaša radilišta)' : '';
                 status.textContent = odjeli.length
-                    ? (odjeli.length + ' odjela · ' + brojIstaknuto + ' istaknuto na mapi')
+                    ? (odjeli.length + ' odjela' + sufiks + ' · ' + brojIstaknuto + ' istaknuto na mapi')
                     : 'Nema odjela za prikaz — svi ostali odjeli su ipak vidljivi na mapi';
             }
             if (typeof markTabRendered === 'function') markTabRendered(tabId);
