@@ -49,6 +49,36 @@
             .trim();
     }
 
+    // ---- HARDKODIRANO: poslovođa → radilišta (SAMO za Karta tab) ----
+    // Na Karta tabu se NE oslanjamo na POSLOVOĐA polje iz STANJE_ZALIHA sheeta
+    // (zna biti prazno/nedosljedno upisano po odjelima) nego na ovu fiksnu mapu:
+    // dohvata se cijelo stanje zaliha i filtrira po RADILIŠTE polju odjela.
+    // Ključevi su normalizovani (velika slova, bez dijakritika, dijelovi imena
+    // sortirani) da "Jasmin Porić" i "Porić Jasmin" oba matchuju.
+    var POSLOVODJA_RADILISTA_KARTA = {
+        'JASMIN PORIC': ['RADICKE UVALE'],
+        'HADZIPASIC IRFAN': ['TURSKE VODE'],
+        'HARBAS MEHMEDALIJA': ['BJELAJSKE UVALE']
+    };
+    // Uppercase + bez dijakritika (Č/Ć→C, Š→S, Ž→Z, Đ→DJ) — isti pristup kao
+    // _normKey, ali bez strip-anja odjel sufiksa (ovdje su imena/radilišta).
+    function _plainUp(s) {
+        return String(s || '').trim().toUpperCase()
+            .replace(/Č/g, 'C').replace(/Ć/g, 'C')
+            .replace(/Š/g, 'S').replace(/Ž/g, 'Z').replace(/Đ/g, 'DJ')
+            .replace(/\s+/g, ' ').trim();
+    }
+    function _sortedName(s) { return _plainUp(s).split(' ').sort().join(' '); }
+    // Vraća niz normalizovanih naziva radilišta za dato ime poslovođe ([] ako
+    // nije u mapi — tada se ne filtrira po radilištu, vidi initMapaRadnika).
+    function _radilistaZaPoslovodju(fullName) {
+        var key = _sortedName(fullName);
+        for (var k in POSLOVODJA_RADILISTA_KARTA) {
+            if (_sortedName(k) === key) return POSLOVODJA_RADILISTA_KARTA[k];
+        }
+        return [];
+    }
+
     var _map = null;
     var _layer = null;
     var _haloLayer = null; // žuti "halo" ispod crne linije (crtan prvi, ispod _layer)
@@ -1192,25 +1222,38 @@
 
         var status = document.getElementById('radnik-mapa-status');
         // poslovođa nema svoje primke/otpreme (ne radi lično) — koristi se isti
-        // 'stanje-zaliha' endpoint koji već poslužuje "Stanje zaliha" tab, VEĆ
-        // backend-filtriran po POSLOVOĐA polju (apps-script/api-handlers.gs
-        // handleStanjeZaliha) — vraća SVE odjele njegovih radilišta, bez potrebe
-        // za dodatnim client-side filtriranjem po radilištu.
+        // 'stanje-zaliha' endpoint koji već poslužuje "Stanje zaliha" tab, ali
+        // BEZ 'poslovodja' parametra: na Karta tabu se filtrira client-side po
+        // RADILIŠTE polju, prema hardkodiranoj mapi POSLOVODJA_RADILISTA_KARTA
+        // (POSLOVOĐA polje u sheetu zna biti prazno/nedosljedno po odjelima).
         var isPoslovodja = (type === 'poslovodja');
         var endpoint = isPoslovodja ? 'stanje-zaliha' : (type === 'otpremac' ? 'otpremac-odjeli' : 'primac-odjeli');
         var tabId = isPoslovodja ? 'poslovodja-mapa' : (type === 'otpremac' ? 'otpremac-mapa' : 'primac-mapa');
-        // Zaseban keš (viši limit) da mapa prikaže SVE radnikove odjele, ne samo top 15
-        var cacheKey = 'cache_' + type + '_odjeli_mapa';
+        // Zaseban keš (viši limit) da mapa prikaže SVE radnikove odjele, ne samo top 15.
+        // Poslovođin keš ima "_sve" sufiks — od v1.4.128 se kešira NEFILTRIRAN
+        // odgovor (filtriranje po radilištu je client-side), pa stari keš pod
+        // ranijim ključem ne smije biti poslužen kao da je isti sadržaj.
+        var cacheKey = 'cache_' + type + '_odjeli_mapa' + (isPoslovodja ? '_sve' : '');
 
         if (status) status.textContent = navigator.onLine ? '⏳ Učitavam...' : '📦 Keširano...';
 
         try {
             var poslovodjaName = (window.currentUser && window.currentUser.fullName) || '';
+            var mojaRadilista = isPoslovodja ? _radilistaZaPoslovodju(poslovodjaName) : [];
             var url = isPoslovodja
-                ? buildApiUrl(endpoint, { poslovodja: poslovodjaName })
+                ? buildApiUrl(endpoint)          // svi odjeli — filtriramo ispod po radilištu
                 : buildApiUrl(endpoint, { limit: 300 });
             var data = await fetchWithCache(url, cacheKey);
             var odjeli = (data && data.odjeli) || [];
+
+            // Hardkodirano filtriranje po radilištu (ako je poslovođa u mapi;
+            // ako nije — ne filtriraj, da mu karta ne ostane prazna).
+            if (isPoslovodja && mojaRadilista.length) {
+                var dozvoljena = mojaRadilista.map(_plainUp);
+                odjeli = odjeli.filter(function(o) {
+                    return dozvoljena.indexOf(_plainUp(o && o.radiliste)) !== -1;
+                });
+            }
             // Normalizuj 'stanje-zaliha' oblik ({odjel, sjeca:{...}, otprema:{...},
             // ukupnoSjeca, ukupnoOtprema, zadnjaOtprema, radiliste, ...}) na oblik
             // koji ostatak ove funkcije očekuje. Poslovođa dobija OBJE sekcije
