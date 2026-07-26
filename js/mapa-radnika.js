@@ -387,6 +387,7 @@
                     if (_handleRoutePickClick(e.latlng)) return;
                     if (_handlePoligonClick(e.latlng)) return;
                     if (_handleSjeceOdjelClick(e.latlng, feature)) return;
+                    if (_handleSjeceDirectionClick(e.latlng)) return;
                     if (radio) {
                         // Fiksni info panel u gornjem dijelu mape (NE Leaflet popup
                         // vezan za tačku klika) — pozicija je uvijek ista i predvidiva
@@ -1592,10 +1593,12 @@
     };
     window.mapaRadnikaCloseSjecePanel = function() {
         _sjecePicking = false;
+        if (typeof window.mapaRadnikaCancelSjeceDirection === 'function') window.mapaRadnikaCancelSjeceDirection();
         var panel = _sjecePanelEl();
         if (panel) panel.classList.add('hidden');
     };
     window.mapaRadnikaSjecePickOdjel = function() {
+        if (typeof window.mapaRadnikaCancelSjeceDirection === 'function') window.mapaRadnikaCancelSjeceDirection();
         _sjecePicking = true;
         _updateSjecePanel();
     };
@@ -1612,6 +1615,72 @@
         _sjecePicking = false;
         _updateSjecePanel();
         return true;
+    }
+
+    // ---- Treća opcija za smjer: nacrtaj pravac (dvije tačke na mapi) —
+    // umjesto kompasa/ručnog unosa, radnik klikne DVIJE tačke koje pokazuju
+    // smjer niz padinu (npr. poravnato sa vidljivim konturama na Topo
+    // podlozi), azimut se izračuna preko postojećeg _bearingDeg (isti kao
+    // kod "Vodi me do lokacije") i upiše u polje za azimut. ----
+    var _sjeceDirPickState = null; // null | 'awaiting-a' | 'awaiting-b'
+    var _sjeceDirPointA = null;
+    var _sjeceDirAMarker = null;
+    var _sjeceDirLine = null;
+    window.mapaRadnikaSjeceDrawDirection = function() {
+        if (typeof window.mapaRadnikaCancelRoutePick === 'function') window.mapaRadnikaCancelRoutePick();
+        if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
+        if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
+        if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
+        _sjecePicking = false; // ne miješaj sa biranjem odjela — samo jedan klik-mod aktivan
+        _sjeceDirPickState = 'awaiting-a';
+        _sjeceDirPointA = null;
+        if (_sjeceDirAMarker) { _map.removeLayer(_sjeceDirAMarker); _sjeceDirAMarker = null; }
+        _updateSjecePanel();
+        _showRouteHint(
+            '<span>✏️ Kliknite POČETNU tačku pravca (niz padinu)</span>' +
+            '<span><button type="button" onclick="mapaRadnikaCancelSjeceDirection()">✕</button></span>'
+        );
+    };
+    window.mapaRadnikaCancelSjeceDirection = function() {
+        _sjeceDirPickState = null;
+        _sjeceDirPointA = null;
+        if (_sjeceDirAMarker) { _map.removeLayer(_sjeceDirAMarker); _sjeceDirAMarker = null; }
+        _hideRouteHint();
+    };
+    // Poziva se iz istog centralnog lanca klika (onEachFeature + generički
+    // _map.on('click',...)) kao _handleRoutePickClick/_handlePoligonClick/
+    // _handleSjeceOdjelClick. Vraća true ako je klik "potrošen".
+    function _handleSjeceDirectionClick(latlng) {
+        if (_sjeceDirPickState === 'awaiting-a') {
+            _sjeceDirPointA = { lat: latlng.lat, lng: latlng.lng };
+            _sjeceDirAMarker = L.circleMarker([latlng.lat, latlng.lng], { radius: 8, color: '#dc2626', fillColor: '#f87171', fillOpacity: 0.9, weight: 2 }).addTo(_map);
+            _sjeceDirPickState = 'awaiting-b';
+            _showRouteHint(
+                '<span>✏️ Kliknite ZAVRŠNU tačku pravca (niz padinu)</span>' +
+                '<span><button type="button" onclick="mapaRadnikaCancelSjeceDirection()">✕</button></span>'
+            );
+            return true;
+        }
+        if (_sjeceDirPickState === 'awaiting-b') {
+            var b = { lat: latlng.lat, lng: latlng.lng };
+            var az = _bearingDeg(_sjeceDirPointA.lat, _sjeceDirPointA.lng, b.lat, b.lng);
+            _sjeceDirPickState = null;
+            if (_sjeceDirAMarker) { _map.removeLayer(_sjeceDirAMarker); _sjeceDirAMarker = null; }
+            _hideRouteHint();
+            if (_sjeceDirLine) { _map.removeLayer(_sjeceDirLine); _sjeceDirLine = null; }
+            _sjeceDirLine = L.polyline(
+                [[_sjeceDirPointA.lat, _sjeceDirPointA.lng], [b.lat, b.lng]],
+                { color: '#dc2626', weight: 3, dashArray: '4 4' }
+            ).addTo(_map);
+            var azEl = document.getElementById('sjece-azimuth-input');
+            if (azEl) azEl.value = Math.round(az);
+            _updateSjecePanel();
+            return true;
+        }
+        return false;
+    }
+    function _clearSjeceDirLine() {
+        if (_sjeceDirLine) { _map.removeLayer(_sjeceDirLine); _sjeceDirLine = null; }
     }
     // Skupi SVE prstenove (outer+holes, iz SVIH GeoJSON feature-a koji dijele
     // isti labelKey — odjel zna biti "rasparčan" na više odvojenih feature-a,
@@ -1701,6 +1770,7 @@
 
         var linesXY = _generateSjeceLinesXY(collected.ringsXY, azimuth, spacing);
         _sjeceLines = _sjeceLinesToLatLng(linesXY, collected.lat0, collected.lng0);
+        _clearSjeceDirLine(); // ukloni privremeni pravac (ako je crtan) — zamijenjen je stvarnim linijama
         _drawSjeceLines();
         _saveSjeceConfig({ odjelKey: _sjeceOdjelKey, odjelLabel: _sjeceOdjelLabel, azimuth: azimuth, spacing: spacing });
         _notify('showSuccess', 'Sječačke linije generisane', _sjeceLines.length + ' linija, razmak ' + spacing + ' m.');
@@ -1712,6 +1782,7 @@
     window.mapaRadnikaUkloniSjeceLinije = function() {
         _sjeceLines = [];
         _clearSjeceLayers();
+        _clearSjeceDirLine();
         _saveSjeceConfig(null);
         _sjeceOdjelKey = null;
         _sjeceOdjelLabel = '';
@@ -2323,6 +2394,7 @@
             _map.on('click', function(e) {
                 if (_handleRoutePickClick(e.latlng)) return;
                 if (_handlePoligonClick(e.latlng)) return;
+                if (_handleSjeceDirectionClick(e.latlng)) return;
                 _hideInfoPanel();
             });
             // Veličina "Prikaži odjele" oznaka prati zoom mape (manje odzumirano,
