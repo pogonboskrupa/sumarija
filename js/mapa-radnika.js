@@ -642,6 +642,7 @@
         _hideOstaloMenu(); // pokreće se iz "Ostalo" popup-a
         if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon(); // samo jedan mod aktivan odjednom
         if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
+        if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
         _routePickState = 'awaiting-a';
         _routePointA = null;
         if (_routeAMarker) { _map.removeLayer(_routeAMarker); _routeAMarker = null; }
@@ -773,6 +774,7 @@
         _hideOstaloMenu(); // pokreće se iz "Ostalo" popup-a
         window.mapaRadnikaCancelRoutePick(); // samo jedan mod (ruta/poligon/tačka) aktivan odjednom
         if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
+        if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
         _poligonDrawing = true;
         _poligonPoints = [];
         _redrawPoligonDraw();
@@ -861,8 +863,8 @@
     // ---- TAČKA — radnik obilježi jednu tačku, imenuje je, i ona ostaje
     // sačuvana/vidljiva na mapi (per-korisnik localStorage, isti obrazac kao
     // tragovi/površine). Klik na tačku na mapi otvara popup sa "🧭 Vodi me do
-    // tačke" (ruta od trenutne lokacije preko OSRM — reuse _drawOsrmRoute) i
-    // brisanjem.
+    // tačke" ("explorer" način — strelica + udaljenost u metrima, vidi
+    // _startExplorer niže) i brisanjem.
     //
     // NAPOMENA o dizajnu: NE koristi se klik-na-mapu biranje (kao "Vodi me do
     // lokacije"/"Označi površinu") — odjeli pokrivaju skoro cijelu vidljivu
@@ -902,6 +904,7 @@
         _hideOstaloMenu();
         if (typeof window.mapaRadnikaCancelRoutePick === 'function') window.mapaRadnikaCancelRoutePick();
         if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
+        if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
         _tackaPicking = true;
         _showTackaCrosshair();
         _showRouteHint(
@@ -984,19 +987,107 @@
             _tackaMarkers.push(marker);
         });
     }
-    // Ruta od trenutne GPS lokacije do sačuvane tačke — reuse _drawOsrmRoute
-    // (isti crtež/tooltip kao "Vodi me do lokacije"), bez potrebe za ručnim
-    // biranjem druge tačke (odredište je već poznato).
+    // ---- "EXPLORER" — vodi me do tačke BEZ rute po putu (za razliku od
+    // "Vodi me do lokacije", koja crta stvarnu rutu preko OSRM/cestovne mreže).
+    // Kroz šumu/vanputa nema smisla ionako pratiti cestu — umjesto toga: velika
+    // strelica koja pokazuje SMJER prema tački (vazdušnom linijom) + udaljenost
+    // u metrima, oboje se uživo ažuriraju dok se korisnik kreće (watchPosition).
+    // Strelica se rotira prema kompasu telefona (device orientation) ako je
+    // dozvoljen pristup; bez njega pokazuje apsolutni azimut (sjever gore) uz
+    // tekstualnu stranu svijeta (S/SI/I/...), i dalje upotrebljivo bez kompasa.
+    var _explorerTarget = null;     // { lat, lng, name }
+    var _explorerLastPos = null;    // { lat, lng } — zadnja GPS pozicija
+    var _explorerHeading = null;    // stepeni 0-360 (0=sjever), null ako kompas nije aktivan
+    var _explorerWatchId = null;
+    var _explorerOrientationEventName = null; // ime event-a na koji je listener zakačen (za uklanjanje)
+
+    function _bearingDeg(lat1, lng1, lat2, lng2) {
+        var phi1 = lat1 * Math.PI / 180, phi2 = lat2 * Math.PI / 180;
+        var dLambda = (lng2 - lng1) * Math.PI / 180;
+        var y = Math.sin(dLambda) * Math.cos(phi2);
+        var x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLambda);
+        return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    }
+    function _cardinalFromDeg(deg) {
+        var dirs = ['S', 'SI', 'I', 'JI', 'J', 'JZ', 'Z', 'SZ'];
+        return dirs[Math.round(deg / 45) % 8];
+    }
+    function _fmtDistanceM(m) {
+        return m < 1000 ? (Math.round(m) + ' m') : ((m / 1000).toFixed(2) + ' km');
+    }
+    function _updateExplorerHud() {
+        if (!_explorerTarget) return;
+        var arrowEl = document.getElementById('radnik-mapa-explorer-arrow');
+        var distEl = document.getElementById('radnik-mapa-explorer-distance');
+        var dirEl = document.getElementById('radnik-mapa-explorer-dir');
+        if (!_explorerLastPos) return;
+        var bearing = _bearingDeg(_explorerLastPos.lat, _explorerLastPos.lng, _explorerTarget.lat, _explorerTarget.lng);
+        var dist = _distM([_explorerLastPos.lat, _explorerLastPos.lng], [_explorerTarget.lat, _explorerTarget.lng]);
+        var rotate = _explorerHeading != null ? (bearing - _explorerHeading + 360) % 360 : bearing;
+        if (arrowEl) arrowEl.style.transform = 'rotate(' + rotate + 'deg)';
+        if (distEl) distEl.textContent = _fmtDistanceM(dist);
+        if (dirEl) dirEl.textContent = _explorerHeading != null ? '' : ('(' + _cardinalFromDeg(bearing) + ' od sjevera)');
+    }
+    function _explorerOrientationHandler(e) {
+        var heading = null;
+        if (typeof e.webkitCompassHeading === 'number') heading = e.webkitCompassHeading; // iOS Safari — već tačan azimut
+        else if (typeof e.alpha === 'number') heading = (360 - e.alpha) % 360; // Android — najbolja dostupna aproksimacija
+        if (heading == null || isNaN(heading)) return;
+        _explorerHeading = heading;
+        var btn = document.getElementById('radnik-mapa-explorer-compass-btn');
+        if (btn) btn.classList.add('hidden');
+        _updateExplorerHud();
+    }
+    window.mapaRadnikaEnableExplorerCompass = function() {
+        function attach() {
+            _explorerOrientationEventName = ('ondeviceorientationabsolute' in window) ? 'deviceorientationabsolute' : 'deviceorientation';
+            window.addEventListener(_explorerOrientationEventName, _explorerOrientationHandler);
+        }
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission().then(function(state) {
+                if (state === 'granted') attach();
+                else _notify('showWarning', 'Pristup kompasu je odbijen — strelica pokazuje azimut bez okretanja telefona.');
+            }).catch(function() { _notify('showError', 'Nije moguće aktivirati kompas.'); });
+        } else if (typeof DeviceOrientationEvent !== 'undefined') {
+            attach();
+        } else {
+            _notify('showWarning', 'Vaš uređaj ne podržava kompas — strelica pokazuje azimut bez okretanja telefona.');
+        }
+    };
+    function _stopExplorer() {
+        if (_explorerWatchId != null) { navigator.geolocation.clearWatch(_explorerWatchId); _explorerWatchId = null; }
+        if (_explorerOrientationEventName) { window.removeEventListener(_explorerOrientationEventName, _explorerOrientationHandler); _explorerOrientationEventName = null; }
+        _explorerHeading = null;
+        _explorerLastPos = null;
+        _explorerTarget = null;
+        var el = document.getElementById('radnik-mapa-explorer');
+        if (el) el.classList.add('hidden');
+        var btn = document.getElementById('radnik-mapa-explorer-compass-btn');
+        if (btn) btn.classList.remove('hidden');
+    }
+    window.mapaRadnikaStopExplorer = _stopExplorer;
+    function _startExplorer(t) {
+        _stopExplorer(); // ne gomilaj watchPosition/listener ako je već aktivan za drugu tačku
+        _explorerTarget = { lat: t.lat, lng: t.lng, name: t.name || 'Tačka' };
+        var nameEl = document.getElementById('radnik-mapa-explorer-name');
+        if (nameEl) nameEl.textContent = String(_explorerTarget.name); // textContent — bez ručnog HTML-escapinga
+        var el = document.getElementById('radnik-mapa-explorer');
+        if (el) el.classList.remove('hidden');
+        _explorerWatchId = navigator.geolocation.watchPosition(function(pos) {
+            _explorerLastPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            _updateExplorerHud();
+        }, function() {
+            _notify('showError', 'Nije moguće pratiti lokaciju za navigaciju do tačke.');
+        }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+    }
+    // Klik na "🧭 Vodi me do tačke" (popup na mapi ili spisak u Tragovi popup-u).
     window.mapaRadnikaRouteToTacka = function(index) {
         var t = _loadSavedTacke()[index];
         if (!t) return;
         if (_map) _map.closePopup();
         if (!navigator.geolocation) { _notify('showError', 'Vaš uređaj ne podržava geolokaciju.'); return; }
-        navigator.geolocation.getCurrentPosition(function(pos) {
-            _drawOsrmRoute({ lat: pos.coords.latitude, lng: pos.coords.longitude }, { lat: t.lat, lng: t.lng });
-        }, function() {
-            _notify('showError', 'Nije moguće dobiti trenutnu lokaciju.');
-        }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+        _hideTragoviMenu();
+        _startExplorer(t);
     };
     window.mapaRadnikaDeleteTacka = function(index) {
         var list = _loadSavedTacke();
@@ -1476,6 +1567,7 @@
         if (typeof window.mapaRadnikaCancelRoutePick === 'function') window.mapaRadnikaCancelRoutePick();
         if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
         if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
+        if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
         _stopFollow(); // ne ostavljaj GPS watchPosition da radi u pozadini nakon izlaska s mape
         // Vrati viewport na korisnikovu preferencu (Desktop/Android prikaz) ako
         // je bila uključena prije ulaska na mapu.

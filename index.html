@@ -1322,6 +1322,18 @@
                      koordinata pri potvrdi je uvijek _map.getCenter(). Vidi
                      mapaRadnikaStartTacka u js/mapa-radnika.js. -->
                 <div id="radnik-mapa-tacka-crosshair" class="rm-tacka-crosshair hidden">🎯</div>
+                <!-- "Explorer" HUD — "Vodi me do tačke" bez rute po putu, samo
+                     smjer (strelica) + udaljenost vazdušnom linijom, uživo dok se
+                     korisnik kreće. Vidi mapaRadnikaRouteToTacka/_startExplorer u
+                     js/mapa-radnika.js. -->
+                <div id="radnik-mapa-explorer" class="rm-explorer hidden">
+                    <button type="button" class="rm-explorer-close" onclick="mapaRadnikaStopExplorer()" aria-label="Zatvori">✕</button>
+                    <div class="rm-explorer-name" id="radnik-mapa-explorer-name"></div>
+                    <div class="rm-explorer-arrow" id="radnik-mapa-explorer-arrow">⬆️</div>
+                    <div class="rm-explorer-distance" id="radnik-mapa-explorer-distance">—</div>
+                    <div class="rm-explorer-dir" id="radnik-mapa-explorer-dir"></div>
+                    <button type="button" class="rm-explorer-compass-btn" id="radnik-mapa-explorer-compass-btn" onclick="mapaRadnikaEnableExplorerCompass()">🧭 Uključi kompas</button>
+                </div>
             </div>
         </div>
 
@@ -3114,6 +3126,33 @@
                       font-size:30px; z-index:1100; pointer-events:none;
                       filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));
                   }
+                  /* "Explorer" HUD — kartica pri vrhu mape, iznad info panela ako je
+                     ikad oba otvorena (ne bi trebalo, ali z-index veći za svaki slučaj). */
+                  .rm-explorer {
+                      position:absolute; top:10px; left:10px; right:10px; z-index:1400;
+                      background:rgba(17,24,39,.9); color:#fff; border-radius:14px;
+                      padding:16px 14px 14px; text-align:center;
+                      box-shadow:0 6px 24px rgba(0,0,0,.3);
+                  }
+                  .rm-explorer.hidden { display:none; }
+                  .rm-explorer-close {
+                      position:absolute; top:8px; right:8px; background:rgba(255,255,255,.15);
+                      color:#fff; border:1px solid rgba(255,255,255,.4); border-radius:8px;
+                      width:28px; height:28px; font-size:14px; cursor:pointer; font-family:inherit;
+                  }
+                  .rm-explorer-name { font-size:14px; font-weight:700; margin-bottom:6px; padding-right:32px; }
+                  .rm-explorer-arrow {
+                      font-size:56px; line-height:1; margin:4px 0;
+                      transition:transform .25s ease; display:inline-block;
+                  }
+                  .rm-explorer-distance { font-size:26px; font-weight:800; }
+                  .rm-explorer-dir { font-size:12px; color:#d1d5db; margin-top:2px; min-height:16px; }
+                  .rm-explorer-compass-btn {
+                      margin-top:10px; background:rgba(255,255,255,.15); color:#fff;
+                      border:1px solid rgba(255,255,255,.4); border-radius:8px;
+                      padding:7px 14px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;
+                  }
+                  .rm-explorer-compass-btn.hidden { display:none; }
                   /* Modali sa unosom teksta — kad se overlay-u JS-om (na otvaranje
                      mobilne tastature) postavi inline visina na stvarni vidljivi
                      viewport (vidi _resizeInputModalsForKeyboard, js/mapa-radnika.js),
