@@ -3094,7 +3094,11 @@
                   .rm-tragovi-empty { padding:10px 12px; font-size:13px; color:#9ca3af; text-align:center; }
                   .rm-tragovi-section-label { font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:.4px; padding:4px 12px 2px; }
                   /* Status ispod "Izvanmrežni prikaz karte" (kad/koliko je skinuto) */
-                  .rm-tragovi-hint { font-size:11px; color:#6b7280; padding:0 12px 6px 34px; }
+                  .rm-tragovi-hint {
+                      font-size:11px; color:#6b7280; padding:0 12px 6px 34px;
+                      opacity:1; transition:opacity .6s ease;
+                  }
+                  .rm-tragovi-hint.rm-fade-out { opacity:0; }
                   /* .modal-overlay (css/main.css) je z-index:1000 — daleko ispod
                      #radnik-mapa-content/bottombar/tragovi-menu (10500-10600) u punom
                      ekranu Mape odjela, pa se ovaj modal renderovao ISPOD njih

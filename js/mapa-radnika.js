@@ -519,6 +519,10 @@
     }
     // Uskladi checkbox + status tekst sa zabilježenim stanjem za tekući sloj.
     // Poziva se pri otvaranju "Ostalo" popup-a i nakon promjene sloja/preuzimanja.
+    // Status tekst je "toast" — vidljiv par sekundi pa nestane (fade), umjesto
+    // da trajno stoji ispod checkboxa svaki put kad se popup otvori.
+    var OFFLINE_STATUS_MS = 4000;
+    var _offlineStatusTimer = null;
     function _refreshOfflineToggle() {
         var cb = document.getElementById('radnik-mapa-offline-toggle');
         var st = document.getElementById('radnik-mapa-offline-status');
@@ -528,6 +532,9 @@
             st.textContent = info
                 ? 'Skinuto ' + info.datum + ' · ' + info.plocica + ' pločica (' + _slojNaziv(_baseMode) + ')'
                 : 'Nije skinuto za sloj ' + _slojNaziv(_baseMode) + ' — uključite da preuzmete.';
+            st.classList.remove('rm-fade-out');
+            if (_offlineStatusTimer) clearTimeout(_offlineStatusTimer);
+            _offlineStatusTimer = setTimeout(function() { st.classList.add('rm-fade-out'); }, OFFLINE_STATUS_MS);
         }
     }
     window.mapaRadnikaRefreshOfflineToggle = _refreshOfflineToggle;
@@ -551,8 +558,16 @@
         _downloadOfflineNow();
     };
 
+    // Toast ako postoji globalni sistem (js/utils.js), inače alert() fallback —
+    // ovaj modul je učitan i prije toast-container inicijalizacije u nekim
+    // ranim tab-otvaranjima, pa se ne smije osloniti samo na showToast.
+    function _offlineToast(type, title, msg) {
+        if (typeof window[type] === 'function') window[type](title, msg);
+        else alert(title + (msg ? ': ' + msg : ''));
+    }
+
     async function _downloadOfflineNow() {
-        if (!_map || !_allLayers.length) { alert('Odjeli još nisu učitani.'); return; }
+        if (!_map || !_allLayers.length) { _offlineToast('showWarning', 'Odjeli još nisu učitani'); return; }
         var cb = document.getElementById('radnik-mapa-offline-toggle');
         var st = document.getElementById('radnik-mapa-offline-status');
         var mode = _baseMode;
@@ -568,6 +583,8 @@
         }
 
         if (cb) cb.disabled = true;
+        if (st) st.classList.remove('rm-fade-out'); // vidljivo tokom cijelog preuzimanja, ne samo nakon refresha
+        if (_offlineStatusTimer) clearTimeout(_offlineStatusTimer);
         var done = 0;
         for (var i = 0; i < tiles.length; i++) {
             try { await fetch(_tileUrl(tiles[i])); done++; } catch (_) {}
@@ -578,9 +595,10 @@
         // ne smije prikazivati kvačicu kao da je sve spremno za teren.
         if (done >= tiles.length * 0.9) {
             _setOfflineInfo(mode, { datum: new Date().toLocaleDateString('bs-BA'), plocica: done });
+            _offlineToast('showSuccess', 'Karta preuzeta', done + ' od ' + tiles.length + ' pločica (' + _slojNaziv(mode) + ')');
         } else {
             _setOfflineInfo(mode, null);
-            alert('Preuzeto samo ' + done + ' od ' + tiles.length + ' pločica — pokušajte ponovo uz bolju vezu.');
+            _offlineToast('showError', 'Preuzimanje nepotpuno', 'Preuzeto samo ' + done + ' od ' + tiles.length + ' pločica — pokušajte ponovo uz bolju vezu.');
         }
         _refreshOfflineToggle();
     }
