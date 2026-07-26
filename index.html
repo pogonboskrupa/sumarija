@@ -3093,6 +3093,15 @@
                   .rm-tragovi-delete { background:none; border:none; font-size:16px; cursor:pointer; padding:4px 8px; }
                   .rm-tragovi-empty { padding:10px 12px; font-size:13px; color:#9ca3af; text-align:center; }
                   .rm-tragovi-section-label { font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:.4px; padding:4px 12px 2px; }
+                  /* Popup na klik na sačuvanu tačku (Leaflet bindPopup, ne fiksni info panel) */
+                  .rm-tacka-popup { min-width:170px; }
+                  .rm-tacka-popup-title { font-weight:700; margin-bottom:8px; color:#1f2937; }
+                  .rm-tacka-popup-route, .rm-tacka-popup-delete {
+                      display:block; width:100%; padding:8px; margin-bottom:6px; border-radius:8px;
+                      font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;
+                  }
+                  .rm-tacka-popup-route { border:none; background:#f97316; color:#fff; }
+                  .rm-tacka-popup-delete { border:1px solid #d1d5db; background:#fff; color:#b91c1c; margin-bottom:0; }
                   /* Status ispod "Izvanmrežni prikaz karte" (kad/koliko je skinuto) */
                   .rm-tragovi-hint {
                       font-size:11px; color:#6b7280; padding:0 12px 6px 34px;
@@ -3528,8 +3537,29 @@
     <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaClearTracks()">
         <span>🗑️</span><span>Obriši tragove</span>
     </button>
+    <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartTacka()">
+        <span>📍</span><span>Tačka</span>
+    </button>
     <div class="rm-tragovi-divider"></div>
     <div id="radnik-mapa-tragovi-list" class="rm-tragovi-list"></div>
+    <div class="rm-tragovi-divider"></div>
+    <div class="rm-tragovi-section-label">Tačke</div>
+    <div id="radnik-mapa-tacke-list" class="rm-tragovi-list"></div>
+</div>
+<!-- Modal za ime tačke — prikazuje se nakon što je tačka odabrana (klik na
+     mapu ili "Moja lokacija"), isti obrazac kao poligon-name-modal. -->
+<div class="modal-overlay" id="tacka-name-modal" onclick="if(event.target===this) closeTackaNameModal();">
+    <div class="modal" style="max-width:340px;">
+        <div class="modal-header"><div class="modal-title">📍 Nova tačka</div></div>
+        <div class="modal-body">
+            <label style="display:block;font-size:12px;font-weight:600;color:#4b5563;margin-bottom:4px;">Ime tačke</label>
+            <input type="text" id="tacka-name-input" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;" />
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeTackaNameModal()">Otkaži</button>
+            <button class="btn btn-primary" onclick="confirmSaveTacka()">Sačuvaj</button>
+        </div>
+    </div>
 </div>
 <!-- Modal za ime traga — prikazuje se PRIJE početka snimanja -->
 <div class="modal-overlay" id="trag-name-modal" onclick="if(event.target===this) closeTragNameModal();">

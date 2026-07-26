@@ -362,12 +362,13 @@
                     radnikLayers.push(lyr);
                     lyr.on('click', function(e) {
                         L.DomEvent.stopPropagation(e);
-                        // Ako je u toku biranje tačke rute ("Vodi me do lokacije") ili
-                        // crtanje poligona ("Označi poligon"), klik na odjel broji se
-                        // kao klik na tu tačku (ne otvara info panel) — inače bi
-                        // poligon "krao" klik od tih moda.
+                        // Ako je u toku biranje tačke rute ("Vodi me do lokacije"),
+                        // crtanje poligona ("Označi poligon") ili biranje "Tačka",
+                        // klik na odjel broji se kao klik na tu tačku (ne otvara info
+                        // panel) — inače bi ti modovi "krali" klik jedni drugima.
                         if (_handleRoutePickClick(e.latlng)) return;
                         if (_handlePoligonClick(e.latlng)) return;
+                        if (_handleTackaClick(e.latlng)) return;
                         // Fiksni info panel u gornjem dijelu mape (NE Leaflet popup
                         // vezan za tačku klika) — pozicija je uvijek ista i predvidiva
                         // bez obzira gdje se na odjelu klikne, cifre se nikad ne
@@ -629,6 +630,7 @@
     window.mapaRadnikaStartRoutePick = function() {
         _hideOstaloMenu(); // pokreće se iz "Ostalo" popup-a
         if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon(); // samo jedan mod aktivan odjednom
+        if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
         _routePickState = 'awaiting-a';
         _routePointA = null;
         if (_routeAMarker) { _map.removeLayer(_routeAMarker); _routeAMarker = null; }
@@ -758,7 +760,8 @@
     }
     window.mapaRadnikaStartPoligon = function() {
         _hideOstaloMenu(); // pokreće se iz "Ostalo" popup-a
-        window.mapaRadnikaCancelRoutePick(); // samo jedan mod (ruta/poligon) aktivan odjednom
+        window.mapaRadnikaCancelRoutePick(); // samo jedan mod (ruta/poligon/tačka) aktivan odjednom
+        if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
         _poligonDrawing = true;
         _poligonPoints = [];
         _redrawPoligonDraw();
@@ -843,6 +846,160 @@
             _renderPoligoniList();
         });
     };
+
+    // ---- TAČKA — radnik označi jednu tačku (klik na mapu ILI trenutna GPS
+    // lokacija), imenuje je, i ona ostaje sačuvana/vidljiva na mapi (per-
+    // korisnik localStorage, isti obrazac kao tragovi/površine). Klik na
+    // tačku na mapi otvara popup sa "🧭 Vodi me do tačke" (ruta od trenutne
+    // lokacije preko OSRM — reuse _drawOsrmRoute) i brisanjem. ----
+    var _tackaPicking = false;
+    var _pendingTackaLatLng = null;
+    var _tackaMarkers = [];
+
+    function _tackaStorageKey() {
+        return 'mapa_radnika_tacke_' + (_currentUserObj().username || 'anon');
+    }
+    function _loadSavedTacke() {
+        try {
+            var raw = localStorage.getItem(_tackaStorageKey());
+            return raw ? JSON.parse(raw) : [];
+        } catch (_) { return []; }
+    }
+    function _saveTacke(list) {
+        try { localStorage.setItem(_tackaStorageKey(), JSON.stringify(list)); } catch (_) {}
+    }
+    window.mapaRadnikaStartTacka = function() {
+        _hideTragoviMenu();
+        _hideOstaloMenu();
+        if (typeof window.mapaRadnikaCancelRoutePick === 'function') window.mapaRadnikaCancelRoutePick();
+        if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
+        _tackaPicking = true;
+        _showRouteHint(
+            '<span>📍 Kliknite na mapu za tačku</span>' +
+            '<span style="display:flex;gap:6px;">' +
+            '<button type="button" onclick="mapaRadnikaUseMyLocationForTacka()">Moja lokacija</button>' +
+            '<button type="button" onclick="mapaRadnikaCancelTacka()">✕</button>' +
+            '</span>'
+        );
+    };
+    window.mapaRadnikaCancelTacka = function() {
+        _tackaPicking = false;
+        _hideRouteHint();
+    };
+    window.mapaRadnikaUseMyLocationForTacka = function() {
+        if (!navigator.geolocation) { alert('Vaš uređaj ne podržava geolokaciju.'); return; }
+        _showRouteHint('<span>📍 Tražim lokaciju...</span>');
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            _finishTackaPick(pos.coords.latitude, pos.coords.longitude);
+        }, function() {
+            alert('Nije moguće dobiti trenutnu lokaciju.');
+            window.mapaRadnikaCancelTacka();
+        }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+    };
+    // Poziva se iz istog centralnog map-click lanca kao _handleRoutePickClick/
+    // _handlePoligonClick. Vraća true ako je klik "potrošen" za biranje tačke.
+    function _handleTackaClick(latlng) {
+        if (!_tackaPicking) return false;
+        _finishTackaPick(latlng.lat, latlng.lng);
+        return true;
+    }
+    function _finishTackaPick(lat, lng) {
+        _tackaPicking = false;
+        _hideRouteHint();
+        _pendingTackaLatLng = { lat: lat, lng: lng };
+        var modal = document.getElementById('tacka-name-modal');
+        var input = document.getElementById('tacka-name-input');
+        if (!modal || !input) { _saveTackaNow('Tačka ' + new Date().toLocaleString('bs-BA')); return; }
+        input.value = 'Tačka ' + new Date().toLocaleString('bs-BA');
+        modal.classList.add('show');
+        setTimeout(function() { input.focus(); input.select(); }, 50);
+    }
+    window.closeTackaNameModal = function() {
+        var modal = document.getElementById('tacka-name-modal');
+        if (modal) modal.classList.remove('show');
+        _pendingTackaLatLng = null;
+    };
+    window.confirmSaveTacka = function() {
+        var input = document.getElementById('tacka-name-input');
+        var name = (input && input.value.trim()) || ('Tačka ' + new Date().toLocaleString('bs-BA'));
+        var modal = document.getElementById('tacka-name-modal');
+        if (modal) modal.classList.remove('show');
+        _saveTackaNow(name);
+    };
+    function _saveTackaNow(name) {
+        if (!_pendingTackaLatLng) return;
+        var list = _loadSavedTacke();
+        list.push({ name: name, created: new Date().toISOString(), lat: _pendingTackaLatLng.lat, lng: _pendingTackaLatLng.lng });
+        _saveTacke(list);
+        _pendingTackaLatLng = null;
+        _drawSavedTacke();
+        _renderTackeList();
+    }
+    function _drawSavedTacke() {
+        _tackaMarkers.forEach(function(m) { _map.removeLayer(m); });
+        _tackaMarkers = [];
+        _loadSavedTacke().forEach(function(t, i) {
+            var safeName = String(t.name || 'Tačka').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            var marker = L.circleMarker([t.lat, t.lng], { radius: 9, color: '#6d28d9', weight: 2, fillColor: '#a78bfa', fillOpacity: 0.9 })
+                .bindTooltip(safeName, { permanent: false, direction: 'top', className: 'karta-tooltip' })
+                .bindPopup(
+                    '<div class="rm-tacka-popup">' +
+                    '<div class="rm-tacka-popup-title">📍 ' + safeName + '</div>' +
+                    '<button type="button" class="rm-tacka-popup-route" onclick="mapaRadnikaRouteToTacka(' + i + ')">🧭 Vodi me do tačke</button>' +
+                    '<button type="button" class="rm-tacka-popup-delete" onclick="mapaRadnikaDeleteTacka(' + i + ')">🗑️ Obriši</button>' +
+                    '</div>'
+                )
+                .addTo(_map);
+            _tackaMarkers.push(marker);
+        });
+    }
+    // Ruta od trenutne GPS lokacije do sačuvane tačke — reuse _drawOsrmRoute
+    // (isti crtež/tooltip kao "Vodi me do lokacije"), bez potrebe za ručnim
+    // biranjem druge tačke (odredište je već poznato).
+    window.mapaRadnikaRouteToTacka = function(index) {
+        var t = _loadSavedTacke()[index];
+        if (!t) return;
+        if (_map) _map.closePopup();
+        if (!navigator.geolocation) { alert('Vaš uređaj ne podržava geolokaciju.'); return; }
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            _drawOsrmRoute({ lat: pos.coords.latitude, lng: pos.coords.longitude }, { lat: t.lat, lng: t.lng });
+        }, function() {
+            alert('Nije moguće dobiti trenutnu lokaciju.');
+        }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+    };
+    window.mapaRadnikaDeleteTacka = function(index) {
+        var list = _loadSavedTacke();
+        var t = list[index];
+        if (!t) return;
+        if (_map) _map.closePopup();
+        _showTragConfirm('Obrisati tačku "' + (t.name || 'Tačka') + '"?', function() {
+            var fresh = _loadSavedTacke();
+            fresh.splice(index, 1);
+            _saveTacke(fresh);
+            _drawSavedTacke();
+            _renderTackeList();
+        });
+    };
+    function _renderTackeList() {
+        var list = document.getElementById('radnik-mapa-tacke-list');
+        if (!list) return;
+        var items = _loadSavedTacke();
+        if (!items.length) {
+            list.innerHTML = '<div class="rm-tragovi-empty">Nema sačuvanih tačaka.</div>';
+            return;
+        }
+        list.innerHTML = items.map(function(t, i) {
+            var when = t.created ? new Date(t.created).toLocaleString('bs-BA') : '?';
+            var name = (t.name || 'Tačka').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return '<div class="rm-tragovi-row">' +
+                '<span class="rm-tragovi-row-info">📍 ' + name + '<br><small>' + when + '</small></span>' +
+                '<span style="display:flex;gap:4px;">' +
+                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaRouteToTacka(' + i + ')" aria-label="Vodi me do tačke">🧭</button>' +
+                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeleteTacka(' + i + ')" aria-label="Obriši tačku">🗑️</button>' +
+                '</span>' +
+                '</div>';
+        }).join('');
+    }
 
     // ---- MOJA LOKACIJA (GPS) ----
     // Ikonica lokacije — samo plava tačka, bez teksta "Vi ste ovdje" i bez
@@ -1219,6 +1376,7 @@
             _hideOstaloMenu(); // samo jedan popup otvoren odjednom
             if (bar) menu.style.bottom = (bar.getBoundingClientRect().height + 8) + 'px';
             _renderTragoviList();
+            _renderTackeList();
         }
         menu.classList.toggle('hidden', !willShow);
     }
@@ -1278,6 +1436,7 @@
         _hideOstaloMenu();
         if (typeof window.mapaRadnikaCancelRoutePick === 'function') window.mapaRadnikaCancelRoutePick();
         if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
+        if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
         _stopFollow(); // ne ostavljaj GPS watchPosition da radi u pozadini nakon izlaska s mape
         // Vrati viewport na korisnikovu preferencu (Desktop/Android prikaz) ako
         // je bila uključena prije ulaska na mapu.
@@ -1361,11 +1520,12 @@
                 attribution: '© OpenTopoMap (CC-BY-SA)', maxZoom: 17
             }).addTo(_map);
             // Klik na praznu mapu (van poligona) zatvara info panel — OSIM ako je
-            // klik "potrošen" za biranje tačke rute ("Vodi me do lokacije") ili
-            // crtanje poligona ("Označi poligon").
+            // klik "potrošen" za biranje tačke rute ("Vodi me do lokacije"),
+            // crtanje poligona ("Označi poligon") ili biranje "Tačka".
             _map.on('click', function(e) {
                 if (_handleRoutePickClick(e.latlng)) return;
                 if (_handlePoligonClick(e.latlng)) return;
+                if (_handleTackaClick(e.latlng)) return;
                 _hideInfoPanel();
             });
             // Veličina "Prikaži odjele" oznaka prati zoom mape (manje odzumirano,
@@ -1384,6 +1544,7 @@
             _bindBarButtons();
             _drawSavedTracks();
             _drawSavedPoligoni();
+            _drawSavedTacke();
         }
         // Leaflet mora preračunati veličinu nakon što tab postane vidljiv
         setTimeout(function() { if (_map) _map.invalidateSize(); }, 100);
