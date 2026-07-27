@@ -3124,6 +3124,12 @@
                       font-size:14px; font-weight:600; color:#1f2937; text-align:left;
                       cursor:pointer; font-family:inherit;
                   }
+                  /* MORA biti .rm-tragovi-item.hidden (specifičnost 0,2,0), NE samo
+                     globalni .hidden — globalni je u css/main.css koji se učitava
+                     PRIJE ovog inline bloka, pa bi .rm-tragovi-item{display:flex}
+                     iznad nadjačao .hidden{display:none} pri istoj specifičnosti
+                     i element se nikad ne bi sakrio. */
+                  .rm-tragovi-item.hidden { display:none; }
                   .rm-tragovi-item:active { background:#f3f4f6; }
                   .rm-tragovi-checkbox { justify-content:flex-start; }
                   .rm-tragovi-checkbox input[type="checkbox"] { width:16px; height:16px; margin:0; cursor:pointer; }
@@ -3672,8 +3678,13 @@
     <div class="rm-tragovi-section-label">Tačke</div>
     <div id="radnik-mapa-tacke-list" class="rm-tragovi-list"></div>
     <div class="rm-tragovi-divider"></div>
-    <div class="rm-tragovi-section-label">Fotografije</div>
+    <!-- Naslov prikazuje i broj + ukupnu veličinu (puni ga _renderFotoList) -->
+    <div class="rm-tragovi-section-label" id="radnik-mapa-foto-section-label">Fotografije</div>
     <div id="radnik-mapa-foto-list" class="rm-tragovi-list"></div>
+    <!-- Vidljivo samo kad stvarno ima starih fotografija (vidi _renderFotoList) -->
+    <button type="button" id="radnik-mapa-foto-cleanup-btn" class="rm-tragovi-item hidden" onclick="mapaRadnikaCleanupFoto()">
+        <span>🧹</span><span>Obriši starije od 30 dana</span>
+    </button>
 </div>
 <!-- Skriveni file input — "capture=environment" otvara zadnju kameru direktno
      na mobilnom umjesto galerije. Klik pokreće JS (mapaRadnikaTakePhoto). -->

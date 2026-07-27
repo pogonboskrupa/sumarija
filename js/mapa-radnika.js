@@ -127,7 +127,6 @@
 
     // ---- Snimanje traga ----
     var _recording = false;
-    var _watchId = null;
     var _currentTrackPoints = []; // [[lat,lng], ...]
     var _currentTrackPolyline = null;
     var _savedTrackLayers = [];   // L.polyline instance za već sačuvane tragove
@@ -155,6 +154,56 @@
     function _notify(type, title, msg) {
         if (typeof window[type] === 'function') window[type](title, msg);
         else alert(title + (msg ? ': ' + msg : ''));
+    }
+
+    // ---- ZAJEDNIČKI GPS — JEDAN watchPosition za SVE potrošače ----
+    // Karta ima tri nezavisne funkcije koje trebaju kontinuiranu lokaciju:
+    // "Prati me" (follow), "Vodi me do tačke" (explorer) i "Snimi trag".
+    // Ranije je svaka otvarala SVOJ watchPosition sa enableHighAccuracy —
+    // do tri paralelna GPS toka, što bespotrebno prazni bateriju (kritično
+    // za cio radni dan na terenu).
+    //
+    // NAMJERNO se NE gase međusobno: snimanje traga je pozadinsko prikupljanje
+    // podataka i ne smije se tiho prekinuti kad radnik usput tapne "Moja
+    // lokacija" ili krene navigirati do tačke — to bi mu izgubilo snimljeni
+    // posao. Umjesto toga svi dijele JEDAN GPS tok; hardver radi jednom, a
+    // svaki potrošač dobija iste pozicije.
+    var _gpsConsumers = {};   // id -> { onPos, onErr }
+    var _gpsWatchId = null;
+    var _gpsLastPos = null;
+
+    function _gpsSubscribe(id, onPos, onErr) {
+        if (!navigator.geolocation) return false;
+        _gpsConsumers[id] = { onPos: onPos, onErr: onErr };
+        // Novi potrošač odmah dobija zadnju poznatu poziciju (ako je ima) —
+        // bez ovoga bi npr. Explorer HUD stajao prazan do prvog novog fix-a.
+        if (_gpsLastPos && onPos) { try { onPos(_gpsLastPos); } catch (e) {} }
+        if (_gpsWatchId == null) {
+            _gpsWatchId = navigator.geolocation.watchPosition(function(pos) {
+                _gpsLastPos = pos;
+                Object.keys(_gpsConsumers).forEach(function(k) {
+                    var c = _gpsConsumers[k];
+                    if (c && c.onPos) { try { c.onPos(pos); } catch (e) { console.error('[MapaRadnika] GPS potrošač', k, e); } }
+                });
+            }, function(err) {
+                // Greška (npr. odbijena dozvola) pogađa SVE potrošače — svaki
+                // sam odlučuje kako da reaguje (npr. snimanje traga vraća UI).
+                Object.keys(_gpsConsumers).forEach(function(k) {
+                    var c = _gpsConsumers[k];
+                    if (c && c.onErr) { try { c.onErr(err); } catch (e) {} }
+                });
+            }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+        }
+        return true;
+    }
+    function _gpsUnsubscribe(id) {
+        delete _gpsConsumers[id];
+        // Zadnji potrošač otišao — ugasi hardver (ne ostavljaj GPS da radi
+        // u pozadini kad ništa na karti više ne treba lokaciju).
+        if (!Object.keys(_gpsConsumers).length && _gpsWatchId != null) {
+            navigator.geolocation.clearWatch(_gpsWatchId);
+            _gpsWatchId = null;
+        }
     }
 
     async function _loadGeojson() {
@@ -1024,7 +1073,6 @@
     var _explorerTarget = null;     // { lat, lng, name }
     var _explorerLastPos = null;    // { lat, lng } — zadnja GPS pozicija
     var _explorerHeading = null;    // stepeni 0-360 (0=sjever), null ako kompas nije aktivan
-    var _explorerWatchId = null;
     var _explorerOrientationEventName = null; // ime event-a na koji je listener zakačen (za uklanjanje)
 
     function _bearingDeg(lat1, lng1, lat2, lng2) {
@@ -1081,7 +1129,7 @@
         }
     };
     function _stopExplorer() {
-        if (_explorerWatchId != null) { navigator.geolocation.clearWatch(_explorerWatchId); _explorerWatchId = null; }
+        _gpsUnsubscribe('explorer');
         if (_explorerOrientationEventName) { window.removeEventListener(_explorerOrientationEventName, _explorerOrientationHandler); _explorerOrientationEventName = null; }
         _explorerHeading = null;
         _explorerLastPos = null;
@@ -1093,18 +1141,19 @@
     }
     window.mapaRadnikaStopExplorer = _stopExplorer;
     function _startExplorer(t) {
-        _stopExplorer(); // ne gomilaj watchPosition/listener ako je već aktivan za drugu tačku
+        _stopExplorer(); // ne gomilaj listener ako je već aktivan za drugu tačku
+        _stopFollow();   // follow bi stalno vraćao mapu na korisnika — vidi _startFollow
         _explorerTarget = { lat: t.lat, lng: t.lng, name: t.name || 'Tačka' };
         var nameEl = document.getElementById('radnik-mapa-explorer-name');
         if (nameEl) nameEl.textContent = String(_explorerTarget.name); // textContent — bez ručnog HTML-escapinga
         var el = document.getElementById('radnik-mapa-explorer');
         if (el) el.classList.remove('hidden');
-        _explorerWatchId = navigator.geolocation.watchPosition(function(pos) {
+        _gpsSubscribe('explorer', function(pos) {
             _explorerLastPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
             _updateExplorerHud();
         }, function() {
             _notify('showError', 'Nije moguće pratiti lokaciju za navigaciju do tačke.');
-        }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+        });
         // Kompas se uključuje automatski (poziv je i dalje unutar istog klika
         // na "Vodi me do tačke", pa iOS-ov requestPermission() i dalje broji
         // kao gest korisnika). Dugme ostaje vidljivo kao ručni retry ako
@@ -1327,10 +1376,79 @@
             });
         });
     };
+    // Fotografije se čuvaju kao base64 data URL — stvarna veličina slike je
+    // 3/4 dužine base64 dijela (minus padding "="). Radniku treba prikazati
+    // koliko prostora zauzimaju, inače se tokom sezone neopaženo nagomilaju.
+    var FOTO_CLEANUP_DANA = 30;
+    function _dataUrlBytes(dataUrl) {
+        if (!dataUrl) return 0;
+        var comma = dataUrl.indexOf(',');
+        var b64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+        var pad = 0;
+        if (b64.slice(-2) === '==') pad = 2;
+        else if (b64.slice(-1) === '=') pad = 1;
+        return Math.max(0, Math.floor(b64.length * 3 / 4) - pad);
+    }
+    function _fmtBytes(b) {
+        if (b < 1024) return b + ' B';
+        if (b < 1024 * 1024) return Math.round(b / 1024) + ' KB';
+        return (b / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+    function _fotoCutoffTs() {
+        return Date.now() - FOTO_CLEANUP_DANA * 24 * 60 * 60 * 1000;
+    }
+    // Fotografije BEZ datuma se NIKAD ne brišu automatski — ne možemo im
+    // pouzdano odrediti starost, pa je sigurnije zadržati ih.
+    function _fotoIsOld(f, cutoff) {
+        var t = f && f.created ? new Date(f.created).getTime() : 0;
+        return !!t && t < cutoff;
+    }
+    window.mapaRadnikaCleanupFoto = function() {
+        _loadSavedFoto().then(function(items) {
+            var cutoff = _fotoCutoffTs();
+            var old = items.filter(function(f) { return _fotoIsOld(f, cutoff); });
+            if (!old.length) {
+                _notify('showInfo', 'Nema fotografija starijih od ' + FOTO_CLEANUP_DANA + ' dana.');
+                return;
+            }
+            var bytes = old.reduce(function(s, f) { return s + _dataUrlBytes(f.dataUrl); }, 0);
+            _showTragConfirm(
+                'Obrisati ' + old.length + ' fotografija starijih od ' + FOTO_CLEANUP_DANA +
+                ' dana? Oslobodiće se oko ' + _fmtBytes(bytes) + '.',
+                function() {
+                    // Svježe učitavanje prije brisanja — ne oslanjaj se na
+                    // podatke učitane prije otvaranja potvrde.
+                    _loadSavedFoto().then(async function(fresh) {
+                        var c = _fotoCutoffTs();
+                        var kept = fresh.filter(function(f) { return !_fotoIsOld(f, c); });
+                        var removed = fresh.length - kept.length;
+                        await _saveFoto(kept);
+                        await _drawSavedFoto();
+                        await _renderFotoList();
+                        _notify('showSuccess', 'Obrisano ' + removed + ' fotografija', 'Oslobođeno oko ' + _fmtBytes(bytes) + '.');
+                    });
+                }
+            );
+        });
+    };
     async function _renderFotoList() {
         var list = document.getElementById('radnik-mapa-foto-list');
         if (!list) return;
         var items = await _loadSavedFoto();
+        var labelEl = document.getElementById('radnik-mapa-foto-section-label');
+        var cleanupBtn = document.getElementById('radnik-mapa-foto-cleanup-btn');
+        var totalBytes = items.reduce(function(s, f) { return s + _dataUrlBytes(f.dataUrl); }, 0);
+        if (labelEl) {
+            labelEl.textContent = items.length
+                ? ('Fotografije (' + items.length + ' · ' + _fmtBytes(totalBytes) + ')')
+                : 'Fotografije';
+        }
+        // Dugme za čišćenje se prikazuje SAMO ako stvarno ima šta da se obriše.
+        if (cleanupBtn) {
+            var cutoff = _fotoCutoffTs();
+            var oldCount = items.filter(function(f) { return _fotoIsOld(f, cutoff); }).length;
+            cleanupBtn.classList.toggle('hidden', oldCount === 0);
+        }
         if (!items.length) {
             list.innerHTML = '<div class="rm-tragovi-empty">Nema sačuvanih fotografija.</div>';
             return;
@@ -1890,23 +2008,27 @@
     // ponovo (ili ručno pomjeri mapu) da isključiš — isto ponašanje kao
     // navigacione aplikacije (ručni pan prekida automatsko centriranje). ----
     var _followMode = false;
-    var _followWatchId = null;
     function _stopFollowOnManualPan() {
         if (_followMode) _stopFollow();
     }
     function _startFollow() {
+        // Follow i Explorer se OTIMAJU oko pogleda na mapu (follow stalno
+        // centrira, Explorer očekuje da korisnik slobodno gleda/pomjera) —
+        // ta dva su jedini par koji se stvarno isključuje. Snimanje traga
+        // NIJE dirano (vidi _gpsSubscribe komentar).
+        _stopExplorer();
         _followMode = true;
         if (_locBtnEl) { _locBtnEl.textContent = '🎯 Prati me (uključeno)'; _locBtnEl.classList.add('following'); }
-        _followWatchId = navigator.geolocation.watchPosition(function(pos) {
+        _gpsSubscribe('follow', function(pos) {
             var ll = _updateLocDisplay(pos);
             if (_map) _map.panTo(ll, { animate: true });
         }, function(err) {
             console.error('[MapaRadnika] praćenje lokacije — greška:', err);
-        }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 });
+        });
         if (_map) _map.on('dragstart', _stopFollowOnManualPan);
     }
     function _stopFollow() {
-        if (_followWatchId != null) { navigator.geolocation.clearWatch(_followWatchId); _followWatchId = null; }
+        _gpsUnsubscribe('follow');
         _followMode = false;
         if (_map) _map.off('dragstart', _stopFollowOnManualPan);
         if (_locBtnEl) { _locBtnEl.textContent = '📍 Moja lokacija'; _locBtnEl.classList.remove('following'); }
@@ -2056,13 +2178,14 @@
         _tragStartIso = new Date().toISOString();
         if (_currentTrackPolyline) { _map.removeLayer(_currentTrackPolyline); _currentTrackPolyline = null; }
 
-        _watchId = navigator.geolocation.watchPosition(_onTragPosition, function(err) {
-            console.error('[MapaRadnika] watchPosition greška:', err);
+        _gpsSubscribe('trag', _onTragPosition, function(err) {
+            console.error('[MapaRadnika] GPS greška pri snimanju traga:', err);
             // Bez ovoga dugme ostaje "Zaustavi snimanje" (optimistički postavljeno
-            // ispod) čak i kad watchPosition stvarno nikad nije uspio (npr. dozvola
+            // ispod) čak i kad GPS stvarno nikad nije proradio (npr. dozvola
             // odbijena) — korisnik vidi "snima" a ništa se ne snima, bez objašnjenja
-            // zašto. Vrati UI u prvobitno stanje i objasni razlog.
-            if (_watchId != null) { navigator.geolocation.clearWatch(_watchId); _watchId = null; }
+            // zašto. Vrati UI u prvobitno stanje i objasni razlog. Odjavljuje se
+            // SAMO snimanje traga — ostali potrošači (follow/explorer) ostaju.
+            _gpsUnsubscribe('trag');
             _recording = false;
             if (_tragBtnEl) {
                 _tragBtnEl.textContent = '⏺️ Snimi trag';
@@ -2072,7 +2195,7 @@
                 ? 'Pristup lokaciji je odbijen. Dozvolite lokaciju u postavkama uređaja/browsera da bi snimanje traga radilo.'
                 : (err.code === 3 ? 'Isteklo vrijeme čekanja na GPS signal. Pokušajte ponovo na otvorenom.' : 'Nije moguće pratiti lokaciju za snimanje traga.');
                 _notify('showError', msg);
-        }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+        });
 
         _recording = true;
         if (_tragBtnEl) {
@@ -2082,7 +2205,7 @@
     }
 
     function _stopTrag() {
-        if (_watchId != null) { navigator.geolocation.clearWatch(_watchId); _watchId = null; }
+        _gpsUnsubscribe('trag');
         _recording = false;
         if (_tragBtnEl) {
             _tragBtnEl.textContent = '⏺️ Snimi trag';
