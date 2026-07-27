@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.11';
+        const APP_VERSION = '2.12';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -5600,6 +5600,27 @@
                         </tr>
                     `;
                 });
+
+                // UKUPNO red — svaka ćelija je zbir SVOJE kolone iznad (mjeseci
+                // se sabiraju po mjesecu, zadnja ćelija je zbir UKUPNO kolone).
+                const mjeseciTotals = mjeseci.map((_, mIdx) =>
+                    data.izvodjaci.reduce((s, izv) => s + (Number((izv.mjeseci || [])[mIdx]) || 0), 0));
+                const grandTotal = data.izvodjaci.reduce((s, izv) => s + (Number(izv.ukupno) || 0), 0);
+                const totalCells = mjeseciTotals.map(val => {
+                    const displayVal = val > 0 ? val.toFixed(2) : '-';
+                    return `<td style="border: 1px solid #7c2d12; font-family: 'Courier New', monospace; font-size: 12px; text-align: right; padding: 10px; font-weight: 800; color: white;">${displayVal}</td>`;
+                }).join('');
+                bodyHTML += `
+                    <tr style="background: linear-gradient(135deg, #7c2d12, #451a03);">
+                        <td style="font-weight: 900; font-size: 13px; border: 1px solid #7c2d12; padding: 12px; color: white;">
+                            📊 UKUPNO
+                        </td>
+                        ${totalCells}
+                        <td style="background: #f59e0b; border: 2px solid #f59e0b; font-family: 'Courier New', monospace; text-align: right; padding: 12px; font-weight: 900; font-size: 14px; color: #451a03;">
+                            ${grandTotal.toFixed(2)}
+                        </td>
+                    </tr>
+                `;
                 document.getElementById('primaci-izvodjaci-body').innerHTML = bodyHTML;
 
                 // Render godišnju rekapitulaciju po sortimentima
@@ -5635,6 +5656,21 @@
                         </tr>
                     `;
                 });
+
+                // UKUPNO red — zbir svakog sortimenta preko svih izvođača
+                const recapTotalCells = data.sortimentiNazivi.map(s => {
+                    const val = data.izvodjaci.reduce((acc, izv) => acc + (Number((izv.sortimentiUkupno || {})[s]) || 0), 0);
+                    const displayVal = val > 0 ? val.toFixed(2) : '-';
+                    return `<td style="border: 1px solid #7c2d12; font-family: 'Courier New', monospace; font-size: 11px; text-align: right; padding: 10px; font-weight: 800; color: white;">${displayVal}</td>`;
+                }).join('');
+                recapBodyHTML += `
+                    <tr style="background: linear-gradient(135deg, #7c2d12, #451a03);">
+                        <td style="font-weight: 900; font-size: 13px; border: 1px solid #7c2d12; padding: 12px; color: white;">
+                            📊 UKUPNO
+                        </td>
+                        ${recapTotalCells}
+                    </tr>
+                `;
                 document.getElementById('primaci-izvodjaci-recap-body').innerHTML = recapBodyHTML;
 
 
