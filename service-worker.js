@@ -1,6 +1,6 @@
 // ========== Service Worker - Offline Support ==========
 
-const CACHE_VERSION = 'v71';
+const CACHE_VERSION = 'v72';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
 // Install — pre-keširaj samo offline.html (fallback koji se inače nikad ne
@@ -60,6 +60,24 @@ self.addEventListener('fetch', (event) => {
                 return fetch(request).then(resp => { _cacheIfOk(resp.clone(), request); return resp; })
                     .catch(() => new Response('{"error":"offline"}', { status: 503 }));
             })
+        );
+        return;
+    }
+
+    // Tile pločice karte — cache-first. Pločice su nepromjenjive: jednom
+    // skinuta pločica vrijedi zauvijek, pa nema razloga ikad pitati mrežu.
+    // OSM/Topo završavaju na .png pa bi ih uhvatilo i pravilo ispod, ali
+    // ArcGIS satelit NEMA ekstenziju u putanji (/tile/{z}/{y}/{x}) pa bi inače
+    // pao na "network-first" granu — što znači da bi i VEĆ SKINUTA satelitska
+    // karta na terenu svaki put prvo pokušavala mrežu (sporo + troši mobilne
+    // podatke) prije nego padne na keš.
+    if (url.hostname === 'server.arcgisonline.com' ||
+        /(^|\.)tile\.openstreetmap\.org$/.test(url.hostname) ||
+        /(^|\.)tile\.opentopomap\.org$/.test(url.hostname)) {
+        event.respondWith(
+            caches.match(request).then(cached => cached || fetch(request)
+                .then(resp => { _cacheIfOk(resp.clone(), request); return resp; })
+                .catch(() => new Response('', { status: 503 })))
         );
         return;
     }

@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.13';
+        const APP_VERSION = '2.14';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1331,10 +1331,18 @@
                 }
                 totalFailed = failedViews.length;
 
-                // MAPA (samo admin ima tab): povuci GeoJSON poligone da ih Service Worker
-                // kešira (cache-first za .geojson) — offline mapa onda radi i ako tab
-                // nikad nije bio otvoren dok je korisnik bio online
-                if (userType === 'admin' || userType === '') {
+                // MAPA: povuci GeoJSON poligone da ih Service Worker kešira
+                // (cache-first za .geojson) — offline mapa onda radi i ako tab
+                // nikad nije bio otvoren dok je korisnik bio online.
+                //
+                // Ranije se radilo SAMO za admina, ali Karta tab danas imaju i
+                // primač, otpremač i poslovođa (js/auth.js) — a to su upravo
+                // terenski korisnici kojima offline mapa i treba. Bez ovoga bi
+                // im mapa u šumi bila prazna ako je nisu otvorili dok su bili
+                // na mreži. GeoJSON je ~3.8MB i skida se samo jednom (svaki
+                // sljedeći poziv posluži Service Worker iz keša, bez mreže).
+                var _mapaRole = ['admin', '', 'primac', 'otpremac', 'poslovođa', 'poslovodja'];
+                if (_mapaRole.indexOf(userType) !== -1) {
                     fetch('data/odjeli.geojson')
                         .then(r => { if (r.ok) console.log('[PRELOAD] ✓ GeoJSON keširan u SW za offline mapu'); })
                         .catch(() => {});
@@ -5611,7 +5619,7 @@
                     return `<td style="border: 1px solid #7c2d12; font-family: 'Courier New', monospace; font-size: 12px; text-align: right; padding: 10px; font-weight: 800; color: white;">${displayVal}</td>`;
                 }).join('');
                 bodyHTML += `
-                    <tr style="background: linear-gradient(135deg, #7c2d12, #451a03);">
+                    <tr class="ukupno-row" style="background: linear-gradient(135deg, #7c2d12, #451a03);">
                         <td style="font-weight: 900; font-size: 13px; border: 1px solid #7c2d12; padding: 12px; color: white;">
                             📊 UKUPNO
                         </td>
@@ -5664,7 +5672,7 @@
                     return `<td style="border: 1px solid #7c2d12; font-family: 'Courier New', monospace; font-size: 11px; text-align: right; padding: 10px; font-weight: 800; color: white;">${displayVal}</td>`;
                 }).join('');
                 recapBodyHTML += `
-                    <tr style="background: linear-gradient(135deg, #7c2d12, #451a03);">
+                    <tr class="ukupno-row" style="background: linear-gradient(135deg, #7c2d12, #451a03);">
                         <td style="font-weight: 900; font-size: 13px; border: 1px solid #7c2d12; padding: 12px; color: white;">
                             📊 UKUPNO
                         </td>

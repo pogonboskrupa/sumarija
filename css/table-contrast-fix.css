@@ -540,6 +540,13 @@ tr[style*="background: linear-gradient"][style*="#065f46"] td {
 /* Monthly table dark rows */
 .monthly-table tfoot td,
 .monthly-table .ukupno-row td,
+/* ID-kvalifikovano NAMJERNO: blanket pravilo gore ("#primaci-izvodjaci-body td",
+   ~linija 288) forsira tamni tekst #0f172a !important na CIJELI tbody i ima ID
+   specifičnost (1,0,1), pa nadjačava i inline color:white i obično
+   ".monthly-table .ukupno-row td" (0,2,1) — UKUPNO red bi ostao crn na tamno
+   smeđoj podlozi. Ovi selektori su (1,1,1) pa taj blanket fix pobjeđuju. */
+#primaci-izvodjaci-body .ukupno-row td,
+#primaci-izvodjaci-recap-body .ukupno-row td,
 .monthly-table tbody tr[style*="background: #047857"] td,
 .monthly-table tbody tr[style*="background: #065f46"] td,
 .monthly-table tbody tr[style*="background:#3F4752"] td,
