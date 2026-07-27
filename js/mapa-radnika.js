@@ -437,6 +437,7 @@
                     if (_handlePoligonClick(e.latlng)) return;
                     if (_handleSjeceOdjelClick(e.latlng, feature)) return;
                     if (_handleSjeceDirectionClick(e.latlng)) return;
+                    if (_handleMjerenjeClick(e.latlng)) return;
                     if (radio) {
                         // Fiksni info panel u gornjem dijelu mape (NE Leaflet popup
                         // vezan za tačku klika) — pozicija je uvijek ista i predvidiva
@@ -708,6 +709,7 @@
         if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
         if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
         if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
+        if (typeof window.mapaRadnikaCancelMjerenje === 'function') window.mapaRadnikaCancelMjerenje();
         _routePickState = 'awaiting-a';
         _routePointA = null;
         if (_routeAMarker) { _map.removeLayer(_routeAMarker); _routeAMarker = null; }
@@ -856,7 +858,7 @@
     // na vrh. (Tačke i fotografije su markeri, u višem "markerPane", pa ih ovo
     // ne treba.)
     function _bringUserLayersToFront() {
-        [_savedPoligonLayers, _savedTrackLayers, _sjeceLayers].forEach(function(arr) {
+        [_savedPoligonLayers, _savedTrackLayers, _sjeceLayers, _mjerenjeLayers].forEach(function(arr) {
             (arr || []).forEach(function(l) { if (l && l.bringToFront && _map && _map.hasLayer(l)) l.bringToFront(); });
         });
     }
@@ -886,6 +888,7 @@
         if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
         if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
         if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
+        if (typeof window.mapaRadnikaCancelMjerenje === 'function') window.mapaRadnikaCancelMjerenje();
         _poligonDrawing = true;
         _poligonPoints = [];
         _redrawPoligonDraw();
@@ -1018,6 +1021,7 @@
         if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
         if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
         if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
+        if (typeof window.mapaRadnikaCancelMjerenje === 'function') window.mapaRadnikaCancelMjerenje();
         _tackaPicking = true;
         _showTackaCrosshair();
         _showRouteHint(
@@ -1775,6 +1779,7 @@
         if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
         if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
         if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
+        if (typeof window.mapaRadnikaCancelMjerenje === 'function') window.mapaRadnikaCancelMjerenje();
         _sjecePicking = false; // ne miješaj sa biranjem odjela — samo jedan klik-mod aktivan
         _sjeceDirPickState = 'awaiting-a';
         _sjeceDirPointA = null;
@@ -2003,6 +2008,307 @@
         } else {
             _notify('showWarning', 'Vaš uređaj ne podržava kompas — unesite azimut ručno.');
         }
+    };
+
+    // ---- IZMJERI — udaljenost / površina / nagib ----
+    // Sva tri mjerenja rade OFFLINE (čista geometrija nad kliknutim tačkama,
+    // bez ijednog mrežnog poziva). Rezultat se crta na mapi, klikabilan je i
+    // otvara popup sa detaljima, i pamti se po korisniku (localStorage) kao i
+    // tragovi/tačke/površine.
+    //
+    // NAGIB: app NEMA nikakav izvor podataka o nadmorskoj visini (sva polja
+    // NadmorskaV/NagibMin/NagibMax u POLIGONI_RIS_GRM_VOJ.geojson su prazna, a
+    // Topo sloj je rasterska SLIKA bez geometrije), pa se visinska razlika ne
+    // može izračunati iz podataka. Zato radnik unosi dvije nadmorske visine —
+    // pročita ih sa izohipsi koje su vidljive na Topo podlozi, ili ih preuzme
+    // sa GPS-a ako fizički stoji na tim tačkama. Horizontalnu udaljenost app
+    // izračuna sam iz kliknutih tačaka.
+    var MJERENJE_BOJE = { udaljenost: '#0891b2', povrsina: '#7c3aed', nagib: '#b45309' };
+    var _mjerenjeMode = null;      // null | 'udaljenost' | 'povrsina' | 'nagib'
+    var _mjerenjePoints = [];      // [[lat,lng], ...] u toku mjerenja
+    var _mjerenjeDrawLayer = null; // privremeni sloj dok se klika
+    var _mjerenjeLayers = [];      // sačuvana mjerenja na mapi
+    var _pendingNagib = null;      // { points, distM } dok se čekaju visine
+
+    function _mjerenjeStorageKey() {
+        return 'mapa_radnika_mjerenja_' + (_currentUserObj().username || 'anon');
+    }
+    function _loadSavedMjerenja() {
+        try {
+            var raw = localStorage.getItem(_mjerenjeStorageKey());
+            return raw ? JSON.parse(raw) : [];
+        } catch (_) { return []; }
+    }
+    function _saveMjerenja(list) {
+        try { localStorage.setItem(_mjerenjeStorageKey(), JSON.stringify(list)); } catch (_) {}
+    }
+    function _polyLengthM(points) {
+        var d = 0;
+        for (var i = 1; i < points.length; i++) d += _distM(points[i - 1], points[i]);
+        return d;
+    }
+    function _fmtDuzina(m) {
+        return m < 1000 ? (Math.round(m * 10) / 10) + ' m' : (m / 1000).toFixed(2) + ' km';
+    }
+
+    function _mjerenjePanelEl() { return document.getElementById('radnik-mapa-mjerenje-panel'); }
+    window.mapaRadnikaOpenMjerenje = function() {
+        _hideOstaloMenu();
+        if (typeof window.mapaRadnikaCancelRoutePick === 'function') window.mapaRadnikaCancelRoutePick();
+        if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
+        if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
+        if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
+        if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
+        var panel = _mjerenjePanelEl();
+        if (panel) panel.classList.remove('hidden');
+    };
+    window.mapaRadnikaCloseMjerenjePanel = function() {
+        window.mapaRadnikaCancelMjerenje();
+        var panel = _mjerenjePanelEl();
+        if (panel) panel.classList.add('hidden');
+    };
+    window.mapaRadnikaStartMjerenje = function(mode) {
+        _mjerenjeMode = mode;
+        _mjerenjePoints = [];
+        _redrawMjerenjeDraw();
+        // Panel se sklanja dok se klika po mapi — stoji na istom mjestu kao
+        // traka-savjet (i iznad nje po z-indexu) pa bi prekrio uputu.
+        var panel = _mjerenjePanelEl();
+        if (panel) panel.classList.add('hidden');
+        _updateMjerenjeHint();
+    };
+    window.mapaRadnikaCancelMjerenje = function() {
+        _mjerenjeMode = null;
+        _mjerenjePoints = [];
+        if (_mjerenjeDrawLayer) { _map.removeLayer(_mjerenjeDrawLayer); _mjerenjeDrawLayer = null; }
+        _hideRouteHint();
+    };
+    window.mapaRadnikaUndoMjerenjePoint = function() {
+        if (!_mjerenjeMode || !_mjerenjePoints.length) return;
+        _mjerenjePoints.pop();
+        _redrawMjerenjeDraw();
+        _updateMjerenjeHint();
+    };
+    function _mjerenjeMinPoints() { return _mjerenjeMode === 'povrsina' ? 3 : 2; }
+    function _updateMjerenjeHint() {
+        if (!_mjerenjeMode) return;
+        var n = _mjerenjePoints.length;
+        var min = _mjerenjeMinPoints();
+        var naziv = _mjerenjeMode === 'udaljenost' ? '📏 Udaljenost'
+            : (_mjerenjeMode === 'povrsina' ? '🔷 Površina' : '⛰️ Nagib');
+        var info = '';
+        if (_mjerenjeMode === 'udaljenost' && n >= 2) info = ' — ' + _fmtDuzina(_polyLengthM(_mjerenjePoints));
+        else if (_mjerenjeMode === 'povrsina' && n >= 3) info = ' — ' + _fmtPovrsina(_polygonAreaM2(_mjerenjePoints));
+        else if (_mjerenjeMode === 'nagib' && n >= 2) info = ' — ' + _fmtDuzina(_distM(_mjerenjePoints[0], _mjerenjePoints[1]));
+        // Nagib je uvijek TAČNO dvije tačke (A i B) — ne treba "Završi".
+        var moze = _mjerenjeMode === 'nagib' ? (n >= 2) : (n >= min);
+        _showRouteHint(
+            '<span>' + naziv + ' (' + n + (moze ? ', spremno' : ', treba još') + ')' + info + '</span>' +
+            '<span style="display:flex;gap:6px;">' +
+            (n > 0 ? '<button type="button" onclick="mapaRadnikaUndoMjerenjePoint()">↩️</button>' : '') +
+            (moze ? '<button type="button" onclick="mapaRadnikaFinishMjerenje()">✅ Završi</button>' : '') +
+            '<button type="button" onclick="mapaRadnikaCancelMjerenje()">✕</button>' +
+            '</span>'
+        );
+    }
+    function _redrawMjerenjeDraw() {
+        if (_mjerenjeDrawLayer) { _map.removeLayer(_mjerenjeDrawLayer); _mjerenjeDrawLayer = null; }
+        if (!_mjerenjePoints.length) return;
+        var boja = MJERENJE_BOJE[_mjerenjeMode] || '#0891b2';
+        if (_mjerenjePoints.length === 1) {
+            _mjerenjeDrawLayer = L.circleMarker(_mjerenjePoints[0], { radius: 6, color: boja, fillColor: boja, fillOpacity: 0.9 }).addTo(_map);
+            return;
+        }
+        _mjerenjeDrawLayer = _mjerenjeMode === 'povrsina'
+            ? L.polygon(_mjerenjePoints, { color: boja, weight: 3, fillColor: boja, fillOpacity: 0.2, dashArray: '6 4' }).addTo(_map)
+            : L.polyline(_mjerenjePoints, { color: boja, weight: 4, dashArray: '8 5' }).addTo(_map);
+    }
+    // Poziva se iz istog centralnog lanca klika kao ostali pick-modovi.
+    function _handleMjerenjeClick(latlng) {
+        if (!_mjerenjeMode) return false;
+        // Nagib prima najviše dvije tačke — treći klik bi bio greška.
+        if (_mjerenjeMode === 'nagib' && _mjerenjePoints.length >= 2) return true;
+        _mjerenjePoints.push([latlng.lat, latlng.lng]);
+        _redrawMjerenjeDraw();
+        _updateMjerenjeHint();
+        return true;
+    }
+    window.mapaRadnikaFinishMjerenje = function() {
+        if (!_mjerenjeMode || _mjerenjePoints.length < _mjerenjeMinPoints()) return;
+        if (_mjerenjeMode === 'nagib') {
+            // Visine ne možemo znati iz podataka — traži ih od radnika.
+            _pendingNagib = { points: _mjerenjePoints.slice(), distM: _distM(_mjerenjePoints[0], _mjerenjePoints[1]) };
+            _showNagibModal();
+            return;
+        }
+        var m = {
+            tip: _mjerenjeMode,
+            created: new Date().toISOString(),
+            points: _mjerenjePoints.slice()
+        };
+        if (_mjerenjeMode === 'udaljenost') m.duzina = _polyLengthM(_mjerenjePoints);
+        else m.povrsina = _polygonAreaM2(_mjerenjePoints);
+        _commitMjerenje(m);
+    };
+    function _commitMjerenje(m) {
+        var list = _loadSavedMjerenja();
+        list.push(m);
+        _saveMjerenja(list);
+        window.mapaRadnikaCancelMjerenje();
+        _drawSavedMjerenja();
+        _renderMjerenjaList();
+        var sazetak = m.tip === 'udaljenost' ? _fmtDuzina(m.duzina)
+            : (m.tip === 'povrsina' ? _fmtPovrsina(m.povrsina) : (Math.round(m.nagibPosto * 10) / 10) + ' %');
+        _notify('showSuccess', 'Mjerenje sačuvano', sazetak);
+    }
+    // ---- Nagib: modal za unos nadmorskih visina ----
+    function _showNagibModal() {
+        var modal = document.getElementById('nagib-modal');
+        var aEl = document.getElementById('nagib-visina-a');
+        var bEl = document.getElementById('nagib-visina-b');
+        var infoEl = document.getElementById('nagib-dist-info');
+        if (!modal || !aEl || !bEl) { window.mapaRadnikaCancelMjerenje(); return; }
+        aEl.value = '';
+        bEl.value = '';
+        if (infoEl) infoEl.textContent = 'Horizontalna udaljenost A–B: ' + _fmtDuzina(_pendingNagib.distM);
+        modal.classList.add('show');
+        setTimeout(function() { aEl.focus(); }, 50);
+    }
+    window.closeNagibModal = function() {
+        var modal = document.getElementById('nagib-modal');
+        if (modal) modal.classList.remove('show');
+        _pendingNagib = null;
+        window.mapaRadnikaCancelMjerenje();
+    };
+    window.confirmNagib = function() {
+        if (!_pendingNagib) return;
+        var aEl = document.getElementById('nagib-visina-a');
+        var bEl = document.getElementById('nagib-visina-b');
+        var hA = parseFloat(aEl && aEl.value);
+        var hB = parseFloat(bEl && bEl.value);
+        if (isNaN(hA) || isNaN(hB)) { _notify('showWarning', 'Unesite obje nadmorske visine (u metrima).'); return; }
+        var d = _pendingNagib.distM;
+        if (!(d > 0)) { _notify('showError', 'Tačke su preblizu za računanje nagiba.'); return; }
+        var dh = hB - hA;
+        var m = {
+            tip: 'nagib',
+            created: new Date().toISOString(),
+            points: _pendingNagib.points,
+            distM: d,
+            visinaA: hA,
+            visinaB: hB,
+            visinskaRazlika: dh,
+            nagibPosto: Math.abs(dh) / d * 100,
+            nagibStepeni: Math.atan(Math.abs(dh) / d) * 180 / Math.PI
+        };
+        var modal = document.getElementById('nagib-modal');
+        if (modal) modal.classList.remove('show');
+        _pendingNagib = null;
+        _commitMjerenje(m);
+    };
+    // Preuzmi trenutnu GPS visinu u polje (ako radnik fizički stoji na tački).
+    window.mapaRadnikaGpsVisina = function(koje) {
+        if (!navigator.geolocation) { _notify('showError', 'Vaš uređaj ne podržava geolokaciju.'); return; }
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            if (pos.coords.altitude == null) {
+                _notify('showWarning', 'GPS ne daje nadmorsku visinu na ovom uređaju — očitajte je sa izohipsi na Topo karti.');
+                return;
+            }
+            var el = document.getElementById(koje === 'a' ? 'nagib-visina-a' : 'nagib-visina-b');
+            if (el) el.value = Math.round(pos.coords.altitude);
+            var tacnost = pos.coords.altitudeAccuracy;
+            _notify('showInfo', 'Visina preuzeta sa GPS-a', tacnost ? ('±' + Math.round(tacnost) + ' m — provjerite sa izohipsama.') : 'Provjerite sa izohipsama na Topo karti.');
+        }, function() {
+            _notify('showError', 'Nije moguće dobiti trenutnu lokaciju.');
+        }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+    };
+    // ---- Iscrtavanje sačuvanih mjerenja (klikabilna, sa info popup-om) ----
+    function _mjerenjeOpis(m) {
+        if (m.tip === 'udaljenost') {
+            return 'Dužina: <strong>' + _fmtDuzina(m.duzina) + '</strong><br>Tačaka: ' + (m.points || []).length;
+        }
+        if (m.tip === 'povrsina') {
+            return 'Površina: <strong>' + _fmtPovrsina(m.povrsina) + '</strong><br>' +
+                'Obim: ' + _fmtDuzina(_polyLengthM((m.points || []).concat([m.points[0]]))) + '<br>' +
+                'Tačaka: ' + (m.points || []).length;
+        }
+        var smjer = m.visinskaRazlika >= 0 ? 'uzbrdo' : 'nizbrdo';
+        return 'Nagib: <strong>' + (Math.round(m.nagibPosto * 10) / 10) + ' %</strong> (' +
+            (Math.round(m.nagibStepeni * 10) / 10) + '°)<br>' +
+            'Visinska razlika: ' + (Math.round(Math.abs(m.visinskaRazlika) * 10) / 10) + ' m ' + smjer + '<br>' +
+            'Horizontalno: ' + _fmtDuzina(m.distM) + '<br>' +
+            'A: ' + m.visinaA + ' m · B: ' + m.visinaB + ' m';
+    }
+    function _mjerenjeKratko(m) {
+        if (m.tip === 'udaljenost') return '📏 ' + _fmtDuzina(m.duzina);
+        if (m.tip === 'povrsina') return '🔷 ' + _fmtPovrsina(m.povrsina);
+        return '⛰️ ' + (Math.round(m.nagibPosto * 10) / 10) + ' %';
+    }
+    function _drawSavedMjerenja() {
+        _mjerenjeLayers.forEach(function(l) { _map.removeLayer(l); });
+        _mjerenjeLayers = [];
+        _loadSavedMjerenja().forEach(function(m, i) {
+            if (!m.points || m.points.length < 2) return;
+            var boja = MJERENJE_BOJE[m.tip] || '#0891b2';
+            var lyr = m.tip === 'povrsina'
+                ? L.polygon(m.points, { color: boja, weight: 3, fillColor: boja, fillOpacity: 0.2 })
+                : L.polyline(m.points, { color: boja, weight: 4 });
+            lyr.addTo(_map);
+            lyr.bindTooltip(_mjerenjeKratko(m), { sticky: true });
+            lyr.bindPopup(
+                '<div class="rm-tacka-popup">' +
+                '<div class="rm-tacka-popup-title">' + _mjerenjeKratko(m) + '</div>' +
+                '<div style="font-size:12px;color:#4b5563;margin-bottom:8px;line-height:1.5;">' +
+                _mjerenjeOpis(m) +
+                (m.created ? '<br><span style="color:#9ca3af;">' + new Date(m.created).toLocaleString('bs-BA') + '</span>' : '') +
+                '</div>' +
+                '<button type="button" class="rm-tacka-popup-delete" onclick="mapaRadnikaDeleteMjerenje(' + i + ')">🗑️ Obriši</button>' +
+                '</div>'
+            );
+            _mjerenjeLayers.push(lyr);
+        });
+        _bringUserLayersToFront();
+    }
+    window.mapaRadnikaDeleteMjerenje = function(index) {
+        var list = _loadSavedMjerenja();
+        var m = list[index];
+        if (!m) return;
+        if (_map) _map.closePopup();
+        _showTragConfirm('Obrisati mjerenje "' + _mjerenjeKratko(m).replace(/<[^>]*>/g, '') + '"?', function() {
+            var fresh = _loadSavedMjerenja();
+            fresh.splice(index, 1);
+            _saveMjerenja(fresh);
+            _drawSavedMjerenja();
+            _renderMjerenjaList();
+        });
+    };
+    function _renderMjerenjaList() {
+        var list = document.getElementById('radnik-mapa-mjerenja-list');
+        if (!list) return;
+        var items = _loadSavedMjerenja();
+        if (!items.length) {
+            list.innerHTML = '<div class="rm-tragovi-empty">Nema sačuvanih mjerenja.</div>';
+            return;
+        }
+        list.innerHTML = items.map(function(m, i) {
+            var when = m.created ? new Date(m.created).toLocaleString('bs-BA') : '?';
+            return '<div class="rm-tragovi-row">' +
+                '<span class="rm-tragovi-row-info">' + _mjerenjeKratko(m) + '<br><small>' + when + '</small></span>' +
+                '<span style="display:flex;gap:4px;">' +
+                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaZoomMjerenje(' + i + ')" aria-label="Prikaži na mapi">🔍</button>' +
+                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeleteMjerenje(' + i + ')" aria-label="Obriši mjerenje">🗑️</button>' +
+                '</span>' +
+                '</div>';
+        }).join('');
+    }
+    window.mapaRadnikaZoomMjerenje = function(index) {
+        var lyr = _mjerenjeLayers[index];
+        if (!lyr || !_map) return;
+        _hideOstaloMenu();
+        try {
+            _map.fitBounds(lyr.getBounds(), { padding: [40, 40], maxZoom: 17 });
+            lyr.openPopup();
+        } catch (_) {}
     };
 
     // ---- MOJA LOKACIJA (GPS) ----
@@ -2409,6 +2715,7 @@
             _renderPoligoniList();
             _refreshOfflineToggle();
             _renderSjeceList();
+            _renderMjerenjaList();
         }
         menu.classList.toggle('hidden', !willShow);
     }
@@ -2458,6 +2765,7 @@
         if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
         if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
         if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
+        if (typeof window.mapaRadnikaCloseMjerenjePanel === 'function') window.mapaRadnikaCloseMjerenjePanel();
         _stopFollow(); // ne ostavljaj GPS watchPosition da radi u pozadini nakon izlaska s mape
         // Vrati viewport na korisnikovu preferencu (Desktop/Android prikaz) ako
         // je bila uključena prije ulaska na mapu.
@@ -2547,6 +2855,7 @@
                 if (_handleRoutePickClick(e.latlng)) return;
                 if (_handlePoligonClick(e.latlng)) return;
                 if (_handleSjeceDirectionClick(e.latlng)) return;
+                if (_handleMjerenjeClick(e.latlng)) return;
                 _hideInfoPanel();
             });
             // Veličina "Prikaži odjele" oznaka prati zoom mape (manje odzumirano,
@@ -2565,7 +2874,8 @@
             // koje POKREĆE mod odmah bude pojeden kao prva tačka tog moda —
             // na mjestu gdje dugme stoji, a ne gdje je radnik htio.
             ['radnik-mapa-info-panel', 'radnik-mapa-route-hint', 'radnik-mapa-sjece-panel',
-             'radnik-mapa-explorer', 'radnik-mapa-sat-btn', 'radnik-mapa-close-btn'
+             'radnik-mapa-explorer', 'radnik-mapa-sat-btn', 'radnik-mapa-close-btn',
+             'radnik-mapa-mjerenje-panel'
             ].forEach(function(id) {
                 var el = document.getElementById(id);
                 if (!el) return;
@@ -2577,6 +2887,7 @@
             _drawSavedPoligoni();
             _drawSavedTacke();
             _drawSavedFoto();
+            _drawSavedMjerenja();
         }
         // Leaflet mora preračunati veličinu nakon što tab postane vidljiv
         setTimeout(function() { if (_map) _map.invalidateSize(); }, 100);
@@ -2704,7 +3015,7 @@
     // ovaj bug je prijavljen za "Nova tačka"). VisualViewport API javlja
     // stvarnu vidljivu visinu; ograničimo overlay na nju dok je otvoren, pa
     // "centrirano" znači centrirano u ONOME što se stvarno vidi.
-    var INPUT_MODAL_IDS = ['tacka-name-modal', 'trag-name-modal', 'poligon-name-modal', 'foto-name-modal'];
+    var INPUT_MODAL_IDS = ['tacka-name-modal', 'trag-name-modal', 'poligon-name-modal', 'foto-name-modal', 'nagib-modal'];
     function _resizeInputModalsForKeyboard() {
         if (!window.visualViewport) return;
         var h = window.visualViewport.height;
