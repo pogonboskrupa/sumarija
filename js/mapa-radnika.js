@@ -1744,6 +1744,21 @@
     var _sjeceDirPointA = null;
     var _sjeceDirAMarker = null;
     var _sjeceDirLine = null;
+    // Panel se PRIVREMENO sklanja dok se bira pravac: stoji na istom mjestu
+    // (top:10px) kao traka-savjet ali sa višim z-index-om (1400 vs 1300), pa
+    // bi inače prekrio uputu "kliknite početnu tačku" i zaklonio dio mape na
+    // koji radnik treba kliknuti. Vraća se čim je pravac izabran/otkazan.
+    var _sjeceDirPanelWasOpen = false;
+    function _restoreSjecePanelAfterDir() {
+        if (_sjeceDirPanelWasOpen) {
+            _sjeceDirPanelWasOpen = false;
+            var panel = _sjecePanelEl();
+            if (panel) panel.classList.remove('hidden');
+        }
+        // Uvijek osvježi (ne samo kad je panel vraćen) — azimut je upravo
+        // upisan, pa "Generiši" treba prestati biti onemogućen.
+        _updateSjecePanel();
+    }
     window.mapaRadnikaSjeceDrawDirection = function() {
         if (typeof window.mapaRadnikaCancelRoutePick === 'function') window.mapaRadnikaCancelRoutePick();
         if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
@@ -1753,7 +1768,9 @@
         _sjeceDirPickState = 'awaiting-a';
         _sjeceDirPointA = null;
         if (_sjeceDirAMarker) { _map.removeLayer(_sjeceDirAMarker); _sjeceDirAMarker = null; }
-        _updateSjecePanel();
+        var panel = _sjecePanelEl();
+        _sjeceDirPanelWasOpen = !!(panel && !panel.classList.contains('hidden'));
+        if (panel) panel.classList.add('hidden');
         _showRouteHint(
             '<span>✏️ Kliknite POČETNU tačku pravca (niz padinu)</span>' +
             '<span><button type="button" onclick="mapaRadnikaCancelSjeceDirection()">✕</button></span>'
@@ -1764,6 +1781,7 @@
         _sjeceDirPointA = null;
         if (_sjeceDirAMarker) { _map.removeLayer(_sjeceDirAMarker); _sjeceDirAMarker = null; }
         _hideRouteHint();
+        _restoreSjecePanelAfterDir();
     };
     // Poziva se iz istog centralnog lanca klika (onEachFeature + generički
     // _map.on('click',...)) kao _handleRoutePickClick/_handlePoligonClick/
@@ -1792,7 +1810,8 @@
             ).addTo(_map);
             var azEl = document.getElementById('sjece-azimuth-input');
             if (azEl) azEl.value = Math.round(az);
-            _updateSjecePanel();
+            _restoreSjecePanelAfterDir(); // vrati panel (već zove _updateSjecePanel)
+            _notify('showSuccess', 'Pravac zabilježen', 'Azimut ' + Math.round(az) + '°.');
             return true;
         }
         return false;
@@ -2529,11 +2548,20 @@
             // pan/zoom mape — skrolanje prstom kroz duži spisak sortimenata
             // (kad odjel ima puno njih) nikad ne bi stiglo do panela, pa bi
             // dio podataka ostao "nedostupan" ispod vidljivog dijela.
-            var infoPanelEl = document.getElementById('radnik-mapa-info-panel');
-            if (infoPanelEl) {
-                L.DomEvent.disableClickPropagation(infoPanelEl);
-                L.DomEvent.disableScrollPropagation(infoPanelEl);
-            }
+            // Isto vrijedi za SVE preklopne elemente unutar Leaflet kontejnera:
+            // bez disableClickPropagation klik na dugme u njima PROPADNE i na
+            // mapu ispod. Kod klik-modova (biranje tačke rute, crtanje pravca
+            // sječačkih linija, tačke poligona) to znači da sam tap na dugme
+            // koje POKREĆE mod odmah bude pojeden kao prva tačka tog moda —
+            // na mjestu gdje dugme stoji, a ne gdje je radnik htio.
+            ['radnik-mapa-info-panel', 'radnik-mapa-route-hint', 'radnik-mapa-sjece-panel',
+             'radnik-mapa-explorer', 'radnik-mapa-sat-btn', 'radnik-mapa-close-btn'
+            ].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                L.DomEvent.disableClickPropagation(el);
+                L.DomEvent.disableScrollPropagation(el);
+            });
             _bindBarButtons();
             _drawSavedTracks();
             _drawSavedPoligoni();
