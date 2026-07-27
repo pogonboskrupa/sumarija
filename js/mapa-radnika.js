@@ -2661,6 +2661,18 @@
         document.body.classList.add('radnik-mapa-fullscreen');
         var bar = document.getElementById('radnik-mapa-bottombar');
         if (bar) bar.style.display = 'flex';
+        // Ako je globalni "Offline" baner (index.html) već prikazan u trenutku
+        // otvaranja Karte, ukloni ga odmah — showBanner() od sada odbija da se
+        // ponovo prikaže dok je Karta otvorena, ali sam po sebi ne nestaje bez
+        // ovog poziva. Direktna DOM manipulacija (ne offlineBannerHide()) jer
+        // ta funkcija ima "if (!navigator.onLine) return;" — baš stanje u
+        // kojem je ovaj baner i prikazan.
+        var _offBanner = document.getElementById('app-offline-banner');
+        if (_offBanner) {
+            _offBanner.style.opacity = '0';
+            _offBanner.style.transform = 'translateX(-50%) translateY(20px)';
+            setTimeout(function() { _offBanner.style.display = 'none'; }, 320);
+        }
         var viewport = document.querySelector('meta[name=viewport]');
         if (viewport) viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
         setTimeout(function() { if (_map) _map.invalidateSize(); }, 50);

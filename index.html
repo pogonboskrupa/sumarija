@@ -3883,6 +3883,11 @@
     window.newestCacheAge = newestCacheAge;
 
     function showBanner(icon, text, ageMs, bg) {
+        // Karta (js/mapa-radnika.js) ima svoju donju traku sa dugmadima na
+        // istoj poziciji — ovaj plutajući baner bi je prekrivao/preklapao.
+        // Karta tab je i inače terenski alat gdje je "offline" očekivano
+        // normalno stanje, ne izuzetak koji treba isticati.
+        if (document.body.classList.contains('radnik-mapa-fullscreen')) return;
         clearTimeout(hideTimer);
         iconEl.textContent = icon;
         textEl.textContent = text;
