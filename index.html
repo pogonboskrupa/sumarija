@@ -1369,7 +1369,6 @@
                     <div class="rm-sjece-title">📐 Izmjeri</div>
                     <button type="button" class="rm-sjece-btn" onclick="mapaRadnikaStartMjerenje('udaljenost')">📏 Izmjeri udaljenost</button>
                     <button type="button" class="rm-sjece-btn" onclick="mapaRadnikaStartMjerenje('povrsina')">🔷 Izmjeri površinu</button>
-                    <button type="button" class="rm-sjece-btn" onclick="mapaRadnikaStartMjerenje('nagib')">⛰️ Izmjeri nagib</button>
                     <div style="font-size:11px;color:#6b7280;line-height:1.4;">Kliknite tačke na mapi, pa &bdquo;Završi&ldquo;. Rezultat ostaje na karti i klikom se otvara detaljan prikaz.</div>
                 </div>
             </div>
@@ -3252,7 +3251,7 @@
                      ekranu Mape odjela, pa se ovaj modal renderovao ISPOD njih
                      (nevidljivo/neklikabilno — pravi razlog "Snimi trag se ne
                      aktivira"). Podignuto iznad svega u toj mapi. */
-                  #trag-name-modal.show, #trag-confirm-modal.show, #poligon-name-modal.show, #tacka-name-modal.show, #foto-name-modal.show, #nagib-modal.show { z-index:20000; }
+                  #trag-name-modal.show, #trag-confirm-modal.show, #poligon-name-modal.show, #tacka-name-modal.show, #foto-name-modal.show { z-index:20000; }
 
                   /* Donja fiksna traka — Moja lokacija / Tragovi / Zatvori.
                      IZVAN Leaflet mape (obična HTML dugmad, ne Leaflet control), pa
@@ -3713,35 +3712,6 @@
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeFotoNameModal()">Otkaži</button>
             <button class="btn btn-primary" onclick="confirmSaveFoto()">Sačuvaj</button>
-        </div>
-    </div>
-</div>
-<!-- Modal za nagib — app nema podatke o nadmorskoj visini (vidi komentar uz
-     IZMJERI u js/mapa-radnika.js), pa visine unosi radnik: očita ih sa izohipsi
-     na Topo podlozi ili preuzme sa GPS-a ako stoji na tački. -->
-<div class="modal-overlay" id="nagib-modal" onclick="if(event.target===this) closeNagibModal();">
-    <div class="modal" style="max-width:360px;">
-        <div class="modal-header"><div class="modal-title">⛰️ Izmjeri nagib</div></div>
-        <div class="modal-body">
-            <div id="nagib-dist-info" style="font-size:13px;font-weight:700;color:#1f2937;margin-bottom:10px;"></div>
-            <div style="font-size:12px;color:#6b7280;margin-bottom:12px;line-height:1.4;">
-                Unesite nadmorske visine tačaka — očitajte ih sa izohipsi na Topo karti,
-                ili preuzmite sa GPS-a ako stojite na toj tački.
-            </div>
-            <label style="display:block;font-size:12px;font-weight:600;color:#4b5563;margin-bottom:4px;">Nadmorska visina tačke A (m)</label>
-            <div style="display:flex;gap:6px;margin-bottom:10px;">
-                <input type="number" id="nagib-visina-a" inputmode="decimal" style="flex:1;min-width:0;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;" />
-                <button type="button" class="btn btn-secondary" style="padding:8px 12px;font-size:12px;white-space:nowrap;" onclick="mapaRadnikaGpsVisina('a')">📍 GPS</button>
-            </div>
-            <label style="display:block;font-size:12px;font-weight:600;color:#4b5563;margin-bottom:4px;">Nadmorska visina tačke B (m)</label>
-            <div style="display:flex;gap:6px;">
-                <input type="number" id="nagib-visina-b" inputmode="decimal" style="flex:1;min-width:0;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;" />
-                <button type="button" class="btn btn-secondary" style="padding:8px 12px;font-size:12px;white-space:nowrap;" onclick="mapaRadnikaGpsVisina('b')">📍 GPS</button>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeNagibModal()">Otkaži</button>
-            <button class="btn btn-primary" onclick="confirmNagib()">Izračunaj</button>
         </div>
     </div>
 </div>

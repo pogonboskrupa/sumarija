@@ -2010,25 +2010,16 @@
         }
     };
 
-    // ---- IZMJERI — udaljenost / površina / nagib ----
-    // Sva tri mjerenja rade OFFLINE (čista geometrija nad kliknutim tačkama,
-    // bez ijednog mrežnog poziva). Rezultat se crta na mapi, klikabilan je i
-    // otvara popup sa detaljima, i pamti se po korisniku (localStorage) kao i
+    // ---- IZMJERI — udaljenost / površina ----
+    // Oba mjerenja rade OFFLINE (čista geometrija nad kliknutim tačkama, bez
+    // ijednog mrežnog poziva). Rezultat se crta na mapi, klikabilan je i otvara
+    // popup sa detaljima, i pamti se po korisniku (localStorage) kao i
     // tragovi/tačke/površine.
-    //
-    // NAGIB: app NEMA nikakav izvor podataka o nadmorskoj visini (sva polja
-    // NadmorskaV/NagibMin/NagibMax u POLIGONI_RIS_GRM_VOJ.geojson su prazna, a
-    // Topo sloj je rasterska SLIKA bez geometrije), pa se visinska razlika ne
-    // može izračunati iz podataka. Zato radnik unosi dvije nadmorske visine —
-    // pročita ih sa izohipsi koje su vidljive na Topo podlozi, ili ih preuzme
-    // sa GPS-a ako fizički stoji na tim tačkama. Horizontalnu udaljenost app
-    // izračuna sam iz kliknutih tačaka.
-    var MJERENJE_BOJE = { udaljenost: '#0891b2', povrsina: '#7c3aed', nagib: '#b45309' };
-    var _mjerenjeMode = null;      // null | 'udaljenost' | 'povrsina' | 'nagib'
+    var MJERENJE_BOJE = { udaljenost: '#0891b2', povrsina: '#7c3aed' };
+    var _mjerenjeMode = null;      // null | 'udaljenost' | 'povrsina'
     var _mjerenjePoints = [];      // [[lat,lng], ...] u toku mjerenja
     var _mjerenjeDrawLayer = null; // privremeni sloj dok se klika
     var _mjerenjeLayers = [];      // sačuvana mjerenja na mapi
-    var _pendingNagib = null;      // { points, distM } dok se čekaju visine
 
     function _mjerenjeStorageKey() {
         return 'mapa_radnika_mjerenja_' + (_currentUserObj().username || 'anon');
@@ -2036,7 +2027,10 @@
     function _loadSavedMjerenja() {
         try {
             var raw = localStorage.getItem(_mjerenjeStorageKey());
-            return raw ? JSON.parse(raw) : [];
+            var list = raw ? JSON.parse(raw) : [];
+            // "Nagib" je uklonjen — odbaci eventualne zaostale zapise da ne
+            // pucaju pri iscrtavanju (nema više koda koji ih zna prikazati).
+            return list.filter(function(m) { return m && m.tip !== 'nagib'; });
         } catch (_) { return []; }
     }
     function _saveMjerenja(list) {
@@ -2094,14 +2088,11 @@
         if (!_mjerenjeMode) return;
         var n = _mjerenjePoints.length;
         var min = _mjerenjeMinPoints();
-        var naziv = _mjerenjeMode === 'udaljenost' ? '📏 Udaljenost'
-            : (_mjerenjeMode === 'povrsina' ? '🔷 Površina' : '⛰️ Nagib');
+        var naziv = _mjerenjeMode === 'udaljenost' ? '📏 Udaljenost' : '🔷 Površina';
         var info = '';
         if (_mjerenjeMode === 'udaljenost' && n >= 2) info = ' — ' + _fmtDuzina(_polyLengthM(_mjerenjePoints));
         else if (_mjerenjeMode === 'povrsina' && n >= 3) info = ' — ' + _fmtPovrsina(_polygonAreaM2(_mjerenjePoints));
-        else if (_mjerenjeMode === 'nagib' && n >= 2) info = ' — ' + _fmtDuzina(_distM(_mjerenjePoints[0], _mjerenjePoints[1]));
-        // Nagib je uvijek TAČNO dvije tačke (A i B) — ne treba "Završi".
-        var moze = _mjerenjeMode === 'nagib' ? (n >= 2) : (n >= min);
+        var moze = n >= min;
         _showRouteHint(
             '<span>' + naziv + ' (' + n + (moze ? ', spremno' : ', treba još') + ')' + info + '</span>' +
             '<span style="display:flex;gap:6px;">' +
@@ -2126,8 +2117,6 @@
     // Poziva se iz istog centralnog lanca klika kao ostali pick-modovi.
     function _handleMjerenjeClick(latlng) {
         if (!_mjerenjeMode) return false;
-        // Nagib prima najviše dvije tačke — treći klik bi bio greška.
-        if (_mjerenjeMode === 'nagib' && _mjerenjePoints.length >= 2) return true;
         _mjerenjePoints.push([latlng.lat, latlng.lng]);
         _redrawMjerenjeDraw();
         _updateMjerenjeHint();
@@ -2135,12 +2124,6 @@
     }
     window.mapaRadnikaFinishMjerenje = function() {
         if (!_mjerenjeMode || _mjerenjePoints.length < _mjerenjeMinPoints()) return;
-        if (_mjerenjeMode === 'nagib') {
-            // Visine ne možemo znati iz podataka — traži ih od radnika.
-            _pendingNagib = { points: _mjerenjePoints.slice(), distM: _distM(_mjerenjePoints[0], _mjerenjePoints[1]) };
-            _showNagibModal();
-            return;
-        }
         var m = {
             tip: _mjerenjeMode,
             created: new Date().toISOString(),
@@ -2157,92 +2140,20 @@
         window.mapaRadnikaCancelMjerenje();
         _drawSavedMjerenja();
         _renderMjerenjaList();
-        var sazetak = m.tip === 'udaljenost' ? _fmtDuzina(m.duzina)
-            : (m.tip === 'povrsina' ? _fmtPovrsina(m.povrsina) : (Math.round(m.nagibPosto * 10) / 10) + ' %');
+        var sazetak = m.tip === 'udaljenost' ? _fmtDuzina(m.duzina) : _fmtPovrsina(m.povrsina);
         _notify('showSuccess', 'Mjerenje sačuvano', sazetak);
     }
-    // ---- Nagib: modal za unos nadmorskih visina ----
-    function _showNagibModal() {
-        var modal = document.getElementById('nagib-modal');
-        var aEl = document.getElementById('nagib-visina-a');
-        var bEl = document.getElementById('nagib-visina-b');
-        var infoEl = document.getElementById('nagib-dist-info');
-        if (!modal || !aEl || !bEl) { window.mapaRadnikaCancelMjerenje(); return; }
-        aEl.value = '';
-        bEl.value = '';
-        if (infoEl) infoEl.textContent = 'Horizontalna udaljenost A–B: ' + _fmtDuzina(_pendingNagib.distM);
-        modal.classList.add('show');
-        setTimeout(function() { aEl.focus(); }, 50);
-    }
-    window.closeNagibModal = function() {
-        var modal = document.getElementById('nagib-modal');
-        if (modal) modal.classList.remove('show');
-        _pendingNagib = null;
-        window.mapaRadnikaCancelMjerenje();
-    };
-    window.confirmNagib = function() {
-        if (!_pendingNagib) return;
-        var aEl = document.getElementById('nagib-visina-a');
-        var bEl = document.getElementById('nagib-visina-b');
-        var hA = parseFloat(aEl && aEl.value);
-        var hB = parseFloat(bEl && bEl.value);
-        if (isNaN(hA) || isNaN(hB)) { _notify('showWarning', 'Unesite obje nadmorske visine (u metrima).'); return; }
-        var d = _pendingNagib.distM;
-        if (!(d > 0)) { _notify('showError', 'Tačke su preblizu za računanje nagiba.'); return; }
-        var dh = hB - hA;
-        var m = {
-            tip: 'nagib',
-            created: new Date().toISOString(),
-            points: _pendingNagib.points,
-            distM: d,
-            visinaA: hA,
-            visinaB: hB,
-            visinskaRazlika: dh,
-            nagibPosto: Math.abs(dh) / d * 100,
-            nagibStepeni: Math.atan(Math.abs(dh) / d) * 180 / Math.PI
-        };
-        var modal = document.getElementById('nagib-modal');
-        if (modal) modal.classList.remove('show');
-        _pendingNagib = null;
-        _commitMjerenje(m);
-    };
-    // Preuzmi trenutnu GPS visinu u polje (ako radnik fizički stoji na tački).
-    window.mapaRadnikaGpsVisina = function(koje) {
-        if (!navigator.geolocation) { _notify('showError', 'Vaš uređaj ne podržava geolokaciju.'); return; }
-        navigator.geolocation.getCurrentPosition(function(pos) {
-            if (pos.coords.altitude == null) {
-                _notify('showWarning', 'GPS ne daje nadmorsku visinu na ovom uređaju — očitajte je sa izohipsi na Topo karti.');
-                return;
-            }
-            var el = document.getElementById(koje === 'a' ? 'nagib-visina-a' : 'nagib-visina-b');
-            if (el) el.value = Math.round(pos.coords.altitude);
-            var tacnost = pos.coords.altitudeAccuracy;
-            _notify('showInfo', 'Visina preuzeta sa GPS-a', tacnost ? ('±' + Math.round(tacnost) + ' m — provjerite sa izohipsama.') : 'Provjerite sa izohipsama na Topo karti.');
-        }, function() {
-            _notify('showError', 'Nije moguće dobiti trenutnu lokaciju.');
-        }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
-    };
     // ---- Iscrtavanje sačuvanih mjerenja (klikabilna, sa info popup-om) ----
     function _mjerenjeOpis(m) {
         if (m.tip === 'udaljenost') {
             return 'Dužina: <strong>' + _fmtDuzina(m.duzina) + '</strong><br>Tačaka: ' + (m.points || []).length;
         }
-        if (m.tip === 'povrsina') {
-            return 'Površina: <strong>' + _fmtPovrsina(m.povrsina) + '</strong><br>' +
-                'Obim: ' + _fmtDuzina(_polyLengthM((m.points || []).concat([m.points[0]]))) + '<br>' +
-                'Tačaka: ' + (m.points || []).length;
-        }
-        var smjer = m.visinskaRazlika >= 0 ? 'uzbrdo' : 'nizbrdo';
-        return 'Nagib: <strong>' + (Math.round(m.nagibPosto * 10) / 10) + ' %</strong> (' +
-            (Math.round(m.nagibStepeni * 10) / 10) + '°)<br>' +
-            'Visinska razlika: ' + (Math.round(Math.abs(m.visinskaRazlika) * 10) / 10) + ' m ' + smjer + '<br>' +
-            'Horizontalno: ' + _fmtDuzina(m.distM) + '<br>' +
-            'A: ' + m.visinaA + ' m · B: ' + m.visinaB + ' m';
+        return 'Površina: <strong>' + _fmtPovrsina(m.povrsina) + '</strong><br>' +
+            'Obim: ' + _fmtDuzina(_polyLengthM((m.points || []).concat([m.points[0]]))) + '<br>' +
+            'Tačaka: ' + (m.points || []).length;
     }
     function _mjerenjeKratko(m) {
-        if (m.tip === 'udaljenost') return '📏 ' + _fmtDuzina(m.duzina);
-        if (m.tip === 'povrsina') return '🔷 ' + _fmtPovrsina(m.povrsina);
-        return '⛰️ ' + (Math.round(m.nagibPosto * 10) / 10) + ' %';
+        return m.tip === 'udaljenost' ? ('📏 ' + _fmtDuzina(m.duzina)) : ('🔷 ' + _fmtPovrsina(m.povrsina));
     }
     function _drawSavedMjerenja() {
         _mjerenjeLayers.forEach(function(l) { _map.removeLayer(l); });
@@ -3015,7 +2926,7 @@
     // ovaj bug je prijavljen za "Nova tačka"). VisualViewport API javlja
     // stvarnu vidljivu visinu; ograničimo overlay na nju dok je otvoren, pa
     // "centrirano" znači centrirano u ONOME što se stvarno vidi.
-    var INPUT_MODAL_IDS = ['tacka-name-modal', 'trag-name-modal', 'poligon-name-modal', 'foto-name-modal', 'nagib-modal'];
+    var INPUT_MODAL_IDS = ['tacka-name-modal', 'trag-name-modal', 'poligon-name-modal', 'foto-name-modal'];
     function _resizeInputModalsForKeyboard() {
         if (!window.visualViewport) return;
         var h = window.visualViewport.height;
