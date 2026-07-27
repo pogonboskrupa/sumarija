@@ -1547,53 +1547,14 @@
         if (t < 0 || t > 1 || u < 0 || u > 1) return null;
         return t;
     }
-    // Dio granice odjela (jedan ili više lanaca tačaka) koji leži NA JEDNOJ
-    // STRANI zadate p-projekcije (limitProj) — koristi se da PRVA i ZADNJA
-    // linija prate STVARNU (često krivudavu) granicu odjela umjesto kratkog
-    // pravog isječka (vidi poziv niže). "wantBelow" bira stranu: true = dio
-    // granice sa projekcijom <= limitProj (kraj odjela na strani minProj-a),
-    // false = >= limitProj (kraj na strani maxProj-a). Sječe ivice ring-a
-    // tačno na limitProj (linearna interpolacija) da se lanac lijepo spoji sa
-    // pravom linijom koju zamjenjuje.
-    function _boundaryCapChains(ringsXY, p, limitProj, wantBelow) {
-        function proj(pt) { return pt.x * p.x + pt.y * p.y; }
-        function isIn(val) { return wantBelow ? val <= limitProj : val >= limitProj; }
-        var chains = [];
-        ringsXY.forEach(function(ring) {
-            var n = ring.length;
-            if (n < 2) return;
-            var current = null;
-            for (var i = 0; i < n; i++) {
-                var a = ring[i], b = ring[(i + 1) % n];
-                var aIn = isIn(proj(a)), bIn = isIn(proj(b));
-                if (aIn && bIn) {
-                    if (!current) current = [a];
-                    current.push(b);
-                } else if (aIn && !bIn) {
-                    var t1 = (limitProj - proj(a)) / (proj(b) - proj(a));
-                    var cross1 = { x: a.x + (b.x - a.x) * t1, y: a.y + (b.y - a.y) * t1 };
-                    if (!current) current = [a];
-                    current.push(cross1);
-                    if (current.length > 1) chains.push(current);
-                    current = null;
-                } else if (!aIn && bIn) {
-                    var t2 = (limitProj - proj(a)) / (proj(b) - proj(a));
-                    current = [{ x: a.x + (b.x - a.x) * t2, y: a.y + (b.y - a.y) * t2 }];
-                }
-            }
-            if (current && current.length > 1) chains.push(current);
-        });
-        return chains;
-    }
     // Generiše paralelne linije preko geometrije odjela (ringsXY — niz
     // prstenova, svaki niz {x,y} tačaka u lokalnim metrima), na datom azimutu
     // (0-359°, 0=sjever) i razmaku (metri). Vraća niz { index, segments }
     // (segments = niz lanaca tačaka u LOKALNIM koordinatama — svaki lanac ima
     // BAR 2 tačke, pozivalac ih vraća u lat/lng preko _fromLocalXY), sortiran
     // po index-u (rastuće, deterministički za istu geometriju+azimut+razmak).
-    // PRVA i ZADNJA linija (najbliže rubovima odjela duž p-ose) prate STVARNU
-    // granicu odjela (može biti krivudava — vidi _boundaryCapChains) umjesto
-    // kratkog pravog isječka; sve OSTALE (unutrašnje) linije ostaju prave.
+    // SVE linije su prave; raspored ih centrira tako da nijedna (pa ni prva/
+    // zadnja) ne padne tik uz granicu odjela — vidi "RASPORED LINIJA" niže.
     function _generateSjeceLinesXY(ringsXY, azimuthDeg, spacingM) {
         var azRad = azimuthDeg * Math.PI / 180;
         var d = { x: Math.sin(azRad), y: Math.cos(azRad) };   // smjer linije (niz padinu)
@@ -1618,12 +1579,27 @@
         var diag = Math.sqrt(Math.pow(maxX - minX, 2) + Math.pow(maxY - minY, 2));
         var halfLen = diag * 2 + spacingM; // sigurno predugo — oba kraja garantovano van geometrije
 
-        var kStart = Math.ceil(minProj / spacingM);
-        var kEnd = Math.floor(maxProj / spacingM);
+        // RASPORED LINIJA — centriran unutar odjela, sa jednakom marginom na
+        // oba kraja koja je UVIJEK bar pola razmaka.
+        //
+        // Ranije su linije bile "zakačene" na apsolutnu mrežu (k * razmak), pa
+        // je prva/zadnja znala pasti tik uz samu granicu odjela — u uglu gdje
+        // je odjel uzan, što je davalo beskoristan kratki patrljak (i to je
+        // bio razlog ranijeg pokušaja da prva/zadnja prate granicu, što je
+        // opet pogrešno jer linija onda POSTANE granica umjesto da bude
+        // sječačka linija).
+        //
+        // Sada: n linija razmaknutih TAČNO za zadati razmak, ali pomjerenih
+        // tako da su podjednako udaljene od oba ruba (margina >= razmak/2).
+        // Prva linija time uvijek stoji pravilno unutar prvog pojasa (od
+        // granice do druge linije), puna dužina, prava — kao i sve ostale.
+        var width = maxProj - minProj;
+        var lineCount = Math.max(1, Math.floor(width / spacingM));
+        var margin = (width - (lineCount - 1) * spacingM) / 2;
 
         var result = [];
-        for (var k = kStart; k <= kEnd; k++) {
-            var originProj = k * spacingM;
+        for (var li = 0; li < lineCount; li++) {
+            var originProj = minProj + margin + li * spacingM;
             var basePt = { x: p.x * originProj, y: p.y * originProj };
             var segA = { x: basePt.x - d.x * halfLen, y: basePt.y - d.y * halfLen };
             var segB = { x: basePt.x + d.x * halfLen, y: basePt.y + d.y * halfLen };
@@ -1650,25 +1626,10 @@
                 var pt1 = { x: segA.x + (segB.x - segA.x) * t1, y: segA.y + (segB.y - segA.y) * t1 };
                 segments.push([pt0, pt1]);
             }
-            if (segments.length) result.push({ k: k, segments: segments });
+            if (segments.length) result.push({ proj: originProj, segments: segments });
         }
-        // Zamijeni PRVU i ZADNJU liniju (result[0]/result[result.length-1] —
-        // krajevi po p-osi, ne nužno kStart/kEnd ako su ti k-ovi degenerisano
-        // prazni) stvarnom granicom odjela na toj strani, ako je granica
-        // pronađena (fallback ostaje prava linija ako je cap prazan/degenerisan).
-        if (result.length) {
-            var first = result[0];
-            var firstCap = _boundaryCapChains(ringsXY, p, first.k * spacingM, true);
-            if (firstCap.length) first.segments = firstCap;
-
-            var last = result[result.length - 1];
-            if (last !== first) {
-                var lastCap = _boundaryCapChains(ringsXY, p, last.k * spacingM, false);
-                if (lastCap.length) last.segments = lastCap;
-            }
-        }
-        // Prikazni broj linije — sekvencijalno od 1, redoslijed FIKSIRAN kStart-om
-        // (deterministički za iste ulaze, isti na svakom telefonu).
+        // Prikazni broj linije — sekvencijalno od 1, redoslijed fiksiran
+        // rasporedom iznad (deterministički za iste ulaze, isti na svakom telefonu).
         result.forEach(function(line, idx) { line.index = idx + 1; });
         return result;
     }
@@ -1856,11 +1817,10 @@
         _sjeceLayers.forEach(function(l) { _map.removeLayer(l); });
         _sjeceLayers = [];
     }
-    // Pretvori generisane linije (lokalne x,y) u lat/lng — segment je ovdje
-    // LANAC tačaka (BAR 2), ne nužno samo dvije: prva/zadnja linija znaju
-    // pratiti stvarnu (krivudavu) granicu odjela, pa imaju više tačaka
-    // (vidi _boundaryCapChains); unutrašnje linije su i dalje obični 2-tačka
-    // pravi segmenti.
+    // Pretvori generisane linije (lokalne x,y) u lat/lng. Segment je lanac
+    // tačaka (u praksi 2 — prava linija); lanac je zadržan kao oblik jer
+    // jedna linija zna imati VIŠE odvojenih segmenata kad presiječe rupu u
+    // odjelu ili prazninu između dva dijela rasparčanog odjela.
     function _sjeceLinesToLatLng(linesXY, lat0, lng0) {
         return linesXY.map(function(line) {
             return {
