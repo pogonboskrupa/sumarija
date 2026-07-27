@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.12';
+        const APP_VERSION = '2.13';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -5616,7 +5616,7 @@
                             📊 UKUPNO
                         </td>
                         ${totalCells}
-                        <td style="background: #f59e0b; border: 2px solid #f59e0b; font-family: 'Courier New', monospace; text-align: right; padding: 12px; font-weight: 900; font-size: 14px; color: #451a03;">
+                        <td style="background: #92400e; border: 2px solid #f59e0b; font-family: 'Courier New', monospace; text-align: right; padding: 12px; font-weight: 900; font-size: 14px; color: white;">
                             ${grandTotal.toFixed(2)}
                         </td>
                     </tr>
