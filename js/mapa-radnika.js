@@ -469,6 +469,10 @@
         var labelsCb = document.getElementById('radnik-mapa-labels-toggle');
         if (labelsCb && labelsCb.checked) _renderLabels();
 
+        // Poligoni odjela su upravo dodati IZNAD korisnikovih slojeva (iste
+        // Leaflet "pane") pa bi hvatali klik namijenjen površini/tragu ispod.
+        _bringUserLayersToFront();
+
         return radnikLayers.length;
     }
 
@@ -801,14 +805,59 @@
     function _savePoligoni(list) {
         try { localStorage.setItem(_poligonStorageKey(), JSON.stringify(list)); } catch (_) {}
     }
+    // Površina poligona u m² — lokalna ravna projekcija (oko prve tačke) +
+    // "shoelace" formula. Na skali odjela/radne površine (stotine metara)
+    // greška projekcije je zanemarljiva.
+    function _polygonAreaM2(points) {
+        if (!points || points.length < 3) return 0;
+        var lat0 = points[0][0], lng0 = points[0][1];
+        var pts = points.map(function(p) { return _toLocalXY(p[0], p[1], lat0, lng0); });
+        var sum = 0;
+        for (var i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+            sum += (pts[j].x * pts[i].y) - (pts[i].x * pts[j].y);
+        }
+        return Math.abs(sum / 2);
+    }
+    function _fmtPovrsina(m2) {
+        if (m2 >= 10000) return (m2 / 10000).toFixed(2) + ' ha (' + Math.round(m2).toLocaleString('de-DE') + ' m²)';
+        return Math.round(m2).toLocaleString('de-DE') + ' m²';
+    }
     function _drawSavedPoligoni() {
         _savedPoligonLayers.forEach(function(l) { _map.removeLayer(l); });
         _savedPoligonLayers = [];
-        _loadSavedPoligoni().forEach(function(p) {
+        _loadSavedPoligoni().forEach(function(p, i) {
             if (!p.points || p.points.length < 3) return;
+            var safeName = String(p.name || 'Površina').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            var when = p.created ? new Date(p.created).toLocaleString('bs-BA') : '';
+            var povrsina = _polygonAreaM2(p.points);
             var poly = L.polygon(p.points, { color: '#ea580c', weight: 2.5, fillColor: '#fb923c', fillOpacity: 0.3 }).addTo(_map);
-            poly.bindTooltip('✏️ ' + (p.name || 'Površina'), { sticky: true });
+            poly.bindTooltip('✏️ ' + safeName, { sticky: true });
+            // Klik na površinu otvara info + brisanje (isti obrazac kao tačke i
+            // fotografije) — ranije se površina uopšte nije mogla kliknuti, pa
+            // se brisala isključivo preko spiska u "Ostalo".
+            poly.bindPopup(
+                '<div class="rm-tacka-popup">' +
+                '<div class="rm-tacka-popup-title">✏️ ' + safeName + '</div>' +
+                '<div style="font-size:12px;color:#4b5563;margin-bottom:8px;">' +
+                'Površina: <strong>' + _fmtPovrsina(povrsina) + '</strong>' +
+                (when ? '<br>Označeno: ' + when : '') +
+                '</div>' +
+                '<button type="button" class="rm-tacka-popup-delete" onclick="mapaRadnikaDeletePoligon(' + i + ')">🗑️ Obriši</button>' +
+                '</div>'
+            );
             _savedPoligonLayers.push(poly);
+        });
+        _bringUserLayersToFront();
+    }
+    // Korisnikovi slojevi (površine, tragovi, sječačke linije) dijele Leaflet
+    // "overlayPane" sa poligonima odjela. Poligoni odjela se crtaju KASNIJE
+    // (kad stignu podaci, _renderLayer), pa završe IZNAD i onda oni hvataju
+    // klik umjesto površine ispod — zato se korisnikovi slojevi moraju vratiti
+    // na vrh. (Tačke i fotografije su markeri, u višem "markerPane", pa ih ovo
+    // ne treba.)
+    function _bringUserLayersToFront() {
+        [_savedPoligonLayers, _savedTrackLayers, _sjeceLayers].forEach(function(arr) {
+            (arr || []).forEach(function(l) { if (l && l.bringToFront && _map && _map.hasLayer(l)) l.bringToFront(); });
         });
     }
     function _redrawPoligonDraw() {
@@ -913,6 +962,7 @@
         var list = _loadSavedPoligoni();
         var p = list[index];
         if (!p) return;
+        if (_map) _map.closePopup(); // poziv može doći iz popup-a na samoj površini
         _showTragConfirm('Obrisati površinu "' + (p.name || 'Površina') + '"?', function() {
             var fresh = _loadSavedPoligoni();
             fresh.splice(index, 1);
