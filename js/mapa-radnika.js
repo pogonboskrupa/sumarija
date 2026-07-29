@@ -975,7 +975,10 @@
             var name = (p.name || 'Površina').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             return '<div class="rm-tragovi-row">' +
                 '<span class="rm-tragovi-row-info">' + name + '<br><small>' + when + '</small></span>' +
+                '<span style="display:flex;gap:4px;">' +
+                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaSharePoligon(' + i + ')" aria-label="Podijeli površinu">📤</button>' +
                 '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeletePoligon(' + i + ')" aria-label="Obriši površinu">🗑️</button>' +
+                '</span>' +
                 '</div>';
         }).join('');
     }
@@ -1269,6 +1272,7 @@
                 '<span class="rm-tragovi-row-info">📍 ' + name + '<br><small>' + when + '</small></span>' +
                 '<span style="display:flex;gap:4px;">' +
                 '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaRouteToTacka(' + i + ')" aria-label="Vodi me do tačke">🧭</button>' +
+                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaShareTacka(' + i + ')" aria-label="Podijeli tačku">📤</button>' +
                 '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeleteTacka(' + i + ')" aria-label="Obriši tačku">🗑️</button>' +
                 '</span>' +
                 '</div>';
@@ -2225,6 +2229,7 @@
                 '<span class="rm-tragovi-row-info">' + _mjerenjeKratko(m) + '<br><small>' + when + '</small></span>' +
                 '<span style="display:flex;gap:4px;">' +
                 '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaZoomMjerenje(' + i + ')" aria-label="Prikaži na mapi">🔍</button>' +
+                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaShareMjerenje(' + i + ')" aria-label="Podijeli mjerenje">📤</button>' +
                 '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeleteMjerenje(' + i + ')" aria-label="Obriši mjerenje">🗑️</button>' +
                 '</span>' +
                 '</div>';
@@ -2560,6 +2565,145 @@
         if (min < 60) return min + ' min';
         return Math.floor(min / 60) + 'h ' + (min % 60) + 'min';
     }
+    // ---- IZVOZ TERENSKIH PODATAKA (GPX) ----
+    // Tragovi/tačke/površine/mjerenja žive SAMO na radnikovom telefonu
+    // (localStorage). Bez izvoza se sav taj posao nepovratno gubi kad se
+    // telefon izgubi/zamijeni ili neko "očisti podatke pregledniku" — a niko
+    // drugi to nikad nije ni vidio.
+    //
+    // GPX je odabran jer ga otvara doslovno svaki GIS/navigacioni program
+    // (QGIS, Garmin, OsmAnd, Locus...) i može se poslati poslovođi preko
+    // Vibera/WhatsApp-a. Dijeljenje ide kroz isti native share meni kao
+    // fotografije, pa radi OFFLINE — nema servera ni upload-a.
+    // Poligoni (površine) se pišu kao ZATVORENA staza (prva tačka ponovljena
+    // na kraju) — GPX nema poseban tip za poligon, a zatvorena staza je
+    // standardan i svuda podržan način da se područje prenese.
+    function _xmlEsc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+    }
+    function _gpxTime(iso) {
+        try { return new Date(iso).toISOString(); } catch (_) { return new Date().toISOString(); }
+    }
+    function _gpxWpt(lat, lng, name, iso) {
+        return '  <wpt lat="' + lat + '" lon="' + lng + '">\n' +
+            '    <name>' + _xmlEsc(name) + '</name>\n' +
+            (iso ? '    <time>' + _gpxTime(iso) + '</time>\n' : '') +
+            '  </wpt>\n';
+    }
+    function _gpxTrk(name, points, iso) {
+        if (!points || points.length < 2) return '';
+        var s = '  <trk>\n    <name>' + _xmlEsc(name) + '</name>\n' +
+            (iso ? '    <time>' + _gpxTime(iso) + '</time>\n' : '') + '    <trkseg>\n';
+        points.forEach(function(p) {
+            s += '      <trkpt lat="' + p[0] + '" lon="' + p[1] + '"></trkpt>\n';
+        });
+        return s + '    </trkseg>\n  </trk>\n';
+    }
+    function _gpxDoc(inner, naslov) {
+        return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+            '<gpx version="1.1" creator="Sumarija Bosanska Krupa" xmlns="http://www.topografix.com/GPX/1/1">\n' +
+            '  <metadata>\n    <name>' + _xmlEsc(naslov) + '</name>\n' +
+            '    <time>' + new Date().toISOString() + '</time>\n  </metadata>\n' +
+            inner + '</gpx>\n';
+    }
+    function _safeFileName(s) {
+        return String(s || 'podaci')
+            .replace(/[ČĆ]/g, 'C').replace(/[čć]/g, 'c').replace(/Š/g, 'S').replace(/š/g, 's')
+            .replace(/Ž/g, 'Z').replace(/ž/g, 'z').replace(/Đ/g, 'Dj').replace(/đ/g, 'dj')
+            .replace(/[^\w\-]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 60) || 'podaci';
+    }
+    // Native share meni ako uređaj podržava dijeljenje fajlova (telefon),
+    // inače klasično preuzimanje fajla (desktop). Oboje radi bez interneta.
+    async function _shareOrDownloadGpx(fileName, gpx, naslov) {
+        var file;
+        try {
+            file = new File([gpx], fileName, { type: 'application/gpx+xml' });
+        } catch (_) { file = null; }
+        if (file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+            try {
+                await navigator.share({ files: [file], title: naslov });
+                return;
+            } catch (err) {
+                if (err && err.name === 'AbortError') return; // korisnik zatvorio meni
+                // ostalo — padni na preuzimanje ispod
+            }
+        }
+        try {
+            var url = URL.createObjectURL(new Blob([gpx], { type: 'application/gpx+xml' }));
+            var a = document.createElement('a');
+            a.href = url; a.download = fileName;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+            _notify('showSuccess', 'Fajl spremljen', fileName);
+        } catch (e) {
+            _notify('showError', 'Nije moguće izvesti podatke', e.message);
+        }
+    }
+    window.mapaRadnikaShareTrag = function(index) {
+        var t = _loadSavedTracks()[index];
+        if (!t || !t.points || t.points.length < 2) { _notify('showWarning', 'Trag nema dovoljno tačaka za izvoz.'); return; }
+        var naziv = t.name || 'Trag';
+        _shareOrDownloadGpx(_safeFileName(naziv) + '.gpx', _gpxDoc(_gpxTrk(naziv, t.points, t.start), naziv), naziv);
+    };
+    window.mapaRadnikaShareTacka = function(index) {
+        var t = _loadSavedTacke()[index];
+        if (!t) return;
+        if (_map) _map.closePopup();
+        var naziv = t.name || 'Tačka';
+        _shareOrDownloadGpx(_safeFileName(naziv) + '.gpx', _gpxDoc(_gpxWpt(t.lat, t.lng, naziv, t.created), naziv), naziv);
+    };
+    window.mapaRadnikaSharePoligon = function(index) {
+        var p = _loadSavedPoligoni()[index];
+        if (!p || !p.points || p.points.length < 3) return;
+        if (_map) _map.closePopup();
+        var naziv = p.name || 'Površina';
+        var zatvoren = p.points.concat([p.points[0]]); // GPX nema poligon — zatvorena staza
+        _shareOrDownloadGpx(_safeFileName(naziv) + '.gpx', _gpxDoc(_gpxTrk(naziv, zatvoren, p.created), naziv), naziv);
+    };
+    window.mapaRadnikaShareMjerenje = function(index) {
+        var m = _loadSavedMjerenja()[index];
+        if (!m || !m.points || m.points.length < 2) return;
+        if (_map) _map.closePopup();
+        var naziv = _mjerenjeKratko(m).replace(/<[^>]*>/g, '');
+        var pts = m.tip === 'povrsina' ? m.points.concat([m.points[0]]) : m.points;
+        _shareOrDownloadGpx(_safeFileName(naziv) + '.gpx', _gpxDoc(_gpxTrk(naziv, pts, m.created), naziv), naziv);
+    };
+    // Sve odjednom — jedan GPX sa svim tačkama i stazama (za predaju/arhivu).
+    window.mapaRadnikaExportSve = function() {
+        var inner = '';
+        var brojac = 0;
+        _loadSavedTacke().forEach(function(t) {
+            inner += _gpxWpt(t.lat, t.lng, t.name || 'Tačka', t.created); brojac++;
+        });
+        _loadSavedFoto().then(function(foto) {
+            // Fotografije nose lokaciju — u GPX idu kao tačke (sama slika se
+            // dijeli zasebno, GPX ne nosi binarni sadržaj).
+            foto.forEach(function(f) {
+                if (f.lat != null && f.lng != null) { inner += _gpxWpt(f.lat, f.lng, '📷 ' + (f.name || 'Foto'), f.created); brojac++; }
+            });
+            _loadSavedTracks().forEach(function(t) {
+                if (t.points && t.points.length >= 2) { inner += _gpxTrk(t.name || 'Trag', t.points, t.start); brojac++; }
+            });
+            _loadSavedPoligoni().forEach(function(p) {
+                if (p.points && p.points.length >= 3) { inner += _gpxTrk(p.name || 'Površina', p.points.concat([p.points[0]]), p.created); brojac++; }
+            });
+            _loadSavedMjerenja().forEach(function(m) {
+                if (m.points && m.points.length >= 2) {
+                    var pts = m.tip === 'povrsina' ? m.points.concat([m.points[0]]) : m.points;
+                    inner += _gpxTrk(_mjerenjeKratko(m).replace(/<[^>]*>/g, ''), pts, m.created); brojac++;
+                }
+            });
+            if (!brojac) { _notify('showWarning', 'Nema terenskih podataka za izvoz.'); return; }
+            var korisnik = _currentUserObj().fullName || _currentUserObj().username || 'radnik';
+            var datum = new Date().toISOString().slice(0, 10);
+            var naslov = 'Teren ' + korisnik + ' ' + datum;
+            _hideOstaloMenu();
+            _shareOrDownloadGpx(_safeFileName(naslov) + '.gpx', _gpxDoc(inner, naslov), naslov);
+        });
+    };
+
     function _renderTragoviList() {
         var list = document.getElementById('radnik-mapa-tragovi-list');
         if (!list) return;
@@ -2576,7 +2720,10 @@
             var stats = km + ' km' + (dur ? ' · ' + dur : '');
             return '<div class="rm-tragovi-row">' +
                 '<span class="rm-tragovi-row-info">' + name + '<br><small>' + when + ' · ' + stats + '</small></span>' +
+                '<span style="display:flex;gap:4px;">' +
+                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaShareTrag(' + i + ')" aria-label="Podijeli trag">📤</button>' +
                 '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeleteTrag(' + i + ')" aria-label="Obriši trag">🗑️</button>' +
+                '</span>' +
                 '</div>';
         }).join('');
     }
