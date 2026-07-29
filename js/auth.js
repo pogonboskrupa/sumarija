@@ -302,6 +302,12 @@
             // Start manifest checker after login
             startManifestChecker();
 
+            // Poziv na instalaciju aplikacije (samo ako app NIJE instalirana) —
+            // sa odgodom da ne skoči preko ekrana dok se početni prikaz učitava.
+            setTimeout(function() {
+                if (typeof maybeShowInstallPrompt === 'function') maybeShowInstallPrompt();
+            }, 2500);
+
             // Setup cross-tab synchronization
             setupCrossTabSync();
 

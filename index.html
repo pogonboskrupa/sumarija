@@ -3642,6 +3642,53 @@
         </div>
     </div>
 
+    <!-- Poziv na instalaciju aplikacije — prikazuje se korisnicima koji app
+         koriste kroz browser (nisu instalirali APK/PWA). Vidi maybeShowInstallPrompt()
+         u js/app.js. Sadrži i korak sa potvrdom instalacije iz nepoznatog izvora,
+         jer APK ne dolazi sa Google Play-a. -->
+    <!-- z-index 30001: .modal-overlay je inače 1000, a .header/.tabs-container su
+         10000 — bez ovoga bi zaglavlje i traka tabova stajali IZNAD ovog modala. -->
+    <div class="modal-overlay" id="install-app-modal" style="display: none; z-index: 30001;">
+        <div class="modal" style="max-width: 460px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #047857 0%, #065f46 100%); color: white; padding: 16px 20px; border-radius: 12px 12px 0 0; margin: -24px -24px 16px -24px;">
+                <div class="modal-title" style="font-size: 18px; font-weight: 700; color: white;">📲 Instalirajte aplikaciju</div>
+            </div>
+            <div class="modal-body" style="margin-bottom: 20px;">
+                <p style="font-size: 14px; color: #374151; line-height: 1.6; margin: 0 0 14px;">
+                    Koristite aplikaciju kroz internet preglednik. <strong>Instalirana aplikacija</strong>
+                    radi brže, otvara se sa ikone na ekranu i <strong>radi bez interneta na terenu</strong>.
+                </p>
+                <div id="install-app-steps-android">
+                    <div style="font-size: 13px; font-weight: 700; color: #047857; margin-bottom: 8px;">Kako instalirati:</div>
+                    <ol style="font-size: 13px; color: #374151; line-height: 1.7; margin: 0 0 14px; padding-left: 20px;">
+                        <li>Dodirnite dugme <strong>Preuzmi aplikaciju</strong> ispod (ili u meniju ⚙️).</li>
+                        <li>Ako preglednik upozori na preuzimanje, potvrdite <strong>„Preuzmi svejedno"</strong>.</li>
+                        <li>Otvorite preuzeti fajl — iz obavještenja ili iz mape <strong>Preuzimanja</strong>.</li>
+                        <li>Android će javiti da instalacija iz ovog izvora nije dozvoljena — dodirnite
+                            <strong>Postavke</strong> pa uključite <strong>„Dozvoli iz ovog izvora"</strong>.</li>
+                        <li>Vratite se nazad i dodirnite <strong>Instaliraj</strong>.</li>
+                    </ol>
+                    <div style="font-size: 12px; color: #6b7280; background: #f9fafb; border-left: 3px solid #d1d5db; padding: 10px 12px; border-radius: 0 6px 6px 0; line-height: 1.5;">
+                        ℹ️ Korak 4 je normalan — aplikacija se ne preuzima sa Google Play prodavnice
+                        nego direktno sa servera Šumarije, pa Android traži vašu potvrdu.
+                    </div>
+                </div>
+                <div id="install-app-steps-ios" style="display: none;">
+                    <div style="font-size: 13px; font-weight: 700; color: #047857; margin-bottom: 8px;">Kako instalirati na iPhone/iPad:</div>
+                    <ol style="font-size: 13px; color: #374151; line-height: 1.7; margin: 0; padding-left: 20px;">
+                        <li>Dodirnite dugme <strong>Podijeli</strong> (kvadrat sa strelicom prema gore) u Safari traci.</li>
+                        <li>Odaberite <strong>„Dodaj na Home Screen"</strong> (Add to Home Screen).</li>
+                        <li>Dodirnite <strong>Dodaj</strong> u gornjem desnom uglu.</li>
+                    </ol>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+                <button class="btn btn-secondary" onclick="dismissInstallPrompt()">Kasnije</button>
+                <button class="btn btn-primary" id="install-app-download-btn" onclick="downloadAppFromPrompt()" style="background: #047857;">⬇️ Preuzmi aplikaciju</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Kupac Details Modal -->
     <div class="modal-overlay" id="kupac-details-modal" style="display: none;">
         <div class="modal" style="width: 96vw; max-width: 1700px; max-height: 90vh; display: flex; flex-direction: column;">

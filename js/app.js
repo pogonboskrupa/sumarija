@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.22';
+        const APP_VERSION = '2.23';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -12567,5 +12567,66 @@
             deferredPrompt = null;
             var btn = document.getElementById('pwa-install-btn');
             if (btn) btn.style.display = 'none';
+            // Instalirano — poziv na instalaciju više nikad ne treba
+            try { localStorage.setItem('app_install_done', '1'); } catch (_) {}
         });
+
+        // ========== POZIV NA INSTALACIJU (za korisnike u browseru) ==========
+        // Korisnici koji app otvaraju kroz link u pregledniku često ni ne znaju
+        // da postoji instalabilna verzija (meni ⚙️ → "Preuzmi aplikaciju"), pa
+        // im nedostaje offline rad na terenu. Ovaj modal ih na to uputi, uz
+        // korak sa potvrdom instalacije iz nepoznatog izvora — APK ne dolazi
+        // sa Google Play-a pa Android traži izričitu dozvolu, što bez
+        // objašnjenja djeluje kao greška i ljudi odustanu.
+        var INSTALL_SNOOZE_DANA = 7;
+
+        // Instalirana aplikacija (APK/TWA ili PWA) radi u "standalone" modu.
+        // TWA (APK) dodatno ima android-app:// referrer — provjeravamo oboje
+        // jer display-mode zna izostati u nekim WebView konfiguracijama.
+        function isInstalledApp() {
+            if (isStandalonePwa()) return true;
+            if (document.referrer && document.referrer.indexOf('android-app://') === 0) return true;
+            try { return localStorage.getItem('app_install_done') === '1'; } catch (_) { return false; }
+        }
+
+        function maybeShowInstallPrompt() {
+            if (isInstalledApp()) return;
+            // Odloženo na korisnikov zahtjev ("Kasnije")
+            try {
+                var until = parseInt(localStorage.getItem('install_prompt_snooze_until') || '0', 10);
+                if (until && Date.now() < until) return;
+            } catch (_) {}
+
+            var modal = document.getElementById('install-app-modal');
+            if (!modal) return;
+            // iOS nema APK — tamo je jedini put "Dodaj na Home Screen"
+            var ios = isIosDevice();
+            var androidSteps = document.getElementById('install-app-steps-android');
+            var iosSteps = document.getElementById('install-app-steps-ios');
+            var dlBtn = document.getElementById('install-app-download-btn');
+            if (androidSteps) androidSteps.style.display = ios ? 'none' : '';
+            if (iosSteps) iosSteps.style.display = ios ? '' : 'none';
+            if (dlBtn) dlBtn.style.display = ios ? 'none' : '';
+            modal.style.display = 'flex';
+        }
+        window.maybeShowInstallPrompt = maybeShowInstallPrompt;
+
+        function dismissInstallPrompt() {
+            var modal = document.getElementById('install-app-modal');
+            if (modal) modal.style.display = 'none';
+            try {
+                localStorage.setItem('install_prompt_snooze_until',
+                    String(Date.now() + INSTALL_SNOOZE_DANA * 24 * 60 * 60 * 1000));
+            } catch (_) {}
+        }
+        window.dismissInstallPrompt = dismissInstallPrompt;
+
+        function downloadAppFromPrompt() {
+            // Isti link kao stavka menija "⬇️ Preuzmi aplikaciju"
+            window.open(encodeURI('/downloads/Šumarija.apk'), '_blank');
+            // Ne gasi trajno — korisnik se tek vraća da završi instalaciju,
+            // ali odloži da mu se ne pojavljuje dok instalira.
+            dismissInstallPrompt();
+        }
+        window.downloadAppFromPrompt = downloadAppFromPrompt;
 
