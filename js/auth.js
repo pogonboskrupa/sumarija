@@ -192,6 +192,17 @@
                     { id: 'mjesecni-sortimenti', icon: '📅', label: 'Mjesečni pregled' },
                     { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' }
                 ];
+            } else if (userType === 'operateri') {
+                // Ograničena uloga (šifrarnik "Korisnici", kolona tip = OPERATERI):
+                // vidi SAMO "Prikaz po kupcima" i po jedan podtab unutar SJEČA/OTPREMA
+                // ("Sječa po danima"/"Otprema po danima") — ostali podtabovi unutar tih
+                // dviju stranica (Mjesečni prikaz, Radilišta, Izvođači...) se sakrivaju
+                // dolje u ovoj istoj funkciji (traži "OPERATERI: sakrij").
+                tabsConfig = [
+                    { id: 'kupci', icon: '🏢', label: 'Prikaz po kupcima', active: true },
+                    { id: 'primaci', icon: '👷', label: 'SJEČA' },
+                    { id: 'otpremaci', icon: '🚛', label: 'OTPREMA' }
+                ];
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
                 tabsConfig = [
                     { id: 'poslovodja-sjeca', icon: '🪓', label: 'SJEČA', active: true },
@@ -219,6 +230,25 @@
                     { id: 'pending-unosi', icon: '📋', label: 'Dodani unosi', hasBadge: true },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
                 ];
+            }
+
+            // OPERATERI: sakrij sve podtabove unutar SJEČA/OTPREMA osim
+            // "Sječa po danima"/"Otprema po danima" (submenu je statičan HTML,
+            // isti za sve uloge — jedini način da OPERATERI vidi SAMO ta dva
+            // podtaba je da se ostali fizički sakriju umjesto da se filtrira
+            // sadržaj tabsConfig-a, jer submenu živi UNUTAR primaci-content/
+            // otpremaci-content, ne kao zaseban tab).
+            if (userType === 'operateri') {
+                var _hidePrimaciSubmenu = ['monthly', 'radilista', 'izvodjaci', 'sortimenti-by-primac'];
+                var _hideOtpremaciSubmenu = ['monthly', 'radilista', 'po-kupcima', 'sortimenti-by-otpremac'];
+                document.querySelectorAll('#primaci-content .submenu-tab').forEach(function(btn) {
+                    var m = /switchPrimaciSubmenu\('([^']+)'\)/.exec(btn.getAttribute('onclick') || '');
+                    if (m && _hidePrimaciSubmenu.indexOf(m[1]) !== -1) btn.classList.add('hidden');
+                });
+                document.querySelectorAll('#otpremaci-content .submenu-tab').forEach(function(btn) {
+                    var m = /switchOtremaciSubmenu\('([^']+)'\)/.exec(btn.getAttribute('onclick') || '');
+                    if (m && _hideOtpremaciSubmenu.indexOf(m[1]) !== -1) btn.classList.add('hidden');
+                });
             }
 
             // Generate sidebar tabs (desktop)
@@ -481,6 +511,8 @@
                 return loadOtpremacPersonal();
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
                 return loadPoslovodjaSjeca();
+            } else if (userType === 'operateri') {
+                return loadKupci();
             } else {
                 return loadDashboard();
             }
