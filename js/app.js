@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.18';
+        const APP_VERSION = '2.19';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6703,15 +6703,21 @@
                     `;
                 });
 
-                // UKUPNO red
+                // UKUPNO red — klasa "ukupno-row" + eksplicitan color:white na
+                // svakoj ćeliji: postoji blanket pravilo (css/table-contrast-fix.css,
+                // "table td[style*='text-align: right']") koje forsira tamni tekst
+                // #0f172a !important na SVAKU desno-poravnatu ćeliju u app-u, bez obzira
+                // na tabelu — bez ove dvije stvari (klasa + #kupac-details-table
+                // ID-kvalifikovano pravilo, vidi CSS) ćelije sa brojevima bi bile
+                // tamne na tamnoj podlozi.
                 html += `
-                    <tr style="background: linear-gradient(135deg, #0e7490 0%, #155e75 100%); color: white; font-weight: 700;">
-                        <td style="position: sticky; left: 0; z-index: 5; background: #0e7490; padding: 12px 8px; font-weight: 800; border-right: 2px solid #164e63;">📊 UKUPNO</td>
+                    <tr class="ukupno-row" style="background: linear-gradient(135deg, #0e7490 0%, #155e75 100%); color: white; font-weight: 700;">
+                        <td style="position: sticky; left: 0; z-index: 5; background: #0e7490; padding: 12px 8px; font-weight: 800; border-right: 2px solid #164e63; color: white;">📊 UKUPNO</td>
                         <td colspan="2" style="padding: 12px 8px;"></td>
                         ${sortimentiNazivi.map(s => {
                             const val = totals[s] || 0;
                             const display = val > 0 ? val.toFixed(2) : '-';
-                            return `<td style="padding: 12px 6px; text-align: right; font-family: 'Roboto Mono', monospace; font-weight: 800;">${display}</td>`;
+                            return `<td style="padding: 12px 6px; text-align: right; font-family: 'Roboto Mono', monospace; font-weight: 800; color: white;">${display}</td>`;
                         }).join('')}
                     </tr>
                 `;

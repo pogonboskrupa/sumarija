@@ -296,6 +296,48 @@ function printMjesecniCard(tip) {
     win.document.close();
 }
 
+// Štampa modal "Detalji kupca" (Prikaz po kupcima > klik na kupca) — isti
+// pro obrazac kao printMjesecniCard: čist HTML iz već renderovane tabele
+// (js/app.js showKupacDetails puni #kupac-details-table), sa "pro" print
+// stilom (buildPrintDocument) umjesto sirovog "print cijelu stranicu".
+function printKupacDetails() {
+    const tableEl = document.getElementById('kupac-details-table');
+    if (!tableEl) { alert('Podaci još nisu učitani ili nema podataka za štampanje.'); return; }
+    const tbody = tableEl.querySelector('tbody');
+    if (!tbody || !tbody.querySelector('tr td')) {
+        alert('Nema podataka za štampanje.');
+        return;
+    }
+
+    const titleElem = document.getElementById('kupac-modal-title');
+    const kupacName = titleElem ? cleanPrintText(titleElem.textContent).replace(/^Otpreme za:\s*/i, '') : 'Kupac';
+
+    const year = new Date().getFullYear();
+    const datumStampe   = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const vrijemeStampe = new Date().toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' });
+    const accent = '#0891b2';
+
+    const sectionsHtml = `
+        <div class="print-section">
+            <div class="section-header" style="border-left:4px solid ${accent};">Otpreme po kupcu — ${year}. godina</div>
+            ${tableToCleanHtml(tableEl)}
+        </div>`;
+
+    const win = window.open('', '_blank', 'width=1200,height=900,scrollbars=yes');
+    if (!win) { alert('Popup blokiran — dozvolite popup prozore za štampanje.'); return; }
+    win.document.write(buildPrintDocument({
+        tabLabel: 'Otprema',
+        activeTabLabel: kupacName,
+        accentColor: accent,
+        monthName: String(year),
+        year: '',
+        datumStampe,
+        vrijemeStampe,
+        sectionsHtml
+    }));
+    win.document.close();
+}
+
 function printActiveView(contentId, tabLabel, accentColor) {
     const container = document.getElementById(contentId);
     if (!container) return;

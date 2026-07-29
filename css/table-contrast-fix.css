@@ -547,6 +547,9 @@ tr[style*="background: linear-gradient"][style*="#065f46"] td {
    smeđoj podlozi. Ovi selektori su (1,1,1) pa taj blanket fix pobjeđuju. */
 #primaci-izvodjaci-body .ukupno-row td,
 #primaci-izvodjaci-recap-body .ukupno-row td,
+/* Isti razlog: "Prikaz po kupcima" > detalji kupca > UKUPNO red — desno
+   poravnate ćelije (text-align: right) inače hvata blanket pravilo iznad. */
+#kupac-details-table tr.ukupno-row td,
 .monthly-table tbody tr[style*="background: #047857"] td,
 .monthly-table tbody tr[style*="background: #065f46"] td,
 .monthly-table tbody tr[style*="background:#3F4752"] td,
