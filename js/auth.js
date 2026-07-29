@@ -123,6 +123,15 @@
             }
         });
 
+        // Prepoznaje ograničenu ulogu OPERATERI bez obzira da li je u šifrarniku
+        // upisana u kolonu "tip" (D) ili "ime_prezime" (C).
+        function _jeOperater(user) {
+            if (!user) return false;
+            var t = String(user.type || '').trim().toLowerCase();
+            var n = String(user.fullName || '').trim().toLowerCase();
+            return t === 'operateri' || n === 'operateri';
+        }
+
         function showApp() {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
@@ -158,7 +167,12 @@
             // Dinamicki kreiraj tab-ove na osnovu tipa korisnika
             const tabsMenu = document.getElementById('tabs-menu'); // Sidebar nav
             const tabsMenuMobile = document.getElementById('tabs-menu-mobile'); // Mobile horizontal tabs
-            const userType = (currentUser.type || '').toLowerCase();
+            let userType = (currentUser.type || '').toLowerCase();
+            // OPERATERI je u šifrarniku upisan u kolonu "ime_prezime" (C), a ne u
+            // "tip" (D) — backend `type` puni ISKLJUČIVO iz kolone D (vidi
+            // handleLogin u apps-script/authentication.gs), pa bi bez ove provjere
+            // takav korisnik pao u `else` granu i dobio PUN admin skup tabova.
+            if (_jeOperater(currentUser)) userType = 'operateri';
 
             // Define tabs based on user type
             let tabsConfig = [];
@@ -193,15 +207,14 @@
                     { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' }
                 ];
             } else if (userType === 'operateri') {
-                // Ograničena uloga (šifrarnik "Korisnici", kolona tip = OPERATERI):
-                // vidi SAMO "Prikaz po kupcima" i po jedan podtab unutar SJEČA/OTPREMA
-                // ("Sječa po danima"/"Otprema po danima") — ostali podtabovi unutar tih
-                // dviju stranica (Mjesečni prikaz, Radilišta, Izvođači...) se sakrivaju
-                // dolje u ovoj istoj funkciji (traži "OPERATERI: sakrij").
+                // Ograničena uloga — SAMO ova tri prikaza. Tabovi 'primaci'/'otpremaci'
+                // nose pune stranice SJEČA/OTPREMA sa svojim podmenijima, pa se za ovu
+                // ulogu podmeniji sakrivaju i otvara se odmah "po danima" prikaz
+                // (vidi "OPERATERI: sakrij" niže u ovoj funkciji).
                 tabsConfig = [
                     { id: 'kupci', icon: '🏢', label: 'Prikaz po kupcima', active: true },
-                    { id: 'primaci', icon: '👷', label: 'SJEČA' },
-                    { id: 'otpremaci', icon: '🚛', label: 'OTPREMA' }
+                    { id: 'primaci', icon: '📅', label: 'Sječa po danima' },
+                    { id: 'otpremaci', icon: '📅', label: 'Otprema po danima' }
                 ];
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
                 tabsConfig = [
@@ -232,22 +245,21 @@
                 ];
             }
 
-            // OPERATERI: sakrij sve podtabove unutar SJEČA/OTPREMA osim
-            // "Sječa po danima"/"Otprema po danima" (submenu je statičan HTML,
-            // isti za sve uloge — jedini način da OPERATERI vidi SAMO ta dva
-            // podtaba je da se ostali fizički sakriju umjesto da se filtrira
-            // sadržaj tabsConfig-a, jer submenu živi UNUTAR primaci-content/
-            // otpremaci-content, ne kao zaseban tab).
+            // OPERATERI: sakrij CIJELI podmeni unutar SJEČA/OTPREMA — ta uloga
+            // ima samo "po danima" prikaz, pa podmeni sa jednim dugmetom nema
+            // svrhu. Podmeni je statičan HTML dijeljen sa svim ulogama (živi
+            // UNUTAR primaci-content/otpremaci-content, nije zaseban tab), pa se
+            // ograničenje radi sakrivanjem u DOM-u, ne filtriranjem tabsConfig-a.
+            // Naslovi stranica se mijenjaju da odgovaraju imenima tabova.
             if (userType === 'operateri') {
-                var _hidePrimaciSubmenu = ['monthly', 'radilista', 'izvodjaci', 'sortimenti-by-primac'];
-                var _hideOtpremaciSubmenu = ['monthly', 'radilista', 'po-kupcima', 'sortimenti-by-otpremac'];
-                document.querySelectorAll('#primaci-content .submenu-tab').forEach(function(btn) {
-                    var m = /switchPrimaciSubmenu\('([^']+)'\)/.exec(btn.getAttribute('onclick') || '');
-                    if (m && _hidePrimaciSubmenu.indexOf(m[1]) !== -1) btn.classList.add('hidden');
+                ['#primaci-content', '#otpremaci-content'].forEach(function(sel) {
+                    var submenu = document.querySelector(sel + ' .submenu');
+                    if (submenu) submenu.classList.add('hidden');
                 });
-                document.querySelectorAll('#otpremaci-content .submenu-tab').forEach(function(btn) {
-                    var m = /switchOtremaciSubmenu\('([^']+)'\)/.exec(btn.getAttribute('onclick') || '');
-                    if (m && _hideOtpremaciSubmenu.indexOf(m[1]) !== -1) btn.classList.add('hidden');
+                var _naslovi = { '#primaci-content': '📅 Sječa po danima', '#otpremaci-content': '📅 Otprema po danima' };
+                Object.keys(_naslovi).forEach(function(sel) {
+                    var h = document.querySelector(sel + ' h2');
+                    if (h) h.textContent = _naslovi[sel];
                 });
             }
 
@@ -497,7 +509,12 @@
 
         // Load initial data based on user type (OPTIMIZED - lazy loading)
         function loadData() {
-            const userType = (currentUser.type || '').toLowerCase();
+            let userType = (currentUser.type || '').toLowerCase();
+            // OPERATERI je u šifrarniku upisan u kolonu "ime_prezime" (C), a ne u
+            // "tip" (D) — backend `type` puni ISKLJUČIVO iz kolone D (vidi
+            // handleLogin u apps-script/authentication.gs), pa bi bez ove provjere
+            // takav korisnik pao u `else` granu i dobio PUN admin skup tabova.
+            if (_jeOperater(currentUser)) userType = 'operateri';
 
             // Show loading screen with progress
             const loadingText = document.querySelector('.loading-text');

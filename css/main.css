@@ -329,6 +329,11 @@
 
         /* Submenu styles */
         .submenu { display: flex; gap: 8px; margin-bottom: 24px; padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; }
+        /* MORA .submenu.hidden (0,2,0): globalni .hidden{display:none} je gore
+           (linija ~101) pa bi ga .submenu{display:flex} iznad nadjačao pri istoj
+           specifičnosti — podmeni se onda ne bi mogao sakriti iz JS-a (koristi
+           se za ulogu OPERATERI, vidi js/auth.js "OPERATERI: sakrij"). */
+        .submenu.hidden { display: none; }
         .submenu-tab { background: white; border: 1px solid #d1d5db; padding: 10px 18px; font-size: 13px; font-weight: 600; color: #4b5563; cursor: pointer; border-radius: 6px; transition: all 0.2s; white-space: nowrap; }
         .submenu-tab:hover { color: #047857; background: #f0fdf4; border-color: #059669; }
         .submenu-tab.active { color: white; background: #047857; border-color: #047857; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2); }
