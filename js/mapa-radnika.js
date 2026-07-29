@@ -657,6 +657,13 @@
     }
 
     async function _doOfflineDownload(tiles, mode) {
+        // Bez mreže nema šta da se skine — bez ove provjere bi korisnik čekao
+        // da prođe kroz stotine zahtjeva koji svi propadaju.
+        if (!navigator.onLine) {
+            _notify('showWarning', 'Nema internet konekcije', 'Kartu treba preuzeti dok ste na mreži, prije izlaska na teren.');
+            _refreshOfflineToggle();
+            return;
+        }
         var cb = document.getElementById('radnik-mapa-offline-toggle');
         var st = document.getElementById('radnik-mapa-offline-status');
         if (cb) cb.disabled = true;
@@ -664,8 +671,19 @@
         if (_offlineStatusTimer) clearTimeout(_offlineStatusTimer);
         var done = 0;
         for (var i = 0; i < tiles.length; i++) {
-            try { await fetch(_tileUrl(tiles[i])); done++; } catch (_) {}
-            if (st) st.textContent = 'Preuzimam... ' + done + '/' + tiles.length;
+            // Broji SAMO stvarno dobavljene pločice. Service Worker na neuspjeh
+            // vraća `new Response('', {status:503})` — a to je RIJEŠEN odgovor,
+            // ne odbačen, pa bi golo `await fetch(); done++` brojalo i pločice
+            // koje uopšte nisu skinute. Posljedica je bila najgora moguća: bez
+            // mreže bi javilo "Karta preuzeta, 950/950" i uključilo kvačicu, a
+            // radnik bi otišao na teren bez ijedne pločice.
+            // `type === 'opaque'` je legitiman slučaj (cross-origin pločica
+            // keširana iz <img> taga) — status joj je po spec-u uvijek 0.
+            try {
+                var resp = await fetch(_tileUrl(tiles[i]));
+                if (resp && (resp.ok || resp.type === 'opaque')) done++;
+            } catch (_) {}
+            if (st) st.textContent = 'Preuzimam... ' + (i + 1) + '/' + tiles.length;
         }
         if (cb) cb.disabled = false;
         // Zabilježi samo ako je preuzeta bar velika većina — pola skinute karte
