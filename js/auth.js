@@ -123,13 +123,17 @@
             }
         });
 
-        // Prepoznaje ograničenu ulogu OPERATERI bez obzira da li je u šifrarniku
-        // upisana u kolonu "tip" (D) ili "ime_prezime" (C).
+        // Prepoznaje ograničenu ulogu OPERATER(I) bez obzira:
+        //  - da li je u šifrarniku upisana u kolonu "tip" (D) ili "ime_prezime" (C),
+        //  - da li je upisana u jednini ("OPERATER") ili množini ("OPERATERI"),
+        //  - na velika/mala slova i razmake.
+        // Namjerno tolerantno: jedan pogrešan oblik u tabeli inače znači da
+        // korisnik tiho dobije PUN admin skup tabova (fallback `else` grana).
         function _jeOperater(user) {
             if (!user) return false;
-            var t = String(user.type || '').trim().toLowerCase();
-            var n = String(user.fullName || '').trim().toLowerCase();
-            return t === 'operateri' || n === 'operateri';
+            var norm = function(v) { return String(v || '').trim().toLowerCase(); };
+            var jeste = function(v) { return v === 'operater' || v === 'operateri'; };
+            return jeste(norm(user.type)) || jeste(norm(user.fullName));
         }
 
         function showApp() {
