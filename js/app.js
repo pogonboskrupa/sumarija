@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.27';
+        const APP_VERSION = '2.28';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -3367,9 +3367,9 @@
             }
 
             container.innerHTML = `
-            <details id="${containerId}-details">
+            <details id="${containerId}-details" open>
                 <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:12px 16px;background:linear-gradient(135deg,#1e3a5f 0%,#2d5a87 100%);color:white;border-radius:8px;font-weight:600;font-size:14px;user-select:none;">
-                    <span id="${containerId}-arrow" style="transition:transform .2s;display:inline-block;">▶</span>
+                    <span id="${containerId}-arrow" style="transition:transform .2s;display:inline-block;transform:rotate(90deg);">▶</span>
                     Detaljni prikaz po odjelima — ${odjeliData.length} odjela
                 </summary>
                 <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:2px;border:1px solid #e5e7eb;border-radius:0 0 8px 8px;">
