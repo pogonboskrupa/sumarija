@@ -30,18 +30,28 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            min-height: 53px;
-            padding: 8px 20px;
+            gap: 10px;
+            min-height: 56px;
+            /* ~30% šire nego ranije. Uz veći horizontalni padding ide i
+               min-width — bez njega širina zavisi isključivo od dužine
+               labele, pa bi dugme "skakalo" po veličini kad se ikona
+               promijeni u ⏳ tokom osvježavanja. */
+            min-width: 190px;
+            padding: 8px 30px;
             border-radius: 30px;
-            background: #eff6ff;
-            border: 2px solid #93c5fd;
+            /* Puna zasićena plava umjesto ranije blijede pozadine sa plavim
+               tekstom — dugme je glavna radnja u zaglavlju i mora se odmah
+               uočiti, i na suncu na terenu. */
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border: 2px solid #1e40af;
+            box-shadow: 0 3px 10px rgba(37, 99, 235, .38);
             cursor: pointer;
-            transition: background 0.15s ease;
+            transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
         }
-        .cloud-sync-btn:hover { background: #dbeafe; }
-        .cloud-sync-btn .cloud-sync-label { font-size: 15px; font-weight: 700; color: #1e40af; white-space: nowrap; }
-        .cloud-sync-btn #check-data-icon { font-size: 29px; line-height: 1; }
+        .cloud-sync-btn:hover { background: linear-gradient(135deg, #1d4ed8, #1e40af); }
+        .cloud-sync-btn:active { transform: translateY(1px); box-shadow: 0 1px 5px rgba(37, 99, 235, .35); }
+        .cloud-sync-btn .cloud-sync-label { font-size: 17px; font-weight: 800; color: #ffffff; white-space: nowrap; letter-spacing: .2px; }
+        .cloud-sync-btn #check-data-icon { font-size: 29px; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,.25)); }
         .user-menu { position: relative; }
         .user-menu-button { background: #f3f4f6; color: #374151; padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .user-menu-button:hover { background: #e5e7eb; }
