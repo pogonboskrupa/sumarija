@@ -2405,6 +2405,12 @@
     }
 
     function _onTragPosition(pos) {
+        // Plava tačka "moja lokacija" se inače ažurira SAMO iz "Prati me"/
+        // "Moja lokacija" — bez ovoga radnik za vrijeme snimanja traga (ako
+        // "Prati me" nije posebno uključeno) ne vidi nikakvu ikonicu na mjestu
+        // kretanja. Ažuriraj je na SVAKOM fix-u (bez throttle-a ispod, koji je
+        // samo za dodavanje tačaka u sam trag, ne za vizuelni prikaz pozicije).
+        _updateLocDisplay(pos);
         var ll = [pos.coords.latitude, pos.coords.longitude];
         var now = Date.now();
         var last = _currentTrackPoints[_currentTrackPoints.length - 1];
