@@ -132,6 +132,10 @@
     var _savedTrackLayers = [];   // L.polyline instance za već sačuvane tragove
     var _lastTragTs = 0;
     var _tragStartIso = null;
+    var _tragPaused = false;
+    var _tragActiveMs = 0;          // zbir SEGMENATA aktivnog snimanja (bez pauza)
+    var _tragSegmentStartTs = 0;    // Date.now() kad je tekući (ne-pauzirani) segment počeo
+    var _tragModalTimerId = null;   // setInterval koji osvježava sat/km u modalu dok snima
 
     var _locBtnEl = null;
     var _tragBtnEl = null;
@@ -529,7 +533,13 @@
     // Worker (v1.4.73+) ih automatski kešira (uklj. opaque OSM/Topo odgovore).
     // Planirano da se kasnije dopuni/zamijeni Protomaps vektorskim slojem.
     var OFFLINE_BUFFER_M = 200; // rezerva oko odjela — hvata prilazni put i granicu
-    var OFFLINE_Z_MIN = 11, OFFLINE_Z_MAX = 15;
+    var OFFLINE_Z_MIN = 11;
+    // Max zoom po sloju — usklađeno sa stvarnim maxZoom vrijednostima L.tileLayer
+    // definicija niže (OSM 18, Satelit/ArcGIS 19, Topo 17 — OpenTopoMap-ov stvarni
+    // serverski maksimum). Ranije je bio jedan zajednički OFFLINE_Z_MAX=15 za sva
+    // tri sloja — znatno ispod stvarne oštrine koju svaki sloj podržava.
+    var OFFLINE_Z_MAX_BY_MODE = { osm: 18, sat: 19, topo: 17 };
+    function _offlineZMax(mode) { return OFFLINE_Z_MAX_BY_MODE[mode] || 17; }
 
     // Skup {z/x/y} pločica koje dodiruju bilo koji od datih bounds-a (+rezerva).
     // Set uklanja duplikate tamo gdje se susjedni odjeli preklapaju na istoj
@@ -638,12 +648,13 @@
     function _downloadOfflineNow() {
         if (!_map || !_allLayers.length) { _notify('showWarning', 'Odjeli još nisu učitani'); return; }
         var mode = _baseMode;
+        var zMax = _offlineZMax(mode);
         var boundsList = _allLayers.map(function(lyr) { return lyr.getBounds(); });
-        var tiles = _tilesForBoundsList(boundsList, OFFLINE_Z_MIN, OFFLINE_Z_MAX, OFFLINE_BUFFER_M);
+        var tiles = _tilesForBoundsList(boundsList, OFFLINE_Z_MIN, zMax, OFFLINE_BUFFER_M);
         if (!tiles.length) return;
         _showTragConfirm(
             'Preuzeti ' + tiles.length + ' pločica (~' + _offlineSizeMb(tiles.length, mode) + ' MB, ' +
-            _slojNaziv(mode) + ', zoom ' + OFFLINE_Z_MIN + '-' + OFFLINE_Z_MAX + ')? ' +
+            _slojNaziv(mode) + ', zoom ' + OFFLINE_Z_MIN + '-' + zMax + ')? ' +
             'Skida se samo područje oko odjela (' + _allLayers.length + ' poligona, +' + OFFLINE_BUFFER_M + ' m rezerve), ' +
             'ne cijeli kvadrat oko njih. Može potrajati i potrošiti mobilne podatke.',
             function() { _doOfflineDownload(tiles, mode); },
@@ -2437,6 +2448,24 @@
         _startTrag();
     };
 
+    // Zajednička GPS-greška i za start i za nastavak nakon pauze — dozvola
+    // može biti povučena u bilo kom trenutku, ne samo na startu.
+    function _handleTragGpsError(err) {
+        console.error('[MapaRadnika] GPS greška pri snimanju traga:', err);
+        _gpsUnsubscribe('trag');
+        _recording = false;
+        _tragPaused = false;
+        _closeTragRecordingModal();
+        if (_tragBtnEl) {
+            _tragBtnEl.textContent = '⏺️ Snimi trag';
+            _tragBtnEl.classList.remove('recording');
+        }
+        var msg = err.code === 1
+            ? 'Pristup lokaciji je odbijen. Dozvolite lokaciju u postavkama uređaja/browsera da bi snimanje traga radilo.'
+            : (err.code === 3 ? 'Isteklo vrijeme čekanja na GPS signal. Pokušajte ponovo na otvorenom.' : 'Nije moguće pratiti lokaciju za snimanje traga.');
+        _notify('showError', msg);
+    }
+
     function _startTrag() {
         if (!navigator.geolocation) {
             _notify('showError', 'Vaš uređaj ne podržava geolokaciju.');
@@ -2447,35 +2476,23 @@
         _tragStartIso = new Date().toISOString();
         if (_currentTrackPolyline) { _map.removeLayer(_currentTrackPolyline); _currentTrackPolyline = null; }
 
-        _gpsSubscribe('trag', _onTragPosition, function(err) {
-            console.error('[MapaRadnika] GPS greška pri snimanju traga:', err);
-            // Bez ovoga dugme ostaje "Zaustavi snimanje" (optimistički postavljeno
-            // ispod) čak i kad GPS stvarno nikad nije proradio (npr. dozvola
-            // odbijena) — korisnik vidi "snima" a ništa se ne snima, bez objašnjenja
-            // zašto. Vrati UI u prvobitno stanje i objasni razlog. Odjavljuje se
-            // SAMO snimanje traga — ostali potrošači (follow/explorer) ostaju.
-            _gpsUnsubscribe('trag');
-            _recording = false;
-            if (_tragBtnEl) {
-                _tragBtnEl.textContent = '⏺️ Snimi trag';
-                _tragBtnEl.classList.remove('recording');
-            }
-            var msg = err.code === 1
-                ? 'Pristup lokaciji je odbijen. Dozvolite lokaciju u postavkama uređaja/browsera da bi snimanje traga radilo.'
-                : (err.code === 3 ? 'Isteklo vrijeme čekanja na GPS signal. Pokušajte ponovo na otvorenom.' : 'Nije moguće pratiti lokaciju za snimanje traga.');
-                _notify('showError', msg);
-        });
+        _gpsSubscribe('trag', _onTragPosition, _handleTragGpsError);
 
         _recording = true;
+        _tragPaused = false;
+        _tragActiveMs = 0;
+        _tragSegmentStartTs = Date.now();
         if (_tragBtnEl) {
             _tragBtnEl.textContent = '⏹️ Zaustavi snimanje';
             _tragBtnEl.classList.add('recording');
         }
+        _openTragRecordingModal();
     }
 
     function _stopTrag() {
         _gpsUnsubscribe('trag');
         _recording = false;
+        _tragPaused = false;
         if (_tragBtnEl) {
             _tragBtnEl.textContent = '⏺️ Snimi trag';
             _tragBtnEl.classList.remove('recording');
@@ -2487,20 +2504,84 @@
                 name: _pendingTragName || 'Trag',
                 start: _tragStartIso || new Date().toISOString(),
                 end: new Date().toISOString(),
-                points: _currentTrackPoints
+                points: _currentTrackPoints,
+                activeMs: _tragActiveMs // aktivno vrijeme snimanja, BEZ pauza — vidi _tragDurationStr
             });
             _saveTracks(tracks);
         }
         _pendingTragName = '';
+        _tragActiveMs = 0;
         if (_currentTrackPolyline) { _map.removeLayer(_currentTrackPolyline); _currentTrackPolyline = null; }
         _currentTrackPoints = [];
         _drawSavedTracks();
         _renderTragoviList();
     }
 
+    // ---- Modal aktivnog snimanja — otvara se na start, prikazuje uživo
+    // proteklo (aktivno) vrijeme i pređenu udaljenost, sa Pauza/Nastavi i
+    // Završi dugmadima. Namjerno NEMA X/minimiziraj — dok snimanje traje,
+    // modal je jedini način upravljanja (klik izvan njega ga ne zatvara). ----
+    function _openTragRecordingModal() {
+        var modal = document.getElementById('trag-recording-modal');
+        if (!modal) return; // fallback ako modal nije u DOM-u — snimanje ipak radi, samo bez uživo prikaza
+        var btn = document.getElementById('trag-recording-pause-btn');
+        if (btn) btn.textContent = '⏸️ Pauza';
+        modal.classList.add('show');
+        _updateTragModalStats();
+        if (_tragModalTimerId) clearInterval(_tragModalTimerId);
+        _tragModalTimerId = setInterval(_updateTragModalStats, 1000);
+    }
+    function _closeTragRecordingModal() {
+        var modal = document.getElementById('trag-recording-modal');
+        if (modal) modal.classList.remove('show');
+        if (_tragModalTimerId) { clearInterval(_tragModalTimerId); _tragModalTimerId = null; }
+    }
+    function _msToClockStr(ms) {
+        var totalSec = Math.max(0, Math.floor(ms / 1000));
+        var h = Math.floor(totalSec / 3600);
+        var m = Math.floor((totalSec % 3600) / 60);
+        var s = totalSec % 60;
+        var pad = function(n) { return (n < 10 ? '0' : '') + n; };
+        return h > 0 ? (h + ':' + pad(m) + ':' + pad(s)) : (pad(m) + ':' + pad(s));
+    }
+    function _updateTragModalStats() {
+        var elapsedEl = document.getElementById('trag-recording-elapsed');
+        var distEl = document.getElementById('trag-recording-distance');
+        var ms = _tragActiveMs + (_tragPaused ? 0 : (Date.now() - _tragSegmentStartTs));
+        if (elapsedEl) elapsedEl.textContent = _msToClockStr(ms);
+        if (distEl) distEl.textContent = _tragDistanceKm(_currentTrackPoints).toFixed(2).replace('.', ',') + ' km';
+    }
+    function _pauseResumeTrag() {
+        if (!_recording) return;
+        var btn = document.getElementById('trag-recording-pause-btn');
+        if (!_tragPaused) {
+            _gpsUnsubscribe('trag');
+            _tragActiveMs += Date.now() - _tragSegmentStartTs;
+            _tragPaused = true;
+            if (btn) btn.textContent = '▶️ Nastavi';
+        } else {
+            _tragSegmentStartTs = Date.now();
+            _gpsSubscribe('trag', _onTragPosition, _handleTragGpsError);
+            _tragPaused = false;
+            if (btn) btn.textContent = '⏸️ Pauza';
+        }
+        _updateTragModalStats();
+    }
+    window.mapaRadnikaPauseResumeTrag = _pauseResumeTrag;
+
+    function _finishTrag() {
+        if (!_recording) return;
+        if (!_tragPaused) _tragActiveMs += Date.now() - _tragSegmentStartTs;
+        _closeTragRecordingModal();
+        _stopTrag();
+    }
+    window.mapaRadnikaFinishTrag = _finishTrag;
+
     function _toggleTrag() {
-        if (_recording) _stopTrag();
-        else _showTragNameModal();
+        // Dok snimanje traje, upravljanje ide isključivo kroz modal
+        // (Pauza/Nastavi/Završi) — ovo dugme na traci samo pokreće novo snimanje.
+        if (_recording) return;
+        _showTragNameModal();
     }
 
     // Opća custom potvrda (zamjena za native browser confirm(), koji uvijek
@@ -2557,13 +2638,21 @@
         for (var i = 1; i < points.length; i++) m += _distM(points[i - 1], points[i]);
         return m / 1000;
     }
-    function _tragDurationStr(start, end) {
-        if (!start || !end) return '';
-        var ms = new Date(end).getTime() - new Date(start).getTime();
+    function _msToDurationStr(ms) {
         if (!(ms > 0)) return '';
         var min = Math.round(ms / 60000);
         if (min < 60) return min + ' min';
         return Math.floor(min / 60) + 'h ' + (min % 60) + 'min';
+    }
+    // Preferira t.activeMs (aktivno vrijeme snimanja, BEZ pauza — postoji na
+    // svim tragovima snimljenim nakon uvođenja pauze); stariji tragovi bez tog
+    // polja padaju nazad na ukupno end-start (uključuje eventualne pauze, ali
+    // takvi tragovi nisu ni imali pauzu jer ta mogućnost tad nije postojala).
+    function _tragDurationStr(t) {
+        if (!t) return '';
+        if (typeof t.activeMs === 'number') return _msToDurationStr(t.activeMs);
+        if (!t.start || !t.end) return '';
+        return _msToDurationStr(new Date(t.end).getTime() - new Date(t.start).getTime());
     }
     // ---- IZVOZ TERENSKIH PODATAKA (GPX) ----
     // Tragovi/tačke/površine/mjerenja žive SAMO na radnikovom telefonu
@@ -2716,7 +2805,7 @@
             var when = t.start ? new Date(t.start).toLocaleString('bs-BA') : '?';
             var name = (t.name || 'Trag').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             var km = _tragDistanceKm(t.points).toFixed(2).replace('.', ',');
-            var dur = _tragDurationStr(t.start, t.end);
+            var dur = _tragDurationStr(t);
             var stats = km + ' km' + (dur ? ' · ' + dur : '');
             return '<div class="rm-tragovi-row">' +
                 '<span class="rm-tragovi-row-info">' + name + '<br><small>' + when + ' · ' + stats + '</small></span>' +

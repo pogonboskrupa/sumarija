@@ -886,7 +886,12 @@
   // Ovdje se uzimaju SAMO odjeli koji su trenutno vidljivi (prošli filtere
   // legende/GJ/pretrage) — admin tako sam bira opseg postojećim filterima.
   const OFFLINE_BUFFER_M_KARTA = 200;
-  const OFFLINE_Z_MIN_KARTA = 11, OFFLINE_Z_MAX_KARTA = 15;
+  const OFFLINE_Z_MIN_KARTA = 11;
+  // Max zoom po sloju — usklađeno sa stvarnim maxZoom L.tileLayer vrijednostima
+  // niže (OSM 18, Satelit/ArcGIS 19, Topo 17 — OpenTopoMap-ov stvarni serverski
+  // maksimum). Vidi identičnu logiku u js/mapa-radnika.js (nije zajednički kod).
+  const OFFLINE_Z_MAX_KARTA_BY_MODE = { osm: 18, sat: 19, topo: 17 };
+  function _offlineZMaxKarta(mode) { return OFFLINE_Z_MAX_KARTA_BY_MODE[mode] || 17; }
 
   function _tilesForBoundsListKarta(boundsList, zMin, zMax, bufferM) {
     const seen = {};
@@ -937,10 +942,11 @@
     let vidljivi = _allFeatures.filter(lyr => _map.hasLayer(lyr));
     if (!vidljivi.length) vidljivi = _allFeatures;
     const boundsList = vidljivi.map(lyr => lyr.getBounds());
-    const tiles = _tilesForBoundsListKarta(boundsList, OFFLINE_Z_MIN_KARTA, OFFLINE_Z_MAX_KARTA, OFFLINE_BUFFER_M_KARTA);
+    const zMaxKarta = _offlineZMaxKarta(_baseMode);
+    const tiles = _tilesForBoundsListKarta(boundsList, OFFLINE_Z_MIN_KARTA, zMaxKarta, OFFLINE_BUFFER_M_KARTA);
     if (!tiles.length) return;
     const slojNaziv = _baseMode === 'sat' ? 'Satelit' : (_baseMode === 'topo' ? 'Topo' : 'OSM');
-    if (!confirm(`Preuzeti ${tiles.length} pločica (~${_offlineSizeMbKarta(tiles.length, _baseMode)} MB, ${slojNaziv}, zoom ${OFFLINE_Z_MIN_KARTA}-${OFFLINE_Z_MAX_KARTA})?\n\n` +
+    if (!confirm(`Preuzeti ${tiles.length} pločica (~${_offlineSizeMbKarta(tiles.length, _baseMode)} MB, ${slojNaziv}, zoom ${OFFLINE_Z_MIN_KARTA}-${zMaxKarta})?\n\n` +
       `Skida se samo područje oko odjela (${vidljivi.length} poligona, +${OFFLINE_BUFFER_M_KARTA} m rezerve), ne cijeli kvadrat oko njih. ` +
       `Može potrajati i potrošiti mobilne podatke.`)) return;
 

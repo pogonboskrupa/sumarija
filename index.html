@@ -3251,7 +3251,7 @@
                      ekranu Mape odjela, pa se ovaj modal renderovao ISPOD njih
                      (nevidljivo/neklikabilno — pravi razlog "Snimi trag se ne
                      aktivira"). Podignuto iznad svega u toj mapi. */
-                  #trag-name-modal.show, #trag-confirm-modal.show, #poligon-name-modal.show, #tacka-name-modal.show, #foto-name-modal.show { z-index:20000; }
+                  #trag-name-modal.show, #trag-confirm-modal.show, #poligon-name-modal.show, #tacka-name-modal.show, #foto-name-modal.show, #trag-recording-modal.show { z-index:20000; }
 
                   /* Donja fiksna traka — Moja lokacija / Tragovi / Zatvori.
                      IZVAN Leaflet mape (obična HTML dugmad, ne Leaflet control), pa
@@ -3793,6 +3793,22 @@
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeTragNameModal()">Otkaži</button>
             <button class="btn btn-primary" onclick="confirmStartTrag()">Počni snimanje</button>
+        </div>
+    </div>
+</div>
+<!-- Modal aktivnog snimanja traga — prikazan cijelo vrijeme dok snimanje
+     traje. Namjerno BEZ onclick-na-overlay zatvaranja i bez X dugmeta —
+     Pauza/Nastavi i Završi su jedine akcije (vidi js/mapa-radnika.js). -->
+<div class="modal-overlay" id="trag-recording-modal">
+    <div class="modal" style="max-width:300px;">
+        <div class="modal-header"><div class="modal-title">⏺️ Snimanje traga</div></div>
+        <div class="modal-body" style="text-align:center;">
+            <div id="trag-recording-elapsed" style="font-size:34px;font-weight:700;color:#1f2937;font-variant-numeric:tabular-nums;">00:00</div>
+            <div id="trag-recording-distance" style="font-size:15px;color:#6b7280;margin-top:6px;">0,00 km</div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="trag-recording-pause-btn" onclick="mapaRadnikaPauseResumeTrag()">⏸️ Pauza</button>
+            <button class="btn btn-danger" onclick="mapaRadnikaFinishTrag()">⏹️ Završi</button>
         </div>
     </div>
 </div>
