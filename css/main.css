@@ -3197,8 +3197,12 @@
    stvarni ograničavajući faktor umjesto paddinga.
    ========================================================================== */
 #tabs-menu-mobile .tab {
-    min-height: 64px;
-    padding: 18px 18px;
-    font-size: 14px;
+    min-height: 66px;
+    padding: 18px 20px;
+    /* Font mora ići uz visinu — sama viša dugmad sa istim sitnim tekstom
+       ne rješava čitljivost na terenu, samo pravi prazan prostor oko slova.
+       Zato i veličina i debljina, ne samo min-height. */
+    font-size: 16px;
+    font-weight: 700;
     line-height: 1.25;
 }
