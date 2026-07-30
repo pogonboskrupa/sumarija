@@ -3437,3 +3437,83 @@
     color: #64748b;
     font-style: italic;
 }
+
+/* ==========================================================================
+   ŠIHTARICA — mjesečna evidencija radnih dana (js/sihtarica.js)
+   Prikazuje SVE dane u mjesecu; vikendi i nepopunjeni dani su namjerno
+   prigušeni da se odmah vidi šta je ostalo neupisano.
+   ========================================================================== */
+.sih-toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+
+/* Kartica godišnjeg odmora */
+.sih-god-card {
+    display: flex; align-items: center; gap: 22px; flex-wrap: wrap;
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+    padding: 16px 20px; margin-bottom: 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.07);
+}
+.sih-god-item { display: flex; flex-direction: column; gap: 2px; }
+.sih-god-label { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; }
+.sih-god-val { font-size: 26px; font-weight: 800; color: #1f2937; font-variant-numeric: tabular-nums; }
+.sih-god-btn { margin-left: auto; }
+.sih-upozorenje {
+    background: #fef2f2; border: 1px solid #fecaca; color: #991b1b;
+    border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; margin-bottom: 16px;
+}
+
+/* Tabela dana */
+.sih-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #e5e7eb; border-radius: 14px; background: #fff; }
+.sih-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; }
+.sih-table thead th {
+    position: sticky; top: 0; z-index: 5;
+    background: #1e293b; color: #f8fafc;
+    font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+    padding: 11px 12px; text-align: left; white-space: nowrap;
+}
+.sih-table tbody td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; color: #0f172a; }
+.sih-table .sih-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sih-table tbody tr:hover td { background: #eff6ff; }
+
+/* Vikend i nepopunjeni dani — prigušeni, ali čitljivi */
+.sih-vikend td { background: #f8fafc; color: #64748b; }
+.sih-vikend:hover td { background: #eef2f7; }
+.sih-prazan .sih-dan-broj { color: #dc2626; }
+
+.sih-dan { white-space: nowrap; }
+.sih-dan-broj { font-weight: 800; margin-right: 6px; }
+.sih-dan-ime { font-size: 12px; color: #6b7280; text-transform: uppercase; }
+
+.sih-badge {
+    display: inline-block; padding: 4px 10px; border-radius: 999px;
+    color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap;
+}
+/* "auto" = izvedeno iz sječe/otpreme, korisnik to nije ručno upisao */
+.sih-auto {
+    margin-left: 6px; font-size: 10px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: .04em;
+}
+.sih-nema { color: #cbd5e1; font-size: 13px; font-style: italic; }
+.sih-napomena { color: #475569; font-size: 13px; }
+.sih-nula { color: #cbd5e1; }
+.sih-edit {
+    background: none; border: none; font-size: 17px; cursor: pointer;
+    padding: 4px 8px; border-radius: 8px; line-height: 1;
+}
+.sih-edit:active { background: #e5e7eb; }
+.sih-akcija { text-align: right; width: 1%; }
+
+/* Rekap mjeseca */
+.sih-rekap {
+    margin-top: 18px; background: #fff; border: 1px solid #e5e7eb;
+    border-radius: 14px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,.07);
+}
+.sih-rekap-naslov { font-size: 15px; font-weight: 800; color: #1f2937; margin-bottom: 14px; }
+.sih-rekap-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; }
+.sih-rekap-item {
+    display: flex; flex-direction: column; gap: 3px;
+    background: #f8fafc; border: 1px solid #eef2f7; border-radius: 10px; padding: 12px 14px;
+}
+.sih-rekap-glavni { background: #f0fdf4; border-color: #bbf7d0; }
+.sih-rekap-label { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .04em; }
+.sih-rekap-val { font-size: 22px; font-weight: 800; color: #1f2937; font-variant-numeric: tabular-nums; }
+.sih-rekap-hint { margin-top: 12px; font-size: 12px; color: #b45309; font-weight: 600; }

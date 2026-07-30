@@ -1,0 +1,373 @@
+// ========== ŠIHTARICA — mjesečna evidencija radnih dana ==========
+//
+// Prikazuje SVE dane u mjesecu (ne samo one sa unosom), pa radnik odmah vidi
+// šta nije popunjeno. Dani na kojima postoji sječa/otprema se automatski
+// označavaju kao Rad — ti podaci se NE čuvaju lokalno nego se svaki put
+// izvode iz istog keša koji puni tab "Pregled sječe"/"Pregled otpreme"
+// (cache_primac_detail_<godina>). Tako se šihtarica sama ažurira kad stigne
+// nova sječa, i radi offline jednako dobro kao i taj tab.
+//
+// Ručni unosi (godišnji, bolovanje, praznik...) čuvaju se LOKALNO po korisniku
+// u localStorage — isti obrazac kao tragovi/tačke u mapa-radnika.js. Zapisi su
+// sitni (datum + tip + kratka napomena) pa localStorage kvota nije problem;
+// IndexedDB je rezervisan za velike stvari (fotografije, keš primki).
+//
+// NAPOMENA: u apps-script/ postoji i serverski backend za šihtaricu
+// (add-sihtarica-primac / get-sihtarica / ŠIHTARICA_GODISNJI_DANI). Ovdje se
+// NAMJERNO ne koristi — dogovoreno je lokalno čuvanje, bez zavisnosti od toga
+// da li je deployana verzija Apps Scripta u koraku sa repoom.
+(function() {
+    'use strict';
+
+    var DANI = ['ned', 'pon', 'uto', 'sri', 'čet', 'pet', 'sub'];
+    var MJESECI = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun',
+                   'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+
+    // Vrste dana. `radni: true` znači da se broji kao odrađen dan u rekapu.
+    var TIPOVI = [
+        { id: 'rad',       label: 'Rad',            ikona: '🪓', boja: '#047857', radni: true },
+        { id: 'teren',     label: 'Terenski rad',   ikona: '🥾', boja: '#0891b2', radni: true },
+        { id: 'godisnji',  label: 'Godišnji odmor', ikona: '🏖️', boja: '#d97706', radni: false },
+        { id: 'bolovanje', label: 'Bolovanje',      ikona: '🏥', boja: '#dc2626', radni: false },
+        { id: 'praznik',   label: 'Praznik',        ikona: '🎉', boja: '#7c3aed', radni: false },
+        { id: 'slobodan',  label: 'Slobodan dan',   ikona: '🏠', boja: '#6b7280', radni: false }
+    ];
+    function _tip(id) {
+        for (var i = 0; i < TIPOVI.length; i++) if (TIPOVI[i].id === id) return TIPOVI[i];
+        return null;
+    }
+
+    // ---- Stanje prikaza ----
+    var _stanje = { primac: null, otpremac: null }; // { godina, mjesec, autoDani }
+
+    function _username() {
+        return (window.currentUser && window.currentUser.username) || 'anon';
+    }
+    function _esc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // ---- Čuvanje (localStorage, po korisniku) ----
+    // Unosi: { "2026-07-15": { tip: "godisnji", napomena: "..." }, ... }
+    function _unosiKey() { return 'sihtarica_unosi_' + _username(); }
+    function _loadUnosi() {
+        try {
+            var raw = localStorage.getItem(_unosiKey());
+            return raw ? JSON.parse(raw) : {};
+        } catch (_) { return {}; }
+    }
+    function _saveUnosi(o) {
+        try { localStorage.setItem(_unosiKey(), JSON.stringify(o)); } catch (_) {}
+    }
+    // Ugovoreni dani godišnjeg — jedan broj po korisniku
+    function _godKey() { return 'sihtarica_godisnji_' + _username(); }
+    function _loadGodDana() {
+        var v = parseInt(localStorage.getItem(_godKey()), 10);
+        return isNaN(v) ? 0 : v;
+    }
+    function _saveGodDana(n) {
+        try { localStorage.setItem(_godKey(), String(n)); } catch (_) {}
+    }
+
+    // ---- Pomoćno oko datuma ----
+    function _iso(g, m, d) {  // m je 0-baziran
+        return g + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    }
+    function _danaUMjesecu(g, m) { return new Date(g, m + 1, 0).getDate(); }
+    function _jeVikend(g, m, d) {
+        var w = new Date(g, m, d).getDay();
+        return w === 0 || w === 6;
+    }
+
+    // ---- Automatski radni dani iz sječe/otpreme ----
+    // Vraća { "2026-07-15": { ukupno: 12.4, unosa: 2 } } za traženi mjesec.
+    // Ako podaci nisu dostupni (offline bez keša), vraća prazno — šihtarica i
+    // dalje radi, samo bez automatskog označavanja.
+    async function _autoDani(tip, godina, mjesec) {
+        var out = {};
+        try {
+            if (typeof buildApiUrl !== 'function' || typeof fetchWithCache !== 'function') return out;
+            var path = tip === 'primac' ? 'primac-detail' : 'otpremac-detail';
+            var kljuc = 'cache_' + (tip === 'primac' ? 'primac' : 'otpremac') + '_detail_' + godina;
+            var data = await fetchWithCache(buildApiUrl(path, { year: godina }), kljuc);
+            if (!data || !data.unosi || !Array.isArray(data.unosi)) return out;
+            data.unosi.forEach(function(u) {
+                if (!u || !u.datum) return;
+                // datum stiže kao DD.MM.YYYY (formatDate u apps-script/utils-triggers.gs),
+                // ali split po /.- pokriva i varijante iz starijih zapisa
+                var p = String(u.datum).split(/[\/\.\-]/);
+                if (p.length < 3) return;
+                var d = parseInt(p[0], 10), m = parseInt(p[1], 10) - 1, g = parseInt(p[2], 10);
+                if (g !== godina || m !== mjesec) return;
+                var k = _iso(g, m, d);
+                if (!out[k]) out[k] = { ukupno: 0, unosa: 0 };
+                out[k].ukupno += (typeof u.ukupno === 'number' ? u.ukupno : parseFloat(u.ukupno) || 0);
+                out[k].unosa += 1;
+            });
+        } catch (_) { /* offline ili greška — ostaje prazno */ }
+        return out;
+    }
+
+    // ---- Efektivna vrsta dana ----
+    // Ručni unos uvijek pobjeđuje; ako ga nema, dan sa sječom/otpremom je Rad.
+    function _efektivniTip(iso, unosi, auto) {
+        if (unosi[iso] && unosi[iso].tip) return unosi[iso].tip;
+        if (auto[iso]) return 'rad';
+        return null;
+    }
+
+    // ---- Iskorišteni godišnji u CIJELOJ godini (ne samo tekućem mjesecu) ----
+    function _iskoristenGodisnji(godina, unosi) {
+        var n = 0;
+        Object.keys(unosi).forEach(function(iso) {
+            if (unosi[iso] && unosi[iso].tip === 'godisnji' && iso.slice(0, 4) === String(godina)) n++;
+        });
+        return n;
+    }
+
+    function _fmtM3(v) {
+        return (Math.round(v * 100) / 100).toLocaleString('de-DE', {
+            minimumFractionDigits: 2, maximumFractionDigits: 2
+        });
+    }
+
+    // ================== RENDER ==================
+    function _render(tip) {
+        var st = _stanje[tip];
+        if (!st) return;
+        var body = document.getElementById('sihtarica-' + tip + '-body');
+        if (!body) return;
+
+        var g = st.godina, m = st.mjesec;
+        var unosi = _loadUnosi();
+        var auto = st.autoDani || {};
+        var dana = _danaUMjesecu(g, m);
+        var akcent = tip === 'primac' ? '#047857' : '#2563eb';
+
+        // --- Zaglavlje: izbor mjeseca/godine ---
+        var sadGod = new Date().getFullYear();
+        var godOpcije = '';
+        for (var y = sadGod - 2; y <= sadGod + 1; y++) {
+            godOpcije += '<option value="' + y + '"' + (y === g ? ' selected' : '') + '>' + y + '</option>';
+        }
+        var mjOpcije = '';
+        for (var i = 0; i < 12; i++) {
+            mjOpcije += '<option value="' + i + '"' + (i === m ? ' selected' : '') + '>' + MJESECI[i] + '</option>';
+        }
+
+        var html = '';
+        html += '<div class="sih-toolbar">' +
+            '<select class="year-select" onchange="sihtaricaPromijeni(\'' + tip + '\')" id="sih-' + tip + '-mjesec">' + mjOpcije + '</select>' +
+            '<select class="year-select" onchange="sihtaricaPromijeni(\'' + tip + '\')" id="sih-' + tip + '-godina">' + godOpcije + '</select>' +
+            '</div>';
+
+        // --- Kartica godišnjeg odmora ---
+        var ugovoreni = _loadGodDana();
+        var iskoristen = _iskoristenGodisnji(g, unosi);
+        var preostalo = ugovoreni - iskoristen;
+        html += '<div class="sih-god-card">' +
+            '<div class="sih-god-item"><span class="sih-god-label">Ugovoreno dana</span>' +
+                '<span class="sih-god-val">' + ugovoreni + '</span></div>' +
+            '<div class="sih-god-item"><span class="sih-god-label">Iskorišteno ' + g + '.</span>' +
+                '<span class="sih-god-val" style="color:#d97706;">' + iskoristen + '</span></div>' +
+            '<div class="sih-god-item"><span class="sih-god-label">Preostalo</span>' +
+                '<span class="sih-god-val" style="color:' + (preostalo < 0 ? '#dc2626' : '#047857') + ';">' + preostalo + '</span></div>' +
+            '<button type="button" class="btn btn-secondary sih-god-btn" onclick="sihtaricaPostaviGodisnji(\'' + tip + '\')">⚙️ Postavi</button>' +
+            '</div>';
+        if (ugovoreni > 0 && preostalo < 0) {
+            html += '<div class="sih-upozorenje">⚠️ Iskorišteno je ' + Math.abs(preostalo) +
+                ' dana više nego što je ugovoreno.</div>';
+        }
+
+        // --- Tabela dana ---
+        var rekap = {};
+        TIPOVI.forEach(function(t) { rekap[t.id] = 0; });
+        var ukupnoM3 = 0, neupisanihRadnih = 0;
+
+        html += '<div class="sih-scroll"><table class="sih-table"><thead><tr>' +
+            '<th>Dan</th><th>Vrsta</th><th>Napomena</th><th class="sih-num">Sječa/otprema</th><th></th>' +
+            '</tr></thead><tbody>';
+
+        for (var d = 1; d <= dana; d++) {
+            var iso = _iso(g, m, d);
+            var vikend = _jeVikend(g, m, d);
+            var a = auto[iso];
+            var et = _efektivniTip(iso, unosi, auto);
+            var t = _tip(et);
+            var napomena = (unosi[iso] && unosi[iso].napomena) || '';
+
+            if (t) rekap[t.id]++;
+            if (a) ukupnoM3 += a.ukupno;
+            if (!t && !vikend) neupisanihRadnih++;
+
+            var klase = 'sih-row' + (vikend ? ' sih-vikend' : '') + (!t && !vikend ? ' sih-prazan' : '');
+            html += '<tr class="' + klase + '">';
+            html += '<td class="sih-dan"><span class="sih-dan-broj">' + d + '.</span>' +
+                    '<span class="sih-dan-ime">' + DANI[new Date(g, m, d).getDay()] + '</span></td>';
+
+            if (t) {
+                html += '<td><span class="sih-badge" style="background:' + t.boja + ';">' +
+                        t.ikona + ' ' + t.label + '</span>' +
+                        (!unosi[iso] ? '<span class="sih-auto">auto</span>' : '') + '</td>';
+            } else {
+                html += '<td><span class="sih-nema">' + (vikend ? 'vikend' : 'nije upisano') + '</span></td>';
+            }
+
+            html += '<td class="sih-napomena">' + _esc(napomena) + '</td>';
+            html += '<td class="sih-num">' + (a ? _fmtM3(a.ukupno) + ' m³' : '<span class="sih-nula">–</span>') + '</td>';
+            html += '<td class="sih-akcija"><button type="button" class="sih-edit" ' +
+                    'onclick="sihtaricaUredi(\'' + tip + '\',\'' + iso + '\')" aria-label="Uredi dan">✏️</button></td>';
+            html += '</tr>';
+        }
+        html += '</tbody></table></div>';
+
+        // --- Rekap mjeseca ---
+        var radnihDana = 0;
+        TIPOVI.forEach(function(t) { if (t.radni) radnihDana += rekap[t.id]; });
+
+        html += '<div class="sih-rekap"><div class="sih-rekap-naslov">📊 Rekap za ' + MJESECI[m] + ' ' + g + '.</div>';
+        html += '<div class="sih-rekap-grid">';
+        html += '<div class="sih-rekap-item sih-rekap-glavni"><span class="sih-rekap-label">Radnih dana</span>' +
+                '<span class="sih-rekap-val" style="color:' + akcent + ';">' + radnihDana + '</span></div>';
+        TIPOVI.forEach(function(t) {
+            if (t.radni) return; // radni tipovi su već sabrani u "Radnih dana"
+            html += '<div class="sih-rekap-item"><span class="sih-rekap-label">' + t.ikona + ' ' + t.label + '</span>' +
+                    '<span class="sih-rekap-val">' + rekap[t.id] + '</span></div>';
+        });
+        html += '<div class="sih-rekap-item"><span class="sih-rekap-label">Ukupno ' +
+                (tip === 'primac' ? 'sječa' : 'otprema') + '</span>' +
+                '<span class="sih-rekap-val">' + _fmtM3(ukupnoM3) + ' m³</span></div>';
+        html += '</div>';
+        if (neupisanihRadnih > 0) {
+            html += '<div class="sih-rekap-hint">Nije upisano ' + neupisanihRadnih +
+                    ' radnih dana (bez vikenda) — kliknite ✏️ da popunite.</div>';
+        }
+        html += '</div>';
+
+        body.innerHTML = html;
+    }
+
+    // ================== JAVNE FUNKCIJE ==================
+
+    window.loadSihtarica = async function(tip) {
+        var tabId = 'sihtarica-' + tip;
+        var contentId = 'sihtarica-' + tip + '-content';
+        if (typeof isActiveTab === 'function' && !isActiveTab(tabId)) return;
+
+        var el = document.getElementById(contentId);
+        if (el) el.classList.remove('hidden');
+        var ls = document.getElementById('loading-screen');
+        if (ls) ls.classList.add('hidden');
+
+        if (!_stanje[tip]) {
+            var sad = new Date();
+            _stanje[tip] = { godina: sad.getFullYear(), mjesec: sad.getMonth(), autoDani: {} };
+        }
+        // Prvo iscrtaj iz lokalnih podataka (trenutno), pa dopuni automatskim
+        // danima kad stignu — tako tab nikad ne stoji prazan dok se čeka mreža.
+        _render(tip);
+        var st = _stanje[tip];
+        st.autoDani = await _autoDani(tip, st.godina, st.mjesec);
+        if (typeof isActiveTab === 'function' && !isActiveTab(tabId)) return;
+        _render(tip);
+
+        if (typeof markTabRendered === 'function') markTabRendered(tabId);
+    };
+
+    window.sihtaricaPromijeni = async function(tip) {
+        var st = _stanje[tip];
+        if (!st) return;
+        var mEl = document.getElementById('sih-' + tip + '-mjesec');
+        var gEl = document.getElementById('sih-' + tip + '-godina');
+        if (mEl) st.mjesec = parseInt(mEl.value, 10);
+        if (gEl) st.godina = parseInt(gEl.value, 10);
+        st.autoDani = {};
+        _render(tip);
+        st.autoDani = await _autoDani(tip, st.godina, st.mjesec);
+        _render(tip);
+    };
+
+    // ---- Modal: uređivanje jednog dana ----
+    var _edit = null; // { tip, iso }
+    window.sihtaricaUredi = function(tip, iso) {
+        _edit = { tip: tip, iso: iso };
+        var unosi = _loadUnosi();
+        var u = unosi[iso] || {};
+        var d = iso.split('-');
+        var dat = new Date(parseInt(d[0], 10), parseInt(d[1], 10) - 1, parseInt(d[2], 10));
+
+        var naslov = document.getElementById('sihtarica-edit-datum');
+        if (naslov) {
+            naslov.textContent = parseInt(d[2], 10) + '. ' + MJESECI[parseInt(d[1], 10) - 1] + ' ' +
+                d[0] + '. (' + DANI[dat.getDay()] + ')';
+        }
+        var sel = document.getElementById('sihtarica-edit-tip');
+        if (sel) {
+            var o = '<option value="">— nije upisano —</option>';
+            TIPOVI.forEach(function(t) {
+                o += '<option value="' + t.id + '"' + (u.tip === t.id ? ' selected' : '') + '>' +
+                     t.ikona + ' ' + t.label + '</option>';
+            });
+            sel.innerHTML = o;
+        }
+        var nap = document.getElementById('sihtarica-edit-napomena');
+        if (nap) nap.value = u.napomena || '';
+
+        var modal = document.getElementById('sihtarica-edit-modal');
+        if (modal) modal.classList.add('show');
+    };
+
+    window.closeSihtaricaEditModal = function() {
+        var modal = document.getElementById('sihtarica-edit-modal');
+        if (modal) modal.classList.remove('show');
+        _edit = null;
+    };
+
+    window.confirmSihtaricaEdit = function() {
+        if (!_edit) { window.closeSihtaricaEditModal(); return; }
+        var sel = document.getElementById('sihtarica-edit-tip');
+        var nap = document.getElementById('sihtarica-edit-napomena');
+        var vrsta = sel ? sel.value : '';
+        var napomena = nap ? nap.value.trim() : '';
+
+        var unosi = _loadUnosi();
+        if (!vrsta && !napomena) {
+            delete unosi[_edit.iso];          // prazno = obriši unos, vrati na auto
+        } else {
+            unosi[_edit.iso] = { tip: vrsta, napomena: napomena };
+        }
+        _saveUnosi(unosi);
+
+        var tip = _edit.tip;
+        window.closeSihtaricaEditModal();
+        _render(tip);
+        if (typeof showSuccess === 'function') showSuccess('Šihtarica ažurirana');
+    };
+
+    // ---- Modal: broj dana godišnjeg ----
+    var _godTip = null;
+    window.sihtaricaPostaviGodisnji = function(tip) {
+        _godTip = tip;
+        var inp = document.getElementById('sihtarica-god-input');
+        if (inp) inp.value = _loadGodDana() || '';
+        var modal = document.getElementById('sihtarica-god-modal');
+        if (modal) modal.classList.add('show');
+        setTimeout(function() { if (inp) { inp.focus(); inp.select(); } }, 50);
+    };
+    window.closeSihtaricaGodModal = function() {
+        var modal = document.getElementById('sihtarica-god-modal');
+        if (modal) modal.classList.remove('show');
+        _godTip = null;
+    };
+    window.confirmSihtaricaGod = function() {
+        var inp = document.getElementById('sihtarica-god-input');
+        var n = inp ? parseInt(inp.value, 10) : NaN;
+        if (isNaN(n) || n < 0) n = 0;
+        _saveGodDana(n);
+        var tip = _godTip;
+        window.closeSihtaricaGodModal();
+        if (tip) _render(tip);
+        if (typeof showSuccess === 'function') showSuccess('Godišnji odmor', n + ' ugovorenih dana.');
+    };
+})();

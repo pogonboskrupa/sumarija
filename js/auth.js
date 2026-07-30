@@ -190,6 +190,7 @@
                     { id: 'primac-odjeli', icon: '🏭', label: 'Prikaz po odjelima' },
                     { id: 'add-sjeca', icon: '➕', label: 'Dodaj sječu' },
                     { id: 'my-sjece', icon: '📝', label: 'Moje sječe' },
+                    { id: 'sihtarica-primac', icon: '🗓️', label: 'Šihtarica' },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
                 ];
             } else if (userType === 'otpremac') {
@@ -201,6 +202,7 @@
                     { id: 'otpremac-odjeli', icon: '🏭', label: 'Prikaz po odjelima' },
                     { id: 'add-otprema', icon: '➕', label: 'Dodaj otpremu' },
                     { id: 'my-otpreme', icon: '📝', label: 'Moje otpreme' },
+                    { id: 'sihtarica-otpremac', icon: '🗓️', label: 'Šihtarica' },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
                 ];
             } else if (userType === 'operativa') {
@@ -507,6 +509,7 @@
                 'izvjestaji-content', 'izvjestaji-primac-content', 'izvjestaji-otpremac-content',
                 'mjesecni-sortimenti-content', 'stanje-odjela-admin-content',
                 'dinamika-content', 'kubikator-content', 'stanje-zaliha-content',
+                'sihtarica-primac-content', 'sihtarica-otpremac-content',
                 'godisnji-plan-content'
             ];
             panelIds.forEach(function(id) {

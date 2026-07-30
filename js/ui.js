@@ -39,6 +39,8 @@
                 'primac-mapa': 'radnik-mapa-content',
                 'otpremac-mapa': 'radnik-mapa-content',
                 'poslovodja-mapa': 'radnik-mapa-content',
+                'sihtarica-primac': 'sihtarica-primac-content',
+                'sihtarica-otpremac': 'sihtarica-otpremac-content',
                 'kubikator': 'kubikator-content',
                 'godisnji-plan': 'godisnji-plan-content',
                 'karta-odjela': 'karta-odjela-content',
@@ -204,6 +206,10 @@
 
                 document.getElementById('izvjestaji-otpremac-content').classList.remove('hidden');
                 switchOtpremacIzvjestajiSubTab('sedmicni');
+            } else if (tab === 'sihtarica-primac') {
+                if (typeof loadSihtarica === 'function') loadSihtarica('primac');
+            } else if (tab === 'sihtarica-otpremac') {
+                if (typeof loadSihtarica === 'function') loadSihtarica('otpremac');
             } else if (tab === 'kubikator') {
                 document.getElementById('kubikator-content').classList.remove('hidden');
                 if (typeof initKubikator === 'function') initKubikator();
