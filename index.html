@@ -3732,6 +3732,15 @@
     <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaTakePhoto()">
         <span>📷</span><span>Uslikaj fotografiju</span>
     </button>
+    <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartPoligon()">
+        <span>✏️</span><span>Označi površinu (završeno/ostalo/popraviti šumski red...)</span>
+    </button>
+    <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartSjeceLinije()">
+        <span>📏</span><span>Sječačke linije</span>
+    </button>
+    <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaOpenMjerenje()">
+        <span>📐</span><span>Izmjeri</span>
+    </button>
     <div class="rm-tragovi-divider"></div>
     <div id="radnik-mapa-tragovi-list" class="rm-tragovi-list"></div>
     <div class="rm-tragovi-divider"></div>
@@ -3745,6 +3754,15 @@
     <button type="button" id="radnik-mapa-foto-cleanup-btn" class="rm-tragovi-item hidden" onclick="mapaRadnikaCleanupFoto()">
         <span>🧹</span><span>Obriši starije od 30 dana</span>
     </button>
+    <div class="rm-tragovi-divider"></div>
+    <div class="rm-tragovi-section-label">Površine</div>
+    <div id="radnik-mapa-poligoni-list" class="rm-tragovi-list"></div>
+    <div class="rm-tragovi-divider"></div>
+    <div class="rm-tragovi-section-label">Sječačke linije</div>
+    <div id="radnik-mapa-sjece-list" class="rm-tragovi-list"></div>
+    <div class="rm-tragovi-divider"></div>
+    <div class="rm-tragovi-section-label">Mjerenja</div>
+    <div id="radnik-mapa-mjerenja-list" class="rm-tragovi-list"></div>
 </div>
 <!-- Skriveni file input — "capture=environment" otvara zadnju kameru direktno
      na mobilnom umjesto galerije. Klik pokreće JS (mapaRadnikaTakePhoto). -->
@@ -3868,27 +3886,9 @@
     <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartRoutePick()">
         <span>🧭</span><span>Vodi me do lokacije</span>
     </button>
-    <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartPoligon()">
-        <span>✏️</span><span>Označi površinu (završeno/ostalo/popraviti šumski red...)</span>
-    </button>
-    <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartSjeceLinije()">
-        <span>📏</span><span>Sječačke linije</span>
-    </button>
-    <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaOpenMjerenje()">
-        <span>📐</span><span>Izmjeri</span>
-    </button>
     <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaExportSve()">
         <span>📤</span><span>Izvezi sve (GPX)</span>
     </button>
-    <div class="rm-tragovi-divider"></div>
-    <div class="rm-tragovi-section-label">Površine</div>
-    <div id="radnik-mapa-poligoni-list" class="rm-tragovi-list"></div>
-    <div class="rm-tragovi-divider"></div>
-    <div class="rm-tragovi-section-label">Sječačke linije</div>
-    <div id="radnik-mapa-sjece-list" class="rm-tragovi-list"></div>
-    <div class="rm-tragovi-divider"></div>
-    <div class="rm-tragovi-section-label">Mjerenja</div>
-    <div id="radnik-mapa-mjerenja-list" class="rm-tragovi-list"></div>
 </div>
 
 <!-- Globalni offline banner -->

@@ -912,7 +912,7 @@
         );
     }
     window.mapaRadnikaStartPoligon = function() {
-        _hideOstaloMenu(); // pokreće se iz "Ostalo" popup-a
+        _hideTragoviMenu(); // pokreće se iz "Tragovi" popup-a
         window.mapaRadnikaCancelRoutePick(); // samo jedan mod (ruta/poligon/tačka) aktivan odjednom
         if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
         if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
@@ -1741,7 +1741,7 @@
         }
     }
     window.mapaRadnikaStartSjeceLinije = function() {
-        _hideOstaloMenu();
+        _hideTragoviMenu();
         if (typeof window.mapaRadnikaCancelRoutePick === 'function') window.mapaRadnikaCancelRoutePick();
         if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
         if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
@@ -1960,7 +1960,7 @@
         _saveSjeceConfig({ odjelKey: _sjeceOdjelKey, odjelLabel: _sjeceOdjelLabel, azimuth: azimuth, spacing: spacing });
         _notify('showSuccess', 'Sječačke linije generisane', _sjeceLines.length + ' linija, razmak ' + spacing + ' m.');
         // Panel se sklanja nakon generisanja — nazad se ide preko spiska
-        // "Sječačke linije" u Ostalo tabu (vidi _renderSjeceList/✏️ Uredi).
+        // "Sječačke linije" u Tragovi tabu (vidi _renderSjeceList/✏️ Uredi).
         if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
         _renderSjeceList();
     };
@@ -2080,7 +2080,7 @@
 
     function _mjerenjePanelEl() { return document.getElementById('radnik-mapa-mjerenje-panel'); }
     window.mapaRadnikaOpenMjerenje = function() {
-        _hideOstaloMenu();
+        _hideTragoviMenu();
         if (typeof window.mapaRadnikaCancelRoutePick === 'function') window.mapaRadnikaCancelRoutePick();
         if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
         if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
@@ -2249,7 +2249,7 @@
     window.mapaRadnikaZoomMjerenje = function(index) {
         var lyr = _mjerenjeLayers[index];
         if (!lyr || !_map) return;
-        _hideOstaloMenu();
+        _hideTragoviMenu();
         try {
             _map.fitBounds(lyr.getBounds(), { padding: [40, 40], maxZoom: 17 });
             lyr.openPopup();
@@ -2872,6 +2872,9 @@
             _renderTragoviList();
             _renderTackeList();
             _renderFotoList();
+            _renderPoligoniList();
+            _renderSjeceList();
+            _renderMjerenjaList();
         }
         menu.classList.toggle('hidden', !willShow);
     }
@@ -2883,10 +2886,7 @@
         if (willShow) {
             _hideTragoviMenu();
             if (bar) menu.style.bottom = (bar.getBoundingClientRect().height + 8) + 'px';
-            _renderPoligoniList();
             _refreshOfflineToggle();
-            _renderSjeceList();
-            _renderMjerenjaList();
         }
         menu.classList.toggle('hidden', !willShow);
     }
