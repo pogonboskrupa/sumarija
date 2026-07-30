@@ -3356,7 +3356,10 @@
                   .rm-bar-btn {
                       flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
                       gap:3px; min-height:42px; border:none; border-radius:10px; margin:0 5px;
-                      font-size:7px; font-weight:800; cursor:pointer; font-family:inherit;
+                      /* Veličina dugmeta (min-height/padding) namjerno nepromijenjena —
+                         traženo je samo veće slovo labele ("Moja lokacija"/"Tragovi"/
+                         "Ostalo"), ne veće dugme. */
+                      font-size:10px; font-weight:800; cursor:pointer; font-family:inherit;
                       letter-spacing:.2px; text-align:center; overflow-wrap:break-word;
                       color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25);
                       box-shadow:0 3px 8px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.25);
@@ -3374,7 +3377,7 @@
                   .rm-bar-trag.recording { background:linear-gradient(180deg,#ef4444,#dc2626); }
                   .rm-bar-clear { background:linear-gradient(180deg,#6b7280,#4b5563); }
                   @media (max-width:360px) {
-                      .rm-bar-btn { font-size:6px; min-height:37px; }
+                      .rm-bar-btn { font-size:9px; min-height:37px; }
                       .rm-bar-icon { font-size:13px; }
                   }
                   /* Donja (i gornja) traka su namjerno velike radi dodira na terenu —
@@ -3388,7 +3391,7 @@
                      uzrok "i dalje nešto koči povećanje" žalbe). */
                   @media (min-width:1025px) {
                       body:not(.force-desktop-view) .radnik-mapa-bottombar { padding:8px 8px calc(8px + env(safe-area-inset-bottom)) 8px; }
-                      body:not(.force-desktop-view) .rm-bar-btn { min-height:56px; font-size:13px; gap:4px; border-radius:12px; margin:0 4px; }
+                      body:not(.force-desktop-view) .rm-bar-btn { min-height:56px; font-size:16px; gap:4px; border-radius:12px; margin:0 4px; }
                       body:not(.force-desktop-view) .rm-bar-icon { font-size:22px; }
                       /* NAPOMENA (v1.4.103): h1/p/checkbox/Zatvori override-i su OVDJE
                          ranije postavljali VEĆE vrijednosti (24px/14px/...) nego
