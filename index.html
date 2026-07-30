@@ -3285,7 +3285,40 @@
                      ekranu Mape odjela, pa se ovaj modal renderovao ISPOD njih
                      (nevidljivo/neklikabilno — pravi razlog "Snimi trag se ne
                      aktivira"). Podignuto iznad svega u toj mapi. */
-                  #trag-name-modal.show, #trag-confirm-modal.show, #poligon-name-modal.show, #tacka-name-modal.show, #foto-name-modal.show, #trag-recording-modal.show, #stavka-edit-modal.show { z-index:20000; }
+                  #trag-name-modal.show, #trag-confirm-modal.show, #poligon-name-modal.show, #tacka-name-modal.show, #foto-name-modal.show, #stavka-edit-modal.show { z-index:20000; }
+                  /* ---- Traka aktivnog snimanja traga (iznad donje trake) ---- */
+                  .rm-rec-bar {
+                      position:fixed; left:10px; right:10px; z-index:10650;
+                      background:rgba(17,24,39,.94); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+                      color:#fff; border:1px solid rgba(255,255,255,.09); border-radius:14px;
+                      box-shadow:0 -6px 24px rgba(0,0,0,.3);
+                      padding:10px 12px; display:flex; align-items:center; gap:11px;
+                  }
+                  .rm-rec-bar.hidden { display:none; }
+                  .rm-rec-dot {
+                      width:10px; height:10px; border-radius:50%; background:#ef4444; flex-shrink:0;
+                      animation:rmRecPulse 1.6s infinite;
+                  }
+                  @keyframes rmRecPulse {
+                      0%   { box-shadow:0 0 0 0 rgba(239,68,68,.65); }
+                      70%  { box-shadow:0 0 0 9px rgba(239,68,68,0); }
+                      100% { box-shadow:0 0 0 0 rgba(239,68,68,0); }
+                  }
+                  /* Pauzirano — tačka prestaje pulsirati i posivi, brojač se prigasi. */
+                  .rm-rec-bar.paused .rm-rec-dot { background:#9ca3af; animation:none; }
+                  .rm-rec-bar.paused .rm-rec-time { opacity:.55; }
+                  .rm-rec-info { flex:1; min-width:0; display:flex; align-items:baseline; gap:9px; }
+                  .rm-rec-time { font-size:21px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:.4px; }
+                  .rm-rec-dist { font-size:13px; font-weight:600; color:#cbd5e1; white-space:nowrap; }
+                  .rm-rec-actions { display:flex; gap:6px; flex-shrink:0; }
+                  .rm-rec-btn {
+                      background:rgba(255,255,255,.14); color:#fff; border:1px solid rgba(255,255,255,.28);
+                      border-radius:10px; padding:9px 11px; font-size:12.5px; font-weight:700;
+                      font-family:inherit; cursor:pointer; white-space:nowrap;
+                  }
+                  .rm-rec-btn:active { background:rgba(255,255,255,.28); }
+                  .rm-rec-stop { background:#dc2626; border-color:#dc2626; }
+                  .rm-rec-stop:active { background:#b91c1c; }
 
                   /* Donja fiksna traka — Moja lokacija / Tragovi / Zatvori.
                      IZVAN Leaflet mape (obična HTML dugmad, ne Leaflet control), pa
@@ -3859,20 +3892,19 @@
         </div>
     </div>
 </div>
-<!-- Modal aktivnog snimanja traga — prikazan cijelo vrijeme dok snimanje
-     traje. Namjerno BEZ onclick-na-overlay zatvaranja i bez X dugmeta —
-     Pauza/Nastavi i Završi su jedine akcije (vidi js/mapa-radnika.js). -->
-<div class="modal-overlay" id="trag-recording-modal">
-    <div class="modal" style="max-width:300px;">
-        <div class="modal-header"><div class="modal-title">⏺️ Snimanje traga</div></div>
-        <div class="modal-body" style="text-align:center;">
-            <div id="trag-recording-elapsed" style="font-size:34px;font-weight:700;color:#1f2937;font-variant-numeric:tabular-nums;">00:00</div>
-            <div id="trag-recording-distance" style="font-size:15px;color:#6b7280;margin-top:6px;">0,00 km</div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" id="trag-recording-pause-btn" onclick="mapaRadnikaPauseResumeTrag()">⏸️ Pauza</button>
-            <button class="btn btn-danger" onclick="mapaRadnikaFinishTrag()">⏹️ Završi</button>
-        </div>
+<!-- Traka aktivnog snimanja traga — kompaktna, sjedi tačno iznad donje
+     trake (bez zamračenja ekrana), da karta ostane vidljiva i upotrebljiva
+     dok se trag snima. Pauza/Nastavi i Završi su jedine akcije; poziciju
+     po visini računa _positionRecBar u js/mapa-radnika.js. -->
+<div id="trag-recording-bar" class="rm-rec-bar hidden">
+    <span class="rm-rec-dot"></span>
+    <div class="rm-rec-info">
+        <span class="rm-rec-time" id="trag-recording-elapsed">00:00</span>
+        <span class="rm-rec-dist" id="trag-recording-distance">0,00 km</span>
+    </div>
+    <div class="rm-rec-actions">
+        <button type="button" class="rm-rec-btn" id="trag-recording-pause-btn" onclick="mapaRadnikaPauseResumeTrag()">⏸️ Pauza</button>
+        <button type="button" class="rm-rec-btn rm-rec-stop" onclick="mapaRadnikaFinishTrag()">⏹️ Završi</button>
     </div>
 </div>
 <!-- Custom potvrda brisanja traga — zamjena za native browser confirm() koji

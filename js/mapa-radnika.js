@@ -853,6 +853,27 @@
         if (m2 >= 10000) return (m2 / 10000).toFixed(2) + ' ha (' + Math.round(m2).toLocaleString('de-DE') + ' m²)';
         return Math.round(m2).toLocaleString('de-DE') + ' m²';
     }
+    // Klik na SAČUVANU korisničku stavku (površina/mjerenje/tačka/foto) dok je
+    // aktivan neki mod crtanja ili biranja: klik tada pripada TOM modu i sloj
+    // ga ne smije "ukrasti" da otvori svoj popup. Leaflet bindPopup sam veže
+    // otvaranje popup-a na 'click' (Layer._openPopup), pa se taj njegov
+    // listener skida i zamjenjuje ovim koji klik prvo propusti kroz isti lanac
+    // modova koji koriste i poligoni odjela (vidi lyr.on('click') u _renderLayer).
+    // Bez ovoga se, npr. pri označavanju nove površine preko već sačuvane,
+    // umjesto nove tačke otvarao popup te stare površine.
+    function _bindStavkaPopupClick(lyr) {
+        lyr.off('click');
+        lyr.on('click', function(e) {
+            L.DomEvent.stopPropagation(e);
+            if (_handleRoutePickClick(e.latlng)) return;
+            if (_handlePoligonClick(e.latlng)) return;
+            if (_handleSjeceDirectionClick(e.latlng)) return;
+            if (_handleMjerenjeClick(e.latlng)) return;
+            if (_tackaPicking) return; // "Tačka" se bira nišanom — klik po mapi ništa ne radi
+            lyr.openPopup(e.latlng);
+        });
+    }
+
     function _drawSavedPoligoni() {
         _savedPoligonLayers.forEach(function(l) { _map.removeLayer(l); });
         _savedPoligonLayers = [];
@@ -876,6 +897,7 @@
                 '<button type="button" class="rm-tacka-popup-delete" onclick="mapaRadnikaDeletePoligon(' + i + ')">🗑️ Obriši</button>' +
                 '</div>'
             );
+            _bindStavkaPopupClick(poly);
             _savedPoligonLayers.push(poly);
         });
         _bringUserLayersToFront();
@@ -1126,6 +1148,7 @@
                     '</div>'
                 )
                 .addTo(_map);
+            _bindStavkaPopupClick(marker);
             _tackaMarkers.push(marker);
         });
     }
@@ -1382,6 +1405,7 @@
                 '<button type="button" class="rm-tacka-popup-delete" onclick="mapaRadnikaDeleteFoto(' + i + ')">🗑️ Obriši</button>' +
                 '</div>'
             ).addTo(_map);
+            _bindStavkaPopupClick(marker);
             _fotoMarkers.push(marker);
         });
     }
@@ -2166,6 +2190,7 @@
                 '<button type="button" class="rm-tacka-popup-delete" onclick="mapaRadnikaDeleteMjerenje(' + i + ')">🗑️ Obriši</button>' +
                 '</div>'
             );
+            _bindStavkaPopupClick(lyr);
             _mjerenjeLayers.push(lyr);
         });
         _bringUserLayersToFront();
@@ -2430,6 +2455,7 @@
             _tragBtnEl.textContent = '⏹️ Zaustavi snimanje';
             _tragBtnEl.classList.add('recording');
         }
+        _hideTragoviMenu(); // traka snimanja sjeda tačno na mjesto gdje stoji ovaj meni
         _openTragRecordingModal();
     }
 
@@ -2465,19 +2491,37 @@
     // proteklo (aktivno) vrijeme i pređenu udaljenost, sa Pauza/Nastavi i
     // Završi dugmadima. Namjerno NEMA X/minimiziraj — dok snimanje traje,
     // modal je jedini način upravljanja (klik izvan njega ga ne zatvara). ----
+    // Visina "sprata" iznad donje trake. Traka snimanja stoji na prvom spratu,
+    // a popup meniji (Tragovi/Ostalo) se dižu iznad nje kad snimanje traje —
+    // inače bi se preklopili na istom mjestu.
+    function _bottomStackOffset(iznadTrakeSnimanja) {
+        var bar = document.getElementById('radnik-mapa-bottombar');
+        var off = (bar ? bar.getBoundingClientRect().height : 0) + 8;
+        if (iznadTrakeSnimanja) {
+            var rec = document.getElementById('trag-recording-bar');
+            if (rec && !rec.classList.contains('hidden')) off += rec.getBoundingClientRect().height + 8;
+        }
+        return off;
+    }
+    function _positionRecBar() {
+        var rec = document.getElementById('trag-recording-bar');
+        if (rec) rec.style.bottom = _bottomStackOffset(false) + 'px';
+    }
     function _openTragRecordingModal() {
-        var modal = document.getElementById('trag-recording-modal');
-        if (!modal) return; // fallback ako modal nije u DOM-u — snimanje ipak radi, samo bez uživo prikaza
+        var rec = document.getElementById('trag-recording-bar');
+        if (!rec) return; // fallback ako traka nije u DOM-u — snimanje ipak radi, samo bez uživo prikaza
         var btn = document.getElementById('trag-recording-pause-btn');
         if (btn) btn.textContent = '⏸️ Pauza';
-        modal.classList.add('show');
+        rec.classList.remove('paused');
+        rec.classList.remove('hidden');
+        _positionRecBar();
         _updateTragModalStats();
         if (_tragModalTimerId) clearInterval(_tragModalTimerId);
         _tragModalTimerId = setInterval(_updateTragModalStats, 1000);
     }
     function _closeTragRecordingModal() {
-        var modal = document.getElementById('trag-recording-modal');
-        if (modal) modal.classList.remove('show');
+        var rec = document.getElementById('trag-recording-bar');
+        if (rec) { rec.classList.add('hidden'); rec.classList.remove('paused'); }
         if (_tragModalTimerId) { clearInterval(_tragModalTimerId); _tragModalTimerId = null; }
     }
     function _msToClockStr(ms) {
@@ -2498,16 +2542,19 @@
     function _pauseResumeTrag() {
         if (!_recording) return;
         var btn = document.getElementById('trag-recording-pause-btn');
+        var rec = document.getElementById('trag-recording-bar');
         if (!_tragPaused) {
             _gpsUnsubscribe('trag');
             _tragActiveMs += Date.now() - _tragSegmentStartTs;
             _tragPaused = true;
             if (btn) btn.textContent = '▶️ Nastavi';
+            if (rec) rec.classList.add('paused');
         } else {
             _tragSegmentStartTs = Date.now();
             _gpsSubscribe('trag', _onTragPosition, _handleTragGpsError);
             _tragPaused = false;
             if (btn) btn.textContent = '⏸️ Pauza';
+            if (rec) rec.classList.remove('paused');
         }
         _updateTragModalStats();
     }
@@ -3052,12 +3099,11 @@
     }
     function _toggleTragoviMenu() {
         var menu = document.getElementById('radnik-mapa-tragovi-menu');
-        var bar = document.getElementById('radnik-mapa-bottombar');
         if (!menu) return;
         var willShow = menu.classList.contains('hidden');
         if (willShow) {
             _hideOstaloMenu(); // samo jedan popup otvoren odjednom
-            if (bar) menu.style.bottom = (bar.getBoundingClientRect().height + 8) + 'px';
+            menu.style.bottom = _bottomStackOffset(true) + 'px';
             _stavkeFotoCache = null; // svježe čitanje IndexedDB-a pri svakom otvaranju
             _renderStavke();
         }
@@ -3065,12 +3111,11 @@
     }
     function _toggleOstaloMenu() {
         var menu = document.getElementById('radnik-mapa-ostalo-menu');
-        var bar = document.getElementById('radnik-mapa-bottombar');
         if (!menu) return;
         var willShow = menu.classList.contains('hidden');
         if (willShow) {
             _hideTragoviMenu();
-            if (bar) menu.style.bottom = (bar.getBoundingClientRect().height + 8) + 'px';
+            menu.style.bottom = _bottomStackOffset(true) + 'px';
             _refreshOfflineToggle();
         }
         menu.classList.toggle('hidden', !willShow);
@@ -3153,6 +3198,7 @@
     // resize dok je fullscreen mod aktivan.
     window.addEventListener('resize', function() {
         if (document.body.classList.contains('radnik-mapa-fullscreen')) _enterMapaFullscreen();
+        _positionRecBar(); // visina donje trake se mijenja pri rotaciji ekrana
     });
     // Poziva se iz switchTab (js/ui.js) kad se prelazi na BILO KOJI drugi tab —
     // sigurnosna mreža za slučaj da korisnik ode s mape mimo "Zatvori" dugmeta.
