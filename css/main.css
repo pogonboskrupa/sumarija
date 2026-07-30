@@ -3209,7 +3209,11 @@
        ne rješava čitljivost na terenu, samo pravi prazan prostor oko slova.
        Zato i veličina i debljina, ne samo min-height. */
     font-size: 18.4px;
-    font-weight: 700;
+    font-weight: 800;
+    /* Crna umjesto osnovne sive (#4b5563) — na terenu, po suncu, siva na
+       bijelom se slabo čita. Nadjačava i ".tab:hover" (0,2,0) jer je ovo
+       (1,1,0), a ID kolona ima prednost. */
+    color: #111827;
     line-height: 1.25;
     /* Svaki tab je zaseban "čip" sa vlastitim obrubom — lakše se razaznaje
        gdje jedan počinje a drugi prestaje nego kad su svi u nizu bez granice.
@@ -3224,6 +3228,8 @@
 #tabs-menu-mobile .tab.active {
     border-color: #047857;
     background: #ecfdf5;
-    color: #065f46;
+    /* I aktivni tab ima crn tekst — zeleni obrub i pozadina već nose signal
+       "ovdje si", pa tekst ne mora nositi i boju na račun čitljivosti. */
+    color: #111827;
     box-shadow: 0 0 0 1px rgba(4, 120, 87, .25);
 }
