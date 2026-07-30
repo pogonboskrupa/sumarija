@@ -1060,7 +1060,7 @@
         _tackaPicking = true;
         _showTackaCrosshair();
         _showRouteHint(
-            '<span>🎯 Pomjerite mapu da tačka bude na željenom mjestu</span>' +
+            '<span>🔵 Pomjerite mapu da tačka bude na željenom mjestu</span>' +
             '<span style="display:flex;gap:6px;">' +
             '<button type="button" onclick="mapaRadnikaCenterTackaOnMyLocation()">Moja lokacija</button>' +
             '<button type="button" onclick="mapaRadnikaConfirmTackaHere()">✅ Sačuvaj ovdje</button>' +
@@ -2045,6 +2045,29 @@
     var _mjerenjeCentar = (function() {
         try { return localStorage.getItem(MJERENJE_CENTAR_KEY) === '1'; } catch (_) { return false; }
     })();
+    // Pomjeranje mape SAMO po sebi dodaje tačku — radnik drži nišan na granici i
+    // "vuče" mapu duž nje umjesto da pritiska dugme na svakom uglu. Prag je u
+    // PIKSELIMA (ne metrima) jer mjeri stvarnu namjeru korisnika jednako na
+    // svakom zoomu: sitno podrhtavanje prsta ne pravi tačku, svjestan pomak da.
+    var MJERENJE_AUTO_MIN_PX = 24;
+    function _onMjerenjeMoveEnd() {
+        if (!_mjerenjeMode || !_mjerenjeCentar || !_map) return;
+        var c = _map.getCenter();
+        var last = _mjerenjePoints[_mjerenjePoints.length - 1];
+        if (last) {
+            var p1 = _map.latLngToContainerPoint(L.latLng(last[0], last[1]));
+            var p2 = _map.latLngToContainerPoint(c);
+            if (p1.distanceTo(p2) < MJERENJE_AUTO_MIN_PX) return;
+        }
+        _mjerenjePoints.push([c.lat, c.lng]);
+        _redrawMjerenjeDraw();
+        _updateMjerenjeHint();
+    }
+    function _bindMjerenjeAuto(on) {
+        if (!_map) return;
+        _map.off('moveend', _onMjerenjeMoveEnd); // nikad dvaput vezano
+        if (on) _map.on('moveend', _onMjerenjeMoveEnd);
+    }
     window.mapaRadnikaToggleMjerenjeCentar = function(on) {
         _mjerenjeCentar = !!on;
         try { localStorage.setItem(MJERENJE_CENTAR_KEY, _mjerenjeCentar ? '1' : '0'); } catch (_) {}
@@ -2052,6 +2075,7 @@
         // može prebaciti na tapkanje bez gubljenja već postavljenih tačaka.
         if (_mjerenjeMode) {
             if (_mjerenjeCentar) _showTackaCrosshair(); else _hideTackaCrosshair();
+            _bindMjerenjeAuto(_mjerenjeCentar);
             _updateMjerenjeHint();
         }
     };
@@ -2072,12 +2096,14 @@
         var panel = _mjerenjePanelEl();
         if (panel) panel.classList.add('hidden');
         if (_mjerenjeCentar) _showTackaCrosshair();
+        _bindMjerenjeAuto(_mjerenjeCentar);
         _updateMjerenjeHint();
     };
     window.mapaRadnikaCancelMjerenje = function() {
         _mjerenjeMode = null;
         _mjerenjePoints = [];
         if (_mjerenjeDrawLayer) { _map.removeLayer(_mjerenjeDrawLayer); _mjerenjeDrawLayer = null; }
+        _bindMjerenjeAuto(false);
         _hideTackaCrosshair();
         _hideRouteHint();
     };
@@ -2098,11 +2124,12 @@
         else if (_mjerenjeMode === 'povrsina' && n >= 3) info = ' — ' + _fmtPovrsina(_polygonAreaM2(_mjerenjePoints));
         var moze = n >= min;
         _showRouteHint(
-            '<span>' + (_mjerenjeCentar ? '🎯 ' : '') + naziv + ' (' + n + (moze ? ', spremno' : ', treba još') + ')' + info +
+            '<span>' + naziv + ' (' + n + (moze ? ', spremno' : ', treba još') + ')' + info +
             '<br><label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;opacity:.85;cursor:pointer;">' +
             '<input type="checkbox" style="width:14px;height:14px;margin:0;cursor:pointer;"' +
             (_mjerenjeCentar ? ' checked' : '') +
-            ' onchange="mapaRadnikaToggleMjerenjeCentar(this.checked)" />Crtaj sa centra ekrana</label></span>' +
+            ' onchange="mapaRadnikaToggleMjerenjeCentar(this.checked)" />' +
+            (_mjerenjeCentar ? 'Vučite mapu — crta samo' : 'Crtaj sa centra ekrana') + '</label></span>' +
             '<span style="display:flex;gap:6px;">' +
             (_mjerenjeCentar ? '<button type="button" onclick="mapaRadnikaAddMjerenjeCenterPoint()">➕ Dodaj</button>' : '') +
             (n > 0 ? '<button type="button" onclick="mapaRadnikaUndoMjerenjePoint()">↩️</button>' : '') +
