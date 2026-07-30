@@ -3196,13 +3196,34 @@
    @media (pointer: coarse) { min-height: 44px }, koje je inače bilo
    stvarni ograničavajući faktor umjesto paddinga.
    ========================================================================== */
+/* Razmak između dugmadi + prostor za obrub, da se okviri ne dodiruju.
+   ID (1,0,0) nadjačava ".tabs" (0,1,0) iz osnovnog pravila iznad. */
+#tabs-menu-mobile {
+    gap: 6px;
+    padding: 6px 10px;
+}
 #tabs-menu-mobile .tab {
-    min-height: 66px;
+    min-height: 70px;
     padding: 18px 20px;
     /* Font mora ići uz visinu — sama viša dugmad sa istim sitnim tekstom
        ne rješava čitljivost na terenu, samo pravi prazan prostor oko slova.
        Zato i veličina i debljina, ne samo min-height. */
-    font-size: 16px;
+    font-size: 18.4px;
     font-weight: 700;
     line-height: 1.25;
+    /* Svaki tab je zaseban "čip" sa vlastitim obrubom — lakše se razaznaje
+       gdje jedan počinje a drugi prestaje nego kad su svi u nizu bez granice.
+       Obrub je uvijek 2px (neaktivni sivi) da se pri promjeni taba raspored
+       ne pomjeri za širinu okvira. */
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+}
+/* Aktivni tab — pun zeleni obrub, jasno vidljiv i na suncu/terenu.
+   (1,2,0) nadjačava osnovno ".tab.active" (0,2,0) iznad, koje boji samo
+   donju ivicu. */
+#tabs-menu-mobile .tab.active {
+    border-color: #047857;
+    background: #ecfdf5;
+    color: #065f46;
+    box-shadow: 0 0 0 1px rgba(4, 120, 87, .25);
 }
