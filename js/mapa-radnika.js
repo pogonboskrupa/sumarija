@@ -973,26 +973,7 @@
         _updatePoligonHint();
         return true;
     }
-    function _renderPoligoniList() {
-        var list = document.getElementById('radnik-mapa-poligoni-list');
-        if (!list) return;
-        var items = _loadSavedPoligoni();
-        if (!items.length) {
-            list.innerHTML = '<div class="rm-tragovi-empty">Nema označenih površina.</div>';
-            return;
-        }
-        list.innerHTML = items.map(function(p, i) {
-            var when = p.created ? new Date(p.created).toLocaleString('bs-BA') : '?';
-            var name = (p.name || 'Površina').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            return '<div class="rm-tragovi-row">' +
-                '<span class="rm-tragovi-row-info">' + name + '<br><small>' + when + '</small></span>' +
-                '<span style="display:flex;gap:4px;">' +
-                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaSharePoligon(' + i + ')" aria-label="Podijeli površinu">📤</button>' +
-                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeletePoligon(' + i + ')" aria-label="Obriši površinu">🗑️</button>' +
-                '</span>' +
-                '</div>';
-        }).join('');
-    }
+    function _renderPoligoniList() { return _renderStavke(); }
     window.mapaRadnikaDeletePoligon = function(index) {
         var list = _loadSavedPoligoni();
         var p = list[index];
@@ -1268,27 +1249,7 @@
             _renderTackeList();
         });
     };
-    function _renderTackeList() {
-        var list = document.getElementById('radnik-mapa-tacke-list');
-        if (!list) return;
-        var items = _loadSavedTacke();
-        if (!items.length) {
-            list.innerHTML = '<div class="rm-tragovi-empty">Nema sačuvanih tačaka.</div>';
-            return;
-        }
-        list.innerHTML = items.map(function(t, i) {
-            var when = t.created ? new Date(t.created).toLocaleString('bs-BA') : '?';
-            var name = (t.name || 'Tačka').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            return '<div class="rm-tragovi-row">' +
-                '<span class="rm-tragovi-row-info">📍 ' + name + '<br><small>' + when + '</small></span>' +
-                '<span style="display:flex;gap:4px;">' +
-                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaRouteToTacka(' + i + ')" aria-label="Vodi me do tačke">🧭</button>' +
-                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaShareTacka(' + i + ')" aria-label="Podijeli tačku">📤</button>' +
-                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeleteTacka(' + i + ')" aria-label="Obriši tačku">🗑️</button>' +
-                '</span>' +
-                '</div>';
-        }).join('');
-    }
+    function _renderTackeList() { return _renderStavke(); }
 
     // ---- USLIKAJ FOTOGRAFIJU — foto se snimi na trenutnoj GPS lokaciji,
     // imenuje se (isti obrazac kao Tačka/Trag), i čuva se PO KORISNIKU u
@@ -1518,40 +1479,9 @@
             );
         });
     };
-    async function _renderFotoList() {
-        var list = document.getElementById('radnik-mapa-foto-list');
-        if (!list) return;
-        var items = await _loadSavedFoto();
-        var labelEl = document.getElementById('radnik-mapa-foto-section-label');
-        var cleanupBtn = document.getElementById('radnik-mapa-foto-cleanup-btn');
-        var totalBytes = items.reduce(function(s, f) { return s + _dataUrlBytes(f.dataUrl); }, 0);
-        if (labelEl) {
-            labelEl.textContent = items.length
-                ? ('Fotografije (' + items.length + ' · ' + _fmtBytes(totalBytes) + ')')
-                : 'Fotografije';
-        }
-        // Dugme za čišćenje se prikazuje SAMO ako stvarno ima šta da se obriše.
-        if (cleanupBtn) {
-            var cutoff = _fotoCutoffTs();
-            var oldCount = items.filter(function(f) { return _fotoIsOld(f, cutoff); }).length;
-            cleanupBtn.classList.toggle('hidden', oldCount === 0);
-        }
-        if (!items.length) {
-            list.innerHTML = '<div class="rm-tragovi-empty">Nema sačuvanih fotografija.</div>';
-            return;
-        }
-        list.innerHTML = items.map(function(f, i) {
-            var when = f.created ? new Date(f.created).toLocaleString('bs-BA') : '?';
-            var name = (f.name || 'Foto').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            return '<div class="rm-tragovi-row">' +
-                '<span class="rm-tragovi-row-info">📷 ' + name + '<br><small>' + when + '</small></span>' +
-                '<span style="display:flex;gap:4px;">' +
-                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaShareFoto(' + i + ')" aria-label="Podijeli fotografiju">📤</button>' +
-                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeleteFoto(' + i + ')" aria-label="Obriši fotografiju">🗑️</button>' +
-                '</span>' +
-                '</div>';
-        }).join('');
-    }
+    // Foto se čuvaju u IndexedDB pa se keš mora poništiti pri svakoj izmjeni —
+    // inače bi objedinjena lista prikazivala staro stanje do idućeg punog čitanja.
+    function _renderFotoList() { _stavkeFotoCache = null; return _renderStavke(); }
 
     // ---- SJEČAČKE LINIJE — linije za obilježavanje sječe, OKOMITE na
     // izohipse (niz padinu — "fall line"), na razmaku koji radnik zada
@@ -1978,25 +1908,7 @@
     // postoji), sa "✏️ Uredi" (ponovo otvara panel, predpopunjen) i "🗑️"
     // (isto kao Ukloni linije). Ovo je JEDINI način da se panel ponovo otvori
     // nakon što se zatvorio pri generisanju.
-    function _renderSjeceList() {
-        var list = document.getElementById('radnik-mapa-sjece-list');
-        if (!list) return;
-        if (!_sjeceLines.length) {
-            list.innerHTML = '<div class="rm-tragovi-empty">Nema generisanih linija.</div>';
-            return;
-        }
-        var info = 'Odjel ' + (_sjeceOdjelLabel || '?') + ' — ' + _sjeceLines.length + ' linija';
-        var cfg = _loadSjeceConfig();
-        if (cfg) info += ' (' + cfg.azimuth + '°, ' + cfg.spacing + ' m)';
-        list.innerHTML =
-            '<div class="rm-tragovi-row">' +
-            '<span class="rm-tragovi-row-info">📏 ' + info + '</span>' +
-            '<span style="display:flex;gap:4px;">' +
-            '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaStartSjeceLinije()" aria-label="Uredi sječačke linije">✏️</button>' +
-            '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaUkloniSjeceLinije()" aria-label="Ukloni sječačke linije">🗑️</button>' +
-            '</span>' +
-            '</div>';
-    }
+    function _renderSjeceList() { return _renderStavke(); }
     // Pri otvaranju mape, ako postoji sačuvana konfiguracija (odjel+azimut+
     // razmak), automatski regeneriši i prikaži linije bez ponovnog unosa —
     // geometrija se lako ponovo izračuna (ne čuvamo je samu, samo konfiguraciju).
@@ -2226,26 +2138,7 @@
             _renderMjerenjaList();
         });
     };
-    function _renderMjerenjaList() {
-        var list = document.getElementById('radnik-mapa-mjerenja-list');
-        if (!list) return;
-        var items = _loadSavedMjerenja();
-        if (!items.length) {
-            list.innerHTML = '<div class="rm-tragovi-empty">Nema sačuvanih mjerenja.</div>';
-            return;
-        }
-        list.innerHTML = items.map(function(m, i) {
-            var when = m.created ? new Date(m.created).toLocaleString('bs-BA') : '?';
-            return '<div class="rm-tragovi-row">' +
-                '<span class="rm-tragovi-row-info">' + _mjerenjeKratko(m) + '<br><small>' + when + '</small></span>' +
-                '<span style="display:flex;gap:4px;">' +
-                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaZoomMjerenje(' + i + ')" aria-label="Prikaži na mapi">🔍</button>' +
-                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaShareMjerenje(' + i + ')" aria-label="Podijeli mjerenje">📤</button>' +
-                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeleteMjerenje(' + i + ')" aria-label="Obriši mjerenje">🗑️</button>' +
-                '</span>' +
-                '</div>';
-        }).join('');
-    }
+    function _renderMjerenjaList() { return _renderStavke(); }
     window.mapaRadnikaZoomMjerenje = function(index) {
         var lyr = _mjerenjeLayers[index];
         if (!lyr || !_map) return;
@@ -2799,29 +2692,280 @@
         });
     };
 
-    function _renderTragoviList() {
-        var list = document.getElementById('radnik-mapa-tragovi-list');
-        if (!list) return;
-        var tracks = _loadSavedTracks();
-        if (!tracks.length) {
-            list.innerHTML = '<div class="rm-tragovi-empty">Nema sačuvanih tragova.</div>';
-            return;
-        }
-        list.innerHTML = tracks.map(function(t, i) {
-            var when = t.start ? new Date(t.start).toLocaleString('bs-BA') : '?';
-            var name = (t.name || 'Trag').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // ================= OBJEDINJENA LISTA TERENSKIH STAVKI =================
+    // Ranije je svaki tip (trag/tačka/foto/površina/sječe/mjerenje) imao svoju
+    // odvojenu listu sa vlastitim naslovom, i to razbacano po dva popup-a —
+    // radnik na terenu je morao pamtiti "gdje je šta" i skrolati kroz šest
+    // kutija da nađe jednu stavku. Sad je sve u JEDNOJ listi sa podtabovima
+    // (filter po tipu), pretragom i preimenovanjem.
+    //
+    // Svih šest starih _renderXList() funkcija su zadržane kao tanki omotači
+    // oko _renderStavke() — postoji desetak poziva na njih po modulu (nakon
+    // brisanja/spremanja/crtanja) i svi i dalje rade bez ijedne izmjene.
+    var _stavkeTab = 'sve';
+    var _stavkeQuery = '';
+    var _stavkeFotoCache = null; // foto su u IndexedDB (base64, teško) — ne čitaj ih na svaki otkucaj u pretrazi
+
+    var STAVKA_TABOVI = [
+        { id: 'sve',      label: 'Sve' },
+        { id: 'trag',     label: '⏺️ Tragovi' },
+        { id: 'tacka',    label: '📍 Tačke' },
+        { id: 'foto',     label: '📷 Foto' },
+        { id: 'povrsina', label: '✏️ Površine' },
+        { id: 'sjece',    label: '📏 Sječe' },
+        { id: 'mjerenje', label: '📐 Mjerenja' }
+    ];
+
+    function _esc(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    // Pretraga tolerantna na dijakritike — radnik kuca "secacke"/"trag pcelinjak"
+    // bez č/ć/š/ž/đ (česta navika na telefonskoj tastaturi) i svejedno nalazi.
+    function _stavkaNorm(s) {
+        return String(s == null ? '' : s).toLowerCase()
+            .replace(/[čć]/g, 'c').replace(/š/g, 's').replace(/ž/g, 'z').replace(/đ/g, 'dj');
+    }
+    function _datumStr(iso) {
+        return iso ? new Date(iso).toLocaleString('bs-BA') : '?';
+    }
+
+    // Skuplja SVE tipove u jedan niz zajedničkog oblika. `idx` je index unutar
+    // vlastitog niza tog tipa — postojeće share/delete funkcije primaju baš taj
+    // index, pa se ovdje ništa ne mora preračunavati.
+    async function _collectStavke(useCache) {
+        var out = [];
+
+        _loadSavedTracks().forEach(function(t, i) {
             var km = _tragDistanceKm(t.points).toFixed(2).replace('.', ',');
             var dur = _tragDurationStr(t);
-            var stats = km + ' km' + (dur ? ' · ' + dur : '');
-            return '<div class="rm-tragovi-row">' +
-                '<span class="rm-tragovi-row-info">' + name + '<br><small>' + when + ' · ' + stats + '</small></span>' +
-                '<span style="display:flex;gap:4px;">' +
-                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaShareTrag(' + i + ')" aria-label="Podijeli trag">📤</button>' +
-                '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeleteTrag(' + i + ')" aria-label="Obriši trag">🗑️</button>' +
-                '</span>' +
-                '</div>';
+            out.push({
+                tip: 'trag', idx: i, ikona: '⏺️', ime: t.name || 'Trag',
+                meta: _datumStr(t.start) + ' · ' + km + ' km' + (dur ? ' · ' + dur : ''),
+                ts: t.start ? new Date(t.start).getTime() : 0,
+                edit: true, zoom: (t.points || []).length >= 2, share: true
+            });
+        });
+
+        _loadSavedTacke().forEach(function(t, i) {
+            out.push({
+                tip: 'tacka', idx: i, ikona: '📍', ime: t.name || 'Tačka',
+                meta: _datumStr(t.created),
+                ts: t.created ? new Date(t.created).getTime() : 0,
+                edit: true, zoom: true, share: true, ruta: true
+            });
+        });
+
+        var fotos = (useCache && _stavkeFotoCache) ? _stavkeFotoCache : await _loadSavedFoto();
+        _stavkeFotoCache = fotos;
+        fotos.forEach(function(f, i) {
+            out.push({
+                tip: 'foto', idx: i, ikona: '📷', ime: f.name || 'Foto',
+                meta: _datumStr(f.created) + ' · ' + _fmtBytes(_dataUrlBytes(f.dataUrl)),
+                ts: f.created ? new Date(f.created).getTime() : 0,
+                edit: true, zoom: !!(f.lat && f.lng), share: true
+            });
+        });
+
+        _loadSavedPoligoni().forEach(function(p, i) {
+            out.push({
+                tip: 'povrsina', idx: i, ikona: '✏️', ime: p.name || 'Površina',
+                meta: _datumStr(p.created) + ' · ' + _fmtPovrsina(_polygonAreaM2(p.points || [])),
+                ts: p.created ? new Date(p.created).getTime() : 0,
+                edit: true, zoom: (p.points || []).length >= 3, share: true
+            });
+        });
+
+        _loadSavedMjerenja().forEach(function(m, i) {
+            var vrijednost = m.tip === 'udaljenost' ? _fmtDuzina(m.duzina) : _fmtPovrsina(m.povrsina);
+            out.push({
+                tip: 'mjerenje', idx: i, ikona: m.tip === 'udaljenost' ? '📏' : '🔷',
+                ime: m.name || vrijednost,
+                meta: _datumStr(m.created) + (m.name ? ' · ' + vrijednost : ''),
+                ts: m.created ? new Date(m.created).getTime() : 0,
+                edit: true, zoom: (m.points || []).length >= 2, share: true
+            });
+        });
+
+        // Sječačke linije nisu niz sačuvanih stavki nego JEDNA konfiguracija iz
+        // koje se linije svaki put deterministički regenerišu (vidi komentar uz
+        // _restoreSjeceIfSaved) — otud najviše jedan red, i "uredi" umjesto
+        // preimenovanja. Nema izvoza jer ih ni mapaRadnikaExportSve ne izvozi.
+        if (_sjeceLines.length) {
+            var cfg = _loadSjeceConfig();
+            out.push({
+                tip: 'sjece', idx: 0, ikona: '📏',
+                ime: 'Odjel ' + (_sjeceOdjelLabel || '?'),
+                meta: _sjeceLines.length + ' linija' + (cfg ? ' · ' + cfg.azimuth + '° · ' + cfg.spacing + ' m' : ''),
+                ts: Date.now(), // uvijek "aktuelno" (regeneriše se pri svakom otvaranju mape)
+                edit: true, zoom: true, share: false
+            });
+        }
+
+        return out;
+    }
+
+    function _stavkeTabsHtml(sve) {
+        return STAVKA_TABOVI.map(function(t) {
+            var n = t.id === 'sve' ? sve.length : sve.filter(function(s) { return s.tip === t.id; }).length;
+            return '<button type="button" class="rm-stavke-tab' + (_stavkeTab === t.id ? ' active' : '') + '"' +
+                ' onclick="mapaRadnikaStavkeTab(\'' + t.id + '\')">' +
+                _esc(t.label) + ' <span class="rm-stavke-tab-n">' + n + '</span></button>';
         }).join('');
     }
+
+    function _stavkaRowHtml(s) {
+        var akcije = '';
+        if (s.ruta)  akcije += '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaRouteToTacka(' + s.idx + ')" aria-label="Vodi me do tačke">🧭</button>';
+        if (s.zoom)  akcije += '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaZoomStavka(\'' + s.tip + '\',' + s.idx + ')" aria-label="Prikaži na mapi">🔍</button>';
+        if (s.edit)  akcije += '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaEditStavka(\'' + s.tip + '\',' + s.idx + ')" aria-label="Preimenuj">✏️</button>';
+        if (s.share) akcije += '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaShareStavka(\'' + s.tip + '\',' + s.idx + ')" aria-label="Podijeli">📤</button>';
+        akcije += '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeleteStavka(\'' + s.tip + '\',' + s.idx + ')" aria-label="Obriši">🗑️</button>';
+        return '<div class="rm-tragovi-row">' +
+            '<span class="rm-tragovi-row-info">' + s.ikona + ' ' + _esc(s.ime) +
+            '<br><small>' + _esc(s.meta) + '</small></span>' +
+            '<span style="display:flex;gap:4px;flex-shrink:0;">' + akcije + '</span>' +
+            '</div>';
+    }
+
+    async function _renderStavke(useCache) {
+        var list = document.getElementById('radnik-mapa-stavke-list');
+        var tabs = document.getElementById('radnik-mapa-stavke-tabs');
+        if (!list) return;
+
+        var sve = await _collectStavke(useCache);
+
+        // Dugme za čišćenje starih fotografija — vidljivo samo kad stvarno ima
+        // šta obrisati (ranije živjelo u _renderFotoList).
+        var cleanupBtn = document.getElementById('radnik-mapa-foto-cleanup-btn');
+        if (cleanupBtn) {
+            var cutoff = _fotoCutoffTs();
+            var staro = (_stavkeFotoCache || []).filter(function(f) { return _fotoIsOld(f, cutoff); }).length;
+            cleanupBtn.classList.toggle('hidden', staro === 0);
+        }
+
+        if (tabs) tabs.innerHTML = _stavkeTabsHtml(sve);
+
+        var q = _stavkaNorm(_stavkeQuery.trim());
+        var vidljive = sve
+            .filter(function(s) { return _stavkeTab === 'sve' || s.tip === _stavkeTab; })
+            .filter(function(s) { return !q || _stavkaNorm(s.ime + ' ' + s.meta).indexOf(q) !== -1; })
+            .sort(function(a, b) { return b.ts - a.ts; }); // najnovije gore
+
+        if (!vidljive.length) {
+            list.innerHTML = '<div class="rm-tragovi-empty">' +
+                (q ? 'Nema rezultata za "' + _esc(_stavkeQuery.trim()) + '".' : 'Nema sačuvanih stavki.') +
+                '</div>';
+            return;
+        }
+        list.innerHTML = vidljive.map(_stavkaRowHtml).join('');
+    }
+
+    window.mapaRadnikaStavkeTab = function(id) {
+        _stavkeTab = id;
+        _renderStavke(true);
+    };
+    window.mapaRadnikaStavkeSearch = function(v) {
+        _stavkeQuery = v || '';
+        _renderStavke(true); // koristi keširane foto — pretraga se okida na svaki otkucaj
+    };
+
+    // ---- Zajedničke akcije (dispatch po tipu na postojeće funkcije) ----
+    window.mapaRadnikaShareStavka = function(tip, idx) {
+        if (tip === 'trag')     return window.mapaRadnikaShareTrag(idx);
+        if (tip === 'tacka')    return window.mapaRadnikaShareTacka(idx);
+        if (tip === 'foto')     return window.mapaRadnikaShareFoto(idx);
+        if (tip === 'povrsina') return window.mapaRadnikaSharePoligon(idx);
+        if (tip === 'mjerenje') return window.mapaRadnikaShareMjerenje(idx);
+    };
+    window.mapaRadnikaDeleteStavka = function(tip, idx) {
+        if (tip === 'trag')     return window.mapaRadnikaDeleteTrag(idx);
+        if (tip === 'tacka')    return window.mapaRadnikaDeleteTacka(idx);
+        if (tip === 'foto')     return window.mapaRadnikaDeleteFoto(idx);
+        if (tip === 'povrsina') return window.mapaRadnikaDeletePoligon(idx);
+        if (tip === 'mjerenje') return window.mapaRadnikaDeleteMjerenje(idx);
+        if (tip === 'sjece')    return window.mapaRadnikaUkloniSjeceLinije();
+    };
+    window.mapaRadnikaZoomStavka = async function(tip, idx) {
+        if (!_map) return;
+        _hideTragoviMenu();
+        var lyr = null, ll = null;
+        if (tip === 'trag')          lyr = _savedTrackLayers[idx];
+        else if (tip === 'povrsina') lyr = _savedPoligonLayers[idx];
+        else if (tip === 'mjerenje') lyr = _mjerenjeLayers[idx];
+        else if (tip === 'sjece')    lyr = _sjeceLayers.length ? L.featureGroup(_sjeceLayers) : null;
+        else if (tip === 'tacka') {
+            var t = _loadSavedTacke()[idx];
+            if (t) ll = [t.lat, t.lng];
+        } else if (tip === 'foto') {
+            var f = (await _loadSavedFoto())[idx];
+            if (f && f.lat && f.lng) ll = [f.lat, f.lng];
+        }
+        try {
+            if (lyr) {
+                _map.fitBounds(lyr.getBounds(), { padding: [40, 40], maxZoom: 17 });
+                if (lyr.openPopup) lyr.openPopup();
+            } else if (ll) {
+                _map.setView(ll, 17);
+            }
+        } catch (_) {}
+    };
+
+    // ---- Preimenovanje stavke ----
+    // Sječačke linije nemaju ime nego konfiguraciju — "uredi" im otvara isti
+    // panel u kojem su i napravljene (odjel/azimut/razmak), ne modal za ime.
+    var _stavkaEdit = null;
+    window.mapaRadnikaEditStavka = async function(tip, idx) {
+        if (tip === 'sjece') return window.mapaRadnikaStartSjeceLinije();
+        var trenutno = '';
+        if (tip === 'trag')          trenutno = (_loadSavedTracks()[idx] || {}).name || '';
+        else if (tip === 'tacka')    trenutno = (_loadSavedTacke()[idx] || {}).name || '';
+        else if (tip === 'povrsina') trenutno = (_loadSavedPoligoni()[idx] || {}).name || '';
+        else if (tip === 'mjerenje') trenutno = (_loadSavedMjerenja()[idx] || {}).name || '';
+        else if (tip === 'foto')     trenutno = ((await _loadSavedFoto())[idx] || {}).name || '';
+        _stavkaEdit = { tip: tip, idx: idx };
+        var modal = document.getElementById('stavka-edit-modal');
+        var input = document.getElementById('stavka-edit-input');
+        if (!modal || !input) return;
+        input.value = trenutno;
+        modal.classList.add('show');
+        setTimeout(function() { input.focus(); input.select(); }, 50);
+    };
+    window.closeStavkaEditModal = function() {
+        var modal = document.getElementById('stavka-edit-modal');
+        if (modal) modal.classList.remove('show');
+        _stavkaEdit = null;
+    };
+    window.confirmStavkaEdit = async function() {
+        var input = document.getElementById('stavka-edit-input');
+        var e = _stavkaEdit;
+        window.closeStavkaEditModal();
+        if (!e || !input) return;
+        var novo = input.value.trim();
+        if (!novo) return;
+        if (e.tip === 'trag') {
+            var tr = _loadSavedTracks(); if (!tr[e.idx]) return;
+            tr[e.idx].name = novo; _saveTracks(tr); _drawSavedTracks();
+        } else if (e.tip === 'tacka') {
+            var ta = _loadSavedTacke(); if (!ta[e.idx]) return;
+            ta[e.idx].name = novo; _saveTacke(ta); _drawSavedTacke();
+        } else if (e.tip === 'povrsina') {
+            var po = _loadSavedPoligoni(); if (!po[e.idx]) return;
+            po[e.idx].name = novo; _savePoligoni(po); _drawSavedPoligoni();
+        } else if (e.tip === 'mjerenje') {
+            var mj = _loadSavedMjerenja(); if (!mj[e.idx]) return;
+            mj[e.idx].name = novo; _saveMjerenja(mj); _drawSavedMjerenja();
+        } else if (e.tip === 'foto') {
+            var fo = await _loadSavedFoto(); if (!fo[e.idx]) return;
+            fo[e.idx].name = novo; await _saveFoto(fo); _stavkeFotoCache = null; await _drawSavedFoto();
+        }
+        _renderStavke();
+        _notify('showSuccess', 'Preimenovano', novo);
+    };
+
+    // Stari pozivi (_renderTragoviList/_renderTackeList/...) su zadržani kao
+    // omotači — svi rade isto: osvježe objedinjenu listu.
+    function _renderTragoviList() { return _renderStavke(); }
     window.mapaRadnikaDeleteTrag = function(index) {
         var tracks = _loadSavedTracks();
         var t = tracks[index];
@@ -2869,12 +3013,8 @@
         if (willShow) {
             _hideOstaloMenu(); // samo jedan popup otvoren odjednom
             if (bar) menu.style.bottom = (bar.getBoundingClientRect().height + 8) + 'px';
-            _renderTragoviList();
-            _renderTackeList();
-            _renderFotoList();
-            _renderPoligoniList();
-            _renderSjeceList();
-            _renderMjerenjaList();
+            _stavkeFotoCache = null; // svježe čitanje IndexedDB-a pri svakom otvaranju
+            _renderStavke();
         }
         menu.classList.toggle('hidden', !willShow);
     }
@@ -3198,7 +3338,7 @@
     // ovaj bug je prijavljen za "Nova tačka"). VisualViewport API javlja
     // stvarnu vidljivu visinu; ograničimo overlay na nju dok je otvoren, pa
     // "centrirano" znači centrirano u ONOME što se stvarno vidi.
-    var INPUT_MODAL_IDS = ['tacka-name-modal', 'trag-name-modal', 'poligon-name-modal', 'foto-name-modal'];
+    var INPUT_MODAL_IDS = ['tacka-name-modal', 'trag-name-modal', 'poligon-name-modal', 'foto-name-modal', 'stavka-edit-modal'];
     function _resizeInputModalsForKeyboard() {
         if (!window.visualViewport) return;
         var h = window.visualViewport.height;

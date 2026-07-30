@@ -3125,6 +3125,12 @@
                       background:rgba(255,255,255,.97); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
                       border-radius:14px; box-shadow:0 -6px 24px rgba(0,0,0,.22);
                       padding:6px; display:flex; flex-direction:column; gap:2px;
+                      /* Panel je sa objedinjenom listom narastao (6 dugmadi +
+                         pretraga + tabovi + lista) — bez ovoga bi na nižim
+                         telefonima izašao van vrha ekrana i dugmad na dnu bi
+                         bila nedostupna. Unutrašnja lista ionako skrola sama,
+                         pa se ovaj skrol javlja samo u krajnjem slučaju. */
+                      max-height:calc(100vh - 110px); overflow-y:auto;
                   }
                   .rm-tragovi-menu.hidden { display:none; }
                   .rm-tragovi-item {
@@ -3153,6 +3159,29 @@
                   .rm-tragovi-delete { background:none; border:none; font-size:16px; cursor:pointer; padding:4px 8px; }
                   .rm-tragovi-empty { padding:10px 12px; font-size:13px; color:#9ca3af; text-align:center; }
                   .rm-tragovi-section-label { font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:.4px; padding:4px 12px 2px; }
+                  /* ---- Objedinjena lista stavki: pretraga + podtabovi ---- */
+                  .rm-stavke-search {
+                      width:100%; box-sizing:border-box; margin:2px 0 6px;
+                      padding:9px 12px; border:1px solid #d1d5db; border-radius:9px;
+                      font-size:13px; font-family:inherit; background:#fff; color:#1f2937;
+                  }
+                  .rm-stavke-search:focus { outline:none; border-color:#047857; box-shadow:0 0 0 3px rgba(4,120,87,.12); }
+                  .rm-stavke-tabs {
+                      display:flex; gap:4px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+                      padding:0 2px 6px; scrollbar-width:none;
+                  }
+                  .rm-stavke-tabs::-webkit-scrollbar { display:none; }
+                  .rm-stavke-tab {
+                      flex:0 0 auto; padding:7px 11px; border-radius:999px;
+                      border:1px solid #d1d5db; background:#f9fafb; color:#4b5563;
+                      font-size:12px; font-weight:700; font-family:inherit;
+                      cursor:pointer; white-space:nowrap;
+                  }
+                  .rm-stavke-tab.active { background:#047857; border-color:#047857; color:#fff; }
+                  .rm-stavke-tab-n { opacity:.65; font-weight:600; }
+                  /* Viša od standardne .rm-tragovi-list (180px) — sad je to
+                     JEDINA lista u panelu umjesto šest, pa ima prostora. */
+                  .rm-stavke-list { max-height:40vh; }
                   /* Popup na klik na sačuvanu tačku (Leaflet bindPopup, ne fiksni info panel) */
                   .rm-tacka-popup { min-width:170px; }
                   .rm-tacka-popup-title { font-weight:700; margin-bottom:8px; color:#1f2937; }
@@ -3237,7 +3266,7 @@
                      mobilne tastature) postavi inline visina na stvarni vidljivi
                      viewport (vidi _resizeInputModalsForKeyboard, js/mapa-radnika.js),
                      sadržaj mora ostati unutar te visine bez izlaska ispod nje. */
-                  #tacka-name-modal .modal, #trag-name-modal .modal, #poligon-name-modal .modal {
+                  #tacka-name-modal .modal, #trag-name-modal .modal, #poligon-name-modal .modal, #stavka-edit-modal .modal {
                       max-height:100%; overflow-y:auto; box-sizing:border-box;
                   }
                   /* Status ispod "Izvanmrežni prikaz karte" (kad/koliko je skinuto) */
@@ -3251,7 +3280,7 @@
                      ekranu Mape odjela, pa se ovaj modal renderovao ISPOD njih
                      (nevidljivo/neklikabilno — pravi razlog "Snimi trag se ne
                      aktivira"). Podignuto iznad svega u toj mapi. */
-                  #trag-name-modal.show, #trag-confirm-modal.show, #poligon-name-modal.show, #tacka-name-modal.show, #foto-name-modal.show, #trag-recording-modal.show { z-index:20000; }
+                  #trag-name-modal.show, #trag-confirm-modal.show, #poligon-name-modal.show, #tacka-name-modal.show, #foto-name-modal.show, #trag-recording-modal.show, #stavka-edit-modal.show { z-index:20000; }
 
                   /* Donja fiksna traka — Moja lokacija / Tragovi / Zatvori.
                      IZVAN Leaflet mape (obična HTML dugmad, ne Leaflet control), pa
@@ -3742,27 +3771,18 @@
         <span>📐</span><span>Izmjeri</span>
     </button>
     <div class="rm-tragovi-divider"></div>
-    <div id="radnik-mapa-tragovi-list" class="rm-tragovi-list"></div>
-    <div class="rm-tragovi-divider"></div>
-    <div class="rm-tragovi-section-label">Tačke</div>
-    <div id="radnik-mapa-tacke-list" class="rm-tragovi-list"></div>
-    <div class="rm-tragovi-divider"></div>
-    <!-- Naslov prikazuje i broj + ukupnu veličinu (puni ga _renderFotoList) -->
-    <div class="rm-tragovi-section-label" id="radnik-mapa-foto-section-label">Fotografije</div>
-    <div id="radnik-mapa-foto-list" class="rm-tragovi-list"></div>
-    <!-- Vidljivo samo kad stvarno ima starih fotografija (vidi _renderFotoList) -->
+    <!-- Objedinjena lista svih terenskih stavki (trag/tačka/foto/površina/
+         sječačke linije/mjerenje) — podtabovi filtriraju po tipu, pretraga
+         po nazivu/datumu. Puni je _renderStavke() u js/mapa-radnika.js. -->
+    <input type="search" id="radnik-mapa-stavke-search" class="rm-stavke-search"
+           placeholder="🔍 Pretraži stavke..." autocomplete="off"
+           oninput="mapaRadnikaStavkeSearch(this.value)" />
+    <div class="rm-stavke-tabs" id="radnik-mapa-stavke-tabs"></div>
+    <div id="radnik-mapa-stavke-list" class="rm-tragovi-list rm-stavke-list"></div>
+    <!-- Vidljivo samo kad stvarno ima starih fotografija (vidi _renderStavke) -->
     <button type="button" id="radnik-mapa-foto-cleanup-btn" class="rm-tragovi-item hidden" onclick="mapaRadnikaCleanupFoto()">
         <span>🧹</span><span>Obriši starije od 30 dana</span>
     </button>
-    <div class="rm-tragovi-divider"></div>
-    <div class="rm-tragovi-section-label">Površine</div>
-    <div id="radnik-mapa-poligoni-list" class="rm-tragovi-list"></div>
-    <div class="rm-tragovi-divider"></div>
-    <div class="rm-tragovi-section-label">Sječačke linije</div>
-    <div id="radnik-mapa-sjece-list" class="rm-tragovi-list"></div>
-    <div class="rm-tragovi-divider"></div>
-    <div class="rm-tragovi-section-label">Mjerenja</div>
-    <div id="radnik-mapa-mjerenja-list" class="rm-tragovi-list"></div>
 </div>
 <!-- Skriveni file input — "capture=environment" otvara zadnju kameru direktno
      na mobilnom umjesto galerije. Klik pokreće JS (mapaRadnikaTakePhoto). -->
@@ -3811,6 +3831,22 @@
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeTragNameModal()">Otkaži</button>
             <button class="btn btn-primary" onclick="confirmStartTrag()">Počni snimanje</button>
+        </div>
+    </div>
+</div>
+<!-- Modal za preimenovanje bilo koje terenske stavke (trag/tačka/foto/
+     površina/mjerenje) — jedan modal za sve tipove, tip/index pamti
+     _stavkaEdit u js/mapa-radnika.js. -->
+<div class="modal-overlay" id="stavka-edit-modal" onclick="if(event.target===this) closeStavkaEditModal();">
+    <div class="modal" style="max-width:340px;">
+        <div class="modal-header"><div class="modal-title">✏️ Preimenuj</div></div>
+        <div class="modal-body">
+            <label style="display:block;font-size:12px;font-weight:600;color:#4b5563;margin-bottom:4px;">Naziv</label>
+            <input type="text" id="stavka-edit-input" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;" />
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeStavkaEditModal()">Otkaži</button>
+            <button class="btn btn-primary" onclick="confirmStavkaEdit()">Sačuvaj</button>
         </div>
     </div>
 </div>
