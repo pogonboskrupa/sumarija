@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.25';
+        const APP_VERSION = '2.26';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -12578,7 +12578,10 @@
         // korak sa potvrdom instalacije iz nepoznatog izvora — APK ne dolazi
         // sa Google Play-a pa Android traži izričitu dozvolu, što bez
         // objašnjenja djeluje kao greška i ljudi odustanu.
-        var INSTALL_SNOOZE_DANA = 7;
+        //
+        // Prikazuje se TAČNO JEDNOM po korisniku (localStorage, ne odloženo
+        // na X dana) — bilo da klikne "Kasnije" ili "Preuzmi", poruka se više
+        // nikad ne vraća na tom uređaju/pregledniku.
 
         // Instalirana aplikacija (APK/TWA ili PWA) radi u "standalone" modu.
         // TWA (APK) dodatno ima android-app:// referrer — provjeravamo oboje
@@ -12591,10 +12594,9 @@
 
         function maybeShowInstallPrompt() {
             if (isInstalledApp()) return;
-            // Odloženo na korisnikov zahtjev ("Kasnije")
+            // Već prikazano jednom (bilo "Kasnije" ili "Preuzmi") — ne vraćaj se više.
             try {
-                var until = parseInt(localStorage.getItem('install_prompt_snooze_until') || '0', 10);
-                if (until && Date.now() < until) return;
+                if (localStorage.getItem('install_prompt_seen') === '1') return;
             } catch (_) {}
 
             var modal = document.getElementById('install-app-modal');
@@ -12614,18 +12616,15 @@
         function dismissInstallPrompt() {
             var modal = document.getElementById('install-app-modal');
             if (modal) modal.style.display = 'none';
-            try {
-                localStorage.setItem('install_prompt_snooze_until',
-                    String(Date.now() + INSTALL_SNOOZE_DANA * 24 * 60 * 60 * 1000));
-            } catch (_) {}
+            try { localStorage.setItem('install_prompt_seen', '1'); } catch (_) {}
         }
         window.dismissInstallPrompt = dismissInstallPrompt;
 
         function downloadAppFromPrompt() {
             // Isti link kao stavka menija "⬇️ Preuzmi aplikaciju"
             window.open(encodeURI('/downloads/Šumarija.apk'), '_blank');
-            // Ne gasi trajno — korisnik se tek vraća da završi instalaciju,
-            // ali odloži da mu se ne pojavljuje dok instalira.
+            // Poruka se ne vraća ni ako korisnik nije završio instalaciju —
+            // dugme "⬇️ Preuzmi aplikaciju" ostaje trajno dostupno u meniju ⚙️.
             dismissInstallPrompt();
         }
         window.downloadAppFromPrompt = downloadAppFromPrompt;
