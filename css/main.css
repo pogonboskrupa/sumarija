@@ -1154,6 +1154,14 @@
                usklađene (vertikalni padding uvećan svuda) da izgled ostane isti bez
                obzira koji blok trenutno "pobjeđuje". */
             .tab { font-size: 12px; padding: 13px 12px; white-space: nowrap; }
+            /* #tabs-menu-mobile .tab je specifičnije (1,1,0) od generičkog
+               ".tab { min-height: 44px }" unutar @media (pointer: coarse) (0,1,0),
+               pa ovo eksplicitno pobjeđuje bez obzira na redoslijed u fajlu i bez
+               obzira da li pointer:coarse uopšte pogađa na datom uređaju — inače
+               je 44px min-height uvijek bio stvarni ograničavajući faktor umjesto
+               paddinga iznad, pa povećanje paddinga nije imalo vidljiv efekat.
+               58px ≈ 44px + 30%. */
+            #tabs-menu-mobile .tab { min-height: 58px; }
 
             /* Summary cards */
             .summary-cards { grid-template-columns: 1fr; gap: 12px; }
