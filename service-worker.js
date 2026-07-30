@@ -1,6 +1,6 @@
 // ========== Service Worker - Offline Support ==========
 
-const CACHE_VERSION = 'v86';
+const CACHE_VERSION = 'v87';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
 // Install — pre-keširaj samo offline.html (fallback koji se inače nikad ne

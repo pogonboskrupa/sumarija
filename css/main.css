@@ -1021,7 +1021,7 @@
 
             /* Tabs - scrollable horizontal */
             .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 2px; padding: 0 12px; white-space: nowrap; }
-            .tab { padding: 12px 16px; font-size: 13px; flex-shrink: 0; }
+            .tab { padding: 17px 16px; font-size: 13px; flex-shrink: 0; }
 
             /* Summary cards - stack vertically */
             .summary-cards { grid-template-columns: 1fr; gap: 12px; }
@@ -1073,7 +1073,7 @@
         @media (max-width: 480px) {
             .section h2 { font-size: 16px; }
             .header-logo h1 { font-size: 18px; }
-            .tab { padding: 10px 12px; font-size: 12px; }
+            .tab { padding: 15px 12px; font-size: 12px; }
             .summary-card-value { font-size: 20px; }
             .chart-container { height: 240px; padding: 12px; }
 
@@ -1146,7 +1146,14 @@
 
             /* Tabs */
             .tabs-container { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 8px 12px; position: sticky; top: 0; z-index: 10000; }
-            .tab { font-size: 12px; padding: 8px 12px; white-space: nowrap; }
+            /* Ovo je pravilo koje se STVARNO primjenjuje na telefonu — tri odvojena
+               @media (max-width) bloka u ovom fajlu mijenjaju .tab za mobilni prikaz
+               (linije ~1024, ~1076, ovdje); pošto CSS kaskada ne tretira uži max-width
+               kao "specifičniji", pri istoj specifičnosti pobjeđuje onaj koji je
+               FIZIČKI POSLJEDNJI u fajlu — to je ovaj. Sve tri vrijednosti su zato
+               usklađene (vertikalni padding uvećan svuda) da izgled ostane isti bez
+               obzira koji blok trenutno "pobjeđuje". */
+            .tab { font-size: 12px; padding: 13px 12px; white-space: nowrap; }
 
             /* Summary cards */
             .summary-cards { grid-template-columns: 1fr; gap: 12px; }
