@@ -184,10 +184,10 @@
             if (userType === 'primac') {
                 tabsConfig = [
                     { id: 'primac-personal', icon: '👷', label: 'Pregled sječe', active: true },
+                    { id: 'izvjestaji-primac', icon: '📋', label: 'Izvještaji' },
+                    { id: 'primac-mapa', icon: '🗺️', label: 'Karta' },
                     { id: 'primac-godisnji', icon: '📅', label: 'Godišnji prikaz' },
                     { id: 'primac-odjeli', icon: '🏭', label: 'Prikaz po odjelima' },
-                    { id: 'primac-mapa', icon: '🗺️', label: 'Karta' },
-                    { id: 'izvjestaji-primac', icon: '📋', label: 'Izvještaji' },
                     { id: 'add-sjeca', icon: '➕', label: 'Dodaj sječu' },
                     { id: 'my-sjece', icon: '📝', label: 'Moje sječe' },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
@@ -195,10 +195,10 @@
             } else if (userType === 'otpremac') {
                 tabsConfig = [
                     { id: 'otpremac-personal', icon: '🚛', label: 'Pregled otpreme', active: true },
+                    { id: 'izvjestaji-otpremac', icon: '📋', label: 'Izvještaji' },
+                    { id: 'otpremac-mapa', icon: '🗺️', label: 'Karta' },
                     { id: 'otpremac-godisnji', icon: '📅', label: 'Godišnji prikaz' },
                     { id: 'otpremac-odjeli', icon: '🏭', label: 'Prikaz po odjelima' },
-                    { id: 'otpremac-mapa', icon: '🗺️', label: 'Karta' },
-                    { id: 'izvjestaji-otpremac', icon: '📋', label: 'Izvještaji' },
                     { id: 'add-otprema', icon: '➕', label: 'Dodaj otpremu' },
                     { id: 'my-otpreme', icon: '📝', label: 'Moje otpreme' },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
