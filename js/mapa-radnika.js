@@ -2000,12 +2000,45 @@
         if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
         var panel = _mjerenjePanelEl();
         if (panel) panel.classList.remove('hidden');
+        // Izbor "crtaj sa centra" se pamti između sesija — uskladi kvačicu.
+        var cb = document.getElementById('radnik-mapa-mjerenje-centar');
+        if (cb) cb.checked = _mjerenjeCentar;
     };
     window.mapaRadnikaCloseMjerenjePanel = function() {
         window.mapaRadnikaCancelMjerenje();
         var panel = _mjerenjePanelEl();
         if (panel) panel.classList.add('hidden');
     };
+    // ---- "Crtaj sa centra ekrana" (nišan) ----
+    // Na telefonu prst prekrije baš ono mjesto na koje se tapa, pa je precizno
+    // obilježavanje ugla parcele teško — posebno kod mjerenja površine gdje
+    // svaka tačka pomjerena par metara mijenja rezultat. U ovom modu tačka se
+    // uzima iz CENTRA ekrana: radnik pomjeri mapu da nišan legne na ugao i
+    // pritisne "Dodaj". Isti obrazac koji već koristi biranje Tačke, pa se
+    // dijeli i isti nišan element (#radnik-mapa-tacka-crosshair) — ta dva moda
+    // se ionako međusobno isključuju.
+    var MJERENJE_CENTAR_KEY = 'mapa_radnika_mjerenje_centar';
+    var _mjerenjeCentar = (function() {
+        try { return localStorage.getItem(MJERENJE_CENTAR_KEY) === '1'; } catch (_) { return false; }
+    })();
+    window.mapaRadnikaToggleMjerenjeCentar = function(on) {
+        _mjerenjeCentar = !!on;
+        try { localStorage.setItem(MJERENJE_CENTAR_KEY, _mjerenjeCentar ? '1' : '0'); } catch (_) {}
+        // Prekidač radi i usred crtanja (traka-savjet ima isti checkbox), da se
+        // može prebaciti na tapkanje bez gubljenja već postavljenih tačaka.
+        if (_mjerenjeMode) {
+            if (_mjerenjeCentar) _showTackaCrosshair(); else _hideTackaCrosshair();
+            _updateMjerenjeHint();
+        }
+    };
+    window.mapaRadnikaAddMjerenjeCenterPoint = function() {
+        if (!_mjerenjeMode || !_map) return;
+        var c = _map.getCenter();
+        _mjerenjePoints.push([c.lat, c.lng]);
+        _redrawMjerenjeDraw();
+        _updateMjerenjeHint();
+    };
+
     window.mapaRadnikaStartMjerenje = function(mode) {
         _mjerenjeMode = mode;
         _mjerenjePoints = [];
@@ -2014,12 +2047,14 @@
         // traka-savjet (i iznad nje po z-indexu) pa bi prekrio uputu.
         var panel = _mjerenjePanelEl();
         if (panel) panel.classList.add('hidden');
+        if (_mjerenjeCentar) _showTackaCrosshair();
         _updateMjerenjeHint();
     };
     window.mapaRadnikaCancelMjerenje = function() {
         _mjerenjeMode = null;
         _mjerenjePoints = [];
         if (_mjerenjeDrawLayer) { _map.removeLayer(_mjerenjeDrawLayer); _mjerenjeDrawLayer = null; }
+        _hideTackaCrosshair();
         _hideRouteHint();
     };
     window.mapaRadnikaUndoMjerenjePoint = function() {
@@ -2039,8 +2074,13 @@
         else if (_mjerenjeMode === 'povrsina' && n >= 3) info = ' — ' + _fmtPovrsina(_polygonAreaM2(_mjerenjePoints));
         var moze = n >= min;
         _showRouteHint(
-            '<span>' + naziv + ' (' + n + (moze ? ', spremno' : ', treba još') + ')' + info + '</span>' +
+            '<span>' + (_mjerenjeCentar ? '🎯 ' : '') + naziv + ' (' + n + (moze ? ', spremno' : ', treba još') + ')' + info +
+            '<br><label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;opacity:.85;cursor:pointer;">' +
+            '<input type="checkbox" style="width:14px;height:14px;margin:0;cursor:pointer;"' +
+            (_mjerenjeCentar ? ' checked' : '') +
+            ' onchange="mapaRadnikaToggleMjerenjeCentar(this.checked)" />Crtaj sa centra ekrana</label></span>' +
             '<span style="display:flex;gap:6px;">' +
+            (_mjerenjeCentar ? '<button type="button" onclick="mapaRadnikaAddMjerenjeCenterPoint()">➕ Dodaj</button>' : '') +
             (n > 0 ? '<button type="button" onclick="mapaRadnikaUndoMjerenjePoint()">↩️</button>' : '') +
             (moze ? '<button type="button" onclick="mapaRadnikaFinishMjerenje()">✅ Završi</button>' : '') +
             '<button type="button" onclick="mapaRadnikaCancelMjerenje()">✕</button>' +
@@ -2062,6 +2102,11 @@
     // Poziva se iz istog centralnog lanca klika kao ostali pick-modovi.
     function _handleMjerenjeClick(latlng) {
         if (!_mjerenjeMode) return false;
+        // U nišan-modu se tačke dodaju ISKLJUČIVO dugmetom "➕ Dodaj" — tap po
+        // mapi se i dalje "pojede" (da se ne otvori popup odjela ispod), ali ne
+        // dodaje tačku: slučajni tap pri namještanju mape je upravo problem koji
+        // ovaj mod rješava.
+        if (_mjerenjeCentar) return true;
         _mjerenjePoints.push([latlng.lat, latlng.lng]);
         _redrawMjerenjeDraw();
         _updateMjerenjeHint();
