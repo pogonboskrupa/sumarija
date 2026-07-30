@@ -2636,14 +2636,6 @@
         if (cb) cb();
     };
 
-    function _clearTracks() {
-        _showTragConfirm('Obrisati sve sačuvane tragove? Ova radnja se ne može poništiti.', function() {
-            _saveTracks([]);
-            _drawSavedTracks();
-            _renderTragoviList();
-        });
-    }
-
     // ---- Lista sačuvanih tragova (unutar "Tragovi" popup-a) sa pojedinačnim
     // brisanjem — uvijek se ponovo iscrtava iz SVJEŽE učitanog niza (ne
     // oslanja se na stare indekse), tako da se izbjegne bilo kakvo
@@ -3243,7 +3235,6 @@
 
     window.mapaRadnikaLocateMe = _locateMe;
     window.mapaRadnikaToggleTrag = _toggleTrag;
-    window.mapaRadnikaClearTracks = _clearTracks;
     window.closeMapaRadnika = function() {
         _exitMapaFullscreen();
         var home = _workerType === 'otpremac' ? 'otpremac-personal'

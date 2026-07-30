@@ -3175,6 +3175,14 @@
                       display:flex; gap:4px; overflow-x:auto; -webkit-overflow-scrolling:touch;
                       padding:0 2px 6px; scrollbar-width:none;
                   }
+                  /* Panel je flex kolona, a flex djeca se po defaultu SMIJU skupiti
+                     ispod svoje sadržajne visine. Kad je stavki puno, dugmad/pretraga/
+                     podtabovi su se zato sabijali i lista je izgledala kao da prelazi
+                     preko njih. Sve što ima fiksnu visinu zato ne smije da se skuplja —
+                     jedino lista (ona ionako ima vlastiti skrol). */
+                  .rm-tragovi-item, .rm-tragovi-divider, .rm-tragovi-section-label,
+                  .rm-stavke-search, .rm-stavke-tabs { flex-shrink:0; }
+                  .rm-tragovi-list { min-height:0; }
                   .rm-stavke-tabs::-webkit-scrollbar { display:none; }
                   .rm-stavke-tab {
                       flex:0 0 auto; padding:7px 11px; border-radius:999px;
@@ -3802,9 +3810,6 @@
 <div id="radnik-mapa-tragovi-menu" class="rm-tragovi-menu hidden">
     <button type="button" id="radnik-mapa-trag-btn" class="rm-tragovi-item" onclick="mapaRadnikaToggleTrag()">
         <span>⏺️</span><span>Snimi trag</span>
-    </button>
-    <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaClearTracks()">
-        <span>🗑️</span><span>Obriši tragove</span>
     </button>
     <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartTacka()">
         <span>📍</span><span>Tačka</span>
