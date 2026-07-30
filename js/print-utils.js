@@ -560,13 +560,16 @@ tbody td:first-child {
     font-weight: 600;
     color: #1e293b;
 }
-/* Kupac kolona (2. kolona) — boldano */
-tbody td:nth-child(2) {
+/* Kupac kolona (2. kolona) — boldano.
+   Scope-ovano na table:not(.pro-mjesecna-table): podešeno je za tabelu po
+   kupcima gdje je 2. kolona ime kupca. Na mjesečnoj tabeli je 2. kolona
+   obična numerička (F/L Č) pa je bezrazložno odudarala od kolona 3+. */
+table:not(.pro-mjesecna-table) tbody td:nth-child(2) {
     font-weight: 700 !important;
     font-size: 11px !important;
 }
 /* Sortimentne vrijednosti (od 3. kolone) — blago povećan font */
-tbody td:nth-child(n+3) {
+table:not(.pro-mjesecna-table) tbody td:nth-child(n+3) {
     font-size: 11.5px !important;
     font-weight: 600 !important;
 }
@@ -601,10 +604,24 @@ tr.week-totals-row td {
 }
 .week-separator td { border-top: 2px solid ${dark}; }
 
-/* Highlight kolone */
+/* Highlight kolone (tabele koje boje cijele grupe kolona) */
 td.col-cetinari, th.col-cetinari { background: #ede9fe; }
 td.col-liscari, th.col-liscari { background: #fef9c3; }
 td.col-sveukupno, th.col-sveukupno { background: #dcfce7; }
+
+/* Mjesečna sječa/otprema — ista hijerarhija kao na ekranu, ne bojenje
+   cijelih kolona. Toplotne mape na papiru namjerno NEMA (--i varijabla
+   ostaje u markupu ali je ovdje nijedno pravilo ne koristi): manje tonera
+   i čitljivije. Grupe nosi vertikalna linija, kao i na ekranu. */
+.pro-mjesecna-table td.col-cetinari, .pro-mjesecna-table th.col-cetinari,
+.pro-mjesecna-table td.col-liscari, .pro-mjesecna-table th.col-liscari {
+    background: transparent;
+}
+.pro-mjesecna-table td.is-total, .pro-mjesecna-table th.is-total { background: #f1f5f9; font-weight: 700; }
+.pro-mjesecna-table td.col-sveukupno, .pro-mjesecna-table th.col-sveukupno { background: #eef2ff; font-weight: 700; }
+.pro-mjesecna-table td.grp-start, .pro-mjesecna-table th.grp-start { border-left: 1.5px solid #94a3b8 !important; }
+.pro-mjesecna-table td.is-zero { color: #9ca3af; }
+.pro-mjesecna-table tbody tr.pct-row td { background: #f8fafc; font-style: italic; color: #64748b; }
 
 /* Progress bar — sakrij u printu */
 .table-progress-bar { display: none; }

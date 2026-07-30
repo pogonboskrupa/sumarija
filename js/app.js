@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.44';
+        const APP_VERSION = '2.45';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -9245,93 +9245,96 @@
             // Grand total
             const grandTotal = ['SVEUKUPNO', 'UKUPNO Č+L'];
 
-            // Build header - PRO STYLE with Comfortaa
-            let headerHtml = '<tr style="background: #1e3a5f;">';
-            headerHtml += '<th style="font-family: Comfortaa, sans-serif; min-width: 80px; position: sticky; left: 0; background: #1e3a5f; color: white; z-index: 20; font-size: 13px; font-weight: 700; padding: 12px 8px; text-align: center; border: 1px solid #374151; border-right: 2px solid #60a5fa;">MJESEC</th>';
+            // Podatke zadrži za Export — .xlsx se gradi IZ NJIH, ne iz DOM-a,
+            // pa formatiranje prikaza (– za nule, tačka za hiljade) ne može
+            // pokvariti brojeve u Excelu. Vidi exportMjesecnaToExcel niže.
+            _mjesecniExportData[tableId] = data;
 
+            // Grupa + rang kolone. Sve boje su sada u CSS-u (css/main.css,
+            // .pro-mjesecna-table) — renderer emituje ISKLJUČIVO klase i
+            // varijablu intenziteta --i. Ranije su boje bile inline, pa ih je
+            // css/table-contrast-fix.css gazio preko [style*="..."] selektora;
+            // ta pravila su obrisana zajedno sa ovim prepisom.
+            function classFor(s) {
+                if (cetinariSortimenti.includes(s)) return 'col-cetinari';
+                if (cetinariTrupci.includes(s))     return 'col-cetinari is-subtotal';
+                if (cetinariUkupno.includes(s))     return 'col-cetinari is-total';
+                if (liscariSortimenti.includes(s))  return 'col-liscari';
+                if (liscariTrupci.includes(s))      return 'col-liscari is-subtotal';
+                if (liscariUkupno.includes(s))      return 'col-liscari is-total';
+                if (grandTotal.includes(s))         return 'col-sveukupno';
+                return 'col-other';
+            }
+            // Prva kolona svake grupe dobija vertikalnu liniju razdvajanja
+            // (zamjena za nekadašnje bojenje cijelih kolona). Računa se iz
+            // STVARNOG redoslijeda kolona, ne iz fiksnih indeksa — server
+            // može promijeniti raspored bez da ovo pukne.
+            const grpStart = new Set();
+            let _prevGrupa = null;
+            sortimenti.forEach(s => {
+                const g = classFor(s).split(' ')[0];
+                if (g !== _prevGrupa) { grpStart.add(s); _prevGrupa = g; }
+            });
+
+            // Maksimum PO KOLONI za toplotnu mapu. Kolone su različitih redova
+            // veličine (F/L L ide do ~1, UKUPNO Č+L do ~35000), pa bi zajednička
+            // skala pokazala samo ukupnu kolonu. Agregatne kolone se izuzimaju —
+            // bile bi na punom intenzitetu u svakom redu.
+            const colMax = {};
+            sortimenti.forEach(s => {
+                let mx = 0;
+                for (let m = 0; m < 12; m++) mx = Math.max(mx, data.mjeseci[m][s] || 0);
+                colMax[s] = mx;
+            });
+            const heatable = s => {
+                const c = classFor(s);
+                return (c === 'col-cetinari' || c === 'col-liscari');
+            };
+
+            // Nula → "–" umjesto "0.00": tabela je pretežno prazna (Avg-Dec),
+            // pa nule inače dominiraju prikazom. Hiljade dobijaju tačku
+            // (de-DE, ista konvencija kao _fmt u mapa-radnika.js/godisnji-plan.js).
+            const fmtBroj = v => v === 0 ? '–'
+                : v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            let headerHtml = '<tr>';
+            headerHtml += '<th class="col-mjesec">MJESEC</th>';
             for (let i = 0; i < sortimenti.length; i++) {
                 const s = sortimenti[i];
-                let bgColor = '#1e3a5f';
-                let borderColor = '#374151';
-
-                // Header colors by group
-                if (cetinariSortimenti.includes(s)) {
-                    bgColor = '#1e40af'; // Plava
-                } else if (cetinariTrupci.includes(s)) {
-                    bgColor = '#1e3a8a'; // Tamnija plava za TRUPCI
-                } else if (cetinariUkupno.includes(s)) {
-                    bgColor = '#172554'; // Najtamnija plava za UKUPNO ČETINARI
-                    borderColor = '#1e3a8a';
-                } else if (liscariSortimenti.includes(s)) {
-                    bgColor = '#b45309'; // Narandžasta
-                } else if (liscariTrupci.includes(s)) {
-                    bgColor = '#92400e'; // Tamnija narandžasta za TRUPCI
-                } else if (liscariUkupno.includes(s)) {
-                    bgColor = '#78350f'; // Najtamnija za UKUPNO LIŠĆARI
-                    borderColor = '#92400e';
-                } else if (grandTotal.includes(s)) {
-                    bgColor = '#7f1d1d'; // Crvena za SVEUKUPNO
-                    borderColor = '#991b1b';
-                }
-
-                headerHtml += `<th style="font-family: Comfortaa, sans-serif; background: ${bgColor}; color: white; border: 1px solid ${borderColor}; min-width: 65px; padding: 12px 6px; font-size: 12px; font-weight: 600; text-align: center; white-space: nowrap;">${s}</th>`;
+                const cls = classFor(s) + (grpStart.has(s) ? ' grp-start' : '');
+                headerHtml += `<th class="${cls}">${s}</th>`;
             }
             headerHtml += '</tr>';
             headerElem.innerHTML = headerHtml;
 
-            // Build body - 12 months + UKUPNO + %UDIO
             let bodyHtml = '';
             const totals = {};
 
-            // Month rows - PRO STYLE with Comfortaa font and group colors
+            // Mjesečni redovi. Klasa m-row je nužna: UKUPNO i % red žive u istom
+            // <tbody> (ne u <tfoot> — vidi komentar niže), pa se zebra i hover
+            // moraju ograničiti samo na mjesece.
             for (let m = 0; m < 12; m++) {
-                const rowBg = m % 2 === 0 ? 'white' : '#f8fafc';
-                bodyHtml += `<tr style="background: ${rowBg};">`;
-                bodyHtml += `<td style="font-family: Comfortaa, sans-serif; font-weight: 700; font-size: 14px; min-width: 80px; position: sticky; left: 0; background: ${rowBg}; z-index: 9; border: 1px solid #d1d5db; border-right: 2px solid #60a5fa; text-align: center; padding: 10px 8px; color: #1e3a5f;">${mjeseci[m]}</td>`;
+                bodyHtml += '<tr class="m-row">';
+                bodyHtml += `<td class="col-mjesec">${mjeseci[m]}</td>`;
 
                 for (let s = 0; s < sortimenti.length; s++) {
                     const sortiment = sortimenti[s];
                     const value = data.mjeseci[m][sortiment] || 0;
-                    const displayVal = value.toFixed(2);
 
-                    // Base style with Comfortaa font
-                    let cellStyle = 'font-family: Comfortaa, sans-serif; padding: 10px 6px; font-size: 13px; min-width: 65px; text-align: right; border: 1px solid #d1d5db;';
+                    let cls = classFor(sortiment);
+                    if (grpStart.has(sortiment)) cls += ' grp-start';
+                    if (value === 0) cls += ' is-zero';
 
-                    // Color grouping
-                    if (cetinariSortimenti.includes(sortiment)) {
-                        // Četinari - svijetlo plava
-                        cellStyle += ' background: #dbeafe;';
-                        cellStyle += value > 0 ? ' color: #1e40af; font-weight: 600;' : ' color: #93c5fd; font-weight: 400;';
-                    } else if (cetinariTrupci.includes(sortiment)) {
-                        // Četinari TRUPCI - tamnija plava
-                        cellStyle += ' background: #bfdbfe;';
-                        cellStyle += value > 0 ? ' color: #1e3a8a; font-weight: 700;' : ' color: #60a5fa; font-weight: 400;';
-                    } else if (cetinariUkupno.includes(sortiment)) {
-                        // Četinari UKUPNO - najtamnija plava
-                        cellStyle += ' background: #93c5fd;';
-                        cellStyle += value > 0 ? ' color: #172554; font-weight: 800;' : ' color: #3b82f6; font-weight: 400;';
-                    } else if (liscariSortimenti.includes(sortiment)) {
-                        // Lišćari - svijetlo žuta/narandžasta
-                        cellStyle += ' background: #fef3c7;';
-                        cellStyle += value > 0 ? ' color: #92400e; font-weight: 600;' : ' color: #fcd34d; font-weight: 400;';
-                    } else if (liscariTrupci.includes(sortiment)) {
-                        // Lišćari TRUPCI - tamnija narandžasta
-                        cellStyle += ' background: #fde68a;';
-                        cellStyle += value > 0 ? ' color: #78350f; font-weight: 700;' : ' color: #f59e0b; font-weight: 400;';
-                    } else if (liscariUkupno.includes(sortiment)) {
-                        // Lišćari UKUPNO - najtamnija narandžasta
-                        cellStyle += ' background: #fcd34d;';
-                        cellStyle += value > 0 ? ' color: #78350f; font-weight: 800;' : ' color: #b45309; font-weight: 400;';
-                    } else if (grandTotal.includes(sortiment)) {
-                        // SVEUKUPNO - crvena
-                        cellStyle += ' background: #fecaca;';
-                        cellStyle += value > 0 ? ' color: #7f1d1d; font-weight: 800;' : ' color: #f87171; font-weight: 400;';
-                    } else {
-                        // Default
-                        cellStyle += value > 0 ? ' color: #1f2937; font-weight: 500;' : ' color: #6b7280; font-weight: 400;';
+                    let stil = '';
+                    if (value > 0 && heatable(sortiment) && colMax[sortiment] > 0) {
+                        // sqrt umjesto linearne skale — linearno bi sve osim
+                        // rekordnog mjeseca ostalo gotovo bijelo
+                        const i = Math.sqrt(value / colMax[sortiment]);
+                        cls += ' heat';
+                        stil = ` style="--i:${i.toFixed(3)}"`;
                     }
 
-                    bodyHtml += `<td style="${cellStyle}">${displayVal}</td>`;
+                    bodyHtml += `<td class="${cls}"${stil}>${fmtBroj(value)}</td>`;
 
                     if (!totals[sortiment]) totals[sortiment] = 0;
                     totals[sortiment] += value;
@@ -9340,81 +9343,97 @@
                 bodyHtml += '</tr>';
             }
 
-            // UKUPNO row - PRO STYLE with Comfortaa
-            bodyHtml += '<tr style="background: #1e3a5f;">';
-            bodyHtml += '<td style="font-family: Comfortaa, sans-serif; min-width: 80px; position: sticky; left: 0; background: #1e3a5f; color: white; z-index: 9; border: 1px solid #374151; border-right: 2px solid #60a5fa; text-align: center; font-size: 13px; font-weight: 700; padding: 12px 8px;">📊 UKUPNO</td>';
+            // UKUPNO i % red ostaju u <tbody>, NE u <tfoot> — print stylesheet
+            // (js/print-utils.js) zacrni "tfoot tr td", što bi pogrešno pocrnilo
+            // i postotni red. Klasa "ukupno-row" usput otključava postojeće
+            // print pravilo tr[class*="ukupno"].
+            bodyHtml += '<tr class="ukupno-row">';
+            bodyHtml += '<td class="col-mjesec">UKUPNO</td>';
             for (let s = 0; s < sortimenti.length; s++) {
                 const sortiment = sortimenti[s];
                 const total = totals[sortiment] || 0;
-                let cellBg = '#e5e7eb';
-                let textColor = '#1f2937';
-
-                // Color grouping for totals
-                if (cetinariSortimenti.includes(sortiment)) {
-                    cellBg = '#93c5fd';
-                    textColor = '#1e3a8a';
-                } else if (cetinariTrupci.includes(sortiment)) {
-                    cellBg = '#60a5fa';
-                    textColor = '#172554';
-                } else if (cetinariUkupno.includes(sortiment)) {
-                    cellBg = '#3b82f6';
-                    textColor = '#ffffff';
-                } else if (liscariSortimenti.includes(sortiment)) {
-                    cellBg = '#fcd34d';
-                    textColor = '#78350f';
-                } else if (liscariTrupci.includes(sortiment)) {
-                    cellBg = '#f59e0b';
-                    textColor = '#78350f';
-                } else if (liscariUkupno.includes(sortiment)) {
-                    cellBg = '#d97706';
-                    textColor = '#ffffff';
-                } else if (grandTotal.includes(sortiment)) {
-                    cellBg = '#ef4444';
-                    textColor = '#ffffff';
-                }
-
-                bodyHtml += `<td style="font-family: Comfortaa, sans-serif; font-weight: 800; font-size: 14px; padding: 12px 6px; background: ${cellBg}; min-width: 65px; text-align: right; border: 1px solid #9ca3af; color: ${textColor};">${total.toFixed(2)}</td>`;
+                let cls = classFor(sortiment);
+                if (grpStart.has(sortiment)) cls += ' grp-start';
+                if (total === 0) cls += ' is-zero';
+                bodyHtml += `<td class="${cls}">${fmtBroj(total)}</td>`;
             }
             bodyHtml += '</tr>';
 
-            // % UČEŠĆE row - PRO STYLE with Comfortaa
+            // % UČEŠĆE — svaki sortiment je udio u SVOJOJ grupi, a grupni totali
+            // su udio u sveukupnom (logika nepromijenjena).
             const cetinariTotalPct = totals['Σ ČETINARI'] || totals['ČETINARI'] || 0;
             const liscariTotalPct = totals['LIŠĆARI'] || 0;
             const grandTotalPct = totals['SVEUKUPNO'] || totals['UKUPNO Č+L'] || 0;
 
-            bodyHtml += '<tr style="background: #f1f5f9;">';
-            bodyHtml += '<td style="font-family: Comfortaa, sans-serif; min-width: 80px; position: sticky; left: 0; background: #f1f5f9; z-index: 9; border: 1px solid #d1d5db; border-right: 2px solid #60a5fa; text-align: center; font-size: 13px; font-weight: 700; padding: 10px 8px; color: #475569; font-style: italic;">% UČEŠĆE</td>';
-
+            bodyHtml += '<tr class="pct-row">';
+            bodyHtml += '<td class="col-mjesec">% UČEŠĆE</td>';
             for (let s = 0; s < sortimenti.length; s++) {
                 const sortiment = sortimenti[s];
                 const total = totals[sortiment] || 0;
-                let cellBg = '#f1f5f9';
                 let percentage = '0.0';
 
-                // Calculate percentage based on group
                 if (cetinariSortimenti.includes(sortiment) || cetinariTrupci.includes(sortiment)) {
                     percentage = cetinariTotalPct > 0 ? ((total / cetinariTotalPct) * 100).toFixed(1) : '0.0';
-                    cellBg = '#dbeafe';
                 } else if (cetinariUkupno.includes(sortiment)) {
                     percentage = grandTotalPct > 0 ? ((total / grandTotalPct) * 100).toFixed(1) : '0.0';
-                    cellBg = '#93c5fd';
                 } else if (liscariSortimenti.includes(sortiment) || liscariTrupci.includes(sortiment)) {
                     percentage = liscariTotalPct > 0 ? ((total / liscariTotalPct) * 100).toFixed(1) : '0.0';
-                    cellBg = '#fef3c7';
                 } else if (liscariUkupno.includes(sortiment)) {
                     percentage = grandTotalPct > 0 ? ((total / grandTotalPct) * 100).toFixed(1) : '0.0';
-                    cellBg = '#fcd34d';
                 } else if (grandTotal.includes(sortiment)) {
                     percentage = '100.0';
-                    cellBg = '#fecaca';
                 }
 
-                bodyHtml += `<td style="font-family: Comfortaa, sans-serif; font-weight: 600; font-size: 13px; padding: 10px 6px; background: ${cellBg}; min-width: 65px; text-align: right; border: 1px solid #d1d5db; color: #64748b; font-style: italic;">${percentage}%</td>`;
+                let cls = classFor(sortiment);
+                if (grpStart.has(sortiment)) cls += ' grp-start';
+                bodyHtml += `<td class="${cls}">${percentage.replace('.', ',')}%</td>`;
             }
             bodyHtml += '</tr>';
 
             bodyElem.innerHTML = bodyHtml;
         }
+
+        // ---- EXPORT MJESEČNIH TABELA ----
+        // Gradi .xlsx IZ IZVORNIH PODATAKA (aoa_to_sheet), a ne iz DOM-a kao
+        // generički exportTableToExcel. Razlog: prikaz sada formatira brojeve
+        // ("–" za nule, tačka za hiljade), a table_to_sheet čita textContent pa
+        // bi te ćelije završile kao TEKST u Excelu — suma i filter bi prestali
+        // raditi. Ovako su prikaz i izvoz trajno nezavisni: buduće izmjene
+        // izgleda tabele više ne mogu pokvariti Excel.
+        const _mjesecniExportData = {};
+        window.exportMjesecnaToExcel = function(tableId, filename) {
+            const data = _mjesecniExportData[tableId];
+            if (!data || !data.sortimenti || !data.mjeseci) {
+                if (typeof showWarning === 'function') showWarning('Nema podataka', 'Tabela još nije učitana.');
+                return;
+            }
+            if (typeof XLSX === 'undefined') {
+                if (typeof showError === 'function') showError('Export nije dostupan', 'Excel biblioteka nije učitana.');
+                return;
+            }
+
+            const sortimenti = data.sortimenti.filter(s => s && s.trim() !== '');
+            const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+
+            const aoa = [['MJESEC'].concat(sortimenti)];
+            const totals = {};
+            for (let m = 0; m < 12; m++) {
+                const red = [mjeseci[m]];
+                sortimenti.forEach(s => {
+                    const v = data.mjeseci[m][s] || 0;
+                    red.push(v);                       // pravi broj, bez formatiranja
+                    totals[s] = (totals[s] || 0) + v;
+                });
+                aoa.push(red);
+            }
+            aoa.push(['UKUPNO'].concat(sortimenti.map(s => totals[s] || 0)));
+
+            const ws = XLSX.utils.aoa_to_sheet(aoa);
+            ws['!cols'] = [{ wch: 10 }].concat(sortimenti.map(s => ({ wch: Math.max(10, s.length + 2) })));
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Podaci');
+            XLSX.writeFile(wb, `${filename}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        };
 
 
         // Sub-tab switching za primača

@@ -3266,3 +3266,174 @@
     color: #111827;
     box-shadow: 0 0 0 1px rgba(4, 120, 87, .25);
 }
+
+/* ==========================================================================
+   MJESEČNA SJEČA / OTPREMA — tabele u tabu "Sječa/otprema"
+
+   Princip: BOJA NOSI INFORMACIJU, ne dekoraciju. Ranije je svaka kolona
+   bila zasićeno obojena (plavo četinari, žuto lišćari, crveno ukupno) pa
+   je pola tabele koja je prazna (Avg-Dec) vizuelno vrištala jednako glasno
+   kao rekordni mjesec. Sada:
+     - intenzitet pozadine ćelije = veličina broja (toplotna mapa)
+     - nule su "–" u svijetlo sivom, bez ispune
+     - grupe razdvaja VERTIKALNA LINIJA, ne poplava boje
+     - grupu identifikuje zaglavlje (akcentna donja ivica), jednom umjesto
+       200 puta
+
+   Sve boje su ovdje, NIJEDNA nije inline u JS-u. Renderer
+   (renderMjesecnaTabela, js/app.js) emituje samo klase + varijablu --i.
+   Zato su iz css/table-contrast-fix.css obrisana pravila koja su ranije
+   gazila inline boje preko [style*="..."] selektora — bez inline boja ona
+   nemaju šta da poklope. NAMJERNO bez ijednog !important: ta trka u
+   naoružanju je bila uzrok toga da se dio boja uopšte nije prikazivao
+   onako kako ih je renderer postavljao.
+
+   Bez @media po širini — setAppViewport() (index.html) fiksira viewport na
+   1280px pa breakpointi po širini unutar aplikacije nikad ne pale.
+   ========================================================================== */
+
+/* Wrapper je scroll kontejner. Nužno da sticky zaglavlje uopšte radi:
+   .mjesecni-card ima overflow:hidden, pa bez ovoga skrol preuzima stranica.
+   NE koristiti klasu .mjesecni-table-wrapper — ona je već stilizovana
+   drugdje u ovom fajlu i vratila bi tačno onaj rainbow koji uklanjamo. */
+.mjesecna-scroll {
+    max-height: 72vh;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.pro-mjesecna-table {
+    /* separate + spacing:0 — kod collapse ivice sticky ćelija nestaju */
+    border-collapse: separate;
+    border-spacing: 0;
+    contain: layout style;          /* NIKAD contain:paint — razbija sticky */
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- ZAGLAVLJE ---------- */
+.pro-mjesecna-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #1e293b;
+    color: #f8fafc;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    padding: 11px 8px;
+    min-width: 68px;
+    text-align: center;
+    white-space: nowrap;
+    border-bottom: 3px solid #475569;
+}
+/* Grupni akcent — jedina boja u zaglavlju, dovoljna da se na 21 koloni
+   odmah vidi gdje počinju lišćari a gdje ukupno. */
+.pro-mjesecna-table thead th.col-cetinari  { border-bottom-color: #3b82f6; }
+.pro-mjesecna-table thead th.col-liscari   { border-bottom-color: #f59e0b; }
+.pro-mjesecna-table thead th.col-sveukupno { border-bottom-color: #ef4444; background: #0f172a; }
+.pro-mjesecna-table thead th.is-total      { background: #0f172a; }
+
+/* ---------- STICKY PRVA KOLONA (MJESEC) ---------- */
+.pro-mjesecna-table thead th.col-mjesec {
+    left: 0;
+    z-index: 20;
+    min-width: 88px;
+    border-right: 2px solid #475569;
+    font-family: 'Comfortaa', sans-serif;
+    font-size: 12px;
+}
+.pro-mjesecna-table tbody td.col-mjesec {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background: #ffffff;
+    border-right: 2px solid #e2e8f0;
+    text-align: center;
+    font-family: 'Comfortaa', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+/* ---------- ĆELIJE ---------- */
+.pro-mjesecna-table tbody td {
+    padding: 9px 10px;
+    min-width: 68px;
+    text-align: right;
+    white-space: nowrap;
+    color: #0f172a;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+    border-bottom: 1px solid #eef2f7;
+}
+.pro-mjesecna-table tbody tr.m-row:nth-child(even) td { background: #f8fafc; }
+.pro-mjesecna-table tbody tr.m-row:nth-child(even) td.col-mjesec { background: #f1f5f9; }
+.pro-mjesecna-table tbody tr.m-row:hover td { background: #eff6ff; }
+.pro-mjesecna-table tbody tr.m-row:hover td.col-mjesec { background: #dbeafe; }
+
+/* Nule se povlače u pozadinu — bez ovoga prazni mjeseci dominiraju mrežom */
+.pro-mjesecna-table tbody td.is-zero { color: #cbd5e1; font-weight: 400; }
+
+/* ---------- TOPLOTNA MAPA ----------
+   Intenzitet dolazi iz --i koji renderer računa po koloni (sqrt skala).
+   Namjerno background-IMAGE, ne background-color: tako zebra i ispuna
+   agregatnih kolona ostaju vidljive ispod, a sticky kolona neprozirna.
+   Takođe: renderer time NE emituje inline "background:" string, pa je ovo
+   imuno na sva [style*="background"] override pravila u projektu. */
+.pro-mjesecna-table tbody tr.m-row td.heat {
+    background-image: linear-gradient(rgba(37, 99, 235, calc(var(--i, 0) * .30)),
+                                      rgba(37, 99, 235, calc(var(--i, 0) * .30)));
+}
+.pro-mjesecna-table tbody tr.m-row td.heat.col-liscari {
+    background-image: linear-gradient(rgba(217, 119, 6, calc(var(--i, 0) * .32)),
+                                      rgba(217, 119, 6, calc(var(--i, 0) * .32)));
+}
+
+/* ---------- HIJERARHIJA KOLONA (blaga ispuna, ne zasićena) ---------- */
+.pro-mjesecna-table tbody td.is-subtotal   { font-weight: 700; }
+.pro-mjesecna-table tbody td.is-total      { background: #f1f5f9; font-weight: 800; }
+.pro-mjesecna-table tbody td.col-sveukupno { background: #eef2ff; font-weight: 800; color: #1e1b4b; }
+
+/* ---------- GRUPNI SEPARATORI (zamjena za bojenje cijelih kolona) ---------- */
+.pro-mjesecna-table thead th.grp-start,
+.pro-mjesecna-table tbody td.grp-start { border-left: 2px solid #cbd5e1; }
+.pro-mjesecna-table thead th.col-sveukupno,
+.pro-mjesecna-table tbody td.col-sveukupno { border-left: 2px solid #94a3b8; }
+
+/* ---------- UKUPNO RED ---------- */
+.pro-mjesecna-table tbody tr.ukupno-row td {
+    background: #1e293b;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 14px;
+    padding: 13px 10px;
+    border-top: 2px solid #0f172a;
+    border-bottom: none;
+}
+.pro-mjesecna-table tbody tr.ukupno-row td.col-mjesec {
+    background: #1e293b;
+    color: #ffffff;
+    border-right: 2px solid #475569;
+    font-size: 13px;
+}
+.pro-mjesecna-table tbody tr.ukupno-row td.is-zero { color: #64748b; font-weight: 500; }
+
+/* ---------- % UČEŠĆE RED (sekundarni podatak) ---------- */
+.pro-mjesecna-table tbody tr.pct-row td {
+    background: #f8fafc;
+    color: #64748b;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 9px 10px;
+    border-bottom: none;
+}
+.pro-mjesecna-table tbody tr.pct-row td.col-mjesec {
+    background: #f8fafc;
+    color: #64748b;
+    font-style: italic;
+}
