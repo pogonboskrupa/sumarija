@@ -101,9 +101,13 @@
                 var d = parseInt(p[0], 10), m = parseInt(p[1], 10) - 1, g = parseInt(p[2], 10);
                 if (g !== godina || m !== mjesec) return;
                 var k = _iso(g, m, d);
-                if (!out[k]) out[k] = { ukupno: 0, unosa: 0 };
+                if (!out[k]) out[k] = { ukupno: 0, unosa: 0, odjeli: [] };
                 out[k].ukupno += (typeof u.ukupno === 'number' ? u.ukupno : parseFloat(u.ukupno) || 0);
                 out[k].unosa += 1;
+                // Odjel se prikazuje umjesto generičnog "Rad" — konkretnije je
+                // i odmah se vidi gdje je radnik bio tog dana.
+                var od = String(u.odjel == null ? '' : u.odjel).trim();
+                if (od && out[k].odjeli.indexOf(od) === -1) out[k].odjeli.push(od);
             });
         } catch (_) { /* offline ili greška — ostaje prazno */ }
         return out;
@@ -189,6 +193,8 @@
             '<th>Dan</th><th>Vrsta</th><th>Napomena</th><th class="sih-num">Sječa/otprema</th><th></th>' +
             '</tr></thead><tbody>';
 
+        var danasIso = _iso(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+
         for (var d = 1; d <= dana; d++) {
             var iso = _iso(g, m, d);
             var vikend = _jeVikend(g, m, d);
@@ -201,14 +207,29 @@
             if (a) ukupnoM3 += a.ukupno;
             if (!t && !vikend) neupisanihRadnih++;
 
-            var klase = 'sih-row' + (vikend ? ' sih-vikend' : '') + (!t && !vikend ? ' sih-prazan' : '');
+            var klase = 'sih-row' + (vikend ? ' sih-vikend' : '') +
+                        (!t && !vikend ? ' sih-prazan' : '') +
+                        (iso === danasIso ? ' sih-danas' : '');
             html += '<tr class="' + klase + '">';
-            html += '<td class="sih-dan"><span class="sih-dan-broj">' + d + '.</span>' +
-                    '<span class="sih-dan-ime">' + DANI[new Date(g, m, d).getDay()] + '</span></td>';
+
+            // Akcentna ivica lijevo u boji vrste dana — vrsta se vidi i bez
+            // čitanja badža, korisno pri brzom skrolu kroz mjesec.
+            var ivica = t ? t.boja : (vikend ? '#cbd5e1' : 'transparent');
+            html += '<td class="sih-dan" style="box-shadow:inset 4px 0 0 ' + ivica + ';">' +
+                    '<span class="sih-dan-broj">' + d + '.</span>' +
+                    '<span class="sih-dan-ime">' + DANI[new Date(g, m, d).getDay()] + '</span>' +
+                    (iso === danasIso ? '<span class="sih-danas-tag">danas</span>' : '') +
+                    '</td>';
 
             if (t) {
+                // Za radne dane sa evidentiranom sječom/otpremom prikazuje se
+                // KONKRETAN odjel umjesto generičnog "Rad".
+                var oznaka = t.label;
+                if (t.id === 'rad' && a && a.odjeli.length) {
+                    oznaka = (a.odjeli.length === 1 ? 'Odjel ' : 'Odjeli ') + a.odjeli.join(', ');
+                }
                 html += '<td><span class="sih-badge" style="background:' + t.boja + ';">' +
-                        t.ikona + ' ' + t.label + '</span>' +
+                        t.ikona + ' ' + _esc(oznaka) + '</span>' +
                         (!unosi[iso] ? '<span class="sih-auto">auto</span>' : '') + '</td>';
             } else {
                 html += '<td><span class="sih-nema">' + (vikend ? 'vikend' : 'nije upisano') + '</span></td>';

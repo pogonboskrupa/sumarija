@@ -3470,13 +3470,15 @@
     font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
     padding: 11px 12px; text-align: left; white-space: nowrap;
 }
-.sih-table tbody td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; color: #0f172a; }
-.sih-table .sih-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sih-table tbody td { padding: 11px 14px; border-bottom: 1px solid #f1f5f9; color: #0f172a; }
+.sih-table .sih-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 700; }
 .sih-table tbody tr:hover td { background: #eff6ff; }
+.sih-table tbody tr:last-child td { border-bottom: none; }
 
 /* Vikend i nepopunjeni dani — prigušeni, ali čitljivi */
-.sih-vikend td { background: #f8fafc; color: #64748b; }
-.sih-vikend:hover td { background: #eef2f7; }
+.sih-vikend td { background: #f1f5f9; color: #94a3b8; }
+.sih-vikend:hover td { background: #e2e8f0; }
+.sih-vikend .sih-dan-broj, .sih-vikend .sih-dan-ime { color: #94a3b8; }
 .sih-prazan .sih-dan-broj { color: #dc2626; }
 
 .sih-dan { white-space: nowrap; }
@@ -3517,3 +3519,39 @@
 .sih-rekap-label { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .04em; }
 .sih-rekap-val { font-size: 22px; font-weight: 800; color: #1f2937; font-variant-numeric: tabular-nums; }
 .sih-rekap-hint { margin-top: 12px; font-size: 12px; color: #b45309; font-weight: 600; }
+
+/* ---- Šihtarica: dorada prikaza ---- */
+/* Podnaslov u zaglavlju — osnovni .worker-header-subtitle ima debeo crni
+   obrub (4 sjenke) koji bijela slova čini mutnim/sivkastim. Ovdje čista
+   bijela sa laganom sjenkom, jer je pozadina ionako pun gradijent. */
+#sihtarica-primac-content .worker-header-subtitle,
+#sihtarica-otpremac-content .worker-header-subtitle {
+    color: #ffffff;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+}
+
+/* Današnji dan — istaknut da se odmah nađe pri otvaranju */
+.sih-table tbody tr.sih-danas td { background: #fffbeb; }
+.sih-table tbody tr.sih-danas:hover td { background: #fef3c7; }
+.sih-danas-tag {
+    display: inline-block; margin-left: 8px; padding: 2px 7px;
+    background: #f59e0b; color: #fff; border-radius: 999px;
+    font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em;
+    vertical-align: middle;
+}
+
+/* Badž vrste/odjela — malo mekši i sa prostorom za duže nazive odjela */
+.sih-badge {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .18);
+    letter-spacing: .01em;
+}
+.sih-table td:nth-child(2) { min-width: 150px; }
+.sih-napomena { max-width: 320px; }
+
+/* Dugme za uređivanje — vidljivije da je red klikabilan */
+.sih-edit {
+    opacity: .55;
+    transition: opacity .15s ease, background .15s ease;
+}
+.sih-table tbody tr:hover .sih-edit { opacity: 1; background: #dbeafe; }
