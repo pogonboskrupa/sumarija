@@ -106,9 +106,26 @@
             const meta = document.querySelector('meta[name="viewport"]');
             if (meta) meta.setAttribute('content',
                 'width=1280, user-scalable=yes, minimum-scale=0.2, maximum-scale=3.0, viewport-fit=cover');
+            markScreenClass();
         }
 
+        // STVARNI ekran vs. prijavljena širina.
+        // setAppViewport() gore fiksira viewport na 1280px za SVE korisnike u
+        // aplikaciji — i na telefonu. Zato CSS `@media (min-width: ...)` ovdje
+        // NE razlikuje desktop od telefona: na telefonu takođe "vidi" 1280px.
+        // (To je bio uzrok ranije situacije da pravila za tabove nisu radila.)
+        // window.screen.width je fizička širina uređaja i viewport meta je NE
+        // mijenja — zato je ona jedini pouzdan pokazatelj. Klasa se koristi u
+        // css/main.css da se traka tabova suzi samo na pravom velikom ekranu.
+        function markScreenClass() {
+            var w = (window.screen && window.screen.width) || window.innerWidth || 0;
+            document.body.classList.toggle('is-desktop-screen', w >= 1024);
+        }
+        window.addEventListener('resize', markScreenClass);
+        window.addEventListener('orientationchange', markScreenClass);
+
         document.addEventListener('DOMContentLoaded', () => {
+            markScreenClass();
             const loginScreen = document.getElementById('login-screen');
             if (loginScreen && !loginScreen.classList.contains('hidden')) {
                 document.body.classList.add('login-active');

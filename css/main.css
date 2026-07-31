@@ -3555,3 +3555,26 @@
     transition: opacity .15s ease, background .15s ease;
 }
 .sih-table tbody tr:hover .sih-edit { opacity: 1; background: #dbeafe; }
+
+/* --------------------------------------------------------------------------
+   Traka tabova na PRAVOM velikom ekranu — uža za ~25%.
+
+   NE koristi @media (min-width:...): setAppViewport() (index.html) fiksira
+   viewport na 1280px za sve korisnike u aplikaciji, pa i telefon "prijavljuje"
+   1280px i takvo pravilo bi ga pogodilo. Klasu .is-desktop-screen postavlja
+   markScreenClass() na osnovu window.screen.width (fizička širina uređaja),
+   koju viewport meta ne mijenja — jedini pouzdan pokazatelj ovdje.
+
+   Na telefonu se ništa ne mijenja: tamo ostaju pune vrijednosti iz pravila
+   iznad (66-70px visina, 18.4px font) jer se dodiruje prstom.
+   -------------------------------------------------------------------------- */
+body.is-desktop-screen #tabs-menu-mobile {
+    gap: 4px;
+    padding: 5px 8px;
+}
+body.is-desktop-screen #tabs-menu-mobile .tab {
+    min-height: 52px;
+    padding: 12px 14px;   /* bilo 18px 20px — glavni izvor uštede u širini */
+    font-size: 14px;      /* bilo 18.4px */
+    border-radius: 10px;
+}
