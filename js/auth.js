@@ -136,6 +136,29 @@
             return jeste(norm(user.type)) || jeste(norm(user.fullName));
         }
 
+        // Čitljiv naziv uloge. `user.type` je slobodan tekst iz kolone D tabele
+        // korisnika (handleLogin, authentication.gs) — obično bez dijakritike
+        // ("primac"), ali može biti i naziv radnog mjesta. Otud mapa poznatih
+        // vrijednosti uz fallback na sirovi tekst umjesto praznog polja.
+        var _ULOGA_NAZIVI = {
+            'primac': 'primač', 'otpremac': 'otpremač', 'operativa': 'operativa',
+            'operater': 'operater', 'operateri': 'operateri',
+            'poslovodja': 'poslovođa', 'poslovođa': 'poslovođa'
+        };
+        function _prikaziUloga(user) {
+            if (!user) return '';
+            if (user.role === 'admin') return 'Administrator';
+            var t = String(user.type || '').trim().toLowerCase();
+            return _ULOGA_NAZIVI[t] || user.type || '';
+        }
+        // Inicijali za krug ("Salkić Adnan" → "SA").
+        function _inicijali(fullName) {
+            var r = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+            if (!r.length) return '?';
+            if (r.length === 1) return r[0].charAt(0).toUpperCase();
+            return (r[0].charAt(0) + r[1].charAt(0)).toUpperCase();
+        }
+
         function showApp() {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
@@ -157,7 +180,9 @@
                 }).catch(() => {});
             }
             document.getElementById('user-name').textContent = currentUser.fullName;
-            document.getElementById('user-role').textContent = currentUser.role === 'admin' ? 'Administrator' : currentUser.type;
+            document.getElementById('user-role').textContent = _prikaziUloga(currentUser);
+            var _avatarEl = document.getElementById('user-avatar');
+            if (_avatarEl) _avatarEl.textContent = _inicijali(currentUser.fullName);
 
             // Initialize notification UI if module loaded
             if (typeof initNotificationUI === 'function') initNotificationUI();
@@ -166,7 +191,7 @@
             const sidebarUserName = document.getElementById('sidebar-user-name');
             const sidebarUserRole = document.getElementById('sidebar-user-role');
             if (sidebarUserName) sidebarUserName.textContent = currentUser.fullName;
-            if (sidebarUserRole) sidebarUserRole.textContent = currentUser.role === 'admin' ? 'Administrator' : currentUser.type;
+            if (sidebarUserRole) sidebarUserRole.textContent = _prikaziUloga(currentUser);
 
             // Dinamicki kreiraj tab-ove na osnovu tipa korisnika
             const tabsMenu = document.getElementById('tabs-menu'); // Sidebar nav

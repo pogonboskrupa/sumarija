@@ -13,18 +13,59 @@
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .error { background: #fee2e2; border: 1px solid #fecaca; color: #991b1b; padding: 12px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; }
         .header { background: white; color: #1f2937; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 16px 24px; border-bottom: 1px solid #e5e7eb; position: relative; z-index: 10000; }
-        .header-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
-        .header-left { display: flex; align-items: center; gap: 12px; }
+        /* JEDAN RED, uvijek: naslov lijevo, dugmad desno do kraja.
+           flex-wrap:nowrap umjesto wrap — ranije se pri užem prikazu (npr.
+           "desktop site" na telefonu, viewport ~980px) desni dio prelamao u
+           drugi red i, pošto je tamo ostajao sam, justify-content:space-between
+           ga je gurao skroz ulijevo ispod naslova.
+           Umjesto prelamanja, naslov se skraćuje (vidi .header-title ispod). */
+        .header-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: nowrap; gap: 16px; }
+        /* min-width:0 je obavezan da bi se .header-left uopšte smio skupiti
+           ispod širine svog teksta — bez toga nowrap gura zaglavlje preko ekrana. */
+        .header-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .header-title { min-width: 0; }
+        .header-title h1, .header-title p {
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
         .header-logo { height: 48px; width: auto; object-fit: contain; }
         .header-center { display: flex; align-items: center; justify-content: center; flex: 1; margin: 0 20px; }
         .company-logo { height: 60px; width: auto; object-fit: contain; transition: all 0.3s ease; }
         .company-logo:hover { transform: scale(1.05); }
         .header-title h1 { font-size: 18px; font-weight: 700; margin-bottom: 2px; color: #047857; }
         .header-title p { font-size: 12px; color: #4b5563; }
-        .header-right { display: flex; align-items: center; gap: 16px; }
-        .header-user { text-align: right; }
-        .header-user-name { font-size: 13px; font-weight: 600; color: #1f2937; }
-        .header-user-role { font-size: 11px; color: #4b5563; }
+        /* flex-shrink:0 — dugmad zadržavaju svoju veličinu, a mjesto ustupa
+           naslov lijevo (skraćuje se sa "..."). Tako "Ažuriraj ... Meni" uvijek
+           stoji desno, u istom redu sa naslovom. */
+        .header-right { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+
+        /* Korisnik umjesto nekadašnjih Desktop/Android dugmadi: krug sa
+           inicijalima + ime i prezime, uloga ispod. */
+        .header-user {
+            display: flex; align-items: center; gap: 9px; min-width: 0;
+            padding: 4px 12px 4px 4px; border-radius: 999px;
+            background: #f8fafc; border: 1px solid #e5e7eb;
+        }
+        .header-user-avatar {
+            flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #059669, #047857);
+            color: #fff; font-size: 13px; font-weight: 800;
+            box-shadow: 0 2px 6px rgba(4, 120, 87, .3);
+        }
+        .header-user-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; line-height: 1.15; }
+        /* Ime i uloga dolaze kao slobodan tekst iz tabele korisnika, dakle
+           neograničene dužine (npr. "Tehnolog za gazdovanje šumama"). Tvrda
+           granica + skraćivanje sa "..." — bez toga dugačko ime razvuče
+           zaglavlje i prelije ga preko širine ekrana. */
+        .header-user-name,
+        .header-user-role { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .header-user-name { font-size: 13px; font-weight: 700; color: #1f2937; }
+        .header-user-role {
+            align-self: flex-start;
+            font-size: 10px; font-weight: 700; color: #047857;
+            background: #d1fae5; padding: 1px 7px; border-radius: 999px;
+            text-transform: uppercase; letter-spacing: .03em;
+        }
         .cloud-sync-btn {
             position: relative;
             display: flex;

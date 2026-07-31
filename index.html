@@ -185,19 +185,15 @@
                         <span id="check-data-icon">☁️</span>
                         <span id="check-data-dot" style="display:none;position:absolute;top:2px;right:2px;width:10px;height:10px;background:#dc2626;border-radius:50%;border:2px solid white;"></span>
                     </button>
+                    <!-- Ime i prezime radnika — zamjena za nekadašnja Desktop/Android
+                         dugmad. Širina je tvrdo ograničena u CSS-u jer ime i uloga
+                         dolaze kao slobodan tekst iz tabele korisnika. -->
                     <div class="header-user">
-                        <div class="header-user-name" id="user-name"></div>
-                        <div class="header-user-role" id="user-role"></div>
-                    </div>
-                    <div class="desktop-view-toggle" style="display: flex; gap: 6px;">
-                        <button class="desktop-view-button" onclick="toggleDesktopView()" id="desktop-view-btn" title="Prebaci na desktop prikaz">
-                            <span>🖥️</span>
-                            <span>Desktop</span>
-                        </button>
-                        <button class="desktop-view-button" onclick="toggleAndroidView()" id="android-view-btn" title="Prebaci na Android prikaz">
-                            <span>📱</span>
-                            <span>Android</span>
-                        </button>
+                        <div class="header-user-avatar" id="user-avatar"></div>
+                        <div class="header-user-text">
+                            <div class="header-user-name" id="user-name"></div>
+                            <div class="header-user-role" id="user-role"></div>
+                        </div>
                     </div>
                     <div class="user-menu">
                         <button class="user-menu-button" onclick="toggleUserMenu(event)">
@@ -3399,19 +3395,24 @@
                       border-top:2px solid #e5e7eb;
                       padding:7px 10px calc(7px + env(safe-area-inset-bottom)) 10px;
                   }
+                  /* Donja traka je terenski alat — dodiruje se prstom, često u
+                     rukavicama, pa je NAMJERNO velika. Ove vrijednosti su ranije
+                     stajale samo unutar @media (min-width:1025px) uz uslov
+                     body:not(.force-desktop-view). Posljedica: u "desktop site"
+                     načinu na telefonu layout viewport je ~980px, taj blok se ne
+                     poklopi i traka padne na sitnu osnovnu vrijednost (42px/10px).
+                     Zato su velike vrijednosti sada BEZUSLOVNA osnova — ne zavise
+                     ni od širine ekrana ni od klase koja se više ne postavlja. */
                   .rm-bar-btn {
                       flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-                      gap:3px; min-height:42px; border:none; border-radius:10px; margin:0 5px;
-                      /* Veličina dugmeta (min-height/padding) namjerno nepromijenjena —
-                         traženo je samo veće slovo labele ("Moja lokacija"/"Tragovi"/
-                         "Ostalo"), ne veće dugme. */
-                      font-size:10px; font-weight:800; cursor:pointer; font-family:inherit;
+                      gap:4px; min-height:56px; border:none; border-radius:12px; margin:0 4px;
+                      font-size:16px; font-weight:800; cursor:pointer; font-family:inherit;
                       letter-spacing:.2px; text-align:center; overflow-wrap:break-word;
                       color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25);
                       box-shadow:0 3px 8px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.25);
                       transition:transform .1s ease, filter .15s ease;
                   }
-                  .rm-bar-icon { font-size:15px; line-height:1; }
+                  .rm-bar-icon { font-size:22px; line-height:1; }
                   .rm-bar-btn:active { transform:scale(.94); filter:brightness(.9); }
                   .rm-bar-btn:disabled { opacity:.6; cursor:default; transform:none; }
                   .rm-bar-loc { background:linear-gradient(180deg,#2563eb,#1d4ed8); }
@@ -3422,39 +3423,20 @@
                   .rm-bar-trag { background:linear-gradient(180deg,#059669,#047857); }
                   .rm-bar-trag.recording { background:linear-gradient(180deg,#ef4444,#dc2626); }
                   .rm-bar-clear { background:linear-gradient(180deg,#6b7280,#4b5563); }
+                  /* Vrlo uski ekrani — samo blago manje, da tri dugmeta stanu u red. */
                   @media (max-width:360px) {
-                      .rm-bar-btn { font-size:9px; min-height:37px; }
-                      .rm-bar-icon { font-size:13px; }
+                      .rm-bar-btn { font-size:13px; min-height:50px; }
+                      .rm-bar-icon { font-size:19px; }
                   }
-                  /* Donja (i gornja) traka su namjerno velike radi dodira na terenu —
-                     smanjuju se SAMO na pravom desktopu (miš, veliki ekran, širina
-                     ekrana STVARNO preko 1024px). Bitno: `body:not(.force-desktop-view)`
-                     isključuje slučaj kad je korisnik uključio "Desktop prikaz"
-                     (toggleDesktopView, js/ui.js) — taj mod postavlja
-                     <meta name="viewport" content="width=1200,...">, pa CSS layout
-                     viewport postaje 1200px ČAK I na malom telefonu, pa bi ova grana
-                     bez ovog isključenja pogrešno smanjivala traku na terenu (pravi
-                     uzrok "i dalje nešto koči povećanje" žalbe). */
+                  /* Traka je sada jednako velika na svakoj širini (vidi .rm-bar-btn
+                     iznad), pa ovdje ostaje samo rezervisani prostor ispod karte —
+                     bezuslovno, jer i visina trake više ne zavisi od širine ekrana.
+                     Ranije je cijeli ovaj blok bio vezan za `body:not(.force-desktop-view)`,
+                     klasu koja se više ne postavlja. */
+                  .radnik-mapa-bottombar { padding:8px 8px calc(8px + env(safe-area-inset-bottom)) 8px; }
                   @media (min-width:1025px) {
-                      body:not(.force-desktop-view) .radnik-mapa-bottombar { padding:8px 8px calc(8px + env(safe-area-inset-bottom)) 8px; }
-                      body:not(.force-desktop-view) .rm-bar-btn { min-height:56px; font-size:16px; gap:4px; border-radius:12px; margin:0 4px; }
-                      body:not(.force-desktop-view) .rm-bar-icon { font-size:22px; }
-                      /* NAPOMENA (v1.4.103): h1/p/checkbox/Zatvori override-i su OVDJE
-                         ranije postavljali VEĆE vrijednosti (24px/14px/...) nego
-                         "terensku" bazu — nakon više krugova smanjivanja zaglavlja
-                         (v1.4.99-102) baza je postala manja od ovoga, pa je ovaj blok
-                         (koji se primjenjuje na svakom ekranu širem od 1024px, uklj.
-                         tablete na terenu) NADJAČAVAO korisnikovo poslednje smanjenje —
-                         izgledalo je kao da izmjene "ne rade". Uklonjeno; zaglavlje sad
-                         zadržava istu (terensku) veličinu na svim širinama. */
-                      /* Manja traka na desktopu oslobađa prostor — smanji rezervisani
-                         razmak za nju (fallback prikaz i puni-ekran padding) sa ~60px
-                         na ~80px — na pravom desktopu je razmak čak i veći nego na
-                         terenskoj (mobilnoj) verziji, jer je ova sad manja od 2,5x
-                         smanjenja (v1.4.97); nije greška, samo ostaje dovoljno
-                         prostora oko manjih desktop dugmadi. */
-                      body:not(.force-desktop-view) #radnik-mapa-map { height:calc(100vh - 240px - 80px); height:calc(100dvh - 240px - 80px); }
-                      body.radnik-mapa-fullscreen:not(.force-desktop-view) #radnik-mapa-content { padding-bottom:calc(80px + env(safe-area-inset-bottom)) !important; }
+                      #radnik-mapa-map { height:calc(100vh - 240px - 80px); height:calc(100dvh - 240px - 80px); }
+                      body.radnik-mapa-fullscreen #radnik-mapa-content { padding-bottom:calc(80px + env(safe-area-inset-bottom)) !important; }
                   }
 
                   /* Info panel s podacima odjela (klik na istaknuti odjel) — FIKSIRAN
@@ -3566,7 +3548,6 @@
                   body.mapa-fokus .header-logo { width:26px !important; height:26px !important; }
                   body.mapa-fokus .header-title { display:none !important; }
                   body.mapa-fokus .header-user { display:none !important; }
-                  body.mapa-fokus .desktop-view-toggle { display:none !important; }
                   body.mapa-fokus .user-menu { display:none !important; }
                   body.mapa-fokus #check-data-btn { display:none !important; }
                   body.mapa-fokus .header-content { min-height:0 !important; padding:4px 0 !important; }
