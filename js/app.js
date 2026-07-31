@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.51';
+        const APP_VERSION = '2.52';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1670,44 +1670,19 @@
             initializeYearSelectors();
 
 
-            // Load desktop view preference
-            const desktopView = localStorage.getItem('desktop-view');
-            if (desktopView === 'enabled') {
-                document.body.classList.add('force-desktop-view');
-                const btn = document.getElementById('desktop-view-btn');
-                if (btn) {
-                    btn.classList.add('active');
-                    btn.title = 'Prebaci na mobilni prikaz';
-                }
-                let viewport = document.querySelector('meta[name=viewport]');
-                if (viewport) {
-                    viewport.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes, viewport-fit=cover');
-                }
-            }
-
-            // Load Android view preference
-            const androidView = localStorage.getItem('android-view');
-            if (androidView === 'enabled') {
-                document.body.classList.add('force-android-view');
-                const aBtn = document.getElementById('android-view-btn');
-                if (aBtn) {
-                    aBtn.classList.add('active');
-                    aBtn.title = 'Isključi Android prikaz';
-                }
-                let vpAndroid = document.querySelector('meta[name=viewport]');
-                if (vpAndroid) {
-                    vpAndroid.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes, viewport-fit=cover');
-                }
-            }
-
-            // Default prikaz: horizontalni tabovi, SAMO ako korisnik nikad nije
-            // ručno dirao nijedan od toggle-a (obje vrijednosti null = prvi
-            // put/nikad kliknuto). Čim korisnik jednom klikne bilo koji toggle,
-            // localStorage prestaje biti null i default se više ne primjenjuje
-            // — poštuje se njihov eksplicitni izbor od tog trenutka nadalje.
-            if (desktopView === null && androidView === null) {
-                document.body.classList.add('force-horizontal-tabs');
-            }
+            // Traka tabova je UVIJEK u horizontalnom rasporedu — Desktop/Android
+            // prikaz (nekadašnja dugmad u zaglavlju, zamijenjena korisničkim
+            // "chipom") je uklonjen. force-desktop-view/force-android-view se
+            // eksplicitno skidaju i za korisnike koji su ih ranije uključili
+            // (leftover 'desktop-view'/'android-view' u localStorage) — bez
+            // ijednog dugmeta da ih isključe, sidebar bi im inače ostao trajno
+            // nametnut.
+            document.body.classList.remove('force-desktop-view', 'force-android-view');
+            document.body.classList.add('force-horizontal-tabs');
+            try {
+                localStorage.removeItem('desktop-view');
+                localStorage.removeItem('android-view');
+            } catch (_) {}
 
             // Add event listeners for dinamika calculation inputs
             for (let i = 1; i <= 12; i++) {
