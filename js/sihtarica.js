@@ -334,9 +334,23 @@
         }
         var sel = document.getElementById('sihtarica-edit-tip');
         if (sel) {
+            // "Rad" se NE nudi za ručni izbor — to je isključivo automatski
+            // izvedena oznaka za dane sa evidentiranom sječom/otpremom (vidi
+            // _efektivniTip). Kad radnik ručno bira vrstu dana, podrazumijeva
+            // se terenski rad — najčešći slučaj (dan bez sječe/otpreme, a
+            // radnik je ipak bio na terenu).
+            var trenutniTip = u.tip;
+            var stAuto = (_stanje[tip] && _stanje[tip].autoDani) || {};
+            var imaAuto = !!stAuto[iso];
+            // Default na "teren" SAMO ako dan nema ni ručni unos ni auto
+            // podatak — dan koji je već automatski "Rad" (sječa/otprema)
+            // ostaje prazan izbor da se ne prepiše slučajnim Sačuvaj-om.
+            if (!trenutniTip && !imaAuto) trenutniTip = 'teren';
+
             var o = '<option value="">— nije upisano —</option>';
             TIPOVI.forEach(function(t) {
-                o += '<option value="' + t.id + '"' + (u.tip === t.id ? ' selected' : '') + '>' +
+                if (t.id === 'rad') return; // vidi komentar iznad
+                o += '<option value="' + t.id + '"' + (trenutniTip === t.id ? ' selected' : '') + '>' +
                      t.ikona + ' ' + t.label + '</option>';
             });
             sel.innerHTML = o;
