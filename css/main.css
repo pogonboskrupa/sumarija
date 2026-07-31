@@ -21,46 +21,10 @@
         .company-logo:hover { transform: scale(1.05); }
         .header-title h1 { font-size: 18px; font-weight: 700; margin-bottom: 2px; color: #047857; }
         .header-title p { font-size: 12px; color: #4b5563; }
-        /* flex-wrap je zaštita: "Ažuriraj" ima min-width:190px i ne može se
-           stisnuti, pa se red radije prelomi nego prelije preko viewporta.
-           Layout viewport je fiksnih 1280px bez initial-scale (setAppViewport
-           u index.html) — svako prelijevanje preko toga natjera mobilni browser
-           da ODZUMIRA cijelu stranicu, pa aplikacija izgleda kao da zauzima
-           samo dio ekrana. */
-        .header-right { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: flex-end; }
-
-        /* Korisnički chip: krug sa inicijalima + ime i uloga. */
-        .header-user {
-            display: flex; align-items: center; gap: 10px; min-width: 0;
-            padding: 5px 14px 5px 5px; border-radius: 999px;
-            background: #f8fafc; border: 1px solid #e5e7eb;
-        }
-        .header-user-avatar {
-            flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(135deg, #059669, #047857);
-            color: #fff; font-size: 14px; font-weight: 800;
-            box-shadow: 0 2px 6px rgba(4, 120, 87, .35);
-        }
-        /* min-width:0 na OBA flex nivoa je obavezan — bez njega flex stavka
-           odbija da se smanji ispod širine svog sadržaja, pa max-width ispod
-           nema efekta i dugačko ime svejedno razvuče zaglavlje. */
-        .header-user-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; line-height: 1.15; }
-        /* Ime i uloga su slobodan tekst iz tabele korisnika (kolone C i D),
-           dakle neograničene dužine — npr. "Tehnolog za gazdovanje šumama".
-           Zato tvrda granica + skraćivanje sa "...", nikako goli nowrap. */
-        .header-user-name,
-        .header-user-role {
-            max-width: 190px;
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-        }
-        .header-user-name { font-size: 13.5px; font-weight: 700; color: #1f2937; }
-        .header-user-role {
-            align-self: flex-start;
-            font-size: 10.5px; font-weight: 700; color: #047857;
-            background: #d1fae5; padding: 1px 8px; border-radius: 999px;
-            text-transform: uppercase; letter-spacing: .04em;
-        }
+        .header-right { display: flex; align-items: center; gap: 16px; }
+        .header-user { text-align: right; }
+        .header-user-name { font-size: 13px; font-weight: 600; color: #1f2937; }
+        .header-user-role { font-size: 11px; color: #4b5563; }
         .cloud-sync-btn {
             position: relative;
             display: flex;
