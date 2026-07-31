@@ -2988,18 +2988,29 @@
         /* touch-stilova (ti ostaju vezani za force-android-view) */
         /* ============================================ */
 
-        body.force-horizontal-tabs .sidebar.desktop-only {
+        /* Od v2.52 je bočni meni (sidebar) trajno ugašen — navigacija je UVIJEK
+           horizontalna traka tabova. Zato ova pravila NAMJERNO ne zavise od JS
+           klase `force-horizontal-tabs`: ako se ta klasa iz bilo kojeg razloga
+           ne postavi (npr. izuzetak ranije u DOMContentLoaded bloku koji je
+           postavlja), grid bi ostao "260px 1fr" sa skrivenim sidebarom, pa bi
+           se sadržaj stisnuo uz lijevu ivicu i desna trećina ekrana ostala
+           prazna. Layout ne smije zavisiti od toga da li se JS izvršio. */
+        .sidebar.desktop-only {
             display: none !important;
         }
 
-        body.force-horizontal-tabs .tabs-container.mobile-only {
+        .tabs-container.mobile-only {
             display: block !important;
         }
 
-        /* Bez ovoga, na širinama ≥1025px .app-layout ostaje CSS grid sa
-           "260px 1fr" kolonama (main.css ~2728) — sidebar je display:none ali
-           njegova 260px grid-traka i dalje postoji, pa sadržaj biva stisnut u
-           preostali 1fr prostor lijevo, ostavljajući prazan prostor desno. */
+        @media (min-width: 1025px) {
+            .app-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Klasa se i dalje postavlja iz js/app.js (koriste je pojedina pravila
+           za Kartu), pa ostaje i ovdje kao pojačanje. */
         body.force-horizontal-tabs .app-layout {
             grid-template-columns: 1fr !important;
         }
@@ -3240,10 +3251,9 @@
    prijavljuje širinu ~1200px čak i na malom telefonu — max-width:768px
    se nikad ne poklopi. A upravo u tim prikazima se traka tabova i koristi.
 
-   Uslov ovdje nije ni potreban: .tabs-container.mobile-only je ionako
-   display:none na širokim ekranima osim kad ga force-horizontal-tabs /
-   force-android-view eksplicitno uključe — dakle pravilo pogađa tačno
-   onda kad je traka i vidljiva.
+   Uslov ovdje nije ni potreban: od v2.52 je traka tabova JEDINA navigacija
+   (bočni meni je trajno ugašen), pa je uvijek vidljiva — dakle pravilo
+   pogađa tačno onda kad treba.
 
    Specifičnost (1,1,0) nadjačava i generičko ".tab" (0,1,0) iz
    @media (pointer: coarse) { min-height: 44px }, koje je inače bilo

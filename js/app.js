@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.54';
+        const APP_VERSION = '2.55';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1627,6 +1627,26 @@
             } catch(_) {}
         }
 
+        // Traka tabova je UVIJEK horizontalna — Desktop/Android prikaz (nekadašnja
+        // dugmad u zaglavlju, zamijenjena korisničkim "chipom") je uklonjen.
+        // Stare klase se skidaju i za korisnike koji su ih ranije uključili
+        // (leftover 'desktop-view'/'android-view' u localStorage) — bez ijednog
+        // dugmeta da ih isključe, sidebar bi im inače ostao trajno nametnut.
+        //
+        // NAMJERNO izvan DOMContentLoaded i izvan try bloka ispod: raspored
+        // stranice ne smije zavisiti od toga da li je neka druga inicijalizacija
+        // uspjela. (js/app.js se učitava sa `defer`, pa <body> već postoji.)
+        // Sama CSS pravila su takođe napravljena da ne zavise od ove klase —
+        // vidi .sidebar.desktop-only u css/main.css.
+        (function _uvijekHorizontalniTabovi() {
+            try {
+                document.body.classList.remove('force-desktop-view', 'force-android-view');
+                document.body.classList.add('force-horizontal-tabs');
+                localStorage.removeItem('desktop-view');
+                localStorage.removeItem('android-view');
+            } catch (_) {}
+        })();
+
         window.addEventListener('DOMContentLoaded', () => {
           try {
             // Watchdog — ako se loading-screen ne skloni u razumnom roku (bilo koji
@@ -1669,20 +1689,6 @@
             // Initialize year selectors first
             initializeYearSelectors();
 
-
-            // Traka tabova je UVIJEK u horizontalnom rasporedu — Desktop/Android
-            // prikaz (nekadašnja dugmad u zaglavlju, zamijenjena korisničkim
-            // "chipom") je uklonjen. force-desktop-view/force-android-view se
-            // eksplicitno skidaju i za korisnike koji su ih ranije uključili
-            // (leftover 'desktop-view'/'android-view' u localStorage) — bez
-            // ijednog dugmeta da ih isključe, sidebar bi im inače ostao trajno
-            // nametnut.
-            document.body.classList.remove('force-desktop-view', 'force-android-view');
-            document.body.classList.add('force-horizontal-tabs');
-            try {
-                localStorage.removeItem('desktop-view');
-                localStorage.removeItem('android-view');
-            } catch (_) {}
 
             // Add event listeners for dinamika calculation inputs
             for (let i = 1; i <= 12; i++) {
