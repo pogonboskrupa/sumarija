@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.57';
+        const APP_VERSION = '2.58';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1627,26 +1627,6 @@
             } catch(_) {}
         }
 
-        // Traka tabova je UVIJEK horizontalna — Desktop/Android prikaz (nekadašnja
-        // dugmad u zaglavlju, zamijenjena korisničkim "chipom") je uklonjen.
-        // Stare klase se skidaju i za korisnike koji su ih ranije uključili
-        // (leftover 'desktop-view'/'android-view' u localStorage) — bez ijednog
-        // dugmeta da ih isključe, sidebar bi im inače ostao trajno nametnut.
-        //
-        // NAMJERNO izvan DOMContentLoaded i izvan try bloka ispod: raspored
-        // stranice ne smije zavisiti od toga da li je neka druga inicijalizacija
-        // uspjela. (js/app.js se učitava sa `defer`, pa <body> već postoji.)
-        // Sama CSS pravila su takođe napravljena da ne zavise od ove klase —
-        // vidi .sidebar.desktop-only u css/main.css.
-        (function _uvijekHorizontalniTabovi() {
-            try {
-                document.body.classList.remove('force-desktop-view', 'force-android-view');
-                document.body.classList.add('force-horizontal-tabs');
-                localStorage.removeItem('desktop-view');
-                localStorage.removeItem('android-view');
-            } catch (_) {}
-        })();
-
         window.addEventListener('DOMContentLoaded', () => {
           try {
             // Watchdog — ako se loading-screen ne skloni u razumnom roku (bilo koji
@@ -1689,6 +1669,45 @@
             // Initialize year selectors first
             initializeYearSelectors();
 
+
+            // Load desktop view preference
+            const desktopView = localStorage.getItem('desktop-view');
+            if (desktopView === 'enabled') {
+                document.body.classList.add('force-desktop-view');
+                const btn = document.getElementById('desktop-view-btn');
+                if (btn) {
+                    btn.classList.add('active');
+                    btn.title = 'Prebaci na mobilni prikaz';
+                }
+                let viewport = document.querySelector('meta[name=viewport]');
+                if (viewport) {
+                    viewport.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes, viewport-fit=cover');
+                }
+            }
+
+            // Load Android view preference
+            const androidView = localStorage.getItem('android-view');
+            if (androidView === 'enabled') {
+                document.body.classList.add('force-android-view');
+                const aBtn = document.getElementById('android-view-btn');
+                if (aBtn) {
+                    aBtn.classList.add('active');
+                    aBtn.title = 'Isključi Android prikaz';
+                }
+                let vpAndroid = document.querySelector('meta[name=viewport]');
+                if (vpAndroid) {
+                    vpAndroid.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes, viewport-fit=cover');
+                }
+            }
+
+            // Default prikaz: horizontalni tabovi, SAMO ako korisnik nikad nije
+            // ručno dirao nijedan od toggle-a (obje vrijednosti null = prvi
+            // put/nikad kliknuto). Čim korisnik jednom klikne bilo koji toggle,
+            // localStorage prestaje biti null i default se više ne primjenjuje
+            // — poštuje se njihov eksplicitni izbor od tog trenutka nadalje.
+            if (desktopView === null && androidView === null) {
+                document.body.classList.add('force-horizontal-tabs');
+            }
 
             // Add event listeners for dinamika calculation inputs
             for (let i = 1; i <= 12; i++) {

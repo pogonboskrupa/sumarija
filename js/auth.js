@@ -136,41 +136,9 @@
             return jeste(norm(user.type)) || jeste(norm(user.fullName));
         }
 
-        // Čitljiv naziv uloge za korisnički "chip" u zaglavlju — sirovo
-        // `user.type` dolazi iz šifrarnika bez dijakritike (npr. "primac"),
-        // ovdje se prikazuje sa č/š/đ kako se stvarno piše.
-        var _ULOGA_NAZIVI = {
-            'primac': 'primač',
-            'otpremac': 'otpremač',
-            'operativa': 'operativa',
-            'operater': 'operater',
-            'operateri': 'operateri',
-            'poslovodja': 'poslovođa',
-            'poslovođa': 'poslovođa'
-        };
-        function _prikaziUloga(user) {
-            if (!user) return '';
-            if (user.role === 'admin') return 'Administrator';
-            var t = String(user.type || '').trim().toLowerCase();
-            return _ULOGA_NAZIVI[t] || user.type || '';
-        }
-
-        // Inicijali za avatar-kružić ("Salkić Adnan" -> "SA"). Uzima prva
-        // slova prve dvije riječi imena; jedno slovo ako je ime jednočlano.
-        function _inicijali(fullName) {
-            var rijeci = String(fullName || '').trim().split(/\s+/).filter(Boolean);
-            if (!rijeci.length) return '?';
-            if (rijeci.length === 1) return rijeci[0].charAt(0).toUpperCase();
-            return (rijeci[0].charAt(0) + rijeci[1].charAt(0)).toUpperCase();
-        }
-
         function showApp() {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
-            // Klasa se dodaje u index.html pri učitavanju, a nigdje se nije
-            // uklanjala — pa su login stilovi (ljubičasti gradijent pozadine,
-            // overflow-x:hidden) ostajali aktivni i u aplikaciji.
-            document.body.classList.remove('login-active');
             if (typeof setAppViewport === 'function') setAppViewport();
 
             // Traži "persistent storage" — bez ovoga Android/Chrome smije tiho
@@ -189,9 +157,7 @@
                 }).catch(() => {});
             }
             document.getElementById('user-name').textContent = currentUser.fullName;
-            document.getElementById('user-role').textContent = _prikaziUloga(currentUser);
-            var _avatarEl = document.getElementById('user-avatar');
-            if (_avatarEl) _avatarEl.textContent = _inicijali(currentUser.fullName);
+            document.getElementById('user-role').textContent = currentUser.role === 'admin' ? 'Administrator' : currentUser.type;
 
             // Initialize notification UI if module loaded
             if (typeof initNotificationUI === 'function') initNotificationUI();
@@ -200,7 +166,7 @@
             const sidebarUserName = document.getElementById('sidebar-user-name');
             const sidebarUserRole = document.getElementById('sidebar-user-role');
             if (sidebarUserName) sidebarUserName.textContent = currentUser.fullName;
-            if (sidebarUserRole) sidebarUserRole.textContent = _prikaziUloga(currentUser);
+            if (sidebarUserRole) sidebarUserRole.textContent = currentUser.role === 'admin' ? 'Administrator' : currentUser.type;
 
             // Dinamicki kreiraj tab-ove na osnovu tipa korisnika
             const tabsMenu = document.getElementById('tabs-menu'); // Sidebar nav
@@ -524,7 +490,6 @@
             localStorage.removeItem('sumarija_pass');
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('app-screen').classList.add('hidden');
-            document.body.classList.add('login-active'); // vidi showApp — skida se pri ulasku u app
             if (typeof setLoginViewport === 'function') setLoginViewport();
 
             // Hide all content panels (safe - won't crash if element missing)

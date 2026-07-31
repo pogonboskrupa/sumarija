@@ -425,13 +425,74 @@
         // ========================================
 
 
-        // Desktop/Android prikaz (toggleDesktopView/toggleAndroidView) je
-        // uklonjen zajedno sa dugmadi u zaglavlju — traka tabova je sad
-        // uvijek u horizontalnom rasporedu (force-horizontal-tabs se
-        // bezuslovno postavlja u js/app.js pri pokretanju). CSS pravila koja
-        // su nekad zavisila od force-desktop-view/force-android-view i dalje
-        // postoje (npr. mapa Karta), samo se te klase više nikad ne postavljaju
-        // pa te grane ostaju neaktivne — što je namjerno, ne greška.
+        // Desktop view toggle
+        function toggleDesktopView() {
+            // Turn off Android view if active
+            if (document.body.classList.contains('force-android-view')) {
+                document.body.classList.remove('force-android-view');
+                localStorage.setItem('android-view', 'disabled');
+                var aBtn = document.getElementById('android-view-btn');
+                if (aBtn) { aBtn.classList.remove('active'); aBtn.title = 'Prebaci na Android prikaz'; }
+            }
+
+            document.body.classList.toggle('force-desktop-view');
+            var isDesktopView = document.body.classList.contains('force-desktop-view');
+            localStorage.setItem('desktop-view', isDesktopView ? 'enabled' : 'disabled');
+
+            var btn = document.getElementById('desktop-view-btn');
+            if (btn) {
+                if (isDesktopView) {
+                    btn.classList.add('active');
+                    btn.title = 'Prebaci na mobilni prikaz';
+                } else {
+                    btn.classList.remove('active');
+                    btn.title = 'Prebaci na desktop prikaz';
+                }
+            }
+
+            var viewport = document.querySelector('meta[name=viewport]');
+            if (isDesktopView) {
+                viewport.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes, viewport-fit=cover');
+            } else {
+                viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
+            }
+
+            window.scrollTo(0, 0);
+        }
+
+        function toggleAndroidView() {
+            // Turn off Desktop view if active
+            if (document.body.classList.contains('force-desktop-view')) {
+                document.body.classList.remove('force-desktop-view');
+                localStorage.setItem('desktop-view', 'disabled');
+                var dBtn = document.getElementById('desktop-view-btn');
+                if (dBtn) { dBtn.classList.remove('active'); dBtn.title = 'Prebaci na desktop prikaz'; }
+            }
+
+            document.body.classList.toggle('force-android-view');
+            var isAndroid = document.body.classList.contains('force-android-view');
+            localStorage.setItem('android-view', isAndroid ? 'enabled' : 'disabled');
+
+            var btn = document.getElementById('android-view-btn');
+            if (btn) {
+                if (isAndroid) {
+                    btn.classList.add('active');
+                    btn.title = 'Isključi Android prikaz';
+                } else {
+                    btn.classList.remove('active');
+                    btn.title = 'Prebaci na Android prikaz';
+                }
+            }
+
+            var viewport = document.querySelector('meta[name=viewport]');
+            if (isAndroid) {
+                viewport.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes, viewport-fit=cover');
+            } else {
+                viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
+            }
+
+            window.scrollTo(0, 0);
+        }
 
         // Filter dashboard table
         function filterDashboardTable() {
