@@ -185,19 +185,18 @@
                         <span id="check-data-icon">☁️</span>
                         <span id="check-data-dot" style="display:none;position:absolute;top:2px;right:2px;width:10px;height:10px;background:#dc2626;border-radius:50%;border:2px solid white;"></span>
                     </button>
+                    <!-- Korisnički "chip" — zamjena za nekadašnja Desktop/Android
+                         dugmad (uklonjena; traka tabova je uvijek horizontalna).
+                         Ime i uloga dolaze kao SLOBODAN TEKST iz tabele korisnika,
+                         pa im CSS tvrdo ograničava širinu i skraćuje ih sa "..." —
+                         bez toga dugačko ime razvuče zaglavlje preko širine
+                         viewporta i browser odzumira cijelu stranicu. -->
                     <div class="header-user">
-                        <div class="header-user-name" id="user-name"></div>
-                        <div class="header-user-role" id="user-role"></div>
-                    </div>
-                    <div class="desktop-view-toggle" style="display: flex; gap: 6px;">
-                        <button class="desktop-view-button" onclick="toggleDesktopView()" id="desktop-view-btn" title="Prebaci na desktop prikaz">
-                            <span>🖥️</span>
-                            <span>Desktop</span>
-                        </button>
-                        <button class="desktop-view-button" onclick="toggleAndroidView()" id="android-view-btn" title="Prebaci na Android prikaz">
-                            <span>📱</span>
-                            <span>Android</span>
-                        </button>
+                        <div class="header-user-avatar" id="user-avatar"></div>
+                        <div class="header-user-text">
+                            <div class="header-user-name" id="user-name"></div>
+                            <div class="header-user-role" id="user-role"></div>
+                        </div>
                     </div>
                     <div class="user-menu">
                         <button class="user-menu-button" onclick="toggleUserMenu(event)">
@@ -3566,7 +3565,6 @@
                   body.mapa-fokus .header-logo { width:26px !important; height:26px !important; }
                   body.mapa-fokus .header-title { display:none !important; }
                   body.mapa-fokus .header-user { display:none !important; }
-                  body.mapa-fokus .desktop-view-toggle { display:none !important; }
                   body.mapa-fokus .user-menu { display:none !important; }
                   body.mapa-fokus #check-data-btn { display:none !important; }
                   body.mapa-fokus .header-content { min-height:0 !important; padding:4px 0 !important; }
