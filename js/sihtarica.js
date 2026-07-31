@@ -167,19 +167,28 @@
             '</div>';
 
         // --- Kartica godišnjeg odmora ---
+        // Naslov + ikonica su NUŽNI da se odmah vidi na šta se brojevi
+        // odnose — bez njih kartica izgleda kao neobilježen skup cifara
+        // (samo "Ugovoreno/Iskorišteno/Preostalo" ne kaže čega).
         var ugovoreni = _loadGodDana();
         var iskoristen = _iskoristenGodisnji(g, unosi);
         var preostalo = ugovoreni - iskoristen;
-        html += '<div class="sih-god-card">' +
+        html += '<div class="sih-god-card">';
+        html += '<div class="sih-god-naslov">🏖️ Godišnji odmor</div>';
+        html += '<div class="sih-god-row">' +
             '<div class="sih-god-item"><span class="sih-god-label">Ugovoreno dana</span>' +
                 '<span class="sih-god-val">' + ugovoreni + '</span></div>' +
             '<div class="sih-god-item"><span class="sih-god-label">Iskorišteno ' + g + '.</span>' +
                 '<span class="sih-god-val" style="color:#d97706;">' + iskoristen + '</span></div>' +
             '<div class="sih-god-item"><span class="sih-god-label">Preostalo</span>' +
                 '<span class="sih-god-val" style="color:' + (preostalo < 0 ? '#dc2626' : '#047857') + ';">' + preostalo + '</span></div>' +
-            '<button type="button" class="btn btn-secondary sih-god-btn" onclick="sihtaricaPostaviGodisnji(\'' + tip + '\')">⚙️ Postavi</button>' +
+            '<button type="button" class="btn btn-secondary sih-god-btn" onclick="sihtaricaPostaviGodisnji(\'' + tip + '\')">' +
+                '⚙️ Postavi broj dana godišnjeg odmora po ugovoru</button>' +
             '</div>';
-        if (ugovoreni > 0 && preostalo < 0) {
+        html += '</div>';
+        if (ugovoreni === 0) {
+            html += '<div class="sih-god-hint">Broj ugovorenih dana još nije postavljen — kliknite dugme iznad.</div>';
+        } else if (preostalo < 0) {
             html += '<div class="sih-upozorenje">⚠️ Iskorišteno je ' + Math.abs(preostalo) +
                 ' dana više nego što je ugovoreno.</div>';
         }
