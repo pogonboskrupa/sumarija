@@ -2746,33 +2746,14 @@
         /* ENTERPRISE DASHBOARD - FULL-WIDTH LAYOUT     */
         /* ============================================ */
 
-        /* 1. Full-width dashboard (override .container max-width: 1200px) */
-        #dashboard-content,
-        #kupci-content,
-        #stanje-zaliha-content,
-        #mjesecni-sortimenti-content,
-        #primaci-content,
-        #otpremaci-content,
-        #izvjestaji-content,
-        #izvjestaji-primac-content,
-        #izvjestaji-otpremac-content,
-        #poslovodja-sjeca-content,
-        #poslovodja-otprema-content,
-        #poslovodja-stanje-content,
-        #poslovodja-pregled-content,
-        #primac-personal-content,
-        #primac-godisnji-content,
-        #primac-odjeli-content,
-        #otpremac-personal-content,
-        #otpremac-godisnji-content,
-        #otpremac-odjeli-content,
-        #my-sjece-content,
-        #my-otpreme-content,
-        #primac-sihtarica-content,
-        #otpremac-sihtarica-content,
-        #pending-unosi-content,
-        #poslovodja-unosi-content,
-        #godisnji-plan-content {
+        /* 1. Puna širina za SVE tabove (override .container max-width: 1200px).
+           Ranije je ovdje stajao SPISAK id-jeva — spisak je tiho zastarijevao:
+           novi tabovi (Šihtarica, Kubikator, Dodaj sječu/otpremu) nisu bili na
+           njemu pa su se prikazivali uži od susjednih, a dva id-ja u spisku
+           (#primac-sihtarica-content) su bila mrtva jer je tab u međuvremenu
+           preimenovan. Svi tabovi su .container unutar .main-content, pa jedno
+           pravilo pokriva i sve buduće. */
+        .main-content > .container {
             max-width: 100%;
             padding-inline: 24px;
             padding-block: 24px;
@@ -2781,31 +2762,7 @@
             max-width: 100%;
         }
         @media (min-width: 1920px) {
-            #dashboard-content,
-            #kupci-content,
-            #stanje-zaliha-content,
-            #mjesecni-sortimenti-content,
-            #primaci-content,
-            #otpremaci-content,
-            #izvjestaji-content,
-            #izvjestaji-primac-content,
-            #izvjestaji-otpremac-content,
-            #poslovodja-sjeca-content,
-            #poslovodja-otprema-content,
-            #poslovodja-stanje-content,
-            #poslovodja-pregled-content,
-            #primac-personal-content,
-            #primac-godisnji-content,
-            #primac-odjeli-content,
-            #otpremac-personal-content,
-            #otpremac-odjeli-content,
-            #my-sjece-content,
-            #my-otpreme-content,
-            #primac-sihtarica-content,
-            #otpremac-sihtarica-content,
-            #pending-unosi-content,
-            #poslovodja-unosi-content,
-            #godisnji-plan-content { padding-inline: 40px; }
+            .main-content > .container { padding-inline: 40px; }
         }
 
         /* 2. Grid layout za desktop (umjesto flex) */
@@ -2936,30 +2893,7 @@
             .enterprise-card .dashboard-monthly-wrapper {
                 overflow-x: auto;
             }
-            #dashboard-content,
-            #kupci-content,
-            #stanje-zaliha-content,
-            #mjesecni-sortimenti-content,
-            #primaci-content,
-            #otpremaci-content,
-            #izvjestaji-content,
-            #izvjestaji-primac-content,
-            #izvjestaji-otpremac-content,
-            #poslovodja-sjeca-content,
-            #poslovodja-otprema-content,
-            #poslovodja-stanje-content,
-            #poslovodja-pregled-content,
-            #primac-personal-content,
-            #primac-godisnji-content,
-            #primac-odjeli-content,
-            #otpremac-personal-content,
-            #otpremac-odjeli-content,
-            #my-sjece-content,
-            #my-otpreme-content,
-            #primac-sihtarica-content,
-            #otpremac-sihtarica-content,
-            #pending-unosi-content,
-            #poslovodja-unosi-content { padding-inline: 12px; padding-block: 12px; }
+            .main-content > .container { padding-inline: 12px; padding-block: 12px; }
         }
 
         /* ============================================ */
