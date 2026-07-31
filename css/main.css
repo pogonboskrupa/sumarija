@@ -3577,4 +3577,15 @@ body.is-desktop-screen #tabs-menu-mobile .tab {
     padding: 12px 14px;   /* bilo 18px 20px — glavni izvor uštede u širini */
     font-size: 14px;      /* bilo 18.4px */
     border-radius: 10px;
+    /* Traka tabova da "fituje taman" na ekran: dugmad se razvuku da
+       ispune CIJELU širinu trake umjesto da stanu uz lijevu ivicu i
+       ostave prazninu desno (broj tabova varira po ulozi — admin ih ima
+       znatno više od radnika, pa fiksna širina ostavlja različit "rep"
+       praznog prostora na svakom ekranu).
+       flex-basis:auto + flex-shrink:0 znači da dugme nikad ne postane uže
+       od svog teksta — samo se PROŠIRI da popuni višak prostora. Ako ima
+       previše tabova da stanu bez skupljanja teksta, postojeći
+       overflow-x:auto na .tabs i dalje uskače kao rezerva (horizontalni
+       skrol), kao i do sada. */
+    flex: 1 0 auto;
 }
