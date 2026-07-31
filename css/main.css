@@ -21,7 +21,13 @@
         .company-logo:hover { transform: scale(1.05); }
         .header-title h1 { font-size: 18px; font-weight: 700; margin-bottom: 2px; color: #047857; }
         .header-title p { font-size: 12px; color: #4b5563; }
-        .header-right { display: flex; align-items: center; gap: 16px; }
+        /* flex-wrap je OBAVEZAN: tri stavke ("Ažuriraj", korisnički chip, "Meni")
+           imaju min-width / white-space:nowrap pa se ne mogu stisnuti. Bez
+           prelamanja se .header-right prelijeva preko širine viewporta, a mobilni
+           browser tada ODZUMIRA cijelu stranicu da stane sav sadržaj — pa cijela
+           aplikacija izgleda kao da zauzima samo lijevih ~60% ekrana, uz vidljivu
+           pozadinu desno. Simptom je globalan iako je uzrok samo zaglavlje. */
+        .header-right { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: flex-end; }
         /* Korisnički "chip" u zaglavlju — zamjena za nekadašnja Desktop/Android
            dugmad. Avatar (inicijali) + ime + uloga kao mala pilula ispod
            imena, npr. "Salkić Adnan" / "primač". */
@@ -3559,4 +3565,23 @@ body.is-desktop-screen #tabs-menu-mobile .tab {
        overflow-x:auto na .tabs i dalje uskače kao rezerva (horizontalni
        skrol), kao i do sada. */
     flex: 1 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   ZAŠTITA OD VODORAVNOG PRELIJEVANJA CIJELE STRANICE
+
+   Ako BILO KOJI element ispadne širi od viewporta (široka tabela, predugo
+   zaglavlje, traka tabova), mobilni browser odzumira cijelu stranicu da sve
+   stane — pa aplikacija izgleda kao da zauzima samo dio ekrana, sa vidljivom
+   pozadinom sa strane. Simptom je globalan iako uzrok može biti jedan jedini
+   element, zbog čega ga je teško locirati.
+
+   `overflow-x: clip` (a NE `hidden`): clip ne pravi scroll kontejner, pa
+   position:sticky zaglavlja i traka tabova unutra nastavljaju raditi. Unutrašnji
+   omotači koji imaju vlastiti `overflow-x: auto` (tabele, traka tabova) i dalje
+   normalno skrolaju vodoravno.
+   -------------------------------------------------------------------------- */
+#app-screen {
+    max-width: 100%;
+    overflow-x: clip;
 }

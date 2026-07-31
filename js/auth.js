@@ -167,6 +167,10 @@
         function showApp() {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
+            // Klasa se dodaje u index.html pri učitavanju, a nigdje se nije
+            // uklanjala — pa su login stilovi (ljubičasti gradijent pozadine,
+            // overflow-x:hidden) ostajali aktivni i u aplikaciji.
+            document.body.classList.remove('login-active');
             if (typeof setAppViewport === 'function') setAppViewport();
 
             // Traži "persistent storage" — bez ovoga Android/Chrome smije tiho
@@ -520,6 +524,7 @@
             localStorage.removeItem('sumarija_pass');
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('app-screen').classList.add('hidden');
+            document.body.classList.add('login-active'); // vidi showApp — skida se pri ulasku u app
             if (typeof setLoginViewport === 'function') setLoginViewport();
 
             // Hide all content panels (safe - won't crash if element missing)
