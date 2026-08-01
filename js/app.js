@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.67';
+        const APP_VERSION = '2.68';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1676,8 +1676,6 @@
             // uključen, traka tabova je horizontalna.
             const desktopView = localStorage.getItem('desktop-view');
             const androidView = localStorage.getItem('android-view');
-            const _sirokiPrikaz = (desktopView === 'enabled') || (androidView === 'enabled');
-
             if (desktopView === 'enabled') {
                 document.body.classList.add('force-desktop-view');
                 const btn = document.getElementById('desktop-view-btn');
@@ -1688,10 +1686,7 @@
                 const aBtn = document.getElementById('android-view-btn');
                 if (aBtn) { aBtn.classList.add('active'); aBtn.title = 'Isključi Android prikaz'; }
             }
-            if (_sirokiPrikaz) {
-                const vp = document.querySelector('meta[name=viewport]');
-                if (vp) vp.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes, viewport-fit=cover');
-            } else {
+            if (desktopView !== 'enabled' && androidView !== 'enabled') {
                 document.body.classList.add('force-horizontal-tabs');
             }
 

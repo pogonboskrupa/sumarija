@@ -102,20 +102,18 @@
             if (meta) meta.setAttribute('content',
                 'width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=3.0, viewport-fit=cover');
         }
+        // JEDNA širina viewporta za cijelu aplikaciju, bez obzira na izabrani
+        // prikaz. "Desktop/Android prikaz" mijenja SAMO raspored (bočni meni vs.
+        // horizontalna traka, preko klasa na <body>) — ne i viewport.
+        //
+        // Ranije su ti modovi postavljali width=1200, initial-scale=0.5. To je
+        // značilo dvije različite širine u opticaju, pa su se @media upiti
+        // ponašali različito zavisno od toga šta je korisnik ranije kliknuo —
+        // i sadržaj se znao prikazati sitno/pomjereno uz vodoravno skrolanje.
         function setAppViewport() {
             const meta = document.querySelector('meta[name="viewport"]');
-            // Poziva se iz showApp(), dakle POSLIJE nego što js/app.js vrati
-            // zapamćeni izbor prikaza. Bez ove provjere bi "Desktop/Android
-            // prikaz" (width=1200) bio odmah pregažen i mod bi se vidio tek
-            // nakon ručnog klika u meniju.
-            let siroki = false;
-            try {
-                siroki = localStorage.getItem('desktop-view') === 'enabled' ||
-                         localStorage.getItem('android-view') === 'enabled';
-            } catch (_) {}
-            if (meta) meta.setAttribute('content', siroki
-                ? 'width=1200, initial-scale=0.5, user-scalable=yes, viewport-fit=cover'
-                : 'width=1280, user-scalable=yes, minimum-scale=0.2, maximum-scale=3.0, viewport-fit=cover');
+            if (meta) meta.setAttribute('content',
+                'width=1280, user-scalable=yes, minimum-scale=0.2, maximum-scale=3.0, viewport-fit=cover');
             markScreenClass();
         }
 

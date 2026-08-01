@@ -437,13 +437,6 @@
             el.classList.toggle('active', aktivan);
             el.title = aktivan ? naslovIskljuci : naslovUkljuci;
         }
-        function _postaviViewport(siroki) {
-            var vp = document.querySelector('meta[name=viewport]');
-            if (!vp) return;
-            vp.setAttribute('content', siroki
-                ? 'width=1200, initial-scale=0.5, user-scalable=yes, viewport-fit=cover'
-                : 'width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover');
-        }
 
         function toggleDesktopView() {
             // Dva moda se međusobno isključuju
@@ -459,7 +452,6 @@
             document.body.classList.toggle('force-horizontal-tabs',
                 !jeste && !document.body.classList.contains('force-android-view'));
             _oznaciPrikaz('desktop-view-btn', jeste, 'Prebaci na desktop prikaz', 'Prebaci na mobilni prikaz');
-            _postaviViewport(jeste);
             window.scrollTo(0, 0);
         }
 
@@ -475,7 +467,6 @@
             document.body.classList.toggle('force-horizontal-tabs',
                 !jeste && !document.body.classList.contains('force-desktop-view'));
             _oznaciPrikaz('android-view-btn', jeste, 'Prebaci na Android prikaz', 'Isključi Android prikaz');
-            _postaviViewport(jeste);
             window.scrollTo(0, 0);
         }
 
