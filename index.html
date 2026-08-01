@@ -3144,9 +3144,9 @@
                   /* Radnik mapa odjela — visina umanjena za donju traku dugmadi (~112-120px,
                      ponovo uvećana traka). Ovo je fallback prikaz PRIJE nego se puni-ekran
                      mod (ispod) aktivira. */
-                  #radnik-mapa-map { position:relative; width:100%; height:calc(100vh - 240px - 140px); height:calc(100dvh - 240px - 140px); min-height:280px; background:#f1f5f9; border-radius:12px; overflow:hidden; }
-                  @media (max-width:1024px) { #radnik-mapa-map { height:calc(100vh - 220px - 140px); height:calc(100dvh - 220px - 140px); min-height:240px; } }
-                  @media (max-width:1024px)  { #radnik-mapa-map { height:calc(100vh - 250px - 140px); height:calc(100dvh - 250px - 140px); min-height:180px; } }
+                  #radnik-mapa-map { position:relative; width:100%; height:calc(100vh - 240px - 112px); height:calc(100dvh - 240px - 112px); min-height:280px; background:#f1f5f9; border-radius:12px; overflow:hidden; }
+                  @media (max-width:1024px) { #radnik-mapa-map { height:calc(100vh - 220px - 112px); height:calc(100dvh - 220px - 112px); min-height:240px; } }
+                  @media (max-width:1024px)  { #radnik-mapa-map { height:calc(100vh - 250px - 60px); height:calc(100dvh - 250px - 60px); min-height:180px; } }
 
                   /* ── PUNI EKRAN (AlpineQuest-stil) — aktivira se ulaskom u Mapa odjela,
                      uklanja se klikom na "Zatvori" (ili automatski pri prelasku na bilo
@@ -3169,7 +3169,7 @@
                       position:fixed !important; inset:0 !important; z-index:10500;
                       display:flex !important; flex-direction:column; overflow:hidden;
                       margin:0 !important; max-width:none !important;
-                      padding:0 0 calc(140px + env(safe-area-inset-bottom)) 0 !important;
+                      padding:0 0 calc(60px + env(safe-area-inset-bottom)) 0 !important;
                       background:#fff; box-sizing:border-box;
                   }
                   /* Zaglavlje je uklonjeno u potpunosti (v1.4.111) — "Prikaži odjele"
@@ -3424,14 +3424,14 @@
                      ni od širine ekrana ni od klase koja se više ne postavlja. */
                   .rm-bar-btn {
                       flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-                      gap:8px; min-height:112px; border:none; border-radius:16px; margin:0 4px;
-                      font-size:32px; font-weight:800; cursor:pointer; font-family:inherit;
+                      gap:4px; min-height:56px; border:none; border-radius:12px; margin:0 4px;
+                      font-size:16px; font-weight:800; cursor:pointer; font-family:inherit;
                       letter-spacing:.2px; text-align:center; overflow-wrap:break-word;
                       color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25);
                       box-shadow:0 3px 8px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.25);
                       transition:transform .1s ease, filter .15s ease;
                   }
-                  .rm-bar-icon { font-size:44px; line-height:1; }
+                  .rm-bar-icon { font-size:22px; line-height:1; }
                   .rm-bar-btn:active { transform:scale(.94); filter:brightness(.9); }
                   .rm-bar-btn:disabled { opacity:.6; cursor:default; transform:none; }
                   .rm-bar-loc { background:linear-gradient(180deg,#2563eb,#1d4ed8); }
@@ -3444,8 +3444,8 @@
                   .rm-bar-clear { background:linear-gradient(180deg,#6b7280,#4b5563); }
                   /* Vrlo uski ekrani — samo blago manje, da tri dugmeta stanu u red. */
                   @media (max-width:360px) {
-                      .rm-bar-btn { font-size:26px; min-height:100px; }
-                      .rm-bar-icon { font-size:38px; }
+                      .rm-bar-btn { font-size:13px; min-height:50px; }
+                      .rm-bar-icon { font-size:19px; }
                   }
                   /* Traka je sada jednako velika na svakoj širini (vidi .rm-bar-btn
                      iznad), pa ovdje ostaje samo rezervisani prostor ispod karte —
@@ -3454,8 +3454,8 @@
                      klasu koja se više ne postavlja. */
                   .radnik-mapa-bottombar { padding:8px 8px calc(8px + env(safe-area-inset-bottom)) 8px; }
                   @media (min-width:1025px) {
-                      #radnik-mapa-map { height:calc(100vh - 240px - 140px); height:calc(100dvh - 240px - 140px); }
-                      body.radnik-mapa-fullscreen #radnik-mapa-content { padding-bottom:calc(140px + env(safe-area-inset-bottom)) !important; }
+                      #radnik-mapa-map { height:calc(100vh - 240px - 80px); height:calc(100dvh - 240px - 80px); }
+                      body.radnik-mapa-fullscreen #radnik-mapa-content { padding-bottom:calc(80px + env(safe-area-inset-bottom)) !important; }
                   }
 
                   /* Info panel s podacima odjela (klik na istaknuti odjel) — FIKSIRAN
@@ -3500,11 +3500,6 @@
                   .rm-close-btn {
                       bottom:auto; right:auto; top:10px; left:10px;
                       color:#b91c1c; border-color:rgba(185,28,28,.45);
-                      /* 2,5x u odnosu na .rm-sat-btn osnovu (6px 10px / 12px / 8px) —
-                         povećava se SAMO "Zatvori", prekidač slojeva u desnom uglu
-                         zadržava svoju veličinu. */
-                      padding:15px 25px; font-size:30px; border-radius:20px;
-                      border-width:2px;
                   }
                   /* Traka-savjet dok se bira tačka rute ("Vodi me do lokacije") —
                      gornji dio mape (zaglavlje je uklonjeno, prostor slobodan). */
