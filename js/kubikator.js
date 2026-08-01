@@ -188,8 +188,29 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     window.getKubikatorUnosi = function() { return _unosi; };
 
     // ---- Puni ekran (isti obrazac kao Karta) ----
-    function _enterFullscreen() { document.body.classList.add('kubikator-fullscreen'); }
-    function _exitFullscreen() { document.body.classList.remove('kubikator-fullscreen'); }
+    // Aplikacija inače drži viewport na width=1280 (setAppViewport, index.html)
+    // za sve korisnike, na svakom uređaju — to je namjerno (vidi
+    // docs/VIEWPORT-PROBLEM-I-RJESENJE.md), ali znači da se sadržaj na telefonu
+    // renderuje sitnije nego stvarni ekran i korisnik mora ručno zumirati da
+    // vidi kalkulator udobno. Zato se, SAMO dok je Kubikator otvoren, viewport
+    // privremeno prebaci na width=device-width — isti trik koji Karta već
+    // koristi za svoju punoekransku mapu (_enterMapaFullscreen/js/mapa-radnika.js).
+    // Pri izlasku se vraća na setAppViewport() (jedini izvor istine za
+    // standardnu širinu), a ne ručno na 1280, da se ne udvostručuje ta logika.
+    function _enterFullscreen() {
+        document.body.classList.add('kubikator-fullscreen');
+        var vp = document.querySelector('meta[name=viewport]');
+        if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
+    }
+    function _exitFullscreen() {
+        // Stražar: exitKubikatorFullscreenIfActive se poziva pri SVAKOM prelasku
+        // na bilo koji drugi tab, ne samo kad je Kubikator stvarno bio otvoren.
+        // Bez ove provjere bi se viewport (pa time i korisnikov izbor
+        // Desktop/Android prikaza) resetovao na svaki klik na tab.
+        if (!document.body.classList.contains('kubikator-fullscreen')) return;
+        document.body.classList.remove('kubikator-fullscreen');
+        if (typeof window.setAppViewport === 'function') window.setAppViewport();
+    }
 
     // Pozivaju se iz switchTab (js/ui.js) PRIJE grane koja može rano izaći na
     // svjež keš — inače bi se pri povratku na već renderovan tab preskočilo.

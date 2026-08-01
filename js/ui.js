@@ -56,8 +56,18 @@
             // mimo "Zatvori" dugmeta (npr. browser back). Postavljeno OVDJE, prije
             // eventualnog ranog "return" ispod (svjež keš → instant prikaz), da se
             // uvijek izvrši bez obzira na tu granu.
+            // Kubikator se takođe otvara preko cijelog ekrana i mijenja viewport
+            // (vidi js/kubikator.js) — SVI "exit" hookovi moraju proći PRIJE
+            // ijednog "enter" hooka. Obrnut redoslijed (mapa exit→enter, pa tek
+            // onda kubikator exit) bi npr. pri prelasku Kubikator→Karta prvo
+            // postavio viewport za mapu (enter), a ODMAH ZATIM ga poništio
+            // izlaskom iz kubikatora (exit) — poništio bi upravo postavljenu
+            // vrijednost.
             if (typeof window.exitMapaRadnikaFullscreenIfActive === 'function') {
                 window.exitMapaRadnikaFullscreenIfActive(tab);
+            }
+            if (typeof window.exitKubikatorFullscreenIfActive === 'function') {
+                window.exitKubikatorFullscreenIfActive(tab);
             }
             // I obrnuto — ako se ULAZI na Mapu odjela, osiguraj da je donja
             // traka vidljiva ODMAH, prije eventualnog ranog "return" ispod
@@ -67,12 +77,9 @@
             if (typeof window.enterMapaRadnikaFullscreenIfActive === 'function') {
                 window.enterMapaRadnikaFullscreenIfActive(tab);
             }
-            // Kubikator se takođe otvara preko cijelog ekrana. Postavljeno OVDJE,
-            // uz mapa-hookove, jer initKubikator rano izlazi kad je tab već
-            // renderovan — a i grana koja slijedi zna rano vratiti na svjež keš.
-            if (typeof window.exitKubikatorFullscreenIfActive === 'function') {
-                window.exitKubikatorFullscreenIfActive(tab);
-            }
+            // Kubikator: initKubikator rano izlazi kad je tab već renderovan, a
+            // grana ispod zna rano vratiti na svjež keš — zato je i "enter" hook
+            // ovdje, ne samo unutar initKubikator.
             if (typeof window.enterKubikatorFullscreenIfActive === 'function') {
                 window.enterKubikatorFullscreenIfActive(tab);
             }
