@@ -126,6 +126,14 @@
         .user-menu-item.danger:hover { background: #fee2e2; }
         .user-menu-item.gold { background: #fef3c7; color: #92400e; font-weight: 700; border-left: 3px solid #d97706; }
         .user-menu-item.gold:hover { background: #fde68a; }
+        /* Izbor prikaza (Desktop/Android) — aktivan mod je zeleno označen, isto
+           kao što je nekad .desktop-view-button.active bio zelen u zaglavlju.
+           Klasu `active` postavlja/skida toggleDesktopView/toggleAndroidView. */
+        .user-menu-item.view-toggle-item.active {
+            background: #ecfdf5; color: #047857; font-weight: 700;
+            border-left: 3px solid #047857;
+        }
+        .user-menu-item.view-toggle-item.active::after { content: '✓'; margin-left: auto; font-weight: 800; }
         .btn-logout { background: #dc2626; color: white; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; }
         .btn-logout:hover { background: #b91c1c; }
         .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }

@@ -425,8 +425,59 @@
         // ========================================
 
 
-        // Desktop/Android prikaz je uklonjen zajedno sa dugmadima u zaglavlju
-        // (na to mjesto je došlo ime radnika). Traka tabova je uvijek horizontalna.
+        // ---- IZBOR PRIKAZA (Desktop / Android) ----
+        // Nekad dva dugmeta u zaglavlju, od v2.65 stavke u "Meni" popupu — na
+        // njihovo mjesto u zaglavlju je došlo ime radnika. Id-evi elemenata su
+        // isti kao ranije (#desktop-view-btn / #android-view-btn) pa ih i ovaj
+        // kod i vraćanje stanja pri pokretanju (js/app.js) i dalje nalaze.
+        // Podrazumijevano (nijedan mod uključen) traka tabova je horizontalna.
+        function _oznaciPrikaz(id, aktivan, naslovUkljuci, naslovIskljuci) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.classList.toggle('active', aktivan);
+            el.title = aktivan ? naslovIskljuci : naslovUkljuci;
+        }
+        function _postaviViewport(siroki) {
+            var vp = document.querySelector('meta[name=viewport]');
+            if (!vp) return;
+            vp.setAttribute('content', siroki
+                ? 'width=1200, initial-scale=0.5, user-scalable=yes, viewport-fit=cover'
+                : 'width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover');
+        }
+
+        function toggleDesktopView() {
+            // Dva moda se međusobno isključuju
+            if (document.body.classList.contains('force-android-view')) {
+                document.body.classList.remove('force-android-view');
+                localStorage.setItem('android-view', 'disabled');
+                _oznaciPrikaz('android-view-btn', false, 'Prebaci na Android prikaz', 'Isključi Android prikaz');
+            }
+            document.body.classList.toggle('force-desktop-view');
+            var jeste = document.body.classList.contains('force-desktop-view');
+            localStorage.setItem('desktop-view', jeste ? 'enabled' : 'disabled');
+            // Bez ijednog uključenog moda vrati se podrazumijevani horizontalni raspored
+            document.body.classList.toggle('force-horizontal-tabs',
+                !jeste && !document.body.classList.contains('force-android-view'));
+            _oznaciPrikaz('desktop-view-btn', jeste, 'Prebaci na desktop prikaz', 'Prebaci na mobilni prikaz');
+            _postaviViewport(jeste);
+            window.scrollTo(0, 0);
+        }
+
+        function toggleAndroidView() {
+            if (document.body.classList.contains('force-desktop-view')) {
+                document.body.classList.remove('force-desktop-view');
+                localStorage.setItem('desktop-view', 'disabled');
+                _oznaciPrikaz('desktop-view-btn', false, 'Prebaci na desktop prikaz', 'Prebaci na mobilni prikaz');
+            }
+            document.body.classList.toggle('force-android-view');
+            var jeste = document.body.classList.contains('force-android-view');
+            localStorage.setItem('android-view', jeste ? 'enabled' : 'disabled');
+            document.body.classList.toggle('force-horizontal-tabs',
+                !jeste && !document.body.classList.contains('force-desktop-view'));
+            _oznaciPrikaz('android-view-btn', jeste, 'Prebaci na Android prikaz', 'Isključi Android prikaz');
+            _postaviViewport(jeste);
+            window.scrollTo(0, 0);
+        }
 
         // Filter dashboard table
         function filterDashboardTable() {

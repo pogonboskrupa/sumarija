@@ -104,8 +104,18 @@
         }
         function setAppViewport() {
             const meta = document.querySelector('meta[name="viewport"]');
-            if (meta) meta.setAttribute('content',
-                'width=1280, user-scalable=yes, minimum-scale=0.2, maximum-scale=3.0, viewport-fit=cover');
+            // Poziva se iz showApp(), dakle POSLIJE nego što js/app.js vrati
+            // zapamćeni izbor prikaza. Bez ove provjere bi "Desktop/Android
+            // prikaz" (width=1200) bio odmah pregažen i mod bi se vidio tek
+            // nakon ručnog klika u meniju.
+            let siroki = false;
+            try {
+                siroki = localStorage.getItem('desktop-view') === 'enabled' ||
+                         localStorage.getItem('android-view') === 'enabled';
+            } catch (_) {}
+            if (meta) meta.setAttribute('content', siroki
+                ? 'width=1200, initial-scale=0.5, user-scalable=yes, viewport-fit=cover'
+                : 'width=1280, user-scalable=yes, minimum-scale=0.2, maximum-scale=3.0, viewport-fit=cover');
             markScreenClass();
         }
 
@@ -212,6 +222,15 @@
                                 <span id="notif-status-badge" style="font-size: 11px; margin-left: 6px; padding: 2px 6px; border-radius: 10px; background: #e5e7eb; color: #4b5563;">OFF</span>
                             </div>
                             <div class="user-menu-item" onclick="event.stopPropagation(); clearAllCache()">🔄 Ažuriraj podatke</div>
+                            <!-- Izbor prikaza — nekad dva dugmeta u zaglavlju, sad ovdje
+                                 (na njihovo mjesto je došlo ime radnika). Id-evi su
+                                 zadržani jer ih toggleDesktopView/toggleAndroidView
+                                 (js/ui.js) i vraćanje stanja pri pokretanju (js/app.js)
+                                 koriste za oznaku aktivnog moda. -->
+                            <div class="user-menu-item view-toggle-item" id="desktop-view-btn" title="Prebaci na desktop prikaz"
+                                 onclick="event.stopPropagation(); closeUserMenu(); toggleDesktopView();">🖥️ Desktop prikaz</div>
+                            <div class="user-menu-item view-toggle-item" id="android-view-btn" title="Prebaci na Android prikaz"
+                                 onclick="event.stopPropagation(); closeUserMenu(); toggleAndroidView();">📱 Android prikaz</div>
                             <div class="user-menu-item danger" onclick="event.stopPropagation(); logout()">🚪 Odjavi se</div>
                             <div id="menu-app-version" style="padding:6px 16px 8px;font-size:10px;color:#6b7280;cursor:default;">v—</div>
                         </div>

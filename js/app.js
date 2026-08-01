@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.64';
+        const APP_VERSION = '2.65';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1670,17 +1670,30 @@
             initializeYearSelectors();
 
 
-            // Traka tabova je UVIJEK horizontalna — izbor Desktop/Android prikaza je
-            // uklonjen zajedno sa dugmadima u zaglavlju. Stare klase se skidaju i
-            // zastarjeli ključevi brišu: korisnik koji je ranije uključio "Desktop
-            // prikaz" bi inače ostao na bočnom meniju bez ijednog dugmeta da ga
-            // isključi.
-            document.body.classList.remove('force-desktop-view', 'force-android-view');
-            document.body.classList.add('force-horizontal-tabs');
-            try {
-                localStorage.removeItem('desktop-view');
-                localStorage.removeItem('android-view');
-            } catch (_) {}
+            // Vrati zapamćeni izbor prikaza. Prekidači su od v2.65 u "Meni" popupu
+            // (ranije dva dugmeta u zaglavlju) — id-evi su isti pa se ovdje samo
+            // označi aktivna stavka. PODRAZUMIJEVANO, kad nijedan mod nije
+            // uključen, traka tabova je horizontalna.
+            const desktopView = localStorage.getItem('desktop-view');
+            const androidView = localStorage.getItem('android-view');
+            const _sirokiPrikaz = (desktopView === 'enabled') || (androidView === 'enabled');
+
+            if (desktopView === 'enabled') {
+                document.body.classList.add('force-desktop-view');
+                const btn = document.getElementById('desktop-view-btn');
+                if (btn) { btn.classList.add('active'); btn.title = 'Prebaci na mobilni prikaz'; }
+            }
+            if (androidView === 'enabled') {
+                document.body.classList.add('force-android-view');
+                const aBtn = document.getElementById('android-view-btn');
+                if (aBtn) { aBtn.classList.add('active'); aBtn.title = 'Isključi Android prikaz'; }
+            }
+            if (_sirokiPrikaz) {
+                const vp = document.querySelector('meta[name=viewport]');
+                if (vp) vp.setAttribute('content', 'width=1200, initial-scale=0.5, user-scalable=yes, viewport-fit=cover');
+            } else {
+                document.body.classList.add('force-horizontal-tabs');
+            }
 
             // Add event listeners for dinamika calculation inputs
             for (let i = 1; i <= 12; i++) {
