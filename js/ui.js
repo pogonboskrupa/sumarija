@@ -67,6 +67,15 @@
             if (typeof window.enterMapaRadnikaFullscreenIfActive === 'function') {
                 window.enterMapaRadnikaFullscreenIfActive(tab);
             }
+            // Kubikator se takođe otvara preko cijelog ekrana. Postavljeno OVDJE,
+            // uz mapa-hookove, jer initKubikator rano izlazi kad je tab već
+            // renderovan — a i grana koja slijedi zna rano vratiti na svjež keš.
+            if (typeof window.exitKubikatorFullscreenIfActive === 'function') {
+                window.exitKubikatorFullscreenIfActive(tab);
+            }
+            if (typeof window.enterKubikatorFullscreenIfActive === 'function') {
+                window.enterKubikatorFullscreenIfActive(tab);
+            }
 
             // Update tab buttons - set active on all matching tabs (sidebar + mobile)
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));

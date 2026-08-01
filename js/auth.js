@@ -541,6 +541,9 @@
                 var el = document.getElementById(id);
                 if (el) el.classList.add('hidden');
             });
+            // Puni ekran Kubikatora postavlja overflow:hidden na <body> — bez
+            // ovoga bi to ostalo aktivno i na login ekranu poslije odjave.
+            document.body.classList.remove('kubikator-fullscreen');
 
             document.getElementById('loading-screen').classList.remove('hidden');
         }

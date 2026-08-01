@@ -2316,155 +2316,41 @@
 
         <!-- KUBIKATOR CONTENT -->
         <div id="kubikator-content" class="container hidden">
-            <div class="section">
+            <!-- Otvara se preko cijelog ekrana (kao Karta) — vidi
+                 body.kubikator-fullscreen u <style> bloku i enterKubikatorFullscreen
+                 u js/kubikator.js. Namjerno svedeno na najbrži mogući unos:
+                 prečnik + dužina, rezultat se računa dok se kuca. -->
+            <button type="button" class="kub-close-btn" onclick="closeKubikator()">✕ Zatvori</button>
 
-                <!-- Page header -->
-                <div class="page-header">
-                    <div class="page-header-left">
-                        <h1>📐 Kubikator</h1>
-                        <p>Terensko kubiciranje drvnih sortimenata — Huberova formula</p>
+            <div class="kub-wrap">
+                <div class="kub-card">
+                    <label class="kub-label" for="kub-precnik">Prečnik (cm)</label>
+                    <input type="number" id="kub-precnik" inputmode="decimal" class="kub-input"
+                           placeholder="24" min="1" step="0.1" autocomplete="off" />
+
+                    <label class="kub-label" for="kub-duzina">Dužina (m)</label>
+                    <input type="number" id="kub-duzina" inputmode="decimal" class="kub-input"
+                           placeholder="4,50" min="0.01" step="0.01" autocomplete="off" />
+
+                    <div class="kub-rezultat">
+                        <span class="kub-rezultat-label">Zapremina</span>
+                        <span class="kub-rezultat-val" id="kub-rezultat">—</span>
                     </div>
+
+                    <button type="button" id="kub-dodaj-btn" class="kub-dodaj" onclick="kubikatorDodaj()">➕ Dodaj</button>
                 </div>
 
-                <!-- Forma za unos -->
-                <div id="kub-forma-section" class="card" style="margin-bottom:20px;">
-                    <h3 style="margin:0 0 16px 0;color:#065f46;font-size:16px;">Novi unos</h3>
-                    <div class="kub-form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-
-                        <div style="grid-column:1/-1;">
-                            <label style="display:block;margin-bottom:8px;font-weight:600;font-size:14px;">Vrsta drveta</label>
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-                                <button id="kub-btn-cetinari" onclick="kubikatorSetVrsta('cetinari')"
-                                    style="padding:13px 8px;font-size:15px;font-weight:700;border-radius:8px;border:2px solid #047857;background:white;color:#047857;cursor:pointer;">
-                                    🌲 Četinari
-                                </button>
-                                <button id="kub-btn-liscari" onclick="kubikatorSetVrsta('liscari')"
-                                    style="padding:13px 8px;font-size:15px;font-weight:700;border-radius:8px;border:2px solid #b45309;background:white;color:#b45309;cursor:pointer;">
-                                    🍃 Lišćari
-                                </button>
-                            </div>
-                        </div>
-
-                        <div style="grid-column:1/-1;">
-                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Odjel <span style="font-weight:400;color:#6b7280;">(opcija)</span></label>
-                            <select id="kub-odjel" style="width:100%;padding:13px 12px;font-size:16px;border:2px solid #d1d5db;border-radius:8px;background:white;">
-                                <option value="">— opciono —</option>
-                            </select>
-                        </div>
-
-                        <div style="grid-column:1/-1;">
-                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Sortiment <span style="font-weight:400;color:#6b7280;">(opcija)</span></label>
-                            <select id="kub-sortiment" style="width:100%;padding:13px 12px;font-size:16px;border:2px solid #d1d5db;border-radius:8px;background:white;">
-                                <option value="">— opciono —</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Prečnik (cm)</label>
-                            <input type="number" id="kub-precnik" inputmode="decimal"
-                                placeholder="npr. 24" min="1" step="1"
-                                style="width:100%;padding:13px 12px;font-size:16px;border:2px solid #d1d5db;border-radius:8px;box-sizing:border-box;">
-                        </div>
-
-                        <div>
-                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Dužina (m)</label>
-                            <input type="number" id="kub-duzina" inputmode="decimal"
-                                placeholder="npr. 4.50" min="0.01" step="0.01"
-                                style="width:100%;padding:13px 12px;font-size:16px;border:2px solid #d1d5db;border-radius:8px;box-sizing:border-box;">
-                        </div>
-
-                        <div style="grid-column:1/-1;">
-                            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;">Napomena <span style="font-weight:400;color:#6b7280;">(opcija)</span></label>
-                            <input type="text" id="kub-napomena"
-                                placeholder="npr. Komad 3, oštećena kora..."
-                                style="width:100%;padding:13px 12px;font-size:15px;border:2px solid #d1d5db;border-radius:8px;box-sizing:border-box;">
-                        </div>
-
+                <div class="kub-mem">
+                    <div class="kub-mem-head">
+                        <span>Zadnji unosi</span>
+                        <span class="kub-mem-ukupno" id="kub-ukupno">0 kom · 0,000 m³</span>
                     </div>
-                    <div style="display:flex;gap:10px;margin-top:16px;">
-                        <button id="kub-dodaj-btn" onclick="kubikatorDodaj()"
-                            style="flex:1;padding:15px;font-size:17px;font-weight:700;background:#047857;color:white;border:none;border-radius:8px;cursor:pointer;">
-                            ➕ DODAJ
-                        </button>
-                        <button id="kub-odustani-btn" onclick="kubikatorOdustani()"
-                            style="display:none;padding:15px 18px;font-size:15px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:8px;cursor:pointer;">
-                            Odustani
-                        </button>
+                    <div id="kub-mem-lista" class="kub-mem-lista"></div>
+                    <div class="kub-mem-akcije">
+                        <button type="button" class="kub-mem-btn" onclick="printKubikator()">🖨️ Štampaj</button>
+                        <button type="button" class="kub-mem-btn kub-mem-btn-danger" onclick="kubikatorOcistiSve()">🗑️ Obriši sve</button>
                     </div>
                 </div>
-
-                <!-- Rekapitulacija -->
-                <div class="card" style="margin-bottom:20px;">
-                    <h3 style="margin:0 0 14px 0;color:#065f46;font-size:15px;">📊 Rekapitulacija</h3>
-
-                    <!-- Ukupno -->
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-                        <div style="text-align:center;padding:14px;background:#f0fdf4;border-radius:8px;border:2px solid #6ee7b7;">
-                            <div style="font-size:12px;color:#065f46;font-weight:600;text-transform:uppercase;margin-bottom:4px;">Ukupno komada</div>
-                            <div style="font-size:30px;font-weight:700;color:#047857;"><span id="kub-ukupno-kom">0</span></div>
-                        </div>
-                        <div style="text-align:center;padding:14px;background:#f0fdf4;border-radius:8px;border:2px solid #6ee7b7;">
-                            <div style="font-size:12px;color:#065f46;font-weight:600;text-transform:uppercase;margin-bottom:4px;">Ukupno m³</div>
-                            <div style="font-size:30px;font-weight:700;color:#047857;"><span id="kub-ukupno-m3">0.00</span></div>
-                        </div>
-                    </div>
-
-                    <!-- Po sortimentima -->
-                    <div style="overflow-x:auto;">
-                        <table style="width:100%;border-collapse:collapse;font-size:13px;">
-                            <thead>
-                                <tr style="background:#f9fafb;border-bottom:2px solid #6ee7b7;">
-                                    <th style="padding:8px 10px;text-align:left;color:#065f46;font-weight:700;">Sortiment</th>
-                                    <th style="padding:8px 10px;text-align:center;color:#065f46;font-weight:700;">Komada</th>
-                                    <th style="padding:8px 10px;text-align:right;color:#065f46;font-weight:700;">m³</th>
-                                </tr>
-                            </thead>
-                            <tbody id="kub-rekap-tbody">
-                                <tr><td colspan="3" style="text-align:center;color:#6b7280;padding:10px;">Nema unosa</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Tabela unosa -->
-                <div class="card" style="padding:0;overflow:hidden;">
-                    <!-- Header tabele -->
-                    <div style="padding:14px 16px;background:linear-gradient(135deg,#047857 0%,#065f46 100%);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-                        <span style="color:white;font-weight:700;font-size:15px;">📋 Svi unosi</span>
-                        <select id="kub-filter-sort" onchange="kubikatorSetFilter(this.value)"
-                            style="padding:8px 12px;font-size:13px;border-radius:6px;border:none;background:rgba(255,255,255,0.9);color:#065f46;font-weight:600;min-width:150px;">
-                            <option value="">Svi sortimenti</option>
-                        </select>
-                    </div>
-                    <!-- Tabela -->
-                    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-                        <table id="kub-tabela" style="width:100%;border-collapse:collapse;font-size:13px;min-width:600px;">
-                            <thead>
-                                <tr style="background:#f9fafb;border-bottom:2px solid #d1d5db;">
-                                    <th class="kub-col-rb"       style="padding:10px 8px;text-align:center;color:#4b5563;font-weight:600;">#</th>
-                                    <th class="kub-col-datum"    style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Datum/Vrij.</th>
-                                    <th                          style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Odjel</th>
-                                    <th                          style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Sortiment</th>
-                                    <th                          style="padding:10px 8px;text-align:center;color:#374151;font-weight:600;">Prečnik (cm)</th>
-                                    <th                          style="padding:10px 8px;text-align:center;color:#374151;font-weight:600;">Dužina (m)</th>
-                                    <th                          style="padding:10px 8px;text-align:right;color:#047857;font-weight:700;">m³</th>
-                                    <th class="kub-col-napomena" style="padding:10px 8px;text-align:left;color:#374151;font-weight:600;">Napomena</th>
-                                    <th                          style="padding:10px 8px;text-align:center;color:#374151;font-weight:600;">Akcije</th>
-                                </tr>
-                            </thead>
-                            <tbody id="kub-tabela-tbody">
-                                <tr><td colspan="9" style="text-align:center;color:#6b7280;padding:30px;">Nema unosa. Dodajte prvi komad.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Akcije na dnu -->
-                <div style="display:flex;gap:12px;margin-top:20px;padding-top:4px;">
-                    <button class="btn btn-primary" onclick="printKubikator()" style="font-weight:600;flex:1;padding:14px;">🖨️ ŠTAMPAJ</button>
-                    <button class="btn btn-secondary" onclick="kubikatorOcistiSve()" style="color:#dc2626;border-color:#dc2626;flex:1;padding:14px;">🗑️ Obriši sve</button>
-                </div>
-
             </div>
         </div>
 
