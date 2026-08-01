@@ -3414,24 +3414,16 @@
                       border-top:2px solid #e5e7eb;
                       padding:7px 10px calc(7px + env(safe-area-inset-bottom)) 10px;
                   }
-                  /* Donja traka je terenski alat — dodiruje se prstom, često u
-                     rukavicama, pa je NAMJERNO velika. Ove vrijednosti su ranije
-                     stajale samo unutar @media (min-width:1025px) uz uslov
-                     body:not(.force-desktop-view). Posljedica: u "desktop site"
-                     načinu na telefonu layout viewport je ~980px, taj blok se ne
-                     poklopi i traka padne na sitnu osnovnu vrijednost (42px/10px).
-                     Zato su velike vrijednosti sada BEZUSLOVNA osnova — ne zavise
-                     ni od širine ekrana ni od klase koja se više ne postavlja. */
                   .rm-bar-btn {
                       flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-                      gap:4px; min-height:56px; border:none; border-radius:12px; margin:0 4px;
-                      font-size:16px; font-weight:800; cursor:pointer; font-family:inherit;
+                      gap:3px; min-height:42px; border:none; border-radius:10px; margin:0 5px;
+                      font-size:10px; font-weight:800; cursor:pointer; font-family:inherit;
                       letter-spacing:.2px; text-align:center; overflow-wrap:break-word;
                       color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25);
                       box-shadow:0 3px 8px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.25);
                       transition:transform .1s ease, filter .15s ease;
                   }
-                  .rm-bar-icon { font-size:22px; line-height:1; }
+                  .rm-bar-icon { font-size:15px; line-height:1; }
                   .rm-bar-btn:active { transform:scale(.94); filter:brightness(.9); }
                   .rm-bar-btn:disabled { opacity:.6; cursor:default; transform:none; }
                   .rm-bar-loc { background:linear-gradient(180deg,#2563eb,#1d4ed8); }
@@ -3442,20 +3434,22 @@
                   .rm-bar-trag { background:linear-gradient(180deg,#059669,#047857); }
                   .rm-bar-trag.recording { background:linear-gradient(180deg,#ef4444,#dc2626); }
                   .rm-bar-clear { background:linear-gradient(180deg,#6b7280,#4b5563); }
-                  /* Vrlo uski ekrani — samo blago manje, da tri dugmeta stanu u red. */
                   @media (max-width:360px) {
-                      .rm-bar-btn { font-size:13px; min-height:50px; }
-                      .rm-bar-icon { font-size:19px; }
+                      .rm-bar-btn { font-size:9px; min-height:37px; }
+                      .rm-bar-icon { font-size:13px; }
                   }
-                  /* Traka je sada jednako velika na svakoj širini (vidi .rm-bar-btn
-                     iznad), pa ovdje ostaje samo rezervisani prostor ispod karte —
-                     bezuslovno, jer i visina trake više ne zavisi od širine ekrana.
-                     Ranije je cijeli ovaj blok bio vezan za `body:not(.force-desktop-view)`,
-                     klasu koja se više ne postavlja. */
-                  .radnik-mapa-bottombar { padding:8px 8px calc(8px + env(safe-area-inset-bottom)) 8px; }
+                  /* Veća traka na širem prikazu — vraćeno na stanje iz doba ukidanja
+                     bočnog menija (commit e6271e8). Uslov body:not(.force-desktop-view)
+                     je namjerno zadržan: "Desktop prikaz" postavlja viewport na
+                     width=1200 pa bi se ova grana inače poklopila i na malom telefonu.
+                     NAPOMENA: u "desktop site" načinu browsera layout viewport je ~980px,
+                     pa se ovaj blok ne poklopi i traka ostaje na osnovnih 42px/10px. */
                   @media (min-width:1025px) {
-                      #radnik-mapa-map { height:calc(100vh - 240px - 80px); height:calc(100dvh - 240px - 80px); }
-                      body.radnik-mapa-fullscreen #radnik-mapa-content { padding-bottom:calc(80px + env(safe-area-inset-bottom)) !important; }
+                      body:not(.force-desktop-view) .radnik-mapa-bottombar { padding:8px 8px calc(8px + env(safe-area-inset-bottom)) 8px; }
+                      body:not(.force-desktop-view) .rm-bar-btn { min-height:56px; font-size:16px; gap:4px; border-radius:12px; margin:0 4px; }
+                      body:not(.force-desktop-view) .rm-bar-icon { font-size:22px; }
+                      body:not(.force-desktop-view) #radnik-mapa-map { height:calc(100vh - 240px - 80px); height:calc(100dvh - 240px - 80px); }
+                      body.radnik-mapa-fullscreen:not(.force-desktop-view) #radnik-mapa-content { padding-bottom:calc(80px + env(safe-area-inset-bottom)) !important; }
                   }
 
                   /* Info panel s podacima odjela (klik na istaknuti odjel) — FIKSIRAN
