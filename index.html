@@ -2324,13 +2324,15 @@
 
             <div class="kub-wrap">
                 <div class="kub-card">
-                    <label class="kub-label" for="kub-precnik">Prečnik (cm)</label>
-                    <input type="number" id="kub-precnik" inputmode="decimal" class="kub-input"
-                           placeholder="24" min="1" step="0.1" autocomplete="off" />
+                    <label class="kub-label" for="kub-precnik">Prečnik (cm) <span class="kub-opseg">7 – 150</span></label>
+                    <input type="number" id="kub-precnik" inputmode="numeric" class="kub-input"
+                           placeholder="24" min="7" max="150" step="1" autocomplete="off" />
 
-                    <label class="kub-label" for="kub-duzina">Dužina (m)</label>
+                    <label class="kub-label" for="kub-duzina">Dužina (m) <span class="kub-opseg">1 – 10</span></label>
                     <input type="number" id="kub-duzina" inputmode="decimal" class="kub-input"
-                           placeholder="4,50" min="0.01" step="0.01" autocomplete="off" />
+                           placeholder="4,50" min="1" max="10" step="0.01" autocomplete="off" />
+
+                    <div class="kub-greska" id="kub-greska"></div>
 
                     <div class="kub-rezultat">
                         <span class="kub-rezultat-label">Zapremina</span>

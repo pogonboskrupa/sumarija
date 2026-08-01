@@ -3605,8 +3605,14 @@ body.kubikator-fullscreen .sidebar { display: none !important; }
 body.kubikator-fullscreen { overflow: hidden !important; }
 body.kubikator-fullscreen #kubikator-content {
     position: fixed !important; inset: 0 !important; z-index: 10500;
+    /* .container ima `contain: layout style` (optimizacija skrolanja) — to
+       pravi zaseban kontekst i zna omesti prekrivanje cijelog ekrana.
+       Ovdje se isključuje da fiksno pozicioniranje sigurno vrijedi u odnosu
+       na viewport. */
+    contain: none !important;
     margin: 0 !important; max-width: none !important;
     padding: 0 !important;
+    width: 100vw; height: 100vh; height: 100dvh;   /* dvh — bez skoka kad se sakrije traka browsera */
     background: #f8fafc; box-sizing: border-box;
     overflow-y: auto; -webkit-overflow-scrolling: touch;
 }
@@ -3636,6 +3642,19 @@ body.kubikator-fullscreen #kubikator-content {
     text-transform: uppercase; letter-spacing: .05em; margin: 0 0 6px 2px;
 }
 .kub-label + .kub-input { margin-bottom: 16px; }
+/* Dozvoljeni opseg stoji uz naziv polja, da se ne pogađa */
+.kub-opseg {
+    float: right; font-weight: 700; color: #9ca3af;
+    text-transform: none; letter-spacing: 0;
+}
+/* Poruka kad je vrijednost van opsega — zauzima mjesto samo kad je ima */
+.kub-greska {
+    display: none; margin: -8px 0 12px; padding: 9px 12px;
+    background: #fef2f2; border: 1px solid #fecaca; border-radius: 9px;
+    color: #991b1b; font-size: 13px; font-weight: 700; text-align: center;
+}
+.kub-greska.vidljiva { display: block; }
+.kub-input.nevalidan { border-color: #dc2626; }
 .kub-input {
     width: 100%; box-sizing: border-box;
     padding: 16px 18px; border: 2px solid #d1d5db; border-radius: 12px;

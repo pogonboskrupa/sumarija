@@ -38,6 +38,12 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
 
     var KUB_KEY = 'kubikator_unosi';
     var MEM_PRIKAZ = 30;          // koliko zadnjih unosa se prikazuje u memoriji
+
+    // Dozvoljeni opsezi — sve van ovoga je gotovo sigurno omaška u kucanju
+    // (npr. prečnik u milimetrima ili dužina u centimetrima).
+    var P_MIN = 7,  P_MAX = 150;  // prečnik, cijeli centimetri
+    var D_MIN = 1,  D_MAX = 10;   // dužina u metrima, dvije decimale
+    var DEC = 2;                  // zapremina se prikazuje na dvije decimale
     var _unosi = [];
     var _inited = false;
 
@@ -67,24 +73,48 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         return (Math.PI / 4) * Math.pow(precnik / 100, 2) * duzina;
     }
 
-    // Trenutno upisane vrijednosti, ili null ako nisu ispravne
+    // Trenutno upisane vrijednosti. Vraća { ok:false } uz razlog dok unos nije
+    // potpun ili je van opsega, da se poruka i stanje dugmeta izvedu s jednog mjesta.
     function _trenutno() {
         var pEl = _el('kub-precnik'), dEl = _el('kub-duzina');
-        var p = _num(pEl && pEl.value);
-        var d = _num(dEl && dEl.value);
-        if (!(p > 0) || !(d > 0)) return null;
-        return { precnik: p, duzina: d, zapremina: _zapremina(p, d) };
+        var pRaw = pEl ? String(pEl.value).trim() : '';
+        var dRaw = dEl ? String(dEl.value).trim() : '';
+        var p = _num(pRaw), d = _num(dRaw);
+
+        var pLose = pRaw !== '' && (!isFinite(p) || p < P_MIN || p > P_MAX);
+        var dLose = dRaw !== '' && (!isFinite(d) || d < D_MIN || d > D_MAX);
+        if (pLose || dLose) {
+            var poruke = [];
+            if (pLose) poruke.push('Prečnik mora biti između ' + P_MIN + ' i ' + P_MAX + ' cm');
+            if (dLose) poruke.push('Dužina mora biti između ' + D_MIN + ' i ' + D_MAX + ' m');
+            return { ok: false, greska: poruke.join(' · '), pLose: pLose, dLose: dLose };
+        }
+        if (pRaw === '' || dRaw === '') return { ok: false, greska: '', pLose: false, dLose: false };
+
+        // Prečnik se mjeri u cijelim centimetrima
+        p = Math.round(p);
+        return { ok: true, precnik: p, duzina: d, zapremina: _zapremina(p, d) };
     }
 
     // Živi rezultat — poziva se na svaki otkucaj
     function _osvjeziRezultat() {
         var box = _el('kub-rezultat');
         var btn = _el('kub-dodaj-btn');
+        var grEl = _el('kub-greska');
+        var pEl = _el('kub-precnik'), dEl = _el('kub-duzina');
         if (!box) return;
         var t = _trenutno();
         var okvir = box.parentElement;
-        if (t) {
-            box.textContent = _fmt(t.zapremina, 3) + ' m³';
+
+        if (grEl) {
+            grEl.textContent = t.greska || '';
+            grEl.classList.toggle('vidljiva', !!t.greska);
+        }
+        if (pEl) pEl.classList.toggle('nevalidan', !!t.pLose);
+        if (dEl) dEl.classList.toggle('nevalidan', !!t.dLose);
+
+        if (t.ok) {
+            box.textContent = _fmt(t.zapremina, DEC) + ' m³';
             if (okvir) okvir.classList.remove('prazno');
             if (btn) btn.disabled = false;
         } else {
@@ -99,7 +129,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         var ukupnoEl = _el('kub-ukupno');
         if (ukupnoEl) {
             var m3 = _unosi.reduce(function(s, u) { return s + (Number(u.zapremina) || 0); }, 0);
-            ukupnoEl.textContent = _unosi.length + ' kom · ' + _fmt(m3, 3) + ' m³';
+            ukupnoEl.textContent = _unosi.length + ' kom · ' + _fmt(m3, DEC) + ' m³';
         }
         if (!lista) return;
         if (!_unosi.length) {
@@ -109,8 +139,8 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         var prikaz = _unosi.slice(-MEM_PRIKAZ).reverse();   // najnoviji gore
         lista.innerHTML = prikaz.map(function(u) {
             return '<div class="kub-mem-red">' +
-                '<span class="kub-mem-dim">' + _fmt(u.precnik, 1) + ' cm × ' + _fmt(u.duzina, 2) + ' m</span>' +
-                '<span class="kub-mem-m3">' + _fmt(u.zapremina, 3) + ' m³</span>' +
+                '<span class="kub-mem-dim">' + _fmt(u.precnik, 0) + ' cm × ' + _fmt(u.duzina, 2) + ' m</span>' +
+                '<span class="kub-mem-m3">' + _fmt(u.zapremina, DEC) + ' m³</span>' +
                 '<button type="button" class="kub-mem-obrisi" onclick="kubikatorObrisi(' + u.id + ')" ' +
                 'aria-label="Obriši unos">🗑️</button>' +
                 '</div>';
@@ -121,7 +151,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
 
     window.kubikatorDodaj = function() {
         var t = _trenutno();
-        if (!t) return;
+        if (!t.ok) return;
         var ts = Date.now();
         _unosi.push({
             id: ts, ts: ts,
@@ -131,10 +161,11 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         _save();
         _renderMemorija();
 
-        // Dužina se između komada rjeđe mijenja nego prečnik, pa ostaje
-        // upisana; kursor se vraća na prečnik za sljedeći komad.
-        var p = _el('kub-precnik');
-        if (p) { p.value = ''; p.focus(); }
+        // Oba polja se prazne poslije unosa, pa se sljedeći komad kuca od nule.
+        var p = _el('kub-precnik'), d = _el('kub-duzina');
+        if (p) p.value = '';
+        if (d) d.value = '';
+        if (p) p.focus();
         _osvjeziRezultat();
     };
 
