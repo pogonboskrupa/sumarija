@@ -21,12 +21,24 @@ function printKubikator() {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
 
-    // Rekapitulacija po sortimentima
+    // Vrsta drveta — nedostaje li u.vrsta (zapisi od prije nego je "prostorno
+    // drvo" dodano), jedini mod koji je tad postojao je oblovina.
+    const vrstaNaziv = v => v === 'prostorno' ? 'Prostorno drvo' : 'Oblovina';
+    // Bočni prikaz dimenzija po unosu — različit oblik podataka po vrsti
+    // (precnik/duzina za oblovinu, sirina/visina za prostorno drvo), pa se
+    // OVDJE svodi na jedan tekst po redu umjesto dvije odvojene kolone koje
+    // bi za polovinu unosa uvijek bile prazne/pogrešno označene.
+    const dimenzijeOpis = u => u.vrsta === 'prostorno'
+        ? `Š ${Number(u.sirina).toFixed(2)} × V ${Number(u.visina).toFixed(2)} m`
+        : `⌀ ${u.precnik} cm × ${Number(u.duzina).toFixed(2)} m`;
+
+    // Rekapitulacija po vrsti drveta (Oblovina / Prostorno drvo)
     const mapa = {};
     unosi.forEach(u => {
-        if (!mapa[u.sortiment]) mapa[u.sortiment] = { kom: 0, m3: 0 };
-        mapa[u.sortiment].kom++;
-        mapa[u.sortiment].m3 += u.zapremina;
+        const key = vrstaNaziv(u.vrsta);
+        if (!mapa[key]) mapa[key] = { kom: 0, m3: 0 };
+        mapa[key].kom++;
+        mapa[key].m3 += u.zapremina;
     });
     const ukupnoM3 = unosi.reduce((s, u) => s + u.zapremina, 0);
 
@@ -41,7 +53,7 @@ function printKubikator() {
         <table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #d1d5db;">
             <thead>
                 <tr style="background:${accent};color:white;">
-                    <th style="padding:9px 10px;text-align:left;">Sortiment</th>
+                    <th style="padding:9px 10px;text-align:left;">Vrsta</th>
                     <th style="padding:9px 10px;text-align:center;">Komada</th>
                     <th style="padding:9px 10px;text-align:right;">m³</th>
                 </tr>
@@ -61,10 +73,8 @@ function printKubikator() {
         <tr style="border-bottom:1px solid #e5e7eb;">
             <td style="padding:7px 8px;text-align:center;color:#4b5563;">${unosi.length - i}</td>
             <td style="padding:7px 8px;font-size:11px;">${fmtTs(u.ts)}</td>
-            <td style="padding:7px 8px;font-size:11px;color:#374151;">${u.odjel || '—'}</td>
-            <td style="padding:7px 8px;font-weight:600;">${u.sortiment || '—'}</td>
-            <td style="padding:7px 8px;text-align:center;">${u.precnik}</td>
-            <td style="padding:7px 8px;text-align:center;">${u.duzina.toFixed(2)}</td>
+            <td style="padding:7px 8px;font-weight:600;">${vrstaNaziv(u.vrsta)}</td>
+            <td style="padding:7px 8px;text-align:center;">${dimenzijeOpis(u)}</td>
             <td style="padding:7px 8px;text-align:right;font-weight:700;color:${accent};">${u.zapremina.toFixed(2)}</td>
             <td style="padding:7px 8px;font-size:11px;color:#4b5563;">${u.napomena || ''}</td>
         </tr>`).join('');
@@ -75,10 +85,8 @@ function printKubikator() {
                 <tr style="background:${accent};color:white;">
                     <th style="padding:9px 8px;text-align:center;">#</th>
                     <th style="padding:9px 8px;text-align:left;">Datum/Vrij.</th>
-                    <th style="padding:9px 8px;text-align:left;">Odjel</th>
-                    <th style="padding:9px 8px;text-align:left;">Sortiment</th>
-                    <th style="padding:9px 8px;text-align:center;">Prečnik (cm)</th>
-                    <th style="padding:9px 8px;text-align:center;">Dužina (m)</th>
+                    <th style="padding:9px 8px;text-align:left;">Vrsta</th>
+                    <th style="padding:9px 8px;text-align:center;">Dimenzije</th>
                     <th style="padding:9px 8px;text-align:right;">m³</th>
                     <th style="padding:9px 8px;text-align:left;">Napomena</th>
                 </tr>

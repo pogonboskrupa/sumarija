@@ -2318,19 +2318,37 @@
         <div id="kubikator-content" class="container hidden">
             <!-- Otvara se preko cijelog ekrana (kao Karta) — vidi
                  body.kubikator-fullscreen u <style> bloku i enterKubikatorFullscreen
-                 u js/kubikator.js. Namjerno svedeno na najbrži mogući unos:
-                 prečnik + dužina, rezultat se računa dok se kuca. -->
-            <button type="button" class="kub-close-btn" onclick="closeKubikator()">✕ Zatvori</button>
+                 u js/kubikator.js. Namjerno svedeno na najbrži mogući unos.
+                 Dva moda — Oblovina (prečnik+dužina) i Prostorno drvo
+                 (širina+visina slaganja) — dijele isti obrazac, prebacuje ih
+                 dugme #kub-mode-btn (kubikatorToggleMode). Rezultat se računa
+                 dok se kuca. -->
+            <div class="kub-header-row">
+                <button type="button" class="kub-close-btn" onclick="closeKubikator()">✕ Zatvori</button>
+                <button type="button" id="kub-mode-btn" class="kub-mode-btn" onclick="kubikatorToggleMode()">🪵 Prostorno drvo</button>
+            </div>
 
             <div class="kub-wrap">
                 <div class="kub-card">
-                    <label class="kub-label" for="kub-precnik">Prečnik (cm) <span class="kub-opseg">7 – 150</span></label>
-                    <input type="number" id="kub-precnik" inputmode="numeric" class="kub-input"
-                           placeholder="24" min="7" max="150" step="1" autocomplete="off" />
+                    <div class="kub-samo-oblovina">
+                        <label class="kub-label" for="kub-precnik">Prečnik (cm) <span class="kub-opseg">7 – 150</span></label>
+                        <input type="number" id="kub-precnik" inputmode="numeric" class="kub-input"
+                               placeholder="24" min="7" max="150" step="1" autocomplete="off" />
 
-                    <label class="kub-label" for="kub-duzina">Dužina (m) <span class="kub-opseg">1 – 10</span></label>
-                    <input type="number" id="kub-duzina" inputmode="decimal" class="kub-input"
-                           placeholder="4,50" min="1" max="10" step="0.01" autocomplete="off" />
+                        <label class="kub-label" for="kub-duzina">Dužina (m) <span class="kub-opseg">1 – 10</span></label>
+                        <input type="number" id="kub-duzina" inputmode="decimal" class="kub-input"
+                               placeholder="4,50" min="1" max="10" step="0.01" autocomplete="off" />
+                    </div>
+
+                    <div class="kub-samo-prostorno">
+                        <label class="kub-label" for="kub-sirina">Širina slaganja (m)</label>
+                        <input type="number" id="kub-sirina" inputmode="decimal" class="kub-input"
+                               placeholder="1,20" min="0.01" step="0.01" autocomplete="off" />
+
+                        <label class="kub-label" for="kub-visina">Visina slaganja (m)</label>
+                        <input type="number" id="kub-visina" inputmode="decimal" class="kub-input"
+                               placeholder="1,50" min="0.01" step="0.01" autocomplete="off" />
+                    </div>
 
                     <div class="kub-greska" id="kub-greska"></div>
 
@@ -2343,36 +2361,74 @@
                 </div>
 
                 <!-- Ilustracija: prikazuje TRENUTNO upisane vrijednosti (ažurira ih
-                     _osvjeziRezultat u js/kubikator.js), da se odmah vidi na šta se
-                     prečnik i dužina odnose i kako nastaje rezultat. -->
+                     _osvjeziIlustraciju u js/kubikator.js), da se odmah vidi na
+                     šta se brojevi odnose i kako nastaje rezultat. -->
                 <div class="kub-objasnjenje">
                     <div class="kub-obj-head">📖 Kako se računa</div>
-                    <svg class="kub-ilus" viewBox="0 0 300 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                        <ellipse cx="252" cy="64" rx="13" ry="32" fill="#c99a5b" stroke="#7c4a12" stroke-width="2"/>
-                        <rect x="48" y="32" width="204" height="64" fill="#c99a5b" stroke="#7c4a12" stroke-width="2"/>
-                        <line x1="48" y1="32" x2="48" y2="96" stroke="#7c4a12" stroke-width="2"/>
-                        <ellipse cx="48" cy="64" rx="13" ry="32" fill="#e8c98a" stroke="#7c4a12" stroke-width="2"/>
-                        <!-- prečnik (visina lijevog presjeka) -->
-                        <line x1="20" y1="32" x2="20" y2="96" stroke="#047857" stroke-width="2" marker-start="url(#kubStrelica)" marker-end="url(#kubStrelica)"/>
-                        <text x="14" y="64" fill="#047857" font-size="13" font-weight="800" text-anchor="end" dominant-baseline="middle" transform="rotate(-90 14 64)">d</text>
-                        <!-- dužina (cijela dužina trupca) -->
-                        <line x1="48" y1="112" x2="252" y2="112" stroke="#047857" stroke-width="2" marker-start="url(#kubStrelica)" marker-end="url(#kubStrelica)"/>
-                        <text x="150" y="126" fill="#047857" font-size="13" font-weight="800" text-anchor="middle">L</text>
-                        <defs>
-                            <marker id="kubStrelica" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
-                                <path d="M0,0 L8,4 L0,8 Z" fill="#047857"/>
-                            </marker>
-                        </defs>
-                    </svg>
-                    <div class="kub-obj-vrijednosti">
-                        <span>d = <strong id="kub-ilus-d">—</strong></span>
-                        <span>L = <strong id="kub-ilus-l">—</strong></span>
+
+                    <div class="kub-samo-oblovina">
+                        <svg class="kub-ilus" viewBox="0 0 300 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                            <ellipse cx="252" cy="64" rx="13" ry="32" fill="#c99a5b" stroke="#7c4a12" stroke-width="2"/>
+                            <rect x="48" y="32" width="204" height="64" fill="#c99a5b" stroke="#7c4a12" stroke-width="2"/>
+                            <line x1="48" y1="32" x2="48" y2="96" stroke="#7c4a12" stroke-width="2"/>
+                            <ellipse cx="48" cy="64" rx="13" ry="32" fill="#e8c98a" stroke="#7c4a12" stroke-width="2"/>
+                            <!-- prečnik (visina lijevog presjeka) -->
+                            <line x1="20" y1="32" x2="20" y2="96" stroke="#047857" stroke-width="2" marker-start="url(#kubStrelicaO)" marker-end="url(#kubStrelicaO)"/>
+                            <text x="14" y="64" fill="#047857" font-size="13" font-weight="800" text-anchor="end" dominant-baseline="middle" transform="rotate(-90 14 64)">d</text>
+                            <!-- dužina (cijela dužina trupca) -->
+                            <line x1="48" y1="112" x2="252" y2="112" stroke="#047857" stroke-width="2" marker-start="url(#kubStrelicaO)" marker-end="url(#kubStrelicaO)"/>
+                            <text x="150" y="126" fill="#047857" font-size="13" font-weight="800" text-anchor="middle">L</text>
+                            <defs>
+                                <marker id="kubStrelicaO" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                                    <path d="M0,0 L8,4 L0,8 Z" fill="#047857"/>
+                                </marker>
+                            </defs>
+                        </svg>
+                        <div class="kub-obj-vrijednosti">
+                            <span>d = <strong id="kub-ilus-d">—</strong></span>
+                            <span>L = <strong id="kub-ilus-l">—</strong></span>
+                        </div>
+                        <div class="kub-obj-formula">
+                            V = (π ⁄ 4) × d² × L&nbsp; =&nbsp; 0,785 × <span id="kub-ilus-dm">—</span>² × <span id="kub-ilus-lm">—</span>&nbsp; =&nbsp;
+                            <strong id="kub-ilus-res">— m³</strong>
+                        </div>
+                        <div class="kub-obj-napomena">Huberova formula — d je prečnik na sredini trupca (u metrima), izmjeren u cm.</div>
                     </div>
-                    <div class="kub-obj-formula">
-                        V = (π ⁄ 4) × d² × L&nbsp; =&nbsp; 0,785 × <span id="kub-ilus-dm">—</span>² × <span id="kub-ilus-lm">—</span>&nbsp; =&nbsp;
-                        <strong id="kub-ilus-res">— m³</strong>
+
+                    <div class="kub-samo-prostorno">
+                        <svg class="kub-ilus" viewBox="0 0 300 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                            <rect x="70" y="20" width="160" height="76" fill="#e8c98a" stroke="#7c4a12" stroke-width="2"/>
+                            <circle cx="100" cy="38" r="11" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.5"/>
+                            <circle cx="150" cy="38" r="11" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.5"/>
+                            <circle cx="200" cy="38" r="11" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.5"/>
+                            <circle cx="100" cy="58" r="11" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.5"/>
+                            <circle cx="150" cy="58" r="11" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.5"/>
+                            <circle cx="200" cy="58" r="11" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.5"/>
+                            <circle cx="100" cy="78" r="11" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.5"/>
+                            <circle cx="150" cy="78" r="11" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.5"/>
+                            <circle cx="200" cy="78" r="11" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.5"/>
+                            <!-- visina slaganja -->
+                            <line x1="46" y1="20" x2="46" y2="96" stroke="#047857" stroke-width="2" marker-start="url(#kubStrelicaP)" marker-end="url(#kubStrelicaP)"/>
+                            <text x="40" y="58" fill="#047857" font-size="13" font-weight="800" text-anchor="end" dominant-baseline="middle" transform="rotate(-90 40 58)">V</text>
+                            <!-- širina slaganja -->
+                            <line x1="70" y1="112" x2="230" y2="112" stroke="#047857" stroke-width="2" marker-start="url(#kubStrelicaP)" marker-end="url(#kubStrelicaP)"/>
+                            <text x="150" y="126" fill="#047857" font-size="13" font-weight="800" text-anchor="middle">Š</text>
+                            <defs>
+                                <marker id="kubStrelicaP" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                                    <path d="M0,0 L8,4 L0,8 Z" fill="#047857"/>
+                                </marker>
+                            </defs>
+                        </svg>
+                        <div class="kub-obj-vrijednosti">
+                            <span>Š = <strong id="kub-ilus-sirina">—</strong></span>
+                            <span>V = <strong id="kub-ilus-visina">—</strong></span>
+                        </div>
+                        <div class="kub-obj-formula">
+                            V = širina × visina × 0,63&nbsp; =&nbsp; <span id="kub-ilus-sm">—</span> × <span id="kub-ilus-vm">—</span> × 0,63&nbsp; =&nbsp;
+                            <strong id="kub-ilus-res2">— m³</strong>
+                        </div>
+                        <div class="kub-obj-napomena">Koeficijent pretvorbe prostornog u čvrsti metar drvne mase: 0,7 − 10% = 0,63.</div>
                     </div>
-                    <div class="kub-obj-napomena">Huberova formula — d je prečnik na sredini trupca (u metrima), izmjeren u cm.</div>
                 </div>
 
                 <div class="kub-mem">

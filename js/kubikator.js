@@ -1,21 +1,28 @@
 // ============================================================
 // KUBIKATOR — Terenski kalkulator zapremine drvnih sortimenata
-// Huberova formula: V = (π/4) × (d/100)² × L
-//   d = prečnik na sredini trupca u cm, L = dužina u m, V u m³.
 //
-// Namjerno svedeno na DVA polja (prečnik + dužina). Rezultat se računa DOK SE
-// KUCA — ne treba pritiskati ništa da bi se vidjela zapremina; "Dodaj" služi
-// samo da unos padne u memoriju ispod. Na terenu se kuca prstom, često u
-// rukavicama, pa su polja i brojevi veliki.
+// Dva moda, prebacuje ih dugme uz "Zatvori" (kubikatorToggleMode):
+//   • OBLOVINA (podrazumijevano) — Huberova formula: V = (π/4) × (d/100)² × L
+//     d = prečnik na sredini trupca u cm, L = dužina u m.
+//   • PROSTORNO DRVO — V = širina × visina × 0,63 (širina/visina slaganja u m).
+//     0,63 = koeficijent pretvorbe prostornog u čvrsti metar drvne mase
+//     (0,7 osnovni koeficijent, umanjen za 10%).
+//
+// Namjerno svedeno na DVA polja po modu. Rezultat se računa DOK SE KUCA — ne
+// treba pritiskati ništa da bi se vidjela zapremina; "Dodaj" služi samo da
+// unos padne u memoriju ispod. Na terenu se kuca prstom, često u rukavicama,
+// pa su polja i brojevi veliki.
 //
 // Otvara se preko cijelog ekrana, isti obrazac kao Karta (klasa
 // body.kubikator-fullscreen + dugme "✕ Zatvori").
 //
 // Podaci su ISKLJUČIVO lokalni — localStorage['kubikator_unosi'], bez servera.
 // VAŽNO: oblik zapisa se NE smije mijenjati. js/print-utils.js (printKubikator)
-// bezuslovno poziva u.duzina.toFixed(2) / u.zapremina.toFixed(2) i čita
-// u.odjel / u.sortiment / u.napomena — zato se ta tri polja i dalje upisuju
-// kao prazan string, da i štampa i stariji zapisi nastave raditi.
+// čita u.odjel/u.sortiment/u.napomena bezuslovno — ta tri polja se zato i
+// dalje upisuju kao prazan string, da i štampa i stariji zapisi (svi
+// "oblovina", nastali prije nego je prostorno drvo dodano) nastave raditi.
+// Svaki unos ima i u.vrsta ('oblovina'|'prostorno'); nedostaje li kod starih
+// zapisa, čita se kao 'oblovina' (jedini mod koji je tad postojao).
 // ============================================================
 
 // ─── Klasifikacija sortimenata ────────────────────────────────
@@ -37,14 +44,17 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     'use strict';
 
     var KUB_KEY = 'kubikator_unosi';
+    var VRSTA_KEY = 'kubikator_vrsta';   // pamti zadnje izabran mod između sesija
     var MEM_PRIKAZ = 30;          // koliko zadnjih unosa se prikazuje u memoriji
 
     // Dozvoljeni opsezi — sve van ovoga je gotovo sigurno omaška u kucanju
     // (npr. prečnik u milimetrima ili dužina u centimetrima).
     var P_MIN = 7,  P_MAX = 150;  // prečnik, cijeli centimetri
     var D_MIN = 1,  D_MAX = 10;   // dužina u metrima, dvije decimale
+    var KOEF_PROSTORNI = 0.63;    // prostorni → čvrsti metar: 0,7 − 10% = 0,63
     var DEC = 2;                  // zapremina se prikazuje na dvije decimale
     var _unosi = [];
+    var _vrsta = 'oblovina';      // 'oblovina' | 'prostorno'
     var _inited = false;
 
     // Zarez i tačka su na terenu ravnopravni ("4,50" i "4.50")
@@ -62,6 +72,10 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             _unosi = raw ? JSON.parse(raw) : [];
             if (!Array.isArray(_unosi)) _unosi = [];
         } catch (_) { _unosi = []; }
+        try {
+            var v = localStorage.getItem(VRSTA_KEY);
+            _vrsta = (v === 'prostorno') ? 'prostorno' : 'oblovina';
+        } catch (_) { _vrsta = 'oblovina'; }
     }
     function _save() {
         try { localStorage.setItem(KUB_KEY, JSON.stringify(_unosi)); } catch (_) {}
@@ -72,10 +86,27 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     function _zapremina(precnik, duzina) {
         return (Math.PI / 4) * Math.pow(precnik / 100, 2) * duzina;
     }
+    function _zapreminaProstorna(sirina, visina) {
+        return sirina * visina * KOEF_PROSTORNI;
+    }
 
-    // Trenutno upisane vrijednosti. Vraća { ok:false } uz razlog dok unos nije
-    // potpun ili je van opsega, da se poruka i stanje dugmeta izvedu s jednog mjesta.
+    // Polja aktivnog moda — jedno mjesto koje zna koja su "prvo"/"drugo"
+    // polje trenutno na ekranu, da ga _osvjeziRezultat i kubikatorDodaj ne
+    // moraju svaki posebno granati po _vrsta.
+    function _poljaZaVrstu() {
+        return _vrsta === 'prostorno'
+            ? { prvo: _el('kub-sirina'), drugo: _el('kub-visina') }
+            : { prvo: _el('kub-precnik'), drugo: _el('kub-duzina') };
+    }
+
+    // Trenutno upisane vrijednosti (za aktivni mod). Vraća { ok:false } uz
+    // razlog dok unos nije potpun ili je van opsega, da se poruka i stanje
+    // dugmeta izvedu s jednog mjesta.
     function _trenutno() {
+        return _vrsta === 'prostorno' ? _trenutnoProstorno() : _trenutnoOblovina();
+    }
+
+    function _trenutnoOblovina() {
         var pEl = _el('kub-precnik'), dEl = _el('kub-duzina');
         var pRaw = pEl ? String(pEl.value).trim() : '';
         var dRaw = dEl ? String(dEl.value).trim() : '';
@@ -96,22 +127,41 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         return { ok: true, precnik: p, duzina: d, zapremina: _zapremina(p, d) };
     }
 
+    function _trenutnoProstorno() {
+        var sEl = _el('kub-sirina'), vEl = _el('kub-visina');
+        var sRaw = sEl ? String(sEl.value).trim() : '';
+        var vRaw = vEl ? String(vEl.value).trim() : '';
+        var s = _num(sRaw), v = _num(vRaw);
+
+        var sLose = sRaw !== '' && (!isFinite(s) || s <= 0);
+        var vLose = vRaw !== '' && (!isFinite(v) || v <= 0);
+        if (sLose || vLose) {
+            var poruke = [];
+            if (sLose) poruke.push('Širina mora biti veća od 0');
+            if (vLose) poruke.push('Visina mora biti veća od 0');
+            return { ok: false, greska: poruke.join(' · '), pLose: sLose, dLose: vLose };
+        }
+        if (sRaw === '' || vRaw === '') return { ok: false, greska: '', pLose: false, dLose: false };
+
+        return { ok: true, sirina: s, visina: v, zapremina: _zapreminaProstorna(s, v) };
+    }
+
     // Živi rezultat — poziva se na svaki otkucaj
     function _osvjeziRezultat() {
         var box = _el('kub-rezultat');
         var btn = _el('kub-dodaj-btn');
         var grEl = _el('kub-greska');
-        var pEl = _el('kub-precnik'), dEl = _el('kub-duzina');
         if (!box) return;
         var t = _trenutno();
         var okvir = box.parentElement;
+        var polja = _poljaZaVrstu();
 
         if (grEl) {
             grEl.textContent = t.greska || '';
             grEl.classList.toggle('vidljiva', !!t.greska);
         }
-        if (pEl) pEl.classList.toggle('nevalidan', !!t.pLose);
-        if (dEl) dEl.classList.toggle('nevalidan', !!t.dLose);
+        if (polja.prvo) polja.prvo.classList.toggle('nevalidan', !!t.pLose);
+        if (polja.drugo) polja.drugo.classList.toggle('nevalidan', !!t.dLose);
 
         if (t.ok) {
             box.textContent = _fmt(t.zapremina, DEC) + ' m³';
@@ -126,20 +176,40 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     }
 
     // Ilustracija ispod forme — prikazuje TRENUTNE vrijednosti da se odmah
-    // vidi na šta se prečnik/dužina odnose i kako formula dolazi do rezultata.
+    // vidi na šta se brojevi odnose i kako formula dolazi do rezultata.
+    // Oba (oblovina/prostorno) bloka postoje u DOM-u; ažuriraju se oba —
+    // vidljiv je samo onaj koji CSS pokazuje za trenutni mod (jeftinije i
+    // jednostavnije nego pratiti koji je trenutno prikazan).
     function _osvjeziIlustraciju(t) {
-        var dEl = _el('kub-ilus-d'), lEl = _el('kub-ilus-l');
-        var dmEl = _el('kub-ilus-dm'), lmEl = _el('kub-ilus-lm'), resEl = _el('kub-ilus-res');
-        if (!dEl) return; // ilustracija je opciona (sakriva se na niskim ekranima)
-        if (t.ok) {
-            dEl.textContent = _fmt(t.precnik, 0) + ' cm';
-            lEl.textContent = _fmt(t.duzina, 2) + ' m';
-            dmEl.textContent = _fmt(t.precnik / 100, 2) + ' m';
-            lmEl.textContent = _fmt(t.duzina, 2) + ' m';
-            resEl.textContent = _fmt(t.zapremina, DEC) + ' m³';
-        } else {
-            dEl.textContent = '—'; lEl.textContent = '—';
-            dmEl.textContent = '—'; lmEl.textContent = '—'; resEl.textContent = '— m³';
+        var dEl = _el('kub-ilus-d');
+        if (dEl) {
+            var lEl = _el('kub-ilus-l'), dmEl = _el('kub-ilus-dm'),
+                lmEl = _el('kub-ilus-lm'), resEl = _el('kub-ilus-res');
+            if (t.ok && _vrsta === 'oblovina') {
+                dEl.textContent = _fmt(t.precnik, 0) + ' cm';
+                lEl.textContent = _fmt(t.duzina, 2) + ' m';
+                dmEl.textContent = _fmt(t.precnik / 100, 2) + ' m';
+                lmEl.textContent = _fmt(t.duzina, 2) + ' m';
+                resEl.textContent = _fmt(t.zapremina, DEC) + ' m³';
+            } else {
+                dEl.textContent = '—'; lEl.textContent = '—';
+                dmEl.textContent = '—'; lmEl.textContent = '—'; resEl.textContent = '— m³';
+            }
+        }
+        var sEl = _el('kub-ilus-sirina');
+        if (sEl) {
+            var vEl = _el('kub-ilus-visina'), smEl = _el('kub-ilus-sm'),
+                vmEl = _el('kub-ilus-vm'), resEl2 = _el('kub-ilus-res2');
+            if (t.ok && _vrsta === 'prostorno') {
+                sEl.textContent = _fmt(t.sirina, 2) + ' m';
+                vEl.textContent = _fmt(t.visina, 2) + ' m';
+                smEl.textContent = _fmt(t.sirina, 2);
+                vmEl.textContent = _fmt(t.visina, 2);
+                resEl2.textContent = _fmt(t.zapremina, DEC) + ' m³';
+            } else {
+                sEl.textContent = '—'; vEl.textContent = '—';
+                smEl.textContent = '—'; vmEl.textContent = '—'; resEl2.textContent = '— m³';
+            }
         }
     }
 
@@ -157,8 +227,15 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         }
         var prikaz = _unosi.slice(-MEM_PRIKAZ).reverse();   // najnoviji gore
         lista.innerHTML = prikaz.map(function(u) {
+            // Stariji zapisi nemaju u.vrsta (nastali prije nego je prostorno
+            // drvo dodano) — jedini mod koji je tad postojao bio je oblovina.
+            var jeProstorno = u.vrsta === 'prostorno';
+            var dim = jeProstorno
+                ? _fmt(u.sirina, 2) + ' × ' + _fmt(u.visina, 2) + ' m'
+                : _fmt(u.precnik, 0) + ' cm × ' + _fmt(u.duzina, 2) + ' m';
+            var ikona = jeProstorno ? '🪵' : '🌲';
             return '<div class="kub-mem-red">' +
-                '<span class="kub-mem-dim">' + _fmt(u.precnik, 0) + ' cm × ' + _fmt(u.duzina, 2) + ' m</span>' +
+                '<span class="kub-mem-dim">' + ikona + ' ' + dim + '</span>' +
                 '<span class="kub-mem-m3">' + _fmt(u.zapremina, DEC) + ' m³</span>' +
                 '<button type="button" class="kub-mem-obrisi" onclick="kubikatorObrisi(' + u.id + ')" ' +
                 'aria-label="Obriši unos">🗑️</button>' +
@@ -172,19 +249,24 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         var t = _trenutno();
         if (!t.ok) return;
         var ts = Date.now();
-        _unosi.push({
-            id: ts, ts: ts,
-            odjel: '', sortiment: '', napomena: '',   // vidi komentar na vrhu — ne uklanjati
-            precnik: t.precnik, duzina: t.duzina, zapremina: t.zapremina
-        });
+        var unos = {
+            id: ts, ts: ts, vrsta: _vrsta,
+            odjel: '', sortiment: '', napomena: ''   // vidi komentar na vrhu — ne uklanjati
+        };
+        if (_vrsta === 'prostorno') {
+            unos.sirina = t.sirina; unos.visina = t.visina; unos.zapremina = t.zapremina;
+        } else {
+            unos.precnik = t.precnik; unos.duzina = t.duzina; unos.zapremina = t.zapremina;
+        }
+        _unosi.push(unos);
         _save();
         _renderMemorija();
 
         // Oba polja se prazne poslije unosa, pa se sljedeći komad kuca od nule.
-        var p = _el('kub-precnik'), d = _el('kub-duzina');
-        if (p) p.value = '';
-        if (d) d.value = '';
-        if (p) p.focus();
+        var polja = _poljaZaVrstu();
+        if (polja.prvo) polja.prvo.value = '';
+        if (polja.drugo) polja.drugo.value = '';
+        if (polja.prvo) polja.prvo.focus();
         _osvjeziRezultat();
 
         // Prikaz ostaje UVIJEK na vrhu (unos), da se može kubicirati komad za
@@ -196,6 +278,29 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     function _naVrh() {
         var content = _el('kubikator-content');
         if (content) content.scrollTo({ top: 0, behavior: 'auto' });
+    }
+
+    // Prebacivanje Oblovina ↔ Prostorno drvo. Oba para polja se čiste pri
+    // prebacivanju — brojevi iz jednog moda nemaju smisla kao unos u drugom.
+    window.kubikatorToggleMode = function() {
+        _vrsta = (_vrsta === 'oblovina') ? 'prostorno' : 'oblovina';
+        try { localStorage.setItem(VRSTA_KEY, _vrsta); } catch (_) {}
+        _primijeniVrstu();
+    };
+
+    function _primijeniVrstu() {
+        var content = _el('kubikator-content');
+        if (content) content.classList.toggle('vrsta-prostorno', _vrsta === 'prostorno');
+        var btn = _el('kub-mode-btn');
+        // Dugme uvijek nudi PRELAZAK u drugi mod, ne opisuje trenutni.
+        if (btn) btn.textContent = _vrsta === 'prostorno' ? '🪵 Oblovina' : '🪵 Prostorno drvo';
+        ['kub-precnik', 'kub-duzina', 'kub-sirina', 'kub-visina'].forEach(function(id) {
+            var el = _el(id);
+            if (el) el.value = '';
+        });
+        _osvjeziRezultat();
+        var polja = _poljaZaVrstu();
+        if (polja.prvo) setTimeout(function() { polja.prvo.focus(); }, 30);
     }
 
     window.kubikatorObrisi = function(id) {
@@ -269,23 +374,37 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         if (!_inited) {
             _inited = true;
             _load();
+            _primijeniVrstu(); // postavi tekst dugmeta i vidljiva polja za učitani mod
+
             var p = _el('kub-precnik'), d = _el('kub-duzina');
-            [p, d].forEach(function(inp) {
+            var s = _el('kub-sirina'), v = _el('kub-visina');
+            [p, d, s, v].forEach(function(inp) {
                 if (inp) inp.addEventListener('input', _osvjeziRezultat);
             });
-            // Enter lanac: prečnik → dužina → dodaj
+            // Enter lanac unutar svakog para: prvo polje → drugo → dodaj.
+            // Oba para su ožičena bez obzira koji je trenutno vidljiv —
+            // neaktivni jednostavno nikad ne dobije fokus, pa mu tastatura
+            // ionako ne okine.
             if (p) p.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') { e.preventDefault(); if (d) d.focus(); }
             });
             if (d) d.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') { e.preventDefault(); window.kubikatorDodaj(); }
             });
+            if (s) s.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); if (v) v.focus(); }
+            });
+            if (v) v.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); window.kubikatorDodaj(); }
+            });
+        } else {
+            _primijeniVrstu(); // uskladi prikaz i pri povratku na već renderovan tab
         }
 
         _renderMemorija();
         _osvjeziRezultat();
         _naVrh(); // otvaranje taba uvijek počinje od unosa, ne od mjesta gdje je prošli put ostalo skrolano
-        var pf = _el('kub-precnik');
+        var pf = _poljaZaVrstu().prvo;
         if (pf) setTimeout(function() { pf.focus(); }, 60);
 
         var ls = _el('loading-screen');
