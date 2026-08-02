@@ -3674,11 +3674,6 @@ body.kubikator-fullscreen #kubikator-content {
 #kubikator-content.vrsta-prostorno .kub-samo-oblovina { display: none; }
 #kubikator-content.vrsta-prostorno .kub-samo-prostorno { display: block; }
 
-/* Mala slika trupca/složaja uz vrh forme — vidljiva bez skrolanja do
-   "Kako se računa" (koja je na dnu liste). Ista svrha kao .kub-ilus tamo,
-   samo manja i bez mjernih strelica/formule. */
-.kub-mini-ilus { width: 100%; max-width: 220px; height: auto; display: block; margin: 0 auto 12px; }
-
 .kub-label {
     display: block; font-size: 11px; font-weight: 800; color: #6b7280;
     text-transform: uppercase; letter-spacing: .05em; margin: 0 0 5px 2px;
@@ -3761,11 +3756,10 @@ body.kubikator-fullscreen #kubikator-content {
     .kub-rezultat { padding: 8px 14px; margin: 2px 0 8px; }
     .kub-rezultat-val { font-size: 22px; }
     .kub-dodaj { padding: 10px; font-size: 15px; }
-    /* Ilustracije su edukativne, ne kritične — na vrlo niskom ekranu (npr.
-       kad je tastatura otvorena) se sakrivaju da "Dodaj" ostane dostupan bez
+    /* Ilustracija je edukativna, ne kritična — na vrlo niskom ekranu (npr.
+       kad je tastatura otvorena) se sakriva da "Dodaj" ostane dostupan bez
        skrolanja. */
     .kub-objasnjenje { display: none; }
-    .kub-mini-ilus { display: none; }
 }
 
 /* ---- Ilustracija/objašnjenje izračuna ---- */
