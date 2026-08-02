@@ -186,7 +186,17 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         if (d) d.value = '';
         if (p) p.focus();
         _osvjeziRezultat();
+
+        // Prikaz ostaje UVIJEK na vrhu (unos), da se može kubicirati komad za
+        // komadom bez skrolanja — ilustraciju i spisak dodanih korisnik sam
+        // otvori skrolom kad poželi da ih pogleda, to ne smije usporavati unos.
+        _naVrh();
     };
+
+    function _naVrh() {
+        var content = _el('kubikator-content');
+        if (content) content.scrollTo({ top: 0, behavior: 'auto' });
+    }
 
     window.kubikatorObrisi = function(id) {
         _unosi = _unosi.filter(function(u) { return u.id !== id; });
@@ -262,15 +272,6 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             var p = _el('kub-precnik'), d = _el('kub-duzina');
             [p, d].forEach(function(inp) {
                 if (inp) inp.addEventListener('input', _osvjeziRezultat);
-                // Mobilna tastatura pojede donju polovinu ekrana, pa "Dodaj"
-                // zna ostati sakriven ispod nje (prijavljeno). Nakon fokusa,
-                // kad se tastatura animira gore, pomjeri dugme u vidno polje.
-                if (inp) inp.addEventListener('focus', function() {
-                    setTimeout(function() {
-                        var btn = _el('kub-dodaj-btn');
-                        if (btn) btn.scrollIntoView({ block: 'center', behavior: 'smooth' });
-                    }, 350);
-                });
             });
             // Enter lanac: prečnik → dužina → dodaj
             if (p) p.addEventListener('keydown', function(e) {
@@ -283,6 +284,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
 
         _renderMemorija();
         _osvjeziRezultat();
+        _naVrh(); // otvaranje taba uvijek počinje od unosa, ne od mjesta gdje je prošli put ostalo skrolano
         var pf = _el('kub-precnik');
         if (pf) setTimeout(function() { pf.focus(); }, 60);
 
