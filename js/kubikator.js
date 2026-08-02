@@ -46,6 +46,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     var KUB_KEY = 'kubikator_unosi';
     var VRSTA_KEY = 'kubikator_vrsta';   // pamti zadnje izabran mod između sesija
     var LOCK_KEY = 'kubikator_lock';     // zaključana dužina između unosa (samo oblovina)
+    var PRVI_KEY = 'kubikator_prvi_unos_gotov'; // "24"/"4,50" prijedlog nestaje poslije prvog unosa ikad
     var MEM_PRIKAZ = 30;          // koliko zadnjih unosa se prikazuje u memoriji
 
     // Dozvoljeni opsezi — sve van ovoga je gotovo sigurno omaška u kucanju
@@ -59,6 +60,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     var _inited = false;
     var _lockDuzina = false;      // dužina ostaje poslije Dodaj (gomila je obično jednake dužine)
     var _justAdded = false;       // animacija u memoriji samo na redu koji je TEK dodan
+    var _prviUnosGotov = false;   // true poslije prvog unosa ikad — gasi placeholder "24"/"4,50"
 
     // Zarez i tačka su na terenu ravnopravni ("4,50" i "4.50")
     function _num(v) { return parseFloat(String(v == null ? '' : v).replace(',', '.')); }
@@ -83,12 +85,24 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             var l = JSON.parse(localStorage.getItem(LOCK_KEY) || '{}');
             _lockDuzina = !!l.duzina;
         } catch (_) { _lockDuzina = false; }
+        try {
+            _prviUnosGotov = localStorage.getItem(PRVI_KEY) === '1';
+        } catch (_) { _prviUnosGotov = false; }
     }
     function _save() {
         try { localStorage.setItem(KUB_KEY, JSON.stringify(_unosi)); } catch (_) {}
     }
     function _saveLock() {
         try { localStorage.setItem(LOCK_KEY, JSON.stringify({ duzina: _lockDuzina })); } catch (_) {}
+    }
+
+    // "24"/"4,50" u poljima prečnik/dužina su prijedlog SAMO dok korisnik nikad
+    // nije dodao nijedan unos — poslije prvog "Dodaj" (ikad, trajno) nestaju,
+    // da se ne pomiješaju sa stvarnom vrijednosti kad je polje prazno.
+    function _osvjeziPlaceholdere() {
+        var p = _el('kub-precnik'), d = _el('kub-duzina');
+        if (p) p.placeholder = _prviUnosGotov ? '' : '24';
+        if (d) d.placeholder = _prviUnosGotov ? '' : '4,50';
     }
 
     function _el(id) { return document.getElementById(id); }
@@ -294,6 +308,11 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         }
         _unosi.push(unos);
         _save();
+        if (!_prviUnosGotov) {
+            _prviUnosGotov = true;
+            try { localStorage.setItem(PRVI_KEY, '1'); } catch (_) {}
+            _osvjeziPlaceholdere();
+        }
         _justAdded = true;
         _renderMemorija();
 
@@ -477,6 +496,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         }
 
         _osvjeziLockUI();
+        _osvjeziPlaceholdere();
         _renderMemorija();
         _osvjeziRezultat();
         _naVrh(); // otvaranje taba uvijek počinje od unosa, ne od mjesta gdje je prošli put ostalo skrolano
