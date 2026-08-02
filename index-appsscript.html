@@ -4200,7 +4200,7 @@
 
     <script>
         // VERSION INFO - Monthly report by departments
-        const APP_VERSION = '2026-01-12-v18-MONTHLY-BY-ODJELI';
+        const APP_VERSION = '2026-08-02-v19-ADMIN-VIEW-FIX';
         const BUILD_COMMIT = 'pending';
 
         // SUPER VISIBLE VERSION CHECK
@@ -4800,7 +4800,7 @@
 
             try {
                 // Determine user type (case-insensitive)
-                const userType = (currentUser.type || '').toLowerCase();
+                const userType = String(currentUser.type || '').trim().toLowerCase();
 
                 let allViews = [];
 
@@ -5128,7 +5128,10 @@
 
             // Dinamički kreiraj tab-ove na osnovu tipa korisnika
             const tabsMenu = document.getElementById('tabs-menu');
-            const userType = (currentUser.type || '').toLowerCase(); // Case-insensitive
+            // trim() + toLowerCase() — bez trim-a bilo koji razmak u koloni "tip"
+            // šifrarnika korisnika (npr. "Primac ") ne pogađa poređenje ispod i
+            // korisnik tiho padne u "else" granu (vidi dolje).
+            const userType = String(currentUser.type || '').trim().toLowerCase();
 
             if (userType === 'primac') {
                 // Primač vidi šest prikaza: pregled, godišnji prikaz, po odjelima, dodavanje, moje sječe, i kubikator
@@ -5169,7 +5172,7 @@
                     <button class="tab" onclick="switchTab('poslovodja-suma')">📈 Suma Mjeseca</button>
                     <button class="tab" onclick="switchTab('izvjestaji')">📋 Izvještaji</button>
                 `;
-            } else {
+            } else if (userType === 'admin') {
                 // Admin korisnici - bez OPERATIVA tab-a (admin se loguje kao OPERATIVA tip ako želi vidjeti operativa podatke)
                 tabsMenu.innerHTML = `
                     <button class="tab active" onclick="switchTab('dashboard')">🌲 Šumarija Krupa</button>
@@ -5185,6 +5188,16 @@
                     </button>
                     <button class="tab" onclick="switchTab('ostalo')">⚙️ Ostalo</button>
                 `;
+            } else {
+                // Neprepoznata uloga (pogrešan/prazan upis u koloni "tip" šifrarnika
+                // korisnika) — NIKAD tiho ne davati pun admin pristup. Prijavi
+                // grešku i odjavi umjesto da korisnik ostane na admin prikazu.
+                console.error('[AUTH] Neprepoznata uloga korisnika, odjavljujem:', currentUser && currentUser.type);
+                if (typeof showError === 'function') {
+                    showError('Nepoznata uloga korisnika', 'Kontaktirajte administratora da provjeri unos u šifrarniku korisnika.');
+                }
+                logout();
+                return;
             }
 
             // 🚀 Initialize Delta Sync System
@@ -5341,7 +5354,7 @@
         
         // Load initial data based on user type (OPTIMIZED - lazy loading)
         function loadData() {
-            const userType = (currentUser.type || '').toLowerCase();
+            const userType = String(currentUser.type || '').trim().toLowerCase();
 
             // Show loading screen with progress
             const loadingText = document.querySelector('.loading-text');
@@ -5355,8 +5368,14 @@
                 loadOtpremacPersonal();
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
                 loadPoslovodjaStanje();
-            } else {
+            } else if (userType === 'admin' || userType === 'operativa') {
+                // OPERATIVA nema poseban početni prikaz — koristi isti dashboard
+                // kao admin (postojeće ponašanje, nepromijenjeno ovom popravkom).
                 loadDashboard();
+            } else {
+                // Odbrana u dubinu — showApp() bi za neprepoznatu ulogu već trebao
+                // odjaviti korisnika prije nego se dođe dovde (vidi else granu tamo).
+                console.error('[AUTH] Neprepoznata uloga u loadData():', currentUser && currentUser.type);
             }
         }
 
@@ -5906,7 +5925,7 @@
         // Helper: Get radilišta for current poslovodja (for display)
         function getPoslovodjaRadilista() {
             if (!currentUser) return [];
-            var userType = (currentUser.type || '').toLowerCase();
+            var userType = String(currentUser.type || '').trim().toLowerCase();
             if (userType !== 'poslovođa' && userType !== 'poslovodja') return [];
 
             _ensurePoslovodjaMappingBuilt();
@@ -5919,7 +5938,7 @@
         // Helper: Get odjeli set for current poslovodja (for precise filtering)
         function getPoslovodjaOdjeli() {
             if (!currentUser) return {};
-            var userType = (currentUser.type || '').toLowerCase();
+            var userType = String(currentUser.type || '').trim().toLowerCase();
             if (userType !== 'poslovođa' && userType !== 'poslovodja') return {};
 
             _ensurePoslovodjaMappingBuilt();
