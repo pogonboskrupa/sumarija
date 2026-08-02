@@ -2715,14 +2715,25 @@
     }
     // Native share meni ako uređaj podržava dijeljenje fajlova (telefon),
     // inače klasično preuzimanje fajla (desktop). Oboje radi bez interneta.
+    // Generička verzija (window.shareOrDownloadFile, ispod) je globalna da je
+    // mogu koristiti i drugi tabovi (npr. Kubikator) bez ponavljanja ove
+    // logike; ovo ostaje tanak gpx-specifičan omotač zbog postojećih poziva
+    // niže u fajlu.
     async function _shareOrDownloadGpx(fileName, gpx, naslov) {
+        return window.shareOrDownloadFile(fileName, gpx, 'application/gpx+xml', naslov);
+    }
+
+    // Opće dijeljenje/preuzimanje bilo kog tekstualnog fajla (CSV, GPX, ...).
+    // Ista logika kao gornji gpx-specifičan omotač, samo generička po
+    // mimeType-u — koristi je i js/kubikator.js za izvoz unosa.
+    window.shareOrDownloadFile = async function(fileName, content, mimeType, title) {
         var file;
         try {
-            file = new File([gpx], fileName, { type: 'application/gpx+xml' });
+            file = new File([content], fileName, { type: mimeType });
         } catch (_) { file = null; }
         if (file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
             try {
-                await navigator.share({ files: [file], title: naslov });
+                await navigator.share({ files: [file], title: title });
                 return;
             } catch (err) {
                 if (err && err.name === 'AbortError') return; // korisnik zatvorio meni
@@ -2730,7 +2741,7 @@
             }
         }
         try {
-            var url = URL.createObjectURL(new Blob([gpx], { type: 'application/gpx+xml' }));
+            var url = URL.createObjectURL(new Blob([content], { type: mimeType }));
             var a = document.createElement('a');
             a.href = url; a.download = fileName;
             document.body.appendChild(a); a.click(); document.body.removeChild(a);
@@ -2739,7 +2750,7 @@
         } catch (e) {
             _notify('showError', 'Nije moguće izvesti podatke', e.message);
         }
-    }
+    };
     window.mapaRadnikaShareTrag = function(index) {
         var t = _loadSavedTracks()[index];
         if (!t || !t.points || t.points.length < 2) { _notify('showWarning', 'Trag nema dovoljno tačaka za izvoz.'); return; }

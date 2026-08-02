@@ -11,11 +11,19 @@
 // ─── Kubikator print ─────────────────────────────────────────
 function printKubikator() {
     const unosi = (typeof getKubikatorUnosi === 'function') ? getKubikatorUnosi() : [];
-    if (!unosi.length) { alert('Nema unosa za štampanje.'); return; }
+    if (!unosi.length) {
+        if (typeof showWarning === 'function') showWarning('Nema unosa za štampanje');
+        else alert('Nema unosa za štampanje.');
+        return;
+    }
 
     const accent = '#047857';
     const datumStampe   = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const vrijemeStampe = new Date().toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' });
+
+    // Isti format kao na ekranu (js/kubikator.js _fmt) — zarez kao decimalni
+    // separator, ne tačka, da se brojevi na štampi i ekranu poklapaju.
+    const fmt2 = n => Number(n || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     const fmtTs = ts => new Date(ts).toLocaleString('bs-BA', {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -29,8 +37,8 @@ function printKubikator() {
     // OVDJE svodi na jedan tekst po redu umjesto dvije odvojene kolone koje
     // bi za polovinu unosa uvijek bile prazne/pogrešno označene.
     const dimenzijeOpis = u => u.vrsta === 'prostorno'
-        ? `Š ${Number(u.sirina).toFixed(2)} × V ${Number(u.visina).toFixed(2)} m`
-        : `⌀ ${u.precnik} cm × ${Number(u.duzina).toFixed(2)} m`;
+        ? `Š ${fmt2(u.sirina)} × V ${fmt2(u.visina)} m`
+        : `⌀ ${u.precnik} cm × ${fmt2(u.duzina)} m`;
 
     // Rekapitulacija po vrsti drveta (Oblovina / Prostorno drvo)
     const mapa = {};
@@ -46,7 +54,7 @@ function printKubikator() {
         <tr>
             <td style="padding:7px 10px;font-weight:600;">${s}</td>
             <td style="padding:7px 10px;text-align:center;">${mapa[s].kom}</td>
-            <td style="padding:7px 10px;text-align:right;font-weight:700;color:${accent};">${mapa[s].m3.toFixed(2)}</td>
+            <td style="padding:7px 10px;text-align:right;font-weight:700;color:${accent};">${fmt2(mapa[s].m3)}</td>
         </tr>`).join('');
 
     const rekapHtml = `
@@ -63,10 +71,45 @@ function printKubikator() {
                 <tr style="background:#f0fdf4;border-top:2px solid ${accent};">
                     <td style="padding:9px 10px;font-weight:700;">UKUPNO</td>
                     <td style="padding:9px 10px;text-align:center;font-weight:700;">${unosi.length}</td>
-                    <td style="padding:9px 10px;text-align:right;font-weight:700;color:${accent};">${ukupnoM3.toFixed(2)}</td>
+                    <td style="padding:9px 10px;text-align:right;font-weight:700;color:${accent};">${fmt2(ukupnoM3)}</td>
                 </tr>
             </tbody>
         </table>`;
+
+    // Rekapitulacija po gomili/odjelu — samo ako je bar jedan unos označen
+    // (Kubikator, polje "Gomila / odjel"); inače se ovaj dio potpuno izostavlja
+    // da izvještaj izgleda isto kao i prije nego je ta oznaka dodana.
+    const imaGomile = unosi.some(u => u.odjel);
+    let gomileHtml = '';
+    if (imaGomile) {
+        const mapaGomile = {};
+        unosi.forEach(u => {
+            const key = u.odjel || 'Bez oznake';
+            if (!mapaGomile[key]) mapaGomile[key] = { kom: 0, m3: 0 };
+            mapaGomile[key].kom++;
+            mapaGomile[key].m3 += u.zapremina;
+        });
+        const gomileRows = Object.keys(mapaGomile).map(g => `
+            <tr>
+                <td style="padding:7px 10px;font-weight:600;">${escapeHtml(g)}</td>
+                <td style="padding:7px 10px;text-align:center;">${mapaGomile[g].kom}</td>
+                <td style="padding:7px 10px;text-align:right;font-weight:700;color:${accent};">${fmt2(mapaGomile[g].m3)}</td>
+            </tr>`).join('');
+        gomileHtml = `
+            <div class="print-section">
+                <div class="section-header" style="border-left:4px solid ${accent};">Rekapitulacija po gomilama/odjelima</div>
+                <table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #d1d5db;">
+                    <thead>
+                        <tr style="background:${accent};color:white;">
+                            <th style="padding:9px 10px;text-align:left;">Gomila/odjel</th>
+                            <th style="padding:9px 10px;text-align:center;">Komada</th>
+                            <th style="padding:9px 10px;text-align:right;">m³</th>
+                        </tr>
+                    </thead>
+                    <tbody>${gomileRows}</tbody>
+                </table>
+            </div>`;
+    }
 
     // Tabela svih unosa
     const tabelaRows = [...unosi].reverse().map((u, i) => `
@@ -75,8 +118,8 @@ function printKubikator() {
             <td style="padding:7px 8px;font-size:11px;">${fmtTs(u.ts)}</td>
             <td style="padding:7px 8px;font-weight:600;">${vrstaNaziv(u.vrsta)}</td>
             <td style="padding:7px 8px;text-align:center;">${dimenzijeOpis(u)}</td>
-            <td style="padding:7px 8px;text-align:right;font-weight:700;color:${accent};">${u.zapremina.toFixed(2)}</td>
-            <td style="padding:7px 8px;font-size:11px;color:#4b5563;">${u.napomena || ''}</td>
+            <td style="padding:7px 8px;text-align:right;font-weight:700;color:${accent};">${fmt2(u.zapremina)}</td>
+            <td style="padding:7px 8px;font-size:11px;color:#4b5563;">${escapeHtml(u.odjel || '')}</td>
         </tr>`).join('');
 
     const tabelaHtml = `
@@ -88,7 +131,7 @@ function printKubikator() {
                     <th style="padding:9px 8px;text-align:left;">Vrsta</th>
                     <th style="padding:9px 8px;text-align:center;">Dimenzije</th>
                     <th style="padding:9px 8px;text-align:right;">m³</th>
-                    <th style="padding:9px 8px;text-align:left;">Napomena</th>
+                    <th style="padding:9px 8px;text-align:left;">Gomila/odjel</th>
                 </tr>
             </thead>
             <tbody>${tabelaRows}</tbody>
@@ -96,16 +139,21 @@ function printKubikator() {
 
     const sectionsHtml = `
         <div class="print-section">
-            <div class="section-header" style="border-left:4px solid ${accent};">Rekapitulacija po sortimentima</div>
+            <div class="section-header" style="border-left:4px solid ${accent};">Rekapitulacija</div>
             ${rekapHtml}
         </div>
+        ${gomileHtml}
         <div class="print-section" style="page-break-before:always;">
             <div class="section-header" style="border-left:4px solid ${accent};">Svi unosi (${unosi.length} komada)</div>
             ${tabelaHtml}
         </div>`;
 
     const win = window.open('', '_blank', 'width=1100,height=900,scrollbars=yes');
-    if (!win) { alert('Popup blokiran — dozvolite popup prozore za štampanje.'); return; }
+    if (!win) {
+        if (typeof showError === 'function') showError('Popup blokiran', 'Dozvolite popup prozore za štampanje.');
+        else alert('Popup blokiran — dozvolite popup prozore za štampanje.');
+        return;
+    }
     win.document.write(buildPrintDocument({
         tabLabel: 'Kubikator',
         activeTabLabel: 'Terenski pregled',
