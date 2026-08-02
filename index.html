@@ -2331,6 +2331,14 @@
             <div class="kub-wrap">
                 <div class="kub-card">
                     <div class="kub-samo-oblovina">
+                        <!-- Mala slika trupca — vidljiva odmah uz polja za unos, bez
+                             skrolanja do "Kako se računa" ispod liste. -->
+                        <svg class="kub-mini-ilus" viewBox="0 0 280 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                            <rect x="30" y="14" width="220" height="32" fill="#c99a5b" stroke="#7c4a12" stroke-width="2"/>
+                            <ellipse cx="250" cy="30" rx="8" ry="16" fill="#c99a5b" stroke="#7c4a12" stroke-width="2"/>
+                            <ellipse cx="30" cy="30" rx="8" ry="16" fill="#e8c98a" stroke="#7c4a12" stroke-width="2"/>
+                        </svg>
+
                         <label class="kub-label" for="kub-precnik">Prečnik (cm) <span class="kub-opseg">7 – 150</span></label>
                         <input type="number" id="kub-precnik" inputmode="numeric" class="kub-input"
                                placeholder="24" min="7" max="150" step="1" autocomplete="off" />
@@ -2345,6 +2353,20 @@
                     </div>
 
                     <div class="kub-samo-prostorno">
+                        <!-- Mala slika složaja metrice — isti razlog kao gore, samo za
+                             prostorno drvo. -->
+                        <svg class="kub-mini-ilus" viewBox="0 0 280 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                            <rect x="60" y="8" width="160" height="44" fill="#e8c98a" stroke="#7c4a12" stroke-width="2"/>
+                            <circle cx="90" cy="20" r="8" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.2"/>
+                            <circle cx="120" cy="20" r="8" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.2"/>
+                            <circle cx="150" cy="20" r="8" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.2"/>
+                            <circle cx="180" cy="20" r="8" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.2"/>
+                            <circle cx="90" cy="40" r="8" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.2"/>
+                            <circle cx="120" cy="40" r="8" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.2"/>
+                            <circle cx="150" cy="40" r="8" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.2"/>
+                            <circle cx="180" cy="40" r="8" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.2"/>
+                        </svg>
+
                         <label class="kub-label" for="kub-sirina">Širina slaganja (m)</label>
                         <input type="number" id="kub-sirina" inputmode="decimal" class="kub-input"
                                placeholder="1,20" min="0.01" step="0.01" autocomplete="off" />

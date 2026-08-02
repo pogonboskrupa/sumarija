@@ -47,6 +47,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     var VRSTA_KEY = 'kubikator_vrsta';   // pamti zadnje izabran mod između sesija
     var LOCK_KEY = 'kubikator_lock';     // zaključana dužina između unosa (samo oblovina)
     var PRVI_KEY = 'kubikator_prvi_unos_gotov'; // "24"/"4,50" prijedlog nestaje poslije prvog unosa ikad
+    var PRVI_PROSTORNI_KEY = 'kubikator_prvi_prostorni_gotov'; // isto, za "1,20"/"1,50" (prostorno drvo)
     var MEM_PRIKAZ = 30;          // koliko zadnjih unosa se prikazuje u memoriji
 
     // Dozvoljeni opsezi — sve van ovoga je gotovo sigurno omaška u kucanju
@@ -61,6 +62,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     var _lockDuzina = false;      // dužina ostaje poslije Dodaj (gomila je obično jednake dužine)
     var _justAdded = false;       // animacija u memoriji samo na redu koji je TEK dodan
     var _prviUnosGotov = false;   // true poslije prvog unosa ikad — gasi placeholder "24"/"4,50"
+    var _prviProstornoGotov = false; // isto, za placeholder "1,20"/"1,50" u modu prostorno drvo
 
     // Zarez i tačka su na terenu ravnopravni ("4,50" i "4.50")
     function _num(v) { return parseFloat(String(v == null ? '' : v).replace(',', '.')); }
@@ -88,6 +90,9 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         try {
             _prviUnosGotov = localStorage.getItem(PRVI_KEY) === '1';
         } catch (_) { _prviUnosGotov = false; }
+        try {
+            _prviProstornoGotov = localStorage.getItem(PRVI_PROSTORNI_KEY) === '1';
+        } catch (_) { _prviProstornoGotov = false; }
     }
     function _save() {
         try { localStorage.setItem(KUB_KEY, JSON.stringify(_unosi)); } catch (_) {}
@@ -96,13 +101,17 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         try { localStorage.setItem(LOCK_KEY, JSON.stringify({ duzina: _lockDuzina })); } catch (_) {}
     }
 
-    // "24"/"4,50" u poljima prečnik/dužina su prijedlog SAMO dok korisnik nikad
-    // nije dodao nijedan unos — poslije prvog "Dodaj" (ikad, trajno) nestaju,
-    // da se ne pomiješaju sa stvarnom vrijednosti kad je polje prazno.
+    // "24"/"4,50" (prečnik/dužina) i "1,20"/"1,50" (širina/visina) su prijedlog
+    // SAMO dok korisnik nikad nije dodao nijedan unos u tom modu — poslije
+    // prvog "Dodaj" (ikad, trajno, po modu) nestaju, da se ne pomiješaju sa
+    // stvarnom vrijednosti kad je polje prazno.
     function _osvjeziPlaceholdere() {
         var p = _el('kub-precnik'), d = _el('kub-duzina');
         if (p) p.placeholder = _prviUnosGotov ? '' : '24';
         if (d) d.placeholder = _prviUnosGotov ? '' : '4,50';
+        var s = _el('kub-sirina'), v = _el('kub-visina');
+        if (s) s.placeholder = _prviProstornoGotov ? '' : '1,20';
+        if (v) v.placeholder = _prviProstornoGotov ? '' : '1,50';
     }
 
     function _el(id) { return document.getElementById(id); }
@@ -308,7 +317,13 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         }
         _unosi.push(unos);
         _save();
-        if (!_prviUnosGotov) {
+        if (_vrsta === 'prostorno') {
+            if (!_prviProstornoGotov) {
+                _prviProstornoGotov = true;
+                try { localStorage.setItem(PRVI_PROSTORNI_KEY, '1'); } catch (_) {}
+                _osvjeziPlaceholdere();
+            }
+        } else if (!_prviUnosGotov) {
             _prviUnosGotov = true;
             try { localStorage.setItem(PRVI_KEY, '1'); } catch (_) {}
             _osvjeziPlaceholdere();
