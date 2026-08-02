@@ -5,7 +5,7 @@
 //   • OBLOVINA (podrazumijevano) — Huberova formula: V = (π/4) × (d/100)² × L
 //     d = prečnik na sredini trupca u cm, L = dužina u m.
 //   • PROSTORNO DRVO — V = širina × visina × 0,63 (širina/visina slaganja u m).
-//     0,63 = koeficijent pretvorbe prostornog u čvrsti metar drvne mase
+//     0,63 = koeficijent pretvorbe prostornog u zapreminski oblik drvne mase
 //     (0,7 osnovni koeficijent, umanjen za 10%).
 //
 // Namjerno svedeno na DVA polja po modu. Rezultat se računa DOK SE KUCA — ne
@@ -54,7 +54,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     // (npr. prečnik u milimetrima ili dužina u centimetrima).
     var P_MIN = 7,  P_MAX = 150;  // prečnik, cijeli centimetri
     var D_MIN = 1,  D_MAX = 10;   // dužina u metrima, dvije decimale
-    var KOEF_PROSTORNI = 0.63;    // prostorni → čvrsti metar: 0,7 − 10% = 0,63
+    var KOEF_PROSTORNI = 0.63;    // prostorni → zapreminski oblik: 0,7 − 10% = 0,63
     var DEC = 2;                  // zapremina se prikazuje na dvije decimale
     var _unosi = [];
     var _vrsta = 'oblovina';      // 'oblovina' | 'prostorno'
