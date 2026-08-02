@@ -122,6 +122,25 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             if (okvir) okvir.classList.add('prazno');
             if (btn) btn.disabled = true;
         }
+        _osvjeziIlustraciju(t);
+    }
+
+    // Ilustracija ispod forme — prikazuje TRENUTNE vrijednosti da se odmah
+    // vidi na šta se prečnik/dužina odnose i kako formula dolazi do rezultata.
+    function _osvjeziIlustraciju(t) {
+        var dEl = _el('kub-ilus-d'), lEl = _el('kub-ilus-l');
+        var dmEl = _el('kub-ilus-dm'), lmEl = _el('kub-ilus-lm'), resEl = _el('kub-ilus-res');
+        if (!dEl) return; // ilustracija je opciona (sakriva se na niskim ekranima)
+        if (t.ok) {
+            dEl.textContent = _fmt(t.precnik, 0) + ' cm';
+            lEl.textContent = _fmt(t.duzina, 2) + ' m';
+            dmEl.textContent = _fmt(t.precnik / 100, 2) + ' m';
+            lmEl.textContent = _fmt(t.duzina, 2) + ' m';
+            resEl.textContent = _fmt(t.zapremina, DEC) + ' m³';
+        } else {
+            dEl.textContent = '—'; lEl.textContent = '—';
+            dmEl.textContent = '—'; lmEl.textContent = '—'; resEl.textContent = '— m³';
+        }
     }
 
     function _renderMemorija() {
@@ -243,6 +262,15 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             var p = _el('kub-precnik'), d = _el('kub-duzina');
             [p, d].forEach(function(inp) {
                 if (inp) inp.addEventListener('input', _osvjeziRezultat);
+                // Mobilna tastatura pojede donju polovinu ekrana, pa "Dodaj"
+                // zna ostati sakriven ispod nje (prijavljeno). Nakon fokusa,
+                // kad se tastatura animira gore, pomjeri dugme u vidno polje.
+                if (inp) inp.addEventListener('focus', function() {
+                    setTimeout(function() {
+                        var btn = _el('kub-dodaj-btn');
+                        if (btn) btn.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                    }, 350);
+                });
             });
             // Enter lanac: prečnik → dužina → dodaj
             if (p) p.addEventListener('keydown', function(e) {
