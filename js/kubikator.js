@@ -526,7 +526,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     window.closeKubikator = function() {
         _exitFullscreen();
         // Nazad na početni prikaz uloge, isto kao "Zatvori" na Karti
-        var t = (window.currentUser && String(window.currentUser.type || '').toLowerCase()) || '';
+        var t = (window.currentUser && String(window.currentUser.type || '').trim().toLowerCase()) || '';
         var home = t === 'otpremac' ? 'otpremac-personal'
                  : (t === 'poslovodja' || t === 'poslovođa') ? 'poslovodja-sjeca'
                  : t === 'primac' ? 'primac-personal'

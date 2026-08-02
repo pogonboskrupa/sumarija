@@ -196,7 +196,7 @@
             // Dinamicki kreiraj tab-ove na osnovu tipa korisnika
             const tabsMenu = document.getElementById('tabs-menu'); // Sidebar nav
             const tabsMenuMobile = document.getElementById('tabs-menu-mobile'); // Mobile horizontal tabs
-            let userType = (currentUser.type || '').toLowerCase();
+            let userType = String(currentUser.type || '').trim().toLowerCase();
             // OPERATERI je u šifrarniku upisan u kolonu "ime_prezime" (C), a ne u
             // "tip" (D) — backend `type` puni ISKLJUČIVO iz kolone D (vidi
             // handleLogin u apps-script/authentication.gs), pa bi bez ove provjere
@@ -258,8 +258,7 @@
                     { id: 'poslovodja-izvjestaj-odjeli', icon: '🏭', label: 'Izvještaj po odjelima' },
                     { id: 'poslovodja-unosi', icon: '📝', label: 'Dodani unosi', hasBadge: true }
                 ];
-            } else {
-                // Admin / default user
+            } else if (userType === 'admin') {
                 tabsConfig = [
                     { id: 'dashboard', icon: '🌲', label: 'Šumarija Krupa', active: true },
                     { id: 'kupci', icon: '🏢', label: 'Prikaz po kupcima' },
@@ -274,6 +273,16 @@
                     { id: 'pending-unosi', icon: '📋', label: 'Dodani unosi', hasBadge: true },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
                 ];
+            } else {
+                // Neprepoznata uloga (pogrešan/prazan upis u koloni "tip" šifrarnika
+                // korisnika) — NIKAD tiho ne davati pun admin pristup. Prijavi
+                // grešku i odjavi umjesto da korisnik ostane na admin prikazu.
+                console.error('[AUTH] Neprepoznata uloga korisnika, odjavljujem:', currentUser && currentUser.type);
+                if (typeof showError === 'function') {
+                    showError('Nepoznata uloga korisnika', 'Kontaktirajte administratora da provjeri unos u šifrarniku korisnika.');
+                }
+                if (typeof _performLogout === 'function') _performLogout();
+                return;
             }
 
             // OPERATERI: sakrij CIJELI podmeni unutar SJEČA/OTPREMA — ta uloga
@@ -550,7 +559,7 @@
 
         // Load initial data based on user type (OPTIMIZED - lazy loading)
         function loadData() {
-            let userType = (currentUser.type || '').toLowerCase();
+            let userType = String(currentUser.type || '').trim().toLowerCase();
             // OPERATERI je u šifrarniku upisan u kolonu "ime_prezime" (C), a ne u
             // "tip" (D) — backend `type` puni ISKLJUČIVO iz kolone D (vidi
             // handleLogin u apps-script/authentication.gs), pa bi bez ove provjere
@@ -571,7 +580,12 @@
                 return loadPoslovodjaSjeca();
             } else if (userType === 'operateri') {
                 return loadKupci();
-            } else {
+            } else if (userType === 'admin') {
                 return loadDashboard();
+            } else {
+                // Odbrana u dubinu — showApp() bi za neprepoznatu ulogu već trebao
+                // odjaviti korisnika prije nego se dođe dovde (vidi else granu tamo).
+                console.error('[AUTH] Neprepoznata uloga u loadData():', currentUser && currentUser.type);
+                return Promise.resolve();
             }
         }

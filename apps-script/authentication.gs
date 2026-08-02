@@ -63,7 +63,11 @@ function handleLogin(username, password) {
     const inputPassword = String(password);
 
     if (data[i][0] === username && storedPassword === inputPassword) {
-      const tip = data[i][3]; // primac ili otpremac
+      // trim/lowercase — bez ovoga bilo koji razmak ili varijanta velikih
+      // slova u koloni D šifrarnika (npr. "Primac " ili "primač") ne pogađa
+      // strogo poređenje na frontendu i korisnik tiho dobije PUN admin prikaz
+      // (vidi js/auth.js showApp/loadData, else grana)
+      const tip = String(data[i][3] || '').trim().toLowerCase(); // primac ili otpremac
 
       return createJsonResponse({
         success: true,

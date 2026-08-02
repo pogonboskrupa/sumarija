@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.77';
+        const APP_VERSION = '2.78';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1060,7 +1060,7 @@
 
             try {
                 // Determine user type (case-insensitive)
-                const userType = (currentUser.type || '').toLowerCase();
+                const userType = String(currentUser.type || '').trim().toLowerCase();
 
                 let allViews = [];
 
@@ -2799,7 +2799,7 @@
             if (!currentUser) {
                 return [];
             }
-            const userType = (currentUser.type || '').toLowerCase();
+            const userType = String(currentUser.type || '').trim().toLowerCase();
             if (userType !== 'poslovođa' && userType !== 'poslovodja') {
                 return [];
             }
@@ -9859,7 +9859,7 @@
         ];
 
         function initPreklasiranjeAdminSection() {
-            const isAdmin = currentUser && (currentUser.type || '').toLowerCase() === 'admin';
+            const isAdmin = currentUser && String(currentUser.type || '').trim().toLowerCase() === 'admin';
             const section = document.getElementById('preklasiranje-admin-section');
             if (!section) return;
             section.style.display = isAdmin ? 'block' : 'none';
