@@ -2330,15 +2330,6 @@
 
             <div class="kub-wrap">
                 <div class="kub-card">
-                    <!-- Oznaka gomile/odjela — postavi se jednom, ostaje dok se ne
-                         promijeni (sticky), grupiše memoriju i izvoz ispod. Opciono,
-                         ne usporava unos ko ga ne koristi. -->
-                    <div class="kub-gomila-red">
-                        <input type="text" id="kub-gomila" class="kub-gomila-input"
-                               placeholder="🗂️ Gomila / odjel (opciono)" autocomplete="off" maxlength="40" />
-                        <div id="kub-gomila-chips" class="kub-gomila-chips"></div>
-                    </div>
-
                     <div class="kub-samo-oblovina">
                         <label class="kub-label" for="kub-precnik">Prečnik (cm) <span class="kub-opseg">7 – 150</span></label>
                         <input type="number" id="kub-precnik" inputmode="numeric" class="kub-input"
@@ -2348,7 +2339,7 @@
                         <div class="kub-input-wrap">
                             <input type="number" id="kub-duzina" inputmode="decimal" class="kub-input"
                                    placeholder="4,50" min="1" max="10" step="0.01" autocomplete="off" />
-                            <button type="button" id="kub-lock-duzina" class="kub-lock-btn" onclick="kubikatorToggleLock('duzina')"
+                            <button type="button" id="kub-lock-duzina" class="kub-lock-btn" onclick="kubikatorToggleLock()"
                                     aria-pressed="false" aria-label="Zaključaj dužinu" title="Zaključaj dužinu — ostaje ista za sljedeći unos">🔓</button>
                         </div>
                     </div>
@@ -2359,12 +2350,8 @@
                                placeholder="1,20" min="0.01" step="0.01" autocomplete="off" />
 
                         <label class="kub-label" for="kub-visina">Visina slaganja (m)</label>
-                        <div class="kub-input-wrap">
-                            <input type="number" id="kub-visina" inputmode="decimal" class="kub-input"
-                                   placeholder="1,50" min="0.01" step="0.01" autocomplete="off" />
-                            <button type="button" id="kub-lock-visina" class="kub-lock-btn" onclick="kubikatorToggleLock('visina')"
-                                    aria-pressed="false" aria-label="Zaključaj visinu" title="Zaključaj visinu — ostaje ista za sljedeći unos">🔓</button>
-                        </div>
+                        <input type="number" id="kub-visina" inputmode="decimal" class="kub-input"
+                               placeholder="1,50" min="0.01" step="0.01" autocomplete="off" />
                     </div>
 
                     <div class="kub-greska" id="kub-greska"></div>
@@ -2374,11 +2361,7 @@
                         <span class="kub-rezultat-val" id="kub-rezultat">—</span>
                     </div>
 
-                    <div class="kub-akcije-red">
-                        <button type="button" id="kub-dodaj-btn" class="kub-dodaj" onclick="kubikatorDodaj()">➕ Dodaj</button>
-                        <button type="button" id="kub-ponisti-btn" class="kub-ponisti" onclick="kubikatorPonisti()"
-                                disabled aria-label="Poništi zadnji unos" title="Poništi zadnji unos">↩️</button>
-                    </div>
+                    <button type="button" id="kub-dodaj-btn" class="kub-dodaj" onclick="kubikatorDodaj()">➕ Dodaj</button>
                 </div>
 
                 <!-- Ilustracija: prikazuje TRENUTNO upisane vrijednosti (ažurira ih

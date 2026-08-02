@@ -3668,22 +3668,6 @@ body.kubikator-fullscreen #kubikator-content {
 #kubikator-content.vrsta-prostorno .kub-samo-oblovina { display: none; }
 #kubikator-content.vrsta-prostorno .kub-samo-prostorno { display: block; }
 
-/* Oznaka gomile/odjela — sticky tekst polje + čipovi zadnjih korištenih
-   vrijednosti za brzo ponovno biranje (jedan tap umjesto ponovnog kucanja). */
-.kub-gomila-red { margin-bottom: 14px; }
-.kub-gomila-input {
-    width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #e5e7eb;
-    border-radius: 10px; font-family: inherit; font-size: 14px; font-weight: 600; color: #475569;
-    background: #f8fafc;
-}
-.kub-gomila-input:focus { outline: none; border-color: #047857; background: #fff; }
-.kub-gomila-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
-.kub-gomila-chip {
-    padding: 4px 11px; border-radius: 999px; border: 1px solid #d1d5db; background: #fff;
-    font-family: inherit; font-size: 12px; font-weight: 700; color: #475569; cursor: pointer;
-}
-.kub-gomila-chip.aktivna { background: #ecfdf5; border-color: #047857; color: #047857; }
-
 .kub-label {
     display: block; font-size: 11px; font-weight: 800; color: #6b7280;
     text-transform: uppercase; letter-spacing: .05em; margin: 0 0 5px 2px;
@@ -3691,9 +3675,9 @@ body.kubikator-fullscreen #kubikator-content {
 .kub-label + .kub-input { margin-bottom: 12px; }
 .kub-label + .kub-input-wrap { margin-bottom: 12px; }
 
-/* Polje sa "zaključaj" dugmetom (Dužina/Visina) — ista vrijednost obično
-   vrijedi za cijelu gomilu, pa se zaključavanjem ne mora ponovo kucati za
-   svaki komad, samo se mijenja prečnik/širina. */
+/* Polje sa "zaključaj" dugmetom (samo Dužina, oblovina) — ista vrijednost
+   obično vrijedi za cijelu gomilu, pa se zaključavanjem ne mora ponovo
+   kucati za svaki komad, samo se mijenja prečnik. */
 .kub-input-wrap { position: relative; }
 .kub-input-wrap .kub-input { padding-right: 50px; margin-bottom: 0; }
 .kub-lock-btn {
@@ -3745,23 +3729,14 @@ body.kubikator-fullscreen #kubikator-content {
 .kub-rezultat.prazno .kub-rezultat-label { color: #9ca3af; }
 .kub-rezultat.prazno .kub-rezultat-val { color: #cbd5e1; }
 
-.kub-akcije-red { display: flex; gap: 8px; }
 .kub-dodaj {
-    flex: 1; width: 100%; padding: 13px; border: none; border-radius: 12px;
+    width: 100%; padding: 13px; border: none; border-radius: 12px;
     background: linear-gradient(180deg, #059669, #047857); color: #fff;
     font-family: inherit; font-size: 17px; font-weight: 800; cursor: pointer;
     box-shadow: 0 3px 10px rgba(4, 120, 87, .3);
 }
 .kub-dodaj:active { transform: translateY(1px); filter: brightness(.95); }
 .kub-dodaj:disabled { background: #e5e7eb; color: #9ca3af; box-shadow: none; cursor: default; }
-
-/* Poništi zadnji unos — brz ispravak fat-finger greške bez otvaranja liste */
-.kub-ponisti {
-    flex: 0 0 54px; border: 2px solid #d1d5db; border-radius: 12px;
-    background: #fff; font-size: 20px; cursor: pointer; font-family: inherit;
-}
-.kub-ponisti:active { background: #f3f4f6; }
-.kub-ponisti:disabled { opacity: .35; cursor: default; }
 
 /* Vrlo niski ekrani (mali telefon u horizontalnom položaju, ili kad
    tastatura pojede pola visine) — smanji razmake i za nijansu dalje. */
@@ -3775,7 +3750,6 @@ body.kubikator-fullscreen #kubikator-content {
     .kub-rezultat { padding: 8px 14px; margin: 2px 0 8px; }
     .kub-rezultat-val { font-size: 22px; }
     .kub-dodaj { padding: 10px; font-size: 15px; }
-    .kub-ponisti { flex-basis: 46px; font-size: 17px; }
     /* Ilustracija je edukativna, ne kritična — na vrlo niskom ekranu (npr.
        kad je tastatura otvorena) se sakriva da "Dodaj" ostane dostupan bez
        skrolanja. */
@@ -3819,14 +3793,6 @@ body.kubikator-fullscreen #kubikator-content {
 }
 .kub-mem-ukupno { color: #047857; font-variant-numeric: tabular-nums; }
 .kub-mem-lista { max-height: 40vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-/* Grupni naslov po gomili/odjelu — pojavljuje se SAMO ako je bar jedan
-   prikazani unos označen (kub-gomila), da spisak izgleda isto kao prije za
-   korisnike koji tu oznaku ne koriste. */
-.kub-mem-grupa {
-    padding: 7px 16px 5px; font-size: 10.5px; font-weight: 800; color: #9ca3af;
-    text-transform: uppercase; letter-spacing: .06em; background: #fafafa;
-    border-bottom: 1px solid #f1f5f9;
-}
 .kub-mem-red {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
     padding: 11px 16px; border-bottom: 1px solid #f1f5f9;

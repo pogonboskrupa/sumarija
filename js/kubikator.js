@@ -45,10 +45,8 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
 
     var KUB_KEY = 'kubikator_unosi';
     var VRSTA_KEY = 'kubikator_vrsta';   // pamti zadnje izabran mod između sesija
-    var GOMILE_KEY = 'kubikator_gomile'; // zadnje korištene oznake gomile/odjela (čipovi)
-    var LOCK_KEY = 'kubikator_lock';     // zaključana dužina/visina između unosa
+    var LOCK_KEY = 'kubikator_lock';     // zaključana dužina između unosa (samo oblovina)
     var MEM_PRIKAZ = 30;          // koliko zadnjih unosa se prikazuje u memoriji
-    var GOMILE_MAX = 6;           // koliko zadnjih oznaka pamtimo kao čipove
 
     // Dozvoljeni opsezi — sve van ovoga je gotovo sigurno omaška u kucanju
     // (npr. prečnik u milimetrima ili dužina u centimetrima).
@@ -59,9 +57,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     var _unosi = [];
     var _vrsta = 'oblovina';      // 'oblovina' | 'prostorno'
     var _inited = false;
-    var _gomile = [];             // zadnje korištene oznake gomile/odjela, najnovija prva
     var _lockDuzina = false;      // dužina ostaje poslije Dodaj (gomila je obično jednake dužine)
-    var _lockVisina = false;      // isto, za visinu slaganja u modu prostorno drvo
     var _justAdded = false;       // animacija u memoriji samo na redu koji je TEK dodan
 
     // Zarez i tačka su na terenu ravnopravni ("4,50" i "4.50")
@@ -84,23 +80,15 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             _vrsta = (v === 'prostorno') ? 'prostorno' : 'oblovina';
         } catch (_) { _vrsta = 'oblovina'; }
         try {
-            var g = localStorage.getItem(GOMILE_KEY);
-            _gomile = g ? JSON.parse(g) : [];
-            if (!Array.isArray(_gomile)) _gomile = [];
-        } catch (_) { _gomile = []; }
-        try {
             var l = JSON.parse(localStorage.getItem(LOCK_KEY) || '{}');
-            _lockDuzina = !!l.duzina; _lockVisina = !!l.visina;
-        } catch (_) { _lockDuzina = false; _lockVisina = false; }
+            _lockDuzina = !!l.duzina;
+        } catch (_) { _lockDuzina = false; }
     }
     function _save() {
         try { localStorage.setItem(KUB_KEY, JSON.stringify(_unosi)); } catch (_) {}
     }
-    function _saveGomile() {
-        try { localStorage.setItem(GOMILE_KEY, JSON.stringify(_gomile.slice(0, GOMILE_MAX))); } catch (_) {}
-    }
     function _saveLock() {
-        try { localStorage.setItem(LOCK_KEY, JSON.stringify({ duzina: _lockDuzina, visina: _lockVisina })); } catch (_) {}
+        try { localStorage.setItem(LOCK_KEY, JSON.stringify({ duzina: _lockDuzina })); } catch (_) {}
     }
 
     function _el(id) { return document.getElementById(id); }
@@ -235,54 +223,18 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         }
     }
 
-    // ─── Oznaka gomile/odjela — sticky polje + čipovi zadnjih vrijednosti ──
-    function _upamtiGomilu(v) {
-        v = String(v || '').trim();
-        if (!v) return;
-        _gomile = [v].concat(_gomile.filter(function(g) { return g !== v; })).slice(0, GOMILE_MAX);
-        _saveGomile();
-        _renderGomilaChips();
-    }
-    function _renderGomilaChips() {
-        var box = _el('kub-gomila-chips');
-        if (!box) return;
-        var polje = _el('kub-gomila');
-        var trenutna = polje ? polje.value.trim() : '';
-        if (!_gomile.length) { box.innerHTML = ''; return; }
-        box.innerHTML = _gomile.map(function(g, i) {
-            return '<button type="button" class="kub-gomila-chip' + (g === trenutna ? ' aktivna' : '') +
-                '" data-idx="' + i + '">' + escapeHtml(g) + '</button>';
-        }).join('');
-        // Vrijednost se čita iz _gomile po indeksu (ne iz atributa), da slobodan
-        // tekst korisnika ne mora proći kroz atribut/onclick — sigurnije od XSS-a.
-        Array.prototype.forEach.call(box.querySelectorAll('.kub-gomila-chip'), function(btn) {
-            btn.addEventListener('click', function() {
-                var idx = Number(btn.dataset.idx);
-                var v = _gomile[idx];
-                var inp = _el('kub-gomila');
-                if (inp && v != null) { inp.value = v; _renderGomilaChips(); }
-            });
-        });
-    }
-
-    // ─── Zaključaj dužinu/visinu — ostaje ista poslije "Dodaj" ──
-    window.kubikatorToggleLock = function(polje) {
-        if (polje === 'visina') { _lockVisina = !_lockVisina; }
-        else { _lockDuzina = !_lockDuzina; }
+    // ─── Zaključaj dužinu (samo oblovina) — ostaje ista poslije "Dodaj" ──
+    window.kubikatorToggleLock = function() {
+        _lockDuzina = !_lockDuzina;
         _saveLock();
         _osvjeziLockUI();
     };
     function _osvjeziLockUI() {
-        var bD = _el('kub-lock-duzina'), bV = _el('kub-lock-visina');
+        var bD = _el('kub-lock-duzina');
         if (bD) {
             bD.textContent = _lockDuzina ? '🔒' : '🔓';
             bD.classList.toggle('zakljucano', _lockDuzina);
             bD.setAttribute('aria-pressed', String(_lockDuzina));
-        }
-        if (bV) {
-            bV.textContent = _lockVisina ? '🔒' : '🔓';
-            bV.classList.toggle('zakljucano', _lockVisina);
-            bV.setAttribute('aria-pressed', String(_lockVisina));
         }
     }
 
@@ -293,29 +245,14 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             var m3 = _unosi.reduce(function(s, u) { return s + (Number(u.zapremina) || 0); }, 0);
             ukupnoEl.textContent = _unosi.length + ' kom · ' + _fmt(m3, DEC) + ' m³';
         }
-        var ponBtn = _el('kub-ponisti-btn');
-        if (ponBtn) ponBtn.disabled = !_unosi.length;
-
         if (!lista) return;
         if (!_unosi.length) {
             lista.innerHTML = '<div class="kub-mem-prazno">Još nema unosa.</div>';
             return;
         }
         var prikaz = _unosi.slice(-MEM_PRIKAZ).reverse();   // najnoviji gore
-        // Grupni naslov po gomili/odjelu — SAMO ako je bar jedan od prikazanih
-        // unosa označen, da spisak izgleda potpuno isto kao prije za korisnike
-        // koji tu (opcionu) oznaku ne koriste.
-        var imaGomile = prikaz.some(function(u) { return u.odjel; });
-        var lastOdjel;
         var html = '';
         prikaz.forEach(function(u, i) {
-            if (imaGomile) {
-                var odjel = u.odjel || '';
-                if (odjel !== lastOdjel) {
-                    html += '<div class="kub-mem-grupa">' + (odjel ? escapeHtml(odjel) : 'Bez oznake') + '</div>';
-                    lastOdjel = odjel;
-                }
-            }
             // Stariji zapisi nemaju u.vrsta (nastali prije nego je prostorno
             // drvo dodano) — jedini mod koji je tad postojao bio je oblovina.
             var jeProstorno = u.vrsta === 'prostorno';
@@ -346,11 +283,9 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         // dio da dva unosa u istoj milisekundi (npr. Enter+Enter na tastaturi)
         // ne dobiju isti id, što bi pokvarilo kubikatorObrisi(id).
         var id = ts + Math.random().toString(36).slice(2, 6);
-        var gomilaEl = _el('kub-gomila');
-        var gomila = gomilaEl ? gomilaEl.value.trim() : '';
         var unos = {
             id: id, ts: ts, vrsta: _vrsta,
-            odjel: gomila, sortiment: '', napomena: ''   // vidi komentar na vrhu — ne uklanjati
+            odjel: '', sortiment: '', napomena: ''   // vidi komentar na vrhu — ne uklanjati
         };
         if (_vrsta === 'prostorno') {
             unos.sirina = t.sirina; unos.visina = t.visina; unos.zapremina = t.zapremina;
@@ -359,15 +294,14 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         }
         _unosi.push(unos);
         _save();
-        if (gomila) _upamtiGomilu(gomila);
         _justAdded = true;
         _renderMemorija();
 
-        // Prečnik/širina se uvijek prazni; dužina/visina ostaje ako je
-        // zaključana (gomila je obično jednake dužine) — sljedeći komad se
-        // onda kuca sa samo jednim brojem.
+        // Prečnik se uvijek prazni; dužina ostaje ako je zaključana (gomila je
+        // obično jednake dužine) — sljedeći komad se onda kuca sa samo jednim
+        // brojem. Širina/visina (prostorno drvo) se uvijek prazne.
         var polja = _poljaZaVrstu();
-        var zakljucanoDrugo = _vrsta === 'prostorno' ? _lockVisina : _lockDuzina;
+        var zakljucanoDrugo = _vrsta === 'oblovina' && _lockDuzina;
         if (polja.prvo) polja.prvo.value = '';
         if (polja.drugo && !zakljucanoDrugo) polja.drugo.value = '';
         if (polja.prvo) polja.prvo.focus();
@@ -381,33 +315,6 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         _naVrh();
     };
 
-    // Poništi zadnji dodani unos — brz ispravak fat-finger greške bez
-    // otvaranja/pretrage liste. Ako je posljednji unos istog moda kao trenutno
-    // prikazani, vraća njegove vrijednosti u polja radi ispravke.
-    window.kubikatorPonisti = function() {
-        if (!_unosi.length) return;
-        var zadnji = _unosi.pop();
-        _save();
-        _justAdded = false;
-        _renderMemorija();
-        if (zadnji.vrsta === _vrsta) {
-            var polja = _poljaZaVrstu();
-            if (_vrsta === 'prostorno') {
-                if (polja.prvo) polja.prvo.value = zadnji.sirina;
-                if (polja.drugo && !_lockVisina) polja.drugo.value = zadnji.visina;
-            } else {
-                if (polja.prvo) polja.prvo.value = zadnji.precnik;
-                if (polja.drugo && !_lockDuzina) polja.drugo.value = zadnji.duzina;
-            }
-            _osvjeziRezultat();
-        }
-        if (navigator.vibrate) { try { navigator.vibrate(20); } catch (_) {} }
-        if (typeof showInfo === 'function') {
-            showInfo('Unos poništen', _fmt(zadnji.zapremina, DEC) + ' m³ uklonjeno iz memorije');
-        }
-        _naVrh();
-    };
-
     // Tekstualni/CSV izvoz svih unosa — dijeljenje (telefon) ili preuzimanje
     // (desktop) preko generičkog helpera iz js/mapa-radnika.js. Namjerno CSV,
     // ne XLSX: Kubikator radi offline na terenu, a XLSX biblioteka je vanjska
@@ -417,7 +324,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             if (typeof showWarning === 'function') showWarning('Nema unosa za izvoz');
             return;
         }
-        var redovi = ['Datum/Vrijeme;Vrsta;Dimenzije;Gomila/odjel;Zapremina (m3)'];
+        var redovi = ['Datum/Vrijeme;Vrsta;Dimenzije;Zapremina (m3)'];
         [].concat(_unosi).reverse().forEach(function(u) {
             var jeProstorno = u.vrsta === 'prostorno';
             var vrstaTxt = jeProstorno ? 'Prostorno drvo' : 'Oblovina';
@@ -427,11 +334,11 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             var datum = new Date(u.ts).toLocaleString('bs-BA', {
                 day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
             });
-            redovi.push([datum, vrstaTxt, dim, (u.odjel || ''), _fmt(u.zapremina, DEC)].join(';'));
+            redovi.push([datum, vrstaTxt, dim, _fmt(u.zapremina, DEC)].join(';'));
         });
         var ukupno = _unosi.reduce(function(s, u) { return s + (Number(u.zapremina) || 0); }, 0);
         redovi.push('');
-        redovi.push('UKUPNO;;;;' + _fmt(ukupno, DEC));
+        redovi.push('UKUPNO;;;' + _fmt(ukupno, DEC));
         var csv = '\ufeff' + redovi.join('\r\n');   // BOM — da Excel prepozna UTF-8 (šđčćž)
         var naziv = 'kubikator_' + new Date().toISOString().slice(0, 10) + '.csv';
         if (typeof window.shareOrDownloadFile === 'function') {
@@ -565,14 +472,10 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             if (v) v.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') { e.preventDefault(); window.kubikatorDodaj(); }
             });
-
-            var gomilaEl = _el('kub-gomila');
-            if (gomilaEl) gomilaEl.addEventListener('input', _renderGomilaChips);
         } else {
             _primijeniVrstu(); // uskladi prikaz i pri povratku na već renderovan tab
         }
 
-        _renderGomilaChips();
         _osvjeziLockUI();
         _renderMemorija();
         _osvjeziRezultat();

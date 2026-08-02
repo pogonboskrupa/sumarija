@@ -76,41 +76,6 @@ function printKubikator() {
             </tbody>
         </table>`;
 
-    // Rekapitulacija po gomili/odjelu — samo ako je bar jedan unos označen
-    // (Kubikator, polje "Gomila / odjel"); inače se ovaj dio potpuno izostavlja
-    // da izvještaj izgleda isto kao i prije nego je ta oznaka dodana.
-    const imaGomile = unosi.some(u => u.odjel);
-    let gomileHtml = '';
-    if (imaGomile) {
-        const mapaGomile = {};
-        unosi.forEach(u => {
-            const key = u.odjel || 'Bez oznake';
-            if (!mapaGomile[key]) mapaGomile[key] = { kom: 0, m3: 0 };
-            mapaGomile[key].kom++;
-            mapaGomile[key].m3 += u.zapremina;
-        });
-        const gomileRows = Object.keys(mapaGomile).map(g => `
-            <tr>
-                <td style="padding:7px 10px;font-weight:600;">${escapeHtml(g)}</td>
-                <td style="padding:7px 10px;text-align:center;">${mapaGomile[g].kom}</td>
-                <td style="padding:7px 10px;text-align:right;font-weight:700;color:${accent};">${fmt2(mapaGomile[g].m3)}</td>
-            </tr>`).join('');
-        gomileHtml = `
-            <div class="print-section">
-                <div class="section-header" style="border-left:4px solid ${accent};">Rekapitulacija po gomilama/odjelima</div>
-                <table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #d1d5db;">
-                    <thead>
-                        <tr style="background:${accent};color:white;">
-                            <th style="padding:9px 10px;text-align:left;">Gomila/odjel</th>
-                            <th style="padding:9px 10px;text-align:center;">Komada</th>
-                            <th style="padding:9px 10px;text-align:right;">m³</th>
-                        </tr>
-                    </thead>
-                    <tbody>${gomileRows}</tbody>
-                </table>
-            </div>`;
-    }
-
     // Tabela svih unosa
     const tabelaRows = [...unosi].reverse().map((u, i) => `
         <tr style="border-bottom:1px solid #e5e7eb;">
@@ -119,7 +84,7 @@ function printKubikator() {
             <td style="padding:7px 8px;font-weight:600;">${vrstaNaziv(u.vrsta)}</td>
             <td style="padding:7px 8px;text-align:center;">${dimenzijeOpis(u)}</td>
             <td style="padding:7px 8px;text-align:right;font-weight:700;color:${accent};">${fmt2(u.zapremina)}</td>
-            <td style="padding:7px 8px;font-size:11px;color:#4b5563;">${escapeHtml(u.odjel || '')}</td>
+            <td style="padding:7px 8px;font-size:11px;color:#4b5563;">${escapeHtml(u.napomena || '')}</td>
         </tr>`).join('');
 
     const tabelaHtml = `
@@ -131,7 +96,7 @@ function printKubikator() {
                     <th style="padding:9px 8px;text-align:left;">Vrsta</th>
                     <th style="padding:9px 8px;text-align:center;">Dimenzije</th>
                     <th style="padding:9px 8px;text-align:right;">m³</th>
-                    <th style="padding:9px 8px;text-align:left;">Gomila/odjel</th>
+                    <th style="padding:9px 8px;text-align:left;">Napomena</th>
                 </tr>
             </thead>
             <tbody>${tabelaRows}</tbody>
@@ -142,7 +107,6 @@ function printKubikator() {
             <div class="section-header" style="border-left:4px solid ${accent};">Rekapitulacija</div>
             ${rekapHtml}
         </div>
-        ${gomileHtml}
         <div class="print-section" style="page-break-before:always;">
             <div class="section-header" style="border-left:4px solid ${accent};">Svi unosi (${unosi.length} komada)</div>
             ${tabelaHtml}
