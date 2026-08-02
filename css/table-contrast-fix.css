@@ -746,19 +746,17 @@ th[style*="color: white"] {
 /* Uniformne, profesionalne tabele */
 /* ============================================ */
 
+/* Modernizovan okvir za SVE .izvjestaj-week-table (sedmične, mjesečne,
+   primač/otpremač) — lakši rub + suptilna sjena umjesto teškog 2px tamnog
+   ruba, dosljedno sa .pro-mjesecna-table (Sječa/otprema tab). */
 .izvjestaj-week-table {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 0;
     font-size: 14px;
-    border: 2px solid #374151;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-/* Sedmični tabele — lakši, moderniji okvir (bez teškog tamnog ruba) */
-table[id^="izvjestaji-sedmicni"].izvjestaj-week-table {
     border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
@@ -1014,30 +1012,72 @@ table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-sedmica {
     text-align: left;
 }
 
-/* Sortiment column groups - subtle coloring */
-.izvjestaj-week-table .col-cetinari {
-    background: rgba(16, 185, 129, 0.08) !important;
-}
-
-.izvjestaj-week-table .col-liscari {
-    background: rgba(245, 158, 11, 0.08) !important;
-}
-
-.izvjestaj-week-table .col-sveukupno {
-    background: rgba(59, 130, 246, 0.12) !important;
-    font-weight: 800 !important;
-}
-
+/* ---- Sortiment kolone — grupni akcent + hijerarhija (modernizovano) ----
+   Princip: TRUPCI Č/TRUPCI L (is-subtotal) i Σ ČETINARI/LIŠĆARI (is-total)
+   moraju se razaznati od običnih sortimenata iz iste grupe, ne samo od
+   suprotne grupe — zato tri stepena jačine unutar iste boje (četinari =
+   zelena, lišćari = žuto-braon), umjesto ravnog "svaka kolona ista".
+   UKUPNO Č+L/SVEUKUPNO ostaje najjači akcent u redu (indigo/plava).
+   Klase dodjeljuje sortimentColClass (js/utils.js), dijeljeno sa
+   .pro-mjesecna-table (Sječa/otprema tab) radi vizuelne dosljednosti. */
 .izvjestaj-week-table thead th.col-cetinari {
     background: #065f46 !important;
+}
+.izvjestaj-week-table thead th.col-cetinari.is-subtotal,
+.izvjestaj-week-table thead th.col-cetinari.is-total {
+    background: #064e3b !important;
+    border-bottom: 3px solid #34d399 !important;
 }
 
 .izvjestaj-week-table thead th.col-liscari {
     background: #92400e !important;
 }
+.izvjestaj-week-table thead th.col-liscari.is-subtotal,
+.izvjestaj-week-table thead th.col-liscari.is-total {
+    background: #78350f !important;
+    border-bottom: 3px solid #fbbf24 !important;
+}
 
 .izvjestaj-week-table thead th.col-sveukupno {
     background: #1e40af !important;
+    border-bottom: 3px solid #93c5fd !important;
+}
+
+/* Ispuna po ćeliji — namjerno isključena iz UKUPNO/UKUPNO MJESEC redova
+   (imaju sopstvenu jaku pozadinu na nivou reda; kolona bi se tu samo
+   sudarala s njom) preko :not() na sve tri varijante naziva total-reda
+   koje renderer emituje (week-totals-row/grand-totals-row/totals-row). */
+.izvjestaj-week-table tbody tr:not(.week-totals-row):not(.grand-totals-row):not(.totals-row) td.col-cetinari {
+    background: rgba(16, 185, 129, 0.07);
+}
+.izvjestaj-week-table tbody tr:not(.week-totals-row):not(.grand-totals-row):not(.totals-row) td.col-liscari {
+    background: rgba(245, 158, 11, 0.08);
+}
+.izvjestaj-week-table tbody tr:not(.week-totals-row):not(.grand-totals-row):not(.totals-row) td.col-cetinari.is-subtotal {
+    background: rgba(16, 185, 129, 0.16);
+    color: #047857 !important;
+    font-weight: 800 !important;
+}
+.izvjestaj-week-table tbody tr:not(.week-totals-row):not(.grand-totals-row):not(.totals-row) td.col-liscari.is-subtotal {
+    background: rgba(245, 158, 11, 0.18);
+    color: #b45309 !important;
+    font-weight: 800 !important;
+}
+.izvjestaj-week-table tbody tr:not(.week-totals-row):not(.grand-totals-row):not(.totals-row) td.col-cetinari.is-total {
+    background: rgba(16, 185, 129, 0.12);
+    color: #065f46 !important;
+    font-weight: 800 !important;
+}
+.izvjestaj-week-table tbody tr:not(.week-totals-row):not(.grand-totals-row):not(.totals-row) td.col-liscari.is-total {
+    background: rgba(245, 158, 11, 0.14);
+    color: #92400e !important;
+    font-weight: 800 !important;
+}
+.izvjestaj-week-table tbody tr:not(.week-totals-row):not(.grand-totals-row):not(.totals-row) td.col-sveukupno {
+    background: rgba(59, 130, 246, 0.14) !important;
+    color: #1e3a8a !important;
+    font-weight: 800 !important;
+    border-left: 2px solid #93c5fd;
 }
 
 /* Week section header */

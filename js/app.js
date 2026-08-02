@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.82';
+        const APP_VERSION = '2.83';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -12385,10 +12385,10 @@
             const footer = document.getElementById(`${tablePrefix}-footer`);
 
             // ========== HEADER ==========
-            // Uniformna tamno siva boja za sve kolone
+            // Grupna klasa po sortimentu — sortimentColClass, js/utils.js.
             let headerHtml = '<tr><th>Sedmica</th>';
             sortimentiNazivi.forEach(sortiment => {
-                headerHtml += `<th>${sortiment}</th>`;
+                headerHtml += `<th class="${sortimentColClass(sortiment)}">${sortiment}</th>`;
             });
             headerHtml += '</tr>';
             header.innerHTML = headerHtml;
@@ -12416,7 +12416,7 @@
 
                         monthTotals[sortiment] += value;
                         const displayValue = value > 0 ? value.toFixed(2) : '-';
-                        bodyHtml += `<td>${displayValue}</td>`;
+                        bodyHtml += `<td class="${sortimentColClass(sortiment)}">${displayValue}</td>`;
                     });
 
                     bodyHtml += '</tr>';
@@ -12457,10 +12457,10 @@
             }
 
             // ========== HEADER ==========
-            // Uniformna tamno siva boja za sve kolone
+            // Grupna klasa po sortimentu — sortimentColClass, js/utils.js.
             let headerHtml = '<tr><th>Odjel</th>';
             sortimentiNazivi.forEach(sortiment => {
-                headerHtml += `<th>${sortiment}</th>`;
+                headerHtml += `<th class="${sortimentColClass(sortiment)}">${sortiment}</th>`;
             });
             headerHtml += '</tr>';
             header.innerHTML = headerHtml;
@@ -12488,7 +12488,7 @@
 
                         totals[sortiment] += value;
                         const displayValue = value > 0 ? value.toFixed(2) : '-';
-                        bodyHtml += `<td>${displayValue}</td>`;
+                        bodyHtml += `<td class="${sortimentColClass(sortiment)}">${displayValue}</td>`;
                     });
 
                     bodyHtml += '</tr>';

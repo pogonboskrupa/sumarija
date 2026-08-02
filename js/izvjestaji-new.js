@@ -315,15 +315,12 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
         return;
     }
 
-    // Build header - uniformna tamno siva boja
+    // Build header - grupna klasa (col-cetinari/col-liscari/col-sveukupno,
+    // + is-subtotal za TRUPCI Č/L, is-total za Σ ČETINARI/LIŠĆARI) iz
+    // sortimentColClass (js/utils.js) — dijeljeno sa body ćelijama ispod.
     let headerHtml = '<tr><th class="col-sedmica">SEDMICA</th><th>' + groupLabel + '</th>';
     sortimentiNazivi.forEach(sortiment => {
-        let extraClass = '';
-        if (sortiment === 'UKUPNO Č+L' || sortiment === 'SVEUKUPNO') extraClass = 'col-sveukupno';
-        else if (sortiment === 'LIŠĆARI') extraClass = 'col-liscari';
-        else if (sortiment === 'Σ ČETINARI' || sortiment === 'ČETINARI') extraClass = 'col-cetinari';
-
-        headerHtml += `<th class="${extraClass}">${sortiment}</th>`;
+        headerHtml += `<th class="${sortimentColClass(sortiment)}">${sortiment}</th>`;
     });
     headerHtml += '</tr>';
     headerElem.innerHTML = headerHtml;
@@ -374,13 +371,7 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
             sortimentiNazivi.forEach(sortiment => {
                 const value = weekData[odjel][sortiment] || 0;
                 const displayValue = value > 0 ? value.toFixed(2) : '-';
-
-                let extraClass = '';
-                if (sortiment === 'UKUPNO Č+L' || sortiment === 'SVEUKUPNO') extraClass = 'col-sveukupno';
-                else if (sortiment === 'LIŠĆARI') extraClass = 'col-liscari';
-                else if (sortiment === 'Σ ČETINARI' || sortiment === 'ČETINARI') extraClass = 'col-cetinari';
-
-                bodyHtml += `<td class="${extraClass}">${displayValue}</td>`;
+                bodyHtml += `<td class="${sortimentColClass(sortiment)}">${displayValue}</td>`;
             });
 
             bodyHtml += '</tr>';
@@ -534,18 +525,19 @@ function renderIzvjestajiTable(data, sortimentiNazivi, tablePrefix) {
     });
 
     // ========== HEADER ==========
-    // Uniformna tamno siva boja - sve kolone iste
+    // Grupna klasa po sortimentu (col-cetinari/col-liscari/col-sveukupno,
+    // is-subtotal za TRUPCI Č/L, is-total za Σ ČETINARI/LIŠĆARI) —
+    // sortimentColClass, js/utils.js.
     let headerHtml = '<tr>';
     headerHtml += '<th style="text-align: left;">Odjel</th>';
 
     sortimentiNazivi.forEach(sortiment => {
-        headerHtml += `<th>${sortiment}</th>`;
+        headerHtml += `<th class="${sortimentColClass(sortiment)}">${sortiment}</th>`;
     });
     headerHtml += '</tr>';
     headerElem.innerHTML = headerHtml;
 
     // ========== BODY ==========
-    // Čisti bijeli/sivi redovi bez šarenja
     let bodyHtml = '';
     const totals = {};
     sortimentiNazivi.forEach(s => totals[s] = 0);
@@ -561,7 +553,7 @@ function renderIzvjestajiTable(data, sortimentiNazivi, tablePrefix) {
 
             // Prikaži vrijednost ili crticu ako je 0
             const displayValue = value > 0 ? value.toFixed(2) : '-';
-            bodyHtml += `<td>${displayValue}</td>`;
+            bodyHtml += `<td class="${sortimentColClass(sortiment)}">${displayValue}</td>`;
         });
 
         bodyHtml += '</tr>';

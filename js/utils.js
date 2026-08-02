@@ -7,6 +7,33 @@
             "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L"
         ];
 
+        // ========== SORTIMENT KOLONA — GRUPNA KLASA ZA BOJENJE TABELA ==========
+        // Dijeljeno između js/izvjestaji-new.js (Izvještaji tab) i js/app.js
+        // (primac/otpremac Izvještaji podtabovi) da se ista mapa ne duplicira
+        // na više mjesta. TRUPCI Č/TRUPCI L dobijaju "is-subtotal" (podgrupa
+        // unutar četinari/lišćari), Σ ČETINARI/LIŠĆARI "is-total" (grupni
+        // zbir), UKUPNO Č+L/SVEUKUPNO svoju posebnu klasu — CSS (vidi
+        // css/table-contrast-fix.css, .izvjestaj-week-table) im daje sve jaču
+        // vizuelnu težinu tim redoslijedom.
+        const _CETINARI_SORTIMENTI = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART'];
+        const _CETINARI_TRUPCI = ['TRUPCI Č'];
+        const _CETINARI_UKUPNO = ['Σ ČETINARI', 'ČETINARI'];
+        const _LISCARI_SORTIMENTI = ['F/L L', 'I L', 'II L', 'III L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE'];
+        const _LISCARI_TRUPCI = ['TRUPCI L', 'TRUPCI'];
+        const _LISCARI_UKUPNO = ['LIŠĆARI'];
+        const _GRAND_TOTAL_SORTIMENTI = ['SVEUKUPNO', 'UKUPNO Č+L'];
+
+        function sortimentColClass(s) {
+            if (_CETINARI_SORTIMENTI.includes(s)) return 'col-cetinari';
+            if (_CETINARI_TRUPCI.includes(s))     return 'col-cetinari is-subtotal';
+            if (_CETINARI_UKUPNO.includes(s))     return 'col-cetinari is-total';
+            if (_LISCARI_SORTIMENTI.includes(s))  return 'col-liscari';
+            if (_LISCARI_TRUPCI.includes(s))      return 'col-liscari is-subtotal';
+            if (_LISCARI_UKUPNO.includes(s))      return 'col-liscari is-total';
+            if (_GRAND_TOTAL_SORTIMENTI.includes(s)) return 'col-sveukupno';
+            return '';
+        }
+
         // ========== PERFORMANCE CONFIGURATION ==========
         const MAX_TABLE_ROWS = 50; // Limit initial table rows for performance
         const LAZY_LOAD_BATCH = 25; // Load additional rows in batches
