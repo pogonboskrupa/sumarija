@@ -2364,9 +2364,24 @@
                     <button type="button" id="kub-dodaj-btn" class="kub-dodaj" onclick="kubikatorDodaj()">➕ Dodaj</button>
                 </div>
 
+                <div class="kub-mem">
+                    <div class="kub-mem-head">
+                        <span>Zadnji unosi</span>
+                        <span class="kub-mem-ukupno" id="kub-ukupno">0 kom · 0,000 m³</span>
+                    </div>
+                    <div id="kub-mem-lista" class="kub-mem-lista"></div>
+                    <div class="kub-mem-akcije">
+                        <button type="button" class="kub-mem-btn" onclick="printKubikator()">🖨️ Štampaj</button>
+                        <button type="button" class="kub-mem-btn" onclick="kubikatorPodijeli()">📤 Podijeli</button>
+                        <button type="button" class="kub-mem-btn kub-mem-btn-danger" onclick="kubikatorOcistiSve()">🗑️ Obriši sve</button>
+                    </div>
+                </div>
+
                 <!-- Ilustracija: prikazuje TRENUTNO upisane vrijednosti (ažurira ih
                      _osvjeziIlustraciju u js/kubikator.js), da se odmah vidi na
-                     šta se brojevi odnose i kako nastaje rezultat. -->
+                     šta se brojevi odnose i kako nastaje rezultat. Namjerno na kraju
+                     liste (poslije "Zadnji unosi") — edukativan sadržaj, ne treba
+                     stajati između unosa i memorije. -->
                 <div class="kub-objasnjenje">
                     <div class="kub-obj-head">📖 Kako se računa</div>
 
@@ -2432,19 +2447,6 @@
                             <strong id="kub-ilus-res2">— m³</strong>
                         </div>
                         <div class="kub-obj-napomena">Koeficijent pretvorbe prostornog drveta u zapreminski oblik: 0,7 − 10% = 0,63.</div>
-                    </div>
-                </div>
-
-                <div class="kub-mem">
-                    <div class="kub-mem-head">
-                        <span>Zadnji unosi</span>
-                        <span class="kub-mem-ukupno" id="kub-ukupno">0 kom · 0,000 m³</span>
-                    </div>
-                    <div id="kub-mem-lista" class="kub-mem-lista"></div>
-                    <div class="kub-mem-akcije">
-                        <button type="button" class="kub-mem-btn" onclick="printKubikator()">🖨️ Štampaj</button>
-                        <button type="button" class="kub-mem-btn" onclick="kubikatorPodijeli()">📤 Podijeli</button>
-                        <button type="button" class="kub-mem-btn kub-mem-btn-danger" onclick="kubikatorOcistiSve()">🗑️ Obriši sve</button>
                     </div>
                 </div>
             </div>
