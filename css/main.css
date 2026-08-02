@@ -483,8 +483,14 @@
         .row-actions-item.danger { color: #dc2626; }
         .row-actions-item.danger:hover { background: #fee2e2; }
 
-        /* Confirm Modal */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center; }
+        /* Confirm Modal
+           z-index 20000 — mora biti IZNAD punoekranskih tabova (Kubikator
+           #kubikator-content: 10500, header/tabs-container: 10000), inače se
+           showConfirmModal() (npr. "Obriši sve" u Kubikatoru) otvori ali
+           ostane nevidljiv iza fullscreen sadržaja. Ispod offline banera
+           (29999) i toast-container-a (30001) da oni ostanu vidljivi i dok
+           je modal otvoren. */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 20000; align-items: center; justify-content: center; }
         .modal-overlay.show { display: flex; }
         .modal { background: white; border-radius: 16px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
         .modal-header { margin-bottom: 16px; }
