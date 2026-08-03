@@ -365,6 +365,82 @@ function handlePrimaci(year, username, password) {
   return createJsonResponse(result, true);
 }
 
+/**
+ * Analiza radnika (primača) — Sječa → Mjesečni prikaz po radnicima.
+ * Za razliku od handlePrimaci (jedna godina), ovdje se prolazi kroz SVE
+ * godine odjednom i grupiše po radnik → godina → (mjeseci[12], odjeli{}),
+ * da frontend može prikazati trend po mjesecu, po godini i po odjelu za
+ * jednog izabranog radnika bez dodatnih poziva.
+ */
+function handlePrimaciRadnikAnaliza(username, password) {
+  const loginResult = JSON.parse(handleLogin(username, password).getContent());
+  if (!loginResult.success) {
+    return createJsonResponse({ error: "Unauthorized" }, false);
+  }
+
+  const cacheKey = 'primaci_radnik_analiza';
+  const cached = getCachedData(cacheKey);
+  if (cached) {
+    return createJsonResponse(cached, true);
+  }
+
+  const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+  const primkaSheet = ss.getSheetByName("INDEKS_PRIMKA");
+  if (!primkaSheet) {
+    return createJsonResponse({ error: "INDEKS_PRIMKA sheet not found in BAZA_PODATAKA" }, false);
+  }
+
+  const primkaData = primkaSheet.getDataRange().getValues();
+  const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
+
+  // radnikMap: ime -> { ukupno, godine: { godina -> { mjeseci:[12], odjeli:{odjel:kubik}, ukupno } } }
+  const radnikMap = {};
+
+  for (let i = 1; i < primkaData.length; i++) {
+    const row = primkaData[i];
+    const datum = row[PRIMKA_COL.DATE];
+    const radnik = row[PRIMKA_COL.RADNIK];
+    const odjel = String(row[PRIMKA_COL.ODJEL] || '').trim();
+    const kubik = parseFloat(row[PRIMKA_COL.UKUPNO]) || 0;
+
+    if (!datum || !radnik) continue;
+
+    const datumObj = parseDate(datum);
+    const godina = datumObj.getFullYear();
+    const mjesec = datumObj.getMonth();
+
+    if (!radnikMap[radnik]) radnikMap[radnik] = { ukupno: 0, godine: {} };
+    const r = radnikMap[radnik];
+    if (!r.godine[godina]) r.godine[godina] = { mjeseci: Array(12).fill(0), odjeli: {}, ukupno: 0 };
+    const g = r.godine[godina];
+
+    g.mjeseci[mjesec] += kubik;
+    g.ukupno += kubik;
+    r.ukupno += kubik;
+    if (odjel) g.odjeli[odjel] = (g.odjeli[odjel] || 0) + kubik;
+  }
+
+  const radnici = [];
+  for (const ime in radnikMap) {
+    const r = radnikMap[ime];
+    const godineArr = Object.keys(r.godine).map(function(g) { return parseInt(g, 10); }).sort(function(a, b) { return a - b; });
+    const godinePodaci = godineArr.map(function(godina) {
+      const gd = r.godine[godina];
+      const odjeli = Object.keys(gd.odjeli)
+        .map(function(o) { return { odjel: o, kubik: gd.odjeli[o] }; })
+        .sort(function(a, b) { return b.kubik - a.kubik; });
+      return { godina: godina, mjeseci: gd.mjeseci, ukupno: gd.ukupno, odjeli: odjeli };
+    });
+    radnici.push({ radnik: ime, ukupno: r.ukupno, godine: godinePodaci });
+  }
+  radnici.sort(function(a, b) { return b.ukupno - a.ukupno; });
+
+  const result = { mjeseci: mjeseci, radnici: radnici };
+  setCachedData(cacheKey, result, CACHE_TTL);
+
+  return createJsonResponse(result, true);
+}
+
 // ========================================
 // OTPREMAČI API - Prikaz po otpremačima
 // ========================================

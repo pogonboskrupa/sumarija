@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.95';
+        const APP_VERSION = '2.96';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -5774,6 +5774,188 @@
                             data: (izvodjac.mjeseci || []).map(v => +(Number(v) || 0).toFixed(2)),
                             borderColor: '#ea580c', backgroundColor: 'rgba(234,88,12,0.15)',
                             tension: 0.3, fill: true, pointRadius: 4, pointBackgroundColor: '#ea580c'
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(2) + ' m³' } }
+                        },
+                        scales: { y: { beginAtZero: true, title: { display: true, text: 'm³' } } }
+                    }
+                });
+            });
+        }
+
+        // ============================================
+        // 🔍 ANALIZA RADNIKA (Sječa → Mjesečni prikaz po radnicima)
+        // Bira se jedan radnik iz dropdowna; prikaz po mjesecu (izabrana
+        // godina), po godini (sve godine) i po odjelu (izabrana godina).
+        // Sve godine se učitavaju JEDNOM (primaci-radnik-analiza API vraća
+        // cijelu istoriju odjednom) — promjena radnika/godine u dropdownu
+        // samo re-renderuje iz već učitanih podataka, bez novog fetch-a.
+        // ============================================
+        let _primaciRadnikAnalizaData = null;
+        let _radnikMjesecChart = null;
+        let _radnikGodinaChart = null;
+
+        async function loadPrimaciRadnikAnaliza() {
+            const sel = document.getElementById('primaci-radnik-analiza-select');
+            if (!sel) return;
+            sel.dataset.loaded = '1';
+            try {
+                const url = buildApiUrl('primaci-radnik-analiza', {});
+                const data = await fetchWithCache(url, 'cache_primaci_radnik_analiza', false, 180000);
+                if (data.error || !data.radnici) {
+                    sel.innerHTML = '<option value="">Greška pri učitavanju</option>';
+                    console.error('Error loading primaci-radnik-analiza:', data.error);
+                    return;
+                }
+                _primaciRadnikAnalizaData = data;
+                sel.innerHTML = '<option value="">— Odaberite radnika —</option>' +
+                    data.radnici.map(r => `<option value="${r.radnik.replace(/"/g, '&quot;')}">${r.radnik}</option>`).join('');
+            } catch (error) {
+                console.error('Error in loadPrimaciRadnikAnaliza:', error);
+                sel.innerHTML = '<option value="">Greška pri učitavanju</option>';
+            }
+        }
+
+        // Poziva se kad korisnik odabere radnika — popuni izbor godina (najnovija
+        // prva, default najnovija) i renderuj.
+        function odaberiPrimaciRadnikAnaliza() {
+            const sel = document.getElementById('primaci-radnik-analiza-select');
+            const godSel = document.getElementById('primaci-radnik-analiza-godina');
+            const wrap = document.getElementById('primaci-radnik-analiza-content');
+            if (!sel || !godSel || !wrap) return;
+            const ime = sel.value;
+
+            if (!ime || !_primaciRadnikAnalizaData) {
+                wrap.classList.add('hidden');
+                godSel.style.display = 'none';
+                return;
+            }
+            const radnik = _primaciRadnikAnalizaData.radnici.find(r => r.radnik === ime);
+            if (!radnik || !radnik.godine.length) {
+                wrap.classList.add('hidden');
+                godSel.style.display = 'none';
+                return;
+            }
+
+            godSel.innerHTML = radnik.godine.slice().reverse()
+                .map(g => `<option value="${g.godina}">${g.godina}.</option>`).join('');
+            godSel.style.display = '';
+            renderPrimaciRadnikAnaliza();
+        }
+
+        function odaberiPrimaciRadnikAnalizaGodina() {
+            renderPrimaciRadnikAnaliza();
+        }
+
+        function renderPrimaciRadnikAnaliza() {
+            const sel = document.getElementById('primaci-radnik-analiza-select');
+            const godSel = document.getElementById('primaci-radnik-analiza-godina');
+            const wrap = document.getElementById('primaci-radnik-analiza-content');
+            if (!sel || !godSel || !wrap || !_primaciRadnikAnalizaData) return;
+
+            const radnik = _primaciRadnikAnalizaData.radnici.find(r => r.radnik === sel.value);
+            if (!radnik || !radnik.godine.length) { wrap.classList.add('hidden'); return; }
+
+            const godinaOdabrana = parseInt(godSel.value, 10) || radnik.godine[radnik.godine.length - 1].godina;
+            const godinaData = radnik.godine.find(g => g.godina === godinaOdabrana) || radnik.godine[radnik.godine.length - 1];
+            if (!godinaData) { wrap.classList.add('hidden'); return; }
+
+            wrap.classList.remove('hidden');
+            const mjeseciNazivi = _primaciRadnikAnalizaData.mjeseci;
+
+            const naslovEl = document.getElementById('primaci-radnik-analiza-naslov');
+            if (naslovEl) naslovEl.textContent = '📊 Analiza — ' + radnik.radnik;
+
+            // --- Po mjesecu (izabrana godina) ---
+            document.getElementById('primaci-radnik-mjesec-header').innerHTML =
+                '<tr><th>Mjesec</th><th style="text-align:right;">m³</th></tr>';
+            let mjBody = '';
+            godinaData.mjeseci.forEach((rawVal, i) => {
+                const val = Number(rawVal) || 0;
+                mjBody += '<tr><td>' + mjeseciNazivi[i] + '</td>' +
+                    '<td style="text-align:right;' + (val > 0 ? 'font-weight:700;' : 'color:#d1d5db;') + '">' +
+                    (val > 0 ? val.toFixed(2) : '-') + '</td></tr>';
+            });
+            mjBody += '<tr class="ukupno-row" style="background:linear-gradient(135deg,#059669,#047857);color:#fff;">' +
+                '<td style="font-weight:900;padding:10px;">📊 UKUPNO ' + godinaData.godina + '.</td>' +
+                '<td style="text-align:right;font-weight:900;padding:10px;">' + godinaData.ukupno.toFixed(2) + '</td></tr>';
+            document.getElementById('primaci-radnik-mjesec-body').innerHTML = mjBody;
+            renderRadnikMjesecChart(godinaData, mjeseciNazivi);
+
+            // --- Po godini (sve godine) ---
+            let godBody = '';
+            radnik.godine.forEach(g => {
+                godBody += '<tr><td>' + g.godina + '.</td><td style="text-align:right;font-weight:700;">' + g.ukupno.toFixed(2) + '</td></tr>';
+            });
+            document.getElementById('primaci-radnik-godina-body').innerHTML = godBody;
+            renderRadnikGodinaChart(radnik);
+
+            // --- Po odjelu (izabrana godina) ---
+            const ukupnoOdjeli = godinaData.odjeli.reduce((s, o) => s + o.kubik, 0) || 1;
+            let odjBody = '';
+            if (!godinaData.odjeli.length) {
+                odjBody = '<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:20px;">Nema podataka o odjelima za ' + godinaData.godina + '.</td></tr>';
+            } else {
+                godinaData.odjeli.forEach(o => {
+                    const udio = o.kubik / ukupnoOdjeli * 100;
+                    odjBody += '<tr><td>' + o.odjel + '</td>' +
+                        '<td style="text-align:right;font-weight:700;">' + o.kubik.toFixed(2) + '</td>' +
+                        '<td style="text-align:right;color:#6b7280;">' + udio.toFixed(1) + '%</td></tr>';
+                });
+            }
+            document.getElementById('primaci-radnik-odjel-body').innerHTML = odjBody;
+        }
+
+        function renderRadnikMjesecChart(godinaData, mjeseciNazivi) {
+            if (typeof window.loadChartJs !== 'function') return;
+            window.loadChartJs().then(() => {
+                const canvas = document.getElementById('primaci-radnik-mjesec-chart');
+                if (!canvas) return;
+                if (_radnikMjesecChart) { _radnikMjesecChart.destroy(); _radnikMjesecChart = null; }
+                const existing = Chart.getChart(canvas);
+                if (existing) existing.destroy();
+                _radnikMjesecChart = new Chart(canvas.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: mjeseciNazivi.map(m => m.slice(0, 3)),
+                        datasets: [{
+                            label: 'm³', data: godinaData.mjeseci.map(v => +(Number(v) || 0).toFixed(2)),
+                            borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.15)',
+                            tension: 0.3, fill: true, pointRadius: 4, pointBackgroundColor: '#059669'
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(2) + ' m³' } }
+                        },
+                        scales: { y: { beginAtZero: true, title: { display: true, text: 'm³' } } }
+                    }
+                });
+            });
+        }
+
+        function renderRadnikGodinaChart(radnik) {
+            if (typeof window.loadChartJs !== 'function') return;
+            window.loadChartJs().then(() => {
+                const canvas = document.getElementById('primaci-radnik-godina-chart');
+                if (!canvas) return;
+                if (_radnikGodinaChart) { _radnikGodinaChart.destroy(); _radnikGodinaChart = null; }
+                const existing = Chart.getChart(canvas);
+                if (existing) existing.destroy();
+                _radnikGodinaChart = new Chart(canvas.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: radnik.godine.map(g => String(g.godina)),
+                        datasets: [{
+                            label: 'Ukupno m³', data: radnik.godine.map(g => +g.ukupno.toFixed(2)),
+                            backgroundColor: '#2563ebcc', borderRadius: 4
                         }]
                     },
                     options: {

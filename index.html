@@ -534,7 +534,7 @@
             <!-- Submenu -->
             <div class="submenu">
                 <button class="submenu-tab active" onclick="switchPrimaciSubmenu('daily')">📅 Sječa po danima</button>
-                <button class="submenu-tab" onclick="switchPrimaciSubmenu('monthly')">📊 Mjesečni prikaz</button>
+                <button class="submenu-tab" onclick="switchPrimaciSubmenu('monthly')">📊 Mjesečni prikaz po radnicima</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('radilista')">🏗️ Radilišta</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('izvodjaci')">👷 Izvođači</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('sortimenti-by-primac')">🏷️ Sortimentni po primačima</button>
@@ -572,6 +572,68 @@
                             <thead id="primaci-radni-dani-header"></thead>
                             <tbody id="primaci-radni-dani-body"></tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- Analiza radnika — na kraju liste. Bira se jedan radnik, prikaz
+                     ide po mjesecu (izabrana godina), po godini (sve godine) i po
+                     odjelu (izabrana godina). Podaci se učitavaju jednom (lazy,
+                     pri prvom otvaranju ovog podtaba) preko primaci-radnik-analiza
+                     API-ja koji već vraća sve godine odjednom — bez novog fetch-a
+                     pri promjeni radnika/godine u dropdownu. -->
+                <div class="section" style="margin-top: 30px;">
+                    <h3 style="color: #7c3aed; text-align: center; margin-bottom: 15px;">🔍 Analiza radnika</h3>
+                    <div class="controls-bar" style="gap: 10px;">
+                        <select id="primaci-radnik-analiza-select" class="month-select" onchange="odaberiPrimaciRadnikAnaliza()">
+                            <option value="">Učitavam radnike...</option>
+                        </select>
+                        <select id="primaci-radnik-analiza-godina" class="month-select" onchange="odaberiPrimaciRadnikAnalizaGodina()" style="display: none;"></select>
+                    </div>
+
+                    <div id="primaci-radnik-analiza-content" class="hidden">
+                        <div class="enterprise-card" style="margin-top: 16px;">
+                            <div class="enterprise-card-header">
+                                <div>
+                                    <h2 id="primaci-radnik-analiza-naslov">📊 Analiza</h2>
+                                    <span class="card-subtitle">Mjesečni trend, godišnji pregled i raspodjela po odjelima</span>
+                                </div>
+                            </div>
+                            <div class="enterprise-card-body">
+                                <h4 style="color: #059669; margin-bottom: 10px;">📅 Po mjesecu</h4>
+                                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 24px;">
+                                    <div style="flex: 1 1 260px; min-width: 240px; overflow-x: auto;">
+                                        <table class="kupci-table" id="primaci-radnik-mjesec-table" style="width: 100%;">
+                                            <thead id="primaci-radnik-mjesec-header"></thead>
+                                            <tbody id="primaci-radnik-mjesec-body"></tbody>
+                                        </table>
+                                    </div>
+                                    <div style="flex: 1 1 320px; min-width: 280px; position: relative; height: 260px;">
+                                        <canvas id="primaci-radnik-mjesec-chart"></canvas>
+                                    </div>
+                                </div>
+
+                                <h4 style="color: #2563eb; margin-bottom: 10px;">📆 Po godini</h4>
+                                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 24px;">
+                                    <div style="flex: 1 1 260px; min-width: 240px; overflow-x: auto;">
+                                        <table class="kupci-table" id="primaci-radnik-godina-table" style="width: 100%;">
+                                            <thead><tr><th>Godina</th><th style="text-align:right;">Ukupno m³</th></tr></thead>
+                                            <tbody id="primaci-radnik-godina-body"></tbody>
+                                        </table>
+                                    </div>
+                                    <div style="flex: 1 1 320px; min-width: 280px; position: relative; height: 260px;">
+                                        <canvas id="primaci-radnik-godina-chart"></canvas>
+                                    </div>
+                                </div>
+
+                                <h4 style="color: #d97706; margin-bottom: 10px;">🏭 Po odjelu</h4>
+                                <div style="overflow-x: auto;">
+                                    <table class="kupci-table" id="primaci-radnik-odjel-table" style="width: 100%;">
+                                        <thead><tr><th>Odjel</th><th style="text-align:right;">Ukupno m³</th><th style="text-align:right;">Udio</th></tr></thead>
+                                        <tbody id="primaci-radnik-odjel-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

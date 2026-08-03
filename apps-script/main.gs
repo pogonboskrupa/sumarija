@@ -131,6 +131,8 @@ function doGet(e) {
       return handleOtpremaciByRadiliste(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'primaci-by-izvodjac') {
       return handlePrimaciByIzvodjac(e.parameter.year, e.parameter.username, e.parameter.password);
+    } else if (path === 'primaci-radnik-analiza') {
+      return handlePrimaciRadnikAnaliza(e.parameter.username, e.parameter.password);
     } else if (path === 'primaci-sortimenti-by-primac') {
       return handlePrimaciSortimentiByPrimac(e.parameter.year, e.parameter.month, e.parameter.username, e.parameter.password);
     } else if (path === 'otpremaci-sortimenti-by-otpremac') {

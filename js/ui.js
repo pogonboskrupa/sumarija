@@ -300,6 +300,9 @@
             // Show selected view
             if (view === 'monthly') {
                 document.getElementById('primaci-monthly-view').classList.remove('hidden');
+                // Analiza radnika — lazy load samo prvi put
+                const analizaSel = document.getElementById('primaci-radnik-analiza-select');
+                if (analizaSel && !analizaSel.dataset.loaded) loadPrimaciRadnikAnaliza();
             } else if (view === 'daily') {
                 document.getElementById('primaci-daily-view').classList.remove('hidden');
                 // Load daily data if not already loaded
