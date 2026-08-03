@@ -3472,8 +3472,14 @@
     border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; margin-bottom: 16px;
 }
 
-/* Tabela dana */
-.sih-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #e5e7eb; border-radius: 14px; background: #fff; }
+/* Tabela dana. Blaga sjenka na desnoj ivici — vidljiva samo ako tabela
+   stvarno pređe širinu ekrana (rijetko, npr. dugačak naziv odjela ili
+   napomena) — signalizira "ima još desno" umjesto da izgleda odsječeno. */
+.sih-scroll {
+    overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #e5e7eb;
+    border-radius: 14px; background: #fff;
+    box-shadow: inset -10px 0 8px -8px rgba(15, 23, 42, .12);
+}
 .sih-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; }
 .sih-table thead th {
     position: sticky; top: 0; z-index: 5;
@@ -3602,6 +3608,28 @@ body.sihtarica-fullscreen #sihtarica-otpremac-content {
     font-family: inherit; cursor: pointer; backdrop-filter: blur(2px);
 }
 .sih-close-btn:active { background: rgba(255, 255, 255, .32); transform: translateY(1px); }
+
+/* Tabela dana na uskom telefonu — otkako je Šihtarica prešla na puni ekran
+   sa STVARNOM širinom uređaja (umjesto fiksnog app viewporta 1280px koji je
+   browser ranije sam smanjivao da stane), tabela (Dan/Vrsta/Napomena/Sječa)
+   je preširoka za obične telefone i "Vrsta" (bedž sa vrstom dana) upada van
+   vidljivog dijela — izgleda kao da dani uopšte nisu popunjeni, iako rekap
+   ispod ispravno računa. @media (max-width:...) ovdje KONAČNO ima smisla
+   (i samo ovdje) jer je unutar sihtarica-fullscreen viewport zaista
+   device-width — vidi docs/VIEWPORT-PROBLEM-I-RJESENJE.md. */
+@media (max-width: 560px) {
+    body.sihtarica-fullscreen #sihtarica-primac-content,
+    body.sihtarica-fullscreen #sihtarica-otpremac-content { padding: 16px 10px; }
+    .sih-table thead th { white-space: normal; } /* "Sječa/otprema" smije preći u 2 reda umjesto da širi kolonu */
+    .sih-table thead th,
+    .sih-table tbody td { padding: 8px 6px; font-size: 12.5px; }
+    .sih-table td:nth-child(2) { min-width: 90px; }
+    .sih-napomena { max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sih-badge { padding: 3px 6px; font-size: 11px; }
+    .sih-dan-broj { margin-right: 4px; }
+    .sih-dan-ime { font-size: 10.5px; }
+    .sih-auto { display: block; margin-left: 0; }
+}
 
 /* --------------------------------------------------------------------------
    Traka tabova na PRAVOM velikom ekranu — uža za ~25%.
