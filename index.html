@@ -1742,10 +1742,14 @@
             </div>
         </div>
 
-        <!-- ŠIHTARICA — mjesečna evidencija radnih dana (js/sihtarica.js) -->
+        <!-- ŠIHTARICA — mjesečna evidencija radnih dana (js/sihtarica.js).
+             Otvara se preko cijelog ekrana, isti obrazac kao Karta/Kubikator —
+             vidi body.sihtarica-fullscreen (css/main.css) i
+             enterSihtaricaFullscreenIfActive (js/sihtarica.js). -->
         <div id="sihtarica-primac-content" class="container hidden">
             <div class="section">
                 <div class="worker-header primac">
+                    <button type="button" class="sih-close-btn" onclick="closeSihtarica('primac')">✕ Zatvori</button>
                     <div class="worker-header-icon">🗓️</div>
                     <div>
                         <h1 class="worker-header-title">Šihtarica</h1>
@@ -1760,6 +1764,7 @@
         <div id="sihtarica-otpremac-content" class="container hidden">
             <div class="section">
                 <div class="worker-header otpremac">
+                    <button type="button" class="sih-close-btn" onclick="closeSihtarica('otpremac')">✕ Zatvori</button>
                     <div class="worker-header-icon">🗓️</div>
                     <div>
                         <h1 class="worker-header-title">Šihtarica</h1>
@@ -3618,9 +3623,9 @@
         <div class="modal" style="max-width:340px;">
             <div class="modal-header"><div class="modal-title">🏖️ Godišnji odmor</div></div>
             <div class="modal-body">
-                <label style="display:block;font-size:12px;font-weight:600;color:#4b5563;margin-bottom:4px;">Ugovoreni broj dana godišnjeg</label>
+                <label style="display:block;font-size:13px;font-weight:800;color:#92400e;margin-bottom:8px;">Ugovoreni broj dana godišnjeg</label>
                 <input type="number" id="sihtarica-god-input" min="0" max="365" inputmode="numeric"
-                       style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;" />
+                       style="width:100%;padding:14px;border:2px solid #f59e0b;border-radius:10px;font-size:28px;font-weight:800;color:#92400e;text-align:center;box-sizing:border-box;background:#fffbeb;" />
                 <div style="font-size:12px;color:#6b7280;margin-top:8px;">Dani označeni kao „Godišnji odmor“ u šihtarici se automatski oduzimaju od ovog broja.</div>
             </div>
             <div class="modal-footer">

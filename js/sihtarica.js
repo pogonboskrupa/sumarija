@@ -21,7 +21,7 @@
 
     var DANI = ['ned', 'pon', 'uto', 'sri', 'čet', 'pet', 'sub'];
     var MJESECI = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun',
-                   'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+                   'Jul', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
 
     // Vrste dana. `radni: true` znači da se broji kao odrađen dan u rekapu.
     var TIPOVI = [
@@ -278,12 +278,47 @@
         body.innerHTML = html;
     }
 
+    // ---- Puni ekran (isti obrazac kao Karta/Kubikator) ----
+    // Aplikacija inače drži viewport na width=1280 (setAppViewport, index.html)
+    // za sve korisnike, na svakom uređaju (vidi docs/VIEWPORT-PROBLEM-I-RJESENJE.md).
+    // Dok je Šihtarica otvorena, viewport se privremeno prebaci na
+    // width=device-width — isti trik kao Karta/Kubikator, tabela dana je
+    // gusta pa se bolje čita na stvarnoj rezoluciji ekrana.
+    function _enterFullscreen() {
+        document.body.classList.add('sihtarica-fullscreen');
+        var vp = document.querySelector('meta[name=viewport]');
+        if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
+    }
+    function _exitFullscreen() {
+        // Stražar: exitSihtaricaFullscreenIfActive se poziva pri SVAKOM prelasku
+        // na bilo koji drugi tab, ne samo kad je Šihtarica stvarno bila otvorena.
+        if (!document.body.classList.contains('sihtarica-fullscreen')) return;
+        document.body.classList.remove('sihtarica-fullscreen');
+        if (typeof window.setAppViewport === 'function') window.setAppViewport();
+    }
+
+    // Pozivaju se iz switchTab (js/ui.js) PRIJE grane koja može rano izaći na
+    // svjež keš — inače bi se pri povratku na već renderovan tab preskočilo.
+    window.enterSihtaricaFullscreenIfActive = function(tab) {
+        if (tab === 'sihtarica-primac' || tab === 'sihtarica-otpremac') _enterFullscreen();
+    };
+    window.exitSihtaricaFullscreenIfActive = function(nextTab) {
+        if (nextTab !== 'sihtarica-primac' && nextTab !== 'sihtarica-otpremac') _exitFullscreen();
+    };
+
+    window.closeSihtarica = function(tip) {
+        _exitFullscreen();
+        var home = tip === 'otpremac' ? 'otpremac-personal' : 'primac-personal';
+        if (typeof switchTab === 'function') switchTab(home);
+    };
+
     // ================== JAVNE FUNKCIJE ==================
 
     window.loadSihtarica = async function(tip) {
         var tabId = 'sihtarica-' + tip;
         var contentId = 'sihtarica-' + tip + '-content';
         if (typeof isActiveTab === 'function' && !isActiveTab(tabId)) return;
+        _enterFullscreen();
 
         var el = document.getElementById(contentId);
         if (el) el.classList.remove('hidden');

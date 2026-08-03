@@ -69,6 +69,9 @@
             if (typeof window.exitKubikatorFullscreenIfActive === 'function') {
                 window.exitKubikatorFullscreenIfActive(tab);
             }
+            if (typeof window.exitSihtaricaFullscreenIfActive === 'function') {
+                window.exitSihtaricaFullscreenIfActive(tab);
+            }
             // I obrnuto — ako se ULAZI na Mapu odjela, osiguraj da je donja
             // traka vidljiva ODMAH, prije eventualnog ranog "return" ispod
             // (svjež keš → instant prikaz preskače granu koja poziva
@@ -82,6 +85,9 @@
             // ovdje, ne samo unutar initKubikator.
             if (typeof window.enterKubikatorFullscreenIfActive === 'function') {
                 window.enterKubikatorFullscreenIfActive(tab);
+            }
+            if (typeof window.enterSihtaricaFullscreenIfActive === 'function') {
+                window.enterSihtaricaFullscreenIfActive(tab);
             }
 
             // Update tab buttons - set active on all matching tabs (sidebar + mobile)

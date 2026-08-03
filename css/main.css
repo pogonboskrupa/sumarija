@@ -3457,7 +3457,15 @@
 .sih-god-item { display: flex; flex-direction: column; gap: 2px; }
 .sih-god-label { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; }
 .sih-god-val { font-size: 26px; font-weight: 800; color: #1f2937; font-variant-numeric: tabular-nums; }
-.sih-god-btn { margin-left: auto; white-space: normal; text-align: left; line-height: 1.3; }
+/* Prebačeno sa bezličnog .btn-secondary (siva) na narandžasti akcent — ovo
+   je jedini ulaz za postavljanje ugovorenih dana, mora se odmah uočiti,
+   posebno dok je "Ugovoreno dana" 0 (vidi .sih-god-hint ispod). */
+.sih-god-btn {
+    margin-left: auto; white-space: normal; text-align: left; line-height: 1.3;
+    background: #fffbeb !important; color: #92400e !important;
+    border: 2px solid #f59e0b !important; font-weight: 800 !important;
+}
+.sih-god-btn:active { background: #fef3c7 !important; }
 .sih-god-hint { color: #92400e; font-size: 12.5px; font-weight: 600; margin: 0 0 16px 2px; }
 .sih-upozorenje {
     background: #fef2f2; border: 1px solid #fecaca; color: #991b1b;
@@ -3558,6 +3566,42 @@
     transition: opacity .15s ease, background .15s ease;
 }
 .sih-table tbody tr:hover .sih-edit { opacity: 1; background: #dbeafe; }
+
+/* ---- Puni ekran (isti obrazac kao Karta/Kubikator) ----
+   Zaglavlje i traka tabova se sakriju, sadržaj postane position:fixed.
+   Izlaz je dugme "✕ Zatvori" gore desno na obojenom zaglavlju taba. */
+body.sihtarica-fullscreen .header,
+body.sihtarica-fullscreen .tabs-container,
+body.sihtarica-fullscreen .sidebar { display: none !important; }
+body.sihtarica-fullscreen { overflow: hidden !important; }
+body.sihtarica-fullscreen #sihtarica-primac-content,
+body.sihtarica-fullscreen #sihtarica-otpremac-content {
+    position: fixed !important; inset: 0 !important; z-index: 10500;
+    /* .container ima `contain: layout style` — pravi zaseban kontekst koji
+       zna omesti prekrivanje cijelog ekrana (isti razlog kao u Kubikatoru). */
+    contain: none !important;
+    margin: 0 !important; max-width: none !important;
+    width: 100vw; height: 100vh; height: 100dvh;   /* dvh — bez skoka kad se sakrije traka browsera */
+    background: #f8fafc; box-sizing: border-box;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+
+/* "Zatvori" dugme — na obojenom gradijent zaglavlju taba (worker-header),
+   zato providno-bijelo umjesto pune plave (kao kod Kubikatora, koji nema
+   obojeno zaglavlje ispod dugmeta). */
+#sihtarica-primac-content .worker-header,
+#sihtarica-otpremac-content .worker-header {
+    position: relative;
+    padding-right: 110px; /* prostor za "Zatvori" dugme da ga podnaslov ne prekrije kad se prelomi */
+}
+.sih-close-btn {
+    position: absolute; top: 14px; right: 16px; z-index: 5;
+    background: rgba(255, 255, 255, .18); color: #fff;
+    border: 2px solid rgba(255, 255, 255, .6); border-radius: 10px;
+    padding: 7px 14px; font-size: 13px; font-weight: 800;
+    font-family: inherit; cursor: pointer; backdrop-filter: blur(2px);
+}
+.sih-close-btn:active { background: rgba(255, 255, 255, .32); transform: translateY(1px); }
 
 /* --------------------------------------------------------------------------
    Traka tabova na PRAVOM velikom ekranu — uža za ~25%.
