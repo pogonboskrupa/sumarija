@@ -81,17 +81,33 @@
     }
 
     // ---- Automatski radni dani iz sječe/otpreme ----
-    // Vraća { "2026-07-15": { ukupno: 12.4, unosa: 2 } } za traženi mjesec.
-    // Ako podaci nisu dostupni (offline bez keša), vraća prazno — šihtarica i
-    // dalje radi, samo bez automatskog označavanja.
+    // Vraća { dani: {"2026-07-15": {ukupno:12.4, unosa:2}}, greska: false }.
+    // `greska: true` znači da API odgovor nije stigao/ispravan (mreža,
+    // istekla sesija, serverska greška...) — RAZLIČITO od "radnik stvarno
+    // nema nijednu sječu/otpremu ovaj mjesec" (validno prazan `dani`, ali
+    // `greska: false`). _render koristi ovo razlikovanje da prikaže
+    // upozorenje SAMO kad je nešto stvarno pošlo po zlu, ne za svaki prazan
+    // mjesec (ranije se svaka greška tiho gutala — korisnik je vidio
+    // "nema automatskog popunjavanja" bez ijednog traga zašto).
     async function _autoDani(tip, godina, mjesec) {
         var out = {};
         try {
-            if (typeof buildApiUrl !== 'function' || typeof fetchWithCache !== 'function') return out;
+            if (typeof buildApiUrl !== 'function' || typeof fetchWithCache !== 'function') {
+                console.warn('[ŠIHTARICA] buildApiUrl/fetchWithCache nisu dostupni — auto-popuna preskočena.');
+                return { dani: out, greska: true };
+            }
             var path = tip === 'primac' ? 'primac-detail' : 'otpremac-detail';
             var kljuc = 'cache_' + (tip === 'primac' ? 'primac' : 'otpremac') + '_detail_' + godina;
             var data = await fetchWithCache(buildApiUrl(path, { year: godina }), kljuc);
-            if (!data || !data.unosi || !Array.isArray(data.unosi)) return out;
+            if (data && data.offline) {
+                // Offline bez keša — ne tretiraj kao grešku (fetchWithCache
+                // ovo namjerno vraća da callers mogu tiho pokazati prazno).
+                return { dani: out, greska: false };
+            }
+            if (!data || data.error || !data.unosi || !Array.isArray(data.unosi)) {
+                console.warn('[ŠIHTARICA] Neispravan/prazan odgovor za auto-popunu (' + path + '):', data && data.error);
+                return { dani: out, greska: true };
+            }
             data.unosi.forEach(function(u) {
                 if (!u || !u.datum) return;
                 // datum stiže kao DD.MM.YYYY (formatDate u apps-script/utils-triggers.gs),
@@ -109,8 +125,11 @@
                 var od = String(u.odjel == null ? '' : u.odjel).trim();
                 if (od && out[k].odjeli.indexOf(od) === -1) out[k].odjeli.push(od);
             });
-        } catch (_) { /* offline ili greška — ostaje prazno */ }
-        return out;
+        } catch (e) {
+            console.warn('[ŠIHTARICA] Greška pri dohvatu auto-popune:', e);
+            return { dani: out, greska: true };
+        }
+        return { dani: out, greska: false };
     }
 
     // ---- Efektivna vrsta dana ----
@@ -165,6 +184,15 @@
             '<select class="year-select" onchange="sihtaricaPromijeni(\'' + tip + '\')" id="sih-' + tip + '-mjesec">' + mjOpcije + '</select>' +
             '<select class="year-select" onchange="sihtaricaPromijeni(\'' + tip + '\')" id="sih-' + tip + '-godina">' + godOpcije + '</select>' +
             '</div>';
+
+        // Auto-popuna dana (iz sječe/otpreme) nije uspjela — RAZLIČITO od
+        // "radnik stvarno nema nijedan unos ovaj mjesec" (tada nema ove
+        // poruke). Bez ovoga korisnik vidi prazan mjesec bez ijednog traga
+        // da je uzrok mreža/sesija, ne da stvarno nije radio.
+        if (st.autoGreska) {
+            html += '<div class="sih-upozorenje">⚠️ Automatsko popunjavanje dana iz sječe/otpreme trenutno nije uspjelo ' +
+                '(mreža ili istekla sesija) — dani i kubici ispod možda nisu ažurni. Provjerite konekciju i ponovo otvorite tab.</div>';
+        }
 
         // --- Kartica godišnjeg odmora ---
         // Naslov + ikonica su NUŽNI da se odmah vidi na šta se brojevi
@@ -327,13 +355,15 @@
 
         if (!_stanje[tip]) {
             var sad = new Date();
-            _stanje[tip] = { godina: sad.getFullYear(), mjesec: sad.getMonth(), autoDani: {} };
+            _stanje[tip] = { godina: sad.getFullYear(), mjesec: sad.getMonth(), autoDani: {}, autoGreska: false };
         }
         // Prvo iscrtaj iz lokalnih podataka (trenutno), pa dopuni automatskim
         // danima kad stignu — tako tab nikad ne stoji prazan dok se čeka mreža.
         _render(tip);
         var st = _stanje[tip];
-        st.autoDani = await _autoDani(tip, st.godina, st.mjesec);
+        var rez = await _autoDani(tip, st.godina, st.mjesec);
+        st.autoDani = rez.dani;
+        st.autoGreska = rez.greska;
         if (typeof isActiveTab === 'function' && !isActiveTab(tabId)) return;
         _render(tip);
 
@@ -349,7 +379,9 @@
         if (gEl) st.godina = parseInt(gEl.value, 10);
         st.autoDani = {};
         _render(tip);
-        st.autoDani = await _autoDani(tip, st.godina, st.mjesec);
+        var rez = await _autoDani(tip, st.godina, st.mjesec);
+        st.autoDani = rez.dani;
+        st.autoGreska = rez.greska;
         _render(tip);
     };
 
