@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.93';
+        const APP_VERSION = '2.94';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6028,6 +6028,9 @@
         let kupciGodisnjiData = [];
         let kupciMjesecniData = [];
         let kupciSortimentiNazivi = [];
+        // Izabrani mjesec (0-11) za "Mjesečni pregled" — default tekući mjesec,
+        // mijenja se preko #kupci-mjesecni-month-select dropdowna.
+        let kupciMjesecniMjesecIdx = new Date().getMonth();
 
         // Sort stanje za oba taba (shared)
         const kupciSortState = {
@@ -6230,17 +6233,21 @@
             bodyElem.innerHTML = bodyHtml;
         }
 
-        // Renderuj mjesečnu tabelu za trenutni mjesec
+        // Renderuj mjesečnu tabelu za izabrani mjesec (kupciMjesecniMjesecIdx,
+        // default tekući mjesec — mijenja se preko #kupci-mjesecni-month-select).
         function renderKupciMjesecniTable(mjesecni, sortimentiNazivi) {
             const headerElem = document.getElementById('kupci-mjesecni-header');
             const bodyElem = document.getElementById('kupci-mjesecni-body');
 
-            // Filtruj samo trenutni mjesec
-            const currentDate = new Date();
             const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
-            const currentMjesec = mjeseci[currentDate.getMonth()];
+            const izabraniMjesec = mjeseci[kupciMjesecniMjesecIdx];
 
-            const filteredData = (mjesecni || []).filter(red => red.mjesec === currentMjesec);
+            // Uskladi dropdown sa trenutno prikazanim mjesecom (npr. poslije
+            // svježeg fetch-a/re-rendera, ne samo poslije ručnog izbora).
+            const selEl = document.getElementById('kupci-mjesecni-month-select');
+            if (selEl) selEl.value = String(kupciMjesecniMjesecIdx);
+
+            const filteredData = (mjesecni || []).filter(red => red.mjesec === izabraniMjesec);
 
             // Sačuvaj filtrirane podatke globalno za sortiranje
             kupciMjesecniData = filteredData;
@@ -6248,7 +6255,7 @@
 
             if (!filteredData || filteredData.length === 0) {
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka za tekući mjesec (' + currentMjesec + ')</td></tr>';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka za ' + izabraniMjesec + '</td></tr>';
                 return;
             }
 
@@ -6257,6 +6264,14 @@
 
             // Renderuj body
             renderKupciMjesecniTableBody();
+        }
+
+        // Poziva se iz #kupci-mjesecni-month-select onchange — re-filtrira već
+        // učitane podatke za CIJELU godinu (kupciMjesecniRawData), bez novog
+        // fetch-a (backend već vraća svih 12 mjeseci u jednom pozivu).
+        function odaberiKupciMjesecniMjesec(idx) {
+            kupciMjesecniMjesecIdx = parseInt(idx, 10) || 0;
+            renderKupciMjesecniTable(kupciMjesecniRawData, kupciSortimentiNazivi);
         }
 
         // Renderuj samo body dio mjesečne tabele (za sortiranje)

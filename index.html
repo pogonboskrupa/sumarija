@@ -967,6 +967,20 @@
                     </div>
                     <div class="enterprise-card-body">
                         <div class="controls-bar">
+                            <select id="kupci-mjesecni-month-select" class="month-select" onchange="odaberiKupciMjesecniMjesec(this.value)">
+                                <option value="0">Januar</option>
+                                <option value="1">Februar</option>
+                                <option value="2">Mart</option>
+                                <option value="3">April</option>
+                                <option value="4">Maj</option>
+                                <option value="5">Juni</option>
+                                <option value="6">Juli</option>
+                                <option value="7">August</option>
+                                <option value="8">Septembar</option>
+                                <option value="9">Oktobar</option>
+                                <option value="10">Novembar</option>
+                                <option value="11">Decembar</option>
+                            </select>
                             <input type="text" class="search-input" id="kupci-mjesecni-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciMjesecniTable()">
                         </div>
                         <div class="kupci-table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
