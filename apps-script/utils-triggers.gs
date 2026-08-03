@@ -12,7 +12,7 @@
 function createMonthlyStats() {
   const mjeseci = [
     'Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun',
-    'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'
+    'Jul', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'
   ];
 
   return mjeseci.map(mjesec => ({

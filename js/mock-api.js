@@ -47,7 +47,7 @@ const MOCK_API = {
   generateMonthlyStats(year) {
     const months = [
       'Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun',
-      'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'
+      'Jul', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'
     ];
 
     // Simuliraj veću sječu tokom ljeta i jeseni
@@ -99,7 +99,7 @@ const MOCK_API = {
   generateWorkerStats(username, type) {
     const months = [
       'Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun',
-      'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'
+      'Jul', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'
     ];
 
     return months.map((mjesec, index) => {

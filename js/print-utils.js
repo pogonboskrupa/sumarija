@@ -376,7 +376,7 @@ function printActiveView(contentId, tabLabel, accentColor) {
         : tabLabel;
 
     // Kontekst: year i month iz selektora unutar aktivnog viewa
-    const MONTHS = ['Januar','Februar','Mart','April','Maj','Juni','Juli','Avgust','Septembar','Oktobar','Novembar','Decembar'];
+    const MONTHS = ['Januar','Februar','Mart','April','Maj','Juni','Juli','August','Septembar','Oktobar','Novembar','Decembar'];
     const monthSel = activeView.querySelector('select.month-select');
     const monthIdx = monthSel ? parseInt(monthSel.value) : new Date().getMonth();
     const year = new Date().getFullYear();

@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.92';
+        const APP_VERSION = '2.93';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -4994,7 +4994,7 @@
         // Helper function to get month name
         function getMonthName(monthIndex) {
             const months = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni',
-                           'Juli', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+                           'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
             return months[monthIndex];
         }
 
@@ -5694,7 +5694,7 @@
         }
 
         function renderPrimaciSortimentiByPrimac(data, month, year) {
-            const MJESECI_NAZIVI = ['Januar','Februar','Mart','April','Maj','Juni','Juli','Avgust','Septembar','Oktobar','Novembar','Decembar'];
+            const MJESECI_NAZIVI = ['Januar','Februar','Mart','April','Maj','Juni','Juli','August','Septembar','Oktobar','Novembar','Decembar'];
             const container = document.getElementById('primaci-sortimenti-primac-container');
 
             if (!data.radilista || data.radilista.length === 0) {
@@ -5773,7 +5773,7 @@
         }
 
         function renderOtremaciSortimentiByOtpremac(data, month, year) {
-            const MJESECI_NAZIVI = ['Januar','Februar','Mart','April','Maj','Juni','Juli','Avgust','Septembar','Oktobar','Novembar','Decembar'];
+            const MJESECI_NAZIVI = ['Januar','Februar','Mart','April','Maj','Juni','Juli','August','Septembar','Oktobar','Novembar','Decembar'];
             const container = document.getElementById('otpremaci-sortimenti-otpremac-container');
 
             if (!data.radilista || data.radilista.length === 0) {
