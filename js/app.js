@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.94';
+        const APP_VERSION = '2.95';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -5513,6 +5513,12 @@
             }
         }
 
+        // Podaci učitani preko loadPrimaciByIzvodjac (svih izvođača, cijela
+        // godina) — čuva se globalno da dropdown detalj (loadPrimaciIzvodjacDetalj)
+        // može ponovo koristiti isti odgovor bez novog fetch-a.
+        let _primaciIzvodjaciData = null;
+        let _izvodjacTrendChart = null;
+
         // Load primaci by izvodjac
         async function loadPrimaciByIzvodjac() {
             try {
@@ -5544,6 +5550,21 @@
                         </td></tr>
                     `;
                     return;
+                }
+
+                // Sačuvaj za dropdown detalj (loadPrimaciIzvodjacDetalj) i popuni
+                // izbor imena — preserviraj trenutni odabir ako korisnik već
+                // gleda nečiji detalj (npr. pozadinski refresh keša).
+                _primaciIzvodjaciData = data;
+                const izvodjacSel = document.getElementById('primaci-izvodjac-select');
+                if (izvodjacSel) {
+                    const prethodni = izvodjacSel.value;
+                    izvodjacSel.innerHTML = '<option value="">— Odaberite izvođača za detaljan pregled —</option>' +
+                        data.izvodjaci.map(iz => `<option value="${iz.naziv.replace(/"/g, '&quot;')}">${iz.naziv}</option>`).join('');
+                    if (prethodni && data.izvodjaci.some(iz => iz.naziv === prethodni)) {
+                        izvodjacSel.value = prethodni;
+                    }
+                    loadPrimaciIzvodjacDetalj();
                 }
 
                 // Render mjesečnu tabelu
@@ -5671,6 +5692,100 @@
                     </td></tr>
                 `;
             }
+        }
+
+        // Detaljan pregled izabranog izvođača (dropdown #primaci-izvodjac-select)
+        // — koristi već učitane podatke iz loadPrimaciByIzvodjac (_primaciIzvodjaciData),
+        // bez novog fetch-a: mjesečna tabela sa trendom u odnosu na prethodni
+        // mjesec, godišnji ukupno po sortimentima, i linijski grafikon trenda.
+        function loadPrimaciIzvodjacDetalj() {
+            const sel = document.getElementById('primaci-izvodjac-select');
+            const card = document.getElementById('primaci-izvodjac-detalj');
+            if (!sel || !card) return;
+            const naziv = sel.value;
+
+            if (!naziv || !_primaciIzvodjaciData) {
+                card.classList.add('hidden');
+                return;
+            }
+            const izvodjac = (_primaciIzvodjaciData.izvodjaci || []).find(iz => iz.naziv === naziv);
+            if (!izvodjac) { card.classList.add('hidden'); return; }
+
+            card.classList.remove('hidden');
+            const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+            const sortimentiNazivi = _primaciIzvodjaciData.sortimentiNazivi || [];
+
+            const naslovEl = document.getElementById('primaci-izvodjac-detalj-naziv');
+            if (naslovEl) naslovEl.textContent = '📊 Detaljan pregled — ' + izvodjac.naziv;
+
+            // Mjesečna tabela — treća kolona pokazuje promjenu u odnosu na
+            // prethodni mjesec (▲/▼), da se odmah vidi trend bez čitanja grafikona.
+            document.getElementById('primaci-izvodjac-detalj-header').innerHTML =
+                '<tr><th>Mjesec</th><th style="text-align:right;">m³</th><th style="text-align:right;">Trend</th></tr>';
+            let prevVal = null;
+            let bodyHtml = '';
+            (izvodjac.mjeseci || []).forEach((rawVal, i) => {
+                const val = Number(rawVal) || 0;
+                let trend = '';
+                if (prevVal !== null) {
+                    if (val > prevVal) trend = '<span style="color:#059669;font-weight:700;">▲ ' + (val - prevVal).toFixed(2) + '</span>';
+                    else if (val < prevVal) trend = '<span style="color:#dc2626;font-weight:700;">▼ ' + (prevVal - val).toFixed(2) + '</span>';
+                    else trend = '<span style="color:#9ca3af;">–</span>';
+                }
+                bodyHtml += '<tr><td>' + mjeseciNazivi[i] + '</td>' +
+                    '<td style="text-align:right;font-weight:700;' + (val > 0 ? '' : 'color:#d1d5db;') + '">' + (val > 0 ? val.toFixed(2) : '-') + '</td>' +
+                    '<td style="text-align:right;">' + trend + '</td></tr>';
+                prevVal = val;
+            });
+            bodyHtml += '<tr class="ukupno-row" style="background:linear-gradient(135deg,#7c2d12,#451a03);color:#fff;">' +
+                '<td style="font-weight:900;padding:10px;">📊 UKUPNO</td>' +
+                '<td style="text-align:right;font-weight:900;padding:10px;">' + (izvodjac.ukupno || 0).toFixed(2) + '</td><td></td></tr>';
+            document.getElementById('primaci-izvodjac-detalj-body').innerHTML = bodyHtml;
+
+            // Sortimenti — godišnji ukupno za izabranog izvođača
+            document.getElementById('primaci-izvodjac-sortimenti-header').innerHTML =
+                '<tr>' + sortimentiNazivi.map(s => '<th style="text-align:right;font-size:11px;">' + s + '</th>').join('') + '</tr>';
+            document.getElementById('primaci-izvodjac-sortimenti-body').innerHTML =
+                '<tr>' + sortimentiNazivi.map(s => {
+                    const v = (izvodjac.sortimentiUkupno || {})[s] || 0;
+                    return '<td style="text-align:right;' + (v > 0 ? 'font-weight:700;' : 'color:#d1d5db;') + '">' + (v > 0 ? v.toFixed(2) : '-') + '</td>';
+                }).join('') + '</tr>';
+
+            renderPrimaciIzvodjacTrendChart(izvodjac, mjeseciNazivi);
+        }
+
+        // Linijski grafikon — mjesečni trend izabranog izvođača (isti obrazac
+        // kao renderKupacStatChart, samo type:'line' umjesto 'bar' jer je ovdje
+        // fokus na trendu iz mjeseca u mjesec, ne na poređenju apsolutnih vrijednosti).
+        function renderPrimaciIzvodjacTrendChart(izvodjac, mjeseciNazivi) {
+            if (typeof window.loadChartJs !== 'function') return;
+            window.loadChartJs().then(() => {
+                const canvas = document.getElementById('primaci-izvodjac-trend-chart');
+                if (!canvas) return;
+                if (_izvodjacTrendChart) { _izvodjacTrendChart.destroy(); _izvodjacTrendChart = null; }
+                const existing = Chart.getChart(canvas);
+                if (existing) existing.destroy();
+                _izvodjacTrendChart = new Chart(canvas.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: mjeseciNazivi.map(m => m.slice(0, 3)),
+                        datasets: [{
+                            label: izvodjac.naziv + ' — m³',
+                            data: (izvodjac.mjeseci || []).map(v => +(Number(v) || 0).toFixed(2)),
+                            borderColor: '#ea580c', backgroundColor: 'rgba(234,88,12,0.15)',
+                            tension: 0.3, fill: true, pointRadius: 4, pointBackgroundColor: '#ea580c'
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(2) + ' m³' } }
+                        },
+                        scales: { y: { beginAtZero: true, title: { display: true, text: 'm³' } } }
+                    }
+                });
+            });
         }
 
         // Load primaci sortimenti by primac (grupisano po radilištu, za odabrani mjesec)
