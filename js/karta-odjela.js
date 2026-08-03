@@ -110,6 +110,19 @@
     return parts.length >= 2 ? parseInt(parts[1]) : null; // 1-12
   }
 
+  // Parsira "DD.MM.YYYY" u Date objekat, radi poređenja (min/max datum sječe
+  // po odjelu) — vraća null za neispravan/nepotpun datum.
+  function _parseDatum(s) {
+    const parts = String(s || '').split('.');
+    if (parts.length < 3) return null;
+    const d = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function _fmtDatum(d) {
+    if (!d) return '—';
+    return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear() + '.';
+  }
+
   // ---- STATUS MAP + SLUČAJNI ----
   // Stripa SLUCAJNI sufiks u svim formatima: "104 SLUCAJNI", "104 SLUCAJNI UZICI", "104 (SLUCAJNI 2025)"
   const _baseKey = k => k.replace(/[\s(]+SLUCAJNI.*/,'').replace(/[\s(]+SLUCAJAN.*/,'').trim();
@@ -177,6 +190,12 @@
       const izvodjac   = uniq(odjelPrimke, p => p.izvodjac);
       const poslovodja = uniq(odjelPrimke, p => p.poslovodja);
 
+      // Početak/kraj sječe — najraniji i najkasniji datum primke za ovaj
+      // odjel (koristi se u modalu SAMO za status "posjeceno").
+      const datumiSjece = odjelPrimke.map(p => _parseDatum(p.datum)).filter(Boolean).sort((a, b) => a - b);
+      const datumPocetka = datumiSjece.length ? datumiSjece[0] : null;
+      const datumKraja   = datumiSjece.length ? datumiSjece[datumiSjece.length - 1] : null;
+
       sjeca.ukupno    = _sumSort(sjeca);
       otpr.ukupno     = _sumSort(otpr);
       sjecaOst.ukupno = _sumSort(sjecaOst);
@@ -184,7 +203,7 @@
 
       const pct    = entry.neto > 0 ? sjeca.ukupno / entry.neto * 100 : 0;
       const status = pct >= 95 ? 'posjeceno' : pct > 5 ? 'u-sjeci' : 'planirano';
-      const entryData = { gj:entry.gj, odjel:entry.odjel, status, pct, sjeca, otpr, sjecaOst, otprOst, neto:entry.neto, bruto:entry.bruto, radiliste, izvodjac, poslovodja };
+      const entryData = { gj:entry.gj, odjel:entry.odjel, status, pct, sjeca, otpr, sjecaOst, otprOst, neto:entry.neto, bruto:entry.bruto, radiliste, izvodjac, poslovodja, datumPocetka, datumKraja };
       map.set(key, entryData);
       // Alias bez /N stripa — sprječava 64/1 da matchuje plan od 64/2P
       const strictKey = _labelKey(entry.gj+' '+entry.odjel);
@@ -772,6 +791,18 @@
             </div>
           </div>
         </div>
+
+        ${s === 'posjeceno' && info.datumPocetka ? `
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;gap:6px;">
+          <div style="background:white;border-radius:7px;padding:4px 8px;text-align:center;flex:1;border:1px solid #bbf7d0;">
+            <div style="font-size:10px;color:#6b7280;">Početak sječe</div>
+            <div style="font-weight:800;font-size:13px;color:#166534;">${_fmtDatum(info.datumPocetka)}</div>
+          </div>
+          <div style="background:white;border-radius:7px;padding:4px 8px;text-align:center;flex:1;border:1px solid #bbf7d0;">
+            <div style="font-size:10px;color:#6b7280;">Kraj sječe</div>
+            <div style="font-weight:800;font-size:13px;color:#166534;">${_fmtDatum(info.datumKraja)}</div>
+          </div>
+        </div>` : ''}
 
         <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Sortimenti — ${PLAN_YEAR}</div>
         <div style="border-radius:10px;overflow:hidden;border:1px solid #f1f5f9;margin-bottom:10px;">
