@@ -1278,37 +1278,6 @@
     }
   }
 
-  // ---- Puni ekran (isti obrazac kao Karta/Kubikator/Šihtarica) ----
-  // Aplikacija inače drži viewport na width=1280 (setAppViewport, index.html)
-  // za sve korisnike, na svakom uređaju. Dok je Mapa odjela otvorena, viewport
-  // se privremeno prebaci na width=device-width — isti trik kao ostali
-  // punoekranski tabovi, mapa se bolje koristi na stvarnoj rezoluciji ekrana.
-  function _enterFullscreen() {
-    document.body.classList.add('karta-odjela-fullscreen');
-    var vp = document.querySelector('meta[name=viewport]');
-    if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
-    if (_map) setTimeout(function() { _map.invalidateSize(); }, 50);
-  }
-  function _exitFullscreen() {
-    // Stražar: exitKartaOdjelaFullscreenIfActive se poziva pri SVAKOM prelasku
-    // na bilo koji drugi tab, ne samo kad je Mapa odjela stvarno bila otvorena.
-    if (!document.body.classList.contains('karta-odjela-fullscreen')) return;
-    document.body.classList.remove('karta-odjela-fullscreen');
-    if (typeof window.setAppViewport === 'function') window.setAppViewport();
-  }
-  // Pozivaju se iz switchTab (js/ui.js) PRIJE grane koja može rano izaći na
-  // svjež keš — inače bi se pri povratku na već renderovan tab preskočilo.
-  window.enterKartaOdjelaFullscreenIfActive = function(tab) {
-    if (tab === 'karta-odjela') _enterFullscreen();
-  };
-  window.exitKartaOdjelaFullscreenIfActive = function(nextTab) {
-    if (nextTab !== 'karta-odjela') _exitFullscreen();
-  };
-  window.closeKartaOdjela = function() {
-    _exitFullscreen();
-    if (typeof switchTab === 'function') switchTab('dashboard');
-  };
-
   // ---- Centriranje na aktivne (u sječi) odjele ----
   // Korisnički zahtjev: pri svakom ulasku prikaz treba biti centriran na
   // područje gdje se trenutno siječe (južno od Bosanske Krupe), ne uvijek

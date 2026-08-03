@@ -72,9 +72,6 @@
             if (typeof window.exitSihtaricaFullscreenIfActive === 'function') {
                 window.exitSihtaricaFullscreenIfActive(tab);
             }
-            if (typeof window.exitKartaOdjelaFullscreenIfActive === 'function') {
-                window.exitKartaOdjelaFullscreenIfActive(tab);
-            }
             // I obrnuto — ako se ULAZI na Mapu odjela, osiguraj da je donja
             // traka vidljiva ODMAH, prije eventualnog ranog "return" ispod
             // (svjež keš → instant prikaz preskače granu koja poziva
@@ -91,9 +88,6 @@
             }
             if (typeof window.enterSihtaricaFullscreenIfActive === 'function') {
                 window.enterSihtaricaFullscreenIfActive(tab);
-            }
-            if (typeof window.enterKartaOdjelaFullscreenIfActive === 'function') {
-                window.enterKartaOdjelaFullscreenIfActive(tab);
             }
 
             // Update tab buttons - set active on all matching tabs (sidebar + mobile)
