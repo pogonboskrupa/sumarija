@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.96';
+        const APP_VERSION = '2.97';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -5792,52 +5792,118 @@
         // 🔍 ANALIZA RADNIKA (Sječa → Mjesečni prikaz po radnicima)
         // Bira se jedan radnik iz dropdowna; prikaz po mjesecu (izabrana
         // godina), po godini (sve godine) i po odjelu (izabrana godina).
-        // Sve godine se učitavaju JEDNOM (primaci-radnik-analiza API vraća
-        // cijelu istoriju odjednom) — promjena radnika/godine u dropdownu
-        // samo re-renderuje iz već učitanih podataka, bez novog fetch-a.
+        //
+        // NAMJERNO bez posebnog backend endpointa — koristi se već postojeći
+        // (i već deployovan) primac-detail-admin, isti koji koristi tab
+        // "Primači na šuma panju". Poziva se jednom PO GODINI za izabranog
+        // radnika (2024..tekuća), a agregacija po mjesecu i po odjelu radi se
+        // ovdje na klijentu. Rezultat se kešira u _primaciRadnikDetalji da
+        // promjena radnika/godine u dropdownu ne ponavlja fetch.
         // ============================================
-        let _primaciRadnikAnalizaData = null;
+        let _primaciRadnikDetalji = {}; // ime radnika -> { radnik, ukupno, godine: [...] }
         let _radnikMjesecChart = null;
         let _radnikGodinaChart = null;
 
+        // Popuni dropdown liste radnika — isti primaci endpoint koji već
+        // koristi "Mjesečni prikaz po radnicima" tabela iznad (loadPrimaci).
         async function loadPrimaciRadnikAnaliza() {
             const sel = document.getElementById('primaci-radnik-analiza-select');
             if (!sel) return;
             sel.dataset.loaded = '1';
             try {
-                const url = buildApiUrl('primaci-radnik-analiza', {});
-                const data = await fetchWithCache(url, 'cache_primaci_radnik_analiza', false, 180000);
-                if (data.error || !data.radnici) {
+                const year = new Date().getFullYear();
+                const url = buildApiUrl('primaci', { year });
+                const data = await fetchWithCache(url, 'cache_primaci_' + year);
+                if (data.error || !data.primaci) {
                     sel.innerHTML = '<option value="">Greška pri učitavanju</option>';
-                    console.error('Error loading primaci-radnik-analiza:', data.error);
+                    console.error('Error loading primaci list for analiza:', data.error);
                     return;
                 }
-                _primaciRadnikAnalizaData = data;
                 sel.innerHTML = '<option value="">— Odaberite radnika —</option>' +
-                    data.radnici.map(r => `<option value="${r.radnik.replace(/"/g, '&quot;')}">${r.radnik}</option>`).join('');
+                    data.primaci.map(p => `<option value="${p.primac.replace(/"/g, '&quot;')}">${p.primac}</option>`).join('');
             } catch (error) {
                 console.error('Error in loadPrimaciRadnikAnaliza:', error);
                 sel.innerHTML = '<option value="">Greška pri učitavanju</option>';
             }
         }
 
-        // Poziva se kad korisnik odabere radnika — popuni izbor godina (najnovija
-        // prva, default najnovija) i renderuj.
-        function odaberiPrimaciRadnikAnaliza() {
+        // Dohvati i agregiraj podatke jednog radnika preko svih godina
+        // (2024..tekuća — isti raspon kao primaci-admin-year-select). Jedan
+        // poziv primac-detail-admin po godini, paralelno; agregacija po
+        // mjesecu i po odjelu radi se ovdje. Rezultat se kešira po imenu.
+        async function _dohvatiPrimaciRadnikDetalje(ime) {
+            if (_primaciRadnikDetalji[ime]) return _primaciRadnikDetalji[ime];
+
+            const trenutnaGodina = new Date().getFullYear();
+            const godineZaProvjeru = [];
+            for (let y = trenutnaGodina; y >= 2024; y--) godineZaProvjeru.push(y);
+
+            const odgovori = await Promise.all(godineZaProvjeru.map(async (godina) => {
+                try {
+                    const url = buildApiUrl('primac-detail-admin', { year: godina, primacName: ime });
+                    const data = await fetchWithCache(url, 'cache_primac_detail_admin_' + ime + '_' + godina);
+                    return { godina, unosi: (data && data.unosi) || [] };
+                } catch (_) {
+                    return { godina, unosi: [] };
+                }
+            }));
+
+            const godine = [];
+            odgovori.sort((a, b) => a.godina - b.godina).forEach(({ godina, unosi }) => {
+                if (!unosi.length) return;
+                const mjeseciArr = Array(12).fill(0);
+                const odjeliMap = {};
+                let ukupno = 0;
+                unosi.forEach(u => {
+                    const parts = String(u.datum || '').split(/[\/.\-]/);
+                    if (parts.length < 2) return;
+                    const mjesecIdx = parseInt(parts[1], 10) - 1;
+                    const val = Number(u.ukupno) || 0;
+                    if (mjesecIdx >= 0 && mjesecIdx < 12) mjeseciArr[mjesecIdx] += val;
+                    ukupno += val;
+                    const odjel = String(u.odjel || '').trim();
+                    if (odjel) odjeliMap[odjel] = (odjeliMap[odjel] || 0) + val;
+                });
+                const odjeli = Object.keys(odjeliMap)
+                    .map(o => ({ odjel: o, kubik: odjeliMap[o] }))
+                    .sort((a, b) => b.kubik - a.kubik);
+                godine.push({ godina, mjeseci: mjeseciArr, ukupno, odjeli });
+            });
+
+            const radnik = { radnik: ime, ukupno: godine.reduce((s, g) => s + g.ukupno, 0), godine };
+            _primaciRadnikDetalji[ime] = radnik;
+            return radnik;
+        }
+
+        // Poziva se kad korisnik odabere radnika — dohvati/agregiraj podatke,
+        // popuni izbor godina (najnovija prva, default najnovija) i renderuj.
+        async function odaberiPrimaciRadnikAnaliza() {
             const sel = document.getElementById('primaci-radnik-analiza-select');
             const godSel = document.getElementById('primaci-radnik-analiza-godina');
             const wrap = document.getElementById('primaci-radnik-analiza-content');
             if (!sel || !godSel || !wrap) return;
             const ime = sel.value;
 
-            if (!ime || !_primaciRadnikAnalizaData) {
+            if (!ime) {
                 wrap.classList.add('hidden');
                 godSel.style.display = 'none';
                 return;
             }
-            const radnik = _primaciRadnikAnalizaData.radnici.find(r => r.radnik === ime);
-            if (!radnik || !radnik.godine.length) {
-                wrap.classList.add('hidden');
+
+            wrap.classList.remove('hidden');
+            const naslovEl = document.getElementById('primaci-radnik-analiza-naslov');
+            if (naslovEl) naslovEl.textContent = '📊 Analiza — ' + ime + ' (učitavam...)';
+            document.getElementById('primaci-radnik-mjesec-body').innerHTML =
+                '<tr><td colspan="2" style="text-align:center;color:#9ca3af;padding:20px;">⏳ Učitavam...</td></tr>';
+
+            const radnik = await _dohvatiPrimaciRadnikDetalje(ime);
+            if (naslovEl) naslovEl.textContent = '📊 Analiza — ' + ime;
+
+            if (!radnik.godine.length) {
+                document.getElementById('primaci-radnik-mjesec-body').innerHTML =
+                    '<tr><td colspan="2" style="text-align:center;color:#9ca3af;padding:20px;">Nema podataka za ovog radnika.</td></tr>';
+                document.getElementById('primaci-radnik-godina-body').innerHTML = '';
+                document.getElementById('primaci-radnik-odjel-body').innerHTML = '';
                 godSel.style.display = 'none';
                 return;
             }
@@ -5845,31 +5911,25 @@
             godSel.innerHTML = radnik.godine.slice().reverse()
                 .map(g => `<option value="${g.godina}">${g.godina}.</option>`).join('');
             godSel.style.display = '';
-            renderPrimaciRadnikAnaliza();
+            renderPrimaciRadnikAnaliza(radnik);
         }
 
         function odaberiPrimaciRadnikAnalizaGodina() {
-            renderPrimaciRadnikAnaliza();
+            const sel = document.getElementById('primaci-radnik-analiza-select');
+            const radnik = sel && _primaciRadnikDetalji[sel.value];
+            if (radnik) renderPrimaciRadnikAnaliza(radnik);
         }
 
-        function renderPrimaciRadnikAnaliza() {
-            const sel = document.getElementById('primaci-radnik-analiza-select');
+        function renderPrimaciRadnikAnaliza(radnik) {
             const godSel = document.getElementById('primaci-radnik-analiza-godina');
             const wrap = document.getElementById('primaci-radnik-analiza-content');
-            if (!sel || !godSel || !wrap || !_primaciRadnikAnalizaData) return;
-
-            const radnik = _primaciRadnikAnalizaData.radnici.find(r => r.radnik === sel.value);
-            if (!radnik || !radnik.godine.length) { wrap.classList.add('hidden'); return; }
+            if (!godSel || !wrap || !radnik || !radnik.godine.length) return;
 
             const godinaOdabrana = parseInt(godSel.value, 10) || radnik.godine[radnik.godine.length - 1].godina;
             const godinaData = radnik.godine.find(g => g.godina === godinaOdabrana) || radnik.godine[radnik.godine.length - 1];
-            if (!godinaData) { wrap.classList.add('hidden'); return; }
+            if (!godinaData) return;
 
-            wrap.classList.remove('hidden');
-            const mjeseciNazivi = _primaciRadnikAnalizaData.mjeseci;
-
-            const naslovEl = document.getElementById('primaci-radnik-analiza-naslov');
-            if (naslovEl) naslovEl.textContent = '📊 Analiza — ' + radnik.radnik;
+            const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
 
             // --- Po mjesecu (izabrana godina) ---
             document.getElementById('primaci-radnik-mjesec-header').innerHTML =
