@@ -3066,6 +3066,7 @@
                     </div>
                     <!-- Filter traka -->
                     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;">
+                        <button type="button" class="kub-close-btn" onclick="closeKartaOdjela()">✕ Zatvori</button>
                         <div style="display:flex;align-items:center;gap:6px;">
                             <label style="font-size:12px;font-weight:600;color:#374151;">GJ:</label>
                             <select id="karta-filter-gj" onchange="applyKartaFilter()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;">
@@ -3127,6 +3128,31 @@
                   #karta-odjela-map { width:100%; height:calc(100vh - 220px); height:calc(100dvh - 220px); min-height:400px; background:#f1f5f9; }
                   @media (max-width:1024px) { #karta-odjela-map { height:calc(100vh - 200px); height:calc(100dvh - 200px); min-height:320px; } }
                   @media (max-width:640px)  { #karta-odjela-map { height:calc(100vh - 230px); height:calc(100dvh - 230px); min-height:260px; } }
+
+                  /* ── PUNI EKRAN (isti obrazac kao Karta/Kubikator/Šihtarica) ──
+                     Zaglavlje, traka tabova i sidebar se sakriju; sadržaj postane
+                     position:fixed preko cijelog ekrana. Izlaz je dugme "✕ Zatvori"
+                     u filter traci (ostaje vidljiv i u mapa-fokus modu, za razliku
+                     od #karta-page-header koji se u tom modu sakriva). */
+                  body.karta-odjela-fullscreen .header,
+                  body.karta-odjela-fullscreen .tabs-container,
+                  body.karta-odjela-fullscreen .sidebar { display:none !important; }
+                  body.karta-odjela-fullscreen { overflow:hidden !important; }
+                  body.karta-odjela-fullscreen #karta-odjela-content {
+                      position:fixed !important; inset:0 !important; z-index:10500;
+                      margin:0 !important; max-width:none !important;
+                      width:100vw; height:100vh; height:100dvh;
+                      background:#fff; box-sizing:border-box;
+                      overflow-y:auto; -webkit-overflow-scrolling:touch;
+                  }
+                  body.karta-odjela-fullscreen #karta-odjela-map {
+                      height:calc(100vh - 190px) !important; height:calc(100dvh - 190px) !important;
+                  }
+                  @media (max-width:640px) {
+                      body.karta-odjela-fullscreen #karta-odjela-map {
+                          height:calc(100vh - 260px) !important; height:calc(100dvh - 260px) !important;
+                      }
+                  }
 
                   /* Radnik mapa odjela — visina umanjena za donju traku dugmadi (~112-120px,
                      ponovo uvećana traka). Ovo je fallback prikaz PRIJE nego se puni-ekran

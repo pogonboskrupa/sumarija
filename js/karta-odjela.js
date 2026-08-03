@@ -1278,6 +1278,61 @@
     }
   }
 
+  // ---- Puni ekran (isti obrazac kao Karta/Kubikator/Šihtarica) ----
+  // Aplikacija inače drži viewport na width=1280 (setAppViewport, index.html)
+  // za sve korisnike, na svakom uređaju. Dok je Mapa odjela otvorena, viewport
+  // se privremeno prebaci na width=device-width — isti trik kao ostali
+  // punoekranski tabovi, mapa se bolje koristi na stvarnoj rezoluciji ekrana.
+  function _enterFullscreen() {
+    document.body.classList.add('karta-odjela-fullscreen');
+    var vp = document.querySelector('meta[name=viewport]');
+    if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
+    if (_map) setTimeout(function() { _map.invalidateSize(); }, 50);
+  }
+  function _exitFullscreen() {
+    // Stražar: exitKartaOdjelaFullscreenIfActive se poziva pri SVAKOM prelasku
+    // na bilo koji drugi tab, ne samo kad je Mapa odjela stvarno bila otvorena.
+    if (!document.body.classList.contains('karta-odjela-fullscreen')) return;
+    document.body.classList.remove('karta-odjela-fullscreen');
+    if (typeof window.setAppViewport === 'function') window.setAppViewport();
+  }
+  // Pozivaju se iz switchTab (js/ui.js) PRIJE grane koja može rano izaći na
+  // svjež keš — inače bi se pri povratku na već renderovan tab preskočilo.
+  window.enterKartaOdjelaFullscreenIfActive = function(tab) {
+    if (tab === 'karta-odjela') _enterFullscreen();
+  };
+  window.exitKartaOdjelaFullscreenIfActive = function(nextTab) {
+    if (nextTab !== 'karta-odjela') _exitFullscreen();
+  };
+  window.closeKartaOdjela = function() {
+    _exitFullscreen();
+    if (typeof switchTab === 'function') switchTab('dashboard');
+  };
+
+  // ---- Centriranje na aktivne (u sječi) odjele ----
+  // Korisnički zahtjev: pri svakom ulasku prikaz treba biti centriran na
+  // područje gdje se trenutno siječe (južno od Bosanske Krupe), ne uvijek
+  // na fiksnu tačku (SUMARIJA_LATLNG = ured Šumarije u gradu). Umjesto da se
+  // nagađa/hardkoduje koordinata (plan sječe se mijenja iz godine u godinu),
+  // računa se STVARNI bounding box svih poligona sa statusom 'u-sjeci' —
+  // to garantovano prati gdje god se trenutno radi. Fallback na cijelu mapu
+  // ako trenutno nijedan odjel nije 'u-sjeci' (npr. van sezone).
+  function _centrirajNaAktivne() {
+    if (!_map || !_allFeatures || !_allFeatures.length) return;
+    var aktivni = _allFeatures.filter(function(lyr) { return lyr._kartaStatus === 'u-sjeci'; });
+    var ciljni = aktivni.length ? aktivni : _allFeatures;
+    var bounds = null;
+    ciljni.forEach(function(lyr) {
+      try {
+        var b = lyr.getBounds();
+        if (bounds) bounds.extend(b); else bounds = L.latLngBounds(b.getSouthWest(), b.getNorthEast());
+      } catch (_) {}
+    });
+    if (bounds && bounds.isValid()) {
+      _map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+    }
+  }
+
   // ---- INICIJALIZACIJA ----
   window.initKartaOdjela = async function(force) {
     const mapDiv = document.getElementById('karta-odjela-map');
@@ -1315,6 +1370,9 @@
 
     } else if (!force) {
       _map.invalidateSize();
+      // "Svaki put" centriraj na aktivne odjele i pri brzom ponovnom ulasku
+      // (bez ponovnog fetch-a — koristi već učitane _allFeatures).
+      setTimeout(_centrirajNaAktivne, 60);
       return;
     }
 
@@ -1334,6 +1392,7 @@
     if (typeof markTabRendered === 'function') markTabRendered('karta-odjela');
 
     setTimeout(() => { if (_map) _map.invalidateSize(); }, 200);
+    setTimeout(_centrirajNaAktivne, 220);
   };
 
   // ---- PLAN ENTRIES ----
