@@ -3611,24 +3611,47 @@ body.sihtarica-fullscreen #sihtarica-otpremac-content {
 
 /* Tabela dana na uskom telefonu — otkako je Šihtarica prešla na puni ekran
    sa STVARNOM širinom uređaja (umjesto fiksnog app viewporta 1280px koji je
-   browser ranije sam smanjivao da stane), tabela (Dan/Vrsta/Napomena/Sječa)
-   je preširoka za obične telefone i "Vrsta" (bedž sa vrstom dana) upada van
-   vidljivog dijela — izgleda kao da dani uopšte nisu popunjeni, iako rekap
-   ispod ispravno računa. @media (max-width:...) ovdje KONAČNO ima smisla
-   (i samo ovdje) jer je unutar sihtarica-fullscreen viewport zaista
-   device-width — vidi docs/VIEWPORT-PROBLEM-I-RJESENJE.md. */
+   browser ranije sam smanjivao da stane), klasična tabela sa 5 kolona
+   (Dan/Vrsta/Napomena/Sječa/Akcija) je preširoka za obične telefone — deo
+   sadržaja je upadao van vidljivog ekrana i traženo je horizontalno
+   skrolanje koje nije bilo očigledno (izgledalo je kao da dani uopšte
+   nisu popunjeni, iako je rekap ispod ispravno računao). Umjesto da se
+   samo suze kolone (i dalje rizik od skrolanja na vrlo uskim ekranima),
+   tabela se PRETVARA U KARTICE — svaki red postane blok koji se prelama
+   prirodno, sadržaj NIKAD ne može upasti van ekrana. Standardna tehnika:
+   display:block na svim tabelarnim elementima + data-label (js/sihtarica.js
+   _render) kao oznaka polja umjesto zaglavlja kolone.
+   @media (max-width:...) ovdje KONAČNO ima smisla (i samo ovdje u aplikaciji)
+   jer je unutar sihtarica-fullscreen viewport zaista device-width — vidi
+   docs/VIEWPORT-PROBLEM-I-RJESENJE.md. */
 @media (max-width: 560px) {
     body.sihtarica-fullscreen #sihtarica-primac-content,
     body.sihtarica-fullscreen #sihtarica-otpremac-content { padding: 16px 10px; }
-    .sih-table thead th { white-space: normal; } /* "Sječa/otprema" smije preći u 2 reda umjesto da širi kolonu */
-    .sih-table thead th,
-    .sih-table tbody td { padding: 8px 6px; font-size: 12.5px; }
-    .sih-table td:nth-child(2) { min-width: 90px; }
-    .sih-napomena { max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .sih-badge { padding: 3px 6px; font-size: 11px; }
-    .sih-dan-broj { margin-right: 4px; }
-    .sih-dan-ime { font-size: 10.5px; }
-    .sih-auto { display: block; margin-left: 0; }
+
+    .sih-scroll { overflow-x: visible; box-shadow: none; } /* kartice se nikad ne skroluju horizontalno */
+    .sih-table, .sih-table tbody { display: block; width: 100%; }
+    .sih-table thead { display: none; } /* zaglavlje kolona nepotrebno — vidi data-label ispod */
+    .sih-table tr {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+        padding: 10px 12px; border-bottom: 1px solid #f1f5f9;
+    }
+    .sih-table tbody tr:last-child { border-bottom: none; }
+    .sih-table td { display: inline-flex; align-items: center; border: none; padding: 0; }
+    /* Akcentna ivica (box-shadow na .sih-dan) se gasi u kartici — bedž već
+       nosi boju vrste dana, druga ivica bi bila suvišna kad ćelija više
+       nije uz lijevi rub reda. */
+    .sih-table td.sih-dan { flex: 0 0 auto; box-shadow: none !important; }
+    /* Oznaka polja (npr. "NAPOMENA:") — samo za kolone kojima naslov nije
+       očigledan iz samog sadržaja (bedž/broj su sami sebi dovoljni). */
+    td[data-label="Napomena"]:not(:empty)::before,
+    td[data-label]:empty { display: none; }
+    td[data-label="Napomena"]:not(:empty)::before {
+        content: attr(data-label) ": "; font-size: 10px; font-weight: 700;
+        color: #9ca3af; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .sih-napomena { max-width: 100%; white-space: normal; overflow: visible; text-overflow: clip; }
+    .sih-table td.sih-num { margin-left: auto; }
+    .sih-table td.sih-akcija { flex: 0 0 auto; }
 }
 
 /* --------------------------------------------------------------------------

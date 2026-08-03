@@ -226,8 +226,9 @@
         TIPOVI.forEach(function(t) { rekap[t.id] = 0; });
         var ukupnoM3 = 0, neupisanihRadnih = 0;
 
+        var labelKub = tip === 'primac' ? 'Sječa' : 'Otprema';
         html += '<div class="sih-scroll"><table class="sih-table"><thead><tr>' +
-            '<th>Dan</th><th>Vrsta</th><th>Napomena</th><th class="sih-num">Sječa/otprema</th><th></th>' +
+            '<th>Dan</th><th>Vrsta</th><th>Napomena</th><th class="sih-num">' + labelKub + '</th><th></th>' +
             '</tr></thead><tbody>';
 
         var danasIso = _iso(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
@@ -265,15 +266,15 @@
                 if (t.id === 'rad' && a && a.odjeli.length) {
                     oznaka = (a.odjeli.length === 1 ? 'Odjel ' : 'Odjeli ') + a.odjeli.join(', ');
                 }
-                html += '<td><span class="sih-badge" style="background:' + t.boja + ';">' +
+                html += '<td data-label="Vrsta"><span class="sih-badge" style="background:' + t.boja + ';">' +
                         t.ikona + ' ' + _esc(oznaka) + '</span>' +
                         (!unosi[iso] ? '<span class="sih-auto">auto</span>' : '') + '</td>';
             } else {
-                html += '<td><span class="sih-nema">' + (vikend ? 'vikend' : 'nije upisano') + '</span></td>';
+                html += '<td data-label="Vrsta"><span class="sih-nema">' + (vikend ? 'vikend' : 'nije upisano') + '</span></td>';
             }
 
-            html += '<td class="sih-napomena">' + _esc(napomena) + '</td>';
-            html += '<td class="sih-num">' + (a ? _fmtM3(a.ukupno) + ' m³' : '<span class="sih-nula">–</span>') + '</td>';
+            html += '<td class="sih-napomena" data-label="Napomena">' + _esc(napomena) + '</td>';
+            html += '<td class="sih-num" data-label="' + labelKub + '">' + (a ? _fmtM3(a.ukupno) + ' m³' : '<span class="sih-nula">–</span>') + '</td>';
             html += '<td class="sih-akcija"><button type="button" class="sih-edit" ' +
                     'onclick="sihtaricaUredi(\'' + tip + '\',\'' + iso + '\')" aria-label="Uredi dan">✏️</button></td>';
             html += '</tr>';
