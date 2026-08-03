@@ -143,18 +143,35 @@
 
     planEntries.forEach(entry => {
       const key  = _normKey(entry.gj+' '+entry.odjel);  // matches normKey(p.odjel)
+      const labelK = _labelKey(entry.gj+' '+entry.odjel); // precizan, čuva /N
       const sjeca = _emptySort();
       const otpr  = _emptySort();
       const sjecaOst = _emptySort();
       const otprOst  = _emptySort();
 
-      primkeTekuce.filter(p => _normKey(p.odjel) === key).forEach(p => _addSort(sjeca, p.sortiment, p.kolicina));
-      otpremeTekuce.filter(p => _normKey(p.odjel) === key).forEach(p => _addSort(otpr, p.sortiment, p.kolicina));
-      primkeOstale.filter(p => _normKey(p.odjel) === key).forEach(p => _addSort(sjecaOst, p.sortiment, p.kolicina));
-      otremeOstale.filter(p => _normKey(p.odjel) === key).forEach(p => _addSort(otprOst, p.sortiment, p.kolicina));
+      // BUGFIX (isti obrazac kao već postojeći za otpremu niže u fajlu):
+      // _normKey briše /N sufiks (68/1 i 68/2 → isti ključ "68"), pa je čist
+      // normKey match "prelijevao" sječu jednog pododsjeka i na susjedni
+      // (npr. 68/1 sječa je gurala i 68/2 u status "u sječi", iako 68/2
+      // uopšte nema evidentiranu sječu). Dva nivoa preciznosti:
+      //  1. precise: labelKey (ČUVA /N) — kad zapis već navodi tačan pododsjek
+      //  2. fallback: normKey (briše /N) — SAMO za zapise koji nemaju /N u
+      //     nazivu (agregatni unos bez preciznog pododsjeka) — ti se
+      //     primjenjuju širom svih pododsjeka jer se iz podatka ne može
+      //     znati tačno koji.
+      const matchOdjel = p => {
+        const raw = String(p.odjel || '');
+        if (/\/\d+/.test(raw)) return _labelKey(raw) === labelK;
+        return _normKey(raw) === key;
+      };
+
+      primkeTekuce.filter(matchOdjel).forEach(p => _addSort(sjeca, p.sortiment, p.kolicina));
+      otpremeTekuce.filter(matchOdjel).forEach(p => _addSort(otpr, p.sortiment, p.kolicina));
+      primkeOstale.filter(matchOdjel).forEach(p => _addSort(sjecaOst, p.sortiment, p.kolicina));
+      otremeOstale.filter(matchOdjel).forEach(p => _addSort(otprOst, p.sortiment, p.kolicina));
 
       // Radilište, izvođač, poslovođa — iz tekućih primki za ovaj odjel
-      const odjelPrimke = primkeTekuce.filter(p => _normKey(p.odjel) === key);
+      const odjelPrimke = primkeTekuce.filter(matchOdjel);
       const uniq = (arr, fn) => [...new Set(arr.map(fn).filter(Boolean))].join(', ') || '—';
       const radiliste  = uniq(odjelPrimke, p => p.radiliste);
       const izvodjac   = uniq(odjelPrimke, p => p.izvodjac);
