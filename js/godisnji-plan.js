@@ -312,8 +312,9 @@
 
   // Koliko dana pauze u sječi znači da je u pitanju NOVI segment (odjel
   // sječen u dva ili više navrata) — umjesto jedne trake od prvog do
-  // zadnjeg dana.
-  const SEGMENT_PAUZA_DANA = 15;
+  // zadnjeg dana. Namjerno "mjesec dana" — kraće pauze (npr. par sedmica)
+  // su normalne u toku jedne sječe i ne treba ih dijeliti na dva dijela.
+  const SEGMENT_PAUZA_DANA = 30;
 
   // Vraća NIZ segmenata [{ datumPocetka, datumKraja }, ...] (Date objekti)
   // za dati odjel — obično jedan, ali dva ili više ako je bila pauza u
