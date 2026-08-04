@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.109';
+        const APP_VERSION = '2.110';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6119,7 +6119,12 @@
             if (!view) return;
             view.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af;">⏳ Učitavam...</div>';
 
-            const primke = await _dohvatiPrimkeZaTimeline();
+            const svePrimke = await _dohvatiPrimkeZaTimeline();
+            const tekucaGodina = new Date().getFullYear();
+            const primke = svePrimke.filter(p => {
+                const d = _parseDatumTl(p.datum);
+                return d && d.getFullYear() === tekucaGodina;
+            });
             const sel = document.getElementById('primaci-izvodjac-select');
             const izabraniIzvodjac = sel ? sel.value : '';
 
