@@ -3730,6 +3730,11 @@ body.kubikator-fullscreen #kubikator-content {
     position: absolute; top: 10px; left: 10px; right: 10px; z-index: 20;
     display: flex; gap: 8px; flex-wrap: wrap;
 }
+/* Mod + sortiment kao jedna cjelina — vidi komentar u index.html uz
+   #kub-sortiment-select. flex-wrap:nowrap unutra: ako bi ipak zafalilo
+   prostora, cijela grupa ide u novi red (.kub-header-row je ta koja
+   prelama), dropdown se nikad ne odvaja od dugmeta moda. */
+.kub-header-right { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
 .kub-close-btn {
     /* Puna plava pozadina umjesto providne bijele — mora se odmah uočiti
        preko cijelog ekrana kalkulatora, isti tretman kao "Ažuriraj" u
@@ -3763,8 +3768,9 @@ body.kubikator-fullscreen #kubikator-content {
 .kub-sortiment-select {
     background: #fff; color: #065f46;
     border: 2px solid #a7f3d0; border-radius: 10px;
-    padding: 8px 10px; font-size: 13px; font-weight: 800;
-    font-family: inherit; cursor: pointer; max-width: 168px;
+    padding: 8px 8px; font-size: 13px; font-weight: 800;
+    font-family: inherit; cursor: pointer;
+    width: 148px; flex: 0 0 auto;
     box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
 }
 

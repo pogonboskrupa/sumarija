@@ -2560,8 +2560,16 @@
                  dok se kuca. -->
             <div class="kub-header-row">
                 <button type="button" class="kub-close-btn" onclick="closeKubikator()">✕ Zatvori</button>
-                <button type="button" id="kub-mode-btn" class="kub-mode-btn" onclick="kubikatorToggleMode()">🪵 Prostorno drvo</button>
-                <select id="kub-sortiment-select" class="kub-sortiment-select" aria-label="Sortiment"></select>
+                <!-- Mod i sortiment su namjerno u ZAJEDNIČKOM omotaču (ne direktno u
+                     .kub-header-row) — na uskom ekranu .kub-header-row prelama svoju
+                     djecu u novi red pojedinačno, pa bi dropdown, kao treći/zadnji
+                     element, znao "otpasti" od dugmeta moda i prelomiti se sam. Ovaj
+                     omotač se prelama KAO CJELINA, pa dropdown ostaje desno od
+                     prekidača na svakoj širini ekrana. -->
+                <div class="kub-header-right">
+                    <button type="button" id="kub-mode-btn" class="kub-mode-btn" onclick="kubikatorToggleMode()">🪵 Prostorno drvo</button>
+                    <select id="kub-sortiment-select" class="kub-sortiment-select" aria-label="Sortiment"></select>
+                </div>
             </div>
 
             <div class="kub-wrap">
