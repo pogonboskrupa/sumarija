@@ -115,6 +115,11 @@
     var _geojson = null;
     var _locMarker = null;
     var _locCircle = null;
+    var _headingActive = false;      // uključen/isključen prikaz smjera gledanja (klik na "moja lokacija")
+    var _headingEventName = null;    // ime device orientation event-a na koji je listener zakačen
+    var _headingLine = null;         // L.polyline — plava prozirna linija smjera gledanja
+    var _headingLastLL = null;       // [lat,lng] zadnje poznate GPS lokacije (polazna tačka linije)
+    var _headingLastDeg = null;      // zadnji poznati kompas azimut (stepeni, 0 = sjever)
     var _odjeliByKey = null; // labelKey/normKey -> radnikov odjel objekat
     var _recentSet = null;   // Set referenci na zadnja 3 odjela (samo za primača) — vidi initMapaRadnika
     var _allLayers = [];     // SVI polygon layer-i (radio i ne-radio) — za "Prikaži odjele" grupisanje po odsjeku
@@ -2246,8 +2251,10 @@
     };
 
     // ---- MOJA LOKACIJA (GPS) ----
-    // Ikonica lokacije — samo plava tačka, bez teksta "Vi ste ovdje" i bez
-    // konusa smjera gledanja (isprobano pa ugašeno na korisnikov zahtjev).
+    // Ikonica lokacije — plava tačka. Klik na nju uključuje/isključuje
+    // "smjer gledanja" (vidi _toggleHeadingView ispod) — obična, tanka linija,
+    // ne konus (raniji konus je isprobano pa ugašen na korisnikov zahtjev; ovo
+    // je nova, minimalnija verzija koju korisnik traži naknadno).
     function _locIconHtml() {
         return '<div class="rm-loc-wrap"><div class="rm-loc-dot"></div></div>';
     }
@@ -2267,9 +2274,90 @@
         }).bindTooltip('±' + Math.round(acc) + ' m preciznost', { direction: 'top', className: 'karta-tooltip' }).addTo(_map);
         _locMarker = L.marker(ll, {
             icon: L.divIcon({ className: 'rm-loc-icon', html: _locIconHtml(), iconSize: [40, 40], iconAnchor: [20, 20] }),
-            interactive: false
+            interactive: true,
+            keyboard: false
+        }).on('click', function(e) {
+            L.DomEvent.stopPropagation(e);
+            _toggleHeadingView();
         }).addTo(_map);
+        _headingLastLL = ll;
+        // Lokacija se pomjerila (npr. "Prati me") — pomjeri i liniju smjera
+        // gledanja s njom, na zadnjem poznatom azimutu, bez čekanja na sljedeći
+        // kompas event (koji na nekim uređajima stiže rjeđe od GPS fix-a).
+        if (_headingActive && _headingLastDeg != null) _drawHeadingLine(_headingLastDeg);
         return ll;
+    }
+
+    // ---- SMJER GLEDANJA — plava prozirna linija od "moja lokacija" u pravcu
+    // u kojem je telefon okrenut (device orientation kompas), crtana na
+    // Leaflet Canvas rendereru (ne SVG) — isti obrazac kompasa kao kod
+    // azimuta za sječačke linije/Explorer, ali OVDJE kontinuirano (linija se
+    // okreće uživo dok se korisnik okreće), ne jednokratno hvatanje. ----
+    var HEADING_LINE_LEN_M = 60;
+    var _headingCanvasRenderer = null; // jedan dijeljen L.canvas() renderer za liniju
+    function _headingDestinationLatLng(ll, deg) {
+        var rad = deg * Math.PI / 180;
+        var dx = HEADING_LINE_LEN_M * Math.sin(rad);
+        var dy = HEADING_LINE_LEN_M * Math.cos(rad);
+        return _fromLocalXY(dx, dy, ll[0], ll[1]);
+    }
+    function _drawHeadingLine(deg) {
+        if (!_map || !_headingLastLL) return;
+        _headingLastDeg = deg;
+        var end = _headingDestinationLatLng(_headingLastLL, deg);
+        var latlngs = [_headingLastLL, [end.lat, end.lng]];
+        if (_headingLine) {
+            _headingLine.setLatLngs(latlngs);
+        } else {
+            if (!_headingCanvasRenderer) _headingCanvasRenderer = L.canvas();
+            _headingLine = L.polyline(latlngs, {
+                renderer: _headingCanvasRenderer,
+                color: '#2563eb',
+                weight: 6,
+                opacity: 0.45,
+                lineCap: 'round',
+                interactive: false
+            }).addTo(_map);
+        }
+    }
+    function _removeHeadingLine() {
+        if (_headingLine) { _map.removeLayer(_headingLine); _headingLine = null; }
+    }
+    function _headingOrientationHandler(e) {
+        var heading = null;
+        if (typeof e.webkitCompassHeading === 'number') heading = e.webkitCompassHeading; // iOS Safari — već tačan azimut
+        else if (typeof e.alpha === 'number') heading = (360 - e.alpha) % 360; // Android — najbolja dostupna aproksimacija
+        if (heading == null || isNaN(heading)) return;
+        _drawHeadingLine(heading);
+    }
+    function _stopHeadingView() {
+        if (_headingEventName) { window.removeEventListener(_headingEventName, _headingOrientationHandler); _headingEventName = null; }
+        _headingActive = false;
+        _headingLastDeg = null;
+        _removeHeadingLine();
+    }
+    function _startHeadingView() {
+        function attach() {
+            _headingEventName = ('ondeviceorientationabsolute' in window) ? 'deviceorientationabsolute' : 'deviceorientation';
+            window.addEventListener(_headingEventName, _headingOrientationHandler);
+        }
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission().then(function(state) {
+                if (state === 'granted') { attach(); } else { _headingActive = false; _notify('showWarning', 'Pristup kompasu je odbijen.'); }
+            }).catch(function() { _headingActive = false; _notify('showError', 'Nije moguće aktivirati kompas.'); });
+        } else if (typeof DeviceOrientationEvent !== 'undefined') {
+            attach();
+        } else {
+            _headingActive = false;
+            _notify('showWarning', 'Vaš uređaj ne podržava kompas.');
+        }
+    }
+    // Klik na plavu tačku "moja lokacija" — vidi _updateLocDisplay.
+    function _toggleHeadingView() {
+        if (!_headingLastLL) return; // nema još GPS pozicije da se linija ima od čega crtati
+        if (_headingActive) { _stopHeadingView(); return; }
+        _headingActive = true;
+        _startHeadingView();
     }
 
     // ---- "PRATI ME" (follow mode) — kontinuirano praćenje umjesto
@@ -3209,6 +3297,7 @@
         if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
         if (typeof window.mapaRadnikaCloseMjerenjePanel === 'function') window.mapaRadnikaCloseMjerenjePanel();
         _stopFollow(); // ne ostavljaj GPS watchPosition da radi u pozadini nakon izlaska s mape
+        _stopHeadingView(); // ne ostavljaj deviceorientation listener da radi u pozadini
         // Vrati viewport na korisnikovu preferencu (Desktop/Android prikaz) ako
         // je bila uključena prije ulaska na mapu.
         var viewport = document.querySelector('meta[name=viewport]');

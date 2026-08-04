@@ -3634,9 +3634,9 @@
                       cursor:pointer; font-family:inherit; white-space:nowrap;
                   }
                   .rm-route-hint button:active { background:rgba(255,255,255,.3); }
-                  /* "Moja lokacija" ikonica — samo plava tačka, BEZ teksta "Vi ste ovdje"
-                     i BEZ konusa smjera gledanja (isprobano pa ugašeno na zahtjev). */
-                  .rm-loc-wrap { position:relative; width:40px; height:40px; }
+                  /* "Moja lokacija" ikonica — plava tačka. Klik uključuje/isključuje
+                     liniju smjera gledanja (js/mapa-radnika.js _toggleHeadingView). */
+                  .rm-loc-wrap { position:relative; width:40px; height:40px; cursor:pointer; }
                   .rm-loc-dot {
                       position:absolute; top:15px; left:15px; width:10px; height:10px; border-radius:50%;
                       background:#3b82f6; border:2.5px solid #fff; box-shadow:0 0 0 1.5px #1d4ed8;
