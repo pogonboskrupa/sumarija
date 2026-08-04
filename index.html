@@ -857,6 +857,7 @@
                 <button class="submenu-tab" onclick="switchOtremaciSubmenu('radilista')">🏗️ Radilišta</button>
                 <button class="submenu-tab" onclick="switchOtremaciSubmenu('po-kupcima')" id="otpremaci-po-kupcima-tab">🏢 Otprema u <span id="current-month-name">tekućem mjesecu</span></button>
                 <button class="submenu-tab" onclick="switchOtremaciSubmenu('sortimenti-by-otpremac')">🏷️ Sortimentni prikaz po otpremačima</button>
+                <button class="submenu-tab" onclick="switchOtremaciSubmenu('trendovi')">📈 Trendovi</button>
             </div>
 
             <!-- Mjesečni prikaz -->
@@ -969,6 +970,59 @@
                         </select>
                     </div>
                     <div id="otpremaci-sortimenti-otpremac-container"></div>
+                </div>
+            </div>
+
+            <!-- Trendovi otpreme — po sedmicama (izabrani mjesec) i po mjesecima
+                 (cijela godina), filtrirano po sortimentu ili ukupno. Isti obrazac
+                 kao Sječa → Trendovi (js/app.js): sedmični dio koristi
+                 otpremaci-daily, mjesečni dio koristi mjesecni-sortimenti
+                 (data.otprema, ISTI cache kao mjesečni pregled) — bez novih API
+                 poziva. -->
+            <div id="otpremaci-trendovi-view" class="submenu-content hidden">
+                <div class="section">
+                    <h3 style="color: #7c2d12; text-align: center; margin-bottom: 20px;">📈 Trendovi otpreme</h3>
+                    <div class="controls-bar" style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center; align-items:flex-end;">
+                        <div class="month-selector month-selector--neutral">
+                            <label>📅 Mjesec (sedmični prikaz):</label>
+                            <select id="otpremaci-trend-month-select" class="month-select" onchange="loadOtpremaciTrendMonth()">
+                                <option value="0">Januar</option>
+                                <option value="1">Februar</option>
+                                <option value="2">Mart</option>
+                                <option value="3">April</option>
+                                <option value="4">Maj</option>
+                                <option value="5">Juni</option>
+                                <option value="6">Juli</option>
+                                <option value="7">August</option>
+                                <option value="8">Septembar</option>
+                                <option value="9">Oktobar</option>
+                                <option value="10">Novembar</option>
+                                <option value="11">Decembar</option>
+                            </select>
+                        </div>
+                        <div class="month-selector month-selector--neutral">
+                            <label>🏷️ Sortiment:</label>
+                            <select id="otpremaci-trend-sortiment-select" class="month-select" onchange="renderOtpremaciTrendCharts()">
+                                <option value="__UKUPNO__">Ukupno (svi sortimenti)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="otpremaci-trend-loading" style="text-align:center; padding:40px; color:#4b5563;">⏳ Učitavam...</div>
+
+                    <div id="otpremaci-trend-charts" class="hidden">
+                        <h4 style="color: #7c2d12; margin: 28px 0 10px;">📅 Otprema po sedmicama — <span id="otpremaci-trend-week-title"></span></h4>
+                        <div id="otpremaci-trend-week-empty" class="hidden" style="text-align:center; color:#9ca3af; padding:30px;">Nema evidentirane otpreme za izabrani mjesec.</div>
+                        <div id="otpremaci-trend-week-chart-wrap" style="position:relative; height:280px;">
+                            <canvas id="otpremaci-trend-week-chart"></canvas>
+                        </div>
+
+                        <h4 style="color: #7c2d12; margin: 34px 0 10px;">📊 Otprema po mjesecima — <span id="otpremaci-trend-year-title"></span></h4>
+                        <div style="position:relative; height:280px;">
+                            <canvas id="otpremaci-trend-month-chart"></canvas>
+                        </div>
+                    </div>
+                    <div id="otpremaci-trend-empty" class="hidden" style="text-align:center; padding:40px; color:#4b5563;">Nema podataka za odabrani period.</div>
                 </div>
             </div>
         </div>

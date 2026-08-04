@@ -384,6 +384,7 @@
             document.getElementById('otpremaci-radilista-view').classList.add('hidden');
             document.getElementById('otpremaci-po-kupcima-view').classList.add('hidden');
             document.getElementById('otpremaci-sortimenti-otpremac-view').classList.add('hidden');
+            document.getElementById('otpremaci-trendovi-view').classList.add('hidden');
 
             // Show selected view
             if (view === 'monthly') {
@@ -414,6 +415,10 @@
                     document.getElementById('otpremaci-sortimenti-month-select').value = currentMonth;
                     loadOtremaciSortimentiByOtpremac(currentMonth);
                 }
+            } else if (view === 'trendovi') {
+                document.getElementById('otpremaci-trendovi-view').classList.remove('hidden');
+                // Load on first open (lazy) — vidi loadOtpremaciTrendovi u app.js
+                if (typeof loadOtpremaciTrendovi === 'function') loadOtpremaciTrendovi();
             }
         }
 

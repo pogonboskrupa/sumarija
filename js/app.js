@@ -6494,6 +6494,203 @@
             container.innerHTML = html;
         }
 
+        // ============================================
+        // 📈 TRENDOVI OTPREME (Otprema → Trendovi)
+        // Isti obrazac kao Sječa → Trendovi (vidi TREND_TOTAL_KEY/TREND_AGGREGATE_KEYS
+        // i komentar iznad loadPrimaciTrendovi) — dva grafikona (Chart.js): po
+        // sedmicama (izabrani mjesec) i po mjesecima (cijela godina), oba
+        // filtrirana dropdown-om sortimenta (ili "Ukupno"). Sedmični dio koristi
+        // otpremaci-daily (isto što i "Otprema po danima"), mjesečni dio koristi
+        // mjesecni-sortimenti — data.otprema, ISTI cache ključ kao Sječa (isti
+        // endpoint vraća oboje odjednom), pa se dijeli fetch čak i između ova
+        // dva taba.
+        // ============================================
+        let _otpremaciTrendState = { year: null, month: null, dailyRows: [], dailySort: [], mjesecni: null, loaded: false };
+        let _otpremaciTrendWeekChart = null;
+        let _otpremaciTrendMonthChart = null;
+
+        async function loadOtpremaciTrendovi() {
+            if (_otpremaciTrendState.loaded) { renderOtpremaciTrendCharts(); return; }
+
+            const loadingEl = document.getElementById('otpremaci-trend-loading');
+            const chartsEl = document.getElementById('otpremaci-trend-charts');
+            const emptyEl = document.getElementById('otpremaci-trend-empty');
+            if (loadingEl) loadingEl.classList.remove('hidden');
+            if (chartsEl) chartsEl.classList.add('hidden');
+            if (emptyEl) emptyEl.classList.add('hidden');
+
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const monthSel = document.getElementById('otpremaci-trend-month-select');
+            if (monthSel) monthSel.value = month;
+
+            try {
+                await Promise.all([
+                    _fetchOtpremaciTrendMjesecni(year),
+                    _fetchOtpremaciTrendDaily(year, month)
+                ]);
+                _otpremaciTrendState.loaded = true;
+                _populateOtpremaciTrendSortimentSelect();
+                if (loadingEl) loadingEl.classList.add('hidden');
+                if (chartsEl) chartsEl.classList.remove('hidden');
+                renderOtpremaciTrendCharts();
+            } catch (err) {
+                console.error('Error in loadOtpremaciTrendovi:', err);
+                if (loadingEl) loadingEl.classList.add('hidden');
+                if (emptyEl) { emptyEl.textContent = 'Greška pri učitavanju: ' + err.message; emptyEl.classList.remove('hidden'); }
+            }
+        }
+
+        async function _fetchOtpremaciTrendMjesecni(year) {
+            const url = buildApiUrl('mjesecni-sortimenti', { year });
+            const data = await fetchWithCache(url, `cache_mjesecni_sortimenti_${year}`);
+            if (data.error) throw new Error(data.error);
+            _otpremaciTrendState.mjesecni = data.otprema || null;
+            _otpremaciTrendState.year = year;
+        }
+
+        async function _fetchOtpremaciTrendDaily(year, month) {
+            const url = buildApiUrl('otpremaci-daily', { year, month });
+            const data = await fetchWithCache(url, `cache_otpremaci_daily_${year}_${month}`);
+            if (data.error) throw new Error(data.error);
+            _otpremaciTrendState.dailyRows = data.data || [];
+            _otpremaciTrendState.dailySort = data.sortimentiNazivi || [];
+            _otpremaciTrendState.month = month;
+        }
+
+        async function loadOtpremaciTrendMonth() {
+            const monthSel = document.getElementById('otpremaci-trend-month-select');
+            const month = monthSel ? parseInt(monthSel.value, 10) : 0;
+            const year = _otpremaciTrendState.year || new Date().getFullYear();
+            try {
+                await _fetchOtpremaciTrendDaily(year, month);
+                renderOtpremaciTrendCharts();
+            } catch (err) {
+                console.error('Error in loadOtpremaciTrendMonth:', err);
+                showError('Greška', 'Greška pri učitavanju sedmičnog prikaza: ' + err.message);
+            }
+        }
+
+        function _populateOtpremaciTrendSortimentSelect() {
+            const sel = document.getElementById('otpremaci-trend-sortiment-select');
+            const mj = _otpremaciTrendState.mjesecni;
+            if (!sel || !mj || sel.dataset.loaded) return;
+            const svi = (mj.sortimenti || []).filter(s => s && !TREND_AGGREGATE_KEYS.includes(s));
+            sel.innerHTML = '<option value="__UKUPNO__">Ukupno (svi sortimenti)</option>' +
+                svi.map(s => `<option value="${s.replace(/"/g, '&quot;')}">${s}</option>`).join('');
+            sel.dataset.loaded = '1';
+        }
+
+        function _otpremaciTrendWeekData(sortimentKey) {
+            const { dailyRows, dailySort, year, month } = _otpremaciTrendState;
+            if (!dailyRows.length || !dailySort.length) return [];
+            const weeks = groupDataByWeeks(dailyRows, year, month, dailySort);
+            const key = sortimentKey === '__UKUPNO__' ? TREND_TOTAL_KEY : sortimentKey;
+            return weeks.map(w => {
+                let total = 0;
+                Object.keys(w.odjeliMap).forEach(odjel => { total += w.odjeliMap[odjel][key] || 0; });
+                return {
+                    label: 'Sed. ' + w.weekNumber + ' (' + w.weekStart.slice(0, 5) + '–' + w.weekEnd.slice(0, 5) + ')',
+                    value: +total.toFixed(2)
+                };
+            });
+        }
+
+        function _otpremaciTrendMonthData(sortimentKey) {
+            const mj = _otpremaciTrendState.mjesecni;
+            if (!mj || !mj.mjeseci) return [];
+            const nazivi = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+            const key = sortimentKey === '__UKUPNO__' ? TREND_TOTAL_KEY : sortimentKey;
+            return mj.mjeseci.map((mObj, idx) => ({
+                label: nazivi[idx],
+                value: +((mObj[key] || 0)).toFixed(2)
+            }));
+        }
+
+        function renderOtpremaciTrendCharts() {
+            if (typeof window.loadChartJs !== 'function') return;
+            const sortSel = document.getElementById('otpremaci-trend-sortiment-select');
+            const filter = sortSel ? sortSel.value : '__UKUPNO__';
+            const label = filter === '__UKUPNO__' ? 'Ukupno' : filter;
+            const mjeseciNazPuni = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+
+            const weekTitle = document.getElementById('otpremaci-trend-week-title');
+            const yearTitle = document.getElementById('otpremaci-trend-year-title');
+            if (weekTitle) weekTitle.textContent = (mjeseciNazPuni[_otpremaciTrendState.month] || '') + ' — ' + label;
+            if (yearTitle) yearTitle.textContent = (_otpremaciTrendState.year || '') + '. — ' + label;
+
+            const weekData = _otpremaciTrendWeekData(filter);
+            const monthData = _otpremaciTrendMonthData(filter);
+
+            const weekEmptyEl = document.getElementById('otpremaci-trend-week-empty');
+            const weekWrapEl = document.getElementById('otpremaci-trend-week-chart-wrap');
+            if (weekData.length === 0) {
+                if (weekEmptyEl) weekEmptyEl.classList.remove('hidden');
+                if (weekWrapEl) weekWrapEl.classList.add('hidden');
+            } else {
+                if (weekEmptyEl) weekEmptyEl.classList.add('hidden');
+                if (weekWrapEl) weekWrapEl.classList.remove('hidden');
+            }
+
+            window.loadChartJs().then(() => {
+                if (weekData.length > 0) {
+                    const wCanvas = document.getElementById('otpremaci-trend-week-chart');
+                    if (wCanvas) {
+                        if (_otpremaciTrendWeekChart) { _otpremaciTrendWeekChart.destroy(); _otpremaciTrendWeekChart = null; }
+                        const existingW = Chart.getChart(wCanvas);
+                        if (existingW) existingW.destroy();
+                        _otpremaciTrendWeekChart = new Chart(wCanvas.getContext('2d'), {
+                            type: 'bar',
+                            data: {
+                                labels: weekData.map(w => w.label),
+                                datasets: [{
+                                    label: label + ' — m³',
+                                    data: weekData.map(w => w.value),
+                                    backgroundColor: '#c2410c', borderRadius: 6, maxBarThickness: 60
+                                }]
+                            },
+                            options: {
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(2) + ' m³' } }
+                                },
+                                scales: { y: { beginAtZero: true, title: { display: true, text: 'm³' } } }
+                            }
+                        });
+                    }
+                }
+
+                const mCanvas = document.getElementById('otpremaci-trend-month-chart');
+                if (mCanvas) {
+                    if (_otpremaciTrendMonthChart) { _otpremaciTrendMonthChart.destroy(); _otpremaciTrendMonthChart = null; }
+                    const existingM = Chart.getChart(mCanvas);
+                    if (existingM) existingM.destroy();
+                    _otpremaciTrendMonthChart = new Chart(mCanvas.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: monthData.map(m => m.label),
+                            datasets: [{
+                                label: label + ' — m³',
+                                data: monthData.map(m => m.value),
+                                borderColor: '#7c2d12', backgroundColor: 'rgba(124,45,18,0.15)',
+                                tension: 0.3, fill: true, pointRadius: 4, pointBackgroundColor: '#7c2d12'
+                            }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(2) + ' m³' } }
+                            },
+                            scales: { y: { beginAtZero: true, title: { display: true, text: 'm³' } } }
+                        }
+                    });
+                }
+            });
+        }
+
         // Load otpremaci sortimenti by otpremac (grupisano po radilištu, za odabrani mjesec)
         async function loadOtremaciSortimentiByOtpremac(selectedMonth) {
             const year = new Date().getFullYear();
