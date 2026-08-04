@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.108';
+        const APP_VERSION = '2.109';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -5699,6 +5699,8 @@
         // bez novog fetch-a: mjesečna tabela sa trendom u odnosu na prethodni
         // mjesec, godišnji ukupno po sortimentima, i linijski grafikon trenda.
         function loadPrimaciIzvodjacDetalj() {
+            renderPrimaciIzvodjaciTimeline(); // isti dropdown filtrira i timeline ispod
+
             const sel = document.getElementById('primaci-izvodjac-select');
             const card = document.getElementById('primaci-izvodjac-detalj');
             if (!sel || !card) return;
@@ -6028,6 +6030,176 @@
                     }
                 });
             });
+        }
+
+        // ============================================
+        // 📅 TIMELINE REALIZACIJE (Sječa → Izvođači podtab)
+        // Isti obrazac kao Godišnji plan → Timeline realizacije, samo:
+        //  - filtrirano po izabranom izvođaču (dropdown #primaci-izvodjac-select,
+        //    dijeljen sa "Detaljan pregled" iznad — prazan izbor = svi izvođači)
+        //  - odjeli su redani po datumu kad je sječa u njima POČELA (ne po GJ),
+        //    da se vidi hronološki tok rada.
+        // Koristi sirove primke (isti "primke" API, dijeljen cache ključ
+        // cache_primke_sjeca sa Mapa/Godišnji plan tabovima) — bez PLAN_ENTRIES,
+        // odjel je prosto p.odjel string iz podataka (uključuje i neplanirane/
+        // slučajne odjele, prirodno).
+        // ============================================
+        let _primkeRawTimeline = null; // keš sirovih primki, izbjegava ponovni fetch
+
+        async function _dohvatiPrimkeZaTimeline() {
+            if (_primkeRawTimeline) return _primkeRawTimeline;
+            try {
+                const url = buildApiUrl('primke', {});
+                const data = await fetchWithCache(url, 'cache_primke_sjeca', false, 150000);
+                _primkeRawTimeline = (data && data.primke) || [];
+            } catch (e) {
+                console.error('Error loading primke for timeline:', e);
+                _primkeRawTimeline = [];
+            }
+            return _primkeRawTimeline;
+        }
+
+        function _parseDatumTl(s) {
+            const parts = String(s || '').split('.');
+            if (parts.length < 3) return null;
+            const d = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+            return isNaN(d.getTime()) ? null : d;
+        }
+        function _fmtDatumTl(d) {
+            if (!d) return '—';
+            return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear() + '.';
+        }
+        function _dayOfYearTl(d) {
+            return Math.floor((d - new Date(d.getFullYear(), 0, 1)) / 86400000);
+        }
+
+        // Isti pragovi/pravila kao Godišnji plan tab: pauza > 30 dana dijeli
+        // sječu na odvojene periode; "kraj" preskače dane kad je jedini
+        // sortiment bio OGR.CIJEPANI/CEL.CIJEPANA (čišćenje).
+        const TL_SEGMENT_PAUZA_DANA = 30;
+        const TL_KRAJ_SJECE_CISCENJE = new Set(['OGR.CIJEPANI', 'CEL.CIJEPANA']);
+
+        function _computeSjecaSegmentiTl(primkeZaOdjel) {
+            if (!primkeZaOdjel.length) return [];
+            const sortimentiPoDatumu = new Map();
+            primkeZaOdjel.forEach(p => {
+                const ds = String(p.datum || '');
+                if (!ds) return;
+                if (!sortimentiPoDatumu.has(ds)) sortimentiPoDatumu.set(ds, new Set());
+                sortimentiPoDatumu.get(ds).add(p.sortiment);
+            });
+            const daniRastuce = [...sortimentiPoDatumu.keys()]
+                .map(raw => ({ raw, date: _parseDatumTl(raw) }))
+                .filter(d => d.date)
+                .sort((a, b) => a.date - b.date);
+            if (!daniRastuce.length) return [];
+
+            const grupe = [[daniRastuce[0]]];
+            for (let i = 1; i < daniRastuce.length; i++) {
+                const gapDana = (daniRastuce[i].date - daniRastuce[i - 1].date) / 86400000;
+                if (gapDana > TL_SEGMENT_PAUZA_DANA) grupe.push([daniRastuce[i]]);
+                else grupe[grupe.length - 1].push(daniRastuce[i]);
+            }
+
+            return grupe.map(grupa => {
+                const datumPocetka = grupa[0].date;
+                let datumKraja = null;
+                for (let j = grupa.length - 1; j >= 0; j--) {
+                    const skup = sortimentiPoDatumu.get(grupa[j].raw);
+                    const samoCiscenje = [...skup].every(s => TL_KRAJ_SJECE_CISCENJE.has(s));
+                    if (!samoCiscenje) { datumKraja = grupa[j].date; break; }
+                }
+                if (!datumKraja) datumKraja = grupa[grupa.length - 1].date;
+                return { datumPocetka, datumKraja };
+            });
+        }
+
+        async function renderPrimaciIzvodjaciTimeline() {
+            const view = document.getElementById('primaci-izvodjaci-timeline');
+            if (!view) return;
+            view.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af;">⏳ Učitavam...</div>';
+
+            const primke = await _dohvatiPrimkeZaTimeline();
+            const sel = document.getElementById('primaci-izvodjac-select');
+            const izabraniIzvodjac = sel ? sel.value : '';
+
+            const primkeFiltrirano = izabraniIzvodjac
+                ? primke.filter(p => String(p.izvodjac || '').trim() === izabraniIzvodjac)
+                : primke;
+
+            // Grupiši po odjelu (raw p.odjel string — već sadrži GJ kontekst)
+            const poOdjelu = new Map();
+            primkeFiltrirano.forEach(p => {
+                const odjel = String(p.odjel || '').trim();
+                if (!odjel) return;
+                if (!poOdjelu.has(odjel)) poOdjelu.set(odjel, []);
+                poOdjelu.get(odjel).push(p);
+            });
+
+            const stavke = [];
+            poOdjelu.forEach((primkeZaOdjel, odjel) => {
+                const segmenti = _computeSjecaSegmentiTl(primkeZaOdjel);
+                if (!segmenti.length) return;
+                stavke.push({
+                    odjel,
+                    segmenti: segmenti.map(seg => ({
+                        dayStart: _dayOfYearTl(seg.datumPocetka),
+                        dayEnd: _dayOfYearTl(seg.datumKraja),
+                        datumPocetka: seg.datumPocetka,
+                        datumKraja: seg.datumKraja,
+                    })),
+                });
+            });
+
+            if (!stavke.length) {
+                view.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af;">Nema evidentirane sječe' + (izabraniIzvodjac ? ' za ' + izabraniIzvodjac : '') + '.</div>';
+                return;
+            }
+
+            // Redaj po datumu kad je odjel POČEO da se siječe (prvi segment) — ne po GJ.
+            stavke.sort((a, b) => a.segmenti[0].dayStart - b.segmenti[0].dayStart);
+
+            const godina = stavke[0].segmenti[0].datumPocetka.getFullYear();
+            const LABEL_COL_WIDTH = 260;
+            const monthNazivi = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+            const monthStarts = monthNazivi.map((lbl, i) => ({ lbl, day: _dayOfYearTl(new Date(godina, i, 1)) }));
+            const totalDays = _dayOfYearTl(new Date(godina, 11, 31)) + 1;
+            const pct = day => (day / totalDays * 100).toFixed(3);
+
+            const monthHeaderHtml = monthStarts.map((m, i) => {
+                const nextDay = i < 11 ? monthStarts[i + 1].day : totalDays;
+                const width = ((nextDay - m.day) / totalDays * 100).toFixed(3);
+                return '<div style="flex:0 0 ' + width + '%;text-align:center;font-size:12px;color:#6b7280;font-weight:700;border-left:1px solid #cbd5e1;">' + m.lbl + '</div>';
+            }).join('');
+
+            const gridStops = [];
+            monthStarts.slice(1).forEach(m => {
+                const p = pct(m.day);
+                gridStops.push('transparent ' + p + '%', '#e5e7eb ' + p + '%', '#e5e7eb calc(' + p + '% + 1px)', 'transparent calc(' + p + '% + 1px)');
+            });
+            const gridBg = gridStops.length ? 'background-image:linear-gradient(to right, ' + gridStops.join(', ') + ');' : '';
+
+            const rowsHtml = stavke.map(s => {
+                const barsHtml = s.segmenti.map(seg => {
+                    const left = pct(seg.dayStart);
+                    const width = pct(Math.max(seg.dayEnd - seg.dayStart + 1, 2));
+                    const naslov = s.odjel + ': ' + _fmtDatumTl(seg.datumPocetka) + ' → ' + _fmtDatumTl(seg.datumKraja);
+                    return '<div title="' + naslov + '" style="position:absolute;left:' + left + '%;width:' + width + '%;top:4px;bottom:4px;min-width:5px;background:#ea580c;border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.15);"></div>';
+                }).join('');
+                return '<div style="display:flex;align-items:center;border-bottom:1px solid #f1f5f9;">' +
+                    '<div style="flex:0 0 ' + LABEL_COL_WIDTH + 'px;padding:6px 10px;font-size:13px;font-weight:600;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + s.odjel + '</div>' +
+                    '<div style="flex:1;position:relative;height:28px;' + gridBg + '">' + barsHtml + '</div></div>';
+            }).join('');
+
+            view.innerHTML = '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;overflow-x:auto;">' +
+                '<div style="font-size:12px;color:#6b7280;margin-bottom:12px;">Odjeli redani po datumu kad je sječa počela' +
+                (izabraniIzvodjac ? ' — izvođač: <strong>' + izabraniIzvodjac + '</strong>' : ' — svi izvođači') +
+                '. Pauza duža od ' + TL_SEGMENT_PAUZA_DANA + ' dana prikazana je kao dvije trake na istom redu.</div>' +
+                '<div style="min-width:760px;">' +
+                '<div style="display:flex;"><div style="flex:0 0 ' + LABEL_COL_WIDTH + 'px;"></div>' +
+                '<div style="flex:1;display:flex;border-bottom:2px solid #cbd5e1;padding-bottom:5px;margin-bottom:2px;">' + monthHeaderHtml + '</div></div>' +
+                rowsHtml +
+                '</div></div>';
         }
 
         // Load primaci sortimenti by primac (grupisano po radilištu, za odabrani mjesec)

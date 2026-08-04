@@ -759,7 +759,14 @@
                         </div>
                     </div>
 
-                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <!-- Timeline realizacije — sviizvođači, ili samo izabrani (isti
+                         dropdown iznad). Odjeli su redani po datumu kad je sječa
+                         u njima POČELA (ne po GJ kao u Godišnji plan tabu), da se
+                         vidi hronološki tok rada izvođača/izvođača kroz godinu. -->
+                    <h4 style="color: #7c2d12; margin-top: 30px; margin-bottom: 12px;">📅 Timeline realizacije</h4>
+                    <div id="primaci-izvodjaci-timeline"></div>
+
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top:30px;">
                         <table class="monthly-table" id="primaci-izvodjaci-table">
                             <thead id="primaci-izvodjaci-header"></thead>
                             <tbody id="primaci-izvodjaci-body"></tbody>
