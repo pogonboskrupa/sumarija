@@ -3152,6 +3152,13 @@
                         <button data-st-btn="u-sjeci" onclick="filterGpStatus('u-sjeci')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#dc2626;">U sječi</button>
                         <button data-st-btn="planirano" onclick="filterGpStatus('planirano')" style="padding:4px 10px;border:none;background:none;font-size:12px;cursor:pointer;color:#4b5563;">Planirano</button>
                     </div>
+                    <div style="width:1px;height:24px;background:#e5e7eb;"></div>
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <span style="font-size:12px;color:#4b5563;font-weight:600;">Izvođač:</span>
+                        <select id="gp-filter-izvodjac" onchange="filterGpIzvodjac(this.value)" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;max-width:180px;">
+                            <option value="sve">Svi izvođači</option>
+                        </select>
+                    </div>
                     <div style="flex:1;min-width:160px;">
                         <input type="text" placeholder="🔍 Pretraži odjel..." oninput="filterGpSearch(this.value)" style="width:100%;padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;box-sizing:border-box;">
                     </div>

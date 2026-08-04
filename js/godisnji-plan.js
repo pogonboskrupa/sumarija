@@ -53,6 +53,7 @@
   let _activeTab  = 'grupe';
   let _gjFilter   = 'sve';
   let _stFilter   = 'sve';
+  let _izvFilter  = 'sve';
   let _search     = '';
   let _sort = {
     grupe:     { col:'odjel', asc:true },
@@ -205,7 +206,9 @@
     return PLAN_ENTRIES.map(entry => {
       const planKey = normKey(entry.gj+' '+entry.odjel);
       const actual = { cTrupci:0, celDuga:0, celCijepana:0, skart:0, lTrupci:0, ogrDugi:0, ogrCijepani:0, gule:0, ukupno:0 };
+      const izvSet = new Set();
       primke.filter(p => normKey(p.odjel)===planKey).forEach(p => {
+        if (p.izvodjac) izvSet.add(String(p.izvodjac).trim());
         switch(p.sortiment){
           case 'TRUPCI Č':    actual.cTrupci    += p.kolicina; break;
           case 'CEL.DUGA':    actual.celDuga    += p.kolicina; break;
@@ -222,7 +225,7 @@
       const koef   = entry.bruto>0 ? entry.neto/entry.bruto*100 : 0;
       const ovr    = getOvr(entry.gj, entry.odjel);
       const status = ovr==='auto' ? deriveStatus(stepen) : ovr;
-      return { ...entry, actual, stepen, koef, status, override:ovr };
+      return { ...entry, actual, stepen, koef, status, override:ovr, izvodjaci:[...izvSet] };
     });
   }
 
@@ -239,8 +242,9 @@
     if (!unmatched.length) return [];
     const map = new Map();
     unmatched.forEach(p => {
-      if (!map.has(p.odjel)) map.set(p.odjel, { odjel:p.odjel, actual:{ cTrupci:0, celDuga:0, celCijepana:0, skart:0, lTrupci:0, ogrDugi:0, ogrCijepani:0, gule:0, ukupno:0 } });
+      if (!map.has(p.odjel)) map.set(p.odjel, { odjel:p.odjel, actual:{ cTrupci:0, celDuga:0, celCijepana:0, skart:0, lTrupci:0, ogrDugi:0, ogrCijepani:0, gule:0, ukupno:0 }, izvSet:new Set() });
       const r = map.get(p.odjel);
+      if (p.izvodjac) r.izvSet.add(String(p.izvodjac).trim());
       switch(p.sortiment){
         case 'TRUPCI Č':    r.actual.cTrupci    += p.kolicina; break;
         case 'CEL.DUGA':    r.actual.celDuga    += p.kolicina; break;
@@ -258,6 +262,7 @@
       slucajni: true,
       bruto:0, neto:0, cTrupci:0, dzgo:0, lTrupci:0, cijepano:0,
       actual: r.actual, stepen:0, koef:0, status:'u-sjeci', override:'auto',
+      izvodjaci:[...r.izvSet],
     }));
   }
 
@@ -459,6 +464,7 @@
     let rows = [..._rows];
     if (_gjFilter !== 'sve') rows = rows.filter(r=>r.gj===_gjFilter);
     if (_stFilter !== 'sve') rows = rows.filter(r=>r.status===_stFilter);
+    if (_izvFilter !== 'sve') rows = rows.filter(r=>(r.izvodjaci||[]).includes(_izvFilter));
     if (_search.trim()) {
       const q = _search.trim().toUpperCase();
       rows = rows.filter(r=>r.odjel.toUpperCase().includes(q)||r.gj.toUpperCase().includes(q));
@@ -504,6 +510,7 @@
     _rawPrimke = primke;
     _rows = [...buildRows(primke), ...buildSlucajniRows(primke)];
     _loaded = true;
+    refreshIzvodjaciFilter();
     renderActiveTab();
     if (typeof markTabRendered==='function') markTabRendered('godisnji-plan');
   }
@@ -1339,6 +1346,27 @@
     if (_loaded) renderActiveTab();
   }
 
+  function filterGpIzvodjac(val) {
+    _izvFilter = val;
+    if (_loaded) renderActiveTab();
+  }
+
+  // Popuni <select> izvođača jedinstvenom listom iz svih odjela (poziva se
+  // poslije svakog učitavanja/osvježavanja podataka — lista izvođača se
+  // može promijeniti tokom godine).
+  function refreshIzvodjaciFilter() {
+    const sel = document.getElementById('gp-filter-izvodjac');
+    if (!sel) return;
+    const svi = new Set();
+    _rows.forEach(r => (r.izvodjaci || []).forEach(iz => svi.add(iz)));
+    const sortirano = [...svi].sort((a, b) => a.localeCompare(b, 'bs'));
+    const prethodni = sel.value;
+    sel.innerHTML = '<option value="sve">Svi izvođači</option>' +
+      sortirano.map(iz => `<option value="${iz.replace(/"/g, '&quot;')}">${iz}</option>`).join('');
+    if (prethodni && (prethodni === 'sve' || svi.has(prethodni))) sel.value = prethodni;
+    else _izvFilter = 'sve';
+  }
+
   function gpSort(tab, col) {
     if (_sort[tab].col===col) { _sort[tab].asc = !_sort[tab].asc; }
     else { _sort[tab] = { col, asc: col==='stepen'?false:true }; }
@@ -1362,6 +1390,7 @@
   window.filterGpGj         = filterGpGj;
   window.filterGpStatus     = filterGpStatus;
   window.filterGpSearch     = filterGpSearch;
+  window.filterGpIzvodjac   = filterGpIzvodjac;
   window.gpSort             = gpSort;
   window.gpSetOverride      = gpSetOverride;
   window.gpOpenOdjelModal   = openOdjelModal;
