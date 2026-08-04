@@ -310,13 +310,20 @@
     return Math.floor((d - new Date(d.getFullYear(), 0, 1)) / 86400000);
   }
 
-  // Vraća { datumPocetka, datumKraja } (Date objekti) za dati odjel, ili
-  // null ako odjel nema nijednu evidentiranu primku.
-  function computeSjecaDani(gj, odjel) {
+  // Koliko dana pauze u sječi znači da je u pitanju NOVI segment (odjel
+  // sječen u dva ili više navrata) — umjesto jedne trake od prvog do
+  // zadnjeg dana.
+  const SEGMENT_PAUZA_DANA = 15;
+
+  // Vraća NIZ segmenata [{ datumPocetka, datumKraja }, ...] (Date objekti)
+  // za dati odjel — obično jedan, ali dva ili više ako je bila pauza u
+  // sječi duža od SEGMENT_PAUZA_DANA. Prazan niz ako odjel nema nijednu
+  // evidentiranu primku.
+  function computeSjecaSegmenti(gj, odjel) {
     const primkeZaOdjel = gj === 'Slučajni užici'
       ? _rawPrimke.filter(p => p.odjel === odjel)
       : _rawPrimke.filter(p => normKey(p.odjel) === normKey(gj + ' ' + odjel));
-    if (!primkeZaOdjel.length) return null;
+    if (!primkeZaOdjel.length) return [];
 
     const sortimentiPoDatumu = new Map(); // raw datum string -> Set(sortiment)
     primkeZaOdjel.forEach(p => {
@@ -325,22 +332,36 @@
       if (!sortimentiPoDatumu.has(ds)) sortimentiPoDatumu.set(ds, new Set());
       sortimentiPoDatumu.get(ds).add(p.sortiment);
     });
-    const daniOpadajuce = [...sortimentiPoDatumu.keys()]
+    const daniRastuce = [...sortimentiPoDatumu.keys()]
       .map(raw => ({ raw, date: _parseDatumGp(raw) }))
       .filter(d => d.date)
-      .sort((a, b) => b.date - a.date);
-    if (!daniOpadajuce.length) return null;
+      .sort((a, b) => a.date - b.date);
+    if (!daniRastuce.length) return [];
 
-    const datumPocetka = daniOpadajuce[daniOpadajuce.length - 1].date;
-    let datumKraja = null;
-    for (const d of daniOpadajuce) {
-      const skup = sortimentiPoDatumu.get(d.raw);
-      const samoCiscenje = [...skup].every(s => KRAJ_SJECE_CISCENJE.has(s));
-      if (!samoCiscenje) { datumKraja = d.date; break; }
+    // Razdvoji u segmente gdje god je razmak između dva uzastopna dana
+    // veći od SEGMENT_PAUZA_DANA.
+    const grupe = [[daniRastuce[0]]];
+    for (let i = 1; i < daniRastuce.length; i++) {
+      const gapDana = (daniRastuce[i].date - daniRastuce[i - 1].date) / 86400000;
+      if (gapDana > SEGMENT_PAUZA_DANA) grupe.push([daniRastuce[i]]);
+      else grupe[grupe.length - 1].push(daniRastuce[i]);
     }
-    if (!datumKraja) datumKraja = daniOpadajuce[0].date; // svi dani su bili samo čišćenje
 
-    return { datumPocetka, datumKraja };
+    // Po segmentu: početak = prvi dan; kraj = zadnji dan tog segmenta koji
+    // NIJE samo čišćenje (ista logika kao ranije, sad primijenjena po
+    // segmentu — ako je cijeli segment čišćenje, koristi njegov stvarni
+    // zadnji dan).
+    return grupe.map(grupa => {
+      const datumPocetka = grupa[0].date;
+      let datumKraja = null;
+      for (let j = grupa.length - 1; j >= 0; j--) {
+        const skup = sortimentiPoDatumu.get(grupa[j].raw);
+        const samoCiscenje = [...skup].every(s => KRAJ_SJECE_CISCENJE.has(s));
+        if (!samoCiscenje) { datumKraja = grupa[j].date; break; }
+      }
+      if (!datumKraja) datumKraja = grupa[grupa.length - 1].date;
+      return { datumPocetka, datumKraja };
+    });
   }
 
   let _timelineChart = null;
@@ -350,20 +371,26 @@
     if (!view) return;
 
     // Samo odjeli koji stvarno imaju evidentiranu sječu — planirani-a-nepočeti
-    // odjeli nemaju datume za prikaz na timeline-u.
+    // odjeli nemaju datume za prikaz na timeline-u. Odjel sječen u dva ili
+    // više navrata (pauza > SEGMENT_PAUZA_DANA) dobija ODVOJEN red po
+    // segmentu, sa oznakom "(1/2)" itd. da se vidi da je isti odjel.
     const stavke = [];
     rows.forEach(r => {
       if (r.status === 'planirano') return;
-      const dani = computeSjecaDani(r.gj, r.odjel);
-      if (!dani) return;
+      const segmenti = computeSjecaSegmenti(r.gj, r.odjel);
+      if (!segmenti.length) return;
       const naziv = r.gj === 'Slučajni užici' ? (r.odjelLabel || r.odjel) : r.odjel;
-      stavke.push({
-        label: naziv + '  ·  ' + (r.gj === 'Slučajni užici' ? 'Slučajni' : r.gj),
-        status: r.status,
-        dayStart: _dayOfYearGp(dani.datumPocetka),
-        dayEnd: _dayOfYearGp(dani.datumKraja),
-        datumPocetka: dani.datumPocetka,
-        datumKraja: dani.datumKraja,
+      const gjKratko = r.gj === 'Slučajni užici' ? 'Slučajni' : r.gj;
+      segmenti.forEach((seg, i) => {
+        const oznaka = segmenti.length > 1 ? ' (' + (i + 1) + '/' + segmenti.length + ')' : '';
+        stavke.push({
+          label: naziv + oznaka + '  ·  ' + gjKratko,
+          status: r.status,
+          dayStart: _dayOfYearGp(seg.datumPocetka),
+          dayEnd: _dayOfYearGp(seg.datumKraja),
+          datumPocetka: seg.datumPocetka,
+          datumKraja: seg.datumKraja,
+        });
       });
     });
 
