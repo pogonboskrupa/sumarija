@@ -3728,13 +3728,17 @@ body.kubikator-fullscreen #kubikator-content {
    ih sam preslaguje bez potrebe za ručnim računanjem razmaka. */
 .kub-header-row {
     position: absolute; top: 10px; left: 10px; right: 10px; z-index: 20;
-    display: flex; gap: 8px; flex-wrap: wrap;
+    display: flex; align-items: center; gap: 6px;
+    /* SVA TRI elementa (Zatvori/mod/sortiment) u jednom redu, uvijek — bez
+       obzira na širinu ekrana. flex-wrap:wrap je ranije razdvajao dropdown
+       od dugmeta moda na uskim telefonima; nowrap + overflow-x:auto ovdje
+       je siguran fallback (horizontalni skrol) za ekrane uže od zbira
+       (kompaktne) širine sve troje — vidi dugmad ispod, smanjena baš zato
+       da tipičnu širinu ekrana popune BEZ potrebe za skrolom. */
+    flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
 }
-/* Mod + sortiment kao jedna cjelina — vidi komentar u index.html uz
-   #kub-sortiment-select. flex-wrap:nowrap unutra: ako bi ipak zafalilo
-   prostora, cijela grupa ide u novi red (.kub-header-row je ta koja
-   prelama), dropdown se nikad ne odvaja od dugmeta moda. */
-.kub-header-right { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+.kub-header-row::-webkit-scrollbar { display: none; }
 .kub-close-btn {
     /* Puna plava pozadina umjesto providne bijele — mora se odmah uočiti
        preko cijelog ekrana kalkulatora, isti tretman kao "Ažuriraj" u
@@ -3743,8 +3747,8 @@ body.kubikator-fullscreen #kubikator-content {
        telefonima nedostaje kad se otvori tastatura). */
     background: linear-gradient(180deg, #2563eb, #1d4ed8); color: #fff;
     border: 2px solid #1e40af; border-radius: 10px;
-    padding: 8px 14px; font-size: 13px; font-weight: 800;
-    font-family: inherit; cursor: pointer;
+    padding: 7px 10px; font-size: 12.5px; font-weight: 800;
+    font-family: inherit; cursor: pointer; white-space: nowrap; flex: 0 0 auto;
     box-shadow: 0 2px 8px rgba(37, 99, 235, .35);
 }
 .kub-close-btn:active { background: #1d4ed8; transform: translateY(1px); }
@@ -3754,8 +3758,8 @@ body.kubikator-fullscreen #kubikator-content {
 .kub-mode-btn {
     background: #fff; color: #92400e;
     border: 2px solid #d9c7a3; border-radius: 10px;
-    padding: 8px 14px; font-size: 13px; font-weight: 800;
-    font-family: inherit; cursor: pointer;
+    padding: 7px 10px; font-size: 12.5px; font-weight: 800;
+    font-family: inherit; cursor: pointer; white-space: nowrap; flex: 0 0 auto;
     box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
 }
 .kub-mode-btn:active { background: #fef3e2; }
@@ -3768,9 +3772,9 @@ body.kubikator-fullscreen #kubikator-content {
 .kub-sortiment-select {
     background: #fff; color: #065f46;
     border: 2px solid #a7f3d0; border-radius: 10px;
-    padding: 8px 8px; font-size: 13px; font-weight: 800;
+    padding: 7px 6px; font-size: 12.5px; font-weight: 800;
     font-family: inherit; cursor: pointer;
-    width: 148px; flex: 0 0 auto;
+    width: 118px; flex: 0 0 auto;
     box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
 }
 

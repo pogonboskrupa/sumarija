@@ -2558,18 +2558,17 @@
                  (širina+visina slaganja) — dijele isti obrazac, prebacuje ih
                  dugme #kub-mode-btn (kubikatorToggleMode). Rezultat se računa
                  dok se kuca. -->
+            <!-- Sva tri elementa u JEDNOM redu (Zatvori, mod, sortiment) — namjerno
+                 flex-wrap:nowrap + overflow-x:auto (vidi CSS): na uskom telefonu
+                 se red horizontalno skroluje umjesto da prelama djecu u novi red
+                 (to je ranije odvajalo dropdown od dugmeta moda, ili gomilalo sve
+                 preko dva reda). Dugmad su zato i kompaktnija (manji padding/font)
+                 nego prije — cilj im je stati sve troje na tipičnu širinu ekrana
+                 bez skrolanja, uz skrol kao siguran fallback ako baš ne stane. -->
             <div class="kub-header-row">
                 <button type="button" class="kub-close-btn" onclick="closeKubikator()">✕ Zatvori</button>
-                <!-- Mod i sortiment su namjerno u ZAJEDNIČKOM omotaču (ne direktno u
-                     .kub-header-row) — na uskom ekranu .kub-header-row prelama svoju
-                     djecu u novi red pojedinačno, pa bi dropdown, kao treći/zadnji
-                     element, znao "otpasti" od dugmeta moda i prelomiti se sam. Ovaj
-                     omotač se prelama KAO CJELINA, pa dropdown ostaje desno od
-                     prekidača na svakoj širini ekrana. -->
-                <div class="kub-header-right">
-                    <button type="button" id="kub-mode-btn" class="kub-mode-btn" onclick="kubikatorToggleMode()">🪵 Prostorno drvo</button>
-                    <select id="kub-sortiment-select" class="kub-sortiment-select" aria-label="Sortiment"></select>
-                </div>
+                <button type="button" id="kub-mode-btn" class="kub-mode-btn" onclick="kubikatorToggleMode()">🪵 Prostorno drvo</button>
+                <select id="kub-sortiment-select" class="kub-sortiment-select" aria-label="Sortiment"></select>
             </div>
 
             <div class="kub-wrap">
