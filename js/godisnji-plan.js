@@ -364,16 +364,16 @@
     });
   }
 
-  let _timelineChart = null;
-
+  // Ručno (CSS-only) crtanje — JEDAN red po odjelu, sa jednom ili VIŠE
+  // traka na istom redu kad je bila pauza u sječi (Chart.js floating-bar
+  // ne podržava lijepo više odvojenih traka po istoj kategoriji, pa je
+  // ovo pouzdanije nego forsirati to preko više dataset-a).
   function renderTimeline(rows) {
     const view = document.getElementById('gp-timeline-view');
     if (!view) return;
 
     // Samo odjeli koji stvarno imaju evidentiranu sječu — planirani-a-nepočeti
-    // odjeli nemaju datume za prikaz na timeline-u. Odjel sječen u dva ili
-    // više navrata (pauza > SEGMENT_PAUZA_DANA) dobija ODVOJEN red po
-    // segmentu, sa oznakom "(1/2)" itd. da se vidi da je isti odjel.
+    // odjeli nemaju datume za prikaz na timeline-u.
     const stavke = [];
     rows.forEach(r => {
       if (r.status === 'planirano') return;
@@ -381,16 +381,15 @@
       if (!segmenti.length) return;
       const naziv = r.gj === 'Slučajni užici' ? (r.odjelLabel || r.odjel) : r.odjel;
       const gjKratko = r.gj === 'Slučajni užici' ? 'Slučajni' : r.gj;
-      segmenti.forEach((seg, i) => {
-        const oznaka = segmenti.length > 1 ? ' (' + (i + 1) + '/' + segmenti.length + ')' : '';
-        stavke.push({
-          label: naziv + oznaka + '  ·  ' + gjKratko,
-          status: r.status,
+      stavke.push({
+        label: naziv + '  ·  ' + gjKratko,
+        status: r.status,
+        segmenti: segmenti.map(seg => ({
           dayStart: _dayOfYearGp(seg.datumPocetka),
           dayEnd: _dayOfYearGp(seg.datumKraja),
           datumPocetka: seg.datumPocetka,
           datumKraja: seg.datumKraja,
-        });
+        })),
       });
     });
 
@@ -399,73 +398,47 @@
       return;
     }
 
-    const visina = Math.max(320, stavke.length * 30 + 50);
+    const monthNazivi = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+    const monthStarts = monthNazivi.map((lbl, i) => ({ lbl, day: _dayOfYearGp(new Date(PLAN_YEAR, i, 1)) }));
+    const totalDays = _dayOfYearGp(new Date(PLAN_YEAR, 11, 31)) + 1; // 365 ili 366 (prestupna)
+    const pct = day => (day / totalDays * 100).toFixed(3);
+    const statusBoja = s => s === 'posjeceno' ? '#16a34a' : '#dc2626';
+
+    const monthHeaderHtml = monthStarts.map((m, i) => {
+      const nextDay = i < 11 ? monthStarts[i + 1].day : totalDays;
+      const width = ((nextDay - m.day) / totalDays * 100).toFixed(3);
+      return `<div style="flex:0 0 ${width}%;text-align:center;font-size:12px;color:#6b7280;font-weight:700;border-left:1px solid #cbd5e1;">${m.lbl}</div>`;
+    }).join('');
+
+    const rowsHtml = stavke.map(s => {
+      const barsHtml = s.segmenti.map(seg => {
+        const left = pct(seg.dayStart);
+        const width = pct(Math.max(seg.dayEnd - seg.dayStart + 1, 2));
+        const naslov = s.label + ': ' + _fmtDatumGp(seg.datumPocetka) + ' → ' + _fmtDatumGp(seg.datumKraja);
+        return `<div title="${naslov}" style="position:absolute;left:${left}%;width:${width}%;top:4px;bottom:4px;min-width:5px;background:${statusBoja(s.status)};border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.15);"></div>`;
+      }).join('');
+      return `
+        <div style="display:flex;align-items:center;border-bottom:1px solid #f1f5f9;">
+          <div style="flex:0 0 190px;padding:6px 10px;font-size:13px;font-weight:600;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.label}</div>
+          <div style="flex:1;position:relative;height:28px;">${barsHtml}</div>
+        </div>`;
+    }).join('');
+
     view.innerHTML = `
-      <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:16px;">
+      <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:16px;overflow-x:auto;">
         <div style="font-size:12px;color:#6b7280;margin-bottom:12px;display:flex;gap:16px;flex-wrap:wrap;">
           <span><span style="display:inline-block;width:10px;height:10px;background:#16a34a;border-radius:2px;margin-right:5px;vertical-align:middle;"></span>Posječeno</span>
           <span><span style="display:inline-block;width:10px;height:10px;background:#dc2626;border-radius:2px;margin-right:5px;vertical-align:middle;"></span>U sječi (do sad)</span>
+          <span style="color:#9ca3af;">Odjel sječen u dva navrata (pauza &gt; ${SEGMENT_PAUZA_DANA} dana) prikazan je sa dvije trake na istom redu.</span>
         </div>
-        <div style="position:relative;height:${visina}px;">
-          <canvas id="gp-timeline-chart"></canvas>
+        <div style="min-width:760px;">
+          <div style="display:flex;">
+            <div style="flex:0 0 190px;"></div>
+            <div style="flex:1;display:flex;border-bottom:2px solid #cbd5e1;padding-bottom:5px;margin-bottom:2px;">${monthHeaderHtml}</div>
+          </div>
+          ${rowsHtml}
         </div>
       </div>`;
-
-    if (typeof window.loadChartJs !== 'function') return;
-    window.loadChartJs().then(() => {
-      const canvas = document.getElementById('gp-timeline-chart');
-      if (!canvas) return;
-      if (_timelineChart) { _timelineChart.destroy(); _timelineChart = null; }
-      const existing = Chart.getChart(canvas);
-      if (existing) existing.destroy();
-
-      const monthNazivi = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
-      const monthTicks = monthNazivi.map((lbl, i) => ({ value: _dayOfYearGp(new Date(PLAN_YEAR, i, 1)), label: lbl }));
-      const statusBoja = s => s === 'posjeceno' ? '#16a34a' : '#dc2626';
-
-      _timelineChart = new Chart(canvas.getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: stavke.map(s => s.label),
-          datasets: [{
-            data: stavke.map(s => [s.dayStart, s.dayEnd]),
-            backgroundColor: stavke.map(s => statusBoja(s.status)),
-            borderRadius: 4,
-            barThickness: 16,
-          }]
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true, maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => {
-                  const st = stavke[ctx.dataIndex];
-                  return _fmtDatumGp(st.datumPocetka) + '  →  ' + _fmtDatumGp(st.datumKraja);
-                }
-              }
-            }
-          },
-          scales: {
-            x: {
-              min: 0, max: 366,
-              afterBuildTicks: axis => { axis.ticks = monthTicks.map(t => ({ value: t.value })); },
-              ticks: {
-                callback: (val) => { const f = monthTicks.find(t => t.value === val); return f ? f.label : ''; },
-                color: '#6b7280', font: { size: 11 }
-              },
-              grid: { color: '#cbd5e1', lineWidth: 1 }
-            },
-            y: {
-              ticks: { color: '#374151', font: { size: 12, weight: '600' } },
-              grid: { display: false }
-            }
-          }
-        }
-      });
-    });
   }
 
   // ---- FILTERING ----
