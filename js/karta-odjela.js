@@ -193,11 +193,13 @@
       // Početak/kraj sječe — najraniji i najkasniji datum primke za ovaj
       // odjel (koristi se u modalu SAMO za status "posjeceno").
       // Grupiši prvo po (raw) datumskom stringu → skup sortimenata tog dana,
-      // da "kraj sječe" može preskočiti dane kad je JEDINI sortiment bio
-      // OGR.CIJEPANI — ogrijevno drvo se često dovršava/čisti i poslije
+      // da "kraj sječe" može preskočiti "čišćenje" dane — kad tog dana ima
+      // ISKLJUČIVO OGR.CIJEPANI i/ili CEL.CIJEPANA (bilo koje od njih, ili
+      // oboje zajedno) — ti sortimenti se često dovršavaju/čiste i poslije
       // stvarnog kraja sječe glavnih sortimenata, pa sam takav dan ne
-      // predstavlja pravi nastavak sječe. Dan sa OGR.CIJEPANI I bilo čim
-      // drugim se i dalje normalno računa.
+      // predstavlja pravi nastavak sječe. Dan sa bilo kojim DRUGIM
+      // sortimentom (uz njih ili umjesto njih) se i dalje normalno računa.
+      const KRAJ_SJECE_CISCENJE = new Set(['OGR.CIJEPANI', 'CEL.CIJEPANA']);
       const sortimentiPoDatumu = new Map(); // raw datum string -> Set(sortiment)
       odjelPrimke.forEach(p => {
         const ds = String(p.datum || '');
@@ -214,10 +216,10 @@
       let datumKraja = null;
       for (const d of daniOpadajuce) {
         const skup = sortimentiPoDatumu.get(d.raw);
-        const samoCijepani = skup.size === 1 && skup.has('OGR.CIJEPANI');
-        if (!samoCijepani) { datumKraja = d.date; break; }
+        const samoCiscenje = [...skup].every(s => KRAJ_SJECE_CISCENJE.has(s));
+        if (!samoCiscenje) { datumKraja = d.date; break; }
       }
-      if (!datumKraja && daniOpadajuce.length) datumKraja = daniOpadajuce[0].date; // svi dani su bili samo cijepani — fallback na stvarni zadnji dan
+      if (!datumKraja && daniOpadajuce.length) datumKraja = daniOpadajuce[0].date; // svi dani su bili samo čišćenje — fallback na stvarni zadnji dan
 
       sjeca.ukupno    = _sumSort(sjeca);
       otpr.ukupno     = _sumSort(otpr);
