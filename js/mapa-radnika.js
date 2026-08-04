@@ -20,8 +20,11 @@
     'use strict';
 
     var GEOJSON_URL = 'data/odjeli.geojson';
-    // Lokacija Šumarije Bosanska Krupa (default centar dok GPS ne stigne)
-    var SUMARIJA_LATLNG = [44.883425, 16.154427];
+    // Podaci specifični za šumariju — js/config-sumarija.js (jedini fajl koji
+    // se mijenja za drugu šumariju).
+    var _CFG = window.SUMARIJA_CONFIG || {};
+    // Lokacija kancelarije (default centar dok GPS ne stigne)
+    var SUMARIJA_LATLNG = _CFG.LOKACIJA || [44.883425, 16.154427];
 
     // Filter tačaka trага — ne dodavaj novu tačku ako je bliže od MIN_DIST_M
     // metara ILI je prošlo manje od MIN_TIME_MS od zadnje tačke (GPS na terenu
@@ -58,14 +61,7 @@
     // Svako pravilo je { radiliste: '<NAZIV>' } — cijelo radilište — ili
     // { radiliste: '<NAZIV>', odjeli: ['21'] } kad poslovođa sa tog radilišta
     // vodi SAMO navedene odjele.
-    var POSLOVODJA_RADILISTA_KARTA = {
-        'JASMIN PORIC': [{ radiliste: 'RADICKE UVALE' }],
-        'HADZIPASIC IRFAN': [{ radiliste: 'TURSKE VODE' }],
-        'HARBAS MEHMEDALIJA': [
-            { radiliste: 'BJELAJSKE UVALE' },
-            { radiliste: 'VOJSKOVA', odjeli: ['21'] }
-        ]
-    };
+    var POSLOVODJA_RADILISTA_KARTA = _CFG.POSLOVODJA_RADILISTA_KARTA || {};
     // Uppercase + bez dijakritika (Č/Ć→C, Š→S, Ž→Z, Đ→DJ) — isti pristup kao
     // _normKey, ali bez strip-anja odjel sufiksa (ovdje su imena/radilišta).
     function _plainUp(s) {

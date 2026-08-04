@@ -4,7 +4,22 @@
 (function () {
   'use strict';
 
-  const GEOJSON_VERSION = '20260603a';
+  // Podaci specifični za šumariju — js/config-sumarija.js (jedini fajl koji
+  // se mijenja za drugu šumariju).
+  const _CFG = window.SUMARIJA_CONFIG || {};
+
+  const GEOJSON_VERSION = _CFG.GEOJSON_VERSION || '1';
+
+  // Prozirna pozadina GJ značke — izvedena iz GJ_COLOR u configu (hex → rgba
+  // 25%), da se nazivi/boje GJ ne moraju održavati na dva mjesta.
+  function _gjBadgeBg(gj) {
+    var hex = (_CFG.GJ_COLOR || {})[gj];
+    if (!hex || !/^#[0-9a-f]{6}$/i.test(hex)) return 'rgba(255,255,255,.15)';
+    var r = parseInt(hex.slice(1, 3), 16),
+        g = parseInt(hex.slice(3, 5), 16),
+        b = parseInt(hex.slice(5, 7), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',.25)';
+  }
   const GEOJSON_URL = 'data/odjeli.geojson';
   // ISTI ključevi kao kanonski preload primke/otpreme fetch — dijeli cache umjesto
   // da duplicira cijeli payload pod treći zaseban ključ (cache_otpreme_karta)
@@ -12,7 +27,7 @@
   const CACHE_OTPR  = 'cache_otpreme_tab';
 
   // Lokacija Šumarije Bosanska Krupa — Trg Alije Izetbegovića 1
-  const SUMARIJA_LATLNG = [44.883425, 16.154427];
+  const SUMARIJA_LATLNG = _CFG.LOKACIJA || [44.883425, 16.154427];
   const OSRM_URL = 'https://router.project-osrm.org/route/v1/driving';
 
   let _map          = null;
@@ -95,7 +110,7 @@
     return v === 0 ? '—' : v.toLocaleString('de-DE') + ' m³';
   }
 
-  const PLAN_YEAR = 2026;
+  const PLAN_YEAR = _CFG.PLAN_YEAR || new Date().getFullYear();
   const MJESECI_NAZIVI = ['Januar','Februar','Mart','April','Maj','Juni','Juli','August','Septembar','Oktobar','Novembar','Decembar'];
 
   let _otpremaMode = false; // "Prikaz otpreme" checkbox — prikaži samo odjele s otpremom u tekućem mjesecu
@@ -534,7 +549,8 @@
     const odjel  = _currentOdjelLabel;
     const gj     = props.gj   || '—';
     const odsjek = props.odsjek || '—';
-    const gjBg = {'Risovac Krupa':'rgba(147,197,253,.25)','Grmeč Jasenica':'rgba(134,239,172,.25)','Vojskova':'rgba(252,211,77,.25)'}[gj]||'rgba(255,255,255,.15)';
+    // Pozadina GJ značke u modalu — boja GJ iz configa, prozirno (25%).
+    const gjBg = _gjBadgeBg(gj);
 
     document.getElementById('mapa-modal-title').textContent = 'Odjel ' + odjel;
     const gjEl = document.getElementById('mapa-modal-gj');
@@ -1439,64 +1455,18 @@
 
   // ---- PLAN ENTRIES ----
   // cTrupci=TRUPCI Č, cijepanoC=CEL.DUGA+CEL.CIJEPANA+ŠKART, lTrupci=TRUPCI L, cijepanoL=OGR.DUGI+OGR.CIJEPANI+GULE
+  // Plan sječe — izvedeno iz js/config-sumarija.js. Mapa koristi druga imena
+  // polja (cijepanoC/cijepanoL) nego Godišnji plan tab (dzgo/cijepano); to
+  // preslikavanje radi sam config, pa dvije liste NE MOGU otići u nesklad
+  // (ranije su bile dvije ručno održavane kopije).
   function _planEntries() {
-    return [
-      { gj:'Risovac Krupa', odjel:'13',    bruto:3244,  neto:2768, cTrupci:3,    cijepanoC:2,   lTrupci:875,  cijepanoL:1888 },
-      { gj:'Risovac Krupa', odjel:'35',    bruto:5417,  neto:4648, cTrupci:122,  cijepanoC:44,  lTrupci:1813, cijepanoL:2670 },
-      { gj:'Risovac Krupa', odjel:'50',    bruto:5161,  neto:4329, cTrupci:1824, cijepanoC:227, lTrupci:971,  cijepanoL:1307 },
-      { gj:'Risovac Krupa', odjel:'54P',   bruto:1511,  neto:1276, cTrupci:639,  cijepanoC:109, lTrupci:208,  cijepanoL:320  },
-      { gj:'Risovac Krupa', odjel:'55',    bruto:5195,  neto:4258, cTrupci:2193, cijepanoC:328, lTrupci:789,  cijepanoL:948  },
-      { gj:'Risovac Krupa', odjel:'56',    bruto:3877,  neto:3206, cTrupci:1779, cijepanoC:263, lTrupci:439,  cijepanoL:725  },
-      { gj:'Risovac Krupa', odjel:'59/1',  bruto:3724,  neto:3087, cTrupci:1545, cijepanoC:208, lTrupci:658,  cijepanoL:676  },
-      { gj:'Risovac Krupa', odjel:'63',    bruto:4033,  neto:3339, cTrupci:1309, cijepanoC:236, lTrupci:796,  cijepanoL:998  },
-      { gj:'Risovac Krupa', odjel:'66',    bruto:2645,  neto:2307, cTrupci:0,    cijepanoC:52,  lTrupci:949,  cijepanoL:1307 },
-      { gj:'Risovac Krupa', odjel:'68/2',  bruto:2605,  neto:2287, cTrupci:35,   cijepanoC:6,   lTrupci:1012, cijepanoL:1234 },
-      { gj:'Risovac Krupa', odjel:'71P',   bruto:1957,  neto:1655, cTrupci:664,  cijepanoC:114, lTrupci:401,  cijepanoL:476  },
-      { gj:'Risovac Krupa', odjel:'97',    bruto:4889,  neto:4058, cTrupci:1253, cijepanoC:236, lTrupci:901,  cijepanoL:1668 },
-      { gj:'Risovac Krupa', odjel:'113P',  bruto:5177,  neto:4300, cTrupci:225,  cijepanoC:74,  lTrupci:1278, cijepanoL:2723 },
-      { gj:'Grmeč Jasenica', odjel:'4/1',   bruto:2490, neto:2117, cTrupci:0,   cijepanoC:0,   lTrupci:303,  cijepanoL:1814 },
-      { gj:'Grmeč Jasenica', odjel:'11P',   bruto:208,  neto:179,  cTrupci:0,   cijepanoC:0,   lTrupci:73,   cijepanoL:106  },
-      { gj:'Grmeč Jasenica', odjel:'43P',   bruto:1099, neto:740,  cTrupci:40,  cijepanoC:100, lTrupci:160,  cijepanoL:440  },
-      { gj:'Grmeč Jasenica', odjel:'60',    bruto:3551, neto:3061, cTrupci:295, cijepanoC:65,  lTrupci:1050, cijepanoL:1651 },
-      { gj:'Grmeč Jasenica', odjel:'61',    bruto:4774, neto:4105, cTrupci:454, cijepanoC:102, lTrupci:1393, cijepanoL:2156 },
-      { gj:'Grmeč Jasenica', odjel:'64/2P', bruto:996,  neto:608,  cTrupci:13,  cijepanoC:23,  lTrupci:211,  cijepanoL:361  },
-      { gj:'Grmeč Jasenica', odjel:'66',    bruto:5339, neto:4493, cTrupci:0,   cijepanoC:0,   lTrupci:1025, cijepanoL:3468 },
-      { gj:'Grmeč Jasenica', odjel:'67',    bruto:4853, neto:4199, cTrupci:0,   cijepanoC:0,   lTrupci:1530, cijepanoL:2669 },
-      { gj:'Grmeč Jasenica', odjel:'69P',   bruto:1309, neto:1204, cTrupci:82,  cijepanoC:32,  lTrupci:390,  cijepanoL:700  },
-      { gj:'Grmeč Jasenica', odjel:'85P',   bruto:678,  neto:418,  cTrupci:0,   cijepanoC:73,  lTrupci:25,   cijepanoL:320  },
-      { gj:'Grmeč Jasenica', odjel:'88P',   bruto:1805, neto:1200, cTrupci:0,   cijepanoC:0,   lTrupci:20,   cijepanoL:1180 },
-      { gj:'Vojskova', odjel:'15',  bruto:450, neto:383, cTrupci:0, cijepanoC:0, lTrupci:0,   cijepanoL:383 },
-      { gj:'Vojskova', odjel:'21P', bruto:787, neto:624, cTrupci:0, cijepanoC:0, lTrupci:202, cijepanoL:422 },
-      { gj:'Vojskova', odjel:'25',  bruto:750, neto:637, cTrupci:0, cijepanoC:0, lTrupci:0,   cijepanoL:637 },
-    ];
+    return _CFG.PLAN_ENTRIES_MAPA || [];
   }
 
   // ---- PLAN 2027 ----
+  // Odjeli planirani za narednu godinu — js/config-sumarija.js
   function _plan2027Entries() {
-    return [
-      { gj:'Grmeč Jasenica', odjel:'5/1'   },
-      { gj:'Grmeč Jasenica', odjel:'5/2'   },
-      { gj:'Grmeč Jasenica', odjel:'68'    },
-      { gj:'Grmeč Jasenica', odjel:'8'     },
-      { gj:'Grmeč Jasenica', odjel:'80'    },
-      { gj:'Grmeč Jasenica', odjel:'81'    },
-      { gj:'Risovac Krupa',  odjel:'112'   },
-      { gj:'Risovac Krupa',  odjel:'120'   },
-      { gj:'Risovac Krupa',  odjel:'14'    },
-      { gj:'Risovac Krupa',  odjel:'34'    },
-      { gj:'Risovac Krupa',  odjel:'4'     },
-      { gj:'Risovac Krupa',  odjel:'44/1P' },
-      { gj:'Risovac Krupa',  odjel:'5'     },
-      { gj:'Risovac Krupa',  odjel:'6'     },
-      { gj:'Risovac Krupa',  odjel:'60'    },
-      { gj:'Risovac Krupa',  odjel:'7'     },
-      { gj:'Risovac Krupa',  odjel:'78'    },
-      { gj:'Risovac Krupa',  odjel:'81'    },
-      { gj:'Vojskova',       odjel:'15'    },
-      { gj:'Vojskova',       odjel:'22'    },
-      { gj:'Vojskova',       odjel:'23/2'  },
-      { gj:'Vojskova',       odjel:'25'    },
-    ];
+    return _CFG.PLAN_ENTRIES_NAREDNA || [];
   }
 
 })();

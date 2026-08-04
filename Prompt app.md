@@ -82,7 +82,7 @@ Ako imaš pristup postojećem repozitoriju (`pogonboskrupa/sumarija` ili kopiji)
 
 1. Kopiraj cijeli repozitorij.
 2. Pročitaj `docs/TEMPLATE-ZA-DRUGE-SUMARIJE.md` — to je kompletno uputstvo za
-   ovaj postupak, sa checklistom od 28 koraka.
+   ovaj postupak, sa checklistom od 25 koraka.
 3. Zamijeni **samo** hardkodirane podatke navedene u DIJELU 3 ovog prompta.
 4. **Ne diraj ništa drugo** — logika izračuna, strukture podataka i UI su
    provjereni u radu i ne treba ih mijenjati.
@@ -335,27 +335,35 @@ Sve ostalo u `config.gs` ostaje isto.
 
 ## Frontend
 
-| # | Šta | Gdje | Napomena |
-|---|---|---|---|
-| 1 | `API_URL` | `js/app.js` (~132) | URL Apps Script Web App-a. **Jedino mjesto.** |
-| 2 | `SUMARIJA_LATLNG` | `js/karta-odjela.js` (~15) **i** `js/mapa-radnika.js` (~24) | **Dvije kopije — obje!** |
-| 3 | `PLAN_ENTRIES` | `js/godisnji-plan.js` (~9) | polja: `gj, odjel, bruto, neto, cTrupci, dzgo, lTrupci, cijepano` |
-| 4 | `_planEntries()` | `js/karta-odjela.js` (~1442) | **Isti podaci, druga imena:** `dzgo`→`cijepanoC`, `cijepano`→`cijepanoL` |
-| 5 | `_plan2027Entries()` | `js/karta-odjela.js` (~1475) | samo `{gj, odjel}` za narednu godinu |
-| 6 | `GJ_LIST`, `GJ_COLOR`, `GJ_BG` | `js/godisnji-plan.js` (~39–41) | nazivi GJ **moraju se poklapati sa `gj` u GeoJSON-u** |
-| 7 | `PLAN_YEAR` | `js/godisnji-plan.js` (~46) **i** `js/karta-odjela.js` (~98) | dvije kopije |
-| 8 | `POSLOVODJA_RADILISTA_FALLBACK` | `js/app.js` | rezerva ako `INFO` sheet ne odgovori |
-| 9 | `POSLOVODJA_RADILISTA_KARTA` | `js/mapa-radnika.js` (~61) | druga kopija istog |
-| 10 | `data/odjeli.geojson` | | properties: `gj`, `odjel` (+ opciono `name`, `odsjek`) |
-| 11 | `GEOJSON_VERSION` | `js/karta-odjela.js` (~7) | **povećati** nakon zamjene GeoJSON-a |
-| 12 | Naziv šumarije | `index.html`, `js/auth.js` (naziv taba), `manifest.webmanifest`, `offline.html` | |
-| 13 | Ikone i logo | `icon-192.png`, `icon-512.png`, `icon-*-maskable.png`, `favicon.*`, logo u zaglavlju | |
-| 14 | `CNAME` | korijen | nova domena, ili obrisati fajl |
-| 15 | `.well-known/assetlinks.json` | | samo ako se pravi Android TWA |
+**Gotovo sve je u jednom fajlu: `js/config-sumarija.js`.**
 
-> **Upozorenje na duplikate:** stavke 2, 4, 7 i 9 postoje na **po dva mjesta**
-> koja se moraju ručno održavati usklađenim. Ako se razlikuju, mapa i Godišnji
-> plan pokazuju različite brojeve.
+| # | Šta | Gdje |
+|---|---|---|
+| 1 | **Svi podaci šumarije** — naziv, koordinate kancelarije, `API_URL`, GJ + boje, `PLAN_YEAR`, `GEOJSON_VERSION`, godišnji plan, plan naredne godine, poslovođa→radilište | **`js/config-sumarija.js`** (fajl je podijeljen u 6 označenih dijelova) |
+| 2 | GeoJSON granica odjela | `data/odjeli.geojson` — properties: `gj`, `odjel` (+ opciono `name`, `odsjek`) |
+| 3 | Naziv šumarije u tekstu | `index.html`, `manifest.webmanifest`, `offline.html` |
+| 4 | Ikone i logo | `icon-192.png`, `icon-512.png`, `icon-*-maskable.png`, `favicon.*`, logo u zaglavlju |
+| 5 | `CNAME` | korijen — nova domena, ili obrisati fajl |
+| 6 | `.well-known/assetlinks.json` | samo ako se pravi Android TWA |
+
+**Struktura jednog unosa godišnjeg plana** (u configu):
+
+```js
+{ gj: 'Naziv GJ', odjel: '13', bruto: 3244, neto: 2768,
+  cTrupci: 3,      // trupci četinara
+  dzgo: 2,         // celuloza/cijepano četinari
+  lTrupci: 875,    // trupci lišćara
+  cijepano: 1888 } // ogrijev/cijepano lišćari
+```
+
+> Mapa interno koristi druga imena za dva polja (`dzgo`→`cijepanoC`,
+> `cijepano`→`cijepanoL`), ali **to preslikavanje radi sam config
+> automatski** — plan se upisuje samo jednom.
+>
+> Ako gradiš iz nule (PUT B): **drži sve podatke specifične za šumariju u
+> jednom config fajlu koji se učitava prvi.** Ranije su bili razbacani po
+> šest fajlova sa četiri duple vrijednosti i to je bio stalan izvor
+> neslaganja između Mape i Godišnjeg plana.
 
 ## Format koji se mora poklapati
 
@@ -374,7 +382,8 @@ Ključ za povezivanje sječe sa poligonom na mapi je normalizovan
 5. Apps Script: kopirati `.gs` fajlove, upisati ID-e, deploy → zapisati URL
 6. Pokrenuti `setupStanjeOdjelaDailyTrigger()` i `setupDeleteOldImagesTrigger()`
 7. Pokrenuti `INDEKS_DODAJ_NOVE()`
-8. Frontend: proći kroz tabelu iznad (15 stavki)
+8. Frontend: popuniti `js/config-sumarija.js` (6 dijelova) + zamijeniti
+   GeoJSON, naziv u tekstu i ikone
 9. GitHub Pages + domena
 10. Testirati sa po jednim korisnikom svake uloge
 

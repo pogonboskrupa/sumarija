@@ -327,38 +327,47 @@ Ovo se ponavlja svaki put kad se dodaju novi podaci u fajlove odjela.
 
 ### 7.1 Obavezne izmjene
 
+**Gotovo sve je u jednom fajlu: `js/config-sumarija.js`.**
+
 | Šta | Gdje | Napomena |
 |---|---|---|
-| **API URL** | `js/app.js` (konstanta `API_URL`, oko linije 132) | Zalijepiti URL iz koraka 6.3. **Ovo je jedino mjesto** — sve ostalo koristi ovu konstantu. |
-| **Koordinate šumarije** | `js/karta-odjela.js` (`SUMARIJA_LATLNG`, ~linija 15) **i** `js/mapa-radnika.js` (~linija 24) | **Dvije kopije — obje promijeniti.** Format `[lat, lng]`. Koristi se za centriranje mape, marker kancelarije i početnu tačku rute. |
-| **Godišnji plan** | `js/godisnji-plan.js` (`PLAN_ENTRIES`, ~linija 9) **i** `js/karta-odjela.js` (`_planEntries()`, ~linija 1442) | **Dvije kopije istih podataka** sa različitim nazivima polja (vidi 7.2). |
-| **Plan naredne godine** | `js/karta-odjela.js` (`_plan2027Entries()`) | Samo `{gj, odjel}` |
-| **Gospodarske jedinice** | `js/godisnji-plan.js` (`GJ_LIST`, `GJ_COLOR`, `GJ_BG`, ~linije 39–41) | Nazivi GJ + boje. **Nazivi se moraju poklapati sa `gj` u GeoJSON-u.** |
-| **Godina plana** | `PLAN_YEAR` u `js/godisnji-plan.js` i `js/karta-odjela.js` | Dvije kopije |
-| **Poslovođa → radilište (rezerva)** | `js/app.js` (`POSLOVODJA_RADILISTA_FALLBACK`) i `js/mapa-radnika.js` (`POSLOVODJA_RADILISTA_KARTA`) | Rezervna lista ako `INFO` sheet nije dostupan |
+| **Sve specifično za šumariju** | **`js/config-sumarija.js`** | Naziv, koordinate, API URL, GJ + boje, godina plana, godišnji plan, plan naredne godine, poslovođa→radilište, verzija GeoJSON-a. **Jedan fajl.** |
 | **GeoJSON granica odjela** | `data/odjeli.geojson` | Vidi 7.3 |
-| **Naziv šumarije u tekstu** | `index.html`, `js/auth.js` (naziv taba), `manifest.webmanifest`, `offline.html` | Zamijeniti "Bosanska Krupa" / "Pogon gospodarenja Bos. Krupa" |
+| **Naziv šumarije u tekstu** | `index.html`, `manifest.webmanifest`, `offline.html` | Zamijeniti "Bosanska Krupa" / "Pogon gospodarenja Bos. Krupa" |
 | **Logo i ikone** | `icon-192.png`, `icon-512.png`, `icon-*-maskable.png`, `favicon.*`, logo u zaglavlju | |
 
-### 7.2 Godišnji plan — struktura
+> Ranije su ovi podaci bili razbacani po šest fajlova, a četiri vrijednosti su
+> postojale u **po dvije kopije** (koordinate, godišnji plan, `PLAN_YEAR`,
+> poslovođa→radilište) — što je bila stalna opasnost da kopije odu u nesklad
+> pa Mapa i Godišnji plan pokažu različite brojeve. Sad su spojene.
 
-`PLAN_ENTRIES` u `js/godisnji-plan.js`:
+### 7.2 Šta se popunjava u `js/config-sumarija.js`
+
+Fajl je podijeljen u šest označenih dijelova:
+
+1. **Osnovni podaci** — `NAZIV_PUNI`, `NAZIV_KRATKI`, `LOKACIJA` (`[lat, lng]`
+   kancelarije — centar mape, marker, početna tačka rute)
+2. **Backend** — `API_URL` (URL Apps Script Web App-a iz koraka 6.3)
+3. **Gospodarske jedinice** — `GJ_LIST`, `GJ_COLOR`, `GJ_BG`
+4. **Godina i verzija podloge** — `PLAN_YEAR`, `GEOJSON_VERSION`
+5. **Godišnji plan** — `PLAN_ENTRIES` i `PLAN_ENTRIES_NAREDNA`
+6. **Poslovođa → radilište** — dvije rezervne liste (namjerno različite, vidi
+   komentar u fajlu)
+
+**Struktura jednog unosa godišnjeg plana:**
 
 ```js
-{ gj:'Naziv GJ', odjel:'13', bruto:3244, neto:2768,
-  cTrupci:3, dzgo:2, lTrupci:875, cijepano:1888 }
+{ gj: 'Naziv GJ', odjel: '13', bruto: 3244, neto: 2768,
+  cTrupci: 3,      // trupci četinara
+  dzgo: 2,         // celuloza/cijepano četinari
+  lTrupci: 875,    // trupci lišćara
+  cijepano: 1888 } // ogrijev/cijepano lišćari
 ```
 
-`_planEntries()` u `js/karta-odjela.js` — **isti podaci, druga imena polja**:
-
-```js
-{ gj:'Naziv GJ', odjel:'13', bruto:3244, neto:2768,
-  cTrupci:3, cijepanoC:2, lTrupci:875, cijepanoL:1888 }
-//              dzgo →  cijepanoC      cijepano → cijepanoL
-```
-
-> Ove dvije liste se moraju **ručno održavati usklađenim**. Ako se planovi
-> razlikuju, mapa i Godišnji plan tab će pokazivati različite brojeve.
+> Mapa interno koristi druga imena za dva polja (`dzgo`→`cijepanoC`,
+> `cijepano`→`cijepanoL`). **To preslikavanje radi sam config
+> automatski** (`PLAN_ENTRIES_MAPA`) — plan se upisuje samo jednom i kopije
+> više ne mogu otići u nesklad.
 
 ### 7.3 GeoJSON — granice odjela
 
@@ -447,22 +456,26 @@ BACKEND
 
 FRONTEND
 [ ] 14. Kopija koda u novi repozitorij
-[ ] 15. js/app.js → API_URL = novi Web App URL
-[ ] 16. SUMARIJA_LATLNG na DVA mjesta
-[ ] 17. PLAN_ENTRIES + _planEntries() (dvije kopije) + _plan2027Entries()
-[ ] 18. GJ_LIST / GJ_COLOR / GJ_BG + PLAN_YEAR (dva mjesta)
-[ ] 19. data/odjeli.geojson zamijenjen + GEOJSON_VERSION povećan
-[ ] 20. Naziv šumarije u index.html, js/auth.js, manifest, offline.html
-[ ] 21. Zamijenjene ikone i logo
-[ ] 22. GitHub Pages uključen, CNAME podešen/obrisan
+[ ] 15. js/config-sumarija.js — popuniti SVIH 6 dijelova:
+        [ ] naziv šumarije (puni i kratki)
+        [ ] LOKACIJA (koordinate kancelarije)
+        [ ] API_URL (Web App URL iz koraka 10)
+        [ ] GJ_LIST / GJ_COLOR / GJ_BG
+        [ ] PLAN_YEAR + GEOJSON_VERSION
+        [ ] PLAN_ENTRIES + PLAN_ENTRIES_NAREDNA
+        [ ] POSLOVODJA_RADILISTA (obje liste)
+[ ] 16. data/odjeli.geojson zamijenjen (+ GEOJSON_VERSION povećan u configu)
+[ ] 17. Naziv šumarije u index.html, manifest.webmanifest, offline.html
+[ ] 18. Zamijenjene ikone i logo
+[ ] 19. GitHub Pages uključen, CNAME podešen/obrisan
 
 PROVJERA
-[ ] 23. Prijava kao admin — vide li se svi tabovi
-[ ] 24. Prijava kao primač — vidi li SVOJE unose
-[ ] 25. Prijava kao poslovođa — vidi li svoja radilišta (INFO sheet)
-[ ] 26. Mapa — poklapaju li se poligoni sa podacima o sječi
-[ ] 27. Godišnji plan — slažu li se brojevi sa planom
-[ ] 28. Test na telefonu + instalacija kao PWA
+[ ] 20. Prijava kao admin — vide li se svi tabovi
+[ ] 21. Prijava kao primač — vidi li SVOJE unose
+[ ] 22. Prijava kao poslovođa — vidi li svoja radilišta (INFO sheet)
+[ ] 23. Mapa — poklapaju li se poligoni sa podacima o sječi
+[ ] 24. Godišnji plan — slažu li se brojevi sa planom
+[ ] 25. Test na telefonu + instalacija kao PWA
 ```
 
 ---

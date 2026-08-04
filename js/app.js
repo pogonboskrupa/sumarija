@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.110';
+        const APP_VERSION = '2.111';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -129,7 +129,11 @@
             }
         })();
 
-        const API_URL = 'https://script.google.com/macros/s/AKfycbz__4umdSqKd0o81TnDgdtHufd0FcaT-1E2oLq9pcHqfWPjVgIA9WZDz6-O4ta_fiUR/exec';
+        // URL Apps Script backenda — js/config-sumarija.js (jedini fajl koji se
+        // mijenja za drugu šumariju). Fallback je zadržan da aplikacija radi i
+        // ako config nekim slučajem ne bude učitan.
+        const API_URL = (window.SUMARIJA_CONFIG && window.SUMARIJA_CONFIG.API_URL)
+            || 'https://script.google.com/macros/s/AKfycbz__4umdSqKd0o81TnDgdtHufd0FcaT-1E2oLq9pcHqfWPjVgIA9WZDz6-O4ta_fiUR/exec';
 
         // ========== PERFORMANCE METRICS ==========
         const perfMetrics = {
@@ -1478,14 +1482,8 @@
 
         // POSLOVOĐA RADILIŠTA MAPPING (dohvaćeno sa API-ja iz INFO sheeta)
         // Hardkodirani fallback ako API ne vrati podatke
-        const POSLOVODJA_RADILISTA_FALLBACK = {
-            'MEHMEDALIJA HARBAŠ': ['BJELAJSKE UVALE', 'VOJSKOVA'],
-            'HARBAŠ MEHMEDALIJA': ['BJELAJSKE UVALE', 'VOJSKOVA'],
-            'JASMIN PORIĆ': ['RADIĆKE UVALE'],
-            'PORIĆ JASMIN': ['RADIĆKE UVALE'],
-            'IRFAN HADŽIPAŠIĆ': ['TURSKE VODE'],
-            'HADŽIPAŠIĆ IRFAN': ['TURSKE VODE']
-        };
+        const POSLOVODJA_RADILISTA_FALLBACK =
+            (window.SUMARIJA_CONFIG && window.SUMARIJA_CONFIG.POSLOVODJA_RADILISTA_OSNOVNI) || {};
         let _poslovodjaRadilistaFromApi = null;
 
         // Dohvati poslovodja→radilista mapping sa API-ja (iz INFO sheeta)

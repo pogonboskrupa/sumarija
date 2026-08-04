@@ -6,44 +6,19 @@
   'use strict';
 
   // ---- PLAN DATA ----
-  const PLAN_ENTRIES = [
-    { gj:'Risovac Krupa', odjel:'13',    bruto:3244,  neto:2768, cTrupci:3,    dzgo:2,   lTrupci:875,  cijepano:1888 },
-    { gj:'Risovac Krupa', odjel:'35',    bruto:5417,  neto:4648, cTrupci:122,  dzgo:44,  lTrupci:1813, cijepano:2670 },
-    { gj:'Risovac Krupa', odjel:'50',    bruto:5161,  neto:4329, cTrupci:1824, dzgo:227, lTrupci:971,  cijepano:1307 },
-    { gj:'Risovac Krupa', odjel:'54P',   bruto:1511,  neto:1276, cTrupci:639,  dzgo:109, lTrupci:208,  cijepano:320  },
-    { gj:'Risovac Krupa', odjel:'55',    bruto:5195,  neto:4258, cTrupci:2193, dzgo:328, lTrupci:789,  cijepano:948  },
-    { gj:'Risovac Krupa', odjel:'56',    bruto:3877,  neto:3206, cTrupci:1779, dzgo:263, lTrupci:439,  cijepano:725  },
-    { gj:'Risovac Krupa', odjel:'59/1',  bruto:3724,  neto:3087, cTrupci:1545, dzgo:208, lTrupci:658,  cijepano:676  },
-    { gj:'Risovac Krupa', odjel:'63',    bruto:4033,  neto:3339, cTrupci:1309, dzgo:236, lTrupci:796,  cijepano:998  },
-    { gj:'Risovac Krupa', odjel:'66',    bruto:2645,  neto:2307, cTrupci:0,    dzgo:52,  lTrupci:949,  cijepano:1307 },
-    { gj:'Risovac Krupa', odjel:'68/2',  bruto:2605,  neto:2287, cTrupci:35,   dzgo:6,   lTrupci:1012, cijepano:1234 },
-    { gj:'Risovac Krupa', odjel:'71P',   bruto:1957,  neto:1655, cTrupci:664,  dzgo:114, lTrupci:401,  cijepano:476  },
-    { gj:'Risovac Krupa', odjel:'97',    bruto:4889,  neto:4058, cTrupci:1253, dzgo:236, lTrupci:901,  cijepano:1668 },
-    { gj:'Risovac Krupa', odjel:'113P',  bruto:5177,  neto:4300, cTrupci:225,  dzgo:74,  lTrupci:1278, cijepano:2723 },
-    { gj:'Grmeč Jasenica', odjel:'4/1',   bruto:2490, neto:2117, cTrupci:0,   dzgo:0,   lTrupci:303,  cijepano:1814 },
-    { gj:'Grmeč Jasenica', odjel:'11P',   bruto:208,  neto:179,  cTrupci:0,   dzgo:0,   lTrupci:73,   cijepano:106  },
-    { gj:'Grmeč Jasenica', odjel:'43P',   bruto:1099, neto:740,  cTrupci:40,  dzgo:100, lTrupci:160,  cijepano:440  },
-    { gj:'Grmeč Jasenica', odjel:'60',    bruto:3551, neto:3061, cTrupci:295, dzgo:65,  lTrupci:1050, cijepano:1651 },
-    { gj:'Grmeč Jasenica', odjel:'61',    bruto:4774, neto:4105, cTrupci:454, dzgo:102, lTrupci:1393, cijepano:2156 },
-    { gj:'Grmeč Jasenica', odjel:'64/2P', bruto:996,  neto:608,  cTrupci:13,  dzgo:23,  lTrupci:211,  cijepano:361  },
-    { gj:'Grmeč Jasenica', odjel:'66',    bruto:5339, neto:4493, cTrupci:0,   dzgo:0,   lTrupci:1025, cijepano:3468 },
-    { gj:'Grmeč Jasenica', odjel:'67',    bruto:4853, neto:4199, cTrupci:0,   dzgo:0,   lTrupci:1530, cijepano:2669 },
-    { gj:'Grmeč Jasenica', odjel:'69P',   bruto:1309, neto:1204, cTrupci:82,  dzgo:32,  lTrupci:390,  cijepano:700  },
-    { gj:'Grmeč Jasenica', odjel:'85P',   bruto:678,  neto:418,  cTrupci:0,   dzgo:73,  lTrupci:25,   cijepano:320  },
-    { gj:'Grmeč Jasenica', odjel:'88P',   bruto:1805, neto:1200, cTrupci:0,   dzgo:0,   lTrupci:20,   cijepano:1180 },
-    { gj:'Vojskova', odjel:'15',  bruto:450, neto:383, cTrupci:0, dzgo:0, lTrupci:0,   cijepano:383 },
-    { gj:'Vojskova', odjel:'21P', bruto:787, neto:624, cTrupci:0, dzgo:0, lTrupci:202, cijepano:422 },
-    { gj:'Vojskova', odjel:'25',  bruto:750, neto:637, cTrupci:0, dzgo:0, lTrupci:0,   cijepano:637 },
-  ];
+  // Podaci specifični za šumariju dolaze iz js/config-sumarija.js (jedini
+  // fajl koji se mijenja za drugu šumariju).
+  const _CFG = window.SUMARIJA_CONFIG || {};
+  const PLAN_ENTRIES = _CFG.PLAN_ENTRIES || [];
 
-  const GJ_LIST = ['Risovac Krupa', 'Grmeč Jasenica', 'Vojskova'];
-  const GJ_COLOR = { 'Risovac Krupa':'#1d4ed8', 'Grmeč Jasenica':'#15803d', 'Vojskova':'#b45309', 'Slučajni užici':'#7c3aed' };
-  const GJ_BG   = { 'Risovac Krupa':'#eff6ff',  'Grmeč Jasenica':'#f0fdf4',  'Vojskova':'#fff7ed', 'Slučajni užici':'#f5f3ff'  };
+  const GJ_LIST  = _CFG.GJ_LIST  || [];
+  const GJ_COLOR = _CFG.GJ_COLOR || {};
+  const GJ_BG    = _CFG.GJ_BG    || {};
   const C = {
     cTrupci:'#1e40af', celDuga:'#5b21b6', celCijepana:'#7c3aed', skart:'#9ca3af',
     lTrupci:'#15803d', ogrDugi:'#92400e', ogrCijepani:'#b45309', gule:'#d97706',
   };
-  const PLAN_YEAR = 2026;
+  const PLAN_YEAR = _CFG.PLAN_YEAR || new Date().getFullYear();
 
   // ---- STATE ----
   let _rows    = [];
