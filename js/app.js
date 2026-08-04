@@ -1,8 +1,10 @@
-        // VERSION INFO — od v2.0 format je major.minor (npr. 2.0, 2.1, 2.2, ...),
+        // VERSION INFO — format je major.minor.patch (npr. 1.0.1, 1.0.2, ...),
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
-        // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
-        // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.111';
+        // uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI koraka,
+        // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
+        // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
+        // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
+        const APP_VERSION = '1.0.1';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
