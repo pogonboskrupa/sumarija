@@ -66,8 +66,8 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     // odvojeno od KUBIKATOR_CETINARI/LISCARI iznad (drugi nazivi, druga
     // svrha — te liste boje kolone drugdje u appu, ove pune OVAJ dropdown).
     var KUB_SORT_OBLOVINA = [
-        'I JT', 'II JT', 'III JT', 'Cel.duga', 'I BT', 'II BT', 'III BT',
-        'Ogr.dugo', 'Furnir Č', 'Furnir L', 'Gule', 'Škart'
+        'I JT', 'II JT', 'III JT', 'Cel.duga', 'Cel.cijepana', 'I BT', 'II BT', 'III BT',
+        'Ogr.dugo', 'Ogr.cijepano', 'Furnir Č', 'Furnir L', 'Gule', 'Škart'
     ];
     var KUB_SORT_PROSTORNO = ['Ogrijev cijepani', 'Cel.cijepana'];
     var _unosi = [];
