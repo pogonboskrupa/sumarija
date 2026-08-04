@@ -18,9 +18,12 @@
 //
 // Podaci su ISKLJUČIVO lokalni — localStorage['kubikator_unosi'], bez servera.
 // VAŽNO: oblik zapisa se NE smije mijenjati. js/print-utils.js (printKubikator)
-// čita u.odjel/u.sortiment/u.napomena bezuslovno — ta tri polja se zato i
-// dalje upisuju kao prazan string, da i štampa i stariji zapisi (svi
-// "oblovina", nastali prije nego je prostorno drvo dodano) nastave raditi.
+// čita u.odjel/u.sortiment/u.napomena bezuslovno — u.odjel i u.napomena i
+// dalje ostaju prazan string (nemaju UI za unos), a u.sortiment se od sad
+// puni iz #kub-sortiment-select dropdowna (KUB_SORT_OBLOVINA/PROSTORNO
+// ispod) — prazan string i dalje znači "bez sortimenta" (dropdown ostavljen
+// na "— Sortiment —", ili stariji zapis od prije ove funkcije), _renderRekap
+// takve grupiše pod "Bez sortimenta".
 // Svaki unos ima i u.vrsta ('oblovina'|'prostorno'); nedostaje li kod starih
 // zapisa, čita se kao 'oblovina' (jedini mod koji je tad postojao).
 // ============================================================
@@ -56,6 +59,17 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     var D_MIN = 1,  D_MAX = 10;   // dužina u metrima, dvije decimale
     var KOEF_PROSTORNI = 0.63;    // prostorni → zapreminski oblik: 0,7 − 10% = 0,63
     var DEC = 2;                  // zapremina se prikazuje na dvije decimale
+
+    // Sortiment (dropdown u zaglavlju, #kub-sortiment-select) — čisto
+    // klasifikacija unosa, ne utiče na računicu. Različita lista po modu:
+    // Oblovina (trupci) vs Prostorno drvo (cijepano/slagano). NAMJERNO
+    // odvojeno od KUBIKATOR_CETINARI/LISCARI iznad (drugi nazivi, druga
+    // svrha — te liste boje kolone drugdje u appu, ove pune OVAJ dropdown).
+    var KUB_SORT_OBLOVINA = [
+        'I JT', 'II JT', 'III JT', 'Cel.duga', 'I BT', 'II BT', 'III BT',
+        'Ogr.dugo', 'Furnir Č', 'Furnir L', 'Gule', 'Škart'
+    ];
+    var KUB_SORT_PROSTORNO = ['Ogrijev cijepani', 'Cel.cijepana'];
     var _unosi = [];
     var _vrsta = 'oblovina';      // 'oblovina' | 'prostorno'
     var _inited = false;
@@ -285,8 +299,10 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
                 : _fmt(u.precnik, 0) + ' cm × ' + _fmt(u.duzina, 2) + ' m';
             var ikona = jeProstorno ? '🪵' : '🌲';
             var animKlasa = (_justAdded && i === 0) ? ' kub-mem-nov' : '';
+            var sortHtml = u.sortiment ? '<span class="kub-mem-sort">' + u.sortiment + '</span>' : '';
             html += '<div class="kub-mem-red' + animKlasa + '">' +
-                '<span class="kub-mem-dim">' + ikona + ' ' + dim + '</span>' +
+                '<span class="kub-mem-info">' + sortHtml +
+                '<span class="kub-mem-dim">' + ikona + ' ' + dim + '</span></span>' +
                 '<span class="kub-mem-m3">' + _fmt(u.zapremina, DEC) + ' m³</span>' +
                 '<button type="button" class="kub-mem-obrisi" onclick="kubikatorObrisi(\'' + u.id + '\')" ' +
                 'aria-label="Obriši unos">🗑️</button>' +
@@ -294,6 +310,54 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         });
         lista.innerHTML = html;
         _justAdded = false;
+    }
+
+    // Zbir SVIH unosa (ne samo zadnjih MEM_PRIKAZ) grupisan po u.sortiment —
+    // "Bez sortimenta" hvata unose gdje dropdown nije korišten (ostavljen na
+    // "— Sortiment —") i starije zapise od prije ove funkcije. Redoslijed
+    // prikaza prati kanonske liste (Oblovina pa Prostorno drvo), "Bez
+    // sortimenta" uvijek zadnji.
+    function _renderRekap() {
+        var lista = _el('kub-rekap-lista');
+        var ukupnoEl = _el('kub-rekap-ukupno');
+        if (ukupnoEl) {
+            var m3Uk = _unosi.reduce(function(s, u) { return s + (Number(u.zapremina) || 0); }, 0);
+            ukupnoEl.textContent = _unosi.length + ' kom · ' + _fmt(m3Uk, DEC) + ' m³';
+        }
+        if (!lista) return;
+        if (!_unosi.length) {
+            lista.innerHTML = '<div class="kub-rekap-prazno">Još nema unosa.</div>';
+            return;
+        }
+        var BEZ = 'Bez sortimenta';
+        var mapa = {};
+        _unosi.forEach(function(u) {
+            var kljuc = u.sortiment || BEZ;
+            if (!mapa[kljuc]) mapa[kljuc] = { kom: 0, m3: 0 };
+            mapa[kljuc].kom += 1;
+            mapa[kljuc].m3 += Number(u.zapremina) || 0;
+        });
+        var redoslijed = KUB_SORT_OBLOVINA.concat(KUB_SORT_PROSTORNO);
+        var kljucevi = Object.keys(mapa).sort(function(a, b) {
+            if (a === BEZ) return 1;
+            if (b === BEZ) return -1;
+            var ia = redoslijed.indexOf(a), ib = redoslijed.indexOf(b);
+            if (ia === -1 && ib === -1) return a.localeCompare(b);
+            if (ia === -1) return 1;
+            if (ib === -1) return -1;
+            return ia - ib;
+        });
+        var html = '';
+        kljucevi.forEach(function(k) {
+            var red = mapa[k];
+            var bezKlasa = k === BEZ ? ' kub-rekap-bez' : '';
+            html += '<div class="kub-rekap-red' + bezKlasa + '">' +
+                '<span class="kub-rekap-naziv">' + k + '</span>' +
+                '<span class="kub-rekap-kom">' + red.kom + ' kom</span>' +
+                '<span class="kub-rekap-m3">' + _fmt(red.m3, DEC) + ' m³</span>' +
+                '</div>';
+        });
+        lista.innerHTML = html;
     }
 
     // ================== JAVNE FUNKCIJE ==================
@@ -307,9 +371,13 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         // dio da dva unosa u istoj milisekundi (npr. Enter+Enter na tastaturi)
         // ne dobiju isti id, što bi pokvarilo kubikatorObrisi(id).
         var id = ts + Math.random().toString(36).slice(2, 6);
+        var sortSel = _el('kub-sortiment-select');
         var unos = {
             id: id, ts: ts, vrsta: _vrsta,
-            odjel: '', sortiment: '', napomena: ''   // vidi komentar na vrhu — ne uklanjati
+            // odjel/napomena ostaju prazan string — vidi komentar na vrhu fajla
+            // (printKubikator ih čita bezuslovno). sortiment se od sad PUNI iz
+            // dropdowna (#kub-sortiment-select) umjesto da ostane trajno prazan.
+            odjel: '', sortiment: sortSel ? sortSel.value : '', napomena: ''
         };
         if (_vrsta === 'prostorno') {
             unos.sirina = t.sirina; unos.visina = t.visina; unos.zapremina = t.zapremina;
@@ -331,6 +399,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         }
         _justAdded = true;
         _renderMemorija();
+        _renderRekap();
 
         // Prečnik se uvijek prazni; dužina ostaje ako je zaključana (gomila je
         // obično jednake dužine) — sljedeći komad se onda kuca sa samo jednim
@@ -404,9 +473,28 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             var el = _el(id);
             if (el) el.value = '';
         });
+        _osvjeziSortimentOptions();
         _osvjeziRezultat();
         var polja = _poljaZaVrstu();
         if (polja.prvo) setTimeout(function() { polja.prvo.focus(); }, 30);
+    }
+
+    // Puni #kub-sortiment-select prema trenutnom modu — Oblovina i Prostorno
+    // drvo imaju POTPUNO različite liste (trupci naspram cijepanog/slaganog
+    // drveta), pa se dropdown mora ponovo napuniti pri svakom prebacivanju
+    // moda, ne samo jednom pri otvaranju. Oblovina počinje PRAZNA (korisnik
+    // mora svjesno izabrati); Prostorno drvo počinje na "Ogrijev cijepani"
+    // (ubjedljivo najčešći slučaj na terenu za slagano drvo).
+    function _osvjeziSortimentOptions() {
+        var sel = _el('kub-sortiment-select');
+        if (!sel) return;
+        var lista = _vrsta === 'prostorno' ? KUB_SORT_PROSTORNO : KUB_SORT_OBLOVINA;
+        var html = _vrsta === 'oblovina' ? '<option value="">— Sortiment —</option>' : '';
+        lista.forEach(function(s) {
+            html += '<option value="' + s.replace(/"/g, '&quot;') + '">' + s + '</option>';
+        });
+        sel.innerHTML = html;
+        sel.value = _vrsta === 'prostorno' ? KUB_SORT_PROSTORNO[0] : '';
     }
 
     window.kubikatorObrisi = function(id) {
@@ -417,12 +505,13 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         _unosi = _unosi.filter(function(u) { return String(u.id) !== String(id); });
         _save();
         _renderMemorija();
+        _renderRekap();
     };
 
     window.kubikatorOcistiSve = function() {
         if (!_unosi.length) return;
         var poruka = 'Obrisati svih ' + _unosi.length + ' unosa? Ova radnja se ne može poništiti.';
-        var obrisi = function() { _unosi = []; _save(); _renderMemorija(); };
+        var obrisi = function() { _unosi = []; _save(); _renderMemorija(); _renderRekap(); };
         if (typeof showConfirmModal === 'function') {
             showConfirmModal('Obriši sve unose', poruka, obrisi, { confirmText: '🗑️ Obriši sve', danger: true });
         } else if (confirm(poruka)) { obrisi(); }
@@ -586,6 +675,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         _osvjeziLockUI();
         _osvjeziPlaceholdere();
         _renderMemorija();
+        _renderRekap();
         _osvjeziRezultat();
         _naVrh(); // otvaranje taba uvijek počinje od unosa, ne od mjesta gdje je prošli put ostalo skrolano
         var pf = _poljaZaVrstu().prvo;

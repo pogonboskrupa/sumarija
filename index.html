@@ -2561,6 +2561,7 @@
             <div class="kub-header-row">
                 <button type="button" class="kub-close-btn" onclick="closeKubikator()">✕ Zatvori</button>
                 <button type="button" id="kub-mode-btn" class="kub-mode-btn" onclick="kubikatorToggleMode()">🪵 Prostorno drvo</button>
+                <select id="kub-sortiment-select" class="kub-sortiment-select" aria-label="Sortiment"></select>
             </div>
 
             <div class="kub-wrap">
@@ -2610,6 +2611,19 @@
                         <button type="button" class="kub-mem-btn" onclick="kubikatorPodijeli()">📤 Podijeli</button>
                         <button type="button" class="kub-mem-btn kub-mem-btn-danger" onclick="kubikatorOcistiSve()">🗑️ Obriši sve</button>
                     </div>
+                </div>
+
+                <!-- Rekapitulacija po sortimentima — zbir svih unosa (svih vremena,
+                     ne samo "Zadnji unosi" gore, koji prikazuje najviše 30) grupisan
+                     po u.sortiment (js/kubikator.js _renderRekap). Unosi bez izabranog
+                     sortimenta (dropdown ostavljen prazan, ili stariji unosi od prije
+                     ove funkcije) padaju pod "Bez sortimenta". -->
+                <div class="kub-rekap">
+                    <div class="kub-rekap-head">
+                        <span>📊 Rekapitulacija po sortimentima</span>
+                        <span class="kub-rekap-ukupno" id="kub-rekap-ukupno">0 kom · 0,00 m³</span>
+                    </div>
+                    <div id="kub-rekap-lista" class="kub-rekap-lista"></div>
                 </div>
 
                 <!-- Ilustracija: prikazuje TRENUTNO upisane vrijednosti (ažurira ih
