@@ -3801,7 +3801,25 @@
                     body.mapa-fokus #mapa-modal { top:38px !important; }
                   }
                   #karta-fokus-btn.active { background:#1e40af !important; color:white !important; border-color:#1e40af !important; }
-                  #karta-fokus-btn { display:none !important; }
+
+                  /* Izlaz iz Fokus moda — position:fixed (NE sticky, NE Leaflet
+                     control) namjerno: #karta-fokus-btn iznad je unutar
+                     #karta-page-header, koji se u fokus modu sakriva (display:none
+                     gore), pa na telefonu, ako panovanje/skrolanje mape ikad
+                     "odvuče" ostatak stranice, korisnik ostaje bez ijedne vidljive
+                     kontrole — mora zatvoriti aplikaciju da bi promijenio tab. Ovo
+                     dugme je fixed (garantovano na istom mjestu, bez obzira na
+                     scroll) i FIZIČKI VAN #karta-odjela-map/Leaflet DOM-a (isti
+                     razlog kao "obična HTML dugmad IZVAN Leaflet kontejnera" u
+                     js/mapa-radnika.js — Leaflet-ov pan gest inače otima dodir
+                     dugmadima koja su njegov L.Control ili mu vizuelno preblizu). */
+                  #karta-fokus-exit-btn {
+                      display:none; position:fixed; top:calc(10px + env(safe-area-inset-top)); right:12px;
+                      z-index:10060; width:38px; height:38px; border-radius:50%; border:none;
+                      background:#1e293b; color:#fff; font-size:18px; line-height:1; cursor:pointer;
+                      box-shadow:0 2px 8px rgba(0,0,0,.35); align-items:center; justify-content:center;
+                  }
+                  body.mapa-fokus #karta-fokus-exit-btn { display:flex; }
                   @media (min-width:1024px) {
                     #mapa-modal { justify-content:flex-start; align-items:stretch; }
                     #mapa-modal-panel { width:400px; max-width:400px; min-height:unset; max-height:calc(100vh - 44px); border-radius:0 0 12px 0; }
@@ -3810,6 +3828,7 @@
                     #mapa-modal-panel { width:460px; max-width:460px; }
                   }
                 </style>
+                <button id="karta-fokus-exit-btn" onclick="if (typeof switchTab === 'function') switchTab('dashboard');" title="Izađi iz mape">✕</button>
                 <div id="karta-odjela-map">
                     <div id="karta-loading" style="display:flex;align-items:center;justify-content:center;height:100%;color:#4b5563;font-size:14px;">⏳ Učitavam kartu...</div>
                 </div>
