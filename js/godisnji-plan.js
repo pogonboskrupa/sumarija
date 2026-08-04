@@ -289,6 +289,158 @@
     });
   }
 
+  // ---- TIMELINE (početak/kraj sječe po odjelu) ----
+  // Isti obrazac kao u js/karta-odjela.js (_buildStatusMap): "kraj sječe"
+  // preskače dane kad je jedini upisani sortiment bio OGR.CIJEPANI i/ili
+  // CEL.CIJEPANA (samo, ili oboje zajedno) — to ogrijevno/celulozno drvo se
+  // često dovršava/čisti i poslije stvarnog kraja sječe glavnih sortimenata.
+  const KRAJ_SJECE_CISCENJE = new Set(['OGR.CIJEPANI', 'CEL.CIJEPANA']);
+
+  function _parseDatumGp(s) {
+    const parts = String(s || '').split('.');
+    if (parts.length < 3) return null;
+    const d = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function _fmtDatumGp(d) {
+    if (!d) return '—';
+    return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear() + '.';
+  }
+  function _dayOfYearGp(d) {
+    return Math.floor((d - new Date(d.getFullYear(), 0, 1)) / 86400000);
+  }
+
+  // Vraća { datumPocetka, datumKraja } (Date objekti) za dati odjel, ili
+  // null ako odjel nema nijednu evidentiranu primku.
+  function computeSjecaDani(gj, odjel) {
+    const primkeZaOdjel = gj === 'Slučajni užici'
+      ? _rawPrimke.filter(p => p.odjel === odjel)
+      : _rawPrimke.filter(p => normKey(p.odjel) === normKey(gj + ' ' + odjel));
+    if (!primkeZaOdjel.length) return null;
+
+    const sortimentiPoDatumu = new Map(); // raw datum string -> Set(sortiment)
+    primkeZaOdjel.forEach(p => {
+      const ds = String(p.datum || '');
+      if (!ds) return;
+      if (!sortimentiPoDatumu.has(ds)) sortimentiPoDatumu.set(ds, new Set());
+      sortimentiPoDatumu.get(ds).add(p.sortiment);
+    });
+    const daniOpadajuce = [...sortimentiPoDatumu.keys()]
+      .map(raw => ({ raw, date: _parseDatumGp(raw) }))
+      .filter(d => d.date)
+      .sort((a, b) => b.date - a.date);
+    if (!daniOpadajuce.length) return null;
+
+    const datumPocetka = daniOpadajuce[daniOpadajuce.length - 1].date;
+    let datumKraja = null;
+    for (const d of daniOpadajuce) {
+      const skup = sortimentiPoDatumu.get(d.raw);
+      const samoCiscenje = [...skup].every(s => KRAJ_SJECE_CISCENJE.has(s));
+      if (!samoCiscenje) { datumKraja = d.date; break; }
+    }
+    if (!datumKraja) datumKraja = daniOpadajuce[0].date; // svi dani su bili samo čišćenje
+
+    return { datumPocetka, datumKraja };
+  }
+
+  let _timelineChart = null;
+
+  function renderTimeline(rows) {
+    const view = document.getElementById('gp-timeline-view');
+    if (!view) return;
+
+    // Samo odjeli koji stvarno imaju evidentiranu sječu — planirani-a-nepočeti
+    // odjeli nemaju datume za prikaz na timeline-u.
+    const stavke = [];
+    rows.forEach(r => {
+      if (r.status === 'planirano') return;
+      const dani = computeSjecaDani(r.gj, r.odjel);
+      if (!dani) return;
+      const naziv = r.gj === 'Slučajni užici' ? (r.odjelLabel || r.odjel) : r.odjel;
+      stavke.push({
+        label: naziv + '  ·  ' + (r.gj === 'Slučajni užici' ? 'Slučajni' : r.gj),
+        status: r.status,
+        dayStart: _dayOfYearGp(dani.datumPocetka),
+        dayEnd: _dayOfYearGp(dani.datumKraja),
+        datumPocetka: dani.datumPocetka,
+        datumKraja: dani.datumKraja,
+      });
+    });
+
+    if (!stavke.length) {
+      view.innerHTML = '<div style="text-align:center;padding:60px;color:#9ca3af;">Nema odjela sa evidentiranom sječom za prikazane filtere.</div>';
+      return;
+    }
+
+    const visina = Math.max(320, stavke.length * 30 + 50);
+    view.innerHTML = `
+      <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:16px;">
+        <div style="font-size:12px;color:#6b7280;margin-bottom:12px;display:flex;gap:16px;flex-wrap:wrap;">
+          <span><span style="display:inline-block;width:10px;height:10px;background:#16a34a;border-radius:2px;margin-right:5px;vertical-align:middle;"></span>Posječeno</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:#dc2626;border-radius:2px;margin-right:5px;vertical-align:middle;"></span>U sječi (do sad)</span>
+        </div>
+        <div style="position:relative;height:${visina}px;">
+          <canvas id="gp-timeline-chart"></canvas>
+        </div>
+      </div>`;
+
+    if (typeof window.loadChartJs !== 'function') return;
+    window.loadChartJs().then(() => {
+      const canvas = document.getElementById('gp-timeline-chart');
+      if (!canvas) return;
+      if (_timelineChart) { _timelineChart.destroy(); _timelineChart = null; }
+      const existing = Chart.getChart(canvas);
+      if (existing) existing.destroy();
+
+      const monthNazivi = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+      const monthTicks = monthNazivi.map((lbl, i) => ({ value: _dayOfYearGp(new Date(PLAN_YEAR, i, 1)), label: lbl }));
+      const statusBoja = s => s === 'posjeceno' ? '#16a34a' : '#dc2626';
+
+      _timelineChart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: stavke.map(s => s.label),
+          datasets: [{
+            data: stavke.map(s => [s.dayStart, s.dayEnd]),
+            backgroundColor: stavke.map(s => statusBoja(s.status)),
+            borderRadius: 4,
+            barThickness: 16,
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const st = stavke[ctx.dataIndex];
+                  return _fmtDatumGp(st.datumPocetka) + '  →  ' + _fmtDatumGp(st.datumKraja);
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              min: 0, max: 366,
+              afterBuildTicks: axis => { axis.ticks = monthTicks.map(t => ({ value: t.value })); },
+              ticks: {
+                callback: (val) => { const f = monthTicks.find(t => t.value === val); return f ? f.label : ''; },
+                color: '#6b7280', font: { size: 11 }
+              },
+              grid: { color: '#f3f4f6' }
+            },
+            y: {
+              ticks: { color: '#374151', font: { size: 11, weight: '600' } },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    });
+  }
+
   // ---- FILTERING ----
   function filteredRows() {
     let rows = [..._rows];
@@ -400,7 +552,7 @@
   }
 
   function showLoading() {
-    ['grupe','sortimenti','pregled','projekat'].forEach(t=>{
+    ['grupe','sortimenti','pregled','projekat','timeline'].forEach(t=>{
       const v = document.getElementById('gp-'+t+'-view');
       if (v && t===_activeTab) v.innerHTML = '<div style="text-align:center;padding:60px;color:#4b5563;"><div style="font-size:32px;margin-bottom:12px;">⏳</div>Učitavam podatke...</div>';
     });
@@ -412,7 +564,7 @@
     document.querySelectorAll('#gp-submenu .submenu-tab').forEach(b=>{
       b.classList.toggle('active', b.dataset.tab===tab);
     });
-    ['grupe','sortimenti','pregled','projekat'].forEach(t=>{
+    ['grupe','sortimenti','pregled','projekat','timeline'].forEach(t=>{
       const v = document.getElementById('gp-'+t+'-view');
       if (v) v.classList.toggle('hidden', t!==tab);
     });
@@ -426,6 +578,7 @@
     else if (_activeTab==='sortimenti') renderSortimenti(rows);
     else if (_activeTab==='pregled')    renderPregled(rows);
     else if (_activeTab==='projekat')   renderProjekat(rows);
+    else if (_activeTab==='timeline')   renderTimeline(rows);
   }
 
   // ---- RENDER: GRUPE ----
