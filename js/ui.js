@@ -296,6 +296,7 @@
             document.getElementById('primaci-radilista-view').classList.add('hidden');
             document.getElementById('primaci-izvodjaci-view').classList.add('hidden');
             document.getElementById('primaci-sortimenti-primac-view').classList.add('hidden');
+            document.getElementById('primaci-trendovi-view').classList.add('hidden');
 
             // Show selected view
             if (view === 'monthly') {
@@ -330,6 +331,10 @@
                     document.getElementById('primaci-sortimenti-month-select').value = currentMonth;
                     loadPrimaciSortimentiByPrimac(currentMonth);
                 }
+            } else if (view === 'trendovi') {
+                document.getElementById('primaci-trendovi-view').classList.remove('hidden');
+                // Load on first open (lazy) — vidi loadPrimaciTrendovi u app.js
+                if (typeof loadPrimaciTrendovi === 'function') loadPrimaciTrendovi();
             }
         }
 

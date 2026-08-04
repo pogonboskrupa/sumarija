@@ -542,6 +542,7 @@
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('radilista')">🏗️ Radilišta</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('izvodjaci')">👷 Izvođači</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('sortimenti-by-primac')">🏷️ Sortimentni po primačima</button>
+                <button class="submenu-tab" onclick="switchPrimaciSubmenu('trendovi')">📈 Trendovi</button>
             </div>
 
             <!-- Mjesečni prikaz -->
@@ -783,6 +784,58 @@
                             <tbody id="primaci-izvodjaci-recap-body"></tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+
+            <!-- Trendovi sječe — po sedmicama (izabrani mjesec) i po mjesecima
+                 (cijela godina), filtrirano po sortimentu ili ukupno. Sedmični
+                 dio koristi primaci-daily (isti endpoint kao Sječa po danima),
+                 mjesečni dio koristi mjesecni-sortimenti (isti kešrandom podatak
+                 kao tab "Mjesečni pregled sortimenti") — bez novih API poziva. -->
+            <div id="primaci-trendovi-view" class="submenu-content hidden">
+                <div class="section">
+                    <h3 style="color: #047857; text-align: center; margin-bottom: 20px;">📈 Trendovi sječe</h3>
+                    <div class="controls-bar" style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center; align-items:flex-end;">
+                        <div class="month-selector month-selector--neutral">
+                            <label>📅 Mjesec (sedmični prikaz):</label>
+                            <select id="primaci-trend-month-select" class="month-select" onchange="loadPrimaciTrendMonth()">
+                                <option value="0">Januar</option>
+                                <option value="1">Februar</option>
+                                <option value="2">Mart</option>
+                                <option value="3">April</option>
+                                <option value="4">Maj</option>
+                                <option value="5">Juni</option>
+                                <option value="6">Juli</option>
+                                <option value="7">August</option>
+                                <option value="8">Septembar</option>
+                                <option value="9">Oktobar</option>
+                                <option value="10">Novembar</option>
+                                <option value="11">Decembar</option>
+                            </select>
+                        </div>
+                        <div class="month-selector month-selector--neutral">
+                            <label>🏷️ Sortiment:</label>
+                            <select id="primaci-trend-sortiment-select" class="month-select" onchange="renderPrimaciTrendCharts()">
+                                <option value="__UKUPNO__">Ukupno (svi sortimenti)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="primaci-trend-loading" style="text-align:center; padding:40px; color:#4b5563;">⏳ Učitavam...</div>
+
+                    <div id="primaci-trend-charts" class="hidden">
+                        <h4 style="color: #047857; margin: 28px 0 10px;">📅 Sječa po sedmicama — <span id="primaci-trend-week-title"></span></h4>
+                        <div id="primaci-trend-week-empty" class="hidden" style="text-align:center; color:#9ca3af; padding:30px;">Nema evidentirane sječe za izabrani mjesec.</div>
+                        <div id="primaci-trend-week-chart-wrap" style="position:relative; height:280px;">
+                            <canvas id="primaci-trend-week-chart"></canvas>
+                        </div>
+
+                        <h4 style="color: #047857; margin: 34px 0 10px;">📊 Sječa po mjesecima — <span id="primaci-trend-year-title"></span></h4>
+                        <div style="position:relative; height:280px;">
+                            <canvas id="primaci-trend-month-chart"></canvas>
+                        </div>
+                    </div>
+                    <div id="primaci-trend-empty" class="hidden" style="text-align:center; padding:40px; color:#4b5563;">Nema podataka za odabrani period.</div>
                 </div>
             </div>
         </div>

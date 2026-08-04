@@ -6207,6 +6207,214 @@
                 '</div></div>';
         }
 
+        // ============================================
+        // 📈 TRENDOVI SJEČE (Sječa → Trendovi)
+        // Dva grafikona: po sedmicama (izabrani mjesec) i po mjesecima (cijela
+        // godina), oba filtrirana po jednom sortimentu ili "Ukupno". Sedmični
+        // dio koristi primaci-daily (isti podatak kao "Sječa po danima"),
+        // agregiran po sedmicama preko već postojećeg groupDataByWeeks
+        // (koristi ga i sedmični izvještaj). Mjesečni dio koristi
+        // mjesecni-sortimenti (isti keš kao tab "Mjesečni pregled sortimenti")
+        // — NAMJERNO isti cache ključ, da se izbjegne duplikat fetch ako je
+        // korisnik već otvorio taj tab. "UKUPNO Č+L" je stvarna kolona iz
+        // baze (Excel-formula), ne zbir ostalih kolona — koristi se direktno
+        // za "Ukupno", da se ne dupliraju već agregirane potkolone
+        // (Σ ČETINARI, LIŠĆARI) u zbiru.
+        // ============================================
+        const TREND_TOTAL_KEY = 'UKUPNO Č+L';
+        const TREND_AGGREGATE_KEYS = ['Σ ČETINARI', 'LIŠĆARI', TREND_TOTAL_KEY];
+        let _primaciTrendState = { year: null, month: null, dailyRows: [], dailySort: [], mjesecni: null, loaded: false };
+        let _primaciTrendWeekChart = null;
+        let _primaciTrendMonthChart = null;
+
+        async function loadPrimaciTrendovi() {
+            if (_primaciTrendState.loaded) { renderPrimaciTrendCharts(); return; }
+
+            const loadingEl = document.getElementById('primaci-trend-loading');
+            const chartsEl = document.getElementById('primaci-trend-charts');
+            const emptyEl = document.getElementById('primaci-trend-empty');
+            if (loadingEl) loadingEl.classList.remove('hidden');
+            if (chartsEl) chartsEl.classList.add('hidden');
+            if (emptyEl) emptyEl.classList.add('hidden');
+
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const monthSel = document.getElementById('primaci-trend-month-select');
+            if (monthSel) monthSel.value = month;
+
+            try {
+                await Promise.all([
+                    _fetchPrimaciTrendMjesecni(year),
+                    _fetchPrimaciTrendDaily(year, month)
+                ]);
+                _primaciTrendState.loaded = true;
+                _populatePrimaciTrendSortimentSelect();
+                if (loadingEl) loadingEl.classList.add('hidden');
+                if (chartsEl) chartsEl.classList.remove('hidden');
+                renderPrimaciTrendCharts();
+            } catch (err) {
+                console.error('Error in loadPrimaciTrendovi:', err);
+                if (loadingEl) loadingEl.classList.add('hidden');
+                if (emptyEl) { emptyEl.textContent = 'Greška pri učitavanju: ' + err.message; emptyEl.classList.remove('hidden'); }
+            }
+        }
+
+        async function _fetchPrimaciTrendMjesecni(year) {
+            const url = buildApiUrl('mjesecni-sortimenti', { year });
+            const data = await fetchWithCache(url, `cache_mjesecni_sortimenti_${year}`);
+            if (data.error) throw new Error(data.error);
+            _primaciTrendState.mjesecni = data.sjeca || null;
+            _primaciTrendState.year = year;
+        }
+
+        async function _fetchPrimaciTrendDaily(year, month) {
+            const url = buildApiUrl('primaci-daily', { year, month });
+            const data = await fetchWithCache(url, `cache_primaci_daily_${year}_${month}`);
+            if (data.error) throw new Error(data.error);
+            _primaciTrendState.dailyRows = data.data || [];
+            _primaciTrendState.dailySort = data.sortimentiNazivi || [];
+            _primaciTrendState.month = month;
+        }
+
+        // Poziva se iz dropdowna mjeseca — samo sedmični dio zavisi od mjeseca,
+        // mjesečni (godišnji) dio ostaje isti (cijela godina se ne mijenja).
+        async function loadPrimaciTrendMonth() {
+            const monthSel = document.getElementById('primaci-trend-month-select');
+            const month = monthSel ? parseInt(monthSel.value, 10) : 0;
+            const year = _primaciTrendState.year || new Date().getFullYear();
+            try {
+                await _fetchPrimaciTrendDaily(year, month);
+                renderPrimaciTrendCharts();
+            } catch (err) {
+                console.error('Error in loadPrimaciTrendMonth:', err);
+                showError('Greška', 'Greška pri učitavanju sedmičnog prikaza: ' + err.message);
+            }
+        }
+
+        function _populatePrimaciTrendSortimentSelect() {
+            const sel = document.getElementById('primaci-trend-sortiment-select');
+            const mj = _primaciTrendState.mjesecni;
+            if (!sel || !mj || sel.dataset.loaded) return;
+            const svi = (mj.sortimenti || []).filter(s => s && !TREND_AGGREGATE_KEYS.includes(s));
+            sel.innerHTML = '<option value="__UKUPNO__">Ukupno (svi sortimenti)</option>' +
+                svi.map(s => `<option value="${s.replace(/"/g, '&quot;')}">${s}</option>`).join('');
+            sel.dataset.loaded = '1';
+        }
+
+        // Zbir po sedmicama za izabrani sortiment (ili "Ukupno") u trenutno
+        // izabranom mjesecu — grupisanje preko groupDataByWeeks (dijeli ga i
+        // sedmični izvještaj sječe/otpreme, vidi loadSedmicniIzvjestajSjeca).
+        function _primaciTrendWeekData(sortimentKey) {
+            const { dailyRows, dailySort, year, month } = _primaciTrendState;
+            if (!dailyRows.length || !dailySort.length) return [];
+            const weeks = groupDataByWeeks(dailyRows, year, month, dailySort);
+            const key = sortimentKey === '__UKUPNO__' ? TREND_TOTAL_KEY : sortimentKey;
+            return weeks.map(w => {
+                let total = 0;
+                Object.keys(w.odjeliMap).forEach(odjel => { total += w.odjeliMap[odjel][key] || 0; });
+                return {
+                    label: 'Sed. ' + w.weekNumber + ' (' + w.weekStart.slice(0, 5) + '–' + w.weekEnd.slice(0, 5) + ')',
+                    value: +total.toFixed(2)
+                };
+            });
+        }
+
+        // Zbir po mjesecima (cijela godina) za izabrani sortiment (ili "Ukupno").
+        function _primaciTrendMonthData(sortimentKey) {
+            const mj = _primaciTrendState.mjesecni;
+            if (!mj || !mj.mjeseci) return [];
+            const nazivi = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+            const key = sortimentKey === '__UKUPNO__' ? TREND_TOTAL_KEY : sortimentKey;
+            return mj.mjeseci.map((mObj, idx) => ({
+                label: nazivi[idx],
+                value: +((mObj[key] || 0)).toFixed(2)
+            }));
+        }
+
+        function renderPrimaciTrendCharts() {
+            if (typeof window.loadChartJs !== 'function') return;
+            const sortSel = document.getElementById('primaci-trend-sortiment-select');
+            const filter = sortSel ? sortSel.value : '__UKUPNO__';
+            const label = filter === '__UKUPNO__' ? 'Ukupno' : filter;
+            const mjeseciNazPuni = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+
+            const weekTitle = document.getElementById('primaci-trend-week-title');
+            const yearTitle = document.getElementById('primaci-trend-year-title');
+            if (weekTitle) weekTitle.textContent = (mjeseciNazPuni[_primaciTrendState.month] || '') + ' — ' + label;
+            if (yearTitle) yearTitle.textContent = (_primaciTrendState.year || '') + '. — ' + label;
+
+            const weekData = _primaciTrendWeekData(filter);
+            const monthData = _primaciTrendMonthData(filter);
+
+            const weekEmptyEl = document.getElementById('primaci-trend-week-empty');
+            const weekWrapEl = document.getElementById('primaci-trend-week-chart-wrap');
+            if (weekData.length === 0) {
+                if (weekEmptyEl) weekEmptyEl.classList.remove('hidden');
+                if (weekWrapEl) weekWrapEl.classList.add('hidden');
+            } else {
+                if (weekEmptyEl) weekEmptyEl.classList.add('hidden');
+                if (weekWrapEl) weekWrapEl.classList.remove('hidden');
+            }
+
+            window.loadChartJs().then(() => {
+                if (weekData.length > 0) {
+                    const wCanvas = document.getElementById('primaci-trend-week-chart');
+                    if (wCanvas) {
+                        if (_primaciTrendWeekChart) { _primaciTrendWeekChart.destroy(); _primaciTrendWeekChart = null; }
+                        const existingW = Chart.getChart(wCanvas);
+                        if (existingW) existingW.destroy();
+                        _primaciTrendWeekChart = new Chart(wCanvas.getContext('2d'), {
+                            type: 'bar',
+                            data: {
+                                labels: weekData.map(w => w.label),
+                                datasets: [{
+                                    label: label + ' — m³',
+                                    data: weekData.map(w => w.value),
+                                    backgroundColor: '#059669', borderRadius: 6, maxBarThickness: 60
+                                }]
+                            },
+                            options: {
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(2) + ' m³' } }
+                                },
+                                scales: { y: { beginAtZero: true, title: { display: true, text: 'm³' } } }
+                            }
+                        });
+                    }
+                }
+
+                const mCanvas = document.getElementById('primaci-trend-month-chart');
+                if (mCanvas) {
+                    if (_primaciTrendMonthChart) { _primaciTrendMonthChart.destroy(); _primaciTrendMonthChart = null; }
+                    const existingM = Chart.getChart(mCanvas);
+                    if (existingM) existingM.destroy();
+                    _primaciTrendMonthChart = new Chart(mCanvas.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: monthData.map(m => m.label),
+                            datasets: [{
+                                label: label + ' — m³',
+                                data: monthData.map(m => m.value),
+                                borderColor: '#047857', backgroundColor: 'rgba(4,120,87,0.15)',
+                                tension: 0.3, fill: true, pointRadius: 4, pointBackgroundColor: '#047857'
+                            }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(2) + ' m³' } }
+                            },
+                            scales: { y: { beginAtZero: true, title: { display: true, text: 'm³' } } }
+                        }
+                    });
+                }
+            });
+        }
+
         // Load primaci sortimenti by primac (grupisano po radilištu, za odabrani mjesec)
         async function loadPrimaciSortimentiByPrimac(selectedMonth) {
             const year = new Date().getFullYear();
