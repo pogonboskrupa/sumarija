@@ -898,14 +898,15 @@
         });
         _bringUserLayersToFront();
     }
-    // Korisnikovi slojevi (površine, tragovi, sječačke linije) dijele Leaflet
-    // "overlayPane" sa poligonima odjela. Poligoni odjela se crtaju KASNIJE
-    // (kad stignu podaci, _renderLayer), pa završe IZNAD i onda oni hvataju
-    // klik umjesto površine ispod — zato se korisnikovi slojevi moraju vratiti
-    // na vrh. (Tačke i fotografije su markeri, u višem "markerPane", pa ih ovo
-    // ne treba.)
+    // Korisnikovi slojevi (površine, tragovi, sječačke linije, tačke, mjerenja)
+    // dijele Leaflet "overlayPane" sa poligonima odjela — TAČKE SU L.circleMarker,
+    // ne L.marker, pa su i one vektorski sloj u istom "overlayPane" (markerPane
+    // koriste jedino fotografije, njih ovo ne treba). Poligoni odjela se crtaju
+    // KASNIJE (kad stignu podaci, _renderLayer), pa završe IZNAD i onda oni
+    // hvataju klik umjesto onoga ispod — zato se korisnikovi slojevi moraju
+    // vratiti na vrh, uvijek nakon svakog ponovnog iscrtavanja poligona odjela.
     function _bringUserLayersToFront() {
-        [_savedPoligonLayers, _savedTrackLayers, _sjeceLayers, _mjerenjeLayers].forEach(function(arr) {
+        [_savedPoligonLayers, _savedTrackLayers, _sjeceLayers, _mjerenjeLayers, _tackaMarkers].forEach(function(arr) {
             (arr || []).forEach(function(l) { if (l && l.bringToFront && _map && _map.hasLayer(l)) l.bringToFront(); });
         });
     }
@@ -1147,6 +1148,7 @@
             _bindStavkaPopupClick(marker);
             _tackaMarkers.push(marker);
         });
+        _bringUserLayersToFront();
     }
     // ---- "EXPLORER" — vodi me do tačke BEZ rute po putu (za razliku od
     // "Vodi me do lokacije", koja crta stvarnu rutu preko OSRM/cestovne mreže).
@@ -1890,6 +1892,7 @@
                 longest.bindTooltip('Linija ' + line.index, { permanent: true, direction: 'center', className: 'karta-tooltip' });
             }
         });
+        _bringUserLayersToFront();
     }
     window.mapaRadnikaGenerisiSjeceLinije = function() {
         if (!_sjeceOdjelKey) { _notify('showWarning', 'Prvo izaberite odjel.'); return; }
