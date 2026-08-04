@@ -3,9 +3,11 @@
 /* Desktop & Mobile Responsive Design */
 /* ============================================ */
 
-/* Body background sa gradientom */
+/* Body background sa gradientom — blago svjetlija nijansa od brand
+   gradijenta na dugmetu/naslovu (koji ostaju originalne boje ispod, u
+   .login-box), jer ovaj proviruje i ispod sadržaja na kraćim tabovima. */
 body.login-active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #8598ee 0%, #916fb5 100%);
     background-attachment: fixed;
     overflow-x: hidden;
     min-height: 100vh;

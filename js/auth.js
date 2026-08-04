@@ -162,11 +162,6 @@
         function showApp() {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
-            // login-active nosi ljubičasti gradient pozadine login ekrana
-            // (css/login-optimized.css) — bez ovoga ostaje na <body> zauvijek
-            // (nigdje se ranije nije uklanjala), pa taj gradient proviruje ispod
-            // sadržaja na svakom tabu koji je kraći od visine ekrana.
-            document.body.classList.remove('login-active');
             if (typeof setAppViewport === 'function') setAppViewport();
 
             // Traži "persistent storage" — bez ovoga Android/Chrome smije tiho
