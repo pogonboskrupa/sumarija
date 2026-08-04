@@ -399,6 +399,7 @@
       return;
     }
 
+    const LABEL_COL_WIDTH = 260; // px — dovoljno široko da stane i "Grmeč Jasenica" naziv GJ
     const monthNazivi = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
     const monthStarts = monthNazivi.map((lbl, i) => ({ lbl, day: _dayOfYearGp(new Date(PLAN_YEAR, i, 1)) }));
     const totalDays = _dayOfYearGp(new Date(PLAN_YEAR, 11, 31)) + 1; // 365 ili 366 (prestupna)
@@ -411,6 +412,17 @@
       return `<div style="flex:0 0 ${width}%;text-align:center;font-size:12px;color:#6b7280;font-weight:700;border-left:1px solid #cbd5e1;">${m.lbl}</div>`;
     }).join('');
 
+    // Linije razdvajanja mjeseci — kao pozadina reda (iza traka sječe), da se
+    // ne mora žonglirati sa z-indexom u odnosu na apsolutno pozicionirane
+    // trake. Jedna hairline na svakoj mjesečnoj granici osim prve (dan 0 je
+    // već obilježen lijevom ivicom kolone).
+    const gridStops = [];
+    monthStarts.slice(1).forEach(m => {
+      const p = pct(m.day);
+      gridStops.push(`transparent ${p}%`, `#e5e7eb ${p}%`, `#e5e7eb calc(${p}% + 1px)`, `transparent calc(${p}% + 1px)`);
+    });
+    const gridBg = gridStops.length ? `background-image:linear-gradient(to right, ${gridStops.join(', ')});` : '';
+
     const rowsHtml = stavke.map(s => {
       const barsHtml = s.segmenti.map(seg => {
         const left = pct(seg.dayStart);
@@ -420,8 +432,8 @@
       }).join('');
       return `
         <div style="display:flex;align-items:center;border-bottom:1px solid #f1f5f9;">
-          <div style="flex:0 0 190px;padding:6px 10px;font-size:13px;font-weight:600;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.label}</div>
-          <div style="flex:1;position:relative;height:28px;">${barsHtml}</div>
+          <div style="flex:0 0 ${LABEL_COL_WIDTH}px;padding:6px 10px;font-size:13px;font-weight:600;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.label}</div>
+          <div style="flex:1;position:relative;height:28px;${gridBg}">${barsHtml}</div>
         </div>`;
     }).join('');
 
@@ -434,7 +446,7 @@
         </div>
         <div style="min-width:760px;">
           <div style="display:flex;">
-            <div style="flex:0 0 190px;"></div>
+            <div style="flex:0 0 ${LABEL_COL_WIDTH}px;"></div>
             <div style="flex:1;display:flex;border-bottom:2px solid #cbd5e1;padding-bottom:5px;margin-bottom:2px;">${monthHeaderHtml}</div>
           </div>
           ${rowsHtml}
