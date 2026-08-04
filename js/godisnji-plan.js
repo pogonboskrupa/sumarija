@@ -429,10 +429,10 @@
                 callback: (val) => { const f = monthTicks.find(t => t.value === val); return f ? f.label : ''; },
                 color: '#6b7280', font: { size: 11 }
               },
-              grid: { color: '#f3f4f6' }
+              grid: { color: '#cbd5e1', lineWidth: 1 }
             },
             y: {
-              ticks: { color: '#374151', font: { size: 11, weight: '600' } },
+              ticks: { color: '#374151', font: { size: 12, weight: '600' } },
               grid: { display: false }
             }
           }
