@@ -2567,13 +2567,13 @@
                 <div class="kub-card">
                     <div class="kub-samo-oblovina">
                         <label class="kub-label" for="kub-precnik">Prečnik (cm) <span class="kub-opseg">7 – 150</span></label>
-                        <input type="number" id="kub-precnik" inputmode="numeric" class="kub-input"
-                               placeholder="24" min="7" max="150" step="1" autocomplete="off" />
+                        <input type="text" id="kub-precnik" inputmode="none" class="kub-input"
+                               placeholder="24" autocomplete="off" />
 
                         <label class="kub-label" for="kub-duzina">Dužina (m) <span class="kub-opseg">1 – 10</span></label>
                         <div class="kub-input-wrap">
-                            <input type="number" id="kub-duzina" inputmode="decimal" class="kub-input"
-                                   placeholder="4,50" min="1" max="10" step="0.01" autocomplete="off" />
+                            <input type="text" id="kub-duzina" inputmode="none" class="kub-input"
+                                   placeholder="4,50" autocomplete="off" />
                             <button type="button" id="kub-lock-duzina" class="kub-lock-btn" onclick="kubikatorToggleLock()"
                                     aria-pressed="false" aria-label="Zaključaj dužinu" title="Zaključaj dužinu — ostaje ista za sljedeći unos">🔓</button>
                         </div>
@@ -2581,12 +2581,12 @@
 
                     <div class="kub-samo-prostorno">
                         <label class="kub-label" for="kub-sirina">Širina slaganja (m)</label>
-                        <input type="number" id="kub-sirina" inputmode="decimal" class="kub-input"
-                               placeholder="1,20" min="0.01" step="0.01" autocomplete="off" />
+                        <input type="text" id="kub-sirina" inputmode="none" class="kub-input"
+                               placeholder="1,20" autocomplete="off" />
 
                         <label class="kub-label" for="kub-visina">Visina slaganja (m)</label>
-                        <input type="number" id="kub-visina" inputmode="decimal" class="kub-input"
-                               placeholder="1,50" min="0.01" step="0.01" autocomplete="off" />
+                        <input type="text" id="kub-visina" inputmode="none" class="kub-input"
+                               placeholder="1,50" autocomplete="off" />
                     </div>
 
                     <div class="kub-greska" id="kub-greska"></div>
@@ -2684,6 +2684,33 @@
                         <div class="kub-obj-napomena">Koeficijent pretvorbe prostornog drveta u zapreminski oblik: 0,7 − 10% = 0,63.</div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Sopstvena tastatura — zamjenjuje OS tastaturu (polja gore imaju
+                 inputmode="none") jedinim znacima koji uopšte imaju smisla ovdje:
+                 cifre, zarez (decimalni razdjelnik — isti kao placeholderi
+                 "4,50"/"1,20", za razliku od OS decimalne tastature koja obično
+                 nudi tačku), obriši i enter. Uvijek dokovana na dnu (ne
+                 iskače/nestaje) — cijeli Kubikator je već "najbrži mogući unos",
+                 nema smisla da tastatura bude manje predvidiva od toga. Logika
+                 (koje polje je aktivno, komanda za Enter/Dodaj) je u
+                 js/kubikator.js — ovdje samo označeni tasteri (data-k). -->
+            <div class="kub-keypad" id="kub-keypad">
+                <div class="kub-keypad-grid">
+                    <button type="button" class="kub-key" data-k="1">1</button>
+                    <button type="button" class="kub-key" data-k="2">2</button>
+                    <button type="button" class="kub-key" data-k="3">3</button>
+                    <button type="button" class="kub-key" data-k="4">4</button>
+                    <button type="button" class="kub-key" data-k="5">5</button>
+                    <button type="button" class="kub-key" data-k="6">6</button>
+                    <button type="button" class="kub-key" data-k="7">7</button>
+                    <button type="button" class="kub-key" data-k="8">8</button>
+                    <button type="button" class="kub-key" data-k="9">9</button>
+                    <button type="button" class="kub-key kub-key-comma" data-k=",">,</button>
+                    <button type="button" class="kub-key" data-k="0">0</button>
+                    <button type="button" class="kub-key kub-key-back" data-k="back" aria-label="Obriši zadnju cifru">⌫</button>
+                </div>
+                <button type="button" class="kub-key-enter" id="kub-key-enter" data-k="enter">→ Dalje</button>
             </div>
         </div>
 

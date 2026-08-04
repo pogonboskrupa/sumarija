@@ -3843,9 +3843,60 @@ body.kubikator-fullscreen #kubikator-content {
 .kub-dodaj:active { transform: translateY(1px); filter: brightness(.95); }
 .kub-dodaj:disabled { background: #e5e7eb; color: #9ca3af; box-shadow: none; cursor: default; }
 
-/* Vrlo niski ekrani (mali telefon u horizontalnom položaju, ili kad
-   tastatura pojede pola visine) — smanji razmake i za nijansu dalje. */
-@media (max-height: 560px) {
+/* ---- Sopstvena tastatura (zamjena za OS tastaturu — polja imaju
+   inputmode="none", vidi komentar u index.html) ----
+   Dokovana na dno, position:fixed unutar #kubikator-content (koji je i sam
+   fixed/inset:0 — vidi gore) — uvijek na istom mjestu, bez obzira na
+   skrolanje sadržaja iznad. --kub-kbd-h drži rezervisanu visinu, čita je
+   .kub-wrap za donji padding da tastatura NIKAD ne prekrije "Dodaj" ili
+   zadnji red memorije. */
+#kubikator-content { --kub-kbd-h: 300px; }
+.kub-wrap { padding-bottom: calc(var(--kub-kbd-h) + 16px + env(safe-area-inset-bottom)); }
+.kub-keypad {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10510;
+    background: #fff; border-top: 1px solid #e5e7eb;
+    box-shadow: 0 -6px 18px rgba(0, 0, 0, .1);
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+}
+.kub-keypad-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px;
+    margin-bottom: 7px;
+}
+.kub-key {
+    padding: 14px 0; border: 2px solid #e2e8f0; border-radius: 14px;
+    background: #fff; color: #0f172a; font-family: inherit;
+    font-size: 23px; font-weight: 800; font-variant-numeric: tabular-nums;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+}
+.kub-key:active { background: #f1f5f9; transform: translateY(1px); }
+.kub-key-comma { color: #047857; }
+.kub-key-back { background: #fef2f2; border-color: #fecaca; color: #dc2626; font-size: 20px; }
+.kub-key-back:active { background: #fee2e2; }
+.kub-key-enter {
+    display: block; width: 100%; padding: 14px; border: none; border-radius: 14px;
+    font-family: inherit; font-size: 17px; font-weight: 800; color: #fff;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    background: linear-gradient(180deg, #059669, #047857);
+    box-shadow: 0 3px 10px rgba(4, 120, 87, .3);
+}
+.kub-key-enter:active { transform: translateY(1px); filter: brightness(.95); }
+/* "→ Dalje" (plavo) dok je aktivno prvo polje para (prečnik/širina) —
+   Enter samo pomjera fokus na drugo polje, ne dodaje ništa. Kad je aktivno
+   drugo polje (dužina/visina), dugme se vraća na zeleno "✓ Dodaj" (JS u
+   js/kubikator.js prebacuje i tekst i ovu klasu, _kubUpdateEnterUI). */
+.kub-key-enter.kub-key-enter-dalje {
+    background: linear-gradient(180deg, #2563eb, #1d4ed8);
+    box-shadow: 0 3px 10px rgba(37, 99, 235, .3);
+}
+
+/* Vrlo niski ekrani (mali telefon u horizontalnom položaju) — smanji
+   razmake i tastaturu za nijansu dalje. Više NIJE vezano za "kad se
+   OS tastatura otvori" (ta se više uopšte ne otvara, inputmode="none") —
+   ostaje samo za stvarno niske ekrane. */
+@media (max-height: 640px) {
+    #kubikator-content { --kub-kbd-h: 250px; }
     .kub-wrap { padding-top: 44px; }
     .kub-card { padding: 10px 14px 12px; }
     .kub-label + .kub-input { margin-bottom: 8px; }
@@ -3855,9 +3906,11 @@ body.kubikator-fullscreen #kubikator-content {
     .kub-rezultat { padding: 8px 14px; margin: 2px 0 8px; }
     .kub-rezultat-val { font-size: 22px; }
     .kub-dodaj { padding: 10px; font-size: 15px; }
-    /* Ilustracija je edukativna, ne kritična — na vrlo niskom ekranu (npr.
-       kad je tastatura otvorena) se sakriva da "Dodaj" ostane dostupan bez
-       skrolanja. */
+    .kub-key { padding: 9px 0; font-size: 19px; }
+    .kub-key-back { font-size: 17px; }
+    .kub-key-enter { padding: 10px; font-size: 15px; }
+    /* Ilustracija je edukativna, ne kritična — na vrlo niskom ekranu se
+       sakriva da "Dodaj" ostane dostupan bez skrolanja. */
     .kub-objasnjenje { display: none; }
 }
 

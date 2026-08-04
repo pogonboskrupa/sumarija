@@ -61,6 +61,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     var _inited = false;
     var _lockDuzina = false;      // dužina ostaje poslije Dodaj (gomila je obično jednake dužine)
     var _justAdded = false;       // animacija u memoriji samo na redu koji je TEK dodan
+    var _kubZadnjeAktivno = null; // zadnje fokusirano .kub-input polje — vidi _initTastatura
     var _prviUnosGotov = false;   // true poslije prvog unosa ikad — gasi placeholder "24"/"4,50"
     var _prviProstornoGotov = false; // isto, za placeholder "1,20"/"1,50" u modu prostorno drvo
 
@@ -475,6 +476,77 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         if (typeof switchTab === 'function') switchTab(home);
     };
 
+    // ─── Sopstvena tastatura (#kub-keypad) ──────────────────────────────
+    // Polja imaju inputmode="none" (index.html) — OS tastatura se uopšte ne
+    // otvara, ovo je JEDINI način unosa na dodir. Namjerno NE dira internu
+    // logiku iznad (_osvjeziRezultat, Enter lanac): svaki taster samo mijenja
+    // .value pa emituje pravi 'input'/'keydown' event, isti koje bi emitovala
+    // fizička tastatura — postojeći listeneri (već ožičeni u initKubikator)
+    // rade ostatak posla bez ijedne duplirane linije logike.
+    function _kubAktivnoPolje() {
+        var a = document.activeElement;
+        if (a && a.classList && a.classList.contains('kub-input')) return a;
+        return _kubZadnjeAktivno;
+    }
+    function _kubOsvjeziEnterDugme() {
+        var btn = _el('kub-key-enter');
+        if (!btn) return;
+        var polje = _kubAktivnoPolje();
+        // "Drugo" polje para (dužina/visina) — Enter tu zove kubikatorDodaj
+        // (vidi Enter lanac u initKubikator), pa dugme postaje "✓ Dodaj".
+        // Svako drugo stanje (prvo polje ili ništa fokusirano) znači da Enter
+        // samo pomjera fokus na drugo polje — "→ Dalje".
+        var jeDrugo = !!polje && (polje.id === 'kub-duzina' || polje.id === 'kub-visina');
+        btn.textContent = jeDrugo ? '✓ Dodaj' : '→ Dalje';
+        btn.classList.toggle('kub-key-enter-dalje', !jeDrugo);
+    }
+    function _initTastatura() {
+        var keypad = _el('kub-keypad');
+        if (!keypad) return;
+
+        // Prati zadnje fokusirano polje — hvata SVAKI .focus() poziv u ovom
+        // fajlu (init, kubikatorDodaj, promjena moda, ručni tap na polje) bez
+        // posebnog kačenja na svaki od njih pojedinačno.
+        document.addEventListener('focusin', function(e) {
+            var t = e.target;
+            if (t && t.classList && t.classList.contains('kub-input')) {
+                _kubZadnjeAktivno = t;
+                _kubOsvjeziEnterDugme();
+            }
+        });
+
+        // preventDefault na pointerdown — polje NIKAD ne izgubi fokus dok se
+        // kuca po ovoj tastaturi (standardni obrazac za "custom on-screen
+        // keyboard"; bez ovoga bi dodir na dugme blur-ovao polje PRIJE nego
+        // stigne click, pa bi _kubAktivnoPolje() vratio null).
+        keypad.addEventListener('pointerdown', function(e) {
+            if (e.target.closest('.kub-key, .kub-key-enter')) e.preventDefault();
+        });
+
+        keypad.addEventListener('click', function(e) {
+            var dugme = e.target.closest('.kub-key, .kub-key-enter');
+            if (!dugme) return;
+            var k = dugme.getAttribute('data-k');
+            var polje = _kubAktivnoPolje();
+            if (!polje) return;
+            if (k === 'enter') {
+                polje.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+                return;
+            }
+            if (k === 'back') {
+                polje.value = polje.value.slice(0, -1);
+            } else if (k === ',') {
+                // Jedan zarez po polju, i ne kao prvi znak (nema smisla ",5").
+                if (polje.value !== '' && polje.value.indexOf(',') === -1) polje.value += ',';
+            } else {
+                polje.value += k;
+            }
+            polje.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+
+        _kubOsvjeziEnterDugme();
+    }
+
     window.initKubikator = function() {
         var content = _el('kubikator-content');
         if (content) content.classList.remove('hidden');
@@ -506,6 +578,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             if (v) v.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') { e.preventDefault(); window.kubikatorDodaj(); }
             });
+            _initTastatura();
         } else {
             _primijeniVrstu(); // uskladi prikaz i pri povratku na već renderovan tab
         }
