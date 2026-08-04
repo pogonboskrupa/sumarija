@@ -1,5 +1,9 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #F6F7F9; min-height: 100vh; color: #1f2937; }
+        /* Ljubičasta pozadina je UNCONDITIONAL ovdje (ne samo na body.login-active
+           u css/login-optimized.css) — bez obzira na stanje te klase (login vs
+           app ekran, ili eventualni budući JS bug koji je ponovo ukloni), pozadina
+           mora ostati prisutna svuda gdje sadržaj ne popuni cijeli ekran. */
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #8598ee 0%, #916fb5 100%); background-attachment: fixed; min-height: 100vh; color: #1f2937; }
         .login-container { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
         .login-box { background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); padding: 40px; max-width: 400px; width: 100%; }
         .login-box h1 { text-align: center; font-size: 64px; margin-bottom: 16px; }
