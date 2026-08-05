@@ -2,6 +2,43 @@
 <html lang="bs">
 <head>
     <meta charset="UTF-8">
+    <!-- Spriječi "flash" login ekrana pri svakom refreshu/nakon "Ažuriraj" —
+         #login-screen je vidljiv PO DEFAULTU u sirovom HTML-u ispod (nema
+         .hidden klasu), a auto-login (js/app.js) živi u jednom od 16
+         deferred <script> tagova ispod — dok se svi ne izvrše, korisnik bi
+         gledao login formu iako je zapravo prijavljen. Ovaj sinhroni,
+         zavisnostima nezagađen script izvršava se ODMAH (nije deferred),
+         PRIJE nego se <body> uopšte parsira, pa CSS pravilo ispod stigne da
+         sakrije login ekran i pokaže brendirani splash prije prvog crtanja
+         (ista tehnika kao sprečavanje "flash-a" pogrešne teme). showApp()
+         (js/auth.js) uklanja klasu čim stvarno pokaže app; setTimeout je
+         sigurnosna mreža za slučaj da neka skripta iz nekog razloga nikad
+         ne stigne da to uradi. -->
+    <script>
+        (function () {
+            try {
+                var u = localStorage.getItem('sumarija_user');
+                var p = localStorage.getItem('sumarija_pass');
+                if (u && p) {
+                    document.documentElement.classList.add('auto-login-pending');
+                    setTimeout(function () {
+                        document.documentElement.classList.remove('auto-login-pending');
+                    }, 8000);
+                }
+            } catch (_) {}
+        })();
+    </script>
+    <style>
+        html.auto-login-pending #login-screen { display: none !important; }
+        #auto-login-splash {
+            display: none; position: fixed; inset: 0; z-index: 99999;
+            align-items: center; justify-content: center; flex-direction: column;
+            background: linear-gradient(135deg, #8598ee 0%, #916fb5 100%);
+        }
+        #auto-login-splash img { width: 120px; height: auto; margin-bottom: 16px; }
+        #auto-login-splash .auto-login-splash-text { font-size: 18px; color: #fff; font-weight: 600; }
+        html.auto-login-pending #auto-login-splash { display: flex; }
+    </style>
     <!-- Desktop prikaz kao default - fiksna širina 1280px, omogućen zoom -->
     <meta name="viewport" content="width=1280, user-scalable=yes, minimum-scale=0.2, maximum-scale=3.0, viewport-fit=cover">
     <!-- iOS optimizacije -->
@@ -139,7 +176,11 @@
         document.addEventListener('DOMContentLoaded', () => {
             markScreenClass();
             const loginScreen = document.getElementById('login-screen');
-            if (loginScreen && !loginScreen.classList.contains('hidden')) {
+            // auto-login-pending (vidi script na vrhu <head>) — ne prebacuj
+            // viewport na login (device-width) ako ionako idemo pravo u app
+            // (width=1280, već je default) — izbjegava nepotreban viewport skok.
+            const autoLoginPending = document.documentElement.classList.contains('auto-login-pending');
+            if (loginScreen && !loginScreen.classList.contains('hidden') && !autoLoginPending) {
                 document.body.classList.add('login-active');
                 setLoginViewport();
             }
@@ -147,6 +188,10 @@
     </script>
 </head>
 <body class="login-active">
+    <div id="auto-login-splash" aria-hidden="true">
+        <img src="assets/IMG_20260322_182605.png" alt="">
+        <div class="auto-login-splash-text">Učitavam...</div>
+    </div>
     <!-- Toast Notification Container -->
     <div id="toast-container" class="toast-container"></div>
 

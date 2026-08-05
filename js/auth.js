@@ -160,6 +160,10 @@
         }
 
         function showApp() {
+            // Uklanja "flash prevention" splash sa index.html <head> — vidi
+            // komentar tamo. Idempotentno/bezopasno ako klasa nikad nije
+            // postavljena (npr. ručna prijava bez sačuvane sesije).
+            document.documentElement.classList.remove('auto-login-pending');
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
             if (typeof setAppViewport === 'function') setAppViewport();

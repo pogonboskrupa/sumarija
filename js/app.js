@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.0.8';
+        const APP_VERSION = '1.0.9';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1612,6 +1612,10 @@
         // Prikaži siguran fallback ekran umjesto trajno zaglavljenog "Učitavam podatke"
         // — koristi se i iz catch bloka ispod i iz watchdog tajmera
         function _showInitFailureScreen(reason) {
+            // Ne čekaj 8s sigurnosnu mrežu iz index.html <head> — inicijalizacija
+            // je već propala, splash odmah dolje mora ustupiti mjesto ekranu
+            // greške/dugmetu za ponovni pokušaj.
+            document.documentElement.classList.remove('auto-login-pending');
             try {
                 const ls = document.getElementById('loading-screen');
                 if (ls) {
@@ -1712,6 +1716,10 @@
                     console.error('[AUTO-LOGIN] Neispravan spremljeni korisnik, brišem i prikazujem login:', e);
                     localStorage.removeItem('sumarija_user');
                     localStorage.removeItem('sumarija_pass');
+                    // Ne čekaj 8s sigurnosnu mrežu iz index.html <head> — odmah
+                    // ukloni "flash prevention" splash, login ekran je ispravan
+                    // sljedeći korak (nema važeće sesije za auto-login).
+                    document.documentElement.classList.remove('auto-login-pending');
                 }
             }
 
