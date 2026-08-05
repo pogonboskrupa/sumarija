@@ -117,8 +117,8 @@
     var _locCircle = null;
     var _headingActive = false;      // uključen/isključen prikaz smjera gledanja (klik na "moja lokacija")
     var _headingEventName = null;    // ime device orientation event-a na koji je listener zakačen
-    var _headingLine = null;         // L.polyline — plava prozirna linija smjera gledanja
-    var _headingLastLL = null;       // [lat,lng] zadnje poznate GPS lokacije (polazna tačka linije)
+    var _headingCone = null;         // L.polygon — plavi prozirni konus (FOV) smjera gledanja
+    var _headingLastLL = null;       // [lat,lng] zadnje poznate GPS lokacije (vrh/apeks konusa)
     var _headingLastDeg = null;      // zadnji poznati kompas azimut (stepeni, 0 = sjever)
     var _odjeliByKey = null; // labelKey/normKey -> radnikov odjel objekat
     var _recentSet = null;   // Set referenci na zadnja 3 odjela (samo za primača) — vidi initMapaRadnika
@@ -2252,9 +2252,9 @@
 
     // ---- MOJA LOKACIJA (GPS) ----
     // Ikonica lokacije — plava tačka. Klik na nju uključuje/isključuje
-    // "smjer gledanja" (vidi _toggleHeadingView ispod) — obična, tanka linija,
-    // ne konus (raniji konus je isprobano pa ugašen na korisnikov zahtjev; ovo
-    // je nova, minimalnija verzija koju korisnik traži naknadno).
+    // "smjer gledanja" (vidi _toggleHeadingView ispod) — konus vidnog polja
+    // (kao svjetiljka/radar), ne linija — korisnik je poslao referentni
+    // screenshot druge terenske aplikacije s tačno ovakvim prikazom.
     function _locIconHtml() {
         return '<div class="rm-loc-wrap"><div class="rm-loc-dot"></div></div>';
     }
@@ -2281,60 +2281,74 @@
             _toggleHeadingView();
         }).addTo(_map);
         _headingLastLL = ll;
-        // Lokacija se pomjerila (npr. "Prati me") — pomjeri i liniju smjera
+        // Lokacija se pomjerila (npr. "Prati me") — pomjeri i konus smjera
         // gledanja s njom, na zadnjem poznatom azimutu, bez čekanja na sljedeći
         // kompas event (koji na nekim uređajima stiže rjeđe od GPS fix-a).
-        if (_headingActive && _headingLastDeg != null) _drawHeadingLine(_headingLastDeg);
+        if (_headingActive && _headingLastDeg != null) _drawHeadingCone(_headingLastDeg);
         return ll;
     }
 
-    // ---- SMJER GLEDANJA — plava prozirna linija od "moja lokacija" u pravcu
-    // u kojem je telefon okrenut (device orientation kompas), crtana na
-    // Leaflet Canvas rendereru (ne SVG) — isti obrazac kompasa kao kod
-    // azimuta za sječačke linije/Explorer, ali OVDJE kontinuirano (linija se
-    // okreće uživo dok se korisnik okreće), ne jednokratno hvatanje. ----
-    var HEADING_LINE_LEN_M = 60;
-    var _headingCanvasRenderer = null; // jedan dijeljen L.canvas() renderer za liniju
-    function _headingDestinationLatLng(ll, deg) {
+    // ---- SMJER GLEDANJA — plavi prozirni konus (vidno polje) od "moja
+    // lokacija" u pravcu u kojem je telefon okrenut (device orientation
+    // kompas), crtan na Leaflet Canvas rendereru (ne SVG) — isti obrazac
+    // kompasa kao kod azimuta za sječačke linije/Explorer, ali OVDJE
+    // kontinuirano (konus se okreće uživo dok se korisnik okreće), ne
+    // jednokratno hvatanje. Poligon (apeks + tačke po luku) umjesto
+    // pravog SVG/canvas kruga jer Leaflet nema ugrađen "sector" oblik. ----
+    var HEADING_CONE_RADIUS_M = 70;   // dužina konusa
+    var HEADING_CONE_ANGLE_DEG = 70;  // ukupan otvor konusa (±35° od azimuta)
+    var HEADING_CONE_STEP_DEG = 5;    // gustina tačaka po luku — glađi rub
+    var _headingCanvasRenderer = null; // jedan dijeljen L.canvas() renderer za konus
+    function _headingPointAt(ll, deg, radiusM) {
         var rad = deg * Math.PI / 180;
-        var dx = HEADING_LINE_LEN_M * Math.sin(rad);
-        var dy = HEADING_LINE_LEN_M * Math.cos(rad);
-        return _fromLocalXY(dx, dy, ll[0], ll[1]);
+        var dx = radiusM * Math.sin(rad);
+        var dy = radiusM * Math.cos(rad);
+        var p = _fromLocalXY(dx, dy, ll[0], ll[1]);
+        return [p.lat, p.lng];
     }
-    function _drawHeadingLine(deg) {
+    // Apeks (korisnikova lokacija) + niz tačaka duž luka od (azimut-pola ugla)
+    // do (azimut+pola ugla) — Leaflet L.polygon sam zatvara oblik nazad na
+    // apeks, pa je rezultat pravi "pie slice"/konus.
+    function _headingConeLatLngs(ll, deg) {
+        var half = HEADING_CONE_ANGLE_DEG / 2;
+        var tacke = [ll];
+        for (var a = -half; a <= half + 0.001; a += HEADING_CONE_STEP_DEG) {
+            tacke.push(_headingPointAt(ll, deg + a, HEADING_CONE_RADIUS_M));
+        }
+        return tacke;
+    }
+    function _drawHeadingCone(deg) {
         if (!_map || !_headingLastLL) return;
         _headingLastDeg = deg;
-        var end = _headingDestinationLatLng(_headingLastLL, deg);
-        var latlngs = [_headingLastLL, [end.lat, end.lng]];
-        if (_headingLine) {
-            _headingLine.setLatLngs(latlngs);
+        var latlngs = _headingConeLatLngs(_headingLastLL, deg);
+        if (_headingCone) {
+            _headingCone.setLatLngs(latlngs);
         } else {
             if (!_headingCanvasRenderer) _headingCanvasRenderer = L.canvas();
-            _headingLine = L.polyline(latlngs, {
+            _headingCone = L.polygon(latlngs, {
                 renderer: _headingCanvasRenderer,
-                color: '#2563eb',
-                weight: 6,
-                opacity: 0.45,
-                lineCap: 'round',
+                stroke: false,
+                fillColor: '#3b82f6',
+                fillOpacity: 0.38,
                 interactive: false
             }).addTo(_map);
         }
     }
-    function _removeHeadingLine() {
-        if (_headingLine) { _map.removeLayer(_headingLine); _headingLine = null; }
+    function _removeHeadingCone() {
+        if (_headingCone) { _map.removeLayer(_headingCone); _headingCone = null; }
     }
     function _headingOrientationHandler(e) {
         var heading = null;
         if (typeof e.webkitCompassHeading === 'number') heading = e.webkitCompassHeading; // iOS Safari — već tačan azimut
         else if (typeof e.alpha === 'number') heading = (360 - e.alpha) % 360; // Android — najbolja dostupna aproksimacija
         if (heading == null || isNaN(heading)) return;
-        _drawHeadingLine(heading);
+        _drawHeadingCone(heading);
     }
     function _stopHeadingView() {
         if (_headingEventName) { window.removeEventListener(_headingEventName, _headingOrientationHandler); _headingEventName = null; }
         _headingActive = false;
         _headingLastDeg = null;
-        _removeHeadingLine();
+        _removeHeadingCone();
     }
     function _startHeadingView() {
         function attach() {
@@ -2354,7 +2368,7 @@
     }
     // Klik na plavu tačku "moja lokacija" — vidi _updateLocDisplay.
     function _toggleHeadingView() {
-        if (!_headingLastLL) return; // nema još GPS pozicije da se linija ima od čega crtati
+        if (!_headingLastLL) return; // nema još GPS pozicije da se konus ima odakle crtati
         if (_headingActive) { _stopHeadingView(); return; }
         _headingActive = true;
         _startHeadingView();
