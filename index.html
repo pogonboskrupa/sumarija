@@ -3630,6 +3630,14 @@
                       color:#fff; border:1px solid rgba(255,255,255,.4); border-radius:8px;
                       width:28px; height:28px; font-size:14px; cursor:pointer; font-family:inherit;
                   }
+                  /* .rm-explorer-close je dizajniran za TAMNU pozadinu (#radnik-mapa-explorer
+                     HUD) — bijela ikona na providnoj bijeloj podlozi. .rm-sjece-panel i
+                     .rm-mjerenje-panel imaju SVIJETLU pozadinu, pa je isto dugme tu bilo
+                     nevidljivo (bijelo na bijelom — korisnik nije mogao zatvoriti panel).
+                     Scoped override vraća kontrast. */
+                  .rm-sjece-panel .rm-explorer-close, .rm-mjerenje-panel .rm-explorer-close {
+                      background:#f3f4f6; color:#4b5563; border-color:#d1d5db;
+                  }
                   .rm-explorer-name { font-size:14px; font-weight:700; margin-bottom:6px; padding-right:32px; }
                   .rm-explorer-arrow {
                       font-size:56px; line-height:1; margin:4px 0;
