@@ -2346,12 +2346,22 @@
         if (_headingCone) { _map.removeLayer(_headingCone); _headingCone = null; }
     }
     // Magnetometar je bučan — sirov azimut zna "skakati" ±10-20° iz otkucaja
-    // u otkucaj i kad je telefon potpuno miran. Eksponencijalno glačanje
-    // (nizak alpha = sporiji ali mirniji odziv) rješava to; posebna pažnja na
-    // kružni prelaz 360°→0° (bez ovoga bi glačanje na sjeveru "skretalo" kroz
-    // jug, jer bi npr. prosjek 350° i 10° naivno ispao 180°).
-    var HEADING_SMOOTH_ALPHA = 0.15;
+    // u otkucaj i kad je telefon potpuno miran. Dva sloja protiv toga:
+    //   1) Eksponencijalno glačanje (nizak alpha = sporiji ali mirniji odziv)
+    //      — posebna pažnja na kružni prelaz 360°→0° (bez ovoga bi glačanje
+    //      na sjeveru "skretalo" kroz jug, jer bi npr. prosjek 350° i 10°
+    //      naivno ispao 180°).
+    //   2) Prag za PRECRTAVANJE — i glačana vrijednost i dalje polako "diše"
+    //      za par stepeni iz otkucaja u otkucaj; bez praga bi se poligon i
+    //      dalje neprestano redrawovao (svaki setLatLngs je repaint), što se
+    //      oku vidi kao treperenje čak i kad je stvarna promjena zanemarljiva.
+    //      Konus se pomjera samo kad se glačana vrijednost stvarno promijeni
+    //      za više od praga — mirno stoji dok je telefon miran, i dalje prati
+    //      stvarno okretanje bez primjetnog kašnjenja.
+    var HEADING_SMOOTH_ALPHA = 0.08;
+    var HEADING_REDRAW_THRESHOLD_DEG = 2.5;
     var _headingSmoothedDeg = null;
+    var _headingDrawnDeg = null; // zadnji azimut koji je STVARNO nacrtan (za prag)
     function _smoothHeadingDeg(raw) {
         if (_headingSmoothedDeg == null) { _headingSmoothedDeg = raw; return raw; }
         var diff = ((raw - _headingSmoothedDeg + 540) % 360) - 180; // najkraća razlika, -180..180
@@ -2363,7 +2373,13 @@
         if (typeof e.webkitCompassHeading === 'number') heading = e.webkitCompassHeading; // iOS Safari — već tačan azimut
         else if (typeof e.alpha === 'number') heading = (360 - e.alpha) % 360; // Android — najbolja dostupna aproksimacija
         if (heading == null || isNaN(heading)) return;
-        _drawHeadingCone(_smoothHeadingDeg(heading));
+        var smoothed = _smoothHeadingDeg(heading);
+        if (_headingDrawnDeg != null) {
+            var drawDiff = Math.abs(((smoothed - _headingDrawnDeg + 540) % 360) - 180);
+            if (drawDiff < HEADING_REDRAW_THRESHOLD_DEG) return; // premala promjena — preskoči repaint
+        }
+        _headingDrawnDeg = smoothed;
+        _drawHeadingCone(smoothed);
     }
     function _stopHeadingView() {
         clearTimeout(_headingNoDataTimer);
@@ -2375,6 +2391,7 @@
         _headingActive = false;
         _headingLastDeg = null;
         _headingSmoothedDeg = null; // sljedeće uključivanje kreće svježe, ne od zastarjele vrijednosti
+        _headingDrawnDeg = null;
         _removeHeadingCone();
     }
     function _startHeadingView() {
