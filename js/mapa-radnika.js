@@ -121,6 +121,7 @@
     var _headingCone = null;         // L.polygon — plavi prozirni konus (FOV) smjera gledanja
     var _headingLastLL = null;       // [lat,lng] zadnje poznate GPS lokacije (vrh/apeks konusa)
     var _headingLastDeg = null;      // zadnji poznati kompas azimut (stepeni, 0 = sjever)
+    var _headingAbsoluteConfirmed = false; // true čim prvi put stigne azimut iz apsolutnog (sjever-referentnog) izvora
     var _odjeliByKey = null; // labelKey/normKey -> radnikov odjel objekat
     var _recentSet = null;   // Set referenci na zadnja 3 odjela (samo za primača) — vidi initMapaRadnika
     var _allLayers = [];     // SVI polygon layer-i (radio i ne-radio) — za "Prikaži odjele" grupisanje po odsjeku
@@ -2373,6 +2374,22 @@
         if (typeof e.webkitCompassHeading === 'number') heading = e.webkitCompassHeading; // iOS Safari — već tačan azimut
         else if (typeof e.alpha === 'number') heading = (360 - e.alpha) % 360; // Android — najbolja dostupna aproksimacija
         if (heading == null || isNaN(heading)) return;
+        // Dio Android uređaja isporučuje OBA event-a za SVAKO fizičko
+        // okretanje: 'deviceorientationabsolute' (azimut referentan prema
+        // sjeveru) i 'deviceorientation' (azimut referentan prema
+        // proizvoljnoj/relativnoj nula-tački, koja zna biti pomjerena za
+        // desetine stepeni od apsolutne). Kad se obje vrijednosti miješaju u
+        // isti glačajući filter, filter naizmjenično juri dva različita cilja
+        // — konus "leti" bez obzira koliko se glačanje pojača, jer problem
+        // nije šum nego dva različita signala. Čim se potvrdi da apsolutni
+        // izvor stvarno isporučuje podatke, relativni ('deviceorientation'
+        // bez apsolutne reference) se u potpunosti ignoriše.
+        var isAbsoluteSource = (e.type === 'deviceorientationabsolute') || (e.absolute === true) || (typeof e.webkitCompassHeading === 'number');
+        if (isAbsoluteSource) {
+            _headingAbsoluteConfirmed = true;
+        } else if (_headingAbsoluteConfirmed) {
+            return; // apsolutni izvor radi — relativni bi samo kvario glačanje
+        }
         var smoothed = _smoothHeadingDeg(heading);
         if (_headingDrawnDeg != null) {
             var drawDiff = Math.abs(((smoothed - _headingDrawnDeg + 540) % 360) - 180);
@@ -2392,6 +2409,7 @@
         _headingLastDeg = null;
         _headingSmoothedDeg = null; // sljedeće uključivanje kreće svježe, ne od zastarjele vrijednosti
         _headingDrawnDeg = null;
+        _headingAbsoluteConfirmed = false;
         _removeHeadingCone();
     }
     function _startHeadingView() {
