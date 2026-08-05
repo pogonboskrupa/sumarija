@@ -441,6 +441,7 @@
                     // nišan u centru ekrana, mapaRadnikaStartTacka.)
                     if (_handleRoutePickClick(e.latlng)) return;
                     if (_handlePoligonClick(e.latlng)) return;
+                    if (_handleIzvrsenoClick(e.latlng)) return;
                     if (_handleSjeceOdjelClick(e.latlng, feature)) return;
                     if (_handleSjeceDirectionClick(e.latlng)) return;
                     if (_handleMjerenjeClick(e.latlng)) return;
@@ -741,6 +742,7 @@
         if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
         if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
         if (typeof window.mapaRadnikaCancelMjerenje === 'function') window.mapaRadnikaCancelMjerenje();
+        if (typeof window.mapaRadnikaCancelIzvrsenoPoligon === 'function') window.mapaRadnikaCancelIzvrsenoPoligon();
         _routePickState = 'awaiting-a';
         _routePointA = null;
         if (_routeAMarker) { _map.removeLayer(_routeAMarker); _routeAMarker = null; }
@@ -869,6 +871,7 @@
             L.DomEvent.stopPropagation(e);
             if (_handleRoutePickClick(e.latlng)) return;
             if (_handlePoligonClick(e.latlng)) return;
+            if (_handleIzvrsenoClick(e.latlng)) return;
             if (_handleSjeceDirectionClick(e.latlng)) return;
             if (_handleMjerenjeClick(e.latlng)) return;
             if (_tackaPicking) return; // "Tačka" se bira nišanom — klik po mapi ništa ne radi
@@ -1018,6 +1021,130 @@
         });
     };
 
+    // ---- OZNAČI IZVRŠENU PRIMKU (poligon) — radnik ocrtava poligon preko
+    // dijela mape (isti obrazac klika kao "Označi površinu", _poligonPoints
+    // gore), a sva NEIZVRŠENA doznačena stabla unutar tog poligona (iz SVIH
+    // sačuvanih doznaka slojeva, bez obzira na trenutnu vidljivost) se
+    // označe kao izvršena — nakon potvrde koliko će ih biti pogođeno.
+    var _izvrsenoDrawing = false;
+    var _izvrsenoPoints = [];
+    var _izvrsenoDrawLayer = null;
+
+    function _redrawIzvrsenoDraw() {
+        if (_izvrsenoDrawLayer) { _map.removeLayer(_izvrsenoDrawLayer); _izvrsenoDrawLayer = null; }
+        if (!_izvrsenoPoints.length) return;
+        if (_izvrsenoPoints.length < 2) {
+            _izvrsenoDrawLayer = L.circleMarker(_izvrsenoPoints[0], { radius: 6, color: '#047857', fillColor: '#10b981', fillOpacity: 0.9 }).addTo(_map);
+            return;
+        }
+        _izvrsenoDrawLayer = L.polygon(_izvrsenoPoints, { color: '#047857', weight: 3, fillColor: '#10b981', fillOpacity: 0.25, dashArray: '6 4' }).addTo(_map);
+    }
+    function _updateIzvrsenoHint() {
+        var n = _izvrsenoPoints.length;
+        _showRouteHint(
+            '<span>✅ Obuhvatite stabla (' + n + (n >= 3 ? ', spremno)' : ', treba još)') + '</span>' +
+            '<span style="display:flex;gap:6px;">' +
+            (n > 0 ? '<button type="button" onclick="mapaRadnikaUndoIzvrsenoPoint()">↩️</button>' : '') +
+            (n >= 3 ? '<button type="button" onclick="mapaRadnikaFinishIzvrsenoPoligon()">✅ Označi</button>' : '') +
+            '<button type="button" onclick="mapaRadnikaCancelIzvrsenoPoligon()">✕</button>' +
+            '</span>'
+        );
+    }
+    window.mapaRadnikaStartIzvrsenoPoligon = function() {
+        _hideTragoviMenu();
+        if (typeof window.mapaRadnikaCancelRoutePick === 'function') window.mapaRadnikaCancelRoutePick();
+        if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
+        if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
+        if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
+        if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
+        if (typeof window.mapaRadnikaCloseMjerenjePanel === 'function') window.mapaRadnikaCloseMjerenjePanel();
+        _izvrsenoDrawing = true;
+        _izvrsenoPoints = [];
+        _redrawIzvrsenoDraw();
+        _updateIzvrsenoHint();
+    };
+    window.mapaRadnikaCancelIzvrsenoPoligon = function() {
+        _izvrsenoDrawing = false;
+        _izvrsenoPoints = [];
+        if (_izvrsenoDrawLayer) { _map.removeLayer(_izvrsenoDrawLayer); _izvrsenoDrawLayer = null; }
+        _hideRouteHint();
+    };
+    window.mapaRadnikaUndoIzvrsenoPoint = function() {
+        if (!_izvrsenoDrawing || !_izvrsenoPoints.length) return;
+        _izvrsenoPoints.pop();
+        _redrawIzvrsenoDraw();
+        _updateIzvrsenoHint();
+    };
+    // Ray-casting point-in-polygon — lat/lng se koriste direktno kao y/x, bez
+    // projekcije (na skali odjela/radne površine greška je zanemarljiva, isti
+    // pristup kao _polygonAreaM2 iznad).
+    function _pointInPolygon(lat, lng, poly) {
+        var inside = false;
+        for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+            var yi = poly[i][0], xi = poly[i][1];
+            var yj = poly[j][0], xj = poly[j][1];
+            var intersect = ((yi > lat) !== (yj > lat)) &&
+                (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+    function _findDoznakaMatchesInPolygon(poly) {
+        var list = _loadSavedDoznaka();
+        var matches = [];
+        list.forEach(function(d, si) {
+            (d.points || []).forEach(function(p, pi) {
+                if (!p.done && _pointInPolygon(p.lat, p.lng, poly)) matches.push({ setIdx: si, pointIdx: pi });
+            });
+        });
+        return matches;
+    }
+    function _applyIzvrsenoMatches(matches) {
+        var list = _loadSavedDoznaka();
+        matches.forEach(function(m) {
+            if (list[m.setIdx] && list[m.setIdx].points && list[m.setIdx].points[m.pointIdx]) {
+                list[m.setIdx].points[m.pointIdx].done = true;
+            }
+        });
+        _saveDoznaka(list);
+        _drawSavedDoznaka();
+        _renderStavke();
+    }
+    window.mapaRadnikaFinishIzvrsenoPoligon = function() {
+        if (!_izvrsenoDrawing || _izvrsenoPoints.length < 3) return;
+        var matches = _findDoznakaMatchesInPolygon(_izvrsenoPoints);
+        if (!matches.length) {
+            _notify('showWarning', 'Nijedno neizvršeno stablo nije obuhvaćeno ovim poligonom.');
+            return;
+        }
+        _showTragConfirm('Označiti ' + matches.length + ' stabala kao izvršenu primku?', function() {
+            _applyIzvrsenoMatches(matches);
+            window.mapaRadnikaCancelIzvrsenoPoligon();
+            _notify('showSuccess', 'Izvršena primka', matches.length + ' stabala označeno.');
+        });
+    };
+    // Poziva se iz istog centralnog map-click lanca kao _handlePoligonClick.
+    function _handleIzvrsenoClick(latlng) {
+        if (!_izvrsenoDrawing) return false;
+        _izvrsenoPoints.push([latlng.lat, latlng.lng]);
+        _redrawIzvrsenoDraw();
+        _updateIzvrsenoHint();
+        return true;
+    }
+    // Ručni switch pojedinačnog stabla — poziva se iz popup dugmeta (vidi
+    // _drawSavedDoznaka). Nezavisno od poligon-obuhvata iznad; koristan za
+    // pojedinačnu ispravku/poništavanje.
+    window.mapaRadnikaToggleDoznakaTreeDone = function(setIdx, pointIdx) {
+        var list = _loadSavedDoznaka();
+        var d = list[setIdx];
+        if (!d || !d.points || !d.points[pointIdx]) return;
+        d.points[pointIdx].done = !d.points[pointIdx].done;
+        _saveDoznaka(list);
+        if (_map) _map.closePopup();
+        _drawSavedDoznaka();
+        _renderStavke();
+    };
+
     // ---- TAČKA — radnik obilježi jednu tačku, imenuje je, i ona ostaje
     // sačuvana/vidljiva na mapi (per-korisnik localStorage, isti obrazac kao
     // tragovi/površine). Klik na tačku na mapi otvara popup sa "🧭 Vodi me do
@@ -1076,6 +1203,7 @@
         if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
         if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
         if (typeof window.mapaRadnikaCancelMjerenje === 'function') window.mapaRadnikaCancelMjerenje();
+        if (typeof window.mapaRadnikaCancelIzvrsenoPoligon === 'function') window.mapaRadnikaCancelIzvrsenoPoligon();
         _tackaPicking = true;
         _showTackaCrosshair();
         _showRouteHint(
@@ -1408,16 +1536,28 @@
         _doznakaLayerGroups.forEach(function(lg) { if (lg && _map.hasLayer(lg)) _map.removeLayer(lg); });
         _doznakaLayerGroups = [];
         _doznakaMarkers = [];
-        _loadSavedDoznaka().forEach(function(d) {
+        _loadSavedDoznaka().forEach(function(d, si) {
             var lg = L.featureGroup();
-            (d.points || []).forEach(function(p) {
+            (d.points || []).forEach(function(p, pi) {
                 var safeName = String(p.name || 'Stablo').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                var done = !!p.done;
                 var marker = L.circleMarker([p.lat, p.lng], {
                     renderer: _doznakaCanvasRenderer,
-                    radius: 5, color: '#15803d', weight: 2, fillColor: '#22c55e', fillOpacity: 0.9
+                    radius: 5,
+                    color: done ? '#4b5563' : '#15803d',
+                    weight: 2,
+                    fillColor: done ? '#9ca3af' : '#22c55e',
+                    fillOpacity: 0.9
                 })
-                    .bindTooltip(safeName, { permanent: false, direction: 'top', className: 'karta-tooltip' })
-                    .bindPopup('<div class="rm-tacka-popup"><div class="rm-tacka-popup-title">🌲 ' + safeName + '</div></div>');
+                    .bindTooltip((done ? '✅ ' : '') + safeName, { permanent: false, direction: 'top', className: 'karta-tooltip' })
+                    .bindPopup(
+                        '<div class="rm-tacka-popup">' +
+                        '<div class="rm-tacka-popup-title">🌲 ' + safeName + '</div>' +
+                        '<div style="font-size:12px;color:#6b7280;margin-bottom:8px;">' + (done ? '✅ Izvršena primka' : '⬜ Nije izvršeno') + '</div>' +
+                        '<button type="button" class="rm-tacka-popup-route" onclick="mapaRadnikaToggleDoznakaTreeDone(' + si + ',' + pi + ')">' +
+                        (done ? '↩️ Poništi izvršeno' : '✅ Označi izvršeno') + '</button>' +
+                        '</div>'
+                    );
                 _bindStavkaPopupClick(marker);
                 marker.addTo(lg);
                 _doznakaMarkers.push(marker);
@@ -1975,6 +2115,7 @@
         if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
         if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
         if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
+        if (typeof window.mapaRadnikaCancelIzvrsenoPoligon === 'function') window.mapaRadnikaCancelIzvrsenoPoligon();
         var panel = _sjecePanelEl();
         if (panel) panel.classList.remove('hidden');
         var cfg = _loadSjeceConfig();
@@ -2042,6 +2183,7 @@
         if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
         if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
         if (typeof window.mapaRadnikaCancelMjerenje === 'function') window.mapaRadnikaCancelMjerenje();
+        if (typeof window.mapaRadnikaCancelIzvrsenoPoligon === 'function') window.mapaRadnikaCancelIzvrsenoPoligon();
         _sjecePicking = false; // ne miješaj sa biranjem odjela — samo jedan klik-mod aktivan
         _sjeceDirPickState = 'awaiting-a';
         _sjeceDirPointA = null;
@@ -2298,6 +2440,7 @@
         if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
         if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
         if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
+        if (typeof window.mapaRadnikaCancelIzvrsenoPoligon === 'function') window.mapaRadnikaCancelIzvrsenoPoligon();
         var panel = _mjerenjePanelEl();
         if (panel) panel.classList.remove('hidden');
         // Izbor "crtaj sa centra" se pamti između sesija — uskladi kvačicu.
@@ -3366,9 +3509,12 @@
         });
 
         _loadSavedDoznaka().forEach(function(d, i) {
+            var doneCount = (d.points || []).filter(function(p) { return p.done; }).length;
             out.push({
                 tip: 'doznaka', idx: i, ikona: '🌲', ime: d.name || 'Doznačena stabla',
-                meta: _datumStr(d.created) + ' · ' + (d.points || []).length + ' stabala' + (d.hidden ? ' · sakriveno' : ''),
+                meta: _datumStr(d.created) + ' · ' + (d.points || []).length + ' stabala' +
+                    (doneCount ? ' · ' + doneCount + ' izvršeno' : '') +
+                    (d.hidden ? ' · sakriveno' : ''),
                 ts: d.created ? new Date(d.created).getTime() : 0,
                 edit: true, zoom: (d.points || []).length >= 1, share: false,
                 toggle: true, hiddenManually: !!d.hidden
@@ -3683,6 +3829,7 @@
         if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
         if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
         if (typeof window.mapaRadnikaCloseMjerenjePanel === 'function') window.mapaRadnikaCloseMjerenjePanel();
+        if (typeof window.mapaRadnikaCancelIzvrsenoPoligon === 'function') window.mapaRadnikaCancelIzvrsenoPoligon();
         _stopFollow(); // ne ostavljaj GPS watchPosition da radi u pozadini nakon izlaska s mape
         _stopHeadingView(); // ne ostavljaj deviceorientation listener da radi u pozadini
         // Vrati viewport na korisnikovu preferencu (Desktop/Android prikaz) ako
@@ -3788,6 +3935,7 @@
             _map.on('click', function(e) {
                 if (_handleRoutePickClick(e.latlng)) return;
                 if (_handlePoligonClick(e.latlng)) return;
+                if (_handleIzvrsenoClick(e.latlng)) return;
                 if (_handleSjeceDirectionClick(e.latlng)) return;
                 if (_handleMjerenjeClick(e.latlng)) return;
                 _hideInfoPanel();
