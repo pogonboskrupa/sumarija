@@ -116,7 +116,8 @@
     var _locMarker = null;
     var _locCircle = null;
     var _headingActive = false;      // uključen/isključen prikaz smjera gledanja (klik na "moja lokacija")
-    var _headingEventName = null;    // ime device orientation event-a na koji je listener zakačen
+    var _headingListening = false;   // da li su device orientation listeneri trenutno zakačeni
+    var _headingNoDataTimer = null;  // upozori korisnika ako ni jedan event ne isporuči upotrebljiv azimut
     var _headingCone = null;         // L.polygon — plavi prozirni konus (FOV) smjera gledanja
     var _headingLastLL = null;       // [lat,lng] zadnje poznate GPS lokacije (vrh/apeks konusa)
     var _headingLastDeg = null;      // zadnji poznati kompas azimut (stepeni, 0 = sjever)
@@ -2352,15 +2353,40 @@
         _drawHeadingCone(heading);
     }
     function _stopHeadingView() {
-        if (_headingEventName) { window.removeEventListener(_headingEventName, _headingOrientationHandler); _headingEventName = null; }
+        clearTimeout(_headingNoDataTimer);
+        if (_headingListening) {
+            window.removeEventListener('deviceorientationabsolute', _headingOrientationHandler);
+            window.removeEventListener('deviceorientation', _headingOrientationHandler);
+            _headingListening = false;
+        }
         _headingActive = false;
         _headingLastDeg = null;
         _removeHeadingCone();
     }
     function _startHeadingView() {
+        // Osluškuj OBA event-a istovremeno (ne biraj jedan preko
+        // feature-detekcije) — na dijelu Android uređaja
+        // 'ondeviceorientationabsolute' postoji u window (feature-detekcija
+        // ispadne tačna), ali event nikad ne isporuči upotrebljiv alpha (null,
+        // senzor nedostupan/nekalibrisan) — dok 'deviceorientation' i dalje
+        // normalno radi. _headingOrientationHandler već ignoriše događaje bez
+        // brojčanog alpha/webkitCompassHeading, pa je slušanje oba potpuno
+        // bezopasno (koristi se prvi koji stvarno isporuči broj) i jedini
+        // pouzdan pristup preko fragmentisanog Android ekosistema senzora.
         function attach() {
-            _headingEventName = ('ondeviceorientationabsolute' in window) ? 'deviceorientationabsolute' : 'deviceorientation';
-            window.addEventListener(_headingEventName, _headingOrientationHandler);
+            window.addEventListener('deviceorientationabsolute', _headingOrientationHandler);
+            window.addEventListener('deviceorientation', _headingOrientationHandler);
+            _headingListening = true;
+            // Ni jedan od oba event-a ponekad ne isporuči upotrebljiv azimut
+            // (senzor odbijen na OS nivou, ili uređaj nema magnetometar) —
+            // korisnik bi ostao "uključen" bez ikakvog konusa i bez povratne
+            // informacije zašto. Upozori umjesto tihog neuspjeha.
+            clearTimeout(_headingNoDataTimer);
+            _headingNoDataTimer = setTimeout(function() {
+                if (_headingActive && _headingLastDeg == null) {
+                    _notify('showWarning', 'Kompas ne šalje podatke o smjeru — provjerite dozvole senzora uređaja u postavkama.');
+                }
+            }, 4000);
         }
         if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
             DeviceOrientationEvent.requestPermission().then(function(state) {
