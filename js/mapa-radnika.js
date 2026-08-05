@@ -3384,10 +3384,22 @@
     // (sibling DOM element) — bringToFront preko te granice ne djeluje,
     // pa bi bio mrtav kod. Pane z-index je jedini pouzdan način da konus
     // ostane iznad odjel poligona bez obzira na redosljed redraw-a. ----
-    var HEADING_CONE_RADIUS_M = 70;   // dužina konusa
     var HEADING_CONE_ANGLE_DEG = 70;  // ukupan otvor konusa (±35° od azimuta)
     var HEADING_CONE_STEP_DEG = 5;    // gustina tačaka po luku — glađi rub
     var _headingCanvasRenderer = null; // jedan dijeljen L.canvas() renderer za konus
+    // Konus je geografski sidren (stvarni metri) — na manjem zumu ista dužina
+    // pokriva manje piksela i postaje sitna (isti problem kao kod tačaka, vidi
+    // _tackaRadiusForZoom). Radijus u metrima raste diskretno kako se zumira
+    // dalje, da konus ostane čitljiv na ekranu; rast je ograničen (cap na zumu
+    // ≤12) da ne postane apsurdno velik na jako odzumiranoj karti.
+    function _headingConeRadiusM() {
+        var z = _map ? _map.getZoom() : 16;
+        if (z >= 16) return 70;
+        if (z === 15) return 140;
+        if (z === 14) return 280;
+        if (z === 13) return 450;
+        return 700;
+    }
     function _headingPointAt(ll, deg, radiusM) {
         var rad = deg * Math.PI / 180;
         var dx = radiusM * Math.sin(rad);
@@ -3400,9 +3412,10 @@
     // apeks, pa je rezultat pravi "pie slice"/konus.
     function _headingConeLatLngs(ll, deg) {
         var half = HEADING_CONE_ANGLE_DEG / 2;
+        var radiusM = _headingConeRadiusM();
         var tacke = [ll];
         for (var a = -half; a <= half + 0.001; a += HEADING_CONE_STEP_DEG) {
-            tacke.push(_headingPointAt(ll, deg + a, HEADING_CONE_RADIUS_M));
+            tacke.push(_headingPointAt(ll, deg + a, radiusM));
         }
         return tacke;
     }
@@ -4700,6 +4713,12 @@
             _map.on('zoomend', _updateLabelSizes);
             _map.on('zoomend', _updateTackaSizes);
             _map.on('zoomend', _updateDoznakaVisibility);
+            // Konus smjera gledanja se inače crta samo iz kompas/GPS eventa —
+            // bez ovoga bi promjena veličine (_headingConeRadiusM) kasnila dok
+            // ne stigne sljedeće očitanje nakon čistog zooma.
+            _map.on('zoomend', function() {
+                if (_headingActive && _headingLastDeg != null) _drawHeadingCone(_headingLastDeg);
+            });
             _updateLabelSizes();
             // Bez ovoga Leaflet hvata touch/scroll geste unutar panela kao
             // pan/zoom mape — skrolanje prstom kroz duži spisak sortimenata
