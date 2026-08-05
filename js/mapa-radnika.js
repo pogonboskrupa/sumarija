@@ -114,7 +114,6 @@
     var _haloLayer = null; // žuti "halo" ispod crne linije (crtan prvi, ispod _layer)
     var _geojson = null;
     var _locMarker = null;
-    var _locCircle = null;
     var _headingActive = false;      // uključen/isključen prikaz smjera gledanja (klik na "moja lokacija")
     var _headingListening = false;   // da li su device orientation listeneri trenutno zakačeni
     var _headingNoDataTimer = null;  // upozori korisnika ako ni jedan event ne isporuči upotrebljiv azimut
@@ -2261,19 +2260,10 @@
         return '<div class="rm-loc-wrap"><div class="rm-loc-dot"></div></div>';
     }
 
-    // Iscrtava/ažurira plavu tačku + krug preciznosti GPS signala (radijus =
-    // pos.coords.accuracy u metrima, sa tooltip-om "±Xm" — bez ovoga krug je
-    // bio nevidljivo "tih" podatak, korisnik nije mogao SAZNATI koliko je
-    // signal precizan, samo naslutiti iz veličine kruga).
+    // Iscrtava/ažurira plavu tačku "moja lokacija".
     function _updateLocDisplay(pos) {
         var ll = [pos.coords.latitude, pos.coords.longitude];
-        var acc = pos.coords.accuracy || 30;
         if (_locMarker) { _map.removeLayer(_locMarker); _locMarker = null; }
-        if (_locCircle) { _map.removeLayer(_locCircle); _locCircle = null; }
-        _locCircle = L.circle(ll, {
-            radius: acc,
-            color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.12, weight: 1
-        }).bindTooltip('±' + Math.round(acc) + ' m preciznost', { direction: 'top', className: 'karta-tooltip' }).addTo(_map);
         _locMarker = L.marker(ll, {
             icon: L.divIcon({ className: 'rm-loc-icon', html: _locIconHtml(), iconSize: [40, 40], iconAnchor: [20, 20] }),
             interactive: true,
