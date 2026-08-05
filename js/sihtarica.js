@@ -40,8 +40,16 @@
     // ---- Stanje prikaza ----
     var _stanje = { primac: null, otpremac: null }; // { godina, mjesec, autoDani }
 
+    // window.currentUser NIKAD nije postavljen u aplikaciji (currentUser je
+    // modul-scoped `let` u js/app.js, ne window property — isti razlog kao
+    // _currentUserObj() u js/mapa-radnika.js) — bez fallback-a na localStorage
+    // bi SVI korisnici na istom uređaju dijelili isti "anon" ključ.
     function _username() {
-        return (window.currentUser && window.currentUser.username) || 'anon';
+        if (window.currentUser && window.currentUser.username) return window.currentUser.username;
+        try {
+            var u = JSON.parse(localStorage.getItem('sumarija_user') || 'null');
+            return (u && u.username) || 'anon';
+        } catch (_) { return 'anon'; }
     }
     function _esc(s) {
         return String(s == null ? '' : s)
@@ -89,6 +97,10 @@
     // upozorenje SAMO kad je nešto stvarno pošlo po zlu, ne za svaki prazan
     // mjesec (ranije se svaka greška tiho gutala — korisnik je vidio
     // "nema automatskog popunjavanja" bez ijednog traga zašto).
+    // `mjesec` je opcionalan — ako se izostavi, vraća se CIJELA godina
+    // (koristi _godisnjiPregled ispod). Keš je već po godini (jedan API poziv
+    // za sve mjesece), pa ovo ne pravi dodatni mrežni poziv kad se mjesečni i
+    // godišnji prikaz preklapaju na istoj godini.
     async function _autoDani(tip, godina, mjesec) {
         var out = {};
         try {
@@ -115,7 +127,7 @@
                 var p = String(u.datum).split(/[\/\.\-]/);
                 if (p.length < 3) return;
                 var d = parseInt(p[0], 10), m = parseInt(p[1], 10) - 1, g = parseInt(p[2], 10);
-                if (g !== godina || m !== mjesec) return;
+                if (g !== godina || (mjesec != null && m !== mjesec)) return;
                 var k = _iso(g, m, d);
                 if (!out[k]) out[k] = { ukupno: 0, unosa: 0, odjeli: [] };
                 out[k].ukupno += (typeof u.ukupno === 'number' ? u.ukupno : parseFloat(u.ukupno) || 0);
@@ -155,6 +167,54 @@
         });
     }
 
+    // ---- Godišnji pregled (1.1. do DANAS tekuće godine) ----
+    // Prikazuje se u zaglavlju pored birača mjeseca/godine, uvijek za TEKUĆU
+    // kalendarsku godinu do DANAŠNJEG dana — NEZAVISNO od toga koji
+    // mjesec/godinu radnik trenutno pregleda u tabeli ispod (zato se ne
+    // preračunava pri svakoj promjeni mjeseca, samo jednom po otvaranju taba).
+    function _izracunajGodisnjiPregled(godina, autoGodina) {
+        var unosi = _loadUnosi();
+        var rekap = {};
+        TIPOVI.forEach(function(t) { rekap[t.id] = 0; });
+        var danas = new Date();
+        var zadnjiMjesec = danas.getMonth();
+        var zadnjiDan = danas.getDate();
+        for (var m = 0; m <= zadnjiMjesec; m++) {
+            var danaUMj = (m === zadnjiMjesec) ? zadnjiDan : _danaUMjesecu(godina, m);
+            for (var d = 1; d <= danaUMj; d++) {
+                var t = _tip(_efektivniTip(_iso(godina, m, d), unosi, autoGodina));
+                if (t) rekap[t.id]++;
+            }
+        }
+        var radnihDana = 0;
+        TIPOVI.forEach(function(t) { if (t.radni) radnihDana += rekap[t.id]; });
+        return { godina: godina, radnihDana: radnihDana, rekap: rekap };
+    }
+
+    function _godPregledHtml(tip, st, akcent) {
+        var sadGod = new Date().getFullYear();
+        if (!st.godPregled) {
+            return '<div class="sih-god-pregled"><span class="sih-god-pregled-naslov">📅 Učitavam pregled ' + sadGod + '. ...</span></div>';
+        }
+        var gp = st.godPregled;
+        var danas = new Date();
+        var html = '<div class="sih-god-pregled">';
+        html += '<span class="sih-god-pregled-naslov">📅 ' + gp.godina + '. (1.1.–' +
+                danas.getDate() + '.' + (danas.getMonth() + 1) + '.)</span>';
+        html += '<div class="sih-god-pregled-item"><span class="sih-god-pregled-val" style="color:' + akcent + ';">' +
+                gp.radnihDana + '</span><span class="sih-god-pregled-label">Radnih</span></div>';
+        TIPOVI.forEach(function(t) {
+            if (t.radni) return; // radni tipovi su već sabrani u "Radnih"
+            html += '<div class="sih-god-pregled-item"><span class="sih-god-pregled-val">' + gp.rekap[t.id] +
+                    '</span><span class="sih-god-pregled-label">' + t.ikona + ' ' + t.label + '</span></div>';
+        });
+        if (st.godPregledGreska) {
+            html += '<span class="sih-god-pregled-greska" title="Automatsko popunjavanje iz sječe/otpreme trenutno nije uspjelo — brojevi možda nisu ažurni">⚠️</span>';
+        }
+        html += '</div>';
+        return html;
+    }
+
     // ================== RENDER ==================
     function _render(tip) {
         var st = _stanje[tip];
@@ -183,6 +243,7 @@
         html += '<div class="sih-toolbar">' +
             '<select class="year-select" onchange="sihtaricaPromijeni(\'' + tip + '\')" id="sih-' + tip + '-mjesec">' + mjOpcije + '</select>' +
             '<select class="year-select" onchange="sihtaricaPromijeni(\'' + tip + '\')" id="sih-' + tip + '-godina">' + godOpcije + '</select>' +
+            _godPregledHtml(tip, st, akcent) +
             '</div>';
 
         // Auto-popuna dana (iz sječe/otpreme) nije uspjela — RAZLIČITO od
@@ -356,7 +417,10 @@
 
         if (!_stanje[tip]) {
             var sad = new Date();
-            _stanje[tip] = { godina: sad.getFullYear(), mjesec: sad.getMonth(), autoDani: {}, autoGreska: false };
+            _stanje[tip] = {
+                godina: sad.getFullYear(), mjesec: sad.getMonth(), autoDani: {}, autoGreska: false,
+                godPregled: null, godPregledGreska: false
+            };
         }
         // Prvo iscrtaj iz lokalnih podataka (trenutno), pa dopuni automatskim
         // danima kad stignu — tako tab nikad ne stoji prazan dok se čeka mreža.
@@ -365,6 +429,18 @@
         var rez = await _autoDani(tip, st.godina, st.mjesec);
         st.autoDani = rez.dani;
         st.autoGreska = rez.greska;
+        if (typeof isActiveTab === 'function' && !isActiveTab(tabId)) return;
+        _render(tip);
+
+        // Godišnji pregled je UVIJEK za tekuću kalendarsku godinu (do danas),
+        // nezavisno od izabranog mjeseca/godine iznad — vidi _izracunajGodisnjiPregled.
+        // Isti keš/API poziv kao mjesečna auto-popuna kad je izabrana godina =
+        // tekuća (fetchWithCache dedupe), pa ovo ne dodaje mrežni trošak.
+        var sadGod = new Date().getFullYear();
+        var rezGod = await _autoDani(tip, sadGod);
+        st.autoGodina = rezGod.dani; // čuva se da se pregled može osvježiti bez ponovnog fetch-a (vidi _refreshGodPregled)
+        st.godPregled = _izracunajGodisnjiPregled(sadGod, rezGod.dani);
+        st.godPregledGreska = rezGod.greska;
         if (typeof isActiveTab === 'function' && !isActiveTab(tabId)) return;
         _render(tip);
 
@@ -453,9 +529,19 @@
 
         var tip = _edit.tip;
         window.closeSihtaricaEditModal();
+        _refreshGodPregled(tip); // uređeni dan može biti u 1.1.-danas rasponu
         _render(tip);
         if (typeof showSuccess === 'function') showSuccess('Šihtarica ažurirana');
     };
+
+    // Ponovo izračuna godišnji pregled iz VEĆ preuzetih auto-dana (bez novog
+    // mrežnog poziva) — poziva se poslije ručne izmjene dana koja može upasti
+    // u raspon 1.1.-danas tekuće godine.
+    function _refreshGodPregled(tip) {
+        var st = _stanje[tip];
+        if (!st || !st.autoGodina) return;
+        st.godPregled = _izracunajGodisnjiPregled(new Date().getFullYear(), st.autoGodina);
+    }
 
     // ---- Modal: broj dana godišnjeg ----
     var _godTip = null;

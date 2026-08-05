@@ -3445,6 +3445,20 @@
    ========================================================================== */
 .sih-toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
 
+/* Godišnji pregled (1.1.-danas tekuće godine) — pored birača mjeseca/godine,
+   gurnut na desnu stranu toolbar-a (margin-left:auto), a na uskom ekranu
+   pada u novi red preko flex-wrap-a na .sih-toolbar. Nezavisan od
+   mjesečnog prikaza ispod (vidi js/sihtarica.js, _izracunajGodisnjiPregled). */
+.sih-god-pregled {
+    margin-left: auto; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 8px 16px;
+}
+.sih-god-pregled-naslov { font-size: 11px; font-weight: 700; color: #6b7280; white-space: nowrap; }
+.sih-god-pregled-item { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.sih-god-pregled-label { font-size: 10px; font-weight: 700; color: #6b7280; white-space: nowrap; }
+.sih-god-pregled-val { font-size: 16px; font-weight: 800; color: #1f2937; font-variant-numeric: tabular-nums; }
+.sih-god-pregled-greska { font-size: 14px; cursor: help; }
+
 /* Kartica godišnjeg odmora — narandžasti akcent (isti kao TIPOVI.godisnji.boja
    u js/sihtarica.js) i eksplicitan naslov, da se odmah vidi na šta se
    brojevi odnose (bez naslova je izgledalo kao neobilježen skup cifara). */
