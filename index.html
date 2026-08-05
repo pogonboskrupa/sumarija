@@ -3682,7 +3682,7 @@
                      ekranu Mape odjela, pa se ovaj modal renderovao ISPOD njih
                      (nevidljivo/neklikabilno — pravi razlog "Snimi trag se ne
                      aktivira"). Podignuto iznad svega u toj mapi. */
-                  #trag-name-modal.show, #trag-confirm-modal.show, #poligon-name-modal.show, #tacka-name-modal.show, #foto-name-modal.show, #stavka-edit-modal.show, #doznaka-name-modal.show { z-index:20000; }
+                  #trag-name-modal.show, #trag-confirm-modal.show, #poligon-name-modal.show, #tacka-name-modal.show, #foto-name-modal.show, #stavka-edit-modal.show, #doznaka-name-modal.show, #doznaka-source-modal.show, #doznaka-server-modal.show { z-index:20000; }
                   /* ---- Traka aktivnog snimanja traga (iznad donje trake) ---- */
                   .rm-rec-bar {
                       position:fixed; left:10px; right:10px; z-index:10650;
@@ -4312,6 +4312,36 @@
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeDoznakaNameModal()">Otkaži</button>
             <button class="btn btn-primary" onclick="confirmSaveDoznaka()">Sačuvaj</button>
+        </div>
+    </div>
+</div>
+<!-- Modal: izbor izvora za "Dodaj doznačena stabla" — fajl sa uređaja ili
+     spisak sa servera (data/doznaka/manifest.json, statički fajlovi u repou). -->
+<div class="modal-overlay" id="doznaka-source-modal" onclick="if(event.target===this) closeDoznakaSourceModal();">
+    <div class="modal" style="max-width:340px;">
+        <div class="modal-header"><div class="modal-title">🌲 Doznačena stabla</div></div>
+        <div class="modal-body" style="display:flex;flex-direction:column;gap:8px;">
+            <button type="button" class="rm-tragovi-item" style="border:1px solid #e5e7eb;" onclick="mapaRadnikaDoznakaLocalPick()">
+                <span>📂</span><span>Fajl sa uređaja (KML)</span>
+            </button>
+            <button type="button" class="rm-tragovi-item" style="border:1px solid #e5e7eb;" onclick="mapaRadnikaDoznakaServerPick()">
+                <span>📥</span><span>Preuzmi sa servera</span>
+            </button>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeDoznakaSourceModal()">Otkaži</button>
+        </div>
+    </div>
+</div>
+<!-- Modal: spisak KML fajlova dostupnih na serveru -->
+<div class="modal-overlay" id="doznaka-server-modal" onclick="if(event.target===this) closeDoznakaServerModal();">
+    <div class="modal" style="max-width:340px;">
+        <div class="modal-header"><div class="modal-title">📥 Doznaka sa servera</div></div>
+        <div class="modal-body">
+            <div id="doznaka-server-list" class="rm-tragovi-list"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeDoznakaServerModal()">Otkaži</button>
         </div>
     </div>
 </div>

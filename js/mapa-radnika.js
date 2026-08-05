@@ -1209,10 +1209,78 @@
         return points;
     }
 
+    // Dva izvora KML fajla: sa uređaja (postojeći file picker) ili sa
+    // "servera" — statički fajlovi u repou (data/doznaka/), popisani u
+    // data/doznaka/manifest.json. Nema pravog backend-a: dodavanje novog
+    // fajla na "server" znači commit+push u taj folder (vidi manifest.json).
     window.mapaRadnikaStartDoznaka = function() {
         _hideTragoviMenu();
+        var modal = document.getElementById('doznaka-source-modal');
+        if (!modal) { _doznakaLocalPick(); return; } // fallback ako modal nije u DOM-u
+        modal.classList.add('show');
+    };
+    window.closeDoznakaSourceModal = function() {
+        var modal = document.getElementById('doznaka-source-modal');
+        if (modal) modal.classList.remove('show');
+    };
+    function _doznakaLocalPick() {
         var input = document.getElementById('radnik-mapa-doznaka-input');
         if (input) input.click();
+    }
+    window.mapaRadnikaDoznakaLocalPick = function() {
+        window.closeDoznakaSourceModal();
+        _doznakaLocalPick();
+    };
+    var DOZNAKA_MANIFEST_URL = 'data/doznaka/manifest.json';
+    var _doznakaServerManifest = [];
+    window.mapaRadnikaDoznakaServerPick = function() {
+        window.closeDoznakaSourceModal();
+        var modal = document.getElementById('doznaka-server-modal');
+        var list = document.getElementById('doznaka-server-list');
+        if (!modal || !list) return;
+        list.innerHTML = '<div class="rm-tragovi-empty">Učitavanje...</div>';
+        modal.classList.add('show');
+        fetch(DOZNAKA_MANIFEST_URL, { cache: 'no-store' })
+            .then(function(r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+            .then(function(items) {
+                _doznakaServerManifest = Array.isArray(items) ? items : [];
+                if (!_doznakaServerManifest.length) {
+                    list.innerHTML = '<div class="rm-tragovi-empty">Nema dostupnih fajlova na serveru.</div>';
+                    return;
+                }
+                list.innerHTML = _doznakaServerManifest.map(function(it, i) {
+                    return '<button type="button" class="rm-tragovi-item" onclick="mapaRadnikaDoznakaServerFetch(' + i + ')">' +
+                        '<span>🌲</span><span>' + _esc(it.name || it.file) +
+                        (it.added ? ' <small style="color:#9ca3af;">(' + _esc(it.added) + ')</small>' : '') +
+                        '</span></button>';
+                }).join('');
+            })
+            .catch(function() {
+                list.innerHTML = '<div class="rm-tragovi-empty">Nije moguće učitati spisak — provjerite internet konekciju.</div>';
+            });
+    };
+    window.closeDoznakaServerModal = function() {
+        var modal = document.getElementById('doznaka-server-modal');
+        if (modal) modal.classList.remove('show');
+    };
+    window.mapaRadnikaDoznakaServerFetch = function(index) {
+        var item = _doznakaServerManifest[index];
+        if (!item || !item.file) return;
+        window.closeDoznakaServerModal();
+        fetch('data/doznaka/' + item.file, { cache: 'no-store' })
+            .then(function(r) { if (!r.ok) throw new Error('http ' + r.status); return r.text(); })
+            .then(function(text) {
+                var points;
+                try { points = _parseKmlPoints(text); } catch (err) { points = null; }
+                if (!points) { _notify('showError', 'Greška', 'Fajl na serveru nije ispravan KML.'); return; }
+                if (!points.length) { _notify('showWarning', 'KML ne sadrži nijednu tačku (stablo).'); return; }
+                _pendingDoznakaPoints = points;
+                _pendingDoznakaDefaultName = item.name || item.file.replace(/\.kml$/i, '') || 'Doznaka';
+                _showDoznakaNameModal(points.length);
+            })
+            .catch(function() {
+                _notify('showError', 'Greška', 'Nije moguće preuzeti fajl sa servera.');
+            });
     };
     window.mapaRadnikaDoznakaFileSelected = function(e) {
         var file = e.target.files && e.target.files[0];
@@ -1267,6 +1335,19 @@
         _notify('showSuccess', 'Doznačena stabla sačuvana',
             count + ' stabala' + (visible ? '' : ' — približite mapu ispod razmjere 1:' + DOZNAKA_MAX_SCALE + ' da ih vidite'));
     }
+    // Ručni switch vidljivo/sakrij po sloju — NEZAVISAN od automatske
+    // razmjere (_updateDoznakaVisibility), primjenjuje se KAO DODATNI uslov:
+    // sloj je vidljiv samo ako je razmjera dovoljno krupna I nije ručno
+    // sakriven. Sakrivanje traje dok se ponovo ne uključi (nije privremeno).
+    window.mapaRadnikaToggleDoznakaVisible = function(index) {
+        var list = _loadSavedDoznaka();
+        var d = list[index];
+        if (!d) return;
+        d.hidden = !d.hidden;
+        _saveDoznaka(list);
+        _updateDoznakaVisibility();
+        _renderStavke();
+    };
     window.mapaRadnikaDeleteDoznaka = function(index) {
         var list = _loadSavedDoznaka();
         var d = list[index];
@@ -1296,13 +1377,17 @@
     }
     function _updateDoznakaVisibility() {
         if (!_map || !_doznakaLayerGroups.length) return;
-        var visible = _currentMapScale() <= DOZNAKA_MAX_SCALE;
-        _doznakaLayerGroups.forEach(function(lg) {
+        var scaleVisible = _currentMapScale() <= DOZNAKA_MAX_SCALE;
+        var saved = _loadSavedDoznaka();
+        var anyVisible = false;
+        _doznakaLayerGroups.forEach(function(lg, i) {
             if (!lg) return;
+            var visible = scaleVisible && !(saved[i] && saved[i].hidden);
             if (visible && !_map.hasLayer(lg)) lg.addTo(_map);
             else if (!visible && _map.hasLayer(lg)) _map.removeLayer(lg);
+            if (visible) anyVisible = true;
         });
-        if (visible) _bringUserLayersToFront();
+        if (anyVisible) _bringUserLayersToFront();
     }
     function _drawSavedDoznaka() {
         _doznakaLayerGroups.forEach(function(lg) { if (lg && _map.hasLayer(lg)) _map.removeLayer(lg); });
@@ -3265,9 +3350,10 @@
         _loadSavedDoznaka().forEach(function(d, i) {
             out.push({
                 tip: 'doznaka', idx: i, ikona: '🌲', ime: d.name || 'Doznačena stabla',
-                meta: _datumStr(d.created) + ' · ' + (d.points || []).length + ' stabala',
+                meta: _datumStr(d.created) + ' · ' + (d.points || []).length + ' stabala' + (d.hidden ? ' · sakriveno' : ''),
                 ts: d.created ? new Date(d.created).getTime() : 0,
-                edit: true, zoom: (d.points || []).length >= 1, share: false
+                edit: true, zoom: (d.points || []).length >= 1, share: false,
+                toggle: true, hiddenManually: !!d.hidden
             });
         });
 
@@ -3302,6 +3388,8 @@
         var akcije = '';
         if (s.ruta)  akcije += '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaRouteToTacka(' + s.idx + ')" aria-label="Vodi me do tačke">🧭</button>';
         if (s.zoom)  akcije += '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaZoomStavka(\'' + s.tip + '\',' + s.idx + ')" aria-label="Prikaži na mapi">🔍</button>';
+        if (s.toggle) akcije += '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaToggleDoznakaVisible(' + s.idx + ')" aria-label="' +
+            (s.hiddenManually ? 'Prikaži na mapi' : 'Sakrij sa mape') + '">' + (s.hiddenManually ? '🙈' : '👁️') + '</button>';
         if (s.edit)  akcije += '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaEditStavka(\'' + s.tip + '\',' + s.idx + ')" aria-label="Preimenuj">✏️</button>';
         if (s.share) akcije += '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaShareStavka(\'' + s.tip + '\',' + s.idx + ')" aria-label="Podijeli">📤</button>';
         akcije += '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeleteStavka(\'' + s.tip + '\',' + s.idx + ')" aria-label="Obriši">🗑️</button>';
