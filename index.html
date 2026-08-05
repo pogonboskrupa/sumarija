@@ -1653,6 +1653,7 @@
                         <span id="sjece-odjel-label" class="rm-sjece-value">— (izaberite odjel)</span>
                     </div>
                     <button type="button" id="sjece-pick-btn" class="rm-sjece-btn" onclick="mapaRadnikaSjecePickOdjel()">📍 Izaberi odjel</button>
+                    <button type="button" id="sjece-locate-odjel-btn" class="rm-sjece-btn" onclick="mapaRadnikaSjeceOdjelPoLokaciji()">🎯 Odjel po mojoj lokaciji</button>
                     <div class="rm-sjece-row">
                         <span class="rm-sjece-label">Azimut (°):</span>
                         <input type="number" id="sjece-azimuth-input" class="rm-sjece-input" min="0" max="359" placeholder="npr. 135" oninput="mapaRadnikaSjeceInputChanged()" />
@@ -1667,6 +1668,16 @@
                         <button type="button" id="sjece-generate-btn" class="rm-sjece-btn rm-sjece-btn-primary" onclick="mapaRadnikaGenerisiSjeceLinije()" disabled>▶️ Generiši</button>
                         <button type="button" class="rm-sjece-btn" onclick="mapaRadnikaUkloniSjeceLinije()">🗑️ Ukloni linije</button>
                     </div>
+                    <div class="rm-sjece-divider"></div>
+                    <!-- Stvarno ofarbane linije — GPS snimanje stvarno prohodane
+                         putanje, šalje se na server i vide je SVI radnici (za
+                         razliku od generisanih linija iznad, koje su samo PLAN
+                         i nikad se nikuda ne šalju). -->
+                    <div class="rm-sjece-title" style="font-size:13px;">🎨 Stvarno ofarbane linije</div>
+                    <div class="rm-sjece-hint">Snimite GPS putanju dok farbate stabla — vidjeće je svi radnici na ovom odjelu.</div>
+                    <button type="button" id="sjek-record-btn" class="rm-sjece-btn rm-sjece-btn-record" onclick="mapaRadnikaStartSjekackoSnimanje()" disabled>⏺️ Snimi ofarbanu liniju</button>
+                    <button type="button" id="sjek-refresh-btn" class="rm-sjece-btn" onclick="mapaRadnikaOsvjeziSjekackeLinije()" disabled>🔄 Osvježi tuđe linije</button>
+                    <div id="sjek-status" class="rm-sjece-hint"></div>
                 </div>
                 <!-- "Izmjeri" panel — bira se vrsta mjerenja, pa se klika po mapi.
                      Sva tri mjerenja rade offline (čista geometrija). -->
@@ -3664,11 +3675,16 @@
                       background:#dc2626; color:#fff; border-color:#dc2626;
                   }
                   .rm-sjece-btn-primary:disabled { background:#e5e7eb; color:#9ca3af; border-color:#e5e7eb; cursor:default; }
+                  /* Stvarno ofarbane linije (GPS snimanje, dijeljeno preko servera) */
+                  .rm-sjece-divider { height:1px; background:#e5e7eb; margin:10px 0 8px; }
+                  .rm-sjece-hint { font-size:11px; color:#6b7280; margin:0 0 6px; line-height:1.4; }
+                  .rm-sjece-btn-record { background:#166534; color:#fff; border-color:#166534; }
+                  .rm-sjece-btn-record:disabled { background:#e5e7eb; color:#9ca3af; border-color:#e5e7eb; cursor:default; }
                   /* Modali sa unosom teksta — kad se overlay-u JS-om (na otvaranje
                      mobilne tastature) postavi inline visina na stvarni vidljivi
                      viewport (vidi _resizeInputModalsForKeyboard, js/mapa-radnika.js),
                      sadržaj mora ostati unutar te visine bez izlaska ispod nje. */
-                  #tacka-name-modal .modal, #trag-name-modal .modal, #poligon-name-modal .modal, #stavka-edit-modal .modal, #doznaka-name-modal .modal {
+                  #tacka-name-modal .modal, #trag-name-modal .modal, #poligon-name-modal .modal, #stavka-edit-modal .modal, #doznaka-name-modal .modal, #sjek-name-modal .modal {
                       max-height:100%; overflow-y:auto; box-sizing:border-box;
                   }
                   /* Status ispod "Izvanmrežni prikaz karte" (kad/koliko je skinuto) */
@@ -3682,7 +3698,7 @@
                      ekranu Mape odjela, pa se ovaj modal renderovao ISPOD njih
                      (nevidljivo/neklikabilno — pravi razlog "Snimi trag se ne
                      aktivira"). Podignuto iznad svega u toj mapi. */
-                  #trag-name-modal.show, #trag-confirm-modal.show, #poligon-name-modal.show, #tacka-name-modal.show, #foto-name-modal.show, #stavka-edit-modal.show, #doznaka-name-modal.show, #doznaka-source-modal.show, #doznaka-server-modal.show { z-index:20000; }
+                  #trag-name-modal.show, #trag-confirm-modal.show, #poligon-name-modal.show, #tacka-name-modal.show, #foto-name-modal.show, #stavka-edit-modal.show, #doznaka-name-modal.show, #doznaka-source-modal.show, #doznaka-server-modal.show, #sjek-name-modal.show { z-index:20000; }
                   /* ---- Traka aktivnog snimanja traga (iznad donje trake) ---- */
                   .rm-rec-bar {
                       position:fixed; left:10px; right:10px; z-index:10650;
@@ -3707,6 +3723,10 @@
                   .rm-rec-info { flex:1; min-width:0; display:flex; align-items:baseline; gap:9px; }
                   .rm-rec-time { font-size:21px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:.4px; }
                   .rm-rec-dist { font-size:13px; font-weight:600; color:#cbd5e1; white-space:nowrap; }
+                  /* Vidljivi samo dok se snima OFARBANA linija (traka je
+                     dijeljena sa običnim tragom, vidi _recAktivno u JS-u). */
+                  .rm-rec-label { font-size:11px; font-weight:600; color:#86efac; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+                  .rm-rec-acc { font-size:11px; color:#fbbf24; white-space:nowrap; }
                   .rm-rec-actions { display:flex; gap:6px; flex-shrink:0; }
                   .rm-rec-btn {
                       background:rgba(255,255,255,.14); color:#fff; border:1px solid rgba(255,255,255,.28);
@@ -4363,6 +4383,24 @@
         </div>
     </div>
 </div>
+<!-- Modal za ime STVARNO OFARBANE sjekačke linije — prikazuje se PRIJE
+     početka GPS snimanja, isti obrazac kao trag-name-modal. -->
+<div class="modal-overlay" id="sjek-name-modal" onclick="if(event.target===this) closeSjekNameModal();">
+    <div class="modal" style="max-width:340px;">
+        <div class="modal-header"><div class="modal-title">🎨 Nova ofarbana linija</div></div>
+        <div class="modal-body">
+            <label style="display:block;font-size:12px;font-weight:600;color:#4b5563;margin-bottom:4px;">Ime linije</label>
+            <input type="text" id="sjek-name-input" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;" />
+            <label style="display:block;font-size:12px;font-weight:600;color:#4b5563;margin:10px 0 4px;">Broj linije (opciono, ako odgovara plan-liniji)</label>
+            <input type="number" id="sjek-broj-linije-input" min="1" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;" />
+            <div id="sjek-datum-prikaz" style="font-size:12px;color:#6b7280;margin-top:8px;"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeSjekNameModal()">Otkaži</button>
+            <button class="btn btn-primary" onclick="confirmStartSjek()">Počni snimanje</button>
+        </div>
+    </div>
+</div>
 <!-- Modal za preimenovanje bilo koje terenske stavke (trag/tačka/foto/
      površina/mjerenje) — jedan modal za sve tipove, tip/index pamti
      _stavkaEdit u js/mapa-radnika.js. -->
@@ -4388,6 +4426,8 @@
     <div class="rm-rec-info">
         <span class="rm-rec-time" id="trag-recording-elapsed">00:00</span>
         <span class="rm-rec-dist" id="trag-recording-distance">0,00 km</span>
+        <span class="rm-rec-label" id="trag-recording-label"></span>
+        <span class="rm-rec-acc" id="trag-recording-acc"></span>
     </div>
     <div class="rm-rec-actions">
         <button type="button" class="rm-rec-btn" id="trag-recording-pause-btn" onclick="mapaRadnikaPauseResumeTrag()">⏸️ Pauza</button>

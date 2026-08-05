@@ -186,6 +186,13 @@ function doGet(e) {
       return handleGetSihtarica(e.parameter.tip, e.parameter.username, e.parameter.password);
     } else if (path === 'set-godisnji-dani') {
       return handleSetGodisnjiDani(e.parameter);
+    } else if (path === 'get-sjekacke-linije') {
+      // 🎨 SJEKAČKE LINIJE - stvarno ofarbane linije (GPS trag) za odjel
+      return handleGetSjekackeLinije(e.parameter.username, e.parameter.password,
+                                     e.parameter.odjelKey, e.parameter.sinceDays);
+    } else if (path === 'delete-sjekacka-linija') {
+      // 🎨 Meko brisanje — samo radnik koji je liniju snimio
+      return handleDeleteSjekackaLinija(e.parameter);
     }
 
     Logger.log('Unknown path: ' + path);
@@ -253,6 +260,13 @@ function doPost(e) {
         postData.type,
         postData.imageData
       );
+    } else if (path === 'add-sjekacka-linija') {
+      // 🎨 Snimljena ofarbana linija — POST jer niz GPS tačaka premašuje
+      // dužinu GET URL-a. Kredencijali dolaze iz query stringa (buildApiUrl
+      // ih tamo stavlja); podržano je i tijelo zahtjeva radi kompatibilnosti.
+      postData.username = postData.username || e.parameter.username;
+      postData.password = postData.password || e.parameter.password;
+      return handleAddSjekackaLinija(postData);
     }
 
     return createJsonResponse({ error: 'Unknown POST path' }, false);

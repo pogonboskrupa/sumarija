@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.2.3';
+        const APP_VERSION = '1.2.4';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -859,6 +859,10 @@
                 setTimeout(() => { _unauthorizedHandled = false; }, 5000);
             }
         }
+        // Izloženo na window da je mapa-radnika.js (odvojen IIFE, sopstvene
+        // fetch pozive za sjekačke linije) može pozvati na isti standardni
+        // odjavni tok umjesto da duplira logiku.
+        window._handleUnauthorized = _handleUnauthorized;
 
         // "Ažuriraj podatke" — OSVJEŽI-U-MJESTU (bez brisanja keša, bez reload-a):
         // povuci svježe podatke za SVE tabove u pozadini pa svaki tab poslije

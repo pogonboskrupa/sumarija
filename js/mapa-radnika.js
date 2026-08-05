@@ -32,6 +32,24 @@
     var TRAG_MIN_DIST_M = 8;
     var TRAG_MIN_TIME_MS = 3000;
 
+    // ---- Snimanje STVARNO OFARBANE sjekačke linije ----
+    // Finiji filter nego kod običnog traga: sjekač ide sporo (staje da ofarba
+    // stablo), a rezultat mora biti upotrebljiva GEOMETRIJA linije, ne samo
+    // zapis "gdje sam bio". Uslov je namjerno OBRNUT u odnosu na trag gore:
+    // tamo je (blizu I skoro) => preskoči, pa radnik koji stoji svejedno dobija
+    // tačku svake 3 s (čisti GPS šum). Ovdje tačka ulazi tek nakon stvarnog
+    // pomaka, uz "heartbeat" tačku svake minute kao dokaz da se stajalo.
+    var SJEK_MIN_DIST_M   = 4;      // nova tačka tek nakon 4 m pomaka
+    var SJEK_HEARTBEAT_MS = 60000;  // ...ali bar jedna tačka svake minute
+    var SJEK_MAX_ACC_M    = 30;     // fix lošiji od ovoga se odbacuje (ne krivi liniju)
+    var SJEK_SIMPLIFY_M   = 2;      // Douglas-Peucker prag prije slanja (ispod GPS šuma)
+    var SJEK_MAX_JSON     = 45000;  // sigurnosna margina ispod Sheets limita ćelije (50.000)
+    var SJEK_TTL_MS       = 5 * 60 * 1000; // keš tuđih linija — vidi _fetchSjekLinije
+    // Boje po autoru — namjerno različite od crvene (plan linije) i
+    // ljubičaste (sačuvani tragovi), da se na prvi pogled razlikuju.
+    var SJEK_PALETTE = ['#0ea5e9', '#f59e0b', '#10b981', '#ec4899',
+                        '#14b8a6', '#f97316', '#84cc16', '#06b6d4'];
+
     // ---- Ključ helperi — OGLEDALO js/karta-odjela.js (_normKey/_labelKey).
     // Namjerno duplirano da se ne dira radni admin map modul. Sheet ODJEL kolona
     // sadrži puni "GJ odjel" string (npr. "Vojskova 73"), isti format koji admin
@@ -2108,6 +2126,11 @@
             var spOk = sp && sp.value !== '' && parseFloat(sp.value) > 0;
             genBtn.disabled = !(_sjeceOdjelKey && azOk && spOk);
         }
+        // Snimanje ofarbane linije traži samo odjel (azimut/razmak su za PLAN).
+        var recBtn = document.getElementById('sjek-record-btn');
+        if (recBtn) recBtn.disabled = !_sjeceOdjelKey;
+        var refBtn = document.getElementById('sjek-refresh-btn');
+        if (refBtn) refBtn.disabled = !_sjeceOdjelKey;
     }
     window.mapaRadnikaStartSjeceLinije = function() {
         _hideTragoviMenu();
@@ -2150,6 +2173,8 @@
         _sjeceOdjelLabel = String(p.odjel || p.name || k.lk);
         _sjecePicking = false;
         _updateSjecePanel();
+        // Odjel je promijenjen — povuci ofarbane linije tog odjela (tuđe i moje).
+        _restoreSjekLinije(true);
         return true;
     }
 
@@ -2395,6 +2420,657 @@
         } else {
             _notify('showWarning', 'Vaš uređaj ne podržava kompas — unesite azimut ručno.');
         }
+    };
+
+    // ================= STVARNO OFARBANE SJEKAČKE LINIJE =================
+    // Generisane linije iznad su PLAN (matematika iz azimuta i razmaka, ista
+    // na svakom telefonu, ništa se ne šalje). Ovdje se snima STVARNO prohodana
+    // putanja dok radnik farba stabla, šalje se na server i vide je SVI radnici
+    // — jedini dio ovog modula koji nešto upisuje na server.
+    //
+    // Ključ dijeljenja je _sjeceOdjelKey (labelKey, npr. "VOJSKOVA 73"), koji
+    // se izvodi iz istog offline geojsona na svakom uređaju.
+
+    var _sjekRecording = false;
+    var _sjekPaused = false;
+    var _sjekPoints = [];          // [{ ll:[lat,lng], t:ms, acc:m }]
+    var _sjekUuid = null;
+    var _sjekStartIso = null;
+    var _sjekActiveMs = 0;
+    var _sjekSegmentStartTs = 0;
+    var _sjekOdbaceno = 0;         // broj fixova odbačenih zbog loše preciznosti
+    var _sjekZadnjaAcc = null;
+    var _sjekDrawLayer = null;     // živa linija dok snima
+    var _sjekLayers = [];          // sačuvane/tuđe linije na mapi (index = _sjekVisible())
+    var _sjekRenderer = null;
+    var _sjekServerLinije = [];    // zadnje povučeno sa servera
+    var _sjekPendingNaziv = '';
+    var _sjekPendingBroj = '';
+
+    function _sjekUuidNovi() {
+        try {
+            if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+        } catch (_) {}
+        // Fallback za starije webview-e bez crypto.randomUUID
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0;
+            return (c === 'x' ? r : ((r & 0x3) | 0x8)).toString(16);
+        });
+    }
+
+    // ---- Douglas-Peucker u LOKALNIM METRIMA ----
+    // Ne u stepenima — bez lokalne projekcije prag je besmislen jer 1° dužine
+    // nije isto što i 1° širine. Iterativno (eksplicitan stack) umjesto
+    // rekurzije: trag od nekoliko hiljada tačaka bi rekurzijom mogao prebiti
+    // stack na slabijem telefonu.
+    function _dpSimplifyXY(pts, epsM) {
+        var n = pts.length;
+        if (n < 3) return pts.slice();
+        var keep = new Array(n);
+        keep[0] = keep[n - 1] = true;
+        var stack = [[0, n - 1]];
+        while (stack.length) {
+            var seg = stack.pop(), i0 = seg[0], i1 = seg[1];
+            if (i1 - i0 < 2) continue;
+            var a = pts[i0], b = pts[i1];
+            var dx = b.x - a.x, dy = b.y - a.y;
+            var den = Math.sqrt(dx * dx + dy * dy);
+            var maxD = -1, maxI = -1;
+            for (var i = i0 + 1; i < i1; i++) {
+                var p = pts[i], d;
+                if (den < 1e-9) d = Math.sqrt((p.x - a.x) * (p.x - a.x) + (p.y - a.y) * (p.y - a.y));
+                else d = Math.abs(dy * (p.x - a.x) - dx * (p.y - a.y)) / den;
+                if (d > maxD) { maxD = d; maxI = i; }
+            }
+            if (maxD > epsM) { keep[maxI] = true; stack.push([i0, maxI], [maxI, i1]); }
+        }
+        var out = [];
+        for (var k = 0; k < n; k++) if (keep[k]) out.push(pts[k]);
+        return out;
+    }
+
+    function _r6(v) { return Math.round(v * 1e6) / 1e6; }
+
+    // Pojednostavi + zaokruži na 6 decimala (≈8 cm — 50× finije od samog GPS-a)
+    // i GARANTUJ da JSON stane u jednu Sheets ćeliju: ako ne stane, udvostruči
+    // prag i probaj ponovo. Douglas-Peucker monotono smanjuje broj tačaka pa se
+    // petlja uvijek zaustavi. Time prekoračenje limita sa našeg klijenta
+    // postaje nemoguće (server ipak ima svoju branu — _sjekChunkPoints).
+    function _sjekPackPoints(latlngs) {
+        if (!latlngs || latlngs.length < 2) return null;
+        var lat0 = latlngs[0][0], lng0 = latlngs[0][1];
+        var xy = latlngs.map(function(ll) {
+            var p = _toLocalXY(ll[0], ll[1], lat0, lng0);
+            p.ll = ll;
+            return p;
+        });
+        var eps = SJEK_SIMPLIFY_M;
+        for (var guard = 0; guard < 12; guard++) {
+            var simp = _dpSimplifyXY(xy, eps);
+            var out = simp.map(function(p) { return [_r6(p.ll[0]), _r6(p.ll[1])]; });
+            var json = JSON.stringify(out);
+            if (json.length <= SJEK_MAX_JSON || out.length <= 2) {
+                return { points: out, bytes: json.length, eps: eps, sirovo: latlngs.length };
+            }
+            eps *= 2;
+        }
+        return {
+            points: [[_r6(lat0), _r6(lng0)],
+                     [_r6(latlngs[latlngs.length - 1][0]), _r6(latlngs[latlngs.length - 1][1])]],
+            bytes: 0, eps: eps, sirovo: latlngs.length
+        };
+    }
+
+    // ---- Lokalno skladište: SAMO moje linije (tuđe žive u cache_sjek_linije_*) ----
+    function _sjekMojeKey()  { return 'mapa_radnika_sjek_moje_'  + (_currentUserObj().username || 'anon'); }
+    function _sjekQueueKey() { return 'mapa_radnika_sjek_queue_' + (_currentUserObj().username || 'anon'); }
+    function _loadSjekMoje() {
+        try { return JSON.parse(localStorage.getItem(_sjekMojeKey()) || '[]') || []; } catch (_) { return []; }
+    }
+    function _saveSjekMoje(list) {
+        // Kapa 300 — linija je ~2 KB, a localStorage je na starijim telefonima
+        // tijesan. Reže se najstarije VEĆ POSLANO; ono što čeka slanje se
+        // nikad ne briše (to bi bio tihi gubitak terenskog rada).
+        if (list.length > 300) {
+            var poslane = list.filter(function(l) { return !l.pendingSync; });
+            var cekaju  = list.filter(function(l) { return l.pendingSync; });
+            poslane.sort(function(a, b) { return String(b.kreirano).localeCompare(String(a.kreirano)); });
+            list = cekaju.concat(poslane.slice(0, Math.max(0, 300 - cekaju.length)));
+        }
+        try { localStorage.setItem(_sjekMojeKey(), JSON.stringify(list)); } catch (_) {}
+    }
+    function _loadSjekQueue() {
+        try { return JSON.parse(localStorage.getItem(_sjekQueueKey()) || '[]') || []; } catch (_) { return []; }
+    }
+    function _saveSjekQueue(q) {
+        try { localStorage.setItem(_sjekQueueKey(), JSON.stringify(q)); } catch (_) {}
+    }
+    function _sjekMarkSynced(uuid, rez) {
+        var list = _loadSjekMoje();
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].uuid !== uuid) continue;
+            list[i].pendingSync = false;
+            delete list[i].syncError;
+            if (rez && rez.duzinaM) list[i].duzinaM = rez.duzinaM;
+            break;
+        }
+        _saveSjekMoje(list);
+    }
+    function _sjekMarkError(uuid, poruka) {
+        var list = _loadSjekMoje();
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].uuid !== uuid) continue;
+            list[i].pendingSync = false;
+            list[i].syncError = String(poruka || '').substring(0, 80);
+            break;
+        }
+        _saveSjekMoje(list);
+    }
+
+    // ---- Povlačenje tuđih linija ----
+    // NAMJERNO ne koristi fetchWithCache: getSmartCacheTTL (js/app.js) petkom
+    // poslije 9h i vikendom keširа "do ponedjeljka 6:30", pa se linija koju je
+    // kolega ofarbao danas ne bi vidjela do ponedjeljka. Ovdje treba svježina
+    // mjerena minutama, ne danima — otud vlastiti keš od 5 minuta.
+    function _sjekCacheKey() { return 'cache_sjek_linije_' + (_sjeceOdjelKey || 'SVE'); }
+    async function _fetchSjekLinije(force) {
+        if (!_sjeceOdjelKey) return { linije: [] }; // bez izabranog odjela ne povlačimo ništa
+        var kljuc = _sjekCacheKey();
+        var kes = null;
+        try { var raw = localStorage.getItem(kljuc); if (raw) kes = JSON.parse(raw); } catch (_) {}
+        if (!navigator.onLine) return kes ? kes.data : { linije: [] };
+        if (!force && kes && (Date.now() - kes.timestamp) < SJEK_TTL_MS) return kes.data;
+        try {
+            var url = buildApiUrl('get-sjekacke-linije', { odjelKey: _sjeceOdjelKey });
+            var r = await fetch(url, { signal: AbortSignal.timeout(30000) });
+            var data = await r.json();
+            if (data && data.linije) {
+                try { localStorage.setItem(kljuc, JSON.stringify({ data: data, timestamp: Date.now() })); } catch (_) {}
+                return data;
+            }
+            if (data && data.error) {
+                if (String(data.error).indexOf('Unknown path') !== -1) {
+                    _notify('showWarning', 'Server još nema podršku za ofarbane linije',
+                        'Administrator treba napraviti novo izdanje (deployment) Apps Script projekta.');
+                } else if (String(data.error).toLowerCase().indexOf('unauthorized') !== -1 &&
+                           typeof window._handleUnauthorized === 'function') {
+                    window._handleUnauthorized();
+                }
+            }
+            return kes ? kes.data : { linije: [] };
+        } catch (_) {
+            return kes ? kes.data : { linije: [] };
+        }
+    }
+
+    // Spoji moje (uklj. one koje čekaju slanje) i tuđe, dedupe po uuid-u —
+    // lokalna verzija pobjeđuje da se "⏳ čeka slanje" ne izgubi nakon što
+    // server vrati istu liniju.
+    function _sjekVisible() {
+        var out = [];
+        var vidjeni = {};
+        _loadSjekMoje().forEach(function(l) {
+            if (_sjeceOdjelKey && l.odjelKey !== _sjeceOdjelKey) return;
+            vidjeni[l.uuid] = true;
+            var kopija = {};
+            for (var k in l) if (Object.prototype.hasOwnProperty.call(l, k)) kopija[k] = l[k];
+            kopija.mine = true;
+            out.push(kopija);
+        });
+        (_sjekServerLinije || []).forEach(function(l) {
+            if (vidjeni[l.uuid]) return;
+            var kopija = {};
+            for (var k in l) if (Object.prototype.hasOwnProperty.call(l, k)) kopija[k] = l[k];
+            kopija.mine = (l.korisnik === (_currentUserObj().username || ''));
+            out.push(kopija);
+        });
+        out.sort(function(a, b) { return String(b.kreirano).localeCompare(String(a.kreirano)); });
+        return out;
+    }
+
+    // Stabilna boja po autoru — isti radnik uvijek ista boja na svim telefonima.
+    function _sjekBoja(korisnik) {
+        var h = 0, s = String(korisnik || '');
+        for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+        return SJEK_PALETTE[h % SJEK_PALETTE.length];
+    }
+
+    function _clearSjekLayers() {
+        _sjekLayers.forEach(function(l) { if (l && _map && _map.hasLayer(l)) _map.removeLayer(l); });
+        _sjekLayers = [];
+    }
+
+    function _drawSjekLinije() {
+        if (!_map) return;
+        if (!_sjekRenderer) _sjekRenderer = L.canvas({ pane: 'rmSjekPane' });
+        _clearSjekLayers();
+        var ja = _currentUserObj().username || '';
+        _sjekVisible().forEach(function(l, i) {
+            var pts = l.points || [];
+            if (pts.length < 2) { _sjekLayers.push(null); return; }
+            var boja = _sjekBoja(l.korisnik || ja);
+            var grupa = L.featureGroup();
+            // Bijeli "halo" ispod — bez njega tanka linija nestane na satelitskoj
+            // podlozi (isti obrazac kao _haloLayer kod granica odjela).
+            L.polyline(pts, { renderer: _sjekRenderer, color: '#ffffff', weight: 7, opacity: 0.75 }).addTo(grupa);
+            L.polyline(pts, {
+                renderer: _sjekRenderer, color: boja, weight: 4, opacity: 0.95,
+                dashArray: l.pendingSync ? '2 6' : null   // isprekidano = još nije poslano
+            }).addTo(grupa);
+
+            var kad = l.kreirano ? new Date(l.kreirano).toLocaleString('bs-BA') : '?';
+            var duz = _fmtDistanceM(l.duzinaM || 0);
+            var ko  = l.radnik || l.korisnik || '?';
+            grupa.bindTooltip(
+                (l.pendingSync ? '⏳ ' : '🎨 ') +
+                (l.brojLinije ? 'Linija ' + l.brojLinije + ' · ' : '') +
+                _esc(ko) + ' · ' + duz,
+                { sticky: true, className: 'karta-tooltip' }
+            );
+            grupa.bindPopup(
+                '<div class="rm-tacka-popup">' +
+                '<div class="rm-tacka-popup-title">🎨 ' + _esc(l.naziv || 'Ofarbana linija') + '</div>' +
+                '<div style="font-size:12px;color:#4b5563;margin-bottom:8px;">' +
+                '👤 ' + _esc(ko) + '<br>📅 ' + _esc(kad) + '<br>📏 ' + duz +
+                ' · ' + (pts.length) + ' tačaka' +
+                (l.pendingSync ? '<br>⏳ Čeka slanje na server' : '') +
+                (l.syncError ? '<br>⚠️ ' + _esc(l.syncError) : '') +
+                '</div>' +
+                (l.mine && !l.pendingSync
+                    ? '<button type="button" class="rm-tacka-popup-delete" onclick="mapaRadnikaDeleteOfarbana(' + i + ')">🗑️ Obriši</button>'
+                    : '') +
+                '</div>'
+            );
+            _bindStavkaPopupClick(grupa);
+            grupa.addTo(_map);
+            _sjekLayers.push(grupa);
+        });
+    }
+
+    async function _restoreSjekLinije(force) {
+        if (!_sjeceOdjelKey) { _sjekServerLinije = []; _clearSjekLayers(); return; }
+        var data = await _fetchSjekLinije(force);
+        _sjekServerLinije = (data && data.linije) || [];
+        _drawSjekLinije();
+        _renderStavke();
+    }
+    window.mapaRadnikaOsvjeziSjekackeLinije = function() {
+        if (!_sjeceOdjelKey) { _notify('showWarning', 'Prvo izaberite odjel.'); return; }
+        var st = document.getElementById('sjek-status');
+        if (st) st.textContent = '⏳ Osvježavam...';
+        _restoreSjekLinije(true).then(function() {
+            if (st) st.textContent = _sjekVisible().length + ' linija za odjel ' + (_sjeceOdjelLabel || '');
+        });
+    };
+
+    // ---- Red čekanja (offline) ----
+    // Radnik farba u šumi bez signala — bez ovoga bi cjelodnevni rad nestao
+    // (kao što se dešava kod submitSjeca, koji offline samo baci "Failed to
+    // fetch"). Linija se UVIJEK prvo snimi lokalno, pa se šalje kad ima mreže.
+    var _sjekDraining = false;
+    async function _drainSjekQueue() {
+        if (_sjekDraining || !navigator.onLine) return;
+        var red = _loadSjekQueue();
+        if (!red.length) return;
+        _sjekDraining = true;
+        var poslato = 0;
+        try {
+            while (red.length) {
+                var stavka = red[0];
+                var moje = _loadSjekMoje();
+                var linija = null;
+                for (var i = 0; i < moje.length; i++) { if (moje[i].uuid === stavka.uuid) { linija = moje[i]; break; } }
+                if (!linija) { red.shift(); _saveSjekQueue(red); continue; } // ručno obrisana
+
+                var rez = null;
+                try {
+                    var r = await fetch(buildApiUrl('add-sjekacka-linija'), {
+                        method: 'POST',
+                        // text/plain => JEDNOSTAVAN zahtjev, bez CORS preflighta
+                        // (doOptions u Apps Scriptu je no-op i ne bi ga preživio).
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({
+                            uuid: linija.uuid, odjelKey: linija.odjelKey,
+                            odjelLabel: linija.odjelLabel, brojLinije: linija.brojLinije,
+                            naziv: linija.naziv, kreirano: linija.kreirano, points: linija.points
+                        })
+                    });
+                    rez = await r.json();
+                } catch (e) {
+                    // Mreža pukla — red OSTAJE netaknut, pokušaćemo kasnije.
+                    stavka.tries = (stavka.tries || 0) + 1;
+                    stavka.lastErr = String((e && e.message) || e);
+                    stavka.lastTry = Date.now();
+                    _saveSjekQueue(red);
+                    break;
+                }
+                if (rez && rez.success) {
+                    _sjekMarkSynced(linija.uuid, rez);
+                    poslato++;
+                    red.shift(); _saveSjekQueue(red);
+                } else {
+                    // Server je ODGOVORIO ali odbio (validacija/ovlaštenje) —
+                    // ponavljanje nikad neće uspjeti, pa ne blokiramo red zauvijek.
+                    var greska = (rez && rez.error) || 'Nepoznata greška';
+                    if (String(greska).indexOf('Unknown path') !== -1) {
+                        _notify('showWarning', 'Server još nema podršku za ofarbane linije',
+                            'Administrator treba napraviti novo izdanje (deployment). Linija je sačuvana i poslaće se kasnije.');
+                        break; // ovo NIJE greška linije — ostavi u redu za poslije
+                    }
+                    _sjekMarkError(linija.uuid, greska);
+                    red.shift(); _saveSjekQueue(red);
+                }
+            }
+        } finally {
+            _sjekDraining = false;
+        }
+        if (poslato) {
+            _notify('showSuccess', 'Ofarbane linije poslane', poslato + ' linija je stiglo na server.');
+            _restoreSjekLinije(true);
+        } else {
+            _drawSjekLinije();
+            _renderStavke();
+        }
+    }
+
+    // ---- Auto-detekcija odjela iz GPS-a ----
+    // Radnik već stoji u odjelu — nema razloga da ga traži klikom po mapi.
+    // Koristi isti even-odd test (_pointInRings) kao generisanje linija.
+    window.mapaRadnikaSjeceOdjelPoLokaciji = function() {
+        if (!navigator.geolocation) { _notify('showError', 'Vaš uređaj ne podržava geolokaciju.'); return; }
+        if (!_geojson) { _notify('showWarning', 'Karta odjela još nije učitana.'); return; }
+        var st = document.getElementById('sjek-status');
+        if (st) st.textContent = '⏳ Tražim lokaciju...';
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            var lat = pos.coords.latitude, lng = pos.coords.longitude;
+            var nadjen = null;
+            for (var i = 0; i < _geojson.features.length && !nadjen; i++) {
+                var f = _geojson.features[i];
+                var k = _featureKeys(f);
+                var collected = _collectOdjelRingsXY(k.lk);
+                if (!collected) continue;
+                var p = _toLocalXY(lat, lng, collected.lat0, collected.lng0);
+                if (_pointInRings(p, collected.ringsXY)) {
+                    nadjen = { key: k.lk, label: String((f.properties || {}).odjel || (f.properties || {}).name || k.lk) };
+                }
+            }
+            if (!nadjen) {
+                if (st) st.textContent = '';
+                _notify('showWarning', 'Niste unutar nijednog odjela', 'Izaberite odjel ručno klikom na mapu.');
+                return;
+            }
+            _sjeceOdjelKey = nadjen.key;
+            _sjeceOdjelLabel = nadjen.label;
+            _updateSjecePanel();
+            if (st) st.textContent = '📍 Odjel ' + nadjen.label;
+            _restoreSjekLinije(true);
+        }, function() {
+            if (st) st.textContent = '';
+            _notify('showError', 'Nije moguće dobiti trenutnu lokaciju.');
+        }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 });
+    };
+
+    // Nađi broj plan-linije najbliže datoj tački (radnici govore "linija 5").
+    function _najblizaPlanLinija(ll) {
+        if (!_sjeceLines.length) return '';
+        var najbolji = '', najD = Infinity;
+        _sjeceLines.forEach(function(line) {
+            (line.segments || []).forEach(function(seg) {
+                seg.forEach(function(p) {
+                    var d = _distM([ll[0], ll[1]], [p.lat, p.lng]);
+                    if (d < najD) { najD = d; najbolji = line.index; }
+                });
+            });
+        });
+        return najD < 60 ? najbolji : ''; // dalje od 60 m — ne nagađaj
+    }
+
+    // ---- Modal za naziv, pa snimanje ----
+    window.mapaRadnikaStartSjekackoSnimanje = function() {
+        if (_recording) {
+            _notify('showWarning', 'Snimanje traga je u toku', 'Prvo završite snimanje traga.');
+            return;
+        }
+        if (_sjekRecording) { _notify('showWarning', 'Snimanje linije je već u toku.'); return; }
+        if (!_sjeceOdjelKey) { _notify('showWarning', 'Prvo izaberite odjel.'); return; }
+        if (!navigator.geolocation) { _notify('showError', 'Vaš uređaj ne podržava geolokaciju.'); return; }
+        window.mapaRadnikaCloseSjecePanel();
+        var modal = document.getElementById('sjek-name-modal');
+        var input = document.getElementById('sjek-name-input');
+        var broj  = document.getElementById('sjek-broj-linije-input');
+        var datum = document.getElementById('sjek-datum-prikaz');
+        var sada = new Date();
+        var podrazumijevano = 'Odjel ' + (_sjeceOdjelLabel || '?') + ' ' +
+            sada.toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' });
+        if (!modal || !input) { _sjekPendingNaziv = podrazumijevano; _sjekPendingBroj = ''; _startSjek(); return; }
+        input.value = podrazumijevano;
+        if (broj) broj.value = '';
+        if (datum) datum.textContent = '📅 ' + sada.toLocaleString('bs-BA') + ' · odjel ' + (_sjeceOdjelLabel || '?');
+        modal.classList.add('show');
+        setTimeout(function() { input.focus(); input.select(); }, 50);
+    };
+    window.closeSjekNameModal = function() {
+        var modal = document.getElementById('sjek-name-modal');
+        if (modal) modal.classList.remove('show');
+    };
+    window.confirmStartSjek = function() {
+        var input = document.getElementById('sjek-name-input');
+        var broj  = document.getElementById('sjek-broj-linije-input');
+        _sjekPendingNaziv = (input && input.value.trim()) || ('Odjel ' + (_sjeceOdjelLabel || '?'));
+        _sjekPendingBroj = (broj && broj.value.trim()) || '';
+        window.closeSjekNameModal();
+        _startSjek();
+    };
+
+    function _startSjek() {
+        _sjekPoints = [];
+        _sjekUuid = _sjekUuidNovi();
+        _sjekStartIso = new Date().toISOString();
+        _sjekOdbaceno = 0;
+        _sjekZadnjaAcc = null;
+        if (_sjekDrawLayer) { _map.removeLayer(_sjekDrawLayer); _sjekDrawLayer = null; }
+        _gpsSubscribe('sjekacka', _onSjekPosition, _handleSjekGpsError);
+        _sjekRecording = true;
+        _sjekPaused = false;
+        _sjekActiveMs = 0;
+        _sjekSegmentStartTs = Date.now();
+        _hideTragoviMenu();
+        _openTragRecordingModal();
+        _setRecBarLabel('🎨 Odjel ' + (_sjeceOdjelLabel || '?'));
+        _sjekWakeLockOn();
+    }
+
+    function _onSjekPosition(pos) {
+        _updateLocDisplay(pos);
+        var acc = pos.coords.accuracy;
+        _sjekZadnjaAcc = (typeof acc === 'number') ? Math.round(acc) : null;
+        // Loš fix bi iskrivio geometriju linije — odbaci ga, ali PRIKAŽI
+        // preciznost u traci snimanja da radnik zna zašto tačke ne rastu
+        // (pod gustom krošnjom to zna trajati). Tiho odbacivanje bi izgledalo
+        // kao da aplikacija ne radi.
+        if (typeof acc === 'number' && acc > SJEK_MAX_ACC_M) { _sjekOdbaceno++; return; }
+        var ll = [pos.coords.latitude, pos.coords.longitude];
+        var now = Date.now();
+        var last = _sjekPoints[_sjekPoints.length - 1];
+        if (last) {
+            var moved = _distM(last.ll, ll);
+            var elapsed = now - last.t;
+            if (moved < SJEK_MIN_DIST_M && elapsed < SJEK_HEARTBEAT_MS) return;
+        }
+        _sjekPoints.push({ ll: ll, t: now, acc: _sjekZadnjaAcc });
+        var latlngs = _sjekPoints.map(function(p) { return p.ll; });
+        if (!_sjekDrawLayer) {
+            _sjekDrawLayer = L.polyline(latlngs, { color: '#16a34a', weight: 5, opacity: 0.9 }).addTo(_map);
+        } else {
+            _sjekDrawLayer.setLatLngs(latlngs);
+        }
+    }
+
+    // NAMJERNO drugačije od _handleTragGpsError: snimljene tačke se NE BACAJU.
+    // Greška GPS-a (izgubljen signal pod krošnjama, povučena dozvola) samo
+    // PAUZIRA snimanje; sve ofarbano do tog trenutka ostaje i radnik može
+    // odmah pritisnuti "Završi" i sačuvati liniju.
+    function _handleSjekGpsError(err) {
+        console.error('[MapaRadnika] GPS greška pri snimanju ofarbane linije:', err);
+        if (!_sjekRecording || _sjekPaused) return;
+        _gpsUnsubscribe('sjekacka');
+        _sjekActiveMs += Date.now() - _sjekSegmentStartTs;
+        _sjekPaused = true;
+        var btn = document.getElementById('trag-recording-pause-btn');
+        var rec = document.getElementById('trag-recording-bar');
+        if (btn) btn.textContent = '▶️ Nastavi';
+        if (rec) rec.classList.add('paused');
+        _notify('showWarning', 'GPS prekinut', err && err.code === 1
+            ? 'Pristup lokaciji je odbijen — snimanje je pauzirano. Snimljeno do sada je sačuvano; možete odmah pritisnuti "Završi".'
+            : 'Izgubljen GPS signal — snimanje je pauzirano. Snimljeno do sada je sačuvano.');
+    }
+
+    function _pauseResumeSjek() {
+        if (!_sjekRecording) return;
+        var btn = document.getElementById('trag-recording-pause-btn');
+        var rec = document.getElementById('trag-recording-bar');
+        if (!_sjekPaused) {
+            _gpsUnsubscribe('sjekacka');
+            _sjekActiveMs += Date.now() - _sjekSegmentStartTs;
+            _sjekPaused = true;
+            if (btn) btn.textContent = '▶️ Nastavi';
+            if (rec) rec.classList.add('paused');
+        } else {
+            _sjekSegmentStartTs = Date.now();
+            _gpsSubscribe('sjekacka', _onSjekPosition, _handleSjekGpsError);
+            _sjekPaused = false;
+            if (btn) btn.textContent = '⏸️ Pauza';
+            if (rec) rec.classList.remove('paused');
+        }
+        _updateTragModalStats();
+    }
+
+    function _finishSjek() {
+        if (!_sjekRecording) return;
+        if (!_sjekPaused) _sjekActiveMs += Date.now() - _sjekSegmentStartTs;
+        _gpsUnsubscribe('sjekacka');
+        _sjekRecording = false;
+        _sjekPaused = false;
+        _closeTragRecordingModal();
+        _sjekWakeLockOff();
+        if (_sjekDrawLayer) { _map.removeLayer(_sjekDrawLayer); _sjekDrawLayer = null; }
+
+        var latlngs = _sjekPoints.map(function(p) { return p.ll; });
+        if (latlngs.length < 2) {
+            _notify('showWarning', 'Linija nije sačuvana',
+                'Snimljeno je manje od 2 upotrebljive tačke' +
+                (_sjekOdbaceno ? ' (' + _sjekOdbaceno + ' fixova odbačeno zbog slabog GPS signala).' : '.'));
+            _sjekPoints = [];
+            return;
+        }
+
+        var pack = _sjekPackPoints(latlngs);
+        if (!pack) { _notify('showError', 'Greška pri obradi linije.'); _sjekPoints = []; return; }
+
+        // Provjera da linija stvarno leži u izabranom odjelu — odjel se bira
+        // PRIJE snimanja, pa se lako desi da je ostao stari izbor.
+        var sredina = latlngs[Math.floor(latlngs.length / 2)];
+        var collected = _collectOdjelRingsXY(_sjeceOdjelKey);
+        var vanOdjela = false;
+        if (collected) {
+            var p = _toLocalXY(sredina[0], sredina[1], collected.lat0, collected.lng0);
+            vanOdjela = !_pointInRings(p, collected.ringsXY);
+        }
+
+        var spremi = function() {
+            var duzina = 0;
+            for (var i = 1; i < pack.points.length; i++) duzina += _distM(pack.points[i - 1], pack.points[i]);
+            var ja = _currentUserObj();
+            var linija = {
+                uuid: _sjekUuid,
+                odjelKey: _sjeceOdjelKey,
+                odjelLabel: _sjeceOdjelLabel || '',
+                brojLinije: _sjekPendingBroj,
+                korisnik: ja.username || '',
+                radnik: ja.fullName || ja.username || '',
+                naziv: _sjekPendingNaziv || 'Ofarbana linija',
+                kreirano: _sjekStartIso || new Date().toISOString(),
+                points: pack.points,
+                duzinaM: Math.round(duzina),
+                pendingSync: true
+            };
+            var moje = _loadSjekMoje();
+            moje.push(linija);
+            _saveSjekMoje(moje);
+            var red = _loadSjekQueue();
+            red.push({ uuid: linija.uuid, tries: 0 });
+            _saveSjekQueue(red);
+            _sjekPoints = [];
+            _drawSjekLinije();
+            _renderStavke();
+            _notify('showSuccess', 'Linija snimljena',
+                pack.points.length + ' tačaka · ' + _fmtDistanceM(duzina) +
+                (navigator.onLine ? ' · šaljem na server...' : ' · čeka mrežu za slanje'));
+            _drainSjekQueue();
+        };
+
+        if (vanOdjela) {
+            _showTragConfirm(
+                'Linija izgleda da je VAN odjela ' + (_sjeceOdjelLabel || '?') +
+                '. Je li odjel dobro izabran? Sačuvati ipak?',
+                spremi, { title: '⚠️ Provjera odjela', confirmLabel: 'Sačuvaj ipak' }
+            );
+        } else {
+            spremi();
+        }
+    }
+
+    // Ekran se gasi => GPS staje. Progresivno: gdje postoji Wake Lock API,
+    // drži ekran budnim dok traje snimanje.
+    var _sjekWakeLock = null;
+    function _sjekWakeLockOn() {
+        try {
+            if (navigator.wakeLock && navigator.wakeLock.request) {
+                navigator.wakeLock.request('screen').then(function(wl) { _sjekWakeLock = wl; }).catch(function() {});
+            }
+        } catch (_) {}
+    }
+    function _sjekWakeLockOff() {
+        try { if (_sjekWakeLock) { _sjekWakeLock.release(); _sjekWakeLock = null; } } catch (_) {}
+    }
+
+    window.mapaRadnikaDeleteOfarbana = function(index) {
+        var l = _sjekVisible()[index];
+        if (!l) return;
+        if (_map) _map.closePopup();
+        if (!l.mine) { _notify('showWarning', 'Liniju može obrisati samo radnik koji ju je snimio.'); return; }
+        if (l.pendingSync) {
+            // Još nije na serveru — briše se samo lokalno, zajedno iz reda čekanja.
+            _showTragConfirm('Obrisati liniju "' + (l.naziv || 'Ofarbana linija') + '" (još nije poslana)?', function() {
+                _saveSjekMoje(_loadSjekMoje().filter(function(x) { return x.uuid !== l.uuid; }));
+                _saveSjekQueue(_loadSjekQueue().filter(function(x) { return x.uuid !== l.uuid; }));
+                _drawSjekLinije();
+                _renderStavke();
+            });
+            return;
+        }
+        if (!navigator.onLine) { _notify('showWarning', 'Brisanje zahtijeva internet konekciju.'); return; }
+        _showTragConfirm('Obrisati liniju "' + (l.naziv || 'Ofarbana linija') + '"? Nestaće i kod ostalih radnika.', function() {
+            fetch(buildApiUrl('delete-sjekacka-linija', { uuid: l.uuid }), { signal: AbortSignal.timeout(30000) })
+                .then(function(r) { return r.json(); })
+                .then(function(rez) {
+                    if (rez && rez.success) {
+                        _saveSjekMoje(_loadSjekMoje().filter(function(x) { return x.uuid !== l.uuid; }));
+                        _notify('showSuccess', 'Linija obrisana');
+                        _restoreSjekLinije(true);
+                    } else {
+                        _notify('showError', 'Brisanje nije uspjelo', (rez && rez.error) || '');
+                    }
+                })
+                .catch(function() { _notify('showError', 'Brisanje nije uspjelo — provjerite konekciju.'); });
+        });
+    };
+
+    window.mapaRadnikaShareOfarbana = function(index) {
+        var l = _sjekVisible()[index];
+        if (!l || !l.points || l.points.length < 2) { _notify('showWarning', 'Linija nema dovoljno tačaka za izvoz.'); return; }
+        var naziv = l.naziv || 'Ofarbana linija';
+        _shareOrDownloadGpx(_safeFileName(naziv) + '.gpx', _gpxDoc(_gpxTrk(naziv, l.points, l.kreirano), naziv), naziv);
     };
 
     // ---- IZMJERI — udaljenost / površina ----
@@ -3157,12 +3833,41 @@
         var pad = function(n) { return (n < 10 ? '0' : '') + n; };
         return h > 0 ? (h + ':' + pad(m) + ':' + pad(s)) : (pad(m) + ':' + pad(s));
     }
+    // Traka snimanja je JEDNA (#trag-recording-bar) i opslužuje OBA snimanja
+    // (obični trag i ofarbanu sjekačku liniju) — nikad oba istovremeno, vidi
+    // _toggleTrag / mapaRadnikaStartSjekackoSnimanje. Ovaj akcesor vraća stanje
+    // aktivnog moda, da traka ne mora znati koji je od dva u toku.
+    function _recAktivno() {
+        if (_sjekRecording) return {
+            tacke: _sjekPoints.map(function(p) { return p.ll; }),
+            activeMs: _sjekActiveMs, paused: _sjekPaused, segStart: _sjekSegmentStartTs, sjek: true
+        };
+        if (_recording) return {
+            tacke: _currentTrackPoints,
+            activeMs: _tragActiveMs, paused: _tragPaused, segStart: _tragSegmentStartTs, sjek: false
+        };
+        return null;
+    }
+    function _setRecBarLabel(txt) {
+        var el = document.getElementById('trag-recording-label');
+        if (el) el.textContent = txt || '';
+    }
     function _updateTragModalStats() {
+        var st = _recAktivno();
+        if (!st) return;
         var elapsedEl = document.getElementById('trag-recording-elapsed');
         var distEl = document.getElementById('trag-recording-distance');
-        var ms = _tragActiveMs + (_tragPaused ? 0 : (Date.now() - _tragSegmentStartTs));
+        var accEl = document.getElementById('trag-recording-acc');
+        var ms = st.activeMs + (st.paused ? 0 : (Date.now() - st.segStart));
         if (elapsedEl) elapsedEl.textContent = _msToClockStr(ms);
-        if (distEl) distEl.textContent = _tragDistanceKm(_currentTrackPoints).toFixed(2).replace('.', ',') + ' km';
+        if (distEl) distEl.textContent = _tragDistanceKm(st.tacke).toFixed(2).replace('.', ',') + ' km';
+        // Preciznost se prikazuje samo pri snimanju linije — tamo se loši
+        // fixovi odbacuju, pa radnik mora vidjeti zašto tačke ne rastu.
+        if (accEl) {
+            accEl.textContent = (st.sjek && _sjekZadnjaAcc != null)
+                ? ('GPS ±' + _sjekZadnjaAcc + ' m' + (_sjekOdbaceno ? ' · ' + _sjekOdbaceno + '↓' : ''))
+                : '';
+        }
     }
     function _pauseResumeTrag() {
         if (!_recording) return;
@@ -3183,7 +3888,11 @@
         }
         _updateTragModalStats();
     }
-    window.mapaRadnikaPauseResumeTrag = _pauseResumeTrag;
+    // Dugmad na traci su zajednička za oba moda — usmjeri ih na aktivni.
+    window.mapaRadnikaPauseResumeTrag = function() {
+        if (_sjekRecording) return _pauseResumeSjek();
+        return _pauseResumeTrag();
+    };
 
     function _finishTrag() {
         if (!_recording) return;
@@ -3191,12 +3900,22 @@
         _closeTragRecordingModal();
         _stopTrag();
     }
-    window.mapaRadnikaFinishTrag = _finishTrag;
+    window.mapaRadnikaFinishTrag = function() {
+        if (_sjekRecording) return _finishSjek();
+        return _finishTrag();
+    };
 
     function _toggleTrag() {
         // Dok snimanje traje, upravljanje ide isključivo kroz modal
         // (Pauza/Nastavi/Završi) — ovo dugme na traci samo pokreće novo snimanje.
         if (_recording) return;
+        // Traka snimanja je jedna; dva paralelna snimanja iza nje značila bi da
+        // radnik drugo ne vidi niti može zaustaviti. Fizički je to ionako ista
+        // šetnja. Odbij glasno, ne tiho.
+        if (_sjekRecording) {
+            _notify('showWarning', 'Snimanje ofarbane linije je u toku', 'Prvo završite snimanje linije.');
+            return;
+        }
         _showTragNameModal();
     }
 
@@ -3403,6 +4122,9 @@
                     inner += _gpxTrk(_mjerenjeKratko(m).replace(/<[^>]*>/g, ''), pts, m.created); brojac++;
                 }
             });
+            _sjekVisible().forEach(function(l) {
+                if (l.points && l.points.length >= 2) { inner += _gpxTrk(l.naziv || 'Ofarbana linija', l.points, l.kreirano); brojac++; }
+            });
             if (!brojac) { _notify('showWarning', 'Nema terenskih podataka za izvoz.'); return; }
             var korisnik = _currentUserObj().fullName || _currentUserObj().username || 'radnik';
             var datum = new Date().toISOString().slice(0, 10);
@@ -3433,6 +4155,7 @@
         { id: 'foto',     label: '📷 Foto' },
         { id: 'povrsina', label: '✏️ Površine' },
         { id: 'sjece',    label: '📏 Sječe' },
+        { id: 'ofarbano', label: '🎨 Ofarbane' },
         { id: 'mjerenje', label: '📐 Mjerenja' },
         { id: 'doznaka',  label: '🌲 Doznaka' }
     ];
@@ -3536,6 +4259,26 @@
             });
         }
 
+        // Stvarno ofarbane linije — PRAVI niz (moje + tuđe za izabrani odjel),
+        // za razliku od 'sjece' iznad koji je jedan config red. Zato zaseban
+        // tip: dijeljenje 'sjece' bi slomilo idx ugovor na koji se oslanjaju
+        // svi dispečeri. 'edit' namjerno izostaje — preimenovanje nakon slanja
+        // tražilo bi još jedan endpoint, a "preimenovano samo na mom telefonu"
+        // je gore nego bez preimenovanja (naziv se bira prije snimanja).
+        _sjekVisible().forEach(function(l, i) {
+            out.push({
+                tip: 'ofarbano', idx: i, ikona: '🎨',
+                ime: (l.brojLinije ? 'Linija ' + l.brojLinije + ' — ' : '') + (l.naziv || 'Ofarbana linija'),
+                meta: _datumStr(l.kreirano) + ' · ' + _fmtDistanceM(l.duzinaM || 0) +
+                      ' · ' + (l.radnik || l.korisnik || '?') +
+                      (l.pendingSync ? ' · ⏳ čeka slanje' : '') +
+                      (l.syncError ? ' · ⚠️ ' + l.syncError : '') +
+                      (l.mine ? '' : ' · 👤 kolega'),
+                ts: l.kreirano ? new Date(l.kreirano).getTime() : 0,
+                edit: false, zoom: (l.points || []).length >= 2, share: true, del: !!l.mine
+            });
+        });
+
         return out;
     }
 
@@ -3556,7 +4299,10 @@
             (s.hiddenManually ? 'Prikaži na mapi' : 'Sakrij sa mape') + '">' + (s.hiddenManually ? '🙈' : '👁️') + '</button>';
         if (s.edit)  akcije += '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaEditStavka(\'' + s.tip + '\',' + s.idx + ')" aria-label="Preimenuj">✏️</button>';
         if (s.share) akcije += '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaShareStavka(\'' + s.tip + '\',' + s.idx + ')" aria-label="Podijeli">📤</button>';
-        akcije += '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeleteStavka(\'' + s.tip + '\',' + s.idx + ')" aria-label="Obriši">🗑️</button>';
+        // s.del je undefined za sve postojeće tipove (dugme se uvijek prikazuje,
+        // nema regresije) — eksplicitno false SAMO za tuđe ofarbane linije, koje
+        // se ne smiju moći obrisati (isti obrazac kao provjera na serveru).
+        if (s.del !== false) akcije += '<button type="button" class="rm-tragovi-delete" onclick="mapaRadnikaDeleteStavka(\'' + s.tip + '\',' + s.idx + ')" aria-label="Obriši">🗑️</button>';
         return '<div class="rm-tragovi-row">' +
             '<span class="rm-tragovi-row-info">' + s.ikona + ' ' + _esc(s.ime) +
             '<br><small>' + _esc(s.meta) + '</small></span>' +
@@ -3613,6 +4359,7 @@
         if (tip === 'foto')     return window.mapaRadnikaShareFoto(idx);
         if (tip === 'povrsina') return window.mapaRadnikaSharePoligon(idx);
         if (tip === 'mjerenje') return window.mapaRadnikaShareMjerenje(idx);
+        if (tip === 'ofarbano') return window.mapaRadnikaShareOfarbana(idx);
     };
     window.mapaRadnikaDeleteStavka = function(tip, idx) {
         if (tip === 'trag')     return window.mapaRadnikaDeleteTrag(idx);
@@ -3622,6 +4369,7 @@
         if (tip === 'mjerenje') return window.mapaRadnikaDeleteMjerenje(idx);
         if (tip === 'sjece')    return window.mapaRadnikaUkloniSjeceLinije();
         if (tip === 'doznaka')  return window.mapaRadnikaDeleteDoznaka(idx);
+        if (tip === 'ofarbano') return window.mapaRadnikaDeleteOfarbana(idx);
     };
     window.mapaRadnikaZoomStavka = async function(tip, idx) {
         if (!_map) return;
@@ -3632,6 +4380,7 @@
         else if (tip === 'mjerenje') lyr = _mjerenjeLayers[idx];
         else if (tip === 'sjece')    lyr = _sjeceLayers.length ? L.featureGroup(_sjeceLayers) : null;
         else if (tip === 'doznaka')  lyr = _doznakaLayerGroups[idx];
+        else if (tip === 'ofarbano') lyr = _sjekLayers[idx];
         else if (tip === 'tacka') {
             var t = _loadSavedTacke()[idx];
             if (t) ll = [t.lat, t.lng];
@@ -3756,6 +4505,7 @@
             menu.style.bottom = _bottomStackOffset(true) + 'px';
             _stavkeFotoCache = null; // svježe čitanje IndexedDB-a pri svakom otvaranju
             _renderStavke();
+            _drainSjekQueue(); // radnik gleda spisak — dobar trenutak za pokušaj slanja
         }
         menu.classList.toggle('hidden', !willShow);
     }
@@ -3918,6 +4668,11 @@
             // poligona nakon svakog redraw-a.
             _map.createPane('rmDoznakaPane');
             _map.getPane('rmDoznakaPane').style.zIndex = 440; // iznad overlayPane(400), ispod rmHeadingPane(450)
+            // Isti razlog i za stvarno ofarbane sjekačke linije (canvas
+            // renderer, _drawSjekLinije): moraju stajati IZNAD generisanih
+            // plan-linija, koje su u dijeljenom SVG rendereru overlayPane-a.
+            _map.createPane('rmSjekPane');
+            _map.getPane('rmSjekPane').style.zIndex = 435; // iznad overlayPane(400), ispod rmDoznakaPane(440)
             L.control.zoom({ position: 'bottomleft' }).addTo(_map);
             _map.on('moveend', _saveMapView);
             _osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -4076,6 +4831,11 @@
             // ponovo izračuna, ne čuvamo je samu). Mora ići NAKON _renderLayer
             // jer zavisi od _geojson (učitanog u _loadGeojson() iznad).
             _restoreSjeceIfSaved();
+            // Stvarno ofarbane linije (server) — isto zavisi od _geojson jer
+            // se crtaju za odjel vraćen iz sačuvane konfiguracije. Red čekanja
+            // se prazni pri svakom otvaranju mape (radnik se vratio u signal).
+            _restoreSjekLinije();
+            _drainSjekQueue();
 
             if (status) {
                 var sufiks = isPoslovodja ? ' (vaša radilišta)' : '';
@@ -4099,7 +4859,7 @@
     // ovaj bug je prijavljen za "Nova tačka"). VisualViewport API javlja
     // stvarnu vidljivu visinu; ograničimo overlay na nju dok je otvoren, pa
     // "centrirano" znači centrirano u ONOME što se stvarno vidi.
-    var INPUT_MODAL_IDS = ['tacka-name-modal', 'trag-name-modal', 'poligon-name-modal', 'foto-name-modal', 'stavka-edit-modal', 'doznaka-name-modal'];
+    var INPUT_MODAL_IDS = ['tacka-name-modal', 'trag-name-modal', 'poligon-name-modal', 'foto-name-modal', 'stavka-edit-modal', 'doznaka-name-modal', 'sjek-name-modal'];
     function _resizeInputModalsForKeyboard() {
         if (!window.visualViewport) return;
         var h = window.visualViewport.height;
@@ -4124,6 +4884,12 @@
                 _resizeInputModalsForKeyboard();
             }
         }).observe(el, { attributes: true, attributeFilter: ['class'] });
+    });
+
+    // Radnik je bio bez signala, sad ga ima — pokušaj poslati sve što čeka
+    // u redu (2 s odgode: 'online' zna okinuti prije nego veza stvarno proradi).
+    window.addEventListener('online', function() {
+        setTimeout(function() { _drainSjekQueue(); }, 2000);
     });
 
     console.log('[MapaRadnika] modul učitan');
