@@ -912,7 +912,7 @@
     // hvataju klik umjesto onoga ispod — zato se korisnikovi slojevi moraju
     // vratiti na vrh, uvijek nakon svakog ponovnog iscrtavanja poligona odjela.
     function _bringUserLayersToFront() {
-        [_savedPoligonLayers, _savedTrackLayers, _sjeceLayers, _mjerenjeLayers, _tackaMarkers].forEach(function(arr) {
+        [_savedPoligonLayers, _savedTrackLayers, _sjeceLayers, _mjerenjeLayers, _tackaMarkers, _doznakaMarkers].forEach(function(arr) {
             (arr || []).forEach(function(l) { if (l && l.bringToFront && _map && _map.hasLayer(l)) l.bringToFront(); });
         });
     }
@@ -1030,6 +1030,17 @@
     var _tackaPicking = false;
     var _pendingTackaLatLng = null;
     var _tackaMarkers = [];
+
+    // ---- DOZNAČENA STABLA — učitavaju se iz KML fajla (dugme u "Tragovi"
+    // meniju), čuvaju se po korisniku (isti localStorage obrazac kao tragovi/
+    // tačke/površine). Svaki upload je JEDAN imenovani sloj (može ih biti
+    // više, npr. po odjelu). Namjerno vidljivi SAMO na krupnoj razmjeri (vidi
+    // _updateDoznakaVisibility niže) — pri stotinama stabala po odjelu bi na
+    // sitnoj razmjeri markeri prekrili cijelu mapu.
+    var _doznakaMarkers = [];      // flat niz L.circleMarker preko SVIH sačuvanih slojeva (bringToFront)
+    var _doznakaLayerGroups = [];  // L.featureGroup po sačuvanom sloju — idx poravnat sa _loadSavedDoznaka()
+    var _pendingDoznakaPoints = null;
+    var _pendingDoznakaDefaultName = '';
 
     function _tackaStorageKey() {
         return 'mapa_radnika_tacke_' + (_currentUserObj().username || 'anon');
@@ -1156,6 +1167,163 @@
         });
         _bringUserLayersToFront();
     }
+
+    // ---- DOZNAČENA STABLA — storage (isti obrazac kao tačke/tragovi) ----
+    function _doznakaStorageKey() {
+        return 'mapa_radnika_doznaka_' + (_currentUserObj().username || 'anon');
+    }
+    function _loadSavedDoznaka() {
+        try {
+            var raw = localStorage.getItem(_doznakaStorageKey());
+            return raw ? JSON.parse(raw) : [];
+        } catch (_) { return []; }
+    }
+    function _saveDoznaka(list) {
+        try { localStorage.setItem(_doznakaStorageKey(), JSON.stringify(list)); } catch (_) {}
+    }
+
+    // Parsira KML (goli DOMParser, bez eksterne biblioteke) — vadi samo
+    // Point Placemark-ove (doznačena stabla su pojedinačne tačke), ignoriše
+    // eventualne LineString/Polygon geometrije u istom fajlu. Ne podržava KML
+    // sa eksplicitnim namespace prefiksom (npr. <kml:Placemark>) — u praksi
+    // gotovo svi izvozi (Google Earth, QGIS, terenski GPS alati) koriste
+    // podrazumijevani namespace bez prefiksa, pa getElementsByTagName radi.
+    function _parseKmlPoints(xmlText) {
+        var doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+        if (doc.getElementsByTagName('parsererror').length) return null;
+        var placemarks = doc.getElementsByTagName('Placemark');
+        var points = [];
+        for (var i = 0; i < placemarks.length; i++) {
+            var pm = placemarks[i];
+            var pointEls = pm.getElementsByTagName('Point');
+            if (!pointEls.length) continue;
+            var coordEl = pointEls[0].getElementsByTagName('coordinates')[0];
+            if (!coordEl) continue;
+            var parts = coordEl.textContent.trim().split(',');
+            var lng = parseFloat(parts[0]);
+            var lat = parseFloat(parts[1]);
+            if (isNaN(lat) || isNaN(lng)) continue;
+            var nameEl = pm.getElementsByTagName('name')[0];
+            points.push({ lat: lat, lng: lng, name: nameEl ? nameEl.textContent.trim() : '' });
+        }
+        return points;
+    }
+
+    window.mapaRadnikaStartDoznaka = function() {
+        _hideTragoviMenu();
+        var input = document.getElementById('radnik-mapa-doznaka-input');
+        if (input) input.click();
+    };
+    window.mapaRadnikaDoznakaFileSelected = function(e) {
+        var file = e.target.files && e.target.files[0];
+        e.target.value = ''; // reset — isti fajl može ponovo okinuti change ako se opet odabere
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function() {
+            var points;
+            try { points = _parseKmlPoints(String(reader.result)); }
+            catch (err) { points = null; }
+            if (!points) { _notify('showError', 'Greška pri čitanju KML fajla', 'Fajl nije ispravan KML.'); return; }
+            if (!points.length) { _notify('showWarning', 'KML ne sadrži nijednu tačku (stablo).'); return; }
+            _pendingDoznakaPoints = points;
+            _pendingDoznakaDefaultName = file.name.replace(/\.kml$/i, '') || 'Doznaka';
+            _showDoznakaNameModal(points.length);
+        };
+        reader.onerror = function() { _notify('showError', 'Greška pri čitanju fajla.'); };
+        reader.readAsText(file);
+    };
+    function _showDoznakaNameModal(count) {
+        var modal = document.getElementById('doznaka-name-modal');
+        var input = document.getElementById('doznaka-name-input');
+        var info = document.getElementById('doznaka-name-info');
+        if (!modal || !input) { _saveDoznakaNow(_pendingDoznakaDefaultName); return; }
+        input.value = _pendingDoznakaDefaultName;
+        if (info) info.textContent = '🌲 ' + count + ' stabala učitano · vidljivo na mapi ispod razmjere 1:' + DOZNAKA_MAX_SCALE;
+        modal.classList.add('show');
+        setTimeout(function() { input.focus(); input.select(); }, 50);
+    }
+    window.closeDoznakaNameModal = function() {
+        var modal = document.getElementById('doznaka-name-modal');
+        if (modal) modal.classList.remove('show');
+        _pendingDoznakaPoints = null;
+    };
+    window.confirmSaveDoznaka = function() {
+        var input = document.getElementById('doznaka-name-input');
+        var name = (input && input.value.trim()) || _pendingDoznakaDefaultName || 'Doznaka';
+        var modal = document.getElementById('doznaka-name-modal');
+        if (modal) modal.classList.remove('show');
+        _saveDoznakaNow(name);
+    };
+    function _saveDoznakaNow(name) {
+        if (!_pendingDoznakaPoints || !_pendingDoznakaPoints.length) return;
+        var list = _loadSavedDoznaka();
+        list.push({ name: name, created: new Date().toISOString(), points: _pendingDoznakaPoints });
+        _saveDoznaka(list);
+        var count = _pendingDoznakaPoints.length;
+        _pendingDoznakaPoints = null;
+        _drawSavedDoznaka();
+        _renderStavke();
+        var visible = _currentMapScale() <= DOZNAKA_MAX_SCALE;
+        _notify('showSuccess', 'Doznačena stabla sačuvana',
+            count + ' stabala' + (visible ? '' : ' — približite mapu ispod razmjere 1:' + DOZNAKA_MAX_SCALE + ' da ih vidite'));
+    }
+    window.mapaRadnikaDeleteDoznaka = function(index) {
+        var list = _loadSavedDoznaka();
+        var d = list[index];
+        if (!d) return;
+        if (_map) _map.closePopup();
+        _showTragConfirm('Obrisati "' + (d.name || 'Doznačena stabla') + '" (' + (d.points || []).length + ' stabala)?', function() {
+            var fresh = _loadSavedDoznaka();
+            fresh.splice(index, 1);
+            _saveDoznaka(fresh);
+            _drawSavedDoznaka();
+            _renderStavke();
+        });
+    };
+
+    // Imenilac razmjere (1:X) — sloj je vidljiv kad je trenutna razmjera <=
+    // ovoga (krupnije/detaljnije od 1:5000, npr. 1:2000). Standardna Web
+    // Mercator formula za rezoluciju (m/piksel po zumu, zavisi od geografske
+    // širine preko cos(lat)), konvertovana u razmjeru preko OGC standardnog
+    // piksela (0.28mm) — isti pristup kao kod glavnih web-mapping servisa
+    // (Leaflet/OpenLayers/Esri) za prikaz "map scale". Računa se iz TRENUTNOG
+    // centra mape, ne fiksno po zumu, jer razmjera zavisi i od širine.
+    var DOZNAKA_MAX_SCALE = 5000;
+    function _currentMapScale() {
+        if (!_map) return Infinity;
+        var metersPerPixel = 156543.03392 * Math.cos(_map.getCenter().lat * Math.PI / 180) / Math.pow(2, _map.getZoom());
+        return metersPerPixel / 0.00028;
+    }
+    function _updateDoznakaVisibility() {
+        if (!_map || !_doznakaLayerGroups.length) return;
+        var visible = _currentMapScale() <= DOZNAKA_MAX_SCALE;
+        _doznakaLayerGroups.forEach(function(lg) {
+            if (!lg) return;
+            if (visible && !_map.hasLayer(lg)) lg.addTo(_map);
+            else if (!visible && _map.hasLayer(lg)) _map.removeLayer(lg);
+        });
+        if (visible) _bringUserLayersToFront();
+    }
+    function _drawSavedDoznaka() {
+        _doznakaLayerGroups.forEach(function(lg) { if (lg && _map.hasLayer(lg)) _map.removeLayer(lg); });
+        _doznakaLayerGroups = [];
+        _doznakaMarkers = [];
+        _loadSavedDoznaka().forEach(function(d) {
+            var lg = L.featureGroup();
+            (d.points || []).forEach(function(p) {
+                var safeName = String(p.name || 'Stablo').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                var marker = L.circleMarker([p.lat, p.lng], { radius: 5, color: '#15803d', weight: 2, fillColor: '#22c55e', fillOpacity: 0.9 })
+                    .bindTooltip(safeName, { permanent: false, direction: 'top', className: 'karta-tooltip' })
+                    .bindPopup('<div class="rm-tacka-popup"><div class="rm-tacka-popup-title">🌲 ' + safeName + '</div></div>');
+                _bindStavkaPopupClick(marker);
+                marker.addTo(lg);
+                _doznakaMarkers.push(marker);
+            });
+            _doznakaLayerGroups.push(lg);
+        });
+        _updateDoznakaVisibility();
+    }
+
     // ---- "EXPLORER" — vodi me do tačke BEZ rute po putu (za razliku od
     // "Vodi me do lokacije", koja crta stvarnu rutu preko OSRM/cestovne mreže).
     // Kroz šumu/vanputa nema smisla ionako pratiti cestu — umjesto toga: velika
@@ -3019,7 +3187,8 @@
         { id: 'foto',     label: '📷 Foto' },
         { id: 'povrsina', label: '✏️ Površine' },
         { id: 'sjece',    label: '📏 Sječe' },
-        { id: 'mjerenje', label: '📐 Mjerenja' }
+        { id: 'mjerenje', label: '📐 Mjerenja' },
+        { id: 'doznaka',  label: '🌲 Doznaka' }
     ];
 
     function _esc(s) {
@@ -3090,6 +3259,15 @@
                 meta: _datumStr(m.created) + (m.name ? ' · ' + vrijednost : ''),
                 ts: m.created ? new Date(m.created).getTime() : 0,
                 edit: true, zoom: (m.points || []).length >= 2, share: true
+            });
+        });
+
+        _loadSavedDoznaka().forEach(function(d, i) {
+            out.push({
+                tip: 'doznaka', idx: i, ikona: '🌲', ime: d.name || 'Doznačena stabla',
+                meta: _datumStr(d.created) + ' · ' + (d.points || []).length + ' stabala',
+                ts: d.created ? new Date(d.created).getTime() : 0,
+                edit: true, zoom: (d.points || []).length >= 1, share: false
             });
         });
 
@@ -3191,6 +3369,7 @@
         if (tip === 'povrsina') return window.mapaRadnikaDeletePoligon(idx);
         if (tip === 'mjerenje') return window.mapaRadnikaDeleteMjerenje(idx);
         if (tip === 'sjece')    return window.mapaRadnikaUkloniSjeceLinije();
+        if (tip === 'doznaka')  return window.mapaRadnikaDeleteDoznaka(idx);
     };
     window.mapaRadnikaZoomStavka = async function(tip, idx) {
         if (!_map) return;
@@ -3200,6 +3379,7 @@
         else if (tip === 'povrsina') lyr = _savedPoligonLayers[idx];
         else if (tip === 'mjerenje') lyr = _mjerenjeLayers[idx];
         else if (tip === 'sjece')    lyr = _sjeceLayers.length ? L.featureGroup(_sjeceLayers) : null;
+        else if (tip === 'doznaka')  lyr = _doznakaLayerGroups[idx];
         else if (tip === 'tacka') {
             var t = _loadSavedTacke()[idx];
             if (t) ll = [t.lat, t.lng];
@@ -3229,6 +3409,7 @@
         else if (tip === 'povrsina') trenutno = (_loadSavedPoligoni()[idx] || {}).name || '';
         else if (tip === 'mjerenje') trenutno = (_loadSavedMjerenja()[idx] || {}).name || '';
         else if (tip === 'foto')     trenutno = ((await _loadSavedFoto())[idx] || {}).name || '';
+        else if (tip === 'doznaka')  trenutno = (_loadSavedDoznaka()[idx] || {}).name || '';
         _stavkaEdit = { tip: tip, idx: idx };
         var modal = document.getElementById('stavka-edit-modal');
         var input = document.getElementById('stavka-edit-input');
@@ -3264,6 +3445,9 @@
         } else if (e.tip === 'foto') {
             var fo = await _loadSavedFoto(); if (!fo[e.idx]) return;
             fo[e.idx].name = novo; await _saveFoto(fo); _stavkeFotoCache = null; await _drawSavedFoto();
+        } else if (e.tip === 'doznaka') {
+            var dz = _loadSavedDoznaka(); if (!dz[e.idx]) return;
+            dz[e.idx].name = novo; _saveDoznaka(dz); _drawSavedDoznaka();
         }
         _renderStavke();
         _notify('showSuccess', 'Preimenovano', novo);
@@ -3498,6 +3682,7 @@
             // veće približeno) — vidi _updateLabelSizes.
             _map.on('zoomend', _updateLabelSizes);
             _map.on('zoomend', _updateTackaSizes);
+            _map.on('zoomend', _updateDoznakaVisibility);
             _updateLabelSizes();
             // Bez ovoga Leaflet hvata touch/scroll geste unutar panela kao
             // pan/zoom mape — skrolanje prstom kroz duži spisak sortimenata
@@ -3524,6 +3709,7 @@
             _drawSavedTacke();
             _drawSavedFoto();
             _drawSavedMjerenja();
+            _drawSavedDoznaka();
         }
         // Leaflet mora preračunati veličinu nakon što tab postane vidljiv
         setTimeout(function() { if (_map) _map.invalidateSize(); }, 100);
@@ -3651,7 +3837,7 @@
     // ovaj bug je prijavljen za "Nova tačka"). VisualViewport API javlja
     // stvarnu vidljivu visinu; ograničimo overlay na nju dok je otvoren, pa
     // "centrirano" znači centrirano u ONOME što se stvarno vidi.
-    var INPUT_MODAL_IDS = ['tacka-name-modal', 'trag-name-modal', 'poligon-name-modal', 'foto-name-modal', 'stavka-edit-modal'];
+    var INPUT_MODAL_IDS = ['tacka-name-modal', 'trag-name-modal', 'poligon-name-modal', 'foto-name-modal', 'stavka-edit-modal', 'doznaka-name-modal'];
     function _resizeInputModalsForKeyboard() {
         if (!window.visualViewport) return;
         var h = window.visualViewport.height;

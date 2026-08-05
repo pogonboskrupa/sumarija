@@ -3668,7 +3668,7 @@
                      mobilne tastature) postavi inline visina na stvarni vidljivi
                      viewport (vidi _resizeInputModalsForKeyboard, js/mapa-radnika.js),
                      sadržaj mora ostati unutar te visine bez izlaska ispod nje. */
-                  #tacka-name-modal .modal, #trag-name-modal .modal, #poligon-name-modal .modal, #stavka-edit-modal .modal {
+                  #tacka-name-modal .modal, #trag-name-modal .modal, #poligon-name-modal .modal, #stavka-edit-modal .modal, #doznaka-name-modal .modal {
                       max-height:100%; overflow-y:auto; box-sizing:border-box;
                   }
                   /* Status ispod "Izvanmrežni prikaz karte" (kad/koliko je skinuto) */
@@ -3682,7 +3682,7 @@
                      ekranu Mape odjela, pa se ovaj modal renderovao ISPOD njih
                      (nevidljivo/neklikabilno — pravi razlog "Snimi trag se ne
                      aktivira"). Podignuto iznad svega u toj mapi. */
-                  #trag-name-modal.show, #trag-confirm-modal.show, #poligon-name-modal.show, #tacka-name-modal.show, #foto-name-modal.show, #stavka-edit-modal.show { z-index:20000; }
+                  #trag-name-modal.show, #trag-confirm-modal.show, #poligon-name-modal.show, #tacka-name-modal.show, #foto-name-modal.show, #stavka-edit-modal.show, #doznaka-name-modal.show { z-index:20000; }
                   /* ---- Traka aktivnog snimanja traga (iznad donje trake) ---- */
                   .rm-rec-bar {
                       position:fixed; left:10px; right:10px; z-index:10650;
@@ -4244,6 +4244,9 @@
     <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaOpenMjerenje()">
         <span>📐</span><span>Izmjeri</span>
     </button>
+    <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartDoznaka()">
+        <span>🌲</span><span>Dodaj doznačena stabla</span>
+    </button>
     <div class="rm-tragovi-divider"></div>
     <!-- Objedinjena lista svih terenskih stavki (trag/tačka/foto/površina/
          sječačke linije/mjerenje) — podtabovi filtriraju po tipu, pretraga
@@ -4261,6 +4264,9 @@
 <!-- Skriveni file input — "capture=environment" otvara zadnju kameru direktno
      na mobilnom umjesto galerije. Klik pokreće JS (mapaRadnikaTakePhoto). -->
 <input type="file" id="radnik-mapa-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="mapaRadnikaPhotoSelected(event)" />
+<!-- Skriveni file input za KML sa doznačenim stablima (v1.4.111+) — klik
+     pokreće JS (mapaRadnikaStartDoznaka). -->
+<input type="file" id="radnik-mapa-doznaka-input" accept=".kml" style="display:none;" onchange="mapaRadnikaDoznakaFileSelected(event)" />
 <!-- Modal za ime fotografije — prikazuje se nakon slikanja/odabira fajla,
      prije čuvanja. Prikazuje i malu pregled sličicu. -->
 <div class="modal-overlay" id="foto-name-modal" onclick="if(event.target===this) closeFotoNameModal();">
@@ -4290,6 +4296,22 @@
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeTackaNameModal()">Otkaži</button>
             <button class="btn btn-primary" onclick="confirmSaveTacka()">Sačuvaj</button>
+        </div>
+    </div>
+</div>
+<!-- Modal za ime sloja doznačenih stabala — prikazuje se nakon učitavanja
+     KML fajla, prije čuvanja (isti obrazac kao tacka-name-modal). -->
+<div class="modal-overlay" id="doznaka-name-modal" onclick="if(event.target===this) closeDoznakaNameModal();">
+    <div class="modal" style="max-width:340px;">
+        <div class="modal-header"><div class="modal-title">🌲 Doznačena stabla</div></div>
+        <div class="modal-body">
+            <label style="display:block;font-size:12px;font-weight:600;color:#4b5563;margin-bottom:4px;">Ime sloja</label>
+            <input type="text" id="doznaka-name-input" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;" />
+            <div id="doznaka-name-info" style="font-size:12px;color:#6b7280;margin-top:8px;"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeDoznakaNameModal()">Otkaži</button>
+            <button class="btn btn-primary" onclick="confirmSaveDoznaka()">Sačuvaj</button>
         </div>
     </div>
 </div>
