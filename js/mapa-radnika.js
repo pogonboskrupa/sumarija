@@ -911,8 +911,13 @@
     // KASNIJE (kad stignu podaci, _renderLayer), pa završe IZNAD i onda oni
     // hvataju klik umjesto onoga ispod — zato se korisnikovi slojevi moraju
     // vratiti na vrh, uvijek nakon svakog ponovnog iscrtavanja poligona odjela.
+    // NAPOMENA: _doznakaMarkers namjerno NIJE u nizu ispod — ti markeri su na
+    // SVOM L.canvas() rendereru/pane-u (rmDoznakaPane, vidi _drawSavedDoznaka),
+    // pa bringToFront() preko granice canvas/SVG ne bi ništa uradio (isti
+    // razlog kao kod konusa smjera gledanja). Njihova vidljivost iznad odjel
+    // poligona garantovana je pane z-indexom, ne redosljedom ovdje.
     function _bringUserLayersToFront() {
-        [_savedPoligonLayers, _savedTrackLayers, _sjeceLayers, _mjerenjeLayers, _tackaMarkers, _doznakaMarkers].forEach(function(arr) {
+        [_savedPoligonLayers, _savedTrackLayers, _sjeceLayers, _mjerenjeLayers, _tackaMarkers].forEach(function(arr) {
             (arr || []).forEach(function(l) { if (l && l.bringToFront && _map && _map.hasLayer(l)) l.bringToFront(); });
         });
     }
@@ -1389,7 +1394,17 @@
         });
         if (anyVisible) _bringUserLayersToFront();
     }
+    // Stvarni KML-ovi iz terena znaju imati i preko 2000-2800 stabala u JEDNOM
+    // sloju (potvrđeno na fajlovima koje je poslovođa dodao) — toliko markera
+    // na Leaflet-ovom DIJELJENOM SVG rendereru (svaki marker = poseban DOM
+    // čvor) zna primjetno usporiti pomjeranje/zumiranje mape na slabijem
+    // telefonu. Doznaka zato koristi SVOJ L.canvas() renderer (jedan <canvas>
+    // umjesto hiljada SVG čvorova) — isti obrazac kao konus smjera gledanja
+    // (_drawHeadingCone). Klik/tooltip/popup i dalje rade normalno preko
+    // canvasa (Leaflet ugrađeno hit-testiranje), ništa se ne gubi.
+    var _doznakaCanvasRenderer = null;
     function _drawSavedDoznaka() {
+        if (!_doznakaCanvasRenderer) _doznakaCanvasRenderer = L.canvas({ pane: 'rmDoznakaPane' });
         _doznakaLayerGroups.forEach(function(lg) { if (lg && _map.hasLayer(lg)) _map.removeLayer(lg); });
         _doznakaLayerGroups = [];
         _doznakaMarkers = [];
@@ -1397,7 +1412,10 @@
             var lg = L.featureGroup();
             (d.points || []).forEach(function(p) {
                 var safeName = String(p.name || 'Stablo').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                var marker = L.circleMarker([p.lat, p.lng], { radius: 5, color: '#15803d', weight: 2, fillColor: '#22c55e', fillOpacity: 0.9 })
+                var marker = L.circleMarker([p.lat, p.lng], {
+                    renderer: _doznakaCanvasRenderer,
+                    radius: 5, color: '#15803d', weight: 2, fillColor: '#22c55e', fillOpacity: 0.9
+                })
                     .bindTooltip(safeName, { permanent: false, direction: 'top', className: 'karta-tooltip' })
                     .bindPopup('<div class="rm-tacka-popup"><div class="rm-tacka-popup-title">🌲 ' + safeName + '</div></div>');
                 _bindStavkaPopupClick(marker);
@@ -3745,6 +3763,14 @@
             // ostane iznad. Kreiran JEDNOM ovdje, ne lijeno u _drawHeadingCone.
             _map.createPane('rmHeadingPane');
             _map.getPane('rmHeadingPane').style.zIndex = 450; // iznad overlayPane(400), ispod markerPane(600)
+            // Zaseban pane za doznačena stabla (canvas renderer, vidi
+            // _drawSavedDoznaka) — isti razlog kao rmHeadingPane: canvas i
+            // SVG su odvojeni DOM čvorovi u istom overlayPane-u, pa
+            // .bringToFront() ne djeluje preko te granice; pane sa eksplicitnim
+            // z-indexom je jedini pouzdan način da stabla ostanu iznad odjel
+            // poligona nakon svakog redraw-a.
+            _map.createPane('rmDoznakaPane');
+            _map.getPane('rmDoznakaPane').style.zIndex = 440; // iznad overlayPane(400), ispod rmHeadingPane(450)
             L.control.zoom({ position: 'bottomleft' }).addTo(_map);
             _map.on('moveend', _saveMapView);
             _osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
