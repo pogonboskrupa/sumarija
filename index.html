@@ -1640,14 +1640,14 @@
                     <div class="rm-explorer-dir" id="radnik-mapa-explorer-dir"></div>
                     <button type="button" class="rm-explorer-compass-btn" id="radnik-mapa-explorer-compass-btn" onclick="mapaRadnikaEnableExplorerCompass()">🧭 Uključi kompas</button>
                 </div>
-                <!-- "Sječačke linije" panel — linije okomite na izohipse (niz
+                <!-- "Sjekačke linije" panel — linije okomite na izohipse (niz
                      padinu), na zadatom razmaku. Bez sinhronizacije: isti odjel +
                      isti azimut + isti razmak = identičan set linija na svakom
                      telefonu (dogovor na terenu). Vidi mapaRadnikaStartSjeceLinije
                      u js/mapa-radnika.js. -->
                 <div id="radnik-mapa-sjece-panel" class="rm-sjece-panel hidden">
                     <button type="button" class="rm-explorer-close" onclick="mapaRadnikaCloseSjecePanel()" aria-label="Zatvori">✕</button>
-                    <div class="rm-sjece-title">📏 Sječačke linije</div>
+                    <div class="rm-sjece-title">📏 Sjekačke linije</div>
                     <div class="rm-sjece-row">
                         <span class="rm-sjece-label">Odjel:</span>
                         <span id="sjece-odjel-label" class="rm-sjece-value">— (izaberite odjel)</span>
@@ -3632,7 +3632,7 @@
                       padding:7px 14px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;
                   }
                   .rm-explorer-compass-btn.hidden { display:none; }
-                  /* "Sječačke linije" panel — isti pozicioni obrazac kao .rm-explorer
+                  /* "Sjekačke linije" panel — isti pozicioni obrazac kao .rm-explorer
                      (kartica pri vrhu mape), ali svijetla pozadina (ima input polja,
                      tamna pozadina bi otežala čitanje teksta u input-ima na suncu). */
                   .rm-sjece-panel {
@@ -4239,7 +4239,7 @@
         <span>✏️</span><span>Označi površinu (završeno/ostalo/popraviti šumski red...)</span>
     </button>
     <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaStartSjeceLinije()">
-        <span>📏</span><span>Sječačke linije</span>
+        <span>📏</span><span>Sjekačke linije</span>
     </button>
     <button type="button" class="rm-tragovi-item" onclick="mapaRadnikaOpenMjerenje()">
         <span>📐</span><span>Izmjeri</span>

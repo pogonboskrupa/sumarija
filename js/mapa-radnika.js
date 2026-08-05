@@ -425,7 +425,7 @@
                     this.setStyle(recent ? { fillOpacity: 0.5, weight: 2.5 } : (radio ? { fillOpacity: 0.45, weight: 2.5 } : { fillOpacity: 0.08, weight: 1.8 }));
                 });
                 if (radio) radnikLayers.push(lyr);
-                // Klik se veže na SVAKI odjel (radio ili ne) — "Sječačke linije"
+                // Klik se veže na SVAKI odjel (radio ili ne) — "Sjekačke linije"
                 // biranje odjela (_handleSjeceOdjelClick) mora moći pogoditi bilo
                 // koji odjel, ne samo istaknute. Za neistaknute, van sjece-picking
                 // moda, ponašanje ostaje isto kao ranije (klik ne otvara ništa,
@@ -2330,9 +2330,9 @@
         _clearSjeceDirLine(); // ukloni privremeni pravac (ako je crtan) — zamijenjen je stvarnim linijama
         _drawSjeceLines();
         _saveSjeceConfig({ odjelKey: _sjeceOdjelKey, odjelLabel: _sjeceOdjelLabel, azimuth: azimuth, spacing: spacing });
-        _notify('showSuccess', 'Sječačke linije generisane', _sjeceLines.length + ' linija, razmak ' + spacing + ' m.');
+        _notify('showSuccess', 'Sjekačke linije generisane', _sjeceLines.length + ' linija, razmak ' + spacing + ' m.');
         // Panel se sklanja nakon generisanja — nazad se ide preko spiska
-        // "Sječačke linije" u Tragovi tabu (vidi _renderSjeceList/✏️ Uredi).
+        // "Sjekačke linije" u Tragovi tabu (vidi _renderSjeceList/✏️ Uredi).
         if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
         _renderSjeceList();
     };
@@ -3521,7 +3521,7 @@
             });
         });
 
-        // Sječačke linije nisu niz sačuvanih stavki nego JEDNA konfiguracija iz
+        // Sjekačke linije nisu niz sačuvanih stavki nego JEDNA konfiguracija iz
         // koje se linije svaki put deterministički regenerišu (vidi komentar uz
         // _restoreSjeceIfSaved) — otud najviše jedan red, i "uredi" umjesto
         // preimenovanja. Nema izvoza jer ih ni mapaRadnikaExportSve ne izvozi.
@@ -3650,7 +3650,7 @@
     };
 
     // ---- Preimenovanje stavke ----
-    // Sječačke linije nemaju ime nego konfiguraciju — "uredi" im otvara isti
+    // Sjekačke linije nemaju ime nego konfiguraciju — "uredi" im otvara isti
     // panel u kojem su i napravljene (odjel/azimut/razmak), ne modal za ime.
     var _stavkaEdit = null;
     window.mapaRadnikaEditStavka = async function(tip, idx) {
