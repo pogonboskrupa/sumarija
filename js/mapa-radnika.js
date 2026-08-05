@@ -2294,7 +2294,14 @@
     // kompasa kao kod azimuta za sječačke linije/Explorer, ali OVDJE
     // kontinuirano (konus se okreće uživo dok se korisnik okreće), ne
     // jednokratno hvatanje. Poligon (apeks + tačke po luku) umjesto
-    // pravog SVG/canvas kruga jer Leaflet nema ugrađen "sector" oblik. ----
+    // pravog SVG/canvas kruga jer Leaflet nema ugrađen "sector" oblik.
+    // Renderer je vezan za 'rmHeadingPane' (kreiran pri inicijalizaciji
+    // mape, iznad overlayPane-a) — NAMJERNO se NE dodaje u
+    // _bringUserLayersToFront(): taj sloj radi bringToFront() unutar
+    // JEDNOG deljenog SVG renderera, a konus ima svoj vlastiti canvas
+    // (sibling DOM element) — bringToFront preko te granice ne djeluje,
+    // pa bi bio mrtav kod. Pane z-index je jedini pouzdan način da konus
+    // ostane iznad odjel poligona bez obzira na redosljed redraw-a. ----
     var HEADING_CONE_RADIUS_M = 70;   // dužina konusa
     var HEADING_CONE_ANGLE_DEG = 70;  // ukupan otvor konusa (±35° od azimuta)
     var HEADING_CONE_STEP_DEG = 5;    // gustina tačaka po luku — glađi rub
@@ -2324,7 +2331,7 @@
         if (_headingCone) {
             _headingCone.setLatLngs(latlngs);
         } else {
-            if (!_headingCanvasRenderer) _headingCanvasRenderer = L.canvas();
+            if (!_headingCanvasRenderer) _headingCanvasRenderer = L.canvas({ pane: 'rmHeadingPane' });
             _headingCone = L.polygon(latlngs, {
                 renderer: _headingCanvasRenderer,
                 stroke: false,
@@ -3382,6 +3389,14 @@
                 zoom: savedView ? savedView.zoom : 11,
                 zoomControl: false
             });
+            // Zaseban pane za "smjer gledanja" konus — z-index EKSPLICITNO iznad
+            // overlayPane-a (400) gdje žive svi ostali slojevi. Konus koristi SVOJ
+            // L.canvas() renderer (_drawHeadingCone), pa .bringToFront() ne djeluje
+            // preko granice canvas/SVG renderera — pane sa višim z-indexom je jedini
+            // garantovan način (nezavisan od redosljeda DOM-a/redraw-a) da konus
+            // ostane iznad. Kreiran JEDNOM ovdje, ne lijeno u _drawHeadingCone.
+            _map.createPane('rmHeadingPane');
+            _map.getPane('rmHeadingPane').style.zIndex = 450; // iznad overlayPane(400), ispod markerPane(600)
             L.control.zoom({ position: 'bottomleft' }).addTo(_map);
             _map.on('moveend', _saveMapView);
             _osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
