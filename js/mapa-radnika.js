@@ -2345,12 +2345,25 @@
     function _removeHeadingCone() {
         if (_headingCone) { _map.removeLayer(_headingCone); _headingCone = null; }
     }
+    // Magnetometar je bučan — sirov azimut zna "skakati" ±10-20° iz otkucaja
+    // u otkucaj i kad je telefon potpuno miran. Eksponencijalno glačanje
+    // (nizak alpha = sporiji ali mirniji odziv) rješava to; posebna pažnja na
+    // kružni prelaz 360°→0° (bez ovoga bi glačanje na sjeveru "skretalo" kroz
+    // jug, jer bi npr. prosjek 350° i 10° naivno ispao 180°).
+    var HEADING_SMOOTH_ALPHA = 0.15;
+    var _headingSmoothedDeg = null;
+    function _smoothHeadingDeg(raw) {
+        if (_headingSmoothedDeg == null) { _headingSmoothedDeg = raw; return raw; }
+        var diff = ((raw - _headingSmoothedDeg + 540) % 360) - 180; // najkraća razlika, -180..180
+        _headingSmoothedDeg = (_headingSmoothedDeg + HEADING_SMOOTH_ALPHA * diff + 360) % 360;
+        return _headingSmoothedDeg;
+    }
     function _headingOrientationHandler(e) {
         var heading = null;
         if (typeof e.webkitCompassHeading === 'number') heading = e.webkitCompassHeading; // iOS Safari — već tačan azimut
         else if (typeof e.alpha === 'number') heading = (360 - e.alpha) % 360; // Android — najbolja dostupna aproksimacija
         if (heading == null || isNaN(heading)) return;
-        _drawHeadingCone(heading);
+        _drawHeadingCone(_smoothHeadingDeg(heading));
     }
     function _stopHeadingView() {
         clearTimeout(_headingNoDataTimer);
@@ -2361,6 +2374,7 @@
         }
         _headingActive = false;
         _headingLastDeg = null;
+        _headingSmoothedDeg = null; // sljedeće uključivanje kreće svježe, ne od zastarjele vrijednosti
         _removeHeadingCone();
     }
     function _startHeadingView() {
