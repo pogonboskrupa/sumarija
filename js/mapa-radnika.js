@@ -2406,6 +2406,16 @@
         _headingActive = true;
         _startHeadingView();
     }
+    // Automatski uključi smjer gledanja čim se prikaže "moja lokacija" — vidi
+    // _locateMe. Korisnici nisu otkrivali da klik NA plavu tačku (odvojen
+    // drugi korak) uključuje konus, pa je izgledalo kao da smjer gledanja
+    // uopšte ne postoji/ne radi. Idempotentno (bez efekta ako je već
+    // uključeno); i dalje se može ručno isključiti klikom na tačku.
+    function _startHeadingIfInactive() {
+        if (_headingActive || !_headingLastLL) return;
+        _headingActive = true;
+        _startHeadingView();
+    }
 
     // ---- "PRATI ME" (follow mode) — kontinuirano praćenje umjesto
     // jednokratnog centriranja. Tapni "Moja lokacija" da uključiš, tapni
@@ -2457,6 +2467,7 @@
                 _map.setView(ll, 15);
                 if (_locBtnEl) _locBtnEl.disabled = false;
                 _startFollow();
+                _startHeadingIfInactive();
             },
             function(err) {
                 if (_locBtnEl) { _locBtnEl.disabled = false; _locBtnEl.textContent = '📍 Moja lokacija'; }
