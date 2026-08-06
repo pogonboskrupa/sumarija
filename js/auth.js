@@ -215,10 +215,10 @@
                     { id: 'primac-personal', icon: '👷', label: 'Pregled sječe', active: true },
                     { id: 'izvjestaji-primac', icon: '📋', label: 'Izvještaji' },
                     { id: 'primac-mapa', icon: '🗺️', label: 'Karta' },
+                    { id: 'kubikator', icon: '📐', label: 'Kubikator' },
                     { id: 'primac-godisnji', icon: '📅', label: 'Godišnji prikaz' },
                     { id: 'primac-odjeli', icon: '🏭', label: 'Prikaz po odjelima' },
                     { id: 'sihtarica-primac', icon: '🗓️', label: 'Šihtarica' },
-                    { id: 'kubikator', icon: '📐', label: 'Kubikator' },
                     { id: 'add-sjeca', icon: '➕', label: 'Dodaj sječu' },
                     { id: 'my-sjece', icon: '📝', label: 'Moje sječe' }
                 ];
@@ -227,10 +227,10 @@
                     { id: 'otpremac-personal', icon: '🚛', label: 'Pregled otpreme', active: true },
                     { id: 'izvjestaji-otpremac', icon: '📋', label: 'Izvještaji' },
                     { id: 'otpremac-mapa', icon: '🗺️', label: 'Karta' },
+                    { id: 'kubikator', icon: '📐', label: 'Kubikator' },
                     { id: 'otpremac-godisnji', icon: '📅', label: 'Godišnji prikaz' },
                     { id: 'otpremac-odjeli', icon: '🏭', label: 'Prikaz po odjelima' },
                     { id: 'sihtarica-otpremac', icon: '🗓️', label: 'Šihtarica' },
-                    { id: 'kubikator', icon: '📐', label: 'Kubikator' },
                     { id: 'add-otprema', icon: '➕', label: 'Dodaj otpremu' },
                     { id: 'my-otpreme', icon: '📝', label: 'Moje otpreme' }
                 ];
