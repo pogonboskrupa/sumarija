@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.3.2';
+        const APP_VERSION = '1.3.3';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -31,7 +31,15 @@
         // offline pristup podacima preživljava update.
         let _updateBannerShown = false;
         async function checkAppVersion() {
-            if (!navigator.onLine || _updateBannerShown) return;
+            // NAMJERNO bez "if (!navigator.onLine) return" — navigator.onLine
+            // zna pogrešno ostati "false" na terenu (slab/isprekidan signal,
+            // neki Android WebView-ovi), i pošto se ovdje ne oslanja na
+            // 'online' event nego samo na taj flag, provjera bi se onda TRAJNO
+            // preskakala dok god ne dođe do stvarnog offline→online prelaza u
+            // istoj sesiji — što objašnjava baner koji se nikad ne pojavi iako
+            // je mreža stvarno dostupna. fetch ispod ionako ima svoj timeout
+            // i catch, pa je gate bio čisto dodatni (i lažni) rizik.
+            if (_updateBannerShown) return;
             try {
                 // cache:'no-store' + ts param — zaobiđi i browser i SW keš
                 const r = await fetch('VERSION?ts=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(10000) });
