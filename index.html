@@ -2677,11 +2677,14 @@
                     </div>
                 </div>
 
-                <!-- Rekapitulacija po sortimentima — zbir svih unosa (svih vremena,
-                     ne samo "Zadnji unosi" gore, koji prikazuje najviše 30) grupisan
-                     po u.sortiment (js/kubikator.js _renderRekap). Unosi bez izabranog
-                     sortimenta (dropdown ostavljen prazan, ili stariji unosi od prije
-                     ove funkcije) padaju pod "Bez sortimenta". -->
+                <!-- Rekapitulacija po sortimentima — organizovana po "stranicama" od
+                     20 unosa, isto kao u službenoj knjizi na terenu (napuni se 20
+                     redova, na kraju stranice ide rekap, pa se nastavi na sljedećoj).
+                     Svi unosi (svih vremena, ne samo "Zadnji unosi" gore koji
+                     prikazuje najviše 30) grupisani po u.sortiment (js/kubikator.js
+                     _renderRekap/_rekapGrupe). Unosi bez izabranog sortimenta
+                     (dropdown ostavljen prazan, ili stariji unosi) padaju pod
+                     "Bez sortimenta". -->
                 <div class="kub-rekap">
                     <div class="kub-rekap-head">
                         <span>📊 Rekapitulacija po sortimentima</span>

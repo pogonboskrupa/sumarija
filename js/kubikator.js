@@ -52,6 +52,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     var PRVI_KEY = 'kubikator_prvi_unos_gotov'; // "24"/"4,50" prijedlog nestaje poslije prvog unosa ikad
     var PRVI_PROSTORNI_KEY = 'kubikator_prvi_prostorni_gotov'; // isto, za "1,20"/"1,50" (prostorno drvo)
     var MEM_PRIKAZ = 30;          // koliko zadnjih unosa se prikazuje u memoriji
+    var KUB_STRANICA = 20;        // "stranica" u službenoj knjizi = 20 unosa (mjerenja)
 
     // Dozvoljeni opsezi — sve van ovoga je gotovo sigurno omaška u kucanju
     // (npr. prečnik u milimetrima ili dužina u centimetrima).
@@ -312,11 +313,49 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         _justAdded = false;
     }
 
-    // Zbir SVIH unosa (ne samo zadnjih MEM_PRIKAZ) grupisan po u.sortiment —
-    // "Bez sortimenta" hvata unose gdje dropdown nije korišten (ostavljen na
-    // "— Sortiment —") i starije zapise od prije ove funkcije. Redoslijed
-    // prikaza prati kanonske liste (Oblovina pa Prostorno drvo), "Bez
-    // sortimenta" uvijek zadnji.
+    // Sortimentski rekap za JEDNU grupu unosa (jednu "stranicu") — "Bez
+    // sortimenta" hvata unose gdje dropdown nije korišten (ostavljen na
+    // "— Sortiment —") i starije zapise od prije te funkcije. Redoslijed
+    // prati kanonske liste (Oblovina pa Prostorno drvo), "Bez sortimenta"
+    // uvijek zadnji.
+    var BEZ_SORTIMENTA = 'Bez sortimenta';
+    function _rekapGrupe(grupa) {
+        var mapa = {};
+        grupa.forEach(function(u) {
+            var kljuc = u.sortiment || BEZ_SORTIMENTA;
+            if (!mapa[kljuc]) mapa[kljuc] = { kom: 0, m3: 0 };
+            mapa[kljuc].kom += 1;
+            mapa[kljuc].m3 += Number(u.zapremina) || 0;
+        });
+        var redoslijed = KUB_SORT_OBLOVINA.concat(KUB_SORT_PROSTORNO);
+        var kljucevi = Object.keys(mapa).sort(function(a, b) {
+            if (a === BEZ_SORTIMENTA) return 1;
+            if (b === BEZ_SORTIMENTA) return -1;
+            var ia = redoslijed.indexOf(a), ib = redoslijed.indexOf(b);
+            if (ia === -1 && ib === -1) return a.localeCompare(b);
+            if (ia === -1) return 1;
+            if (ib === -1) return -1;
+            return ia - ib;
+        });
+        var html = '';
+        kljucevi.forEach(function(k) {
+            var red = mapa[k];
+            var bezKlasa = k === BEZ_SORTIMENTA ? ' kub-rekap-bez' : '';
+            html += '<div class="kub-rekap-red' + bezKlasa + '">' +
+                '<span class="kub-rekap-naziv">' + k + '</span>' +
+                '<span class="kub-rekap-kom">' + red.kom + ' kom</span>' +
+                '<span class="kub-rekap-m3">' + _fmt(red.m3, DEC) + ' m³</span>' +
+                '</div>';
+        });
+        return html;
+    }
+
+    // Rekap organizovan po "stranicama" od KUB_STRANICA (20) unosa — isto kao
+    // u službenoj knjizi na terenu: puni se 20 redova, na kraju stranice ide
+    // rekap po sortimentima, pa se nastavlja na sljedećoj stranici. Stranice
+    // se računaju hronološki (redoslijed unošenja), a prikazuju najnovija
+    // prva (isti obrazac kao "Zadnji unosi" ispod — najnovije uvijek gore).
+    // Nedovršena (trenutna) stranica se i dalje prikazuje, obilježena "u toku".
     function _renderRekap() {
         var lista = _el('kub-rekap-lista');
         var ukupnoEl = _el('kub-rekap-ukupno');
@@ -329,34 +368,21 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             lista.innerHTML = '<div class="kub-rekap-prazno">Još nema unosa.</div>';
             return;
         }
-        var BEZ = 'Bez sortimenta';
-        var mapa = {};
-        _unosi.forEach(function(u) {
-            var kljuc = u.sortiment || BEZ;
-            if (!mapa[kljuc]) mapa[kljuc] = { kom: 0, m3: 0 };
-            mapa[kljuc].kom += 1;
-            mapa[kljuc].m3 += Number(u.zapremina) || 0;
-        });
-        var redoslijed = KUB_SORT_OBLOVINA.concat(KUB_SORT_PROSTORNO);
-        var kljucevi = Object.keys(mapa).sort(function(a, b) {
-            if (a === BEZ) return 1;
-            if (b === BEZ) return -1;
-            var ia = redoslijed.indexOf(a), ib = redoslijed.indexOf(b);
-            if (ia === -1 && ib === -1) return a.localeCompare(b);
-            if (ia === -1) return 1;
-            if (ib === -1) return -1;
-            return ia - ib;
-        });
+        var brojStranica = Math.ceil(_unosi.length / KUB_STRANICA);
         var html = '';
-        kljucevi.forEach(function(k) {
-            var red = mapa[k];
-            var bezKlasa = k === BEZ ? ' kub-rekap-bez' : '';
-            html += '<div class="kub-rekap-red' + bezKlasa + '">' +
-                '<span class="kub-rekap-naziv">' + k + '</span>' +
-                '<span class="kub-rekap-kom">' + red.kom + ' kom</span>' +
-                '<span class="kub-rekap-m3">' + _fmt(red.m3, DEC) + ' m³</span>' +
+        for (var s = brojStranica; s >= 1; s--) {
+            var od = (s - 1) * KUB_STRANICA;
+            var grupa = _unosi.slice(od, od + KUB_STRANICA);
+            var nepotpuna = grupa.length < KUB_STRANICA;
+            html += '<div class="kub-rekap-stranica">';
+            html += '<div class="kub-rekap-stranica-naslov"><span>📄 Stranica ' + s + '</span>' +
+                (nepotpuna
+                    ? '<span class="kub-rekap-stranica-status">' + grupa.length + '/' + KUB_STRANICA + ' · u toku</span>'
+                    : '<span class="kub-rekap-stranica-status kub-rekap-stranica-puna">popunjena</span>') +
                 '</div>';
-        });
+            html += _rekapGrupe(grupa);
+            html += '</div>';
+        }
         lista.innerHTML = html;
     }
 

@@ -4038,6 +4038,15 @@ body.kubikator-fullscreen #kubikator-content {
 }
 .kub-rekap-ukupno { color: #047857; font-variant-numeric: tabular-nums; }
 .kub-rekap-lista { max-height: 40vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+/* Jedna "stranica" (20 unosa, kao u službenoj knjizi) — vidi _renderRekap. */
+.kub-rekap-stranica { border-bottom: 8px solid #f8fafc; }
+.kub-rekap-stranica:last-child { border-bottom: none; }
+.kub-rekap-stranica-naslov {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 9px 16px; background: #f8fafc; font-size: 12px; font-weight: 800; color: #4b5563;
+}
+.kub-rekap-stranica-status { font-size: 11px; font-weight: 700; color: #d97706; text-transform: uppercase; letter-spacing: .03em; }
+.kub-rekap-stranica-status.kub-rekap-stranica-puna { color: #9ca3af; }
 .kub-rekap-red {
     display: flex; align-items: center; gap: 10px;
     padding: 10px 16px; border-bottom: 1px solid #f1f5f9;
