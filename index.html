@@ -2703,21 +2703,53 @@
 
                     <div class="kub-samo-oblovina">
                         <svg class="kub-ilus" viewBox="0 0 300 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                            <ellipse cx="252" cy="64" rx="13" ry="32" fill="#c99a5b" stroke="#7c4a12" stroke-width="2"/>
-                            <rect x="48" y="32" width="204" height="64" fill="#c99a5b" stroke="#7c4a12" stroke-width="2"/>
-                            <line x1="48" y1="32" x2="48" y2="96" stroke="#7c4a12" stroke-width="2"/>
-                            <ellipse cx="48" cy="64" rx="13" ry="32" fill="#e8c98a" stroke="#7c4a12" stroke-width="2"/>
-                            <!-- prečnik (visina lijevog presjeka) -->
-                            <line x1="20" y1="32" x2="20" y2="96" stroke="#047857" stroke-width="2" marker-start="url(#kubStrelicaO)" marker-end="url(#kubStrelicaO)"/>
-                            <text x="14" y="64" fill="#047857" font-size="13" font-weight="800" text-anchor="end" dominant-baseline="middle" transform="rotate(-90 14 64)">d</text>
-                            <!-- dužina (cijela dužina trupca) -->
-                            <line x1="48" y1="112" x2="252" y2="112" stroke="#047857" stroke-width="2" marker-start="url(#kubStrelicaO)" marker-end="url(#kubStrelicaO)"/>
-                            <text x="150" y="126" fill="#047857" font-size="13" font-weight="800" text-anchor="middle">L</text>
                             <defs>
-                                <marker id="kubStrelicaO" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
-                                    <path d="M0,0 L8,4 L0,8 Z" fill="#047857"/>
+                                <radialGradient id="kubGradPresjek" cx="38%" cy="35%" r="75%">
+                                    <stop offset="0%" stop-color="#f5e0b3"/>
+                                    <stop offset="55%" stop-color="#e8c98a"/>
+                                    <stop offset="100%" stop-color="#c99a5b"/>
+                                </radialGradient>
+                                <radialGradient id="kubGradCelo" cx="35%" cy="30%" r="80%">
+                                    <stop offset="0%" stop-color="#d9ad6c"/>
+                                    <stop offset="100%" stop-color="#a97b3f"/>
+                                </radialGradient>
+                                <linearGradient id="kubGradKora" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#dcae70"/>
+                                    <stop offset="45%" stop-color="#c99a5b"/>
+                                    <stop offset="100%" stop-color="#a97b3f"/>
+                                </linearGradient>
+                                <!-- orient="auto-start-reverse": na marker-start strelica gleda UNAZAD (van,
+                                     suprotno smjeru linije), na marker-end gleda NAPRIJED (van, u smjeru
+                                     linije) — tako obje strelice pokazuju VAN od mjerene dužine, kao na
+                                     tehničkom crtežu, umjesto da lijeva pogrešno gleda unutra. -->
+                                <marker id="kubStrelicaO" markerWidth="9" markerHeight="9" refX="4.5" refY="4.5" orient="auto-start-reverse">
+                                    <path d="M0,0.5 L8.5,4.5 L0,8.5 Z" fill="#047857"/>
                                 </marker>
                             </defs>
+                            <!-- sjenka na podlozi -->
+                            <ellipse cx="150" cy="103" rx="108" ry="6" fill="#000" opacity=".08"/>
+                            <!-- tijelo trupca (kora) -->
+                            <rect x="48" y="32" width="204" height="64" fill="url(#kubGradKora)" stroke="#7c4a12" stroke-width="2"/>
+                            <!-- dalji kraj trupca -->
+                            <ellipse cx="252" cy="64" rx="13" ry="32" fill="url(#kubGradCelo)" stroke="#7c4a12" stroke-width="2"/>
+                            <!-- bliži kraj — čeoni presjek gdje se mjeri prečnik -->
+                            <ellipse cx="48" cy="64" rx="13" ry="32" fill="url(#kubGradPresjek)" stroke="#7c4a12" stroke-width="2"/>
+                            <!-- godovi na presjeku -->
+                            <ellipse cx="48" cy="64" rx="9.5" ry="23" fill="none" stroke="#a97b3f" stroke-width="1" opacity=".5"/>
+                            <ellipse cx="48" cy="64" rx="6" ry="14" fill="none" stroke="#a97b3f" stroke-width="1" opacity=".5"/>
+                            <ellipse cx="48" cy="64" rx="2.5" ry="6" fill="none" stroke="#a97b3f" stroke-width="1" opacity=".5"/>
+                            <!-- produžne (pomoćne) linije prečnika -->
+                            <line x1="22" y1="32" x2="44" y2="32" stroke="#9ca3af" stroke-width="1"/>
+                            <line x1="22" y1="96" x2="44" y2="96" stroke="#9ca3af" stroke-width="1"/>
+                            <!-- prečnik (visina lijevog presjeka) -->
+                            <line x1="20" y1="32" x2="20" y2="96" stroke="#047857" stroke-width="2" stroke-linecap="round" marker-start="url(#kubStrelicaO)" marker-end="url(#kubStrelicaO)"/>
+                            <text x="11" y="64" fill="#047857" font-size="13" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 11 64)">d</text>
+                            <!-- produžne (pomoćne) linije dužine -->
+                            <line x1="48" y1="98" x2="48" y2="110" stroke="#9ca3af" stroke-width="1"/>
+                            <line x1="252" y1="98" x2="252" y2="110" stroke="#9ca3af" stroke-width="1"/>
+                            <!-- dužina (cijela dužina trupca) -->
+                            <line x1="48" y1="112" x2="252" y2="112" stroke="#047857" stroke-width="2" stroke-linecap="round" marker-start="url(#kubStrelicaO)" marker-end="url(#kubStrelicaO)"/>
+                            <text x="150" y="126" fill="#047857" font-size="13" font-weight="800" text-anchor="middle">L</text>
                         </svg>
                         <div class="kub-obj-vrijednosti">
                             <span>d = <strong id="kub-ilus-d">—</strong></span>
@@ -2732,27 +2764,47 @@
 
                     <div class="kub-samo-prostorno">
                         <svg class="kub-ilus" viewBox="0 0 300 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                            <rect x="70" y="20" width="160" height="76" fill="#e8c98a" stroke="#7c4a12" stroke-width="2"/>
-                            <circle cx="100" cy="38" r="11" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.5"/>
-                            <circle cx="150" cy="38" r="11" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.5"/>
-                            <circle cx="200" cy="38" r="11" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.5"/>
-                            <circle cx="100" cy="58" r="11" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.5"/>
-                            <circle cx="150" cy="58" r="11" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.5"/>
-                            <circle cx="200" cy="58" r="11" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.5"/>
-                            <circle cx="100" cy="78" r="11" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.5"/>
-                            <circle cx="150" cy="78" r="11" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.5"/>
-                            <circle cx="200" cy="78" r="11" fill="#c99a5b" stroke="#7c4a12" stroke-width="1.5"/>
-                            <!-- visina slaganja -->
-                            <line x1="46" y1="20" x2="46" y2="96" stroke="#047857" stroke-width="2" marker-start="url(#kubStrelicaP)" marker-end="url(#kubStrelicaP)"/>
-                            <text x="40" y="58" fill="#047857" font-size="13" font-weight="800" text-anchor="end" dominant-baseline="middle" transform="rotate(-90 40 58)">V</text>
-                            <!-- širina slaganja -->
-                            <line x1="70" y1="112" x2="230" y2="112" stroke="#047857" stroke-width="2" marker-start="url(#kubStrelicaP)" marker-end="url(#kubStrelicaP)"/>
-                            <text x="150" y="126" fill="#047857" font-size="13" font-weight="800" text-anchor="middle">Š</text>
                             <defs>
-                                <marker id="kubStrelicaP" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
-                                    <path d="M0,0 L8,4 L0,8 Z" fill="#047857"/>
+                                <radialGradient id="kubGradPanj" cx="35%" cy="30%" r="75%">
+                                    <stop offset="0%" stop-color="#e8c98a"/>
+                                    <stop offset="65%" stop-color="#c99a5b"/>
+                                    <stop offset="100%" stop-color="#a97b3f"/>
+                                </radialGradient>
+                                <!-- vidi komentar uz kubStrelicaO — auto-start-reverse okreće strelicu na
+                                     marker-start prema van, da obje strelice pokazuju van od mjerene dužine. -->
+                                <marker id="kubStrelicaP" markerWidth="9" markerHeight="9" refX="4.5" refY="4.5" orient="auto-start-reverse">
+                                    <path d="M0,0.5 L8.5,4.5 L0,8.5 Z" fill="#047857"/>
                                 </marker>
                             </defs>
+                            <!-- sjenka na podlozi -->
+                            <ellipse cx="150" cy="100" rx="86" ry="6" fill="#000" opacity=".08"/>
+                            <!-- naslagano prostorno drvo (bukva/panjevi u presjeku) -->
+                            <rect x="70" y="20" width="160" height="76" rx="3" fill="#f0dcb0" stroke="#7c4a12" stroke-width="2"/>
+                            <circle cx="100" cy="38" r="11" fill="url(#kubGradPanj)" stroke="#7c4a12" stroke-width="1.5"/>
+                            <circle cx="150" cy="38" r="11" fill="url(#kubGradPanj)" stroke="#7c4a12" stroke-width="1.5"/>
+                            <circle cx="200" cy="38" r="11" fill="url(#kubGradPanj)" stroke="#7c4a12" stroke-width="1.5"/>
+                            <circle cx="100" cy="58" r="11" fill="url(#kubGradPanj)" stroke="#7c4a12" stroke-width="1.5"/>
+                            <circle cx="150" cy="58" r="11" fill="url(#kubGradPanj)" stroke="#7c4a12" stroke-width="1.5"/>
+                            <circle cx="200" cy="58" r="11" fill="url(#kubGradPanj)" stroke="#7c4a12" stroke-width="1.5"/>
+                            <circle cx="100" cy="78" r="11" fill="url(#kubGradPanj)" stroke="#7c4a12" stroke-width="1.5"/>
+                            <circle cx="150" cy="78" r="11" fill="url(#kubGradPanj)" stroke="#7c4a12" stroke-width="1.5"/>
+                            <circle cx="200" cy="78" r="11" fill="url(#kubGradPanj)" stroke="#7c4a12" stroke-width="1.5"/>
+                            <!-- godovi na po jednom panju iz svakog reda, radi detalja bez zagušenja -->
+                            <circle cx="100" cy="38" r="5.5" fill="none" stroke="#a97b3f" stroke-width="1" opacity=".55"/>
+                            <circle cx="150" cy="58" r="5.5" fill="none" stroke="#a97b3f" stroke-width="1" opacity=".55"/>
+                            <circle cx="200" cy="78" r="5.5" fill="none" stroke="#a97b3f" stroke-width="1" opacity=".55"/>
+                            <!-- produžne (pomoćne) linije visine -->
+                            <line x1="48" y1="20" x2="66" y2="20" stroke="#9ca3af" stroke-width="1"/>
+                            <line x1="48" y1="96" x2="66" y2="96" stroke="#9ca3af" stroke-width="1"/>
+                            <!-- visina slaganja -->
+                            <line x1="46" y1="20" x2="46" y2="96" stroke="#047857" stroke-width="2" stroke-linecap="round" marker-start="url(#kubStrelicaP)" marker-end="url(#kubStrelicaP)"/>
+                            <text x="37" y="58" fill="#047857" font-size="13" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 37 58)">V</text>
+                            <!-- produžne (pomoćne) linije širine -->
+                            <line x1="70" y1="98" x2="70" y2="110" stroke="#9ca3af" stroke-width="1"/>
+                            <line x1="230" y1="98" x2="230" y2="110" stroke="#9ca3af" stroke-width="1"/>
+                            <!-- širina slaganja -->
+                            <line x1="70" y1="112" x2="230" y2="112" stroke="#047857" stroke-width="2" stroke-linecap="round" marker-start="url(#kubStrelicaP)" marker-end="url(#kubStrelicaP)"/>
+                            <text x="150" y="126" fill="#047857" font-size="13" font-weight="800" text-anchor="middle">Š</text>
                         </svg>
                         <div class="kub-obj-vrijednosti">
                             <span>Š = <strong id="kub-ilus-sirina">—</strong></span>
