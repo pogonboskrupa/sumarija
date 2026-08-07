@@ -64,7 +64,16 @@ function doGet(e) {
     }
 
     if (path === 'login') {
-      return handleLogin(e.parameter.username, e.parameter.password);
+      var loginResponse = handleLogin(e.parameter.username, e.parameter.password);
+      // Log SAMO ovdje (stvaran path=login poziv) — vidi komentar uz
+      // logPrijava u authentication.gs zašto ne unutar handleLogin same.
+      try {
+        var loginParsed = JSON.parse(loginResponse.getContent());
+        logPrijava(e.parameter.username, loginParsed.fullName, loginParsed.userType || loginParsed.type, !!loginParsed.success);
+      } catch (logErr) {
+        Logger.log('Greška pri logovanju prijave: ' + logErr);
+      }
+      return loginResponse;
     } else if (path === 'stats') {
       return handleStats(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'dashboard') {
