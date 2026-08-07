@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.3.5';
+        const APP_VERSION = '1.3.6';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1686,10 +1686,19 @@
             initializeYearSelectors();
 
 
+            // PODRAZUMIJEVANO za NOVE korisnike/uređaje (nijedan prekidač nikad
+            // dirnut) — Android prikaz je UKLJUČEN. Postavlja se JEDNOM ovdje pa
+            // se dalje ponaša identično kao da je korisnik sam kliknuo (uključujući
+            // budući toggle). Ne dira nikoga ko je ikad eksplicitno birao (desktop
+            // prikaz, ili ručno isključio Android) — samo prazan localStorage.
+            if (localStorage.getItem('desktop-view') === null && localStorage.getItem('android-view') === null) {
+                localStorage.setItem('android-view', 'enabled');
+            }
+
             // Vrati zapamćeni izbor prikaza. Prekidači su od v2.65 u "Meni" popupu
             // (ranije dva dugmeta u zaglavlju) — id-evi su isti pa se ovdje samo
-            // označi aktivna stavka. PODRAZUMIJEVANO, kad nijedan mod nije
-            // uključen, traka tabova je horizontalna.
+            // označi aktivna stavka. Bez ijednog uključenog moda (npr. korisnik
+            // ručno isključio oba), traka tabova je horizontalna.
             const desktopView = localStorage.getItem('desktop-view');
             const androidView = localStorage.getItem('android-view');
             if (desktopView === 'enabled') {
