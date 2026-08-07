@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.3.6';
+        const APP_VERSION = '1.3.7';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6108,6 +6108,46 @@
         const TL_SEGMENT_PAUZA_DANA = 30;
         const TL_KRAJ_SJECE_CISCENJE = new Set(['OGR.CIJEPANI', 'CEL.CIJEPANA']);
 
+        // Isti kriterij kao SLUCAJNI_KEYWORDS u js/godisnji-plan.js — ovdje se
+        // odjel čita direktno iz sirovog p.odjel stringa (nema unaprijed
+        // izračunatu .slucajni oznaku kao tamo), pa se provjerava tekstualno.
+        const TL_SLUCAJNI_KEYWORDS = ['ZAPISNIK', 'SLUČAJNI UŽICI', 'SANITARNA SJEČA', 'SANITAR'];
+        function _tlJeSlucajniOdjel(odjel) {
+            const u = String(odjel || '').toUpperCase();
+            return TL_SLUCAJNI_KEYWORDS.some(kw => u.includes(kw));
+        }
+        let _tlHideSlucajni = false;
+        function tlToggleSlucajni(checked) {
+            _tlHideSlucajni = checked;
+            renderPrimaciIzvodjaciTimeline();
+        }
+
+        // Klik na red (odjel) timeline-a — "izabere" ga (istakne, ostali potamne)
+        // radi boljeg pregleda kad ima puno redova. Dijele ga OBA timeline
+        // prikaza (ovdje i js/godisnji-plan.js renderTimeline) — oba renderuju
+        // redove ručno preko innerHTML, pa je najjednostavnije direktno mijenjati
+        // inline stil na klik, bez posebne CSS klase. data-sel na redu razlikuje
+        // podatkovne redove od reda sa mjesecima iznad njih (isti roditelj).
+        function timelineRowSelect(rowEl) {
+            const container = rowEl.parentElement;
+            if (!container) return;
+            const bioIzabran = rowEl.dataset.sel === '1';
+            [...container.children].forEach(r => {
+                if (!r.dataset || r.dataset.sel === undefined) return;
+                r.dataset.sel = '0';
+                r.style.opacity = '';
+                r.style.background = '';
+            });
+            if (!bioIzabran) {
+                rowEl.dataset.sel = '1';
+                rowEl.style.background = '#eff6ff';
+                [...container.children].forEach(r => {
+                    if (r !== rowEl && r.dataset && r.dataset.sel !== undefined) r.style.opacity = '.35';
+                });
+            }
+        }
+        window.timelineRowSelect = timelineRowSelect;
+
         function _computeSjecaSegmentiTl(primkeZaOdjel) {
             if (!primkeZaOdjel.length) return [];
             const sortimentiPoDatumu = new Map();
@@ -6166,6 +6206,7 @@
             primkeFiltrirano.forEach(p => {
                 const odjel = String(p.odjel || '').trim();
                 if (!odjel) return;
+                if (_tlHideSlucajni && _tlJeSlucajniOdjel(odjel)) return;
                 if (!poOdjelu.has(odjel)) poOdjelu.set(odjel, []);
                 poOdjelu.get(odjel).push(p);
             });
@@ -6220,15 +6261,19 @@
                     const naslov = s.odjel + ': ' + _fmtDatumTl(seg.datumPocetka) + ' → ' + _fmtDatumTl(seg.datumKraja);
                     return '<div title="' + naslov + '" style="position:absolute;left:' + left + '%;width:' + width + '%;top:4px;bottom:4px;min-width:5px;background:#ea580c;border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.15);"></div>';
                 }).join('');
-                return '<div style="display:flex;align-items:center;border-bottom:1px solid #f1f5f9;">' +
+                return '<div data-sel="0" onclick="timelineRowSelect(this)" style="display:flex;align-items:center;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:opacity .15s ease,background-color .15s ease;">' +
                     '<div style="flex:0 0 ' + LABEL_COL_WIDTH + 'px;padding:6px 10px;font-size:13px;font-weight:600;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + s.odjel + '</div>' +
                     '<div style="flex:1;position:relative;height:28px;' + gridBg + '">' + barsHtml + '</div></div>';
             }).join('');
 
             view.innerHTML = '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;overflow-x:auto;">' +
-                '<div style="font-size:12px;color:#6b7280;margin-bottom:12px;">Odjeli redani po datumu kad je sječa počela' +
+                '<div style="font-size:12px;color:#6b7280;margin-bottom:12px;display:flex;align-items:center;flex-wrap:wrap;gap:16px;">' +
+                '<span>Odjeli redani po datumu kad je sječa počela' +
                 (izabraniIzvodjac ? ' — izvođač: <strong>' + izabraniIzvodjac + '</strong>' : ' — svi izvođači') +
-                '. Pauza duža od ' + TL_SEGMENT_PAUZA_DANA + ' dana prikazana je kao dvije trake na istom redu.</div>' +
+                '. Pauza duža od ' + TL_SEGMENT_PAUZA_DANA + ' dana prikazana je kao dvije trake na istom redu.</span>' +
+                '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:auto;font-weight:600;color:#374151;white-space:nowrap;">' +
+                '<input type="checkbox" onchange="tlToggleSlucajni(this.checked)"' + (_tlHideSlucajni ? ' checked' : '') + '>' +
+                'Sakrij "Slučajni užici" / "Zapisnik"</label></div>' +
                 '<div style="min-width:760px;">' +
                 '<div style="display:flex;"><div style="flex:0 0 ' + LABEL_COL_WIDTH + 'px;"></div>' +
                 '<div style="flex:1;display:flex;border-bottom:2px solid #cbd5e1;padding-bottom:5px;margin-bottom:2px;">' + monthHeaderHtml + '</div></div>' +

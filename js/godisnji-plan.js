@@ -30,6 +30,11 @@
   let _stFilter   = 'sve';
   let _izvFilter  = 'sve';
   let _search     = '';
+  // Timeline: sakrij odjele iz "Slučajni užici" grupe (ZAPISNIK/SANITAR/...,
+  // vidi SLUCAJNI_KEYWORDS) — checkbox u zaglavlju timeline-a, odvojeno od
+  // glavnog GJ filtera jer ti odjeli obično nisu dio planiranog rasporeda pa
+  // znaju zagušiti hronološki pregled.
+  let _timelineHideSlucajni = false;
   let _sort = {
     grupe:     { col:'odjel', asc:true },
     sortimenti:{ col:'stepen', asc:false },
@@ -358,6 +363,7 @@
     const stavke = [];
     rows.forEach(r => {
       if (r.status === 'planirano') return;
+      if (_timelineHideSlucajni && r.slucajni) return;
       const segmenti = computeSjecaSegmenti(r.gj, r.odjel);
       if (!segmenti.length) return;
       const naziv = r.gj === 'Slučajni užici' ? (r.odjelLabel || r.odjel) : r.odjel;
@@ -411,7 +417,7 @@
         return `<div title="${naslov}" style="position:absolute;left:${left}%;width:${width}%;top:4px;bottom:4px;min-width:5px;background:${statusBoja(s.status)};border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.15);"></div>`;
       }).join('');
       return `
-        <div style="display:flex;align-items:center;border-bottom:1px solid #f1f5f9;">
+        <div data-sel="0" onclick="timelineRowSelect(this)" style="display:flex;align-items:center;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:opacity .15s ease,background-color .15s ease;">
           <div style="flex:0 0 ${LABEL_COL_WIDTH}px;padding:6px 10px;font-size:13px;font-weight:600;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.label}</div>
           <div style="flex:1;position:relative;height:28px;${gridBg}">${barsHtml}</div>
         </div>`;
@@ -419,10 +425,14 @@
 
     view.innerHTML = `
       <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:16px;overflow-x:auto;">
-        <div style="font-size:12px;color:#6b7280;margin-bottom:12px;display:flex;gap:16px;flex-wrap:wrap;">
+        <div style="font-size:12px;color:#6b7280;margin-bottom:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
           <span><span style="display:inline-block;width:10px;height:10px;background:#16a34a;border-radius:2px;margin-right:5px;vertical-align:middle;"></span>Posječeno</span>
           <span><span style="display:inline-block;width:10px;height:10px;background:#dc2626;border-radius:2px;margin-right:5px;vertical-align:middle;"></span>U sječi (do sad)</span>
           <span style="color:#9ca3af;">Odjel sječen u dva navrata (pauza &gt; ${SEGMENT_PAUZA_DANA} dana) prikazan je sa dvije trake na istom redu.</span>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:auto;font-weight:600;color:#374151;white-space:nowrap;">
+            <input type="checkbox" onchange="gpTimelineToggleSlucajni(this.checked)" ${_timelineHideSlucajni ? 'checked' : ''}>
+            Sakrij "Slučajni užici" / "Zapisnik"
+          </label>
         </div>
         <div style="min-width:760px;">
           <div style="display:flex;">
@@ -1342,6 +1352,11 @@
     else _izvFilter = 'sve';
   }
 
+  function gpTimelineToggleSlucajni(checked) {
+    _timelineHideSlucajni = checked;
+    if (_loaded) renderActiveTab();
+  }
+
   function gpSort(tab, col) {
     if (_sort[tab].col===col) { _sort[tab].asc = !_sort[tab].asc; }
     else { _sort[tab] = { col, asc: col==='stepen'?false:true }; }
@@ -1367,6 +1382,7 @@
   window.filterGpSearch     = filterGpSearch;
   window.filterGpIzvodjac   = filterGpIzvodjac;
   window.gpSort             = gpSort;
+  window.gpTimelineToggleSlucajni = gpTimelineToggleSlucajni;
   window.gpSetOverride      = gpSetOverride;
   window.gpOpenOdjelModal   = openOdjelModal;
   window.closeGpOdjelModal  = closeOdjelModal;
