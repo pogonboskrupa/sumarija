@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.3.9';
+        const APP_VERSION = '1.4.1';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6135,6 +6135,11 @@
             _tlHideSlucajni = checked;
             renderPrimaciIzvodjaciTimeline();
         }
+        let _tlHideOtprema = false;
+        function tlToggleOtprema(checked) {
+            _tlHideOtprema = checked;
+            renderPrimaciIzvodjaciTimeline();
+        }
 
         // Klik na red (odjel) timeline-a — "izabere" ga (istakne, ostali potamne)
         // radi boljeg pregleda kad ima puno redova. Dijele ga OBA timeline
@@ -6248,7 +6253,7 @@
             const stavke = [];
             sviOdjeliTl.forEach(odjel => {
                 const segmenti = toDaniTl(_computeSjecaSegmentiTl(primkePoOdjelu.get(odjel) || []));
-                const segmentiOtprema = toDaniTl(_computeSjecaSegmentiTl(otpremePoOdjelu.get(odjel) || []));
+                const segmentiOtprema = _tlHideOtprema ? [] : toDaniTl(_computeSjecaSegmentiTl(otpremePoOdjelu.get(odjel) || []));
                 if (!segmenti.length && !segmentiOtprema.length) return;
                 stavke.push({ odjel, segmenti, segmentiOtprema });
             });
@@ -6303,7 +6308,7 @@
                     return '<div title="' + naslov + '" style="position:absolute;left:' + left + '%;width:' + width + '%;top:15px;height:11px;min-width:5px;background:#2563eb;border-radius:3px;box-shadow:0 1px 2px rgba(0,0,0,.15);"></div>';
                 }).join('');
                 const barsHtml = sjecaBarsHtml + otpremaBarsHtml;
-                return '<div data-sel="0" onclick="timelineRowSelect(this)" style="display:flex;align-items:center;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:opacity .15s ease,background-color .15s ease;">' +
+                return '<div data-sel="0" onclick="timelineRowSelect(this)" style="display:flex;align-items:center;border-bottom:1px solid #cbd5e1;cursor:pointer;transition:opacity .15s ease,background-color .15s ease;">' +
                     '<div style="flex:0 0 ' + LABEL_COL_WIDTH + 'px;padding:6px 10px;font-size:13px;font-weight:600;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + s.odjel + '</div>' +
                     '<div style="flex:1;position:relative;height:28px;' + gridBg + '">' + barsHtml + '</div></div>';
             }).join('');
@@ -6316,6 +6321,9 @@
                 (izabraniIzvodjac ? ' — izvođač: <strong>' + izabraniIzvodjac + '</strong>' : ' — svi izvođači') +
                 '. Pauza duža od ' + TL_SEGMENT_PAUZA_DANA + ' dana prikazana je kao dvije trake iste boje na istom redu.</span>' +
                 '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:auto;font-weight:600;color:#374151;white-space:nowrap;">' +
+                '<input type="checkbox" onchange="tlToggleOtprema(this.checked)"' + (_tlHideOtprema ? ' checked' : '') + '>' +
+                'Sakrij otpremu</label>' +
+                '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;color:#374151;white-space:nowrap;">' +
                 '<input type="checkbox" onchange="tlToggleSlucajni(this.checked)"' + (_tlHideSlucajni ? ' checked' : '') + '>' +
                 'Sakrij "Slučajni užici" / "Zapisnik"</label></div>' +
                 '<div style="min-width:760px;">' +
