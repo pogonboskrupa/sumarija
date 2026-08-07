@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.3.8';
+        const APP_VERSION = '1.3.9';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6074,6 +6074,7 @@
         // slučajne odjele, prirodno).
         // ============================================
         let _primkeRawTimeline = null; // keš sirovih primki, izbjegava ponovni fetch
+        let _otpremeRawTimeline = null; // isto, za otpreme
 
         async function _dohvatiPrimkeZaTimeline() {
             if (_primkeRawTimeline) return _primkeRawTimeline;
@@ -6086,6 +6087,19 @@
                 _primkeRawTimeline = [];
             }
             return _primkeRawTimeline;
+        }
+
+        async function _dohvatiOtpremeZaTimeline() {
+            if (_otpremeRawTimeline) return _otpremeRawTimeline;
+            try {
+                const url = buildApiUrl('otpreme', {});
+                const data = await fetchWithCache(url, 'cache_otpreme_tab', false, 150000);
+                _otpremeRawTimeline = (data && data.otpreme) || [];
+            } catch (e) {
+                console.error('Error loading otpreme for timeline:', e);
+                _otpremeRawTimeline = [];
+            }
+            return _otpremeRawTimeline;
         }
 
         function _parseDatumTl(s) {
@@ -6188,53 +6202,71 @@
             if (!view) return;
             view.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af;">⏳ Učitavam...</div>';
 
-            const svePrimke = await _dohvatiPrimkeZaTimeline();
+            const [svePrimke, sveOtpreme] = await Promise.all([
+                _dohvatiPrimkeZaTimeline(),
+                _dohvatiOtpremeZaTimeline()
+            ]);
             const tekucaGodina = new Date().getFullYear();
-            const primke = svePrimke.filter(p => {
-                const d = _parseDatumTl(p.datum);
-                return d && d.getFullYear() === tekucaGodina;
-            });
+            const uTekucojGodini = p => { const d = _parseDatumTl(p.datum); return d && d.getFullYear() === tekucaGodina; };
+            const primke = svePrimke.filter(uTekucojGodini);
+            const otpreme = sveOtpreme.filter(uTekucojGodini);
+
             const sel = document.getElementById('primaci-izvodjac-select');
             const izabraniIzvodjac = sel ? sel.value : '';
-
-            const primkeFiltrirano = izabraniIzvodjac
-                ? primke.filter(p => String(p.izvodjac || '').trim() === izabraniIzvodjac)
-                : primke;
+            const filtrirajIzvodjaca = niz => izabraniIzvodjac
+                ? niz.filter(p => String(p.izvodjac || '').trim() === izabraniIzvodjac)
+                : niz;
+            const primkeFiltrirano = filtrirajIzvodjaca(primke);
+            const otpremeFiltrirano = filtrirajIzvodjaca(otpreme);
 
             // Grupiši po odjelu (raw p.odjel string — već sadrži GJ kontekst)
-            const poOdjelu = new Map();
-            primkeFiltrirano.forEach(p => {
-                const odjel = String(p.odjel || '').trim();
-                if (!odjel) return;
-                if (_tlHideSlucajni && _tlJeSlucajniOdjel(odjel)) return;
-                if (!poOdjelu.has(odjel)) poOdjelu.set(odjel, []);
-                poOdjelu.get(odjel).push(p);
-            });
+            function grupisiPoOdjeluTl(niz) {
+                const m = new Map();
+                niz.forEach(p => {
+                    const odjel = String(p.odjel || '').trim();
+                    if (!odjel) return;
+                    if (_tlHideSlucajni && _tlJeSlucajniOdjel(odjel)) return;
+                    if (!m.has(odjel)) m.set(odjel, []);
+                    m.get(odjel).push(p);
+                });
+                return m;
+            }
+            const primkePoOdjelu = grupisiPoOdjeluTl(primkeFiltrirano);
+            const otpremePoOdjelu = grupisiPoOdjeluTl(otpremeFiltrirano);
+
+            // Svi odjeli koji imaju BILO sječu BILO otpremu (unija) — odjel sa samo
+            // jednom od te dvije aktivnosti i dalje dobija svoj red, prosto bez
+            // trake druge boje.
+            const sviOdjeliTl = new Set([...primkePoOdjelu.keys(), ...otpremePoOdjelu.keys()]);
+            const toDaniTl = segs => segs.map(seg => ({
+                dayStart: _dayOfYearTl(seg.datumPocetka),
+                dayEnd: _dayOfYearTl(seg.datumKraja),
+                datumPocetka: seg.datumPocetka,
+                datumKraja: seg.datumKraja,
+            }));
 
             const stavke = [];
-            poOdjelu.forEach((primkeZaOdjel, odjel) => {
-                const segmenti = _computeSjecaSegmentiTl(primkeZaOdjel);
-                if (!segmenti.length) return;
-                stavke.push({
-                    odjel,
-                    segmenti: segmenti.map(seg => ({
-                        dayStart: _dayOfYearTl(seg.datumPocetka),
-                        dayEnd: _dayOfYearTl(seg.datumKraja),
-                        datumPocetka: seg.datumPocetka,
-                        datumKraja: seg.datumKraja,
-                    })),
-                });
+            sviOdjeliTl.forEach(odjel => {
+                const segmenti = toDaniTl(_computeSjecaSegmentiTl(primkePoOdjelu.get(odjel) || []));
+                const segmentiOtprema = toDaniTl(_computeSjecaSegmentiTl(otpremePoOdjelu.get(odjel) || []));
+                if (!segmenti.length && !segmentiOtprema.length) return;
+                stavke.push({ odjel, segmenti, segmentiOtprema });
             });
 
             if (!stavke.length) {
-                view.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af;">Nema evidentirane sječe' + (izabraniIzvodjac ? ' za ' + izabraniIzvodjac : '') + '.</div>';
+                view.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af;">Nema evidentirane sječe ni otpreme' + (izabraniIzvodjac ? ' za ' + izabraniIzvodjac : '') + '.</div>';
                 return;
             }
 
-            // Redaj po datumu kad je odjel POČEO da se siječe (prvi segment) — ne po GJ.
-            stavke.sort((a, b) => a.segmenti[0].dayStart - b.segmenti[0].dayStart);
+            // Redaj po datumu kad je odjel POČEO (sječa ili otprema, šta je ranije) — ne po GJ.
+            const prviDanTl = s => Math.min(
+                s.segmenti.length ? s.segmenti[0].dayStart : Infinity,
+                s.segmentiOtprema.length ? s.segmentiOtprema[0].dayStart : Infinity
+            );
+            stavke.sort((a, b) => prviDanTl(a) - prviDanTl(b));
 
-            const godina = stavke[0].segmenti[0].datumPocetka.getFullYear();
+            const prviDatumTl = stavke[0].segmenti[0] || stavke[0].segmentiOtprema[0];
+            const godina = prviDatumTl.datumPocetka.getFullYear();
             const LABEL_COL_WIDTH = 260;
             const monthNazivi = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
             const monthStarts = monthNazivi.map((lbl, i) => ({ lbl, day: _dayOfYearTl(new Date(godina, i, 1)) }));
@@ -6254,13 +6286,23 @@
             });
             const gridBg = gridStops.length ? 'background-image:linear-gradient(to right, ' + gridStops.join(', ') + ');' : '';
 
+            // Dvije trake po redu — sječa (narandžasta, gornja polovina) i otprema
+            // (plava, donja polovina), iste boje kao svugdje drugo u aplikaciji
+            // (#ea580c/#2563eb). I dalje u istoj tabeli/redu, ne razdvojeno.
             const rowsHtml = stavke.map(s => {
-                const barsHtml = s.segmenti.map(seg => {
+                const sjecaBarsHtml = s.segmenti.map(seg => {
                     const left = pct(seg.dayStart);
                     const width = pct(Math.max(seg.dayEnd - seg.dayStart + 1, 2));
-                    const naslov = s.odjel + ': ' + _fmtDatumTl(seg.datumPocetka) + ' → ' + _fmtDatumTl(seg.datumKraja);
-                    return '<div title="' + naslov + '" style="position:absolute;left:' + left + '%;width:' + width + '%;top:4px;bottom:4px;min-width:5px;background:#ea580c;border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.15);"></div>';
+                    const naslov = 'Sječa — ' + s.odjel + ': ' + _fmtDatumTl(seg.datumPocetka) + ' → ' + _fmtDatumTl(seg.datumKraja);
+                    return '<div title="' + naslov + '" style="position:absolute;left:' + left + '%;width:' + width + '%;top:2px;height:11px;min-width:5px;background:#ea580c;border-radius:3px;box-shadow:0 1px 2px rgba(0,0,0,.15);"></div>';
                 }).join('');
+                const otpremaBarsHtml = s.segmentiOtprema.map(seg => {
+                    const left = pct(seg.dayStart);
+                    const width = pct(Math.max(seg.dayEnd - seg.dayStart + 1, 2));
+                    const naslov = 'Otprema — ' + s.odjel + ': ' + _fmtDatumTl(seg.datumPocetka) + ' → ' + _fmtDatumTl(seg.datumKraja);
+                    return '<div title="' + naslov + '" style="position:absolute;left:' + left + '%;width:' + width + '%;top:15px;height:11px;min-width:5px;background:#2563eb;border-radius:3px;box-shadow:0 1px 2px rgba(0,0,0,.15);"></div>';
+                }).join('');
+                const barsHtml = sjecaBarsHtml + otpremaBarsHtml;
                 return '<div data-sel="0" onclick="timelineRowSelect(this)" style="display:flex;align-items:center;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:opacity .15s ease,background-color .15s ease;">' +
                     '<div style="flex:0 0 ' + LABEL_COL_WIDTH + 'px;padding:6px 10px;font-size:13px;font-weight:600;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + s.odjel + '</div>' +
                     '<div style="flex:1;position:relative;height:28px;' + gridBg + '">' + barsHtml + '</div></div>';
@@ -6268,9 +6310,11 @@
 
             view.innerHTML = '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;overflow-x:auto;">' +
                 '<div style="font-size:12px;color:#6b7280;margin-bottom:12px;display:flex;align-items:center;flex-wrap:wrap;gap:16px;">' +
-                '<span>Odjeli redani po datumu kad je sječa počela' +
+                '<span><span style="display:inline-block;width:10px;height:10px;background:#ea580c;border-radius:2px;margin-right:5px;vertical-align:middle;"></span>Sječa</span>' +
+                '<span><span style="display:inline-block;width:10px;height:10px;background:#2563eb;border-radius:2px;margin-right:5px;vertical-align:middle;"></span>Otprema</span>' +
+                '<span>Odjeli redani po datumu kad je sječa ili otprema počela' +
                 (izabraniIzvodjac ? ' — izvođač: <strong>' + izabraniIzvodjac + '</strong>' : ' — svi izvođači') +
-                '. Pauza duža od ' + TL_SEGMENT_PAUZA_DANA + ' dana prikazana je kao dvije trake na istom redu.</span>' +
+                '. Pauza duža od ' + TL_SEGMENT_PAUZA_DANA + ' dana prikazana je kao dvije trake iste boje na istom redu.</span>' +
                 '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:auto;font-weight:600;color:#374151;white-space:nowrap;">' +
                 '<input type="checkbox" onchange="tlToggleSlucajni(this.checked)"' + (_tlHideSlucajni ? ' checked' : '') + '>' +
                 'Sakrij "Slučajni užici" / "Zapisnik"</label></div>' +
