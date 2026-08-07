@@ -587,6 +587,7 @@
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('monthly')">📊 Mjesečni prikaz po radnicima</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('radilista')">🏗️ Radilišta</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('izvodjaci')">👷 Izvođači</button>
+                <button class="submenu-tab" onclick="switchPrimaciSubmenu('period-realizacije')">📅 Period realizacije odjela</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('sortimenti-by-primac')">🏷️ Sortimentni po primačima</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('trendovi')">📈 Trendovi</button>
             </div>
@@ -810,13 +811,6 @@
                         </div>
                     </div>
 
-                    <!-- Timeline realizacije — sviizvođači, ili samo izabrani (isti
-                         dropdown iznad). Odjeli su redani po datumu kad je sječa
-                         u njima POČELA (ne po GJ kao u Godišnji plan tabu), da se
-                         vidi hronološki tok rada izvođača/izvođača kroz godinu. -->
-                    <h4 style="color: #7c2d12; margin-top: 30px; margin-bottom: 12px;">📅 Timeline realizacije</h4>
-                    <div id="primaci-izvodjaci-timeline"></div>
-
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top:30px;">
                         <table class="monthly-table" id="primaci-izvodjaci-table">
                             <thead id="primaci-izvodjaci-header"></thead>
@@ -830,6 +824,23 @@
                             <tbody id="primaci-izvodjaci-recap-body"></tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+
+            <!-- Period realizacije odjela — Timeline realizacije, izdvojen u vlastiti
+                 podtab (ranije dio "Izvođači" podtaba). Odjeli su redani po datumu
+                 kad je sječa u njima POČELA (ne po GJ kao u Godišnji plan tabu), da
+                 se vidi hronološki tok rada izvođača kroz godinu. Filter i dalje
+                 dijeli #primaci-izvodjac-select iz "Izvođači" podtaba (prazno = svi
+                 izvođači) — element ostaje u DOM-u i čitljiv i dok taj podtab nije
+                 aktivan, vidi renderPrimaciIzvodjaciTimeline (js/app.js). -->
+            <div id="primaci-period-view" class="submenu-content hidden">
+                <div class="section">
+                    <h3 style="color: #ea580c; text-align: center; margin-bottom: 20px;">📅 Period realizacije odjela</h3>
+                    <div style="text-align:center; font-size:12px; color:#9ca3af; margin-bottom:16px;">
+                        Filtrirano prema izvođaču izabranom u podtabu "Izvođači" (prazno = svi izvođači).
+                    </div>
+                    <div id="primaci-izvodjaci-timeline"></div>
                 </div>
             </div>
 

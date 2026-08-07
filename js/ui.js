@@ -295,6 +295,7 @@
             document.getElementById('primaci-daily-view').classList.add('hidden');
             document.getElementById('primaci-radilista-view').classList.add('hidden');
             document.getElementById('primaci-izvodjaci-view').classList.add('hidden');
+            document.getElementById('primaci-period-view').classList.add('hidden');
             document.getElementById('primaci-sortimenti-primac-view').classList.add('hidden');
             document.getElementById('primaci-trendovi-view').classList.add('hidden');
 
@@ -321,6 +322,15 @@
                 // Load izvodjaci data if not already loaded
                 if (!document.getElementById('primaci-izvodjaci-header').innerHTML) {
                     loadPrimaciByIzvodjac();
+                }
+            } else if (view === 'period-realizacije') {
+                document.getElementById('primaci-period-view').classList.remove('hidden');
+                // Lazy load samo prvi put — nezavisno od "Izvođači" podtaba
+                // (renderPrimaciIzvodjaciTimeline sam dohvata podatke, ne treba
+                // loadPrimaciByIzvodjac da bude prethodno pokrenut).
+                const tlView = document.getElementById('primaci-izvodjaci-timeline');
+                if (tlView && !tlView.innerHTML && typeof renderPrimaciIzvodjaciTimeline === 'function') {
+                    renderPrimaciIzvodjaciTimeline();
                 }
             } else if (view === 'sortimenti-by-primac') {
                 document.getElementById('primaci-sortimenti-primac-view').classList.remove('hidden');
