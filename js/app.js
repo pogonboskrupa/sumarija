@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.4.4';
+        const APP_VERSION = '1.4.5';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6368,12 +6368,17 @@
         // iznova u renderPrimaciTrendOverview.
         const TREND_OVERVIEW_DANA_DEFAULT = 7;
         const TREND_ZALIHA_PRAG_DEFAULT = 200;
-        // "Listovi" sortimenti iz zaliha objekta — bez agregatnih/rollup ključeva
-        // (TRUPCI Č/Σ ČETINARI/TRUPCI L/LIŠĆARI/UKUPNO Č+L, vidi buildCorrectedZaliha),
-        // da se ista količina ne prijavi više puta kroz roditelja i dijete.
+        // "Glavni" sortimenti iz zaliha objekta — klase (F/L Č/I Č/II Č/III Č/RD
+        // i lišćarski ekvivalenti) su spojene u TRUPCI Č/TRUPCI L (buildCorrectedZaliha
+        // ih već zbraja, isto polje koje koristi i kartica "Stanje zaliha"), a
+        // Σ ČETINARI/LIŠĆARI/UKUPNO Č+L (dalji zbirovi) su izostavljeni — inače
+        // bi se ista količina prijavila po dva-tri puta kroz roditelja i dijete.
+        // Isti 8 "pravih" sortimenata kao TREND_TOP_ISKLJUCENI dolje (obrnuta
+        // logika: tamo se isključuju klase/agregati iz flatten-ovanih primki/
+        // otprema redova, ovdje se čita spreman zbir iz zaliha objekta).
         const TREND_ZALIHA_LEAF_SORTIMENTI = [
-            'F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART',
-            'F/L L', 'I L', 'II L', 'III L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE'
+            'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART',
+            'TRUPCI L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE'
         ];
 
         // handlePrimke/handleOtpreme (apps-script) "flatten"-uju svih 19
