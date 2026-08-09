@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.4.3';
+        const APP_VERSION = '1.4.4';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6376,6 +6376,20 @@
             'F/L L', 'I L', 'II L', 'III L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE'
         ];
 
+        // handlePrimke/handleOtpreme (apps-script) "flatten"-uju svih 19
+        // sortiment kolona iz PRIMAČ_UNOS/INDEKS_OTPREMA reda u ODVOJENE
+        // primke/otpreme zapise (jedan po koloni sa vrijednošću > 0) — F/L Č,
+        // I Č, II Č, III Č, RD su POJEDINAČNE klase, a Σ ČETINARI/LIŠĆARI su
+        // NJIHOVI zbirovi upisani u istu kolonu-red. Ubrajanje klasa i/ili
+        // zbirova u rang-listu "najviše sječeno/otpremljeno" pored TRUPCI Č/
+        // TRUPCI L bi istu drvnu masu brojalo i dva i tri puta. Isti "glavni"
+        // sortimenti koje godisnji-plan.js buildRows() jedine i čita.
+        const TREND_TOP_ISKLJUCENI = new Set([
+            'F/L Č', 'I Č', 'II Č', 'III Č', 'RD',
+            'F/L L', 'I L', 'II L', 'III L',
+            'Σ ČETINARI', 'LIŠĆARI'
+        ]);
+
         function _topSortimentiPoslednjihDana(niz, dana) {
             const danas = new Date();
             danas.setHours(0, 0, 0, 0);
@@ -6385,6 +6399,7 @@
             niz.forEach(p => {
                 const d = _parseDatumTl(p.datum);
                 if (!d || d < od || d > danas) return;
+                if (TREND_TOP_ISKLJUCENI.has(p.sortiment)) return;
                 const kolicina = parseFloat(p.kolicina) || 0;
                 if (!kolicina) return;
                 zbir[p.sortiment] = (zbir[p.sortiment] || 0) + kolicina;
@@ -6432,8 +6447,19 @@
                 const url = buildApiUrl('stanje-zaliha');
                 const data = await fetchWithCache(url, 'cache_stanje_zaliha', false, 180000);
                 const odjeli = (data && data.odjeli) || [];
+                // Odjel bez skorije otpreme je vjerovatno napušten/završen —
+                // zaliha mu i dalje "stoji" u brojkama, ali niko trenutno ne
+                // radi na njemu, pa ne treba trošiti pažnju na njega u ovom
+                // pregledu. Bez ijedne evidentirane otpreme (zadnjaOtprema
+                // prazno) tretira se isto kao "davno" — ne može se potvrditi
+                // skorija aktivnost.
+                const dvaMjesecaPrije = new Date();
+                dvaMjesecaPrije.setHours(0, 0, 0, 0);
+                dvaMjesecaPrije.setMonth(dvaMjesecaPrije.getMonth() - 2);
                 const visokeZalihe = [];
                 odjeli.forEach(odjel => {
+                    const zadnjaOtpremaDatum = _parseDatumTl(odjel.zadnjaOtprema);
+                    if (!zadnjaOtpremaDatum || zadnjaOtpremaDatum < dvaMjesecaPrije) return;
                     const netZ = getNetZaliha(odjel);
                     TREND_ZALIHA_LEAF_SORTIMENTI.forEach(s => {
                         const v = netZ[s] || 0;
