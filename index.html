@@ -878,6 +878,25 @@
                         </div>
                     </div>
 
+                    <!-- Brzi pregled: najviše sječeno/otpremljeno (klizni period do danas,
+                         namjerno bez vidljive napomene o dužini perioda) i odjeli/sortimenti
+                         sa zalihom preko praga — vidi renderPrimaciTrendOverview (js/app.js).
+                         Nezavisno od mjesec/sortiment birača iznad i grafikona ispod. -->
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:16px; margin-bottom:28px;">
+                        <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:14px 16px;">
+                            <div style="font-size:12px; font-weight:800; color:#ea580c; text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px;">🔥 Najviše sječeno</div>
+                            <div id="primaci-trend-top-sjeca"></div>
+                        </div>
+                        <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:14px 16px;">
+                            <div style="font-size:12px; font-weight:800; color:#2563eb; text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px;">📦 Najviše otpremljeno</div>
+                            <div id="primaci-trend-top-otprema"></div>
+                        </div>
+                        <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:14px 16px;">
+                            <div style="font-size:12px; font-weight:800; color:#b45309; text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px;">⚠️ Zalihe preko 200 m³</div>
+                            <div id="primaci-trend-zalihe"></div>
+                        </div>
+                    </div>
+
                     <div id="primaci-trend-loading" style="text-align:center; padding:40px; color:#4b5563;">⏳ Učitavam...</div>
 
                     <div id="primaci-trend-charts" class="hidden">

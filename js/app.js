@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.4.1';
+        const APP_VERSION = '1.4.2';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6353,7 +6353,101 @@
         let _primaciTrendWeekChart = null;
         let _primaciTrendMonthChart = null;
 
+        // ============================================
+        // 🔥 BRZI PREGLED (Sječa → Trendovi) — najviše sječeno/otpremljeno u
+        // kliznom periodu do danas (koristi ISTE keširane primke/otpreme kao
+        // "Period realizacije odjela" — _dohvatiPrimkeZaTimeline/Otpreme), i
+        // odjeli/sortimenti sa TRENUTNOM zalihom preko praga (isti stanje-zaliha
+        // endpoint i getNetZaliha() kao admin tab "Stanje zaliha", ponovo
+        // upotrijebljeni ovdje). NAMJERNO bez vidljive napomene o dužini
+        // perioda u naslovima — korisnik eksplicitno nije htio taj hint.
+        // Nezavisno od mjesec/sortiment birača i grafikona ispod.
+        // ============================================
+        const TREND_OVERVIEW_DANA = 7;
+        const TREND_ZALIHA_PRAG = 200;
+        // "Listovi" sortimenti iz zaliha objekta — bez agregatnih/rollup ključeva
+        // (TRUPCI Č/Σ ČETINARI/TRUPCI L/LIŠĆARI/UKUPNO Č+L, vidi buildCorrectedZaliha),
+        // da se ista količina ne prijavi više puta kroz roditelja i dijete.
+        const TREND_ZALIHA_LEAF_SORTIMENTI = [
+            'F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART',
+            'F/L L', 'I L', 'II L', 'III L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE'
+        ];
+
+        function _topSortimentiPoslednjihDana(niz, dana) {
+            const danas = new Date();
+            danas.setHours(0, 0, 0, 0);
+            const od = new Date(danas);
+            od.setDate(od.getDate() - (dana - 1));
+            const zbir = {};
+            niz.forEach(p => {
+                const d = _parseDatumTl(p.datum);
+                if (!d || d < od || d > danas) return;
+                const kolicina = parseFloat(p.kolicina) || 0;
+                if (!kolicina) return;
+                zbir[p.sortiment] = (zbir[p.sortiment] || 0) + kolicina;
+            });
+            return Object.entries(zbir)
+                .filter(([, v]) => v > 0)
+                .sort((a, b) => b[1] - a[1]);
+        }
+
+        function _trendOverviewListaHtml(lista, boja) {
+            if (!lista.length) return '<div style="text-align:center;padding:12px;color:#9ca3af;font-size:13px;">Nema evidentiranih unosa.</div>';
+            return lista.slice(0, 8).map(([sortiment, kolicina], i) => (
+                '<div style="display:flex;align-items:center;gap:10px;padding:7px 2px;' + (i ? 'border-top:1px solid #f1f5f9;' : '') + '">' +
+                '<span style="flex:0 0 20px;font-size:11px;font-weight:800;color:#9ca3af;">' + (i + 1) + '.</span>' +
+                '<span style="flex:1;font-size:13px;font-weight:600;color:#374151;">' + sortiment + '</span>' +
+                '<span style="font-size:13px;font-weight:800;color:' + boja + ';font-variant-numeric:tabular-nums;">' + kolicina.toFixed(2) + ' m³</span>' +
+                '</div>'
+            )).join('');
+        }
+
+        async function renderPrimaciTrendOverview() {
+            const sjecaEl = document.getElementById('primaci-trend-top-sjeca');
+            const otpremaEl = document.getElementById('primaci-trend-top-otprema');
+            const zalihaEl = document.getElementById('primaci-trend-zalihe');
+            if (!sjecaEl || !otpremaEl || !zalihaEl) return;
+
+            sjecaEl.innerHTML = otpremaEl.innerHTML = zalihaEl.innerHTML =
+                '<div style="text-align:center;padding:12px;color:#9ca3af;">⏳</div>';
+
+            const [primke, otpreme] = await Promise.all([
+                _dohvatiPrimkeZaTimeline(),
+                _dohvatiOtpremeZaTimeline()
+            ]);
+            sjecaEl.innerHTML = _trendOverviewListaHtml(_topSortimentiPoslednjihDana(primke, TREND_OVERVIEW_DANA), '#ea580c');
+            otpremaEl.innerHTML = _trendOverviewListaHtml(_topSortimentiPoslednjihDana(otpreme, TREND_OVERVIEW_DANA), '#2563eb');
+
+            try {
+                const url = buildApiUrl('stanje-zaliha');
+                const data = await fetchWithCache(url, 'cache_stanje_zaliha', false, 180000);
+                const odjeli = (data && data.odjeli) || [];
+                const visokeZalihe = [];
+                odjeli.forEach(odjel => {
+                    const netZ = getNetZaliha(odjel);
+                    TREND_ZALIHA_LEAF_SORTIMENTI.forEach(s => {
+                        const v = netZ[s] || 0;
+                        if (v > TREND_ZALIHA_PRAG) visokeZalihe.push({ odjel: odjel.odjel, sortiment: s, zaliha: v });
+                    });
+                });
+                visokeZalihe.sort((a, b) => b.zaliha - a.zaliha);
+
+                zalihaEl.innerHTML = !visokeZalihe.length
+                    ? '<div style="text-align:center;padding:12px;color:#9ca3af;font-size:13px;">Nema odjela sa zalihom preko ' + TREND_ZALIHA_PRAG + ' m³ po sortimentu.</div>'
+                    : visokeZalihe.map((v, i) => (
+                        '<div style="display:flex;align-items:center;gap:10px;padding:7px 2px;' + (i ? 'border-top:1px solid #f1f5f9;' : '') + '">' +
+                        '<span style="flex:1;font-size:13px;font-weight:600;color:#374151;">' + v.odjel + ' <span style="color:#9ca3af;font-weight:500;">— ' + v.sortiment + '</span></span>' +
+                        '<span style="font-size:13px;font-weight:800;color:#b45309;font-variant-numeric:tabular-nums;">' + v.zaliha.toFixed(2) + ' m³</span>' +
+                        '</div>'
+                    )).join('');
+            } catch (e) {
+                console.error('Error loading zalihe za trend overview:', e);
+                zalihaEl.innerHTML = '<div style="text-align:center;padding:12px;color:#dc2626;font-size:13px;">Greška pri učitavanju zaliha.</div>';
+            }
+        }
+
         async function loadPrimaciTrendovi() {
+            renderPrimaciTrendOverview(); // brzi pregled — nezavisan od grafikona ispod, uvijek osvježi
             if (_primaciTrendState.loaded) { renderPrimaciTrendCharts(); return; }
 
             const loadingEl = document.getElementById('primaci-trend-loading');
