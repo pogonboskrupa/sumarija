@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.4.5';
+        const APP_VERSION = '1.4.6';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6395,15 +6395,29 @@
             'Σ ČETINARI', 'LIŠĆARI'
         ]);
 
-        function _topSortimentiPoslednjihDana(niz, dana) {
+        // Subota/nedjelja — na terenu se ne siječe/otprema pa se ne broje kao
+        // "dani unosa" (korisnikova napomena: "dana" = radni dani unosa).
+        function _jeVikend(d) {
+            const dan = d.getDay(); // 0=nedjelja, 6=subota
+            return dan === 0 || dan === 6;
+        }
+
+        function _topSortimentiPoslednjihDana(niz, danaRadnih) {
             const danas = new Date();
             danas.setHours(0, 0, 0, 0);
+            // Vrati se unazad dan-po-dan dok se ne nabroji traženi broj RADNIH
+            // dana (vikend se preskače, pa prozor u kalendarskim danima zna biti
+            // širi od danaRadnih ako unutra upadne subota/nedjelja).
             const od = new Date(danas);
-            od.setDate(od.getDate() - (dana - 1));
+            let brojac = _jeVikend(od) ? 0 : 1;
+            while (brojac < danaRadnih) {
+                od.setDate(od.getDate() - 1);
+                if (!_jeVikend(od)) brojac++;
+            }
             const zbir = {};
             niz.forEach(p => {
                 const d = _parseDatumTl(p.datum);
-                if (!d || d < od || d > danas) return;
+                if (!d || d < od || d > danas || _jeVikend(d)) return;
                 if (TREND_TOP_ISKLJUCENI.has(p.sortiment)) return;
                 const kolicina = parseFloat(p.kolicina) || 0;
                 if (!kolicina) return;
