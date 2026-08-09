@@ -881,7 +881,23 @@
                     <!-- Brzi pregled: najviše sječeno/otpremljeno (klizni period do danas,
                          namjerno bez vidljive napomene o dužini perioda) i odjeli/sortimenti
                          sa zalihom preko praga — vidi renderPrimaciTrendOverview (js/app.js).
-                         Nezavisno od mjesec/sortiment birača iznad i grafikona ispod. -->
+                         Perioda dana i prag zalihe su podesivi (birači ispod), nezavisno od
+                         mjesec/sortiment birača iznad i grafikona ispod. -->
+                    <div class="controls-bar" style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center; align-items:flex-end; margin-bottom:14px;">
+                        <div class="month-selector month-selector--neutral">
+                            <label>📆 Period (dana):</label>
+                            <select id="primaci-trend-overview-dana" class="month-select" onchange="renderPrimaciTrendOverview()">
+                                <option value="3">3</option>
+                                <option value="7" selected>7</option>
+                                <option value="14">14</option>
+                                <option value="30">30</option>
+                            </select>
+                        </div>
+                        <div class="month-selector month-selector--neutral">
+                            <label>⚠️ Prag zalihe (m³):</label>
+                            <input type="number" id="primaci-trend-overview-prag" class="month-select" value="200" min="0" step="10" onchange="renderPrimaciTrendOverview()" style="width:90px;">
+                        </div>
+                    </div>
                     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:16px; margin-bottom:28px;">
                         <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:14px 16px;">
                             <div style="font-size:12px; font-weight:800; color:#ea580c; text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px;">🔥 Najviše sječeno</div>
@@ -892,7 +908,7 @@
                             <div id="primaci-trend-top-otprema"></div>
                         </div>
                         <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:14px 16px;">
-                            <div style="font-size:12px; font-weight:800; color:#b45309; text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px;">⚠️ Zalihe preko 200 m³</div>
+                            <div style="font-size:12px; font-weight:800; color:#b45309; text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px;">⚠️ Zalihe preko <span id="primaci-trend-zalihe-prag-label">200</span> m³</div>
                             <div id="primaci-trend-zalihe"></div>
                         </div>
                     </div>

@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.4.2';
+        const APP_VERSION = '1.4.3';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6363,8 +6363,11 @@
         // perioda u naslovima — korisnik eksplicitno nije htio taj hint.
         // Nezavisno od mjesec/sortiment birača i grafikona ispod.
         // ============================================
-        const TREND_OVERVIEW_DANA = 7;
-        const TREND_ZALIHA_PRAG = 200;
+        // Podrazumijevane vrijednosti — korisnik ih mijenja preko birača u
+        // zaglavlju (#primaci-trend-overview-dana / -prag), čita se svaki put
+        // iznova u renderPrimaciTrendOverview.
+        const TREND_OVERVIEW_DANA_DEFAULT = 7;
+        const TREND_ZALIHA_PRAG_DEFAULT = 200;
         // "Listovi" sortimenti iz zaliha objekta — bez agregatnih/rollup ključeva
         // (TRUPCI Č/Σ ČETINARI/TRUPCI L/LIŠĆARI/UKUPNO Č+L, vidi buildCorrectedZaliha),
         // da se ista količina ne prijavi više puta kroz roditelja i dijete.
@@ -6408,6 +6411,13 @@
             const zalihaEl = document.getElementById('primaci-trend-zalihe');
             if (!sjecaEl || !otpremaEl || !zalihaEl) return;
 
+            const danaSel = document.getElementById('primaci-trend-overview-dana');
+            const dana = danaSel ? parseInt(danaSel.value, 10) || TREND_OVERVIEW_DANA_DEFAULT : TREND_OVERVIEW_DANA_DEFAULT;
+            const pragEl = document.getElementById('primaci-trend-overview-prag');
+            const prag = pragEl && pragEl.value !== '' ? Number(pragEl.value) : TREND_ZALIHA_PRAG_DEFAULT;
+            const pragLabelEl = document.getElementById('primaci-trend-zalihe-prag-label');
+            if (pragLabelEl) pragLabelEl.textContent = prag;
+
             sjecaEl.innerHTML = otpremaEl.innerHTML = zalihaEl.innerHTML =
                 '<div style="text-align:center;padding:12px;color:#9ca3af;">⏳</div>';
 
@@ -6415,8 +6425,8 @@
                 _dohvatiPrimkeZaTimeline(),
                 _dohvatiOtpremeZaTimeline()
             ]);
-            sjecaEl.innerHTML = _trendOverviewListaHtml(_topSortimentiPoslednjihDana(primke, TREND_OVERVIEW_DANA), '#ea580c');
-            otpremaEl.innerHTML = _trendOverviewListaHtml(_topSortimentiPoslednjihDana(otpreme, TREND_OVERVIEW_DANA), '#2563eb');
+            sjecaEl.innerHTML = _trendOverviewListaHtml(_topSortimentiPoslednjihDana(primke, dana), '#ea580c');
+            otpremaEl.innerHTML = _trendOverviewListaHtml(_topSortimentiPoslednjihDana(otpreme, dana), '#2563eb');
 
             try {
                 const url = buildApiUrl('stanje-zaliha');
@@ -6427,13 +6437,13 @@
                     const netZ = getNetZaliha(odjel);
                     TREND_ZALIHA_LEAF_SORTIMENTI.forEach(s => {
                         const v = netZ[s] || 0;
-                        if (v > TREND_ZALIHA_PRAG) visokeZalihe.push({ odjel: odjel.odjel, sortiment: s, zaliha: v });
+                        if (v > prag) visokeZalihe.push({ odjel: odjel.odjel, sortiment: s, zaliha: v });
                     });
                 });
                 visokeZalihe.sort((a, b) => b.zaliha - a.zaliha);
 
                 zalihaEl.innerHTML = !visokeZalihe.length
-                    ? '<div style="text-align:center;padding:12px;color:#9ca3af;font-size:13px;">Nema odjela sa zalihom preko ' + TREND_ZALIHA_PRAG + ' m³ po sortimentu.</div>'
+                    ? '<div style="text-align:center;padding:12px;color:#9ca3af;font-size:13px;">Nema odjela sa zalihom preko ' + prag + ' m³ po sortimentu.</div>'
                     : visokeZalihe.map((v, i) => (
                         '<div style="display:flex;align-items:center;gap:10px;padding:7px 2px;' + (i ? 'border-top:1px solid #f1f5f9;' : '') + '">' +
                         '<span style="flex:1;font-size:13px;font-weight:600;color:#374151;">' + v.odjel + ' <span style="color:#9ca3af;font-weight:500;">— ' + v.sortiment + '</span></span>' +
