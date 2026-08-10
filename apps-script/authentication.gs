@@ -105,11 +105,12 @@ function handleLogin(username, password) {
 //   - Nova prijava istog korisnika unutar zadnjih 12h → ništa se ne mijenja
 //     (isti "posjet"/sesija, ne novo otvaranje vrijedno bilježenja).
 //   - Nova prijava poslije 12h+ pauze (ili prvi put ikad za tog korisnika)
-//     → ZADNJA_PRIJAVA prelazi u PRETPOSLJEDNJA_PRIJAVA, trenutno vrijeme
-//     postaje nova ZADNJA_PRIJAVA. Samo zadnja dva otvaranja se pamte.
+//     → LOGIN 1 prelazi u LOGIN 2, trenutno vrijeme postaje novi LOGIN 1.
+//     Samo zadnja dva otvaranja se pamte.
 // Samo USPJEŠNE prijave se bilježe (pogrešna šifra se ne upisuje).
 var PRIJAVA_SHEET = 'prijava';
-var PRIJAVA_HEADERS = ['KORISNICKO_IME', 'IME', 'TIP', 'ZADNJA_PRIJAVA', 'PRETPOSLJEDNJA_PRIJAVA'];
+// LOGIN 1 = zadnja (najnovija) prijava, LOGIN 2 = pretposljednja.
+var PRIJAVA_HEADERS = ['KORISNICKO_IME', 'IME', 'TIP', 'LOGIN 1', 'LOGIN 2'];
 var PRIJAVA_LIMIT_MS = 12 * 60 * 60 * 1000; // 12h
 
 function _prijavaSheet(create) {
