@@ -102,16 +102,16 @@ function handleLogin(username, password) {
 // provjera kredencijala u js/app.js kad se prijava vraća iz localStorage-a)
 // — ne samo pri stvarnom unosu korisničkog imena/šifre. Zato JEDAN RED PO
 // KORISNIKU umjesto reda-po-događaju:
-//   - Nova prijava istog korisnika unutar zadnjih 12h → ništa se ne mijenja
+//   - Nova prijava istog korisnika unutar zadnjih 6h → ništa se ne mijenja
 //     (isti "posjet"/sesija, ne novo otvaranje vrijedno bilježenja).
-//   - Nova prijava poslije 12h+ pauze (ili prvi put ikad za tog korisnika)
+//   - Nova prijava poslije 6h+ pauze (ili prvi put ikad za tog korisnika)
 //     → LOGIN 1 prelazi u LOGIN 2, trenutno vrijeme postaje novi LOGIN 1.
 //     Samo zadnja dva otvaranja se pamte.
 // Samo USPJEŠNE prijave se bilježe (pogrešna šifra se ne upisuje).
 var PRIJAVA_SHEET = 'prijava';
 // LOGIN 1 = zadnja (najnovija) prijava, LOGIN 2 = pretposljednja.
 var PRIJAVA_HEADERS = ['KORISNICKO_IME', 'IME', 'TIP', 'LOGIN 1', 'LOGIN 2'];
-var PRIJAVA_LIMIT_MS = 12 * 60 * 60 * 1000; // 12h
+var PRIJAVA_LIMIT_MS = 6 * 60 * 60 * 1000; // 6h
 
 function _prijavaSheet(create) {
   var ss = SpreadsheetApp.openById(KORISNICI_SPREADSHEET_ID);
@@ -155,7 +155,7 @@ function logPrijava(username, ime, tip, uspjesno) {
     var zadnja = data[redIndex][3];
     var zadnjaMs = (zadnja instanceof Date) ? zadnja.getTime() : 0;
     if (zadnjaMs && (sada.getTime() - zadnjaMs) < PRIJAVA_LIMIT_MS) {
-      return; // unutar 12h od zadnje prijave — ne diraj red
+      return; // unutar 6h od zadnje prijave — ne diraj red
     }
 
     var redBroj = redIndex + 1; // 1-indexed red u sheetu (data je 0-indexed)
