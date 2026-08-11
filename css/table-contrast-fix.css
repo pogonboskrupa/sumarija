@@ -48,7 +48,6 @@
 
 /* Override inline styles sa světlim bojama */
 .month-row[style*="#fef3c7"],
-.data-row[style*="#fef3c7"],
 td[style*="background: #fef3c7"] {
     background: #fde047 !important;
     color: #78350f !important;
@@ -65,40 +64,13 @@ td[style*="background: linear-gradient"][style*="254, 243"] {
 }
 
 /* Fix za izvještaje tabele */
-.izvjestaj-table td[style*="background"],
-.izvjestaj-table th[style*="background"] {
-    /* Osiguraj dovoljnu kontrast */
-}
 
-.izvjestaj-table td[style*="#fef3c7"],
-.izvjestaj-table td[style*="#fef9c3"],
-.izvjestaj-table td[style*="#fed7aa"] {
-    background: #fbbf24 !important;
-    color: #78350f !important;
-}
 
 /* Specifično za mjesečni izvještaj tabele */
-#primac-mjesecni-content table td,
-#otpremac-mjesecni-content table td {
-    min-width: 80px;
-}
 
-#primac-mjesecni-content table td[style*="background"],
-#otpremac-mjesecni-content table td[style*="background"] {
-    font-weight: 500;
-}
 
 /* Svijetle žute ćelije -> Tamnije */
-#primac-mjesecni-content table td[style*="#fef3c7"],
-#primac-mjesecni-content table td[style*="#fef9c3"],
-#primac-mjesecni-content table td[style*="#fed7aa"],
-#otpremac-mjesecni-content table td[style*="#fef3c7"],
-#otpremac-mjesecni-content table td[style*="#fef9c3"],
-#otpremac-mjesecni-content table td[style*="#fed7aa"] {
-    background: #fbbf24 !important;
-    color: #78350f !important;
-    font-weight: 600 !important;
-}
+
 
 /* Badge warning - tamniji */
 .badge.warning {
@@ -107,10 +79,7 @@ td[style*="background: linear-gradient"][style*="254, 243"] {
 }
 
 /* Cache status warning - tamniji */
-.cache-status.cache-loading {
-    background: #fbbf24 !important;
-    color: #78350f !important;
-}
+
 
 /* Ensure text contrast na svim svijetlim background-ima */
 *[style*="background: #fef"],
@@ -120,60 +89,8 @@ td[style*="background: linear-gradient"][style*="254, 243"] {
     color: #78350f !important;
 }
 
-/* ============================================ */
-/* 🔧 NOVI IZVJEŠTAJI - Profesionalne tabele */
-/* Konzistentne boje sa pravilnim borderima */
-/* ============================================ */
+/* ============================================ */ /* 🔧 NOVI IZVJEŠTAJI - Profesionalne tabele */ /* Konzistentne boje sa pravilnim borderima */ /* ============================================ */
 
-.izvjestaji-table {
-    width: 100%;
-    border-collapse: collapse;
-    border: 2px solid #e5e7eb;
-    font-size: 14px;
-}
-
-.izvjestaji-table thead th {
-    padding: 12px;
-    text-align: right;
-    font-weight: 700;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.izvjestaji-table thead th:first-child {
-    text-align: left;
-    position: sticky;
-    left: 0;
-    z-index: 20;
-    background: #374151 !important;
-    color: white !important;
-    border-right: 2px solid #1f2937;
-}
-
-.izvjestaji-table tbody td {
-    padding: 12px;
-    text-align: right;
-    font-weight: 600;
-    border: 1px solid #e5e7eb;
-}
-
-.izvjestaji-table tbody td:first-child {
-    text-align: left;
-    position: sticky;
-    left: 0;
-    z-index: 10;
-    background: white !important;
-    color: #1f2937 !important;
-    font-weight: 700;
-    border-right: 2px solid #d1d5db;
-}
-
-.izvjestaji-table tbody tr:hover {
-    background: #f9fafb;
-}
-
-.izvjestaji-table tbody tr:hover td:first-child {
-    background: #f3f4f6 !important;
-}
 
 /* ============================================ */
 /* 📊 GLOBAL TYPOGRAPHY FOR NUMERIC DATA */
@@ -192,16 +109,8 @@ table td {
 table td[style*="text-align: right"],
 table td.number,
 table td.right,
-.izvjestaji-table tbody td,
-.izvjestaj-table tbody td,
 .worker-table tbody td,
 #odjeli-table-body td,
-#stanje-table-body td,
-#realizacija-table-body td,
-#primke-table-body td,
-#otpreme-table-body td,
-#kupci-godisnji-tbody td,
-#kupci-mjesecni-tbody td,
 #primaci-body td,
 #otpremaci-body td,
 #primaci-daily-body td,
@@ -271,10 +180,16 @@ td[style*="color: #ef4444"] {
    red je u posebnom <tfoot> (već pokriven pravilom "table tfoot td" ispod),
    pa je zadnji red u <tbody> obični mjesec (Decembar), ne total — bez izuzetka
    bi se Decembar uvijek boldirao bez obzira na to koji je mjesec stvarno tekući. */
+/* UKUPNO/Total rows - MAXIMUM emphasis
+   #dashboard-table (Šumarija tab,
+Mjesečni pregled) je izuzet — njegov UKUPNO
+   red je u posebnom <tfoot> (već pokriven pravilom "table tfoot td" ispod),
+pa je zadnji red u <tbody> obični mjesec (Decembar),
+ne total — bez izuzetka
+   bi se Decembar uvijek boldirao bez obzira na to koji je mjesec stvarno tekući. */
 table:not(#dashboard-table) tbody tr:last-child td,
 table tfoot td,
-.ukupno-row td,
-.total-row td {
+.ukupno-row td {
     font-family: 'Inter', -apple-system, sans-serif !important;
     font-weight: 900 !important;
     font-size: 15px !important;
@@ -319,9 +234,7 @@ th[style*="color: #ffffff"] {
 }
 
 /* Dashboard cards - numeric values - INTER */
-.stat-value,
-.card-value,
-.metric-value {
+.card-value {
     font-family: 'Inter', -apple-system, sans-serif !important;
     font-weight: 800 !important;
     -webkit-font-smoothing: antialiased !important;
@@ -329,10 +242,6 @@ th[style*="color: #ffffff"] {
 
 
 /* Primaci and Otpremaci detail tables - INTER */
-#primac-detail-content table td,
-#otpremac-detail-content table td,
-#primac-mjesecni-content table td,
-#otpremac-mjesecni-content table td,
 #primac-odjeli-content table td,
 #otpremac-odjeli-content table td {
     font-family: 'Inter', -apple-system, sans-serif !important;
@@ -343,7 +252,6 @@ th[style*="color: #ffffff"] {
 
 /* Sortimenti tables - INTER */
 #sortimenti-content table td,
-#primke-content table td,
 #otpreme-content table td {
     font-family: 'Inter', -apple-system, sans-serif !important;
     font-weight: 700 !important;
@@ -353,9 +261,7 @@ th[style*="color: #ffffff"] {
 
 /* Poslovođa panel tables - INTER */
 #poslovodja-stanje-content table td,
-#poslovodja-realizacija-content table td,
-#poslovodja-zadnjih5-content table td,
-#poslovodja-suma-content table td {
+#poslovodja-zadnjih5-content table td {
     font-family: 'Inter', -apple-system, sans-serif !important;
     font-weight: 700 !important;
     font-size: 14px !important;
@@ -363,7 +269,6 @@ th[style*="color: #ffffff"] {
 }
 
 /* Radnici panel tables - INTER */
-#radnici-content table td,
 #primac-personal-content table td,
 #otpremac-personal-content table td {
     font-family: 'Inter', -apple-system, sans-serif !important;
@@ -1122,22 +1027,17 @@ table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-sedmica {
     border-radius: 0 0 8px 8px;
 }
 
-/* ============================================ */
-/* 🎨 PREGLED PO ODJELIMA - RADILIŠTE COLORING */
-/* Centralna paleta boja za radilišta */
-/* ============================================ */
-
-/* Radilište color palette - 10 distinct colors */
-.radiliste-1 { background-color: #dbeafe !important; } /* Light blue */
-.radiliste-2 { background-color: #dcfce7 !important; } /* Light green */
-.radiliste-3 { background-color: #fef3c7 !important; } /* Light amber */
-.radiliste-4 { background-color: #fce7f3 !important; } /* Light pink */
-.radiliste-5 { background-color: #e0e7ff !important; } /* Light indigo */
-.radiliste-6 { background-color: #ccfbf1 !important; } /* Light teal */
-.radiliste-7 { background-color: #fed7aa !important; } /* Light orange */
-.radiliste-8 { background-color: #ddd6fe !important; } /* Light violet */
-.radiliste-9 { background-color: #fbcfe8 !important; } /* Light rose */
-.radiliste-10 { background-color: #d1fae5 !important; } /* Light emerald */
+/* ============================================ */ /* 🎨 PREGLED PO ODJELIMA - RADILIŠTE COLORING */ /* Centralna paleta boja za radilišta */ /* ============================================ */ /* Radilište color palette - 10 distinct colors */
+ /* Light blue */
+ /* Light green */
+ /* Light amber */
+ /* Light pink */
+ /* Light indigo */
+ /* Light teal */
+ /* Light orange */
+ /* Light violet */
+ /* Light rose */
+ /* Light emerald */
 
 /* Radilište column text remains dark for readability */
 #odjeli-table-body td.radiliste-1,
