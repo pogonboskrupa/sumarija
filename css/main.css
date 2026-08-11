@@ -493,37 +493,60 @@
             }
         }
 
-        /* Tabs submenu for Ostalo */
-        .tabs-submenu { display: flex; gap: 8px; flex-wrap: wrap; }
-        .tab-sub { background: white; border: 2px solid var(--border); padding: 12px 20px; font-size: 14px; font-weight: 600; color: var(--text-3); cursor: pointer; border-radius: 8px; transition: all 0.2s; }
-        .tab-sub:hover { color: var(--primary); background: var(--brand-25); border-color: var(--brand-600); }
-        .tab-sub.active { color: white; background: var(--primary); border-color: var(--primary); }
-
         /* Odjel row styles (for expand/collapse) */
         .odjel-row { transition: background-color 0.2s; }
         .odjel-row:hover { background-color: var(--brand-25) !important; }
         .sortimenti-row { animation: slideDown 0.2s ease-out; }
         @keyframes slideDown { from { opacity: 0; } to { opacity: 1; } }
 
-        /* Submenu styles */
-        .submenu { display: flex; gap: 8px; margin-bottom: 24px; padding: 12px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--border); }
+        /* ——— PODMENI — jedan sistem za sva tri naziva klasa ———————————————
+           Ranije su ovdje stajala TRI skoro identična sistema: .submenu/
+           .submenu-tab (podmeni po tabovima), .sub-tabs/.sub-tab (Izvještaji)
+           i .tabs-submenu/.tab-sub (Ostalo). Razlikovali su se samo u
+           debljini okvira, razmacima i sjeni — bez ikakve namjere, samo su
+           nastajali jedan za drugim.
+
+           Klase se NE preimenuju u HTML-u; stari nazivi su ovdje aliasi, pa
+           je izmjena čisto u CSS-u. Vodeći sistem je .submenu/.submenu-tab
+           jer je najrašireniji.
+
+           min-height: 44px — ovo se dodiruje prstom na terenu. */
+        .submenu, .sub-tabs, .tabs-submenu {
+            display: flex; gap: var(--sp-2); flex-wrap: wrap;
+            margin-bottom: var(--sp-6); padding: var(--sp-3);
+            background: var(--surface-2);
+            border: 1px solid var(--border); border-radius: var(--r-md);
+        }
         /* MORA .submenu.hidden (0,2,0): globalni .hidden{display:none} je gore
            (linija ~101) pa bi ga .submenu{display:flex} iznad nadjačao pri istoj
            specifičnosti — podmeni se onda ne bi mogao sakriti iz JS-a (koristi
            se za ulogu OPERATERI, vidi js/auth.js "OPERATERI: sakrij"). */
-        .submenu.hidden { display: none; }
-        .submenu-tab { background: white; border: 1px solid var(--border-strong); padding: 10px 18px; font-size: 13px; font-weight: 600; color: var(--text-3); cursor: pointer; border-radius: 6px; transition: all 0.2s; white-space: nowrap; }
-        .submenu-tab:hover { color: var(--primary); background: var(--brand-25); border-color: var(--brand-600); }
-        .submenu-tab.active { color: white; background: var(--primary); border-color: var(--primary); box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2); }
-        .submenu-content { animation: fadeIn 0.3s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .submenu.hidden, .sub-tabs.hidden, .tabs-submenu.hidden { display: none; }
 
-        /* Sub-tabs for IZVJEŠTAJI */
-        .sub-tabs { display: flex; gap: 12px; padding: 16px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex-wrap: wrap; }
-        .sub-tab { background: white; border: 2px solid var(--border); padding: 12px 24px; font-size: 14px; font-weight: 600; color: var(--text-3); cursor: pointer; border-radius: 8px; transition: all 0.2s; white-space: nowrap; }
-        .sub-tab:hover { color: var(--primary); background: var(--brand-25); border-color: var(--brand-500); }
-        .sub-tab.active { color: white; background: var(--primary); border-color: var(--primary); box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3); }
-        .sub-content { animation: fadeIn 0.3s ease-in; }
+        .submenu-tab, .sub-tab, .tab-sub {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-height: 44px;
+            padding: var(--sp-3) var(--sp-5);
+            background: var(--surface);
+            border: 1px solid var(--border-strong); border-radius: var(--r-sm);
+            font-family: inherit; font-size: var(--fs-md); font-weight: 600;
+            color: var(--text-3); cursor: pointer; white-space: nowrap;
+            transition: background var(--t-base), color var(--t-base),
+                        border-color var(--t-base), box-shadow var(--t-base);
+        }
+        .submenu-tab:hover, .sub-tab:hover, .tab-sub:hover {
+            color: var(--primary); background: var(--primary-soft);
+            border-color: var(--primary);
+        }
+        .submenu-tab:focus-visible, .sub-tab:focus-visible, .tab-sub:focus-visible {
+            outline: none; box-shadow: var(--sh-focus);
+        }
+        .submenu-tab.active, .sub-tab.active, .tab-sub.active {
+            color: var(--text-inv); background: var(--primary);
+            border-color: var(--primary); box-shadow: var(--sh-sm);
+        }
+        .submenu-content, .sub-content { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .sub-content.hidden { display: none; }
 
         /* Month selector */
