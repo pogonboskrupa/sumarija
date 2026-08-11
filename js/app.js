@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.4.6';
+        const APP_VERSION = '1.4.7';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6402,18 +6402,24 @@
             return dan === 0 || dan === 6;
         }
 
-        function _topSortimentiPoslednjihDana(niz, danaRadnih) {
+        // Vrati se unazad dan-po-dan dok se ne nabroji traženi broj RADNIH dana
+        // (vikend se preskače, pa prozor u kalendarskim danima zna biti širi od
+        // danaRadnih ako unutra upadne subota/nedjelja). Izdvojeno iz
+        // _topSortimentiPoslednjihDana da se isti prozor može prikazati
+        // korisniku (primaci-trend-overview-period) bez računanja dvaput.
+        function _radnihDanaProzor(danaRadnih) {
             const danas = new Date();
             danas.setHours(0, 0, 0, 0);
-            // Vrati se unazad dan-po-dan dok se ne nabroji traženi broj RADNIH
-            // dana (vikend se preskače, pa prozor u kalendarskim danima zna biti
-            // širi od danaRadnih ako unutra upadne subota/nedjelja).
             const od = new Date(danas);
             let brojac = _jeVikend(od) ? 0 : 1;
             while (brojac < danaRadnih) {
                 od.setDate(od.getDate() - 1);
                 if (!_jeVikend(od)) brojac++;
             }
+            return { od, danas };
+        }
+
+        function _topSortimentiPoslednjihDana(niz, od, danas) {
             const zbir = {};
             niz.forEach(p => {
                 const d = _parseDatumTl(p.datum);
@@ -6428,6 +6434,12 @@
                 .sort((a, b) => b[1] - a[1]);
         }
 
+        // "Pon 28.07." stil — skraćen dan u sedmici + dd.mm.
+        const _DANI_KRATKO = ['Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub'];
+        function _fmtDanKratko(d) {
+            return _DANI_KRATKO[d.getDay()] + ' ' + String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.';
+        }
+
         function _trendOverviewListaHtml(lista, boja) {
             if (!lista.length) return '<div style="text-align:center;padding:12px;color:#9ca3af;font-size:13px;">Nema evidentiranih unosa.</div>';
             return lista.slice(0, 8).map(([sortiment, kolicina], i) => (
@@ -6439,6 +6451,17 @@
             )).join('');
         }
 
+        // "Prilagođeno..." u #primaci-trend-overview-dana otkriva broj-input za
+        // proizvoljan broj radnih dana; ostale opcije ga sakrivaju. Odvojeno od
+        // običnog onchange="renderPrimaciTrendOverview()" (koji koriste ostali
+        // birači) jer ovaj mora prvo prebaciti vidljivost inputa.
+        function primaciTrendOverviewDanaChange() {
+            const sel = document.getElementById('primaci-trend-overview-dana');
+            const customEl = document.getElementById('primaci-trend-overview-dana-custom');
+            if (customEl) customEl.classList.toggle('hidden', !sel || sel.value !== 'custom');
+            renderPrimaciTrendOverview();
+        }
+
         async function renderPrimaciTrendOverview() {
             const sjecaEl = document.getElementById('primaci-trend-top-sjeca');
             const otpremaEl = document.getElementById('primaci-trend-top-otprema');
@@ -6446,11 +6469,24 @@
             if (!sjecaEl || !otpremaEl || !zalihaEl) return;
 
             const danaSel = document.getElementById('primaci-trend-overview-dana');
-            const dana = danaSel ? parseInt(danaSel.value, 10) || TREND_OVERVIEW_DANA_DEFAULT : TREND_OVERVIEW_DANA_DEFAULT;
+            let dana = TREND_OVERVIEW_DANA_DEFAULT;
+            if (danaSel) {
+                if (danaSel.value === 'custom') {
+                    const customEl = document.getElementById('primaci-trend-overview-dana-custom');
+                    dana = customEl && customEl.value !== '' ? parseInt(customEl.value, 10) || TREND_OVERVIEW_DANA_DEFAULT : TREND_OVERVIEW_DANA_DEFAULT;
+                } else {
+                    dana = parseInt(danaSel.value, 10) || TREND_OVERVIEW_DANA_DEFAULT;
+                }
+            }
+            dana = Math.max(1, dana);
             const pragEl = document.getElementById('primaci-trend-overview-prag');
             const prag = pragEl && pragEl.value !== '' ? Number(pragEl.value) : TREND_ZALIHA_PRAG_DEFAULT;
             const pragLabelEl = document.getElementById('primaci-trend-zalihe-prag-label');
             if (pragLabelEl) pragLabelEl.textContent = prag;
+
+            const { od, danas } = _radnihDanaProzor(dana);
+            const periodEl = document.getElementById('primaci-trend-overview-period');
+            if (periodEl) periodEl.textContent = _fmtDanKratko(od) + '  →  ' + _fmtDanKratko(danas);
 
             sjecaEl.innerHTML = otpremaEl.innerHTML = zalihaEl.innerHTML =
                 '<div style="text-align:center;padding:12px;color:#9ca3af;">⏳</div>';
@@ -6459,8 +6495,8 @@
                 _dohvatiPrimkeZaTimeline(),
                 _dohvatiOtpremeZaTimeline()
             ]);
-            sjecaEl.innerHTML = _trendOverviewListaHtml(_topSortimentiPoslednjihDana(primke, dana), '#ea580c');
-            otpremaEl.innerHTML = _trendOverviewListaHtml(_topSortimentiPoslednjihDana(otpreme, dana), '#2563eb');
+            sjecaEl.innerHTML = _trendOverviewListaHtml(_topSortimentiPoslednjihDana(primke, od, danas), '#ea580c');
+            otpremaEl.innerHTML = _trendOverviewListaHtml(_topSortimentiPoslednjihDana(otpreme, od, danas), '#2563eb');
 
             try {
                 const url = buildApiUrl('stanje-zaliha');
