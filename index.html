@@ -114,22 +114,33 @@
         // značilo dvije različite širine u opticaju, pa su se @media upiti
         // ponašali različito zavisno od toga šta je korisnik ranije kliknuo —
         // i sadržaj se znao prikazati sitno/pomjereno uz vodoravno skrolanje.
-        // FLUIDNI RASPORED (u pripremi, PODRAZUMIJEVANO ISKLJUČEN).
+        // FLUIDNI RASPORED — na telefonu se prijavljuje stvarna širina ekrana
+        // umjesto 1280, pa se aplikacija čita bez zumiranja.
         //
-        // Cilj: na telefonu prijaviti stvarnu širinu ekrana umjesto 1280, pa da
-        // se aplikacija čita bez zumiranja. Ključna razlika u odnosu na raniji
-        // pokušaj opisan iznad: širina viewporta je funkcija ISKLJUČIVO
-        // fizičkog ekrana, nikad korisničkog izbora koji se pamti. Zato dvije
-        // širine ne mogu biti u opticaju na istom uređaju.
+        // Ključna razlika u odnosu na raniji pokušaj opisan iznad: širina
+        // viewporta je funkcija FIZIČKOG EKRANA, a ne prikaza koji je korisnik
+        // izabrao. Na jednom uređaju je zato uvijek u opticaju tačno jedna
+        // širina, i @media upiti daju isti rezultat bez obzira na to šta je
+        // korisnik ranije kliknuo. Odluka se donosi jednom, pri pokretanju.
         //
-        // Dok se ne završi (v. body.layout-fluid pravila u css/main.css),
-        // uključuje se samo preko ?fluid=1 u URL-u. Sva nova pravila su
-        // omeđena klasom body.layout-fluid, pa je gašenje jedna linija.
+        // Sva pravila fluidnog rasporeda omeđena su klasom body.layout-fluid
+        // (v. kraj css/main.css), pa se sve gasi jednom izmjenom ovdje.
+        //
+        // IZLAZ U NUŽDI ZA TEREN, bez novog deploya:
+        //   localStorage.setItem('layout','fixed')  → stari fiksni prikaz 1280
+        //   localStorage.removeItem('layout')       → nazad na automatski
+        // Uz to ?fluid=1 / ?fluid=0 za jednokratnu provjeru u pregledniku.
         function jeFluidniRaspored() {
             var q = location.search;
-            if (q.indexOf('fluid=1') !== -1) return true;   // razvojni prekidač
+            if (q.indexOf('fluid=1') !== -1) return true;
             if (q.indexOf('fluid=0') !== -1) return false;
-            return false;   // ← 9e: ovdje ide `w < 1024` kad se pusti u rad
+            try {
+                var izbor = localStorage.getItem('layout');
+                if (izbor === 'fixed') return false;
+                if (izbor === 'fluid') return true;
+            } catch (_) {}
+            var w = (window.screen && window.screen.width) || window.innerWidth || 0;
+            return w < 1024;
         }
 
         function setAppViewport() {
