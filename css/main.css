@@ -106,9 +106,14 @@
         .form-group { margin-bottom: 16px; }
         .form-group label { display: block; font-size: 14px; font-weight: 500; color: var(--text-2); margin-bottom: 4px; }
         .form-group input { width: 100%; padding: 12px 16px; border: 1px solid var(--border-strong); border-radius: 8px; font-size: 16px; }
-        .btn { width: 100%; background: var(--brand-600); color: white; padding: 12px; border-radius: 8px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; }
-        .btn:hover { background: var(--primary); }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        /* Dugme login forme. MORA biti suženo na .login-box: nesuženo, ovo je
+           bilo globalno pravilo pa je SVAKO .btn u aplikaciji nasljeđivalo
+           width:100% i font-size:16px iz login ekrana. Stvarni izgled login
+           dugmeta ionako dolazi iz css/login-optimized.css (.login-box .btn),
+           koji se učitava poslije ovog fajla. */
+        .login-box .btn { width: 100%; background: var(--brand-600); color: var(--text-inv); padding: 12px; border-radius: var(--r-md); border: none; font-size: var(--fs-lg); font-weight: 600; cursor: pointer; }
+        .login-box .btn:hover { background: var(--primary); }
+        .login-box .btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .error { background: #fee2e2; border: 1px solid #fecaca; color: #991b1b; padding: 12px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; }
         .header { background: white; color: var(--text-1); box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 16px 24px; border-bottom: 1px solid var(--border); position: relative; z-index: 10000; }
         /* JEDAN RED, uvijek: naslov lijevo, dugmad desno do kraja.
@@ -573,11 +578,37 @@
         /* Search and controls */
         .controls-bar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
         .search-input { padding: 10px 16px; border: 1px solid var(--border-strong); border-radius: 8px; font-size: 14px; flex: 1; min-width: 200px; }
-        .btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: var(--brand-600); }
-        .btn-secondary { background: var(--text-4); color: white; }
-        .btn-secondary:hover { background: var(--text-3); }
+        /* ——— DUGMAD — jedan sistem ————————————————————————————————————————
+           .worker-form-btn*, .rm-btn, .kub-btn i .sih-btn su nastali kao
+           zasebni sistemi po panelima; ovdje su aliasi na isto bazno dugme.
+           Klase se NE preimenuju u HTML-u.
+
+           min-height: 44px — dodiruje se prstom na terenu.
+           :focus-visible — ranije nije postojao nikakav pokazatelj fokusa na
+           tastaturi ni na jednom dugmetu u aplikaciji. */
+        .btn, .worker-form-btn, .rm-btn, .kub-btn, .sih-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: var(--sp-2); min-height: 44px;
+            padding: var(--sp-3) var(--sp-5);
+            border: 1px solid transparent; border-radius: var(--r-md);
+            font-family: inherit; font-size: var(--fs-base); font-weight: 600;
+            line-height: 1.2; cursor: pointer;
+            transition: background var(--t-base), border-color var(--t-base),
+                        box-shadow var(--t-base), opacity var(--t-base);
+        }
+        .btn:focus-visible, .worker-form-btn:focus-visible,
+        .rm-btn:focus-visible, .kub-btn:focus-visible, .sih-btn:focus-visible {
+            outline: none; box-shadow: var(--sh-focus);
+        }
+        .btn:disabled, .worker-form-btn:disabled,
+        .rm-btn:disabled, .kub-btn:disabled, .sih-btn:disabled {
+            opacity: .55; cursor: not-allowed;
+        }
+        .btn-primary,   .worker-form-btn-primary   { background: var(--primary); color: var(--text-inv); border-color: var(--primary); }
+        .btn-primary:hover, .worker-form-btn-primary:hover   { background: var(--primary-hover); border-color: var(--primary-hover); }
+        .btn-primary:active, .worker-form-btn-primary:active { background: var(--primary-active); }
+        .btn-secondary, .worker-form-btn-secondary { background: var(--surface); color: var(--text-2); border-color: var(--border-strong); }
+        .btn-secondary:hover, .worker-form-btn-secondary:hover { background: var(--surface-2); border-color: var(--text-4); }
 
         /* Filter Bar - Advanced */
         .filter-bar { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
@@ -645,8 +676,8 @@
             .modal-overlay.modal-overlay-lg .modal-footer { flex-direction: column; gap: 10px; }
             .modal-overlay.modal-overlay-lg .modal-footer .btn { width: 100%; padding: 15px 20px; font-size: 16px; min-height: 50px; box-sizing: border-box; }
         }
-        .btn-danger { background: var(--danger); color: white; }
-        .btn-danger:hover { background: var(--danger-strong); }
+        .btn-danger { background: var(--danger); color: var(--text-inv); border-color: var(--danger); }
+        .btn-danger:hover { background: var(--danger-strong); border-color: var(--danger-strong); }
 
         /* Column Grouping */
         .col-group-cetinari { background: linear-gradient(to bottom, var(--brand-25) 0%, #dcfce7 100%); border-left: 2px solid var(--brand-500); border-right: 2px solid var(--brand-500); }
