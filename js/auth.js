@@ -320,9 +320,14 @@
 
             // Generate mobile tabs (horizontal)
             if (tabsMenuMobile) {
+                // Isti oblik kao bočni meni gore: ikona i oznaka MORAJU biti u
+                // svojim span-ovima. Ranije su ovdje stajale kao goli tekst, pa
+                // je svako pravilo za .tab-icon/.tab-label radilo samo u bočnom
+                // meniju, a u horizontalnoj traci se tiho ignorisalo.
                 tabsMenuMobile.innerHTML = tabsConfig.map(tab => `
                     <button class="tab${tab.active ? ' active' : ''}${tab.hasBadge ? ' notification-badge' : ''}" onclick="switchTab('${tab.id}')">
-                        ${tab.icon} ${tab.label}
+                        <span class="tab-icon">${tab.icon}</span>
+                        <span class="tab-label">${tab.label}</span>
                         ${tab.hasBadge ? '<span class="badge-count" id="pending-count-badge-mobile"></span>' : ''}
                     </button>
                 `).join('');

@@ -46,10 +46,71 @@
                 'karta-odjela': 'karta-odjela-content',
         };
 
+        // ——— FIOKA (bočni meni u fluidnom rasporedu) ————————————————————————
+        // Bočni meni je u fluidnom rasporedu izvučen izvan ekrana; ova dva
+        // pomoćnika ga samo pomjeraju klasom na <body>. Sve ostalo je CSS.
+        function toggleDrawer(force) {
+            var otvorena = document.body.classList.toggle('drawer-open', force);
+            var btn = document.getElementById('drawer-toggle');
+            if (btn) btn.setAttribute('aria-expanded', otvorena ? 'true' : 'false');
+        }
+        function closeDrawer() { toggleDrawer(false); }
+        window.toggleDrawer = toggleDrawer;
+        window.closeDrawer = closeDrawer;
+
+        // ——— VISINA KARATA U FLUIDNOM RASPOREDU ———————————————————————————
+        // Karte imaju visinu oblika calc(100dvh - Npx), gdje je N tvrdo upisan
+        // po breakpointu. Ti brojevi su štelovani za fiksni viewport od 1280 i
+        // za traku tabova; u fluidnom rasporedu chrome iznad karte je drugačiji
+        // (fioka umjesto trake), pa karta ispada ispod ekrana — izmjereno 199px
+        // preko ruba na 390×844.
+        //
+        // Umjesto novog tvrdo upisanog broja, visina se računa iz STVARNOG
+        // položaja karte: od njenog vrha do dna ekrana. To prati i rotaciju i
+        // promjenu chrome-a bez novog breakpointa.
+        function updateFluidMapHeights() {
+            if (!document.body.classList.contains('layout-fluid')) return;
+            ['karta-odjela-map', 'radnik-mapa-map'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (!el || !el.offsetParent) return;      // nije vidljiva
+                var vrh = el.getBoundingClientRect().top;
+                var visina = Math.max(240, Math.round(window.innerHeight - vrh - 8));
+                el.style.setProperty('height', visina + 'px', 'important');
+            });
+            // Leaflet ne primjećuje promjenu visine kontejnera sam.
+            setTimeout(function () {
+                try { if (window._kartaOdjelaMap) window._kartaOdjelaMap.invalidateSize(); } catch (_) {}
+                try { if (window._radnikMapaMap) window._radnikMapaMap.invalidateSize(); } catch (_) {}
+            }, 60);
+        }
+        window.updateFluidMapHeights = updateFluidMapHeights;
+        window.addEventListener('resize', updateFluidMapHeights);
+        window.addEventListener('orientationchange', function () {
+            setTimeout(updateFluidMapHeights, 250);
+        });
+
+        // Klik na zatamnjenje (::after na <body>) zatvara fioku. Pošto
+        // pseudo-element ne prima poseban događaj, hvata se klik na <body>
+        // izvan samog menija.
+        document.addEventListener('click', function (e) {
+            if (!document.body.classList.contains('drawer-open')) return;
+            if (e.target.closest('#sidebar') || e.target.closest('#drawer-toggle')) return;
+            closeDrawer();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeDrawer();
+        });
+
         // Switch between tabs
         function switchTab(tab) {
             // Prati aktivni tab za sprečavanje bleeding-a kod async operacija
             window.currentTab = tab;
+
+            // Izbor taba u fioci je i njeno zatvaranje.
+            closeDrawer();
+            // Karta se tek sada prikazuje, pa joj se visina računa poslije
+            // renderovanja (dva okvira su dovoljna da layout slegne).
+            setTimeout(updateFluidMapHeights, 300);
 
             // Izađi iz punog ekrana Mape odjela (radnik) ako se prelazi na bilo
             // koji drugi tab — sigurnosna mreža za slučaj da korisnik ode s mape

@@ -4095,3 +4095,87 @@ body.kubikator-fullscreen #kubikator-content {
 }
 .kub-mem-btn:active { background: var(--n-100); }
 .kub-mem-btn-danger { color: var(--danger); border-color: #fecaca; }
+
+/* ==========================================================================
+   FLUIDNI RASPORED — bočni meni kao fioka (u pripremi)
+
+   Sve u ovoj sekciji pali se SAMO uz body.layout-fluid, koju postavlja
+   setAppViewport() u index.html. Dok je fluidni raspored isključen (danas:
+   uvijek, osim uz ?fluid=1), nijedno pravilo odavde ne dodiruje aplikaciju —
+   zato je i pisano ovako, a ne kroz @media upite.
+
+   Zašto fioka umjesto horizontalne trake: traka na telefonu prikaže 1-2 od
+   9-12 tabova, a pojede ~90px visine na SVAKOM ekranu. Fioka ne troši ništa
+   dok je zatvorena i pokaže sve tabove odjednom.
+   ========================================================================== */
+
+/* Hamburger je vidljiv samo u fluidnom rasporedu. */
+.drawer-toggle { display: none; }
+body.layout-fluid .drawer-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; margin-right: var(--sp-2);
+    background: transparent; border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    font-size: 20px; line-height: 1; color: var(--text-2); cursor: pointer;
+}
+body.layout-fluid .drawer-toggle:focus-visible { outline: none; box-shadow: var(--sh-focus); }
+
+body.layout-fluid .app-layout {
+    display: block;                 /* nema grid trake za meni */
+    min-height: auto;
+}
+
+/* Bočni meni izvučen izvan ekrana. !important je nužan: gore postoje
+   `display:none !important` pravila za .sidebar.desktop-only (force-* modovi
+   i @media ≤1024px), a fioka mora nadjačati sva tri. */
+body.layout-fluid .sidebar.desktop-only {
+    display: flex !important;
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: min(84vw, var(--sidebar-w));
+    height: 100dvh; max-height: 100dvh;
+    transform: translateX(-100%);
+    transition: transform var(--t-base);
+    z-index: var(--z-fullscreen);
+    overflow-y: auto;
+    box-shadow: none;
+}
+body.layout-fluid.drawer-open .sidebar.desktop-only {
+    transform: translateX(0);
+    box-shadow: var(--sh-modal);
+}
+body.layout-fluid.drawer-open::after {
+    content: ''; position: fixed; inset: 0;
+    background: rgb(0 0 0 / .45);
+    z-index: calc(var(--z-fullscreen) - 1);
+}
+
+/* Fioka zamjenjuje horizontalnu traku, pa se traka gasi. */
+body.layout-fluid .tabs-container.mobile-only { display: none !important; }
+
+/* Stavke menija dovoljno velike za prst. */
+body.layout-fluid .sidebar-nav .tab {
+    min-height: 52px;
+    font-size: var(--fs-lg);
+}
+
+/* Pod-aplikacije preko cijelog ekrana (Kubikator, Šihtarica, Mapa radnika)
+   same skrivaju zaglavlje i meni — ne smiju dobiti ni fioku ni zatamnjenje. */
+body.layout-fluid.kubikator-fullscreen .sidebar.desktop-only,
+body.layout-fluid.sihtarica-fullscreen .sidebar.desktop-only,
+body.layout-fluid.radnik-mapa-fullscreen .sidebar.desktop-only { display: none !important; }
+body.layout-fluid.kubikator-fullscreen .drawer-toggle,
+body.layout-fluid.sihtarica-fullscreen .drawer-toggle,
+body.layout-fluid.radnik-mapa-fullscreen .drawer-toggle { display: none; }
+body.layout-fluid.kubikator-fullscreen::after,
+body.layout-fluid.sihtarica-fullscreen::after,
+body.layout-fluid.radnik-mapa-fullscreen::after { content: none; }
+
+/* Prekidači "Desktop/Android prikaz" mijenjaju raspored preko klasa na <body>
+   i tuku se sa fiokom. U fluidnom rasporedu se ignorišu — raspored diktira
+   ekran, ne zapamćeni izbor. To je i pouka ranijeg pokušaja (v. komentar uz
+   setAppViewport u index.html). */
+body.layout-fluid.force-desktop-view .app-layout,
+body.layout-fluid.force-android-view .app-layout,
+body.layout-fluid.force-horizontal-tabs .app-layout { display: block; }
+body.layout-fluid.force-horizontal-tabs .tabs-container.mobile-only,
+body.layout-fluid.force-android-view .tabs-container.mobile-only { display: none !important; }

@@ -114,10 +114,31 @@
         // značilo dvije različite širine u opticaju, pa su se @media upiti
         // ponašali različito zavisno od toga šta je korisnik ranije kliknuo —
         // i sadržaj se znao prikazati sitno/pomjereno uz vodoravno skrolanje.
+        // FLUIDNI RASPORED (u pripremi, PODRAZUMIJEVANO ISKLJUČEN).
+        //
+        // Cilj: na telefonu prijaviti stvarnu širinu ekrana umjesto 1280, pa da
+        // se aplikacija čita bez zumiranja. Ključna razlika u odnosu na raniji
+        // pokušaj opisan iznad: širina viewporta je funkcija ISKLJUČIVO
+        // fizičkog ekrana, nikad korisničkog izbora koji se pamti. Zato dvije
+        // širine ne mogu biti u opticaju na istom uređaju.
+        //
+        // Dok se ne završi (v. body.layout-fluid pravila u css/main.css),
+        // uključuje se samo preko ?fluid=1 u URL-u. Sva nova pravila su
+        // omeđena klasom body.layout-fluid, pa je gašenje jedna linija.
+        function jeFluidniRaspored() {
+            var q = location.search;
+            if (q.indexOf('fluid=1') !== -1) return true;   // razvojni prekidač
+            if (q.indexOf('fluid=0') !== -1) return false;
+            return false;   // ← 9e: ovdje ide `w < 1024` kad se pusti u rad
+        }
+
         function setAppViewport() {
             const meta = document.querySelector('meta[name="viewport"]');
-            if (meta) meta.setAttribute('content',
-                'width=1280, user-scalable=yes, minimum-scale=0.2, maximum-scale=3.0, viewport-fit=cover');
+            const fluid = jeFluidniRaspored();
+            if (meta) meta.setAttribute('content', fluid
+                ? 'width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=3.0, viewport-fit=cover'
+                : 'width=1280, user-scalable=yes, minimum-scale=0.2, maximum-scale=3.0, viewport-fit=cover');
+            document.body.classList.toggle('layout-fluid', fluid);
             markScreenClass();
         }
 
@@ -184,6 +205,11 @@
         <div class="header">
             <div class="header-content">
                 <div class="header-left">
+                    <!-- Otvara bočni meni kao fioku. Vidljivo SAMO u fluidnom
+                         rasporedu (body.layout-fluid) — v. css/main.css. -->
+                    <button type="button" class="drawer-toggle" id="drawer-toggle"
+                            aria-label="Otvori meni" aria-expanded="false"
+                            aria-controls="sidebar" onclick="toggleDrawer()">☰</button>
                     <img src="assets/IMG_20260322_182605.png" alt="Šumarija Bos. Krupa" class="header-logo">
                     <div class="header-title">
                         <p class="company-name-header">ŠPD "UNSKO-SANSKE ŠUME" D.O.O. BOS.KRUPA</p>

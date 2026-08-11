@@ -1410,6 +1410,9 @@
       });
 
       _map = L.map('karta-odjela-map', { center:SUMARIJA_LATLNG, zoom:12, zoomControl:true });
+      // Izloženo zbog updateFluidMapHeights() u js/ui.js — poslije promjene
+      // visine kontejnera Leaflet mora dobiti invalidateSize().
+      window._kartaOdjelaMap = _map;
 
       _osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',

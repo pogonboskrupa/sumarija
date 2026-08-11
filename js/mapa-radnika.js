@@ -3279,6 +3279,8 @@
                 zoom: savedView ? savedView.zoom : 11,
                 zoomControl: false
             });
+            // Izloženo zbog updateFluidMapHeights() u js/ui.js.
+            window._radnikMapaMap = _map;
             L.control.zoom({ position: 'bottomleft' }).addTo(_map);
             _map.on('moveend', _saveMapView);
             _osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
