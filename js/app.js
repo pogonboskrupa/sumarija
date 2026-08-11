@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.4.7';
+        const APP_VERSION = '1.4.8';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6527,7 +6527,7 @@
                     ? '<div style="text-align:center;padding:12px;color:#9ca3af;font-size:13px;">Nema odjela sa zalihom preko ' + prag + ' m³ po sortimentu.</div>'
                     : visokeZalihe.map((v, i) => (
                         '<div style="display:flex;align-items:center;gap:10px;padding:7px 2px;' + (i ? 'border-top:1px solid #f1f5f9;' : '') + '">' +
-                        '<span style="flex:1;font-size:13px;font-weight:600;color:#374151;">' + v.odjel + ' <span style="color:#9ca3af;font-weight:500;">— ' + v.sortiment + '</span></span>' +
+                        '<span style="flex:1;font-size:13px;font-weight:600;color:#374151;">' + v.odjel + ' <span style="color:#ca8a04;font-weight:700;">— ' + v.sortiment + '</span></span>' +
                         '<span style="font-size:13px;font-weight:800;color:#b45309;font-variant-numeric:tabular-nums;">' + v.zaliha.toFixed(2) + ' m³</span>' +
                         '</div>'
                     )).join('');
