@@ -114,33 +114,32 @@
         // značilo dvije različite širine u opticaju, pa su se @media upiti
         // ponašali različito zavisno od toga šta je korisnik ranije kliknuo —
         // i sadržaj se znao prikazati sitno/pomjereno uz vodoravno skrolanje.
-        // FLUIDNI RASPORED — na telefonu se prijavljuje stvarna širina ekrana
-        // umjesto 1280, pa se aplikacija čita bez zumiranja.
+        // FLUIDNI RASPORED — ISKLJUČEN. Svi uređaji, i telefoni, dobijaju
+        // fiksnu širinu od 1280px i koriste aplikaciju uz zumiranje, kao i
+        // ranije. Tako je izričito traženo.
         //
-        // Ključna razlika u odnosu na raniji pokušaj opisan iznad: širina
-        // viewporta je funkcija FIZIČKOG EKRANA, a ne prikaza koji je korisnik
-        // izabrao. Na jednom uređaju je zato uvijek u opticaju tačno jedna
-        // širina, i @media upiti daju isti rezultat bez obzira na to šta je
-        // korisnik ranije kliknuo. Odluka se donosi jednom, pri pokretanju.
+        // Mehanizam je zadržan i ispravan, samo se ne pali automatski:
+        //   ?fluid=1                                → jednokratno u pregledniku
+        //   localStorage.setItem('layout','fluid')  → trajno na tom uređaju
+        //   localStorage.removeItem('layout')       → nazad na fiksni 1280
         //
         // Sva pravila fluidnog rasporeda omeđena su klasom body.layout-fluid
-        // (v. kraj css/main.css), pa se sve gasi jednom izmjenom ovdje.
+        // (v. kraj css/main.css), pa dok je ovo isključeno nijedno od njih ne
+        // dodiruje aplikaciju.
         //
-        // IZLAZ U NUŽDI ZA TEREN, bez novog deploya:
-        //   localStorage.setItem('layout','fixed')  → stari fiksni prikaz 1280
-        //   localStorage.removeItem('layout')       → nazad na automatski
-        // Uz to ?fluid=1 / ?fluid=0 za jednokratnu provjeru u pregledniku.
+        // Ako se ikad bude vraćalo na automatsko: `return w < 1024;` umjesto
+        // `return false;` ispod. Širina viewporta tada mora ostati funkcija
+        // FIZIČKOG EKRANA, nikad prikaza koji je korisnik izabrao — inače se
+        // ponavlja kvar opisan u komentaru iznad (dvije širine u opticaju na
+        // istom uređaju, pa se @media upiti ponašaju različito).
         function jeFluidniRaspored() {
             var q = location.search;
             if (q.indexOf('fluid=1') !== -1) return true;
             if (q.indexOf('fluid=0') !== -1) return false;
             try {
-                var izbor = localStorage.getItem('layout');
-                if (izbor === 'fixed') return false;
-                if (izbor === 'fluid') return true;
+                if (localStorage.getItem('layout') === 'fluid') return true;
             } catch (_) {}
-            var w = (window.screen && window.screen.width) || window.innerWidth || 0;
-            return w < 1024;
+            return false;
         }
 
         function setAppViewport() {
