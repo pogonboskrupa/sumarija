@@ -1,3 +1,101 @@
+/* ==========================================================================
+   DIZAJN TOKENI — jedini izvor istine za boje, razmake, sjene i radijuse.
+
+   Princip je preuzet iz .pro-mjesecna-table (dolje, ~3300): BOJA NOSI
+   INFORMACIJU, ne dekoraciju. Novi kod NE SMIJE pisati heks direktno —
+   ako neka boja ovdje nedostaje, dodaj je ovdje pa je koristi.
+
+   Zašto u main.css a ne u zasebnom css/tokens.css: service-worker servira
+   CSS stale-while-revalidate i pri hladnom offline startu vraća prazan
+   Response za nekeširan fajl. Prazan tokens.css znači da SVAKI var() postane
+   nevažeći i svako svojstvo otpadne — nestilizovana aplikacija, offline, na
+   terenu. Ovako su tokeni i pravila koja ih troše atomični po konstrukciji.
+
+   Vrijednosti nisu nove — to su boje koje su i do sada bile na ekranu,
+   samo su sada imenovane i na jednom mjestu.
+   ========================================================================== */
+:root {
+    /* ——— MARKA (zeleno) — postojeći identitet, samo imenovan ——— */
+    --brand-900: #064e3b;  --brand-800: #065f46;  --brand-700: #047857;
+    --brand-600: #059669;  --brand-500: #10b981;  --brand-400: #34d399;
+    --brand-100: #d1fae5;  --brand-50:  #ecfdf5;  --brand-25:  #f0fdf4;
+    --primary:        var(--brand-700);    /* dugmad, aktivni tab, naslovi */
+    --primary-hover:  var(--brand-800);
+    --primary-active: var(--brand-900);
+    --primary-soft:   var(--brand-50);     /* pozadina aktivnog stanja */
+    --primary-ring:   rgba(4, 120, 87, .25);
+
+    /* ——— NEUTRALI ——— */
+    --n-0:   #ffffff;  --n-25:  #fafbfc;  --n-50:  #f9fafb;  --n-100: #f3f4f6;
+    --n-200: #e5e7eb;  --n-300: #d1d5db;  --n-400: #9ca3af;  --n-500: #6b7280;
+    --n-600: #4b5563;  --n-700: #374151;  --n-800: #1f2937;  --n-900: #111827;
+
+    /* ——— SLATE — koristi ga najnovija generacija tabela ——— */
+    --s-900: #0f172a;  --s-800: #1e293b;  --s-600: #475569;
+    --s-200: #e2e8f0;  --s-100: #f1f5f9;  --s-50:  #f8fafc;
+
+    /* ——— SEMANTIČKI SLOJ — ovo koristi većina pravila ——— */
+    --bg-page:       #F6F7F9;
+    --surface:       var(--n-0);
+    --surface-2:     var(--n-50);
+    --surface-3:     var(--s-50);
+    --border:        var(--n-200);
+    --border-strong: var(--n-300);
+    --border-subtle: var(--n-100);
+    --text-1:        var(--n-800);   /* osnovni tekst */
+    --text-2:        var(--n-700);
+    --text-3:        var(--n-600);   /* sekundarni */
+    --text-4:        var(--n-500);   /* prigušeni */
+    --text-inv:      var(--n-0);
+
+    /* ——— STATUSI — svaka boja ima "soft" parnjak za pozadinu ćelije ——— */
+    --info:   #2563eb;  --info-strong:   #1d4ed8;  --info-soft:   #eff6ff;
+    --ok:     var(--brand-600);                    --ok-soft:     var(--brand-25);
+    --warn:   #d97706;  --warn-strong:   #b45309;  --warn-soft:   #fffbeb;
+    --danger: #dc2626;  --danger-strong: #b91c1c;  --danger-soft: #fef2f2;
+
+    /* Grupe sortimenata — JEDINO mjesto gdje se ove tri boje definišu */
+    --grp-cetinari: #3b82f6;  --grp-liscari: #f59e0b;  --grp-ukupno: #ef4444;
+
+    /* ——— BOČNI MENI ——— */
+    --sidebar-bg:          linear-gradient(180deg, #1f2937 0%, #111827 100%);
+    --sidebar-text:        #d1d5db;
+    --sidebar-text-muted:  #9ca3af;
+    --sidebar-hover:       rgba(255, 255, 255, .06);
+    --sidebar-active:      var(--brand-500);
+    --sidebar-w:           260px;
+    --header-h:            100px;
+
+    /* ——— RAZMACI (postojeća de-facto skala) ——— */
+    --sp-1: 4px;   --sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;
+    --sp-5: 20px;  --sp-6: 24px;  --sp-8: 32px;  --sp-10: 40px;
+
+    /* ——— RADIJUSI ——— */
+    --r-sm: 6px;  --r-md: 8px;  --r-lg: 12px;  --r-xl: 16px;  --r-full: 999px;
+
+    /* ——— SJENE ——— */
+    --sh-sm:    0 1px 3px rgba(0, 0, 0, .1);
+    --sh-md:    0 4px 12px rgba(0, 0, 0, .08);
+    --sh-lg:    0 8px 24px rgba(0, 0, 0, .12);
+    --sh-modal: 0 8px 40px rgba(0, 0, 0, .3);
+    --sh-focus: 0 0 0 3px var(--primary-ring);
+
+    /* ——— TIPOGRAFIJA ——— */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-display: 'Comfortaa', var(--font-sans);  /* SAMO oznake, nikad brojevi */
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --fs-xs: 11px;  --fs-sm: 12px;  --fs-md: 13px;  --fs-base: 14px;
+    --fs-lg: 16px;  --fs-xl: 18px;  --fs-2xl: 24px;
+
+    /* ——— PRELAZI ——— */
+    --t-fast: .12s ease;  --t-base: .2s ease;  --t-slow: .35s ease;
+
+    /* ——— Z-INDEX — ljestvica je bila samo u komentaru, sada je izvršna ——— */
+    --z-sticky-col: 20;    --z-sidebar: 100;      --z-dropdown: 1000;
+    --z-header: 10000;     --z-fullscreen: 10500; --z-modal: 20000;
+    --z-offline: 29999;    --z-toast: 30001;
+}
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #F6F7F9; min-height: 100vh; color: #1f2937; }
         .login-container { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
@@ -2573,9 +2671,16 @@
             backface-visibility: hidden;
         }
 
-        /* Optimize table rendering */
+        /* Optimize table rendering.
+           BILO: contain: layout style paint. `paint` razbija position:sticky —
+           to je već bilo poznato na tri mjesta u ovom fajlu (zakrpa za
+           dashboard tabelu ispod, komentar "NIKAD contain:paint" na
+           .pro-mjesecna-table, i dva `contain:none !important` na .container).
+           Svaka druga tabela sa sticky zaglavljem radila je UPRKOS ovom
+           pravilu, ne zbog njega. `layout style` zadržava optimizaciju bez
+           lomljenja sticky-ja. */
         table {
-            contain: layout style paint;
+            contain: layout style;
         }
 
         /* Reduce repaints during scroll */
@@ -2583,9 +2688,15 @@
             contain: layout style;
         }
 
-        /* Optimize transitions */
-        * {
-            transition-duration: 0.15s !important; /* Faster transitions */
+        /* Brži prelazi na interaktivnim elementima.
+           BILO: * { transition-duration: .15s !important }. Univerzalni
+           selektor sa !important pogađao je SVAKI element i činio svako
+           trajanje prelaza u ostatku fajla mrtvim slovom — uključujući
+           --t-fast/--t-base/--t-slow tokene. Suženo na elemente koji se
+           stvarno animiraju, bez !important. */
+        button, .btn, .tab, a, input, select, textarea,
+        .card, .enterprise-card, .section {
+            transition-duration: var(--t-base);
         }
 
         /* Disable animations during heavy operations */
