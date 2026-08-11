@@ -1,5 +1,18 @@
 #!/bin/bash
 
+# ⛔ MRTVA I DESTRUKTIVNA SKRIPTA — NE POKRETATI.
+#
+# Ova skripta prepisuje index.html ("cat > index.html") iz heredoc-a koji je
+# zaostao iz ranije faze projekta. Njen sadržaj je zastario: postavlja
+# viewport na width=device-width (aplikacija koristi 1280 — vidi
+# setAppViewport u index.html) i učitava js/cache-helper.js i
+# js/api-optimized.js, a NIJEDAN od ta dva fajla više ne postoji. Pokretanje
+# uništava aplikaciju.
+#
+# index.html se uređuje direktno. Zadržano samo kao historijski trag.
+echo "⛔ Ova build skripta je mrtva i destruktivna — prepisala bi index.html. Prekidam." >&2
+exit 1
+
 # Build index.html sa optimizovanim login screen-om
 
 echo "🎨 Building optimized index.html with beautiful login screen..."

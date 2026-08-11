@@ -2,6 +2,22 @@
 
 Moderna web aplikacija za evidenciju sječe i otpreme drvne mase.
 
+## ⛔ Ne pokretati build skripte
+
+`scripts/build-fast.sh`, `build-final.sh`, `build-optimized.sh` i
+`build-with-login.sh` su **mrtve i destruktivne**. Svaka radi
+`cat > index.html` iz zastarjelog heredoc-a: postavlja viewport na
+`width=device-width` (aplikacija koristi 1280 — vidi `setAppViewport` u
+`index.html`) i učitava `js/cache-helper.js` i `js/api-optimized.js`, a nijedan
+od ta dva fajla više ne postoji. Sada imaju ugrađen prekid na početku, ali ih
+ne treba ni pokušavati koristiti.
+
+**`index.html` se uređuje direktno.** Radi je i `scripts/run-tests.sh`.
+
+Slično: `css/styles.css` se nigdje ne učitava (mrtav fajl), a
+`index-appsscript.html` je ručna kopija za alternativni Apps Script hosting
+(vidi `docs/APPS-SCRIPT-HOSTING.md`) — **ne sinhroniše se** sa `index.html`.
+
 ## 🚀 BRZI START
 
 Pročitaj **[BRZI_START.md](BRZI_START.md)** za kompletno uputstvo!
