@@ -268,9 +268,12 @@
         table { width: 100%; border-collapse: collapse; }
         thead { background: var(--surface-2); position: sticky; top: 0; z-index: 10; }
         thead::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--border); }
-        th { padding: 14px 12px; text-align: left; font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+        th { padding: 14px 12px; text-align: left; font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; font-variant-numeric: tabular-nums; }
         th.right { text-align: right; }
-        td { padding: 14px 12px; font-size: 14px; border-bottom: 1px solid var(--n-100); color: var(--text-2); }
+        /* tabular-nums na SVIM ćelijama, ne samo na .right: cifre dobijaju
+           jednaku širinu pa se kolone m³ poravnavaju odozgo nadolje. Radi sa
+           bilo kojim fontom, uključujući sistemski. */
+        td { padding: 14px 12px; font-size: 14px; border-bottom: 1px solid var(--n-100); color: var(--text-2); font-variant-numeric: tabular-nums; }
         td.right { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
         tbody tr:nth-child(even) { background: var(--surface-2); }
         tbody tr:hover { background: #f0f9ff; }
@@ -753,7 +756,7 @@
             min-width: 85px;
             max-width: 110px;
             text-align: right;
-            font-family: 'Courier New', monospace;
+            font-family: var(--font-mono);
         }
         .kupci-table thead .sortiment-col {
             text-align: center;
@@ -767,7 +770,7 @@
         .kupci-table .ukupno-col {
             font-weight: bold; background: linear-gradient(to right, var(--brand-25) 0%, #dcfce7 100%);
             min-width: 95px; border-left: 3px solid var(--brand-500); text-align: right;
-            font-size: 12px; font-family: 'Courier New', monospace;
+            font-size: 12px; font-family: var(--font-mono);
         }
         .kupci-table .totals-row {
             background: linear-gradient(to bottom, #dcfce7 0%, #bbf7d0 100%);
@@ -951,7 +954,7 @@
         /* Sortiment columns */
         .unosi-table .sort-col {
             text-align: right;
-            font-family: 'Courier New', Courier, monospace;
+            font-family: var(--font-mono);
             font-size: 12px;
             min-width: 72px;
             color: var(--text-2);
@@ -1103,7 +1106,7 @@
         }
         .expert-table tbody td.sortiment-value {
             text-align: right;
-            font-family: 'Courier New', monospace;
+            font-family: var(--font-mono);
             color: #0e7490;
         }
         .expert-table tfoot tr {
@@ -2035,7 +2038,7 @@
             font-weight: 900;
             color: #92400e;
             text-align: center;
-            font-family: 'Courier New', monospace;
+            font-family: var(--font-mono);
             text-shadow: 0 2px 4px rgba(146, 64, 14, 0.1);
         }
 
@@ -2174,7 +2177,7 @@
             font-size: 32px;
             font-weight: 800;
             color: var(--text-1);
-            font-family: 'Courier New', monospace;
+            font-family: var(--font-mono);
         }
 
         .worker-stat-card.green .worker-stat-card-value {
