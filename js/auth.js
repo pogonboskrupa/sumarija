@@ -162,6 +162,12 @@
         function showApp() {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
+            // Klasa 'login-active' se dodavala pri pokretanju (index.html), ali se
+            // NIGDJE nije uklanjala — pa je ljubičasti gradijent login ekrana
+            // (css/login-optimized.css: body.login-active) ostajao kao pozadina
+            // cijele aplikacije, na svakom tabu. Uklanja se ovdje, vraća u
+            // _performLogout.
+            document.body.classList.remove('login-active');
             if (typeof setAppViewport === 'function') setAppViewport();
 
             // Traži "persistent storage" — bez ovoga Android/Chrome smije tiho
@@ -524,6 +530,7 @@
             localStorage.removeItem('sumarija_pass');
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('app-screen').classList.add('hidden');
+            document.body.classList.add('login-active'); // vraća gradijent login ekrana
             if (typeof setLoginViewport === 'function') setLoginViewport();
 
             // Hide all content panels (safe - won't crash if element missing)
