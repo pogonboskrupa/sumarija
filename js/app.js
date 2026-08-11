@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.4.9';
+        const APP_VERSION = '1.5.1';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6407,16 +6407,26 @@
         // danaRadnih ako unutra upadne subota/nedjelja). Izdvojeno iz
         // _topSortimentiPoslednjihDana da se isti prozor može prikazati
         // korisniku (primaci-trend-overview-period) bez računanja dvaput.
+        //
+        // Trenutni dan se UVIJEK izuzima iz prozora — podaci za taj dan se
+        // unose tek sutradan, pa bi njegovo uključivanje prikazivalo lažno
+        // nepotpune (prenisko iskazane) količine dok dan još traje. Prozor
+        // zato završava na POSLJEDNJEM PRETHODNOM radnom danu (jučer, ili
+        // petak ako je danas ponedjeljak), ne na danas.
         function _radnihDanaProzor(danaRadnih) {
-            const danas = new Date();
+            const danas = new Date(); // "danas" ostaje pravi kalendarski danas
             danas.setHours(0, 0, 0, 0);
-            const od = new Date(danas);
-            let brojac = _jeVikend(od) ? 0 : 1;
+            const krajProzora = new Date(danas);
+            krajProzora.setDate(krajProzora.getDate() - 1);
+            while (_jeVikend(krajProzora)) krajProzora.setDate(krajProzora.getDate() - 1);
+
+            const od = new Date(krajProzora);
+            let brojac = 1; // krajProzora je već garantovano radni dan (petlja gore)
             while (brojac < danaRadnih) {
                 od.setDate(od.getDate() - 1);
                 if (!_jeVikend(od)) brojac++;
             }
-            return { od, danas };
+            return { od, danas: krajProzora };
         }
 
         function _topSortimentiPoslednjihDana(niz, od, danas) {
