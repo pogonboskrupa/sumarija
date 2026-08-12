@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.5.1';
+        const APP_VERSION = '1.5.2';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6452,13 +6452,21 @@
 
         function _trendOverviewListaHtml(lista, boja) {
             if (!lista.length) return '<div style="text-align:center;padding:12px;color:#9ca3af;font-size:13px;">Nema evidentiranih unosa.</div>';
-            return lista.slice(0, 8).map(([sortiment, kolicina], i) => (
+            const stavkeHtml = lista.slice(0, 8).map(([sortiment, kolicina], i) => (
                 '<div style="display:flex;align-items:center;gap:10px;padding:7px 2px;' + (i ? 'border-top:1px solid #f1f5f9;' : '') + '">' +
                 '<span style="flex:0 0 20px;font-size:11px;font-weight:800;color:#9ca3af;">' + (i + 1) + '.</span>' +
                 '<span style="flex:1;font-size:13px;font-weight:600;color:#374151;">' + sortiment + '</span>' +
                 '<span style="font-size:13px;font-weight:800;color:' + boja + ';font-variant-numeric:tabular-nums;">' + kolicina.toFixed(2) + ' m³</span>' +
                 '</div>'
             )).join('');
+            // Ukupno = zbir SVIH sortimenata u periodu, ne samo prikazanog top 8.
+            const ukupno = lista.reduce((s, [, v]) => s + v, 0);
+            const ukupnoHtml =
+                '<div style="display:flex;align-items:center;gap:10px;padding:8px 2px 2px;margin-top:4px;border-top:2px solid #e5e7eb;">' +
+                '<span style="flex:1;font-size:12px;font-weight:800;color:#374151;text-transform:uppercase;letter-spacing:.03em;">Ukupno</span>' +
+                '<span style="font-size:14px;font-weight:900;color:' + boja + ';font-variant-numeric:tabular-nums;">' + ukupno.toFixed(2) + ' m³</span>' +
+                '</div>';
+            return stavkeHtml + ukupnoHtml;
         }
 
         // "Prilagođeno..." u #primaci-trend-overview-dana otkriva broj-input za
