@@ -83,8 +83,21 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     // Zarez i tačka su na terenu ravnopravni ("4,50" i "4.50")
     function _num(v) { return parseFloat(String(v == null ? '' : v).replace(',', '.')); }
 
+    // toLocaleString/toFixed zaokružuju na osnovu STVARNE binarne reprezentacije
+    // broja, ne "matematičke" decimalne vrijednosti — npr. 0,345 se u memoriji
+    // čuva kao 0,34499999999999997 (posljedica Huberove formule i sličnih
+    // množenja), pa standardno zaokruživanje zna pogrešno otići na dolje
+    // (0,34 umjesto očekivanog 0,35 kad je treća decimala 5). Množenje sa
+    // (1 + Number.EPSILON) prije Math.round nježno "gurne" broj preko granice
+    // kad je razlog čisto reprezentacijska greška, bez uticaja na brojeve koji
+    // stvarno nisu na granici.
+    function _roundHalfUp(v, dec) {
+        var p = Math.pow(10, dec);
+        return Math.round(v * p * (1 + Number.EPSILON)) / p;
+    }
+
     function _fmt(v, dec) {
-        return Number(v).toLocaleString('de-DE', {
+        return _roundHalfUp(Number(v), dec).toLocaleString('de-DE', {
             minimumFractionDigits: dec, maximumFractionDigits: dec
         });
     }

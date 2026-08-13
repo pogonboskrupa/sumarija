@@ -22,8 +22,11 @@ function printKubikator() {
     const vrijemeStampe = new Date().toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' });
 
     // Isti format kao na ekranu (js/kubikator.js _fmt) — zarez kao decimalni
-    // separator, ne tačka, da se brojevi na štampi i ekranu poklapaju.
-    const fmt2 = n => Number(n || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // separator, ne tačka, i isto "round half up" zaokruživanje (vidi
+    // _roundHalfUp u js/kubikator.js), da se brojevi na štampi i ekranu
+    // poklapaju do zadnje decimale.
+    const _roundHalfUp2 = n => { const p = 100; return Math.round(n * p * (1 + Number.EPSILON)) / p; };
+    const fmt2 = n => _roundHalfUp2(Number(n || 0)).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     const fmtTs = ts => new Date(ts).toLocaleString('bs-BA', {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
