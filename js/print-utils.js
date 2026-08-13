@@ -43,15 +43,18 @@ function printKubikator() {
         ? `Š ${fmt2(u.sirina)} × V ${fmt2(u.visina)} m`
         : `⌀ ${u.precnik} cm × ${fmt2(u.duzina)} m`;
 
-    // Rekapitulacija po vrsti drveta (Oblovina / Prostorno drvo)
+    // Rekapitulacija po vrsti drveta (Oblovina / Prostorno drvo). Zbir VEĆ
+    // ZAOKRUŽENIH vrijednosti (onih ispisanih po redu), ne zaokruženi zbir
+    // sirovih vrijednosti — inače zbir stavki na štampi ne odgovara
+    // prikazanom ukupnom (isti razlog kao _renderMemorija u kubikator.js).
     const mapa = {};
     unosi.forEach(u => {
         const key = vrstaNaziv(u.vrsta);
         if (!mapa[key]) mapa[key] = { kom: 0, m3: 0 };
         mapa[key].kom++;
-        mapa[key].m3 += u.zapremina;
+        mapa[key].m3 += _roundHalfUp2(Number(u.zapremina) || 0);
     });
-    const ukupnoM3 = unosi.reduce((s, u) => s + u.zapremina, 0);
+    const ukupnoM3 = unosi.reduce((s, u) => s + _roundHalfUp2(Number(u.zapremina) || 0), 0);
 
     const rekapRows = Object.keys(mapa).map(s => `
         <tr>

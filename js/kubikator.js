@@ -294,7 +294,11 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         var lista = _el('kub-mem-lista');
         var ukupnoEl = _el('kub-ukupno');
         if (ukupnoEl) {
-            var m3 = _unosi.reduce(function(s, u) { return s + (Number(u.zapremina) || 0); }, 0);
+            // Zbir VEĆ ZAOKRUŽENIH vrijednosti (onih koje korisnik vidi po
+            // stavci), ne zaokruženi zbir sirovih vrijednosti — inače zbir
+            // stavki na ekranu ne odgovara prikazanom ukupnom (npr.
+            // 0,51 + 0,75 mora dati 1,26, ne 1,25 iz sirovog zbira).
+            var m3 = _unosi.reduce(function(s, u) { return s + _roundHalfUp(Number(u.zapremina) || 0, DEC); }, 0);
             ukupnoEl.textContent = _unosi.length + ' kom · ' + _fmt(m3, DEC) + ' m³';
         }
         if (!lista) return;
@@ -338,7 +342,8 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             var kljuc = u.sortiment || BEZ_SORTIMENTA;
             if (!mapa[kljuc]) mapa[kljuc] = { kom: 0, m3: 0 };
             mapa[kljuc].kom += 1;
-            mapa[kljuc].m3 += Number(u.zapremina) || 0;
+            // Zbir zaokruženih vrijednosti — vidi komentar u _renderMemorija.
+            mapa[kljuc].m3 += _roundHalfUp(Number(u.zapremina) || 0, DEC);
         });
         var redoslijed = KUB_SORT_OBLOVINA.concat(KUB_SORT_PROSTORNO);
         var kljucevi = Object.keys(mapa).sort(function(a, b) {
@@ -373,7 +378,8 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         var lista = _el('kub-rekap-lista');
         var ukupnoEl = _el('kub-rekap-ukupno');
         if (ukupnoEl) {
-            var m3Uk = _unosi.reduce(function(s, u) { return s + (Number(u.zapremina) || 0); }, 0);
+            // Zbir zaokruženih vrijednosti — vidi komentar u _renderMemorija.
+            var m3Uk = _unosi.reduce(function(s, u) { return s + _roundHalfUp(Number(u.zapremina) || 0, DEC); }, 0);
             ukupnoEl.textContent = _unosi.length + ' kom · ' + _fmt(m3Uk, DEC) + ' m³';
         }
         if (!lista) return;
@@ -479,7 +485,8 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             });
             redovi.push([datum, vrstaTxt, dim, _fmt(u.zapremina, DEC)].join(';'));
         });
-        var ukupno = _unosi.reduce(function(s, u) { return s + (Number(u.zapremina) || 0); }, 0);
+        // Zbir zaokruženih vrijednosti — vidi komentar u _renderMemorija.
+        var ukupno = _unosi.reduce(function(s, u) { return s + _roundHalfUp(Number(u.zapremina) || 0, DEC); }, 0);
         redovi.push('');
         redovi.push('UKUPNO;;;' + _fmt(ukupno, DEC));
         var csv = '\ufeff' + redovi.join('\r\n');   // BOM — da Excel prepozna UTF-8 (šđčćž)
