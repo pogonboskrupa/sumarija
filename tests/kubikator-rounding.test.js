@@ -128,3 +128,25 @@ describe('Zbir prikazanih stavki mora biti jednak prikazanom ukupnom', () => {
         assert.equal(_roundHalfUp(zbirPrikazanih, 2), _roundHalfUp(rucniZbirStringova, 2));
     });
 });
+
+describe('Izbor broja decimala (2 podrazumijevano / 3 po izboru — kubikatorToggleDecimals)', () => {
+    // DEC utice SAMO na prikaz/zaokruzivanje — sirova zapremina se cuva
+    // punom preciznoscu u _unosi, pa isti unos daje razlicit ali dosljedan
+    // prikaz zavisno od trenutno izabranog broja decimala.
+    test('ista sirova zapremina prikazuje razlicit broj decimala na 2 vs 3', () => {
+        const v = _zapremina(26, 8); // 0,4247433... m3
+        assert.equal(_fmt(v, 2), '0,42');
+        assert.equal(_fmt(v, 3), '0,425');
+    });
+
+    test('treca decimala 5 i dalje zaokruzuje na vecu i pri 3 decimale (cetvrta decimala)', () => {
+        // 0,0005 na cetvrtoj decimali -> mora otici na vecu treca decimala
+        assert.equal(_roundHalfUp(0.1235, 3), 0.124);
+    });
+
+    test('_roundHalfUp(v,2) i _roundHalfUp(v,3) se ne moraju slagati u zadnjoj cifri (razlicita preciznost, oba ispravna)', () => {
+        const v = _zapremina(43, 3.50); // 0,5082704... m3
+        assert.equal(_fmt(v, 2), '0,51');
+        assert.equal(_fmt(v, 3), '0,508');
+    });
+});

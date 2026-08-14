@@ -59,7 +59,8 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     var P_MIN = 7,  P_MAX = 150;  // prečnik, cijeli centimetri
     var D_MIN = 1,  D_MAX = 10;   // dužina u metrima, dvije decimale
     var KOEF_PROSTORNI = 0.63;    // prostorni → zapreminski oblik: 0,7 − 10% = 0,63
-    var DEC = 2;                  // zapremina se prikazuje na dvije decimale
+    var DEC_KEY = 'kubikator_dec'; // pamti izabran broj decimala između sesija
+    var DEC = 2;                  // zapremina se prikazuje na dvije (podrazumijevano) ili tri decimale — kubikatorToggleDecimals
 
     // Sortiment (dropdown u zaglavlju, #kub-sortiment-select) — čisto
     // klasifikacija unosa, ne utiče na računicu. Različita lista po modu:
@@ -122,12 +123,19 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         try {
             _prviProstornoGotov = localStorage.getItem(PRVI_PROSTORNI_KEY) === '1';
         } catch (_) { _prviProstornoGotov = false; }
+        try {
+            var dec = parseInt(localStorage.getItem(DEC_KEY), 10);
+            DEC = (dec === 3) ? 3 : 2;
+        } catch (_) { DEC = 2; }
     }
     function _save() {
         try { localStorage.setItem(KUB_KEY, JSON.stringify(_unosi)); } catch (_) {}
     }
     function _saveLock() {
         try { localStorage.setItem(LOCK_KEY, JSON.stringify({ duzina: _lockDuzina })); } catch (_) {}
+    }
+    function _saveDec() {
+        try { localStorage.setItem(DEC_KEY, String(DEC)); } catch (_) {}
     }
 
     // "24"/"4,50" (prečnik/dužina) i "1,20"/"1,50" (širina/visina) su prijedlog
@@ -287,6 +295,28 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             bD.textContent = _lockDuzina ? '🔒' : '🔓';
             bD.classList.toggle('zakljucano', _lockDuzina);
             bD.setAttribute('aria-pressed', String(_lockDuzina));
+        }
+    }
+
+    // ─── Broj decimala (2 podrazumijevano, 3 po izboru) ──────────────────
+    // Utiče samo na PRIKAZ/zaokruživanje (_fmt/_roundHalfUp) — sirova
+    // izračunata zapremina se u _unosi i dalje čuva punom preciznošću, pa
+    // prebacivanje broja decimala odmah tačno preračuna i već postojeće
+    // unose, bez migracije podataka.
+    window.kubikatorToggleDecimals = function() {
+        DEC = (DEC === 2) ? 3 : 2;
+        _saveDec();
+        _osvjeziDecUI();
+        _osvjeziRezultat();
+        _renderMemorija();
+        _renderRekap();
+    };
+    function _osvjeziDecUI() {
+        var b = _el('kub-dec-toggle');
+        if (b) {
+            b.textContent = DEC === 3 ? '.000' : '.00';
+            b.classList.toggle('tri-decimale', DEC === 3);
+            b.setAttribute('aria-pressed', String(DEC === 3));
         }
     }
 
@@ -563,8 +593,9 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         } else if (confirm(poruka)) { obrisi(); }
     };
 
-    // Koristi je printKubikator (js/print-utils.js)
+    // Koristi ih printKubikator (js/print-utils.js)
     window.getKubikatorUnosi = function() { return _unosi; };
+    window.getKubikatorDec = function() { return DEC; };
 
     // ---- Puni ekran (isti obrazac kao Karta) ----
     // Aplikacija inače drži viewport na width=1280 (setAppViewport, index.html)
@@ -719,6 +750,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         }
 
         _osvjeziLockUI();
+        _osvjeziDecUI();
         _osvjeziPlaceholdere();
         _renderMemorija();
         _renderRekap();
