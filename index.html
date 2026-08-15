@@ -3516,8 +3516,14 @@
                             <button class="btn btn-primary" onclick="initKartaOdjela(true)">🔄 Osvježi</button>
                         </div>
                     </div>
-                    <!-- Filter traka -->
-                    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;">
+                    <!-- Switch Proizvodnja ⇄ Šumsko uzgojni radovi — isti .submenu-tab
+                         obrazac kao ostali podtabovi u appu (js/ui.js switchPrimaciSubmenu). -->
+                    <div style="display:flex;gap:6px;margin-bottom:10px;">
+                        <button type="button" class="submenu-tab active" id="karta-mode-proizvodnja-btn" onclick="switchKartaOdjelaMode('proizvodnja')">🪵 Proizvodnja</button>
+                        <button type="button" class="submenu-tab" id="karta-mode-uzgojni-btn" onclick="switchKartaOdjelaMode('uzgojni')">🌱 Šumsko uzgojni radovi</button>
+                    </div>
+                    <!-- Filter traka — samo Proizvodnja prikaz, sakriva se u Uzgojni modu -->
+                    <div id="karta-proizvodnja-filteri" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;">
                         <div style="display:flex;align-items:center;gap:6px;">
                             <label style="font-size:12px;font-weight:600;color:#374151;">GJ:</label>
                             <select id="karta-filter-gj" onchange="applyKartaFilter()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;">
@@ -3548,6 +3554,14 @@
                             🚛 Prikaz otpreme
                         </label>
                         <span id="karta-otprema-info" style="font-size:11px;color:#b45309;font-weight:700;display:none;"></span>
+                        <!-- "Prikaži sanitar" — zamjenjuje bivši "Slučajni" legend checkbox
+                             (slučajni/zapisnik su se preselili isključivo u Šumsko uzgojni
+                             radovi prikaz). Podrazumijevano isključen — sanitarne sječe se
+                             na Proizvodnji ne prikazuju dok se ne čekira. -->
+                        <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#374151;cursor:pointer;background:white;border:1px solid #d1d5db;border-radius:6px;padding:4px 10px;">
+                            <input id="karta-sanitar-toggle" type="checkbox" onchange="applyKartaFilter()" style="cursor:pointer;margin:0;" />
+                            🌲 Prikaži sanitar
+                        </label>
                         <button id="karta-sat-btn" onclick="toggleMapaSat()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🗺️ OSM</button>
                         <button id="karta-offline-btn" onclick="downloadKartaOffline()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">⬇️ Offline</button>
                         <button id="karta-odjel-ruta-btn" onclick="toggleOdjelRutaMode()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🔀 Ruta odjel→odjel</button>
@@ -3561,7 +3575,6 @@
                             <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" class="karta-legend-toggle" data-status="planirano" checked onchange="applyKartaFilter()" style="margin:0;cursor:pointer;" /><span style="display:inline-block;width:12px;height:12px;background:#eab308;border-radius:2px;"></span>Planirano</label>
                             <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" class="karta-legend-toggle" data-status="u-sjeci" checked onchange="applyKartaFilter()" style="margin:0;cursor:pointer;" /><span style="display:inline-block;width:12px;height:12px;background:#dc2626;border-radius:2px;"></span>U sječi</label>
                             <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" class="karta-legend-toggle" data-status="posjeceno" checked onchange="applyKartaFilter()" style="margin:0;cursor:pointer;" /><span style="display:inline-block;width:12px;height:12px;background:#16a34a;border-radius:2px;"></span>Posječeno</label>
-                            <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" class="karta-legend-toggle" data-status="slucajni" checked onchange="applyKartaFilter()" style="margin:0;cursor:pointer;" /><span style="display:inline-block;width:12px;height:12px;background:#7c3aed;border-radius:2px;"></span>Slučajni</label>
                             <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" class="karta-legend-toggle" data-status="prelazni" checked onchange="applyKartaFilter()" style="margin:0;cursor:pointer;" /><span style="display:inline-block;width:12px;height:12px;background:#0891b2;border-radius:2px;"></span>Nekategorisan</label>
                         </div>
                     </div>
@@ -3579,6 +3592,13 @@
                   #karta-odjela-map { width:100%; height:calc(100vh - 220px); height:calc(100dvh - 220px); min-height:400px; background:#f1f5f9; }
                   @media (max-width:1024px) { #karta-odjela-map { height:calc(100vh - 200px); height:calc(100dvh - 200px); min-height:320px; } }
                   @media (max-width:640px)  { #karta-odjela-map { height:calc(100vh - 230px); height:calc(100dvh - 230px); min-height:260px; } }
+                  /* Šumsko uzgojni radovi mod — niža mapa da je panel (lista + feromonske
+                     klopke) ispod dohvatljiv bez pretjeranog skrolanja. !important je
+                     ovdje samo zbog specifičnosti drugih pravila iznad; Fokus mod se
+                     uvijek prvo gasi pri ulasku u ovaj mod (switchKartaOdjelaMode u
+                     js/karta-odjela.js), pa nema konflikta sa Fokusovim !important
+                     visinama definisanim niže u ovom fajlu. */
+                  #karta-odjela-map.kod-uzgojni { height:45vh !important; min-height:320px !important; }
 
                   /* Radnik mapa odjela — visina umanjena za donju traku dugmadi (~112-120px,
                      ponovo uvećana traka). Ovo je fallback prikaz PRIJE nego se puni-ekran
@@ -4064,6 +4084,51 @@
                 </div>
                 <!-- Ruta info -->
                 <div id="mapa-ruta-info" style="display:none;margin:8px 20px;padding:10px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:13px;color:#1e40af;"></div>
+
+                <!-- ŠUMSKO UZGOJNI RADOVI PANEL — vidljiv samo u Uzgojni modu
+                     (switchKartaOdjelaMode, js/karta-odjela.js). Dvije sekcije:
+                     lista slučajnih/zapisnik odjela (isti izvor podataka kao
+                     mapa — statusMap._extra, garantuje sklad liste i poligona)
+                     i feromonske klopke (forma + tabela očitanja). -->
+                <div id="karta-uzgojni-panel" class="hidden" style="padding:0 20px 24px;">
+                    <div style="margin-top:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;">
+                        <div style="font-size:14px;font-weight:700;color:#1f2937;margin-bottom:10px;">🌱 Slučajni užici i zapisnik odjeli</div>
+                        <div id="karta-uzgojni-lista" style="overflow-x:auto;"></div>
+                    </div>
+
+                    <div style="margin-top:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;">
+                        <div style="font-size:14px;font-weight:700;color:#1f2937;margin-bottom:10px;">🪤 Feromonske klopke — evidencija ulova potkornjaka</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:12px;">
+                            <div>
+                                <label style="display:block;font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Odjel</label>
+                                <select id="klopka-odjel-select" style="font-size:12px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;min-width:160px;"></select>
+                            </div>
+                            <div>
+                                <label style="display:block;font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Broj klopke</label>
+                                <input id="klopka-broj" type="text" placeholder="npr. 3" style="font-size:12px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;width:90px;" />
+                            </div>
+                            <div>
+                                <label style="display:block;font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Vrsta potkornjaka</label>
+                                <input id="klopka-vrsta" type="text" placeholder="npr. Ips typographus" style="font-size:12px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;width:170px;" />
+                            </div>
+                            <div>
+                                <label style="display:block;font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Broj ulova</label>
+                                <input id="klopka-ulov" type="number" min="0" step="1" placeholder="0" style="font-size:12px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;width:90px;" />
+                            </div>
+                            <div>
+                                <label style="display:block;font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Datum očitanja</label>
+                                <input id="klopka-datum" type="date" style="font-size:12px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;" />
+                            </div>
+                            <div style="flex:1 1 160px;min-width:140px;">
+                                <label style="display:block;font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Napomena (opciono)</label>
+                                <input id="klopka-napomena" type="text" placeholder="" style="font-size:12px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;width:100%;box-sizing:border-box;" />
+                            </div>
+                            <button type="button" onclick="dodajKlopkaOcitanje()" style="font-size:12px;font-weight:700;padding:7px 14px;border:none;border-radius:6px;background:#0d9488;color:white;cursor:pointer;">➕ Dodaj očitanje</button>
+                        </div>
+                        <div id="klopka-status" style="font-size:12px;font-weight:600;display:none;margin-bottom:8px;"></div>
+                        <div id="klopka-tabela" style="overflow-x:auto;"></div>
+                    </div>
+                </div>
             </div>
 
             </main><!-- /main-content -->

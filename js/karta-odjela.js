@@ -38,7 +38,9 @@
   let _geojson      = null;
   let _statusMap       = new Map();
   let _slucajniSet     = new Set(); // normKeys s "SLUCAJNI" u nazivu
-  let _prelazniSetGlobal = new Set(); // normKeys bez plana, bez "SLUCAJNI" — prelazni
+  let _sanitarSet      = new Set(); // normKeys s "SANITAR" u nazivu (sanitarna sječa)
+  let _zapisnikSet     = new Set(); // normKeys s "ZAPISNIK" u nazivu
+  let _prelazniSetGlobal = new Set(); // normKeys bez plana, bez SLUCAJNI/SANITAR/ZAPISNIK — prelazni
   let _allFeatures  = [];
   let _mapBounds    = null;
   let _routeLine    = null;
@@ -59,6 +61,8 @@
       case 'planirano':  return '#eab308';
       case 'plan-2027':  return '#2563eb'; // plava — plan za narednu godinu
       case 'slucajni':   return '#7c3aed';
+      case 'sanitar':    return '#ea580c'; // narandžasta — sanitarna sječa (Proizvodnja, "Prikaži sanitar")
+      case 'zapisnik':   return '#0d9488'; // teal — zapisnik odjeli (Šumsko uzgojni radovi)
       case 'prelazni':   return '#0891b2';
       default:           return '#6366f1';
     }
@@ -114,6 +118,7 @@
   const MJESECI_NAZIVI = ['Januar','Februar','Mart','April','Maj','Juni','Juli','August','Septembar','Oktobar','Novembar','Decembar'];
 
   let _otpremaMode = false; // "Prikaz otpreme" checkbox — prikaži samo odjele s otpremom u tekućem mjesecu
+  let _prikazMode  = 'proizvodnja'; // 'proizvodnja' | 'uzgojni' — NIJE perzistirano, uvijek default pri otvaranju taba
 
   function _getYear(p) {
     const parts = (p.datum||'').split('.');
@@ -138,9 +143,29 @@
     return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear() + '.';
   }
 
-  // ---- STATUS MAP + SLUČAJNI ----
-  // Stripa SLUCAJNI sufiks u svim formatima: "104 SLUCAJNI", "104 SLUCAJNI UZICI", "104 (SLUCAJNI 2025)"
-  const _baseKey = k => k.replace(/[\s(]+SLUCAJNI.*/,'').replace(/[\s(]+SLUCAJAN.*/,'').trim();
+  // ---- STATUS MAP + SLUČAJNI/SANITAR/ZAPISNIK ----
+  // Stripa SLUCAJNI/SANITAR/ZAPISNIK sufiks u svim formatima: "104 SLUCAJNI",
+  // "104 SLUCAJNI UZICI", "104 (SLUCAJNI 2025)", "104 SANITARNA SJECA", "104 ZAPISNIK"
+  const _baseKey = k => k
+    .replace(/[\s(]+SLUCAJNI.*/,'').replace(/[\s(]+SLUCAJAN.*/,'')
+    .replace(/[\s(]+SANITAR.*/,'').replace(/[\s(]+ZAPISNIK.*/,'')
+    .trim();
+
+  // Klasifikacija NE-PLANIRANOG odjela (poslije provjere planKeys) — JEDNO
+  // mjesto koje style/onEachFeature/_openDetaljiModal dijele umjesto da
+  // svaka nezavisno ponavlja isti if/else lanac (bilo je trostruko duplirano).
+  // Namjerno RAZLIČITO od šireg TL_SLUCAJNI_KEYWORDS (js/app.js) /
+  // SLUCAJNI_KEYWORDS (js/godisnji-plan.js) koji SANITAR/ZAPISNIK lijepe u
+  // isti "Slučajni užici" bucket za Sječa-timeline — ovdje treba finija
+  // podjela (poseban "Prikaži sanitar" checkbox na Proizvodnji, zapisnik i
+  // slučajni razdvojeni u Šumsko uzgojni radovi prikazu).
+  function _nonPlanKategorija(key) {
+    if (_sanitarSet.has(key))        return 'sanitar';
+    if (_zapisnikSet.has(key))       return 'zapisnik';
+    if (_slucajniSet.has(key))       return 'slucajni';
+    if (_prelazniSetGlobal.has(key)) return 'prelazni';
+    return 'bez-plana';
+  }
 
   function _buildStatusMap(primke, otpreme) {
     const planEntries    = _planEntries();
@@ -154,13 +179,22 @@
     const otremeOstale  = (otpreme||[]).filter(p => _getYear(p) !== PLAN_YEAR);
 
     _slucajniSet  = new Set(); // ima "SLUCAJNI" u nazivu odjela
-    let _prelazniSet = new Set(); // nije u planu 2026, ali nema "SLUCAJNI" — prelazni iz prethodne godine
+    _sanitarSet   = new Set(); // ima "SANITAR" u nazivu odjela
+    _zapisnikSet  = new Set(); // ima "ZAPISNIK" u nazivu odjela
+    let _prelazniSet = new Set(); // nije u planu 2026, bez SLUCAJNI/SANITAR/ZAPISNIK — prelazni iz prethodne godine
 
+    // Prioritet prvog poklapanja kad bi naziv teorijski sadržao više ključnih
+    // riječi odjednom: SANITAR (operativno najspecifičniji tag) → ZAPISNIK →
+    // SLUCAJNI/SLUCAJAN → prelazni (generički catch-all).
     primkeTekuce.forEach(p => {
       const k  = _normKey(p.odjel);
-      const bk = _baseKey(k); // stripa SLUCAJNI sufiks da matchuje GeoJSON polygon key
+      const bk = _baseKey(k); // stripa sufiks da matchuje GeoJSON polygon key
       if (!planKeys.has(k)) {
-        if (k.includes('SLUCAJNI') || k.includes('SLUCAJAN')) {
+        if (k.includes('SANITAR')) {
+          _sanitarSet.add(bk);
+        } else if (k.includes('ZAPISNIK')) {
+          _zapisnikSet.add(bk);
+        } else if (k.includes('SLUCAJNI') || k.includes('SLUCAJAN')) {
           _slucajniSet.add(bk); // čuvamo baseKey, ne puni normKey
         } else {
           _prelazniSet.add(bk); // isto za prelazne
@@ -571,9 +605,9 @@
       metaDiv.style.display = metaDiv.innerHTML ? 'flex' : 'none';
     }
 
-    const statusLabel = { posjeceno:'Posječeno','u-sjeci':'U sječi',planirano:'Planirano',slucajni:'Slučajni užitak',prelazni:'Nekategorisan odjel','plan-2027':'Plan sječa 2027' };
-    const statusColor = { posjeceno:'#166534','u-sjeci':'#dc2626',planirano:'#6b7280',slucajni:'#7c3aed',prelazni:'#0e7490','plan-2027':'#1e40af' };
-    const statusBg    = { posjeceno:'#dcfce7','u-sjeci':'#fee2e2',planirano:'#f3f4f6',slucajni:'#f5f3ff',prelazni:'#ecfeff','plan-2027':'#dbeafe' };
+    const statusLabel = { posjeceno:'Posječeno','u-sjeci':'U sječi',planirano:'Planirano',slucajni:'Slučajni užitak',sanitar:'Sanitarna sječa',zapisnik:'Zapisnik','plan-2027':'Plan sječa 2027',prelazni:'Nekategorisan odjel' };
+    const statusColor = { posjeceno:'#166534','u-sjeci':'#dc2626',planirano:'#6b7280',slucajni:'#7c3aed',sanitar:'#c2410c',zapisnik:'#0f766e','plan-2027':'#1e40af',prelazni:'#0e7490' };
+    const statusBg    = { posjeceno:'#dcfce7','u-sjeci':'#fee2e2',planirano:'#f3f4f6',slucajni:'#f5f3ff',sanitar:'#fff7ed',zapisnik:'#f0fdfa','plan-2027':'#dbeafe',prelazni:'#ecfeff' };
 
     const routeBtn = `
       <div style="display:flex;gap:8px;margin-top:12px;">
@@ -581,19 +615,18 @@
         <button onclick="routeOdjelToOdjel()" style="flex:1;display:flex;align-items:center;gap:6px;background:#dc2626;color:white;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;justify-content:center;">🔀 Ruta do odjela…</button>
       </div>`;
 
-    const normKey2    = _labelKey((props.gj||'') + ' ' + (props.odjel||props.name||''));
-    const isSlucajni  = !info && _slucajniSet.has(normKey2);
-    const isPrelazni  = !info && !isSlucajni && _prelazniSetGlobal.has(normKey2);
+    const normKey2  = _labelKey((props.gj||'') + ' ' + (props.odjel||props.name||''));
+    const nonPlanKat = !info ? _nonPlanKategorija(normKey2) : null;
 
     let body;
     if (!info) {
-      const label = isSlucajni ? 'Slučajni užitak' : isPrelazni ? 'Nekategorisan odjel' : 'Bez plana';
-      const bg    = isSlucajni ? '#f5f3ff' : isPrelazni ? '#ecfeff' : '#f3f4f6';
-      const col   = isSlucajni ? '#7c3aed' : isPrelazni ? '#0e7490' : '#6b7280';
-      const note  = isSlucajni
-        ? `${gj} — sječa evidentirana kao slučajni užitak`
-        : isPrelazni
-        ? `${gj} — nije u planu 2026, vjerovatno prelazni odjel iz prethodne godine`
+      const label = nonPlanKat === 'bez-plana' ? 'Bez plana' : statusLabel[nonPlanKat];
+      const bg    = nonPlanKat === 'bez-plana' ? '#f3f4f6' : statusBg[nonPlanKat];
+      const col   = nonPlanKat === 'bez-plana' ? '#6b7280' : statusColor[nonPlanKat];
+      const note  = nonPlanKat === 'sanitar'  ? `${gj} — sječa evidentirana kao sanitarna sječa`
+        : nonPlanKat === 'zapisnik' ? `${gj} — sječa evidentirana kao zapisnik`
+        : nonPlanKat === 'slucajni' ? `${gj} — sječa evidentirana kao slučajni užitak`
+        : nonPlanKat === 'prelazni' ? `${gj} — nije u planu 2026, vjerovatno prelazni odjel iz prethodne godine`
         : `${gj} — nema podataka za ovaj odjel`;
 
       let extraTable = '';
@@ -1088,10 +1121,30 @@
 
   // ---- FILTER ----
   window.applyKartaFilter = function() {
+    // Šumsko uzgojni radovi mod — ekskluzivni prikaz (isti mehanizam kao
+    // _otpremaMode-only): SAMO slucajni+zapisnik poligoni, sve ostalo
+    // sakriveno. Proizvodnja-specifični filteri (GJ/status/pretraga/otprema/
+    // sanitar/legenda) su sakriveni u ovom modu, pa se ovdje ne primjenjuju.
+    if (_prikazMode === 'uzgojni') {
+      _allFeatures.forEach(lyr => {
+        const uzgM = lyr._kartaStatus === 'slucajni' || lyr._kartaStatus === 'zapisnik';
+        if (uzgM) {
+          if (!_map.hasLayer(lyr)) lyr.addTo(_map);
+          if (_layer) _layer.resetStyle(lyr);
+        } else if (_map.hasLayer(lyr)) {
+          _map.removeLayer(lyr);
+        }
+      });
+      const info = document.getElementById('karta-otprema-info');
+      if (info) info.style.display = 'none';
+      return;
+    }
+
     const gjF = (document.getElementById('karta-filter-gj')     || {}).value || 'sve';
     const stF = (document.getElementById('karta-filter-status') || {}).value || 'sve';
     const q   = ((document.getElementById('karta-search')       || {}).value || '').trim().toUpperCase();
     _otpremaMode = (document.getElementById('karta-otprema-toggle') || {}).checked || false;
+    const sanitarOn = (document.getElementById('karta-sanitar-toggle') || {}).checked || false;
 
     // Legenda checkboxovi — isključi boju/status da sakriješ sve odjele tog
     // statusa. "bez-plana" nema checkbox u legendi pa uvijek prolazi
@@ -1108,10 +1161,16 @@
       const qM  = !q || o.startsWith(q) || String(p.gj||'').toUpperCase().includes(q);
       const legendM = lyr._kartaStatus === 'bez-plana' || legendOn[lyr._kartaStatus] !== false;
       // U režimu otpreme prikaži SAMO odjele s otpremom u tekućem mjesecu
-      // (uključujući bez-plana/slučajne/prelazne) — ostali se sakriju.
+      // (uključujući bez-plana/prelazne) — ostali se sakriju.
       const otM = !_otpremaMode || (lyr._kartaOtpremaMjesec > 0);
+      // Slučajni/zapisnik su se preselili isključivo u Šumsko uzgojni radovi
+      // prikaz — na Proizvodnji se nikad ne prikazuju (nema više legend
+      // checkboxa za njih). Sanitar se gate-uje novim "Prikaži sanitar"
+      // checkboxom, podrazumijevano isključen.
+      const kategM = lyr._kartaStatus !== 'slucajni' && lyr._kartaStatus !== 'zapisnik';
+      const sanM   = lyr._kartaStatus !== 'sanitar' || sanitarOn;
 
-      if (gjM && stM && qM && legendM && otM) {
+      if (gjM && stM && qM && legendM && otM && kategM && sanM) {
         if (!_map.hasLayer(lyr)) lyr.addTo(_map);
         if (_otpremaMode) { lyr.setStyle(_getOtpremaStyle(lyr._kartaStatus)); otpremaBroj++; }
         else if (_layer)  { _layer.resetStyle(lyr); }
@@ -1130,6 +1189,250 @@
       } else {
         info.style.display = 'none';
       }
+    }
+  };
+
+  // ---- SWITCH Proizvodnja ⇄ Šumsko uzgojni radovi ----
+  window.switchKartaOdjelaMode = function(mode) {
+    _prikazMode = (mode === 'uzgojni') ? 'uzgojni' : 'proizvodnja';
+
+    const bProizvodnja = document.getElementById('karta-mode-proizvodnja-btn');
+    const bUzgojni      = document.getElementById('karta-mode-uzgojni-btn');
+    if (bProizvodnja) bProizvodnja.classList.toggle('active', _prikazMode === 'proizvodnja');
+    if (bUzgojni)      bUzgojni.classList.toggle('active', _prikazMode === 'uzgojni');
+
+    const filteri = document.getElementById('karta-proizvodnja-filteri');
+    if (filteri) filteri.classList.toggle('hidden', _prikazMode === 'uzgojni');
+    const panel = document.getElementById('karta-uzgojni-panel');
+    if (panel) panel.classList.toggle('hidden', _prikazMode !== 'uzgojni');
+    const mapEl = document.getElementById('karta-odjela-map');
+    if (mapEl) mapEl.classList.toggle('kod-uzgojni', _prikazMode === 'uzgojni');
+
+    // Fokus mod koristi !important visinu na #karta-odjela-map (index.html)
+    // koja bi pregazila smanjenu visinu za Uzgojni panel — prostor za panel
+    // je baš ono što Fokus mod oduzima, pa se izlaz iz Fokusa čisto rješava
+    // izlaskom iz njega. Ruta-mod se čisti u oba smjera (simetrija sa
+    // toggleOdjelRutaMode() koji već čisti stare rute pri ulasku).
+    if (_prikazMode === 'uzgojni') {
+      if (document.body.classList.contains('mapa-fokus')) window.toggleMapaFokus();
+      if (_odjelRutaMode) window.toggleOdjelRutaMode();
+    } else if (_odjelRutaMode) {
+      window.toggleOdjelRutaMode();
+    }
+
+    applyKartaFilter();
+    if (_map) setTimeout(() => _map.invalidateSize(), 50);
+
+    if (_prikazMode === 'uzgojni') {
+      _renderUzgojniPanel();
+      _popuniKlopkaOdjelSelect();
+      const datumEl = document.getElementById('klopka-datum');
+      if (datumEl && !datumEl.value) datumEl.value = new Date().toISOString().slice(0, 10);
+      _fetchKlopkeCached();
+    }
+  };
+
+  // ---- ŠUMSKO UZGOJNI RADOVI: lista slučajnih/zapisnik odjela ----
+  // Isti izvor podataka (lyr._kartaStatus, lyr._kartaExtra) kao mapa —
+  // garantuje da su lista i obojeni poligoni UVIJEK u skladu (isti Setovi,
+  // ista _buildStatusMap petlja).
+  let _uzgojniRedovi = [];
+  function _renderUzgojniPanel() {
+    const lista = document.getElementById('karta-uzgojni-lista');
+    if (!lista) return;
+
+    const seen = new Map(); // labelKey → { odjel, gj, kategorija, extra, lyr }
+    _allFeatures.forEach(lyr => {
+      const st = lyr._kartaStatus;
+      if (st !== 'slucajni' && st !== 'zapisnik') return;
+      const p     = lyr._kartaProps || {};
+      const odjel = String(p.odjel || p.name || '').trim();
+      const gj    = String(p.gj || '').trim();
+      const key   = _labelKey(gj + ' ' + odjel);
+      if (!seen.has(key)) seen.set(key, { odjel, gj, kategorija: st, extra: lyr._kartaExtra, lyr });
+    });
+
+    _uzgojniRedovi = [...seen.values()].sort((a, b) => a.odjel.localeCompare(b.odjel, 'bs'));
+
+    if (!_uzgojniRedovi.length) {
+      lista.innerHTML = '<div style="font-size:12px;color:#6b7280;padding:8px 0;">Nema slučajnih užitaka ni zapisnik odjela za tekuću godinu.</div>';
+      return;
+    }
+
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+      '<thead><tr style="text-align:left;color:#6b7280;">' +
+      '<th style="padding:6px 8px;">Odjel</th><th style="padding:6px 8px;">GJ</th>' +
+      '<th style="padding:6px 8px;">Kategorija</th>' +
+      '<th style="padding:6px 8px;text-align:right;">Sječa</th>' +
+      '<th style="padding:6px 8px;text-align:right;">Otprema</th></tr></thead><tbody>';
+    _uzgojniRedovi.forEach((r, i) => {
+      const sj    = (r.extra && r.extra.sjeca && r.extra.sjeca.ukupno) || 0;
+      const ot    = (r.extra && r.extra.otpr  && r.extra.otpr.ukupno)  || 0;
+      const boja  = r.kategorija === 'slucajni' ? '#7c3aed' : '#0d9488';
+      const naziv = r.kategorija === 'slucajni' ? 'Slučajni' : 'Zapisnik';
+      html += `<tr style="border-top:1px solid #f1f5f9;cursor:pointer;" onclick="_klikUzgojniRed(${i})">` +
+        `<td style="padding:6px 8px;font-weight:600;">${r.odjel}</td>` +
+        `<td style="padding:6px 8px;">${r.gj}</td>` +
+        `<td style="padding:6px 8px;"><span style="background:${boja}22;color:${boja};font-weight:700;padding:2px 8px;border-radius:10px;">${naziv}</span></td>` +
+        `<td style="padding:6px 8px;text-align:right;">${_fmt(sj)}</td>` +
+        `<td style="padding:6px 8px;text-align:right;">${_fmt(ot)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    lista.innerHTML = html;
+  }
+  window._klikUzgojniRed = function(i) {
+    const r = _uzgojniRedovi[i];
+    if (!r || !r.lyr) return;
+    const center = _centroid(r.lyr);
+    if (center) _openDetaljiModal(r.lyr._kartaProps, r.lyr._kartaInfo, center, r.lyr._kartaExtra);
+  };
+
+  // ---- FEROMONSKE KLOPKE ----
+  let _klopke = [];
+
+  function _popuniKlopkaOdjelSelect() {
+    const sel = document.getElementById('klopka-odjel-select');
+    if (!sel || sel.dataset.popunjeno) return;
+    const labels = new Set();
+    _allFeatures.forEach(lyr => {
+      const p     = lyr._kartaProps || {};
+      const odjel = String(p.odjel || p.name || '').trim();
+      const gj    = String(p.gj || '').trim();
+      if (odjel) labels.add(gj ? (gj + ' ' + odjel) : odjel);
+    });
+    const sorted = [...labels].sort((a, b) => a.localeCompare(b, 'bs'));
+    sel.innerHTML = sorted.map(l => `<option value="${l.replace(/"/g, '&quot;')}">${l}</option>`).join('');
+    sel.dataset.popunjeno = '1';
+  }
+
+  window.dodajKlopkaOcitanje = async function() {
+    const odjel      = (document.getElementById('klopka-odjel-select') || {}).value || '';
+    const brojKlopke = ((document.getElementById('klopka-broj')     || {}).value || '').trim();
+    const vrsta      = ((document.getElementById('klopka-vrsta')    || {}).value || '').trim();
+    const ulovRaw    = (document.getElementById('klopka-ulov')      || {}).value;
+    const datum      = (document.getElementById('klopka-datum')     || {}).value || '';
+    const napomena   = ((document.getElementById('klopka-napomena') || {}).value || '').trim();
+    const statusEl   = document.getElementById('klopka-status');
+    const ulov = parseInt(ulovRaw, 10);
+
+    if (!odjel || !brojKlopke || !vrsta || ulovRaw === '' || isNaN(ulov) || ulov < 0) {
+      if (statusEl) {
+        statusEl.textContent = '⚠️ Popunite odjel, broj klopke, vrstu i broj ulova (0 ili veći).';
+        statusEl.style.color = '#dc2626'; statusEl.style.display = 'block';
+      }
+      return;
+    }
+
+    if (statusEl) { statusEl.textContent = '⏳ Šaljem...'; statusEl.style.color = '#6b7280'; statusEl.style.display = 'block'; }
+    try {
+      const url = buildApiUrl('add-klopka-ocitanje', {
+        odjel, brojKlopke, vrsta, ulov, datumOcitanja: datum, napomena
+      });
+      const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
+      const data = await r.json();
+      if (!data || data.success !== true) throw new Error((data && data.error) || 'Greška');
+
+      if (statusEl) { statusEl.textContent = '✅ Očitanje uneseno'; statusEl.style.color = '#16a34a'; }
+      document.getElementById('klopka-broj').value = '';
+      document.getElementById('klopka-vrsta').value = '';
+      document.getElementById('klopka-ulov').value = '';
+      document.getElementById('klopka-napomena').value = '';
+      await _fetchKlopkeCached(true);
+      setTimeout(() => { if (statusEl) statusEl.style.display = 'none'; }, 2500);
+    } catch (err) {
+      if (statusEl) {
+        statusEl.textContent = '❌ ' + ((err && err.message) || 'Greška pri slanju');
+        statusEl.style.color = '#dc2626';
+      }
+    }
+  };
+
+  // Isti obrazac kao fetchPreklasiranjaCached (js/app.js) — online: uvijek
+  // svjež fetch, snimi u localStorage kao offline fallback; offline: vrati
+  // keš. NAMJERNO ne fetchWithCache/smart TTL (može zadržati stare podatke
+  // danima) — admin treba uvijek najnovije stanje kad otvori ovaj panel.
+  async function _fetchKlopkeCached() {
+    const CK = 'cache_klopke';
+    const readCache = () => {
+      try {
+        const raw = localStorage.getItem(CK);
+        if (raw) return JSON.parse(raw).data || { klopke: [] };
+      } catch (_) {}
+      return { klopke: [] };
+    };
+    let data;
+    if (!navigator.onLine) {
+      data = readCache();
+    } else {
+      try {
+        const r = await fetch(buildApiUrl('get-klopke-ocitanja'), { signal: AbortSignal.timeout(20000) });
+        data = await r.json();
+        if (data && data.klopke) {
+          try { localStorage.setItem(CK, JSON.stringify({ data, timestamp: Date.now() })); } catch (_) {}
+        } else {
+          data = readCache();
+        }
+      } catch (_) {
+        data = readCache();
+      }
+    }
+    _klopke = (data && data.klopke) || [];
+    _renderKlopkeTabela();
+  }
+
+  function _renderKlopkeTabela() {
+    const el = document.getElementById('klopka-tabela');
+    if (!el) return;
+    if (!_klopke.length) {
+      el.innerHTML = '<div style="font-size:12px;color:#6b7280;padding:8px 0;">Još nema unesenih očitanja.</div>';
+      return;
+    }
+    // DD.MM.YYYY string → YYYYMMDD za sortiranje opadajuće (najnovije prvo)
+    const sortKljuc = d => {
+      const p = String(d || '').split('.');
+      return p.length === 3 ? p[2] + p[1].padStart(2, '0') + p[0].padStart(2, '0') : '';
+    };
+    const sorted = [..._klopke].sort((a, b) => sortKljuc(b.datumOcitanja).localeCompare(sortKljuc(a.datumOcitanja)));
+
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+      '<thead><tr style="text-align:left;color:#6b7280;">' +
+      '<th style="padding:6px 8px;">Datum</th><th style="padding:6px 8px;">Odjel</th>' +
+      '<th style="padding:6px 8px;">Klopka</th><th style="padding:6px 8px;">Vrsta</th>' +
+      '<th style="padding:6px 8px;text-align:right;">Ulov</th>' +
+      '<th style="padding:6px 8px;">Napomena</th><th style="padding:6px 8px;">Unio</th><th></th></tr></thead><tbody>';
+    sorted.forEach(k => {
+      html += `<tr style="border-top:1px solid #f1f5f9;">` +
+        `<td style="padding:6px 8px;white-space:nowrap;">${k.datumOcitanja || ''}</td>` +
+        `<td style="padding:6px 8px;">${k.odjel || ''}</td>` +
+        `<td style="padding:6px 8px;">${k.brojKlopke || ''}</td>` +
+        `<td style="padding:6px 8px;">${k.vrsta || ''}</td>` +
+        `<td style="padding:6px 8px;text-align:right;font-weight:700;">${k.ulov || 0}</td>` +
+        `<td style="padding:6px 8px;color:#6b7280;">${k.napomena || ''}</td>` +
+        `<td style="padding:6px 8px;color:#6b7280;">${k.korisnik || ''}</td>` +
+        `<td style="padding:6px 8px;"><button type="button" onclick="obrisiKlopkaOcitanje(${k.rowIndex})" style="border:none;background:none;cursor:pointer;font-size:13px;" title="Obriši">🗑️</button></td>` +
+        `</tr>`;
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  }
+
+  window.obrisiKlopkaOcitanje = function(rowIndex) {
+    const izvrsi = async () => {
+      try {
+        const url = buildApiUrl('delete-klopka-ocitanje', { rowIndex });
+        const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
+        const data = await r.json();
+        if (!data || data.success !== true) throw new Error((data && data.error) || 'Greška');
+        await _fetchKlopkeCached(true);
+      } catch (err) {
+        if (typeof showWarning === 'function') showWarning('Greška pri brisanju: ' + ((err && err.message) || ''));
+        else alert('Greška pri brisanju.');
+      }
+    };
+    if (typeof showConfirmModal === 'function') {
+      showConfirmModal('Obriši očitanje', 'Da li ste sigurni da želite obrisati ovo očitanje klopke?', izvrsi, { confirmText: '🗑️ Obriši', danger: true });
+    } else if (confirm('Obrisati ovo očitanje?')) {
+      izvrsi();
     }
   };
 
@@ -1186,20 +1489,16 @@
       style: feature => {
         const p      = feature.properties || {};
         const key    = _labelKey((p.gj||'') + ' ' + (p.odjel||p.name||''));
-        const info      = statusMap.get(key);
-        const isSluc    = !info && _slucajniSet.has(key);
-        const isPrelazni= !info && !isSluc && _prelazniSetGlobal.has(key);
-        return _getStyle(info ? info.status : isSluc ? 'slucajni' : isPrelazni ? 'prelazni' : 'bez-plana');
+        const info   = statusMap.get(key);
+        return _getStyle(info ? info.status : _nonPlanKategorija(key));
       },
       onEachFeature: (feature, lyr) => {
         const props  = feature.properties || {};
         const odjel  = String(props.odjel || props.name || '').trim();
         const gj     = String(props.gj    || '').trim();
         const key    = _labelKey(gj + ' ' + odjel); // bez /N stripa — 64/1 ≠ 64/2
-        const info      = statusMap.get(key);
-        const isSluc    = !info && _slucajniSet.has(key);
-        const isPrelazni= !info && !isSluc && _prelazniSetGlobal.has(key);
-        const status    = info ? info.status : isSluc ? 'slucajni' : isPrelazni ? 'prelazni' : 'bez-plana';
+        const info   = statusMap.get(key);
+        const status = info ? info.status : _nonPlanKategorija(key);
 
         lyr._kartaStatus = status;
         lyr._kartaGj     = gj;

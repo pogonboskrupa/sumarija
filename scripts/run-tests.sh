@@ -35,7 +35,8 @@ node --test tests/name-matching.test.js \
               tests/retry-logic.test.js \
               tests/security-audit.test.js \
               tests/sjekacke-linije.test.js \
-              tests/kubikator-rounding.test.js
+              tests/kubikator-rounding.test.js \
+              tests/karta-odjela-kategorije.test.js
 
 echo ""
 echo "=============================================="

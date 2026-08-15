@@ -202,6 +202,13 @@ function doGet(e) {
     } else if (path === 'delete-sjekacka-linija') {
       // 🎨 Meko brisanje — samo radnik koji je liniju snimio
       return handleDeleteSjekackaLinija(e.parameter);
+    } else if (path === 'add-klopka-ocitanje') {
+      // 🪤 Feromonske klopke — novo očitanje ulova potkornjaka
+      return handleAddKlopkaOcitanje(e.parameter);
+    } else if (path === 'get-klopke-ocitanja') {
+      return handleGetKlopkeOcitanja(e.parameter.username, e.parameter.password, e.parameter.odjel);
+    } else if (path === 'delete-klopka-ocitanje') {
+      return handleDeleteKlopkaOcitanje(e.parameter);
     }
 
     Logger.log('Unknown path: ' + path);
