@@ -456,6 +456,24 @@
     } catch(e) { return null; }
   }
 
+  // Proširi bounds za TAČNO km kilometara u svakom pravcu (sjever/jug/istok/
+  // zapad) — stvarna udaljenost, ne fitBounds "padding" u pikselima (taj daje
+  // različitu stvarnu udaljenost zavisno od veličine poligona/zuma). Prosta
+  // ravninska aproksimacija (1° geo. širine ≈ 111 km svuda; 1° geo. dužine se
+  // sužava sa cos(širina)) — dovoljno precizna na regionalnoj skali kakva je
+  // ovdje potrebna (isti stil aproksimacije kao ostatak fajla, npr. formula
+  // metara-po-pikselu na 156543×cos(lat)/2^zoom).
+  function _padBoundsKm(bounds, km) {
+    const sw = bounds.getSouthWest(), ne = bounds.getNorthEast();
+    const latMid = (sw.lat + ne.lat) / 2;
+    const dLat = km / 111;
+    const dLng = km / (111 * Math.cos(latMid * Math.PI / 180));
+    return L.latLngBounds(
+      [sw.lat - dLat, sw.lng - dLng],
+      [ne.lat + dLat, ne.lng + dLng]
+    );
+  }
+
   // ---- OSRM RUTA ----
   async function _drawRoute(destLatLng) {
     if (_routeLine) { _map.removeLayer(_routeLine); _routeLine = null; }
@@ -1044,6 +1062,20 @@
       btn.classList.toggle('active', active);
     }
     if (_map) setTimeout(() => _map.invalidateSize(), 50);
+  };
+
+  // Sigurnosna mreža — isti obrazac kao exitMapaRadnikaFullscreenIfActive/
+  // exitKubikatorFullscreenIfActive/exitSihtaricaFullscreenIfActive (js/ui.js
+  // switchTab). BEZ ovoga, napuštanje Mape dok je Fokus aktivan bilo kojim
+  // putem OSIM eksplicitnog "⛶ Fokus"/izlaznog dugmeta (npr. klik na drugi
+  // tab u bočnoj traci, dugme nazad u browseru) ostavlja body.mapa-fokus
+  // trajno prikačen — CSS pravila su vezana za body klasu, ne za tab, pa
+  // zaglavlje/kontrole ostaju sakriveni na SVIM tabovima dok se stranica ne
+  // reloaduje. Prijavljeno: "nema zaglavlja" i van Mape/Fokusa.
+  window.exitMapaFokusIfActive = function(nextTab) {
+    if (nextTab !== 'karta-odjela' && document.body.classList.contains('mapa-fokus')) {
+      window.toggleMapaFokus();
+    }
   };
 
   // ---- OSM / SATELIT / TOPO ---- (v1.4.122: dodat treći sloj, ciklično dugme,
@@ -1783,7 +1815,7 @@
     document.getElementById('karta-filter-status').value = 'sve';
     const ot = document.getElementById('karta-otprema-toggle'); if (ot) ot.checked = false;
     applyKartaFilter();
-    if (_mapBounds && _mapBounds.isValid()) _map.fitBounds(_mapBounds, { padding:[20,20] });
+    if (_mapBounds && _mapBounds.isValid()) _map.fitBounds(_padBoundsKm(_mapBounds, 5));
   };
 
   let _labelMarkers = []; // permanentni labeli po odjelu
@@ -2052,7 +2084,10 @@
       } catch (_) {}
     });
     if (bounds && bounds.isValid()) {
-      _map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+      // Korisnički zahtjev: prikaz treba pokazivati tačno 5 km dalje od
+      // poligona sa svih strana (stvarna udaljenost), ne proizvoljan broj
+      // piksela — vidi _padBoundsKm.
+      _map.fitBounds(_padBoundsKm(bounds, 5));
     }
   }
 

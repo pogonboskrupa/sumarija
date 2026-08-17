@@ -72,6 +72,14 @@
             if (typeof window.exitSihtaricaFullscreenIfActive === 'function') {
                 window.exitSihtaricaFullscreenIfActive(tab);
             }
+            // Admin Mapa odjela "Fokus" mod — ista sigurnosna mreža kao gornja tri
+            // (js/karta-odjela.js exitMapaFokusIfActive). Fokus ne skriva
+            // .tabs-container/.sidebar kao ostala tri fullscreen moda, pa je bilo
+            // lako otići na drugi tab dok je aktivan bez ikad ga eksplicitno
+            // isključiti — bez ovog hooka, body.mapa-fokus ostaje trajno prikačen.
+            if (typeof window.exitMapaFokusIfActive === 'function') {
+                window.exitMapaFokusIfActive(tab);
+            }
             // I obrnuto — ako se ULAZI na Mapu odjela, osiguraj da je donja
             // traka vidljiva ODMAH, prije eventualnog ranog "return" ispod
             // (svjež keš → instant prikaz preskače granu koja poziva
