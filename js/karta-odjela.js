@@ -92,8 +92,11 @@
   // Šumsko uzgojni radovi mod — svi odjeli OSIM slucajni/zapisnik se prikazuju
   // blijedo (kontekst na mapi — korisnik traži da vidi GDJE su ti odjeli u
   // odnosu na ostale, ne da ostatak mape nestane).
-  const _UZGOJNI_DIM_STYLE      = { fillColor:'#cbd5e1', fillOpacity:0.12, color:'#94a3b8', weight:1, opacity:0.5 };
-  const _UZGOJNI_DIM_HOVER_STYLE = { fillColor:'#cbd5e1', fillOpacity:0.25, color:'#64748b', weight:2, opacity:0.8 };
+  // weight isti kao Proizvodnja za "normalne" statuse (_getStyle/_getHoverStyle,
+  // 4/5) — samo fillOpacity/boja su blijede, da linije poligona ostanu podjednako
+  // debele/vidljive kao na Proizvodnji, ne samo fill.
+  const _UZGOJNI_DIM_STYLE      = { fillColor:'#cbd5e1', fillOpacity:0.12, color:'#94a3b8', weight:4, opacity:0.5 };
+  const _UZGOJNI_DIM_HOVER_STYLE = { fillColor:'#cbd5e1', fillOpacity:0.25, color:'#64748b', weight:5, opacity:0.8 };
   function _uzgojniIstaknut(status) { return status === 'slucajni' || status === 'zapisnik'; }
   // Jedno mjesto koje style/hover ODLUČUJU stil zavisno od _prikazMode-a —
   // koristi ga i style: callback (za resetStyle poslije hover-a) i mouseover
