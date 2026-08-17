@@ -4086,14 +4086,20 @@
                 <div id="mapa-ruta-info" style="display:none;margin:8px 20px;padding:10px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:13px;color:#1e40af;"></div>
 
                 <!-- ŠUMSKO UZGOJNI RADOVI PANEL — vidljiv samo u Uzgojni modu
-                     (switchKartaOdjelaMode, js/karta-odjela.js). Dvije sekcije:
-                     lista slučajnih/zapisnik odjela (isti izvor podataka kao
-                     mapa — statusMap._extra, garantuje sklad liste i poligona)
-                     i feromonske klopke (forma + tabela očitanja). -->
+                     (switchKartaOdjelaMode, js/karta-odjela.js). Legenda +
+                     dvije sekcije: feromonske klopke (forma + tabela, prva —
+                     to je akcija koju admin najčešće traži pri otvaranju ovog
+                     moda) i lista slučajnih/zapisnik odjela (isti izvor
+                     podataka kao mapa — statusMap._extra, garantuje sklad
+                     liste i poligona). Ostali odjeli na mapi iznad ostaju
+                     vidljivi blijedo (kontekst), NE nestaju — vidi
+                     _UZGOJNI_DIM_STYLE u js/karta-odjela.js. -->
                 <div id="karta-uzgojni-panel" class="hidden" style="padding:0 20px 24px;">
-                    <div style="margin-top:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;">
-                        <div style="font-size:14px;font-weight:700;color:#1f2937;margin-bottom:10px;">🌱 Slučajni užici i zapisnik odjeli</div>
-                        <div id="karta-uzgojni-lista" style="overflow-x:auto;"></div>
+                    <div style="margin-top:12px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12px;color:#4b5563;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;">
+                        <span style="font-weight:700;">Legenda:</span>
+                        <span style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:12px;height:12px;background:#7c3aed;border-radius:2px;"></span>Slučajni užici</span>
+                        <span style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:12px;height:12px;background:#0d9488;border-radius:2px;"></span>Zapisnik</span>
+                        <span style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:12px;height:12px;background:#cbd5e1;border-radius:2px;"></span>Ostali odjeli (kontekst)</span>
                     </div>
 
                     <div style="margin-top:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;">
@@ -4127,6 +4133,11 @@
                         </div>
                         <div id="klopka-status" style="font-size:12px;font-weight:600;display:none;margin-bottom:8px;"></div>
                         <div id="klopka-tabela" style="overflow-x:auto;"></div>
+                    </div>
+
+                    <div style="margin-top:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;">
+                        <div style="font-size:14px;font-weight:700;color:#1f2937;margin-bottom:10px;">🌱 Slučajni užici i zapisnik odjeli</div>
+                        <div id="karta-uzgojni-lista" style="overflow-x:auto;"></div>
                     </div>
                 </div>
             </div>

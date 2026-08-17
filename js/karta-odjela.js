@@ -89,6 +89,25 @@
     return { fillColor:c, fillOpacity:0.6, color:'#b45309', weight:4, opacity:1, dashArray:null };
   }
 
+  // Šumsko uzgojni radovi mod — svi odjeli OSIM slucajni/zapisnik se prikazuju
+  // blijedo (kontekst na mapi — korisnik traži da vidi GDJE su ti odjeli u
+  // odnosu na ostale, ne da ostatak mape nestane).
+  const _UZGOJNI_DIM_STYLE      = { fillColor:'#cbd5e1', fillOpacity:0.12, color:'#94a3b8', weight:1, opacity:0.5 };
+  const _UZGOJNI_DIM_HOVER_STYLE = { fillColor:'#cbd5e1', fillOpacity:0.25, color:'#64748b', weight:2, opacity:0.8 };
+  function _uzgojniIstaknut(status) { return status === 'slucajni' || status === 'zapisnik'; }
+  // Jedno mjesto koje style/hover ODLUČUJU stil zavisno od _prikazMode-a —
+  // koristi ga i style: callback (za resetStyle poslije hover-a) i mouseover
+  // handler, da hover na "zatamnjenom" odjelu u Uzgojni modu ne "iscuri"
+  // njegovu punu Proizvodnja boju nazad nakon mouseout-a.
+  function _styleForMode(status) {
+    if (_prikazMode === 'uzgojni' && !_uzgojniIstaknut(status)) return _UZGOJNI_DIM_STYLE;
+    return _getStyle(status);
+  }
+  function _hoverStyleForMode(status) {
+    if (_prikazMode === 'uzgojni' && !_uzgojniIstaknut(status)) return _UZGOJNI_DIM_HOVER_STYLE;
+    return _getHoverStyle(status);
+  }
+
   // ---- NORMALIZACIJA ----
   function _normKey(s) {
     return String(s||'').trim().toUpperCase()
@@ -1121,19 +1140,16 @@
 
   // ---- FILTER ----
   window.applyKartaFilter = function() {
-    // Šumsko uzgojni radovi mod — ekskluzivni prikaz (isti mehanizam kao
-    // _otpremaMode-only): SAMO slucajni+zapisnik poligoni, sve ostalo
-    // sakriveno. Proizvodnja-specifični filteri (GJ/status/pretraga/otprema/
-    // sanitar/legenda) su sakriveni u ovom modu, pa se ovdje ne primjenjuju.
+    // Šumsko uzgojni radovi mod — SVI poligoni ostaju vidljivi (kontekst
+    // ostalih odjela na mapi), ali su slucajni/zapisnik istaknuti punom
+    // bojom preko _styleForMode-a (style: callback u _renderLayer), a sve
+    // ostalo je zatamnjeno (_UZGOJNI_DIM_STYLE). Proizvodnja-specifični
+    // filteri (GJ/status/pretraga/otprema/sanitar/legenda) su sakriveni u
+    // ovom modu, pa se ovdje ne primjenjuju.
     if (_prikazMode === 'uzgojni') {
       _allFeatures.forEach(lyr => {
-        const uzgM = lyr._kartaStatus === 'slucajni' || lyr._kartaStatus === 'zapisnik';
-        if (uzgM) {
-          if (!_map.hasLayer(lyr)) lyr.addTo(_map);
-          if (_layer) _layer.resetStyle(lyr);
-        } else if (_map.hasLayer(lyr)) {
-          _map.removeLayer(lyr);
-        }
+        if (!_map.hasLayer(lyr)) lyr.addTo(_map);
+        if (_layer) _layer.resetStyle(lyr);
       });
       const info = document.getElementById('karta-otprema-info');
       if (info) info.style.display = 'none';
@@ -1490,7 +1506,7 @@
         const p      = feature.properties || {};
         const key    = _labelKey((p.gj||'') + ' ' + (p.odjel||p.name||''));
         const info   = statusMap.get(key);
-        return _getStyle(info ? info.status : _nonPlanKategorija(key));
+        return _styleForMode(info ? info.status : _nonPlanKategorija(key));
       },
       onEachFeature: (feature, lyr) => {
         const props  = feature.properties || {};
@@ -1519,10 +1535,11 @@
         if (status === 'bez-plana' || status === 'prelazni') {
           lyr.bindTooltip(odjel || '?', { permanent:false, direction:'center', className:'karta-tooltip' });
         }
-        lyr.on('mouseover', function() { this.setStyle(_getHoverStyle(this._kartaStatus)); });
+        lyr.on('mouseover', function() { this.setStyle(_hoverStyleForMode(this._kartaStatus)); });
         lyr.on('mouseout',  function() {
-          // U režimu otpreme zadrži otprema-highlight umjesto default stila
-          if (_otpremaMode && this._kartaOtpremaMjesec > 0) this.setStyle(_getOtpremaStyle(this._kartaStatus));
+          // U režimu otpreme (SAMO Proizvodnja mod) zadrži otprema-highlight
+          // umjesto default stila.
+          if (_prikazMode === 'proizvodnja' && _otpremaMode && this._kartaOtpremaMjesec > 0) this.setStyle(_getOtpremaStyle(this._kartaStatus));
           else if (_layer) _layer.resetStyle(this);
         });
         lyr.on('click',     function(e) {
