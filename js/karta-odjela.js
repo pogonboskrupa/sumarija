@@ -1411,7 +1411,7 @@
     } else {
       _klopkaPickMarker = L.marker(latlng, {
         draggable: true,
-        icon: L.divIcon({ className: 'klopka-pick-marker', html: '🪤', iconSize: [26, 26], iconAnchor: [13, 24] })
+        icon: L.divIcon({ className: 'klopka-pick-marker', html: '<div class="klopka-badge">FK</div>', iconSize: [26, 26], iconAnchor: [13, 13] })
       }).addTo(_map);
       _klopkaPickMarker.on('dragend', _osvjeziKlopkaPozicijaUI);
     }
@@ -1529,7 +1529,7 @@
       const lat = parseFloat(k.lat), lng = parseFloat(k.lng);
       if (isNaN(lat) || isNaN(lng)) return;
       const m = L.marker([lat, lng], {
-        icon: L.divIcon({ className: 'klopka-saved-marker', html: '🪤', iconSize: [20, 20], iconAnchor: [10, 18] })
+        icon: L.divIcon({ className: 'klopka-saved-marker', html: '<div class="klopka-badge">FK</div>', iconSize: [22, 22], iconAnchor: [11, 11] })
       });
       const esc = typeof escapeHtml === 'function' ? escapeHtml : (s => String(s == null ? '' : s));
       m.bindTooltip(
