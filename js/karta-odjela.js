@@ -194,6 +194,7 @@
     const planKeys       = new Set(planEntries.map(e => _normKey(e.gj+' '+e.odjel)));
     const map            = new Map();
     _slucajniSet         = new Set();
+    const stanjeMap      = _getStanjeMap(); // Stanje zaliha — projektovana masa, vidi _projektovanaMasa
 
     const primkeTekuce  = (primke||[]).filter(p => _getYear(p) === PLAN_YEAR);
     const primkeOstale  = (primke||[]).filter(p => _getYear(p) !== PLAN_YEAR);
@@ -304,16 +305,23 @@
       sjecaOst.ukupno = _sumSort(sjecaOst);
       otprOst.ukupno  = _sumSort(otprOst);
 
-      const pct    = entry.neto > 0 ? sjeca.ukupno / entry.neto * 100 : 0;
+      // "Gotovo" (posjeceno) status se računa na osnovu projektovane mase iz
+      // Stanje zaliha (precizniji/ažurniji broj), NE godišnjeg plana —
+      // fallback na entry.neto samo ako odjel nema unos u Stanju zaliha
+      // (npr. keš još nije učitan na ovom uređaju).
+      const projMasa  = _projektovanaMasa(stanjeMap, entry.gj, entry.odjel);
+      const ciljMasa  = projMasa != null ? projMasa : entry.neto;
+      const masaIzvor = projMasa != null ? 'stanje-zaliha' : 'plan';
+      const pct    = ciljMasa > 0 ? sjeca.ukupno / ciljMasa * 100 : 0;
       const status = pct >= 95 ? 'posjeceno' : pct > 5 ? 'u-sjeci' : 'planirano';
-      const entryData = { gj:entry.gj, odjel:entry.odjel, status, pct, sjeca, otpr, sjecaOst, otprOst, neto:entry.neto, bruto:entry.bruto, radiliste, izvodjac, poslovodja, datumPocetka, datumKraja };
+      const entryData = { gj:entry.gj, odjel:entry.odjel, status, pct, sjeca, otpr, sjecaOst, otprOst, neto:entry.neto, bruto:entry.bruto, ciljMasa, masaIzvor, radiliste, izvodjac, poslovodja, datumPocetka, datumKraja };
 
       if (status === 'u-sjeci') _kpiUSjeci++;
       else if (status === 'posjeceno') _kpiPosjeceno++;
       else _kpiPlanirano++;
       _kpiSjecaUkupno   += sjeca.ukupno;
       _kpiOtpremaUkupno += otpr.ukupno;
-      _kpiNetoUkupno    += entry.neto || 0;
+      _kpiNetoUkupno    += ciljMasa || 0; // ista masa (Stanje zaliha/plan) kao pojedinačni pct, radi konzistentnosti sa "% Realizacije" u KPI traci
 
       map.set(key, entryData);
       // Alias bez /N stripa — sprječava 64/1 da matchuje plan od 64/2P
@@ -623,6 +631,23 @@
     return _stanjeMap || null;
   }
 
+  // Projektovana masa (SVEUKUPNO) za odjel iz Stanje zaliha — korisnik je
+  // eksplicitno tražio da se "gotovo" (posjeceno) status odjela na mapi
+  // gleda na osnovu OVE mase, ne godišnjeg plana (entry.neto), jer je
+  // projekat u Stanju zaliha precizniji/ažurniji broj. Vraća null ako
+  // odjel nema unos u Stanju zaliha (keš možda nije još učitan na ovom
+  // uređaju) — _buildStatusMap se tad vraća na stari fallback (entry.neto),
+  // da odjeli bez tog podatka ne dobiju pogrešan/nedostajući status.
+  function _projektovanaMasa(stanjeMap, gj, odjel) {
+    if (!stanjeMap) return null;
+    const od = stanjeMap.get(_normKey(gj + ' ' + odjel));
+    if (!od || !od.projekat || !od.projekat.length) return null;
+    const idx = (od.sortimentiNazivi || []).findIndex(s => s === 'SVEUKUPNO');
+    if (idx < 0) return null;
+    const v = Number(od.projekat[idx]);
+    return (!isNaN(v) && v > 0) ? v : null;
+  }
+
   // ---- DETALJI MODAL ----
   function _openDetaljiModal(props, info, latlng, extra) {
     _currentLatlng     = latlng;
@@ -914,8 +939,8 @@
               <div style="font-weight:800;font-size:13px;color:${zaliha<0?'#dc2626':'#1d4ed8'};">${_fmt(zaliha)}</div>
             </div>`:''}
             <div style="background:white;border-radius:7px;padding:4px 8px;text-align:center;flex:1;min-width:60px;">
-              <div style="font-size:10px;color:#6b7280;">Plan neto</div>
-              <div style="font-weight:800;font-size:13px;color:#4b5563;">${_fmt(info.neto)}</div>
+              <div style="font-size:10px;color:#6b7280;">${info.masaIzvor === 'stanje-zaliha' ? 'Projektovano (zalihe)' : 'Plan neto'}</div>
+              <div style="font-weight:800;font-size:13px;color:#4b5563;">${_fmt(info.ciljMasa)}</div>
             </div>
           </div>
         </div>
