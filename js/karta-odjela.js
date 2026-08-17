@@ -1314,6 +1314,25 @@
   let _klopkaPickMarker = null;  // draggable marker — trenutno postavljena pozicija (nije još poslana)
   let _klopkeLayer      = null;  // grupa markera VEĆ sačuvanih klopki (samo Uzgojni mod)
 
+  // Silueta kutije-klopke (bijela kutija sa prorezima + posuda ispod) — isti
+  // SVG za oba stanja markera, boja dolazi iz CSS currentColor na roditelju
+  // (.klopka-badge), pa prorezi/zakovice "sijeku kroz" bijelu siluetu u boji
+  // pozadine značke (teal dok se postavlja, braon kad je sačuvana).
+  const _KLOPKA_ICON_SVG =
+    '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">' +
+      '<rect x="14" y="8" width="72" height="52" rx="6" fill="#fff"/>' +
+      '<circle cx="20" cy="13" r="3" fill="currentColor"/>' +
+      '<circle cx="80" cy="13" r="3" fill="currentColor"/>' +
+      '<circle cx="20" cy="55" r="3" fill="currentColor"/>' +
+      '<circle cx="80" cy="55" r="3" fill="currentColor"/>' +
+      '<rect x="22" y="18" width="56" height="7" fill="currentColor"/>' +
+      '<rect x="22" y="32" width="56" height="7" fill="currentColor"/>' +
+      '<rect x="22" y="46" width="56" height="7" fill="currentColor"/>' +
+      '<rect x="6" y="64" width="88" height="13" rx="3" fill="#fff"/>' +
+      '<rect x="12" y="77" width="7" height="7" fill="#fff"/>' +
+      '<rect x="81" y="77" width="7" height="7" fill="#fff"/>' +
+    '</svg>';
+
   function _popuniKlopkaGjSelect() {
     const sel = document.getElementById('klopka-gj-select');
     if (!sel || sel.dataset.popunjeno) return;
@@ -1411,7 +1430,7 @@
     } else {
       _klopkaPickMarker = L.marker(latlng, {
         draggable: true,
-        icon: L.divIcon({ className: 'klopka-pick-marker', html: '<div class="klopka-badge">FK</div>', iconSize: [26, 26], iconAnchor: [13, 13] })
+        icon: L.divIcon({ className: 'klopka-pick-marker', html: '<div class="klopka-badge">' + _KLOPKA_ICON_SVG + '</div>', iconSize: [26, 26], iconAnchor: [13, 13] })
       }).addTo(_map);
       _klopkaPickMarker.on('dragend', _osvjeziKlopkaPozicijaUI);
     }
@@ -1529,7 +1548,7 @@
       const lat = parseFloat(k.lat), lng = parseFloat(k.lng);
       if (isNaN(lat) || isNaN(lng)) return;
       const m = L.marker([lat, lng], {
-        icon: L.divIcon({ className: 'klopka-saved-marker', html: '<div class="klopka-badge">FK</div>', iconSize: [22, 22], iconAnchor: [11, 11] })
+        icon: L.divIcon({ className: 'klopka-saved-marker', html: '<div class="klopka-badge">' + _KLOPKA_ICON_SVG + '</div>', iconSize: [22, 22], iconAnchor: [11, 11] })
       });
       const esc = typeof escapeHtml === 'function' ? escapeHtml : (s => String(s == null ? '' : s));
       m.bindTooltip(

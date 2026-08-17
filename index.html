@@ -3600,19 +3600,22 @@
                      visinama definisanim niže u ovom fajlu. */
                   #karta-odjela-map.kod-uzgojni { height:45vh !important; min-height:320px !important; }
                   #klopka-pozicija-btn.active { background:#0d9488 !important; color:white !important; }
-                  /* Feromonska klopka na mapi — kružna "FK" značka umjesto emoji ikone
-                     (jasnija na malom zumu, ne oslanja se na to da li font/OS ima
-                     lijep prikaz emoji-ja). Isprekidan teal obrub = pozicija se tek
-                     postavlja/pomjera (draggable, nije još poslana); pun braon
-                     obrub = već sačuvana klopka. */
+                  /* Feromonska klopka na mapi — kružna značka sa siluetom kutije-klopke
+                     (bijela kutija sa prorezima + posuda ispod, po uzoru na stvarnu
+                     feromonsku klopku) umjesto emoji/teksta — jasnije prepoznatljivo
+                     na malom zumu. SVG slotovi/zakovice koriste currentColor = ista
+                     boja kao pozadina značke, pa "sijeku kroz" bijelu siluetu i
+                     izgledaju kao stvarni prorezi na kutiji. Isprekidan teal obrub =
+                     pozicija se tek postavlja/pomjera (draggable, nije još poslana);
+                     pun braon obrub = već sačuvana klopka. */
                   .klopka-badge {
                       width:26px; height:26px; border-radius:50%;
                       display:flex; align-items:center; justify-content:center;
-                      color:#fff; font-size:10px; font-weight:800; letter-spacing:.02em;
                       box-shadow:0 1px 4px rgba(0,0,0,.45); box-sizing:border-box;
                   }
-                  .klopka-pick-marker .klopka-badge  { background:#0d9488; border:2px dashed #fff; }
-                  .klopka-saved-marker .klopka-badge { width:22px; height:22px; font-size:9px; background:#7c2d12; border:2px solid #fff; }
+                  .klopka-badge svg { width:68%; height:68%; display:block; }
+                  .klopka-pick-marker .klopka-badge  { background:#0d9488; color:#0d9488; border:2px dashed #fff; }
+                  .klopka-saved-marker .klopka-badge { width:22px; height:22px; background:#7c2d12; color:#7c2d12; border:2px solid #fff; }
 
                   /* Radnik mapa odjela — visina umanjena za donju traku dugmadi (~112-120px,
                      ponovo uvećana traka). Ovo je fallback prikaz PRIJE nego se puni-ekran
