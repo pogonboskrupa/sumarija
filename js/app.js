@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.7.2';
+        const APP_VERSION = '1.7.3';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -873,14 +873,16 @@
         window._handleUnauthorized = _handleUnauthorized;
 
         // Sigurnosni izlaz iz "cijeli ekran" modova (Karta radnika, Kubikator,
-        // Šihtarica, admin Mapa Fokus) — njihova vlastita "✕ Zatvori"/"Fokus"
-        // dugmad su UNUTAR sadržaja tog taba (position:absolute ili position:fixed
-        // ugniježdeno), pa na nekim telefonima (adresna traka browsera se
-        // sklanja/vraća, PWA se budi iz pozadine, itd.) taj sadržaj zna izračunati
-        // veću visinu od stvarno vidljivog ekrana — dugme tehnički postoji, ali je
-        // van dohvata, a scroll je namjerno isključen (overflow:hidden) dok je
+        // Šihtarica) — njihova vlastita "✕ Zatvori" dugmad su UNUTAR sadržaja
+        // tog taba (position:absolute ili position:fixed ugniježdeno), pa na
+        // nekim telefonima (adresna traka browsera se sklanja/vraća, PWA se
+        // budi iz pozadine, itd.) taj sadržaj zna izračunati veću visinu od
+        // stvarno vidljivog ekrana — dugme tehnički postoji, ali je van
+        // dohvata, a scroll je namjerno isključen (overflow:hidden) dok je
         // fullscreen aktivan. Korisnik je tad zaglavljen i mora ugasiti cijelu
-        // aplikaciju da izađe (prijavljeno više puta, i za Kartu i za admin Mapu).
+        // aplikaciju da izađe (prijavljeno više puta). Admin Mapa Fokus mod
+        // NIJE ovdje — ima svoj #karta-fokus-exit-btn (position:fixed, uvijek
+        // dohvatljiv), pa bi ovo dugme tu bilo čisto dupliranje.
         // Ovo dugme je position:fixed i direktno dijete <body>-a — potpuno
         // neovisno o layoutu bilo kojeg taba, pa je uvijek dohvatljivo bez obzira
         // šta se dešava sa mapom/sadržajem.
@@ -897,15 +899,6 @@
                 var primacEl = document.getElementById('sihtarica-primac-content');
                 var tip = (primacEl && !primacEl.classList.contains('hidden')) ? 'primac' : 'otpremac';
                 closeSihtarica(tip);
-                return;
-            }
-            if (document.body.classList.contains('mapa-fokus')) {
-                // Isto ponašanje kao postojeći #karta-fokus-exit-btn (izlaz na
-                // dashboard, ne samo gašenje Fokus klase) — korisnik je prijavio
-                // da taj dedikovani dugme ponekad i dalje ostane nedohvatljivo,
-                // ovo je nezavisan drugi izlaz za isti mod.
-                document.body.classList.remove('mapa-fokus');
-                if (typeof switchTab === 'function') switchTab('dashboard');
                 return;
             }
             // Ne bi trebalo da se desi (dugme se prikazuje samo uz gornje klase),

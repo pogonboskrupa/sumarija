@@ -1979,6 +1979,15 @@
       _mapBounds = _layer.getBounds();
     } catch(e) {}
 
+    // Korisnički zahtjev: karta se ne smije moći skrolati u nedogled — prikaz
+    // (pan) ograničen na 2 km izvan ukupnog opsega SVIH odjel poligona
+    // (jednostavan pravougaonik/"kocka" oko cijelog opsega, ne prati oblik
+    // poligona). setMaxBounds ne mijenja zoom/centar odmah, samo ograničava
+    // dokle korisnik može panovati/zumirati izvan te oblasti.
+    if (_map && _mapBounds && _mapBounds.isValid()) {
+      _map.setMaxBounds(_padBoundsKm(_mapBounds, 2));
+    }
+
     // Marker šumarije
     if (!_sumarijaMark) {
       _sumarijaMark = L.marker(SUMARIJA_LATLNG, {
