@@ -3512,7 +3512,8 @@
                             <h1>🗺️ Mapa odjela 2026</h1>
                             <p>Prostorni prikaz odjela po statusu realizacije plana sječe</p>
                         </div>
-                        <div class="page-header-right">
+                        <div class="page-header-right" style="display:flex;align-items:center;gap:10px;">
+                            <span id="karta-zadnje-osvjezeno" style="font-size:11px;color:#9ca3af;font-weight:600;"></span>
                             <button class="btn btn-primary" onclick="initKartaOdjela(true)">🔄 Osvježi</button>
                         </div>
                     </div>
@@ -4252,6 +4253,12 @@
                             <button type="button" onclick="dodajKlopkaOcitanje()" style="margin-left:auto;font-size:12px;font-weight:700;padding:7px 14px;border:none;border-radius:6px;background:#0d9488;color:white;cursor:pointer;">➕ Dodaj očitanje</button>
                         </div>
                         <div id="klopka-status" style="font-size:12px;font-weight:600;display:none;margin-bottom:8px;"></div>
+                        <!-- Ulov po vrsti potkornjaka — popunjava _renderKlopkePoVrsti()
+                             (js/karta-odjela.js), praznina dok nema unosa. -->
+                        <div id="klopka-po-vrsti" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+                        <div style="display:flex;justify-content:flex-end;margin-bottom:6px;">
+                            <button type="button" onclick="podijeliKlopke()" class="karta-ctrl-btn">📤 Izvezi CSV</button>
+                        </div>
                         <div id="klopka-tabela" style="overflow-x:auto;"></div>
                     </div>
 

@@ -1415,6 +1415,16 @@
   let _klopkaPickMarker = null;  // draggable marker — trenutno postavljena pozicija (nije još poslana)
   let _klopkeLayer      = null;  // grupa markera VEĆ sačuvanih klopki (samo Uzgojni mod)
 
+  // ---- "ZADNJE OSVJEŽENO" ----
+  let _zadnjeOsvjezenoAt = null;
+  function _oznaciOsvjezeno() {
+    _zadnjeOsvjezenoAt = new Date();
+    const el = document.getElementById('karta-zadnje-osvjezeno');
+    if (!el) return;
+    const vrijeme = _zadnjeOsvjezenoAt.toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' });
+    el.textContent = '🕒 Ažurirano ' + vrijeme;
+  }
+
   // Silueta kutije-klopke (bijela kutija sa prorezima + posuda ispod) — isti
   // SVG za oba stanja markera, boja dolazi iz CSS currentColor na roditelju
   // (.klopka-badge), pa prorezi/zakovice "sijeku kroz" bijelu siluetu u boji
@@ -1633,8 +1643,10 @@
     }
     _klopke = (data && data.klopke) || [];
     _renderKlopkeTabela();
+    _renderKlopkePoVrsti();
     _renderKlopkeMarkers();
     _renderKpiBar(); // broj klopki/ukupan ulov u KPI traci zavisi od _klopke
+    _oznaciOsvjezeno();
   }
 
   // Sačuvane klopke kao markeri na mapi (samo one sa validnom pozicijom —
@@ -1699,6 +1711,27 @@
     el.innerHTML = html;
   }
 
+  // Ulov grupisan po vrsti potkornjaka (opadajuće po broju ulova) — glavna
+  // svrha feromonskih klopki je baš ovo poređenje, ne samo ukupan zbir.
+  function _renderKlopkePoVrsti() {
+    const el = document.getElementById('klopka-po-vrsti');
+    if (!el) return;
+    if (!_klopke.length) { el.innerHTML = ''; return; }
+
+    const poVrsti = new Map(); // vrsta -> ukupan ulov
+    _klopke.forEach(k => {
+      const vrsta = (k.vrsta || '').trim() || 'Nepoznato';
+      poVrsti.set(vrsta, (poVrsti.get(vrsta) || 0) + (parseInt(k.ulov, 10) || 0));
+    });
+    const sortirano = [...poVrsti.entries()].sort((a, b) => b[1] - a[1]);
+
+    el.innerHTML = sortirano.map(([vrsta, ulov]) =>
+      `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;` +
+      `background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:20px;padding:4px 10px;">` +
+      `🐛 ${vrsta}<span style="font-weight:800;background:#fecaca;border-radius:8px;padding:0 6px;">${ulov}</span></span>`
+    ).join('');
+  }
+
   window.obrisiKlopkaOcitanje = function(rowIndex) {
     const izvrsi = async () => {
       try {
@@ -1716,6 +1749,31 @@
       showConfirmModal('Obriši očitanje', 'Da li ste sigurni da želite obrisati ovo očitanje klopke?', izvrsi, { confirmText: '🗑️ Obriši', danger: true });
     } else if (confirm('Obrisati ovo očitanje?')) {
       izvrsi();
+    }
+  };
+
+  // CSV izvoz svih učitanih očitanja klopki — isti obrazac kao
+  // kubikatorPodijeli (js/kubikator.js): generički shareOrDownloadFile
+  // helper (dijeljenje na telefonu ili preuzimanje na desktopu).
+  window.podijeliKlopke = function() {
+    if (!_klopke.length) {
+      if (typeof showWarning === 'function') showWarning('Nema klopki za izvoz');
+      return;
+    }
+    const redovi = ['Datum;Odjel;Broj klopke;Vrsta potkornjaka;Broj ulova;Napomena;Unio'];
+    [..._klopke].forEach(k => {
+      redovi.push([
+        k.datumOcitanja || '', k.odjel || '', k.brojKlopke || '',
+        k.vrsta || '', k.ulov || 0, (k.napomena || '').replace(/;/g, ','), k.korisnik || ''
+      ].join(';'));
+    });
+    const ukupanUlov = _klopke.reduce((s, k) => s + (parseInt(k.ulov, 10) || 0), 0);
+    redovi.push('');
+    redovi.push('UKUPNO;;;;' + ukupanUlov + ';;');
+    const csv = '﻿' + redovi.join('\r\n'); // BOM — da Excel prepozna UTF-8 (šđčćž)
+    const naziv = 'feromonske_klopke_' + new Date().toISOString().slice(0, 10) + '.csv';
+    if (typeof window.shareOrDownloadFile === 'function') {
+      window.shareOrDownloadFile(naziv, csv, 'text/csv;charset=utf-8', 'Feromonske klopke — izvoz');
     }
   };
 
@@ -2044,6 +2102,7 @@
     _renderLayer(geojson, _statusMap);
     _renderKpiBar();
     _renderLegendCounts();
+    _oznaciOsvjezeno();
     if (typeof markTabRendered === 'function') markTabRendered('karta-odjela');
 
     setTimeout(() => { if (_map) _map.invalidateSize(); }, 200);
