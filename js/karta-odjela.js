@@ -1985,7 +1985,20 @@
     // poligona). setMaxBounds ne mijenja zoom/centar odmah, samo ograničava
     // dokle korisnik može panovati/zumirati izvan te oblasti.
     if (_map && _mapBounds && _mapBounds.isValid()) {
-      _map.setMaxBounds(_padBoundsKm(_mapBounds, 2));
+      const padded = _padBoundsKm(_mapBounds, 2);
+      _map.setMaxBounds(padded);
+      // BEZ ovoga: čim korisnik odzumira dovoljno da vidljivi dio ekrana
+      // postane VEĆI od gornje kutije, ne postoji nijedna validna pozicija
+      // koja zadovoljava maxBounds — Leaflet onda pri svakom pokušaju
+      // panovanja odmah vrati kartu na isti (jedini mogući) centar, što
+      // korisnik doživljava kao "karta se uporno vraća na jedno mjesto".
+      // getBoundsZoom(..., false) daje TAČNO taj granični zoom (kutija baš
+      // ispuni ekran) — zabranom daljeg odzumiravanja iza te tačke uvijek
+      // postoji prostor za panovanje unutar kutije.
+      try {
+        const minZ = _map.getBoundsZoom(padded, false);
+        if (isFinite(minZ)) _map.setMinZoom(minZ);
+      } catch(e) {}
     }
 
     // Marker šumarije
@@ -2118,7 +2131,11 @@
         if (e.target === modal) closeMapaModal();
       });
 
-      _map = L.map('karta-odjela-map', { center:SUMARIJA_LATLNG, zoom:12, zoomControl:true });
+      // maxBoundsViscosity:1 — "čvrst zid" na granici umjesto elastičnog
+      // odskoka (koji korisnik na dodirnom ekranu doživljava kao "karta se
+      // sama vraća"); stvarni maxBounds se postavlja kasnije u _renderLayer
+      // čim se izračuna opseg svih poligona.
+      _map = L.map('karta-odjela-map', { center:SUMARIJA_LATLNG, zoom:12, zoomControl:true, maxBoundsViscosity:1.0 });
 
       _osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
