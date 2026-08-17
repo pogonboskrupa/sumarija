@@ -474,6 +474,37 @@
     );
   }
 
+  // Ograniči panovanje/zumiranje karte na razumnu oblast oko svih odjel
+  // poligona (20 km padding — velikodušno, da normalno pregledanje terena
+  // nikad ne "udari u zid"), umjesto da se karta može skrolati u nedogled.
+  //
+  // setMaxBounds SAM ZA SEBE nije dovoljan: čim korisnik odzumira dovoljno
+  // da vidljivi dio ekrana postane VEĆI od dozvoljene kutije, ne postoji
+  // nijedna validna pozicija koja zadovoljava maxBounds — Leaflet onda pri
+  // SVAKOM pokušaju panovanja odmah vrati kartu na isti (jedini mogući)
+  // centar, što korisnik doživljava kao "karta se uporno vraća na jedno
+  // mjesto" / "dio karte je zaključan". Rješenje je setMinZoom na tačno
+  // onaj zoom gdje kutija baš ispuni ekran (getBoundsZoom(..., false),
+  // isto što fitBounds interno računa) — iza te tačke odzumiravanje je
+  // zabranjeno, pa uvijek postoji prostor za panovanje unutar kutije.
+  //
+  // KLJUČNO: getBoundsZoom zavisi od TRENUTNE veličine ekrana mape
+  // (_map.getSize()) — ako se pozove prije nego što je kontejner dobio
+  // svoju konačnu vidljivu veličinu (npr. odmah nakon otvaranja taba, prije
+  // layout/reflow-a), izračuna preusko ograničenje i "zaključa" korisnika
+  // na preveliki zum. Zato se poziva i na svaki 'resize' event (Leaflet ga
+  // sam emituje iz invalidateSize() kad primijeti promjenu veličine), ne
+  // samo jednom pri učitavanju podataka.
+  function _applyKartaMaxBounds() {
+    if (!_map || !_mapBounds || !_mapBounds.isValid()) return;
+    const padded = _padBoundsKm(_mapBounds, 20);
+    _map.setMaxBounds(padded);
+    try {
+      const minZ = _map.getBoundsZoom(padded, false);
+      if (isFinite(minZ)) _map.setMinZoom(minZ);
+    } catch(e) {}
+  }
+
   // ---- OSRM RUTA ----
   async function _drawRoute(destLatLng) {
     if (_routeLine) { _map.removeLayer(_routeLine); _routeLine = null; }
@@ -1979,27 +2010,8 @@
       _mapBounds = _layer.getBounds();
     } catch(e) {}
 
-    // Korisnički zahtjev: karta se ne smije moći skrolati u nedogled — prikaz
-    // (pan) ograničen na 2 km izvan ukupnog opsega SVIH odjel poligona
-    // (jednostavan pravougaonik/"kocka" oko cijelog opsega, ne prati oblik
-    // poligona). setMaxBounds ne mijenja zoom/centar odmah, samo ograničava
-    // dokle korisnik može panovati/zumirati izvan te oblasti.
-    if (_map && _mapBounds && _mapBounds.isValid()) {
-      const padded = _padBoundsKm(_mapBounds, 2);
-      _map.setMaxBounds(padded);
-      // BEZ ovoga: čim korisnik odzumira dovoljno da vidljivi dio ekrana
-      // postane VEĆI od gornje kutije, ne postoji nijedna validna pozicija
-      // koja zadovoljava maxBounds — Leaflet onda pri svakom pokušaju
-      // panovanja odmah vrati kartu na isti (jedini mogući) centar, što
-      // korisnik doživljava kao "karta se uporno vraća na jedno mjesto".
-      // getBoundsZoom(..., false) daje TAČNO taj granični zoom (kutija baš
-      // ispuni ekran) — zabranom daljeg odzumiravanja iza te tačke uvijek
-      // postoji prostor za panovanje unutar kutije.
-      try {
-        const minZ = _map.getBoundsZoom(padded, false);
-        if (isFinite(minZ)) _map.setMinZoom(minZ);
-      } catch(e) {}
-    }
+    // Karta se ne smije moći skrolati u nedogled — vidi _applyKartaMaxBounds.
+    _applyKartaMaxBounds();
 
     // Marker šumarije
     if (!_sumarijaMark) {
@@ -2152,6 +2164,12 @@
       _map.on('zoomend', _updateLabelSizes);
       _updateLabelSizes();
 
+      // Ponovo izračunaj minZoom/maxBounds kad Leaflet detektuje stvarnu
+      // promjenu veličine kontejnera (invalidateSize) — vidi komentar uz
+      // _applyKartaMaxBounds zašto se ne može osloniti samo na jedan poziv
+      // pri učitavanju podataka.
+      _map.on('resize', _applyKartaMaxBounds);
+
       // Feromonske klopke — klik na prazan prostor mape dok je pick mod
       // aktivan (klik NA poligon se hvata u onEachFeature ispod, jer bi
       // Leaflet inače prvo/umjesto ovog handlera pokrenuo poligonov click).
@@ -2167,7 +2185,7 @@
       return;
     }
 
-    setTimeout(() => { if (_map) _map.invalidateSize(); }, 100);
+    setTimeout(() => { if (_map) { _map.invalidateSize(); _applyKartaMaxBounds(); } }, 100);
 
     const ld = document.getElementById('karta-loading');
     if (ld) { ld.style.display='flex'; ld.textContent= navigator.onLine ? '⏳ Učitavam podatke...' : '📦 Učitavam keširano stanje...'; }
