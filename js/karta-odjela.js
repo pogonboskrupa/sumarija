@@ -225,6 +225,13 @@
     });
     _prelazniSetGlobal = _prelazniSet;
 
+    // KPI pregled traka — akumulira se u OVOJ istoj petlji (jedan prolaz po
+    // stvarnom plan-entry-ju, prije aliasing map.set-a niže) da se izbjegne
+    // dupliranje pri zbrajanju (isti entryData se inače upisuje u mapu i pod
+    // key i pod strictKey).
+    let _kpiUSjeci = 0, _kpiPosjeceno = 0, _kpiPlanirano = 0;
+    let _kpiSjecaUkupno = 0, _kpiOtpremaUkupno = 0, _kpiNetoUkupno = 0;
+
     planEntries.forEach(entry => {
       const key  = _normKey(entry.gj+' '+entry.odjel);  // matches normKey(p.odjel)
       const labelK = _labelKey(entry.gj+' '+entry.odjel); // precizan, čuva /N
@@ -300,6 +307,14 @@
       const pct    = entry.neto > 0 ? sjeca.ukupno / entry.neto * 100 : 0;
       const status = pct >= 95 ? 'posjeceno' : pct > 5 ? 'u-sjeci' : 'planirano';
       const entryData = { gj:entry.gj, odjel:entry.odjel, status, pct, sjeca, otpr, sjecaOst, otprOst, neto:entry.neto, bruto:entry.bruto, radiliste, izvodjac, poslovodja, datumPocetka, datumKraja };
+
+      if (status === 'u-sjeci') _kpiUSjeci++;
+      else if (status === 'posjeceno') _kpiPosjeceno++;
+      else _kpiPlanirano++;
+      _kpiSjecaUkupno   += sjeca.ukupno;
+      _kpiOtpremaUkupno += otpr.ukupno;
+      _kpiNetoUkupno    += entry.neto || 0;
+
       map.set(key, entryData);
       // Alias bez /N stripa — sprječava 64/1 da matchuje plan od 64/2P
       const strictKey = _labelKey(entry.gj+' '+entry.odjel);
@@ -313,10 +328,12 @@
     // "zauzeo" normKey i naveo guard da tiho preskoči 5/2 kao da je već obrađen.
     const plan2026NormKeys  = new Set(planEntries.map(e => _normKey(e.gj + ' ' + e.odjel)));
     const plan2026LabelKeys = new Set(planEntries.map(e => _labelKey(e.gj + ' ' + e.odjel)));
+    let _kpiPlan2027 = 0;
     _plan2027Entries().forEach(entry => {
       const normK  = _normKey(entry.gj + ' ' + entry.odjel);
       const labelK = _labelKey(entry.gj + ' ' + entry.odjel);
       if (plan2026NormKeys.has(normK) || plan2026LabelKeys.has(labelK)) return; // već u planu 2026
+      _kpiPlan2027++;
       const d = { gj: entry.gj, odjel: entry.odjel, status: 'plan-2027', pct: 0,
         sjeca: _emptySort(), otpr: _emptySort(), sjecaOst: _emptySort(), otprOst: _emptySort(),
         neto: 0, bruto: 0, radiliste: '—', izvodjac: '—', poslovodja: '—' };
@@ -394,6 +411,15 @@
     map._otpremaPrecise     = otpremaPreciseMap;
     map._otpremaFallback    = otpremaFallbackMap;
     map._otpremaMjesecNaziv = MJESECI_NAZIVI[curMonth - 1] + ' ' + curYear;
+
+    map._kpi = {
+      odjela: planEntries.length,
+      uSjeci: _kpiUSjeci, posjeceno: _kpiPosjeceno, planirano: _kpiPlanirano,
+      plan2027: _kpiPlan2027, prelazni: _prelazniSetGlobal.size,
+      sanitar: _sanitarSet.size, slucajni: _slucajniSet.size, zapisnik: _zapisnikSet.size,
+      sjecaUkupno: _kpiSjecaUkupno, otpremaUkupno: _kpiOtpremaUkupno, netoUkupno: _kpiNetoUkupno,
+      pctRealizacije: _kpiNetoUkupno > 0 ? (_kpiSjecaUkupno / _kpiNetoUkupno * 100) : 0
+    };
 
     return map;
   }
@@ -631,10 +657,16 @@
     const statusColor = { posjeceno:'#166534','u-sjeci':'#dc2626',planirano:'#6b7280',slucajni:'#7c3aed',sanitar:'#c2410c',zapisnik:'#0f766e','plan-2027':'#1e40af',prelazni:'#0e7490' };
     const statusBg    = { posjeceno:'#dcfce7','u-sjeci':'#fee2e2',planirano:'#f3f4f6',slucajni:'#f5f3ff',sanitar:'#fff7ed',zapisnik:'#f0fdfa','plan-2027':'#dbeafe',prelazni:'#ecfeff' };
 
+    // Zaseban naslov iznad dugmadi za rutu — ista uniformna sekcija-naslov
+    // konvencija (mala, uppercase, siva) kao "Sortimenti"/"Godišnji plan"
+    // ispod, da se modal čita kao jasno odvojene sekcije umjesto jednog bloka.
     const routeBtn = `
-      <div style="display:flex;gap:8px;margin-top:12px;">
-        <button onclick="routeToOdjel()" style="flex:1;display:flex;align-items:center;gap:6px;background:#2563eb;color:white;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;justify-content:center;">🏢 Ruta od Šumarije</button>
-        <button onclick="routeOdjelToOdjel()" style="flex:1;display:flex;align-items:center;gap:6px;background:#dc2626;color:white;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;justify-content:center;">🔀 Ruta do odjela…</button>
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid #f1f5f9;">
+        <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">🛣️ Navigacija</div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="routeToOdjel()" style="flex:1;display:flex;align-items:center;gap:6px;background:#2563eb;color:white;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;justify-content:center;">🏢 Ruta od Šumarije</button>
+          <button onclick="routeOdjelToOdjel()" style="flex:1;display:flex;align-items:center;gap:6px;background:#dc2626;color:white;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;justify-content:center;">🔀 Ruta do odjela…</button>
+        </div>
       </div>`;
 
     const normKey2  = _labelKey((props.gj||'') + ' ' + (props.odjel||props.name||''));
@@ -1241,13 +1273,14 @@
 
     applyKartaFilter();
     if (_map) setTimeout(() => _map.invalidateSize(), 50);
+    _renderKpiBar();
 
     if (_prikazMode === 'uzgojni') {
       _renderUzgojniPanel();
       _popuniKlopkaGjSelect();
       const datumEl = document.getElementById('klopka-datum');
       if (datumEl && !datumEl.value) datumEl.value = new Date().toISOString().slice(0, 10);
-      _fetchKlopkeCached();
+      _fetchKlopkeCached(); // osvježava i KPI (broj klopki/ulov) kad podaci stignu
     } else {
       // Napusti pick mod i ukloni neposlani marker pri izlasku iz Uzgojni moda
       _klopkaPickMode = false;
@@ -1255,6 +1288,46 @@
       if (_klopkeLayer && _map.hasLayer(_klopkeLayer)) _map.removeLayer(_klopkeLayer);
     }
   };
+
+  // ---- KPI PREGLED TRAKA ----
+  // Jedan stat-chip helper, dijele ga Proizvodnja i Uzgojni prikaz.
+  function _kpiChip(icon, bg, value, label) {
+    return '<div class="karta-kpi-chip"><div class="karta-kpi-icon" style="background:' + bg + ';">' + icon + '</div>' +
+      '<div><div class="karta-kpi-value">' + value + '</div><div class="karta-kpi-label">' + label + '</div></div></div>';
+  }
+  function _renderKpiBar() {
+    const el = document.getElementById('karta-kpi-bar');
+    if (!el) return;
+    if (_prikazMode === 'uzgojni') {
+      const brojKlopki = _klopke.length;
+      const ukupanUlov = _klopke.reduce((s, k) => s + (parseInt(k.ulov, 10) || 0), 0);
+      el.innerHTML =
+        _kpiChip('🌀', '#ede9fe', _slucajniSet.size, 'Slučajni užici') +
+        _kpiChip('📋', '#ccfbf1', _zapisnikSet.size, 'Zapisnik odjeli') +
+        _kpiChip('🪤', '#fde8d7', brojKlopki, 'Feromonskih klopki') +
+        _kpiChip('🐛', '#fee2e2', ukupanUlov, 'Ukupan ulov (kom)');
+    } else {
+      const k = (_statusMap && _statusMap._kpi) || {};
+      el.innerHTML =
+        _kpiChip('📊', '#dcfce7', Math.round(k.pctRealizacije || 0) + '%', 'Realizacija plana') +
+        _kpiChip('🌲', '#dcfce7', _fmt(k.sjecaUkupno || 0), 'Posječeno ' + PLAN_YEAR) +
+        _kpiChip('🚛', '#fef3c7', _fmt(k.otpremaUkupno || 0), 'Otpremljeno ' + PLAN_YEAR) +
+        _kpiChip('🔴', '#fee2e2', k.uSjeci || 0, 'Odjela u sječi');
+    }
+  }
+
+  // ---- LEGENDA — brojevi odjela po statusu ----
+  function _renderLegendCounts() {
+    const k = (_statusMap && _statusMap._kpi) || {};
+    const counts = {
+      'plan-2027': k.plan2027 || 0, 'planirano': k.planirano || 0, 'u-sjeci': k.uSjeci || 0,
+      'posjeceno': k.posjeceno || 0, 'prelazni': k.prelazni || 0
+    };
+    Object.keys(counts).forEach(st => {
+      const el = document.getElementById('karta-legend-count-' + st);
+      if (el) el.textContent = counts[st];
+    });
+  }
 
   // ---- ŠUMSKO UZGOJNI RADOVI: lista slučajnih/zapisnik odjela ----
   // Isti izvor podataka (lyr._kartaStatus, lyr._kartaExtra) kao mapa —
@@ -1536,6 +1609,7 @@
     _klopke = (data && data.klopke) || [];
     _renderKlopkeTabela();
     _renderKlopkeMarkers();
+    _renderKpiBar(); // broj klopki/ukupan ulov u KPI traci zavisi od _klopke
   }
 
   // Sačuvane klopke kao markeri na mapi (samo one sa validnom pozicijom —
@@ -1943,6 +2017,8 @@
 
     _statusMap = _buildStatusMap(primke, otpreme);
     _renderLayer(geojson, _statusMap);
+    _renderKpiBar();
+    _renderLegendCounts();
     if (typeof markTabRendered === 'function') markTabRendered('karta-odjela');
 
     setTimeout(() => { if (_map) _map.invalidateSize(); }, 200);
