@@ -3627,6 +3627,22 @@ body.sihtarica-fullscreen #sihtarica-otpremac-content {
 }
 .sih-close-btn:active { background: rgba(255, 255, 255, .32); transform: translateY(1px); }
 
+/* Globalni sigurnosni izlaz iz fullscreen modova — vidi komentar uz
+   #global-fullscreen-exit-btn u index.html i globalFullscreenEmergencyExit
+   u js/app.js. Prikazuje se ISKLJUČIVO preko body klase (nikakva JS logika
+   ne treba da se izvrši da bi dugme postalo vidljivo), pa je garantovano
+   dostupno čak i ako sadržaj konkretnog taba "poludi" i sam svoj "✕ Zatvori"
+   ostavi van dohvata. */
+#global-fullscreen-exit-btn {
+    display: none; position: fixed; top: calc(10px + env(safe-area-inset-top)); left: 12px;
+    z-index: 50000; width: 38px; height: 38px; border-radius: 50%; border: none;
+    background: #b91c1c; color: #fff; font-size: 18px; line-height: 1; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .4); align-items: center; justify-content: center;
+}
+body.radnik-mapa-fullscreen #global-fullscreen-exit-btn,
+body.kubikator-fullscreen #global-fullscreen-exit-btn,
+body.sihtarica-fullscreen #global-fullscreen-exit-btn { display: flex; }
+
 /* Tabela dana na uskom telefonu — otkako je Šihtarica prešla na puni ekran
    sa STVARNOM širinom uređaja (umjesto fiksnog app viewporta 1280px koji je
    browser ranije sam smanjivao da stane), klasična tabela sa 5 kolona

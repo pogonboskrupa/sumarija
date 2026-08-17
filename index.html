@@ -4458,6 +4458,15 @@
             </div>
         </div>
     </div>
+<!-- Sigurnosni izlaz iz BILO KOJEG "cijeli ekran" moda (Karta radnika,
+     Kubikator, Šihtarica) — vidi globalFullscreenEmergencyExit (js/app.js).
+     Direktno dijete <body>-a, position:fixed (isti razlog kao donja traka
+     ispod) — nedohvatljiv "✕ Zatvori" unutar tih tabova je bio poznat
+     problem na telefonu (korisnik mora zatvoriti cijelu aplikaciju da
+     izađe). CSS vidljivost (main.css) — nikakva JS logika ne odlučuje da
+     li se dugme prikazuje, samo prisustvo body klase. -->
+<button id="global-fullscreen-exit-btn" onclick="globalFullscreenEmergencyExit()" title="Zatvori">✕</button>
+
 <!-- Mapa odjela (radnik) — donja traka dugmadi. Namjerno IZVAN #radnik-mapa-content
      (koji nosi .container klasu sa "contain:layout" — to pravi novi containing
      block za position:fixed potomke, pa bi fiksirana traka bila "fiksna" u
