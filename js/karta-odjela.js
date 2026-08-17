@@ -1982,6 +1982,25 @@
     }
   }
 
+  // Stanje zaliha (projektovana masa po odjelu) — MORA se učitati ovdje, ne
+  // samo pasivno čitati iz localStorage (_getStanjeMap) kao ranije. Prije
+  // je "gotovo" status ispravno koristio projektovanu masu SAMO ako je
+  // admin nekad ranije otvorio Stanje zaliha tab (ili je pozadinsko
+  // "Ažuriraj podatke" već stiglo) — inače je _getStanjeMap() vraćao null i
+  // tiho padao nazad na godišnji plan, bez ikakve poruke da nedostaje
+  // podatak (korisnik prijavio: odjel i dalje pokazuje "gotovo" po planu).
+  // fetchWithCache ovdje puni ISTI cache_stanje_zaliha ključ (isti kao
+  // Stanje zaliha tab), pa ne duplicira podatke — samo garantuje da je
+  // svjež PRIJE nego _buildStatusMap izračuna status.
+  async function _prefetchStanjeZaliha(force) {
+    try {
+      if (typeof buildApiUrl !== 'function' || typeof fetchWithCache !== 'function') return;
+      await fetchWithCache(buildApiUrl('stanje-zaliha'), 'cache_stanje_zaliha', force || false, 180000);
+    } catch (e) {
+      console.warn('[Mapa] stanje-zaliha failed:', e.message);
+    }
+  }
+
   async function _loadGeojson() {
     if (_geojson) return _geojson;
     const ld = document.getElementById('karta-loading');
@@ -2096,8 +2115,14 @@
       _loadGeojson(),
       _loadArr('primke',  CACHE_SJECA, 'primke',  force),
       _loadArr('otpreme', CACHE_OTPR,  'otpreme', force),
+      _prefetchStanjeZaliha(force),
     ]);
 
+    // Resetuj memoizovani _stanjeMap da _getStanjeMap() (poziva ga
+    // _buildStatusMap niže) ponovo pročita localStorage — _prefetchStanjeZaliha
+    // gore je upravo mogao osvježiti cache_stanje_zaliha, stari memoizovan
+    // Map bi inače sakrio svježe podatke do sljedećeg punog reloada stranice.
+    _stanjeMap = null;
     _statusMap = _buildStatusMap(primke, otpreme);
     _renderLayer(geojson, _statusMap);
     _renderKpiBar();
