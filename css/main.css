@@ -3641,7 +3641,15 @@ body.sihtarica-fullscreen #sihtarica-otpremac-content {
 }
 body.radnik-mapa-fullscreen #global-fullscreen-exit-btn,
 body.kubikator-fullscreen #global-fullscreen-exit-btn,
-body.sihtarica-fullscreen #global-fullscreen-exit-btn { display: flex; }
+body.sihtarica-fullscreen #global-fullscreen-exit-btn,
+body.mapa-fokus #global-fullscreen-exit-btn { display: flex; }
+/* Admin Mapa Fokus mod već ima svoj #karta-fokus-exit-btn na desnoj strani
+   (i dalje radi, ostaje nepromijenjen) — globalno dugme je dodatna
+   sigurnosna mreža na LIJEVOJ strani (isti razlog kao ostala tri fullscreen
+   moda: korisnik je prijavio da se i dalje desi da ne može izaći). Fokus mod
+   ne skriva .tabs-container/.sidebar kao ostala tri moda, ali ako se to ikad
+   pokaže nedovoljno, ovo je nezavisan drugi izlaz koji ne zavisi ni od čega
+   unutar #karta-odjela-content. */
 
 /* Tabela dana na uskom telefonu — otkako je Šihtarica prešla na puni ekran
    sa STVARNOM širinom uređaja (umjesto fiksnog app viewporta 1280px koji je
