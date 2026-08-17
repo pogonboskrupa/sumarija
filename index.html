@@ -3599,6 +3599,8 @@
                      js/karta-odjela.js), pa nema konflikta sa Fokusovim !important
                      visinama definisanim niže u ovom fajlu. */
                   #karta-odjela-map.kod-uzgojni { height:45vh !important; min-height:320px !important; }
+                  #klopka-pozicija-btn.active { background:#0d9488 !important; color:white !important; }
+                  .klopka-pick-marker, .klopka-saved-marker { font-size:20px; line-height:1; text-align:center; filter:drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
 
                   /* Radnik mapa odjela — visina umanjena za donju traku dugmadi (~112-120px,
                      ponovo uvećana traka). Ovo je fallback prikaz PRIJE nego se puni-ekran
@@ -4104,10 +4106,14 @@
 
                     <div style="margin-top:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;">
                         <div style="font-size:14px;font-weight:700;color:#1f2937;margin-bottom:10px;">🪤 Feromonske klopke — evidencija ulova potkornjaka</div>
-                        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:12px;">
+                        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:8px;">
+                            <div>
+                                <label style="display:block;font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">GJ</label>
+                                <select id="klopka-gj-select" onchange="klopkaGjPromijenjen()" style="font-size:12px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;min-width:140px;"></select>
+                            </div>
                             <div>
                                 <label style="display:block;font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Odjel</label>
-                                <select id="klopka-odjel-select" style="font-size:12px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;min-width:160px;"></select>
+                                <select id="klopka-odjel-select" onchange="klopkaOdjelPromijenjen()" disabled style="font-size:12px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;min-width:120px;"><option value="">— Odjel —</option></select>
                             </div>
                             <div>
                                 <label style="display:block;font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Broj klopke</label>
@@ -4129,7 +4135,15 @@
                                 <label style="display:block;font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Napomena (opciono)</label>
                                 <input id="klopka-napomena" type="text" placeholder="" style="font-size:12px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;width:100%;box-sizing:border-box;" />
                             </div>
-                            <button type="button" onclick="dodajKlopkaOcitanje()" style="font-size:12px;font-weight:700;padding:7px 14px;border:none;border-radius:6px;background:#0d9488;color:white;cursor:pointer;">➕ Dodaj očitanje</button>
+                        </div>
+                        <!-- Pozicija klopke — bira se KLIKOM na mapu (unutar ili blizu
+                             odabranog odjela, mapa se automatski zumira na njega),
+                             marker se poslije može ručno povući (draggable) za fino
+                             podešavanje. Dugme onemogućeno dok nisu izabrani GJ+odjel. -->
+                        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px;padding:8px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
+                            <button type="button" id="klopka-pozicija-btn" onclick="toggleKlopkaPickMode()" disabled style="font-size:12px;font-weight:700;padding:6px 12px;border:2px solid #0d9488;border-radius:6px;background:white;color:#0d9488;cursor:pointer;">🎯 Postavi poziciju</button>
+                            <span id="klopka-pozicija-info" style="font-size:12px;font-weight:600;color:#dc2626;">⚠️ Pozicija nije postavljena</span>
+                            <button type="button" onclick="dodajKlopkaOcitanje()" style="margin-left:auto;font-size:12px;font-weight:700;padding:7px 14px;border:none;border-radius:6px;background:#0d9488;color:white;cursor:pointer;">➕ Dodaj očitanje</button>
                         </div>
                         <div id="klopka-status" style="font-size:12px;font-weight:600;display:none;margin-bottom:8px;"></div>
                         <div id="klopka-tabela" style="overflow-x:auto;"></div>

@@ -1241,10 +1241,15 @@
 
     if (_prikazMode === 'uzgojni') {
       _renderUzgojniPanel();
-      _popuniKlopkaOdjelSelect();
+      _popuniKlopkaGjSelect();
       const datumEl = document.getElementById('klopka-datum');
       if (datumEl && !datumEl.value) datumEl.value = new Date().toISOString().slice(0, 10);
       _fetchKlopkeCached();
+    } else {
+      // Napusti pick mod i ukloni neposlani marker pri izlasku iz Uzgojni moda
+      _klopkaPickMode = false;
+      if (_klopkaPickMarker) { _map.removeLayer(_klopkaPickMarker); _klopkaPickMarker = null; }
+      if (_klopkeLayer && _map.hasLayer(_klopkeLayer)) _map.removeLayer(_klopkeLayer);
     }
   };
 
@@ -1305,24 +1310,131 @@
 
   // ---- FEROMONSKE KLOPKE ----
   let _klopke = [];
+  let _klopkaPickMode   = false; // true dok se čeka klik na mapu za poziciju klopke
+  let _klopkaPickMarker = null;  // draggable marker — trenutno postavljena pozicija (nije još poslana)
+  let _klopkeLayer      = null;  // grupa markera VEĆ sačuvanih klopki (samo Uzgojni mod)
 
-  function _popuniKlopkaOdjelSelect() {
-    const sel = document.getElementById('klopka-odjel-select');
+  function _popuniKlopkaGjSelect() {
+    const sel = document.getElementById('klopka-gj-select');
     if (!sel || sel.dataset.popunjeno) return;
-    const labels = new Set();
+    const gjevi = new Set();
     _allFeatures.forEach(lyr => {
-      const p     = lyr._kartaProps || {};
-      const odjel = String(p.odjel || p.name || '').trim();
-      const gj    = String(p.gj || '').trim();
-      if (odjel) labels.add(gj ? (gj + ' ' + odjel) : odjel);
+      const gj = String((lyr._kartaProps || {}).gj || '').trim();
+      if (gj) gjevi.add(gj);
     });
-    const sorted = [...labels].sort((a, b) => a.localeCompare(b, 'bs'));
-    sel.innerHTML = sorted.map(l => `<option value="${l.replace(/"/g, '&quot;')}">${l}</option>`).join('');
+    const sorted = [...gjevi].sort((a, b) => a.localeCompare(b, 'bs'));
+    sel.innerHTML = '<option value="">— GJ —</option>' +
+      sorted.map(g => `<option value="${g.replace(/"/g, '&quot;')}">${g}</option>`).join('');
     sel.dataset.popunjeno = '1';
   }
 
+  window.klopkaGjPromijenjen = function() {
+    const gj = (document.getElementById('klopka-gj-select') || {}).value || '';
+    const odjelSel = document.getElementById('klopka-odjel-select');
+    if (!odjelSel) return;
+    if (!gj) {
+      odjelSel.innerHTML = '<option value="">— Odjel —</option>';
+      odjelSel.disabled = true;
+    } else {
+      const odjeli = new Set();
+      _allFeatures.forEach(lyr => {
+        const p = lyr._kartaProps || {};
+        if (String(p.gj || '').trim() === gj) {
+          const odjel = String(p.odjel || p.name || '').trim();
+          if (odjel) odjeli.add(odjel);
+        }
+      });
+      const sorted = [...odjeli].sort((a, b) => a.localeCompare(b, 'bs', { numeric: true }));
+      odjelSel.innerHTML = '<option value="">— Odjel —</option>' +
+        sorted.map(o => `<option value="${o.replace(/"/g, '&quot;')}">${o}</option>`).join('');
+      odjelSel.disabled = false;
+    }
+    window.klopkaOdjelPromijenjen();
+  };
+
+  window.klopkaOdjelPromijenjen = function() {
+    _osvjeziKlopkaPozicijaBtn();
+    // Novi odjel = nova klopka — poništi eventualnu prethodno postavljenu
+    // (ali još neposlanu) poziciju da se slučajno ne pošalje pogrešnom odjelu.
+    if (_klopkaPickMarker) { _map.removeLayer(_klopkaPickMarker); _klopkaPickMarker = null; }
+    _klopkaPickMode = false;
+    _osvjeziKlopkaPozicijaUI();
+  };
+
+  function _osvjeziKlopkaPozicijaBtn() {
+    const gj    = (document.getElementById('klopka-gj-select')    || {}).value || '';
+    const odjel = (document.getElementById('klopka-odjel-select') || {}).value || '';
+    const btn = document.getElementById('klopka-pozicija-btn');
+    if (btn) btn.disabled = !(gj && odjel);
+  }
+
+  // Klik na dugme "Postavi poziciju" — zumira mapu na izabrani odjel i
+  // uključuje "pick" mod: sljedeći klik na mapu (bilo na poligon bilo na
+  // prazan prostor) postavlja marker klopke i mod se sam isključuje.
+  window.toggleKlopkaPickMode = function() {
+    const gj    = (document.getElementById('klopka-gj-select')    || {}).value || '';
+    const odjel = (document.getElementById('klopka-odjel-select') || {}).value || '';
+    if (!gj || !odjel) return;
+
+    _klopkaPickMode = !_klopkaPickMode;
+    const btn = document.getElementById('klopka-pozicija-btn');
+    if (btn) {
+      btn.classList.toggle('active', _klopkaPickMode);
+      btn.textContent = _klopkaPickMode ? '🎯 Kliknite na mapu…' : '🎯 Postavi poziciju';
+    }
+    if (_klopkaPickMode && _map) {
+      const key = _labelKey(gj + ' ' + odjel);
+      let bounds = null;
+      _allFeatures.forEach(lyr => {
+        const p = lyr._kartaProps || {};
+        const lKey = _labelKey((p.gj || '') + ' ' + (p.odjel || p.name || ''));
+        if (lKey !== key) return;
+        try { bounds = bounds ? bounds.extend(lyr.getBounds()) : lyr.getBounds(); } catch (_) {}
+      });
+      if (bounds && bounds.isValid()) _map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+    }
+  };
+
+  // Zajednička tačka za mapa-klik I poligon-klik (vidi _renderLayer) dok je
+  // pick mod aktivan — postavlja/pomjera marker i sam isključuje pick mod
+  // (jedan klik = gotovo; naknadno fino podešavanje ide preko drag-a).
+  function _zavrsiKlopkaPick(latlng) {
+    _placeKlopkaMarker(latlng);
+    _klopkaPickMode = false;
+    const btn = document.getElementById('klopka-pozicija-btn');
+    if (btn) { btn.classList.remove('active'); btn.textContent = '🎯 Postavi poziciju'; }
+  }
+
+  function _placeKlopkaMarker(latlng) {
+    if (_klopkaPickMarker) {
+      _klopkaPickMarker.setLatLng(latlng);
+    } else {
+      _klopkaPickMarker = L.marker(latlng, {
+        draggable: true,
+        icon: L.divIcon({ className: 'klopka-pick-marker', html: '🪤', iconSize: [26, 26], iconAnchor: [13, 24] })
+      }).addTo(_map);
+      _klopkaPickMarker.on('dragend', _osvjeziKlopkaPozicijaUI);
+    }
+    _osvjeziKlopkaPozicijaUI();
+  }
+
+  function _osvjeziKlopkaPozicijaUI() {
+    const el = document.getElementById('klopka-pozicija-info');
+    if (!el) return;
+    if (_klopkaPickMarker) {
+      const ll = _klopkaPickMarker.getLatLng();
+      el.textContent = '📍 Pozicija postavljena (' + ll.lat.toFixed(5) + ', ' + ll.lng.toFixed(5) + ') — povucite marker za fino podešavanje';
+      el.style.color = '#16a34a';
+    } else {
+      el.textContent = '⚠️ Pozicija nije postavljena';
+      el.style.color = '#dc2626';
+    }
+  }
+
   window.dodajKlopkaOcitanje = async function() {
-    const odjel      = (document.getElementById('klopka-odjel-select') || {}).value || '';
+    const gj         = (document.getElementById('klopka-gj-select')    || {}).value || '';
+    const odjelKrat  = (document.getElementById('klopka-odjel-select') || {}).value || '';
+    const odjel      = gj && odjelKrat ? (gj + ' ' + odjelKrat) : odjelKrat;
     const brojKlopke = ((document.getElementById('klopka-broj')     || {}).value || '').trim();
     const vrsta      = ((document.getElementById('klopka-vrsta')    || {}).value || '').trim();
     const ulovRaw    = (document.getElementById('klopka-ulov')      || {}).value;
@@ -1331,18 +1443,22 @@
     const statusEl   = document.getElementById('klopka-status');
     const ulov = parseInt(ulovRaw, 10);
 
-    if (!odjel || !brojKlopke || !vrsta || ulovRaw === '' || isNaN(ulov) || ulov < 0) {
+    if (!gj || !odjelKrat || !brojKlopke || !vrsta || ulovRaw === '' || isNaN(ulov) || ulov < 0 || !_klopkaPickMarker) {
       if (statusEl) {
-        statusEl.textContent = '⚠️ Popunite odjel, broj klopke, vrstu i broj ulova (0 ili veći).';
+        statusEl.textContent = !_klopkaPickMarker
+          ? '⚠️ Postavite poziciju klopke na mapi (dugme "🎯 Postavi poziciju").'
+          : '⚠️ Popunite GJ, odjel, broj klopke, vrstu i broj ulova (0 ili veći).';
         statusEl.style.color = '#dc2626'; statusEl.style.display = 'block';
       }
       return;
     }
 
+    const ll = _klopkaPickMarker.getLatLng();
     if (statusEl) { statusEl.textContent = '⏳ Šaljem...'; statusEl.style.color = '#6b7280'; statusEl.style.display = 'block'; }
     try {
       const url = buildApiUrl('add-klopka-ocitanje', {
-        odjel, brojKlopke, vrsta, ulov, datumOcitanja: datum, napomena
+        odjel, brojKlopke, vrsta, ulov, datumOcitanja: datum, napomena,
+        lat: ll.lat, lng: ll.lng
       });
       const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
       const data = await r.json();
@@ -1353,6 +1469,9 @@
       document.getElementById('klopka-vrsta').value = '';
       document.getElementById('klopka-ulov').value = '';
       document.getElementById('klopka-napomena').value = '';
+      _map.removeLayer(_klopkaPickMarker);
+      _klopkaPickMarker = null;
+      _osvjeziKlopkaPozicijaUI();
       await _fetchKlopkeCached(true);
       setTimeout(() => { if (statusEl) statusEl.style.display = 'none'; }, 2500);
     } catch (err) {
@@ -1394,6 +1513,33 @@
     }
     _klopke = (data && data.klopke) || [];
     _renderKlopkeTabela();
+    _renderKlopkeMarkers();
+  }
+
+  // Sačuvane klopke kao markeri na mapi (samo one sa validnom pozicijom —
+  // stariji/uvezeni zapisi bez LAT/LNG se preskaču, ne mogu se prikazati).
+  // Poseban sloj (ne _allFeatures) — čisti se u cjelini prije svakog crtanja.
+  function _renderKlopkeMarkers() {
+    if (!_map) return;
+    if (_klopkeLayer) { _map.removeLayer(_klopkeLayer); _klopkeLayer = null; }
+    if (_prikazMode !== 'uzgojni' || !_klopke.length) return;
+
+    _klopkeLayer = L.layerGroup();
+    _klopke.forEach(k => {
+      const lat = parseFloat(k.lat), lng = parseFloat(k.lng);
+      if (isNaN(lat) || isNaN(lng)) return;
+      const m = L.marker([lat, lng], {
+        icon: L.divIcon({ className: 'klopka-saved-marker', html: '🪤', iconSize: [20, 20], iconAnchor: [10, 18] })
+      });
+      const esc = typeof escapeHtml === 'function' ? escapeHtml : (s => String(s == null ? '' : s));
+      m.bindTooltip(
+        `<b>Klopka ${esc(k.brojKlopke)}</b> — ${esc(k.odjel)}<br>` +
+        `${esc(k.vrsta)} · zadnje: ${esc(k.datumOcitanja)} · ulov ${k.ulov || 0}`,
+        { direction: 'top', offset: [0, -16] }
+      );
+      _klopkeLayer.addLayer(m);
+    });
+    _klopkeLayer.addTo(_map);
   }
 
   function _renderKlopkeTabela() {
@@ -1543,6 +1689,11 @@
           else if (_layer) _layer.resetStyle(this);
         });
         lyr.on('click',     function(e) {
+          // Feromonske klopke pick mod ima prioritet nad normalnim klikom
+          // (otvaranje modala / ruta-mod) — klik NA poligon dok se traži
+          // pozicija klopke postavlja marker, ne otvara ništa drugo.
+          if (_klopkaPickMode) { _zavrsiKlopkaPick(e.latlng); return; }
+
           const center = _centroid(this) || e.latlng;
           const label  = String(this._kartaProps.odjel || this._kartaProps.name || '?');
 
@@ -1741,6 +1892,13 @@
       // Zoom-responsive labeli
       _map.on('zoomend', _updateLabelSizes);
       _updateLabelSizes();
+
+      // Feromonske klopke — klik na prazan prostor mape dok je pick mod
+      // aktivan (klik NA poligon se hvata u onEachFeature ispod, jer bi
+      // Leaflet inače prvo/umjesto ovog handlera pokrenuo poligonov click).
+      _map.on('click', function(e) {
+        if (_klopkaPickMode) _zavrsiKlopkaPick(e.latlng);
+      });
 
     } else if (!force) {
       _map.invalidateSize();

@@ -15,7 +15,9 @@
 // redova bez izmjene postojećih handlera.
 
 var KLOPKE_SHEET   = 'FEROMONSKE_KLOPKE';
-var KLOPKE_HEADERS = ['DATUM_OCITANJA', 'ODJEL', 'BROJ_KLOPKE', 'VRSTA_POTKORNJAKA', 'BROJ_ULOVA', 'NAPOMENA', 'KORISNIK'];
+// LAT/LNG su dodati NA KRAJ (ne umetnuti usred postojećih kolona) da eventualno
+// već postojeći sheet sa starijom šemom (bez pozicije) ostane čitljiv bez pomjeranja.
+var KLOPKE_HEADERS = ['DATUM_OCITANJA', 'ODJEL', 'BROJ_KLOPKE', 'VRSTA_POTKORNJAKA', 'BROJ_ULOVA', 'NAPOMENA', 'KORISNIK', 'LAT', 'LNG'];
 
 // ---------- UPIS (GET, admin) ----------
 function handleAddKlopkaOcitanje(params) {
@@ -44,6 +46,18 @@ function handleAddKlopkaOcitanje(params) {
       return createJsonResponse({ error: 'Neispravan datum' }, false);
     }
 
+    // Pozicija (klik na mapu, frontend) — opciono na serveru (frontend je
+    // već traži obavezno prije slanja), ali ako je poslana mora biti validna
+    // koordinata da se izbjegnu smeće-markeri na mapi.
+    var lat = params.lat === '' || params.lat == null ? '' : parseFloat(params.lat);
+    var lng = params.lng === '' || params.lng == null ? '' : parseFloat(params.lng);
+    if (lat !== '' && (isNaN(lat) || lat < -90 || lat > 90)) {
+      return createJsonResponse({ error: 'Neispravna lat koordinata' }, false);
+    }
+    if (lng !== '' && (isNaN(lng) || lng < -180 || lng > 180)) {
+      return createJsonResponse({ error: 'Neispravna lng koordinata' }, false);
+    }
+
     lock = LockService.getScriptLock();
     if (!lock.tryLock(15000)) {
       return createJsonResponse({ error: 'Server je zauzet, pokušajte ponovo' }, false);
@@ -63,7 +77,8 @@ function handleAddKlopkaOcitanje(params) {
 
     sheet.appendRow([
       formatDate(datum), odjel, brojKlopke, vrsta, ulov,
-      String(params.napomena || '').trim(), loginResult.fullName || params.username
+      String(params.napomena || '').trim(), loginResult.fullName || params.username,
+      lat, lng
     ]);
 
     invalidateAllCache();
@@ -98,6 +113,8 @@ function handleGetKlopkeOcitanja(username, password, odjel) {
       if (!row[0]) continue; // prazan red
       var odjelRow = String(row[1] || '').trim();
       if (odjelFilter && odjelRow !== odjelFilter) continue;
+      var lat = parseFloat(row[7]);
+      var lng = parseFloat(row[8]);
       klopke.push({
         rowIndex:      i + 1, // 1-based za deleteRow
         datumOcitanja: String(row[0] || ''),
@@ -106,7 +123,9 @@ function handleGetKlopkeOcitanja(username, password, odjel) {
         vrsta:         String(row[3] || ''),
         ulov:          parseInt(row[4], 10) || 0,
         napomena:      String(row[5] || ''),
-        korisnik:      String(row[6] || '')
+        korisnik:      String(row[6] || ''),
+        lat:           isNaN(lat) ? null : lat,
+        lng:           isNaN(lng) ? null : lng
       });
     }
 
