@@ -1471,8 +1471,11 @@
   }
   function _renderKpiBar() {
     const el = document.getElementById('karta-kpi-bar');
+    const badge = document.getElementById('karta-header-usjeci-badge');
     if (!el) return;
     if (_prikazMode === 'uzgojni') {
+      if (badge) badge.classList.add('hidden');
+      el.style.display = 'flex';
       const brojKlopki = _klopke.length;
       const ukupanUlov = _klopke.reduce((s, k) => s + (parseInt(k.ulov, 10) || 0), 0);
       el.innerHTML =
@@ -1481,12 +1484,19 @@
         _kpiChip('🪤', '#fde8d7', brojKlopki, 'Feromonskih klopki') +
         _kpiChip('🐛', '#fee2e2', ukupanUlov, 'Ukupan ulov (kom)');
     } else {
+      // KPI traka (Realizacija plana/Posječeno/Otpremljeno/Odjela u sječi) je
+      // uklonjena sa Proizvodnja prikaza (korisnički zahtjev) — "Odjela u
+      // sječi" je premješteno u malu značku u zaglavlju taba, ostalo obrisano
+      // (Realizacija plana/Posječeno/Otpremljeno su i dalje vidljivi drugdje
+      // — legenda ima broj po statusu, sortimenti tabela ima ukupne iznose).
+      el.style.display = 'none';
+      el.innerHTML = '';
       const k = (_statusMap && _statusMap._kpi) || {};
-      el.innerHTML =
-        _kpiChip('📊', '#dcfce7', Math.round(k.pctRealizacije || 0) + '%', 'Realizacija plana') +
-        _kpiChip('🌲', '#dcfce7', _fmt(k.sjecaUkupno || 0), 'Posječeno ' + PLAN_YEAR) +
-        _kpiChip('🚛', '#fef3c7', _fmt(k.otpremaUkupno || 0), 'Otpremljeno ' + PLAN_YEAR) +
-        _kpiChip('🔴', '#fee2e2', k.uSjeci || 0, 'Odjela u sječi');
+      if (badge) {
+        const n = k.uSjeci || 0;
+        badge.textContent = '🔴 ' + n + ' u sječi';
+        badge.classList.toggle('hidden', n === 0);
+      }
     }
   }
 

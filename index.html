@@ -3513,6 +3513,9 @@
                             <p>Prostorni prikaz odjela po statusu realizacije plana sječe</p>
                         </div>
                         <div class="page-header-right" style="display:flex;align-items:center;gap:10px;">
+                            <!-- "Odjela u sječi" — premješteno ovdje iz KPI trake (korisnički
+                                 zahtjev), popunjava _renderKpiBar() (js/karta-odjela.js). -->
+                            <span id="karta-header-usjeci-badge" class="karta-header-badge hidden"></span>
                             <span id="karta-zadnje-osvjezeno" style="font-size:11px;color:#9ca3af;font-weight:600;"></span>
                             <button class="btn btn-primary" onclick="initKartaOdjela(true)">🔄 Osvježi</button>
                         </div>
@@ -3634,6 +3637,10 @@
                      Jedinstven "card" izgled za cijeli Mapa tab (isti obrazac kao
                      Uzgojni panel) umjesto ad-hoc flex redova sa inline stilom. */
                   .karta-kpi-bar { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px; }
+                  /* Značka "Odjela u sječi" u zaglavlju taba — zamjena za KPI traku
+                     na Proizvodnja prikazu (korisnički zahtjev, vidi _renderKpiBar). */
+                  .karta-header-badge { background:#fee2e2; color:#b91c1c; font-size:12px; font-weight:800;
+                      padding:5px 12px; border-radius:99px; white-space:nowrap; }
                   .karta-kpi-chip { flex:1 1 130px; min-width:120px; background:#fff; border:1px solid #e2e8f0;
                       border-radius:10px; padding:10px 12px; display:flex; align-items:center; gap:10px; }
                   .karta-kpi-icon { width:34px; height:34px; border-radius:8px; display:flex; align-items:center;
