@@ -474,43 +474,6 @@
     );
   }
 
-  // Ograniči panovanje/zumiranje karte na razumnu oblast oko svih odjel
-  // poligona (20 km padding — velikodušno, da normalno pregledanje terena
-  // nikad ne "udari u zid"), umjesto da se karta može skrolati u nedogled.
-  //
-  // setMaxBounds SAM ZA SEBE nije dovoljan: čim korisnik odzumira dovoljno
-  // da vidljivi dio ekrana postane VEĆI od dozvoljene kutije, ne postoji
-  // nijedna validna pozicija koja zadovoljava maxBounds — Leaflet onda pri
-  // SVAKOM pokušaju panovanja odmah vrati kartu na isti (jedini mogući)
-  // centar, što korisnik doživljava kao "karta se uporno vraća na jedno
-  // mjesto" / "dio karte je zaključan". Rješenje je setMinZoom na tačno
-  // onaj zoom gdje kutija baš ispuni ekran (getBoundsZoom(..., false),
-  // isto što fitBounds interno računa) — iza te tačke odzumiravanje je
-  // zabranjeno, pa uvijek postoji prostor za panovanje unutar kutije.
-  //
-  // KLJUČNO: getBoundsZoom zavisi od TRENUTNE veličine ekrana mape
-  // (_map.getSize()) — ako se pozove prije nego što je kontejner dobio
-  // svoju konačnu vidljivu veličinu (npr. odmah nakon otvaranja taba, prije
-  // layout/reflow-a), izračuna preusko ograničenje. Zato se poziva JEDNOM
-  // odmah pri renderovanju i JOŠ JEDNOM ~100ms kasnije (nakon invalidateSize)
-  // kao sigurnosna mreža za tu tačku u vremenu.
-  //
-  // NAMJERNO se NE poziva na Leaflet-ov 'resize' event trajno (probano i
-  // uklonjeno) — setMaxBounds/setMinZoom odmah prisilno vraćaju kartu u
-  // granice/zum, a na telefonu se 'resize' okida vrlo često dok korisnik
-  // panuje (adresna traka browsera se sklanja/vraća pri skrolanju), pa bi
-  // svaki takav event prekinuo aktivno povlačenje prstom — korisnik je to
-  // doživljavao kao da mapu uopšte ne može skrolati.
-  function _applyKartaMaxBounds() {
-    if (!_map || !_mapBounds || !_mapBounds.isValid()) return;
-    const padded = _padBoundsKm(_mapBounds, 20);
-    _map.setMaxBounds(padded);
-    try {
-      const minZ = _map.getBoundsZoom(padded, false);
-      if (isFinite(minZ)) _map.setMinZoom(minZ);
-    } catch(e) {}
-  }
-
   // ---- OSRM RUTA ----
   async function _drawRoute(destLatLng) {
     if (_routeLine) { _map.removeLayer(_routeLine); _routeLine = null; }
@@ -2016,9 +1979,6 @@
       _mapBounds = _layer.getBounds();
     } catch(e) {}
 
-    // Karta se ne smije moći skrolati u nedogled — vidi _applyKartaMaxBounds.
-    _applyKartaMaxBounds();
-
     // Marker šumarije
     if (!_sumarijaMark) {
       _sumarijaMark = L.marker(SUMARIJA_LATLNG, {
@@ -2149,11 +2109,7 @@
         if (e.target === modal) closeMapaModal();
       });
 
-      // maxBoundsViscosity:1 — "čvrst zid" na granici umjesto elastičnog
-      // odskoka (koji korisnik na dodirnom ekranu doživljava kao "karta se
-      // sama vraća"); stvarni maxBounds se postavlja kasnije u _renderLayer
-      // čim se izračuna opseg svih poligona.
-      _map = L.map('karta-odjela-map', { center:SUMARIJA_LATLNG, zoom:12, zoomControl:true, maxBoundsViscosity:1.0 });
+      _map = L.map('karta-odjela-map', { center:SUMARIJA_LATLNG, zoom:12, zoomControl:true });
 
       _osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -2185,7 +2141,7 @@
       return;
     }
 
-    setTimeout(() => { if (_map) { _map.invalidateSize(); _applyKartaMaxBounds(); } }, 100);
+    setTimeout(() => { if (_map) _map.invalidateSize(); }, 100);
 
     const ld = document.getElementById('karta-loading');
     if (ld) { ld.style.display='flex'; ld.textContent= navigator.onLine ? '⏳ Učitavam podatke...' : '📦 Učitavam keširano stanje...'; }
