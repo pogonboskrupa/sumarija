@@ -19,13 +19,14 @@ function _normKey(s) {
         .trim();
 }
 
+// Stvaran oblik odgovora handleStanjeZaliha (apps-script/api-handlers.gs):
+// svaki odjel objekat ima ukupnoProjekat (broj, već izračunat server-side kao
+// projekat["UKUPNO Č+L"]), NE niz + posebno ime sortimenta "SVEUKUPNO".
 function _projektovanaMasa(stanjeMap, gj, odjel) {
     if (!stanjeMap) return null;
     const od = stanjeMap.get(_normKey(gj + ' ' + odjel));
-    if (!od || !od.projekat || !od.projekat.length) return null;
-    const idx = (od.sortimentiNazivi || []).findIndex(s => s === 'SVEUKUPNO');
-    if (idx < 0) return null;
-    const v = Number(od.projekat[idx]);
+    if (!od) return null;
+    const v = Number(od.ukupnoProjekat);
     return (!isNaN(v) && v > 0) ? v : null;
 }
 
@@ -38,10 +39,10 @@ function _statusZaOdjel(stanjeMap, entry, sjecaUkupno) {
     return { status, pct, ciljMasa, masaIzvor };
 }
 
-describe('_projektovanaMasa — čitanje SVEUKUPNO iz Stanje zaliha', () => {
-    test('vraća SVEUKUPNO vrijednost kad odjel postoji u Stanju zaliha', () => {
+describe('_projektovanaMasa — čitanje ukupnoProjekat iz Stanje zaliha', () => {
+    test('vraća ukupnoProjekat vrijednost kad odjel postoji u Stanju zaliha', () => {
         const stanjeMap = new Map([
-            ['RISOVAC KRUPA 64', { projekat: [100, 50, 150], sortimentiNazivi: ['ČETINARI', 'LIŠĆARI', 'SVEUKUPNO'] }]
+            ['RISOVAC KRUPA 64', { odjel: 'RISOVAC KRUPA 64', ukupnoProjekat: 150 }]
         ]);
         assert.equal(_projektovanaMasa(stanjeMap, 'Risovac Krupa', '64'), 150);
     });
@@ -52,23 +53,30 @@ describe('_projektovanaMasa — čitanje SVEUKUPNO iz Stanje zaliha', () => {
 
     test('vraća null kad odjel nema unos u Stanju zaliha', () => {
         const stanjeMap = new Map([
-            ['RISOVAC KRUPA 64', { projekat: [100, 50, 150], sortimentiNazivi: ['ČETINARI', 'LIŠĆARI', 'SVEUKUPNO'] }]
+            ['RISOVAC KRUPA 64', { odjel: 'RISOVAC KRUPA 64', ukupnoProjekat: 150 }]
         ]);
         assert.equal(_projektovanaMasa(stanjeMap, 'Risovac Krupa', '73'), null);
     });
 
-    test('vraća null kad SVEUKUPNO nedostaje u sortimentiNazivi', () => {
+    test('vraća null kad ukupnoProjekat nedostaje (undefined → NaN)', () => {
         const stanjeMap = new Map([
-            ['RISOVAC KRUPA 64', { projekat: [100, 50], sortimentiNazivi: ['ČETINARI', 'LIŠĆARI'] }]
+            ['RISOVAC KRUPA 64', { odjel: 'RISOVAC KRUPA 64' }]
         ]);
         assert.equal(_projektovanaMasa(stanjeMap, 'Risovac Krupa', '64'), null);
     });
 
-    test('vraća null kad je SVEUKUPNO 0 ili negativno (ne dijeliti sa 0/negativnim)', () => {
+    test('vraća null kad je ukupnoProjekat 0 ili negativno (ne dijeliti sa 0/negativnim)', () => {
         const stanjeMap = new Map([
-            ['RISOVAC KRUPA 64', { projekat: [0, 0, 0], sortimentiNazivi: ['ČETINARI', 'LIŠĆARI', 'SVEUKUPNO'] }]
+            ['RISOVAC KRUPA 64', { odjel: 'RISOVAC KRUPA 64', ukupnoProjekat: 0 }]
         ]);
         assert.equal(_projektovanaMasa(stanjeMap, 'Risovac Krupa', '64'), null);
+    });
+
+    test('odjel sa "P" sufiksom (prelazni, npr. "71P" iz godišnjeg plana) i dalje pogodi ključ bez P u Stanju zaliha', () => {
+        const stanjeMap = new Map([
+            ['RISOVAC KRUPA 71', { odjel: 'RISOVAC KRUPA 71', ukupnoProjekat: 4998 }]
+        ]);
+        assert.equal(_projektovanaMasa(stanjeMap, 'Risovac Krupa', '71P'), 4998);
     });
 });
 
@@ -78,13 +86,28 @@ describe('Status odjela — projektovana masa (Stanje zaliha) ima prioritet nad 
         // projektovano samo 100 (preciznija/ažurnija procjena) — 95 posječeno
         // treba biti "posjeceno" (95/100=95%), iako je 95/200=47.5% (bilo bi "u-sjeci").
         const stanjeMap = new Map([
-            ['RISOVAC KRUPA 64', { projekat: [100], sortimentiNazivi: ['SVEUKUPNO'] }]
+            ['RISOVAC KRUPA 64', { odjel: 'RISOVAC KRUPA 64', ukupnoProjekat: 100 }]
         ]);
         const entry = { gj: 'Risovac Krupa', odjel: '64', neto: 200 };
         const r = _statusZaOdjel(stanjeMap, entry, 95);
         assert.equal(r.status, 'posjeceno');
         assert.equal(r.masaIzvor, 'stanje-zaliha');
         assert.equal(r.ciljMasa, 100);
+    });
+
+    test('odjel sa VEĆOM projektovanom masom od plana (npr. višegodišnji prelazni odjel) ostaje "u-sjeci" umjesto lažno "posjeceno"', () => {
+        // Ovo je stvarni prijavljeni bug: RISOVAC KRUPA 71 ima plan.neto=1655,
+        // ali stvarni projekat (Stanje zaliha) je 4998 (kumulativ na više
+        // godina) — sječa 1799.17 je 108% plana (lažno "posjeceno"), ali samo
+        // 36% stvarnog projekta (ispravno "u-sjeci").
+        const stanjeMap = new Map([
+            ['RISOVAC KRUPA 71', { odjel: 'RISOVAC KRUPA 71', ukupnoProjekat: 4998 }]
+        ]);
+        const entry = { gj: 'Risovac Krupa', odjel: '71P', neto: 1655 };
+        const r = _statusZaOdjel(stanjeMap, entry, 1799.17);
+        assert.equal(r.status, 'u-sjeci');
+        assert.equal(r.masaIzvor, 'stanje-zaliha');
+        assert.equal(r.ciljMasa, 4998);
     });
 
     test('fallback na godišnji plan (entry.neto) kad odjel nema unos u Stanju zaliha', () => {
@@ -97,7 +120,7 @@ describe('Status odjela — projektovana masa (Stanje zaliha) ima prioritet nad 
 
     test('"u-sjeci" ostaje ispravno klasifikovano sa novim izvorom mase', () => {
         const stanjeMap = new Map([
-            ['RISOVAC KRUPA 64', { projekat: [100], sortimentiNazivi: ['SVEUKUPNO'] }]
+            ['RISOVAC KRUPA 64', { odjel: 'RISOVAC KRUPA 64', ukupnoProjekat: 100 }]
         ]);
         const entry = { gj: 'Risovac Krupa', odjel: '64', neto: 200 };
         const r = _statusZaOdjel(stanjeMap, entry, 30); // 30/100 = 30%
@@ -106,7 +129,7 @@ describe('Status odjela — projektovana masa (Stanje zaliha) ima prioritet nad 
 
     test('"planirano" (nedirnut odjel) ostaje ispravno klasifikovano', () => {
         const stanjeMap = new Map([
-            ['RISOVAC KRUPA 64', { projekat: [100], sortimentiNazivi: ['SVEUKUPNO'] }]
+            ['RISOVAC KRUPA 64', { odjel: 'RISOVAC KRUPA 64', ukupnoProjekat: 100 }]
         ]);
         const entry = { gj: 'Risovac Krupa', odjel: '64', neto: 200 };
         const r = _statusZaOdjel(stanjeMap, entry, 0);

@@ -48,7 +48,7 @@
   let _sumarijaMark = null;
   let _currentLatlng     = null;
   let _currentOdjelLabel = null;
-  let _stanjeMap         = null; // normKey → { projekat:[], sortimentiNazivi:[] }
+  let _stanjeMap         = null; // normKey → puni odjel objekat iz handleStanjeZaliha (vidi _getStanjeMap)
   let _odjelRutaMode = false;    // da li je aktivan režim rute između odjela
   let _odjelRutaFrom = null;     // { latlng, label }
   let _odjelRutaFromMark = null;
@@ -625,31 +625,30 @@
       const payload = wrapper && wrapper.data;
       if (!payload) return null;
 
-      // stanje-zaliha vraća { odjeli: [...], sortimentiHeader: [...] }
-      // stanje-odjela vraća { data: [...], sortimentiNazivi: [...] }
-      const odjeli   = payload.odjeli || payload.data || [];
-      const sortN    = payload.sortimentiHeader || payload.sortimentiNazivi || [];
-
+      // Stvaran oblik odgovora handleStanjeZaliha (apps-script/api-handlers.gs):
+      // { odjeli: [ { odjel:'GJ ODJEL', projekat:{...}, sjeca:{...}, otprema:{...},
+      //   zaliha:{...}, ukupnoProjekat, ukupnoSjeca, ukupnoOtprema, ukupnoZaliha } ],
+      //   sortimentiHeader: [...] }
+      // projekat/sjeca/otprema/zaliha su OBJEKTI keyed po nazivu sortimenta (npr.
+      // "UKUPNO Č+L", "Σ ČETINARI", "LIŠĆARI" — vidi sortimentiHeader), NE nizovi
+      // sa posebnim "SVEUKUPNO" imenom kako je prijašnja verzija ovog koda
+      // pogrešno pretpostavljala (zato je _projektovanaMasa uvijek vraćala null i
+      // "gotovo" status je tiho padao nazad na godišnji plan za SVAKI odjel — isti
+      // format koji js/app.js Stanje Zaliha tab stvarno koristi, npr. odjel.ukupnoProjekat).
+      const odjeli = payload.odjeli || [];
       if (!Array.isArray(odjeli) || !odjeli.length) return null;
 
       _stanjeMap = new Map();
       odjeli.forEach(od => {
-        const naziv = od.odjelNaziv || od.odjel || '';
+        const naziv = od.odjel || '';
         if (!naziv) return;
-        const k = _normKey(naziv);
-        _stanjeMap.set(k, {
-          projekat:        (od.redovi && od.redovi.projekat)   || [],
-          sjeca:           (od.redovi && od.redovi.sjeca)       || [],
-          otprema:         (od.redovi && od.redovi.otprema)     || [],
-          sumaLager:       (od.redovi && od.redovi.sumaLager)   || [],
-          sortimentiNazivi: sortN
-        });
+        _stanjeMap.set(_normKey(naziv), od);
       });
     } catch(_) {}
     return _stanjeMap || null;
   }
 
-  // Projektovana masa (SVEUKUPNO) za odjel iz Stanje zaliha — korisnik je
+  // Projektovana masa (UKUPNO Č+L) za odjel iz Stanje zaliha — korisnik je
   // eksplicitno tražio da se "gotovo" (posjeceno) status odjela na mapi
   // gleda na osnovu OVE mase, ne godišnjeg plana (entry.neto), jer je
   // projekat u Stanju zaliha precizniji/ažurniji broj. Vraća null ako
@@ -659,10 +658,8 @@
   function _projektovanaMasa(stanjeMap, gj, odjel) {
     if (!stanjeMap) return null;
     const od = stanjeMap.get(_normKey(gj + ' ' + odjel));
-    if (!od || !od.projekat || !od.projekat.length) return null;
-    const idx = (od.sortimentiNazivi || []).findIndex(s => s === 'SVEUKUPNO');
-    if (idx < 0) return null;
-    const v = Number(od.projekat[idx]);
+    if (!od) return null;
+    const v = Number(od.ukupnoProjekat);
     return (!isNaN(v) && v > 0) ? v : null;
   }
 
@@ -843,22 +840,22 @@
         return `<tr style="background:#fafafa;">${tdL('<span style="font-size:12px;color:#6b7280;padding-left:10px;">↳ '+label+'</span>')}${td(sv,'#6b7280',false)}${hasOtpr?td(ov,'#9ca3af',false)+'<td style="border-bottom:1px solid #f1f5f9;"></td>':''}<td style="border-bottom:1px solid #f1f5f9;"></td></tr>`;
       };
 
-      // Projekat + realizacija iz stanje-odjela cache
+      // Projekat + realizacija iz Stanje zaliha (vidi _getStanjeMap — proj/sj/
+      // lager su objekti keyed po nazivu sortimenta, npr. "UKUPNO Č+L")
       const _sm = _getStanjeMap();
       const _stanjeKey = _normKey((info.gj||'') + ' ' + info.odjel);
       const _stanjeOd = _sm && _sm.get(_stanjeKey);
       let projekatSection = '';
-      if (_stanjeOd && _stanjeOd.projekat && _stanjeOd.projekat.length) {
-        const sortN = _stanjeOd.sortimentiNazivi;
-        const proj  = _stanjeOd.projekat;
-        const sj    = _stanjeOd.sjeca    || [];
-        const lager = _stanjeOd.sumaLager || [];
+      if (_stanjeOd && _stanjeOd.projekat) {
+        const proj  = _stanjeOd.projekat || {};
+        const sj    = _stanjeOd.sjeca    || {};
+        const lager = _stanjeOd.zaliha   || {};
         const fmtP  = v => (v === 0 || v == null) ? '—' : Number(v).toFixed(2);
-        const getV  = (arr, name) => { const i = sortN.findIndex(s => s === name); return i >= 0 ? (arr[i] ?? null) : null; };
+        const getV  = (obj, name) => (obj[name] ?? null);
 
-        const pC  = getV(proj,  'ČETINARI'), pL  = getV(proj,  'LIŠĆARI'), pSveu = getV(proj,  'SVEUKUPNO');
-        const sC  = getV(sj,    'ČETINARI'), sL  = getV(sj,    'LIŠĆARI'), sSveu = getV(sj,    'SVEUKUPNO');
-        const zC  = getV(lager, 'ČETINARI'), zL  = getV(lager, 'LIŠĆARI'), zSveu = getV(lager, 'SVEUKUPNO');
+        const pC  = getV(proj,  'Σ ČETINARI'), pL  = getV(proj,  'LIŠĆARI'), pSveu = getV(proj,  'UKUPNO Č+L');
+        const sC  = getV(sj,    'Σ ČETINARI'), sL  = getV(sj,    'LIŠĆARI'), sSveu = getV(sj,    'UKUPNO Č+L');
+        const zC  = getV(lager, 'Σ ČETINARI'), zL  = getV(lager, 'LIŠĆARI'), zSveu = getV(lager, 'UKUPNO Č+L');
 
         const pctC = (pC && pC > 0 && sC != null) ? Math.min(999, sC / pC * 100).toFixed(1) : null;
         const pctL = (pL && pL > 0 && sL != null) ? Math.min(999, sL / pL * 100).toFixed(1) : null;
