@@ -323,6 +323,27 @@
       const pct = ciljMasa > 0 ? sjeca.ukupno / ciljMasa * 100 : 0;
       let status = pct >= 95 ? 'posjeceno' : pct > 5 ? 'u-sjeci' : 'planirano';
 
+      // Automatski "završeno" kad odjel nije sječen duže od 14 dana —
+      // korisnički zahtjev: umjesto da odjel ostane zaglavljen na "u sječi"
+      // (ili "planirano") zauvijek jer nikad ne dostigne 95% projektovane
+      // mase, dug prekid rada se tumači kao da je posao stvaran gotov.
+      // datumKraja je već izračunat gore (najkasniji dan sa stvarnom sječom,
+      // preskačući dane koji su bili samo "čišćenje" — vidi komentar uz
+      // KRAJ_SJECE_CISCENJE) pa je pouzdan izvor "zadnja stvarna aktivnost".
+      // NIJE persistirano stanje — računa se iznova iz podataka pri svakom
+      // učitavanju, pa nastavak sječe (nova primka unutar 14 dana) sam od
+      // sebe vrati odjel na status po pct-u ("ponovna sječa = aktivan").
+      const DANI_NEAKTIVNOSTI_ZAVRSENO = 14;
+      let autoZavrseno = false;
+      let danaNeaktivnosti = null;
+      if (status !== 'posjeceno' && datumKraja) {
+        danaNeaktivnosti = Math.floor((Date.now() - datumKraja.getTime()) / 86400000);
+        if (danaNeaktivnosti > DANI_NEAKTIVNOSTI_ZAVRSENO) {
+          status = 'posjeceno';
+          autoZavrseno = true;
+        }
+      }
+
       // Ručni override — vidi _prefetchZavrseniOdjeli/_getZavrseniMap. Neki
       // odjeli nikad ne dostignu 95% (teren, procjena bila preoptimistična),
       // pa admin može ručno potvrditi da je posao na terenu gotov.
@@ -330,7 +351,7 @@
       const rucnoZavrseno = !!(zOverride && zOverride.zavrseno);
       if (rucnoZavrseno) status = 'posjeceno';
 
-      const entryData = { gj:entry.gj, odjel:entry.odjel, status, pct, sjeca, otpr, sjecaOst, otprOst, neto:entry.neto, bruto:entry.bruto, ciljMasa, masaIzvor, radiliste, izvodjac, poslovodja, datumPocetka, datumKraja, rucnoZavrseno, rucnoZavrsenoOd:zOverride||null };
+      const entryData = { gj:entry.gj, odjel:entry.odjel, status, pct, sjeca, otpr, sjecaOst, otprOst, neto:entry.neto, bruto:entry.bruto, ciljMasa, masaIzvor, radiliste, izvodjac, poslovodja, datumPocetka, datumKraja, rucnoZavrseno, rucnoZavrsenoOd:zOverride||null, autoZavrseno, danaNeaktivnosti };
 
       if (status === 'u-sjeci') _kpiUSjeci++;
       else if (status === 'posjeceno') _kpiPosjeceno++;
@@ -987,6 +1008,11 @@
           </div>
           <span style="background:${statusBg[s]};color:${statusColor[s]};padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;align-self:flex-start;">${statusLabel[s]||s}</span>
         </div>
+
+        ${info.autoZavrseno ? `
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#166534;">
+          ⏱️ Automatski označeno kao završeno — nema sječe ${info.danaNeaktivnosti} dana (${_fmtDatum(info.datumKraja)}). Nastavak sječe vraća odjel na "U sječi".
+        </div>` : ''}
 
         ${projekatSection}
 

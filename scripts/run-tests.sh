@@ -40,7 +40,8 @@ node --test tests/name-matching.test.js \
               tests/karta-odjela-projektovana-masa.test.js \
               tests/karta-odjela-klopke-po-vrsti.test.js \
               tests/karta-odjela-pad-bounds.test.js \
-              tests/karta-odjela-zavrsena-realizacija.test.js
+              tests/karta-odjela-zavrsena-realizacija.test.js \
+              tests/karta-odjela-neaktivnost-zavrseno.test.js
 
 echo ""
 echo "=============================================="
