@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.8.2';
+        const APP_VERSION = '1.8.3';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -381,6 +381,17 @@
 
         // ========== POVRATAK MREŽE — osvježi aktivni tab svježim podacima ==========
         window.addEventListener('online', () => {
+            // Red čekanja (offline sječa/otprema, vidi drainSjecaQueue/
+            // drainOtpremaQueue) — nezavisno od toga koji je tab otvoren, za
+            // razliku od osvježavanja taba ispod ovo ne dira formu na ekranu.
+            // 2s odgode: 'online' zna okinuti prije nego veza stvarno proradi.
+            if (currentUser) {
+                setTimeout(() => {
+                    if (typeof drainSjecaQueue === 'function') drainSjecaQueue();
+                    if (typeof drainOtpremaQueue === 'function') drainOtpremaQueue();
+                }, 2000);
+            }
+
             if (!currentUser || !window.currentTab) return;
             // NIKAD ne osvježavaj tabove s formama — signal na terenu zatreperi
             // usred unosa i re-render bi obrisao pola popunjene forme
@@ -12012,6 +12023,154 @@
             return errors;
         }
 
+        // ========== OFFLINE RED ČEKANJA (Dodaj sječu / Dodaj otpremu) ==========
+        // Radnik na terenu zna popuniti cijelu formu bez signala — dosad bi
+        // fetch prosto pukao ("Failed to fetch") i cjelodnevni rad bi nestao.
+        // Isti obrazac kao _drainSjekQueue (js/mapa-radnika.js, sjekačke
+        // linije): forma se OVDJE ne šalje direktno nego preko _posaljiSjecu/
+        // _posaljiOtpremu, koje na MREŽNU grešku sačuvaju cijeli unos u
+        // localStorage red i vrate {queued:true} — submitSjeca/submitOtprema
+        // to tretiraju kao uspjeh (forma se resetuje, korisnik nastavlja),
+        // a red se prazni čim se veza vrati (window 'online' event) ili kad
+        // korisnik otvori "Moje sječe/otpreme". Server eksplicitno odbijen
+        // odgovor (validacija/ovlaštenje) se NE stavlja u red — ponavljanje
+        // offline ne bi pomoglo, greška se prikazuje odmah.
+        function _novaUuid() {
+            try {
+                if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+            } catch (_) {}
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                const r = Math.random() * 16 | 0;
+                return (c === 'x' ? r : ((r & 0x3) | 0x8)).toString(16);
+            });
+        }
+
+        function _sjecaQueueKey()   { return 'queue_sjeca_'   + ((currentUser && currentUser.username) || 'anon'); }
+        function _otpremaQueueKey() { return 'queue_otprema_' + ((currentUser && currentUser.username) || 'anon'); }
+        function _loadQueue(key)    { try { return JSON.parse(localStorage.getItem(key) || '[]') || []; } catch (_) { return []; } }
+        function _saveQueue(key, q) { try { localStorage.setItem(key, JSON.stringify(q)); } catch (_) {} }
+
+        // Upsert po uuid-u — i prvi unos i ponovni pokušaj tokom drain-a
+        // pozivaju istu funkciju, pa mora biti idempotentna (ne dodavati
+        // duplikat u red ako stavka za taj uuid već postoji).
+        function _queueUpsert(key, uuid, fields, imageUrl) {
+            const q = _loadQueue(key);
+            const item = { uuid, fields, imageUrl: imageUrl || null, savedAt: Date.now() };
+            const idx = q.findIndex(x => x.uuid === uuid);
+            if (idx >= 0) q[idx] = item; else q.push(item);
+            _saveQueue(key, q);
+        }
+
+        async function _posaljiSjecu(uuid, fields, imageUrl) {
+            const formData = new URLSearchParams();
+            formData.append('path', 'add-sjeca');
+            formData.append('username', currentUser.username);
+            formData.append('password', currentPassword);
+            formData.append('uuid', uuid);
+            Object.keys(fields).forEach(k => formData.append(k, fields[k]));
+            if (imageUrl) formData.append('imageUrl', imageUrl);
+
+            let result;
+            try {
+                const response = await fetch(`${API_URL}?${formData.toString()}`, { signal: AbortSignal.timeout(20000) });
+                result = await response.json();
+            } catch (err) {
+                _queueUpsert(_sjecaQueueKey(), uuid, fields, imageUrl);
+                return { queued: true };
+            }
+            return result; // server je ODGOVORIO — uspjeh ili eksplicitno odbijanje
+        }
+
+        async function _posaljiOtpremu(uuid, fields, imageUrl) {
+            const formData = new URLSearchParams();
+            formData.append('path', 'add-otprema');
+            formData.append('username', currentUser.username);
+            formData.append('password', currentPassword);
+            formData.append('uuid', uuid);
+            Object.keys(fields).forEach(k => formData.append(k, fields[k]));
+            if (imageUrl) formData.append('imageUrl', imageUrl);
+
+            let result;
+            try {
+                const response = await fetch(`${API_URL}?${formData.toString()}`, { signal: AbortSignal.timeout(20000) });
+                result = await response.json();
+            } catch (err) {
+                _queueUpsert(_otpremaQueueKey(), uuid, fields, imageUrl);
+                return { queued: true };
+            }
+            return result;
+        }
+
+        let _sjecaDraining = false, _otpremaDraining = false;
+
+        async function drainSjecaQueue() {
+            if (_sjecaDraining || !navigator.onLine) return;
+            let q = _loadQueue(_sjecaQueueKey());
+            if (!q.length) return;
+            _sjecaDraining = true;
+            let poslato = 0;
+            try {
+                while (q.length) {
+                    const stavka = q[0];
+                    const result = await _posaljiSjecu(stavka.uuid, stavka.fields, stavka.imageUrl);
+                    if (result.queued) break; // mreža i dalje ne radi, pokušaj kasnije
+                    q.shift();
+                    _saveQueue(_sjecaQueueKey(), q);
+                    if (result.success) {
+                        poslato++;
+                    } else if (typeof showError === 'function') {
+                        showError('Sječa nije poslana', (result.error || 'Nepoznata greška') +
+                            ' (odjel ' + (stavka.fields.odjel || '') + ', ' + (stavka.fields.datum || '') + ')');
+                    }
+                }
+            } finally {
+                _sjecaDraining = false;
+            }
+            if (poslato) {
+                if (typeof showSuccess === 'function') {
+                    showSuccess('Sječa poslana', poslato + (poslato === 1 ? ' sačuvan unos je' : ' sačuvana unosa je') + ' stiglo na server.');
+                }
+                clearCacheByPattern('primac'); clearCacheByPattern('primaci'); clearCacheByPattern('dashboard');
+                clearCacheByPattern('izvjestaji'); clearCacheByPattern('sedmicni_sjeca'); clearCacheByPattern('stanje_odjela');
+                clearCacheByPattern('stanje_zaliha'); clearCacheByPattern('my_sjece');
+                if (typeof isActiveTab === 'function' && isActiveTab('my-sjece') && typeof loadMySjece === 'function') loadMySjece();
+            }
+        }
+
+        async function drainOtpremaQueue() {
+            if (_otpremaDraining || !navigator.onLine) return;
+            let q = _loadQueue(_otpremaQueueKey());
+            if (!q.length) return;
+            _otpremaDraining = true;
+            let poslato = 0;
+            try {
+                while (q.length) {
+                    const stavka = q[0];
+                    const result = await _posaljiOtpremu(stavka.uuid, stavka.fields, stavka.imageUrl);
+                    if (result.queued) break;
+                    q.shift();
+                    _saveQueue(_otpremaQueueKey(), q);
+                    if (result.success) {
+                        poslato++;
+                    } else if (typeof showError === 'function') {
+                        showError('Otprema nije poslana', (result.error || 'Nepoznata greška') +
+                            ' (odjel ' + (stavka.fields.odjel || '') + ', ' + (stavka.fields.datum || '') + ')');
+                    }
+                }
+            } finally {
+                _otpremaDraining = false;
+            }
+            if (poslato) {
+                if (typeof showSuccess === 'function') {
+                    showSuccess('Otprema poslana', poslato + (poslato === 1 ? ' sačuvan unos je' : ' sačuvana unosa je') + ' stigao na server.');
+                }
+                clearCacheByPattern('otpremac'); clearCacheByPattern('otpremaci'); clearCacheByPattern('dashboard');
+                clearCacheByPattern('kupci'); clearCacheByPattern('izvjestaji'); clearCacheByPattern('sedmicni_otprema');
+                clearCacheByPattern('stanje_odjela'); clearCacheByPattern('stanje_zaliha'); clearCacheByPattern('my_otpreme');
+                if (typeof isActiveTab === 'function' && isActiveTab('my-otpreme') && typeof loadMyOtpreme === 'function') loadMyOtpreme();
+            }
+        }
+
         async function submitSjeca(event) {
             event.preventDefault();
 
@@ -12045,59 +12204,44 @@
             submitBtn.textContent = 'Dodavanje...';
             messageDiv.classList.add('hidden');
 
+            // Sakupi polja JEDNOM, prije bilo kakvog mrežnog poziva — ako sve
+            // dalje pukne (slika, glavni zahtjev), podaci već postoje u
+            // memoriji i idu direktno u red čekanja umjesto da se izgube.
+            const fields = {
+                'datum': getVal('sjeca-datum'), 'odjel': odjel,
+                'F/L Č': getNum('sjeca-FL-C'), 'I Č': getNum('sjeca-I-C'), 'II Č': getNum('sjeca-II-C'),
+                'III Č': getNum('sjeca-III-C'), 'RD': getNum('sjeca-RD'), 'TRUPCI Č': getNum('sjeca-TRUPCI-C'),
+                'CEL.DUGA': getNum('sjeca-CEL-DUGA'), 'CEL.CIJEPANA': getNum('sjeca-CEL-CIJEPANA'),
+                'ŠKART': getNum('sjeca-SKART'), 'Σ ČETINARI': getNum('sjeca-CETINARI'),
+                'F/L L': getNum('sjeca-FL-L'), 'I L': getNum('sjeca-I-L'), 'II L': getNum('sjeca-II-L'),
+                'III L': getNum('sjeca-III-L'), 'TRUPCI L': getNum('sjeca-TRUPCI-L'),
+                'OGR.DUGI': getNum('sjeca-OGR-DUGI'), 'OGR.CIJEPANI': getNum('sjeca-OGR-CIJEPANI'),
+                'GULE': getNum('sjeca-GULE'), 'LIŠĆARI': getNum('sjeca-LISCARI')
+            };
+            const uuid = _novaUuid();
+
             try {
-                // Upload image first if exists
+                // Upload slike PRESKAČE se offline (uploadImage bi svejedno
+                // pukao i prikazao svoj alert prije nego stignemo do reda
+                // čekanja ispod) — glavni unos (brojevi) je ono što se ne
+                // smije izgubiti, slika bez veze ostaje bez fotke.
                 let imageUrl = null;
-                if (sjecaImageData) {
+                if (sjecaImageData && navigator.onLine) {
                     submitBtn.textContent = 'Učitavam sliku...';
-                    console.log('Uploading image, data length:', sjecaImageData.length);
                     imageUrl = await uploadImage(sjecaImageData, 'sjeca');
-                    console.log('Upload result:', imageUrl ? 'SUCCESS: ' + imageUrl : 'FAILED');
-                    if (!imageUrl) {
-                        console.warn('Image upload failed, continuing without image');
-                    }
+                    if (!imageUrl) console.warn('Image upload failed, continuing without image');
                 }
 
                 submitBtn.textContent = 'Dodavanje...';
+                const result = await _posaljiSjecu(uuid, fields, imageUrl);
 
-                // Collect form data with safe getters (quantities default to 0)
-                const formData = new URLSearchParams();
-                formData.append('path', 'add-sjeca');
-                formData.append('username', currentUser.username);
-                formData.append('password', currentPassword);
-                formData.append('datum', getVal('sjeca-datum'));
-                formData.append('odjel', odjel);
-                formData.append('F/L Č', getNum('sjeca-FL-C'));
-                formData.append('I Č', getNum('sjeca-I-C'));
-                formData.append('II Č', getNum('sjeca-II-C'));
-                formData.append('III Č', getNum('sjeca-III-C'));
-                formData.append('RD', getNum('sjeca-RD'));
-                formData.append('TRUPCI Č', getNum('sjeca-TRUPCI-C'));
-                formData.append('CEL.DUGA', getNum('sjeca-CEL-DUGA'));
-                formData.append('CEL.CIJEPANA', getNum('sjeca-CEL-CIJEPANA'));
-                formData.append('ŠKART', getNum('sjeca-SKART'));
-                formData.append('Σ ČETINARI', getNum('sjeca-CETINARI'));
-                formData.append('F/L L', getNum('sjeca-FL-L'));
-                formData.append('I L', getNum('sjeca-I-L'));
-                formData.append('II L', getNum('sjeca-II-L'));
-                formData.append('III L', getNum('sjeca-III-L'));
-                formData.append('TRUPCI L', getNum('sjeca-TRUPCI-L'));
-                formData.append('OGR.DUGI', getNum('sjeca-OGR-DUGI'));
-                formData.append('OGR.CIJEPANI', getNum('sjeca-OGR-CIJEPANI'));
-                formData.append('GULE', getNum('sjeca-GULE'));
-                formData.append('LIŠĆARI', getNum('sjeca-LISCARI'));
-
-                // Add image URL if uploaded
-                if (imageUrl) {
-                    formData.append('imageUrl', imageUrl);
-                }
-
-                // Send request (don't cache this)
-                const url = `${API_URL}?${formData.toString()}`;
-                const response = await fetch(url);
-                const result = await response.json();
-
-                if (result.success) {
+                if (result.queued) {
+                    messageDiv.innerHTML = '⏳ Nema veze — sječa je sačuvana i poslaće se automatski čim se veza vrati.';
+                    messageDiv.style.background = '#fef3c7';
+                    messageDiv.style.color = '#92400e';
+                    messageDiv.classList.remove('hidden');
+                    resetSjecaForm();
+                } else if (result.success) {
                     messageDiv.innerHTML = `✅ ${result.message}<br>Ukupno: ${(Number(result.ukupno) || 0).toFixed(2)} m³`;
                     messageDiv.style.background = '#d1fae5';
                     messageDiv.style.color = '#047857';
@@ -12120,6 +12264,10 @@
                     clearCacheByPattern('stanje_odjela');
                     clearCacheByPattern('stanje_zaliha');
                     clearCacheByPattern('my_sjece');
+
+                    // Ako je iz nekog ranijeg pokušaja/sesije nešto ostalo u
+                    // redu čekanja, sad znamo da veza radi — pokušaj i to.
+                    drainSjecaQueue();
                 } else {
                     throw new Error(result.error || 'Unknown error');
                 }
@@ -12162,56 +12310,53 @@
                 if (i.value && i.value.includes(',')) i.value = i.value.replace(',', '.');
             });
 
+            // Sakupi polja JEDNOM, prije bilo kakvog mrežnog poziva — vidi
+            // identičan komentar u submitSjeca.
+            const fields = {
+                'datum': document.getElementById('otprema-datum').value,
+                'odjel': document.getElementById('otprema-odjel').value,
+                'kupac': document.getElementById('otprema-kupac').value,
+                'brojOtpremnice': document.getElementById('otprema-broj-otpremnice').value,
+                'F/L Č': document.getElementById('otprema-FL-C').value,
+                'I Č': document.getElementById('otprema-I-C').value,
+                'II Č': document.getElementById('otprema-II-C').value,
+                'III Č': document.getElementById('otprema-III-C').value,
+                'RD': document.getElementById('otprema-RD').value,
+                'TRUPCI Č': document.getElementById('otprema-TRUPCI-C').value,
+                'CEL.DUGA': document.getElementById('otprema-CEL-DUGA').value,
+                'CEL.CIJEPANA': document.getElementById('otprema-CEL-CIJEPANA').value,
+                'ŠKART': document.getElementById('otprema-SKART').value,
+                'Σ ČETINARI': document.getElementById('otprema-CETINARI').value,
+                'F/L L': document.getElementById('otprema-FL-L').value,
+                'I L': document.getElementById('otprema-I-L').value,
+                'II L': document.getElementById('otprema-II-L').value,
+                'III L': document.getElementById('otprema-III-L').value,
+                'TRUPCI L': document.getElementById('otprema-TRUPCI-L').value,
+                'OGR.DUGI': document.getElementById('otprema-OGR-DUGI').value,
+                'OGR.CIJEPANI': document.getElementById('otprema-OGR-CIJEPANI').value,
+                'GULE': document.getElementById('otprema-GULE').value,
+                'LIŠĆARI': document.getElementById('otprema-LISCARI').value
+            };
+            const uuid = _novaUuid();
+
             try {
-                // Upload image first if exists
+                // Upload slike se preskače offline — vidi komentar u submitSjeca.
                 let imageUrl = null;
-                if (otpremaImageData) {
+                if (otpremaImageData && navigator.onLine) {
                     submitBtn.textContent = 'Učitavam sliku...';
                     imageUrl = await uploadImage(otpremaImageData, 'otprema');
                 }
 
                 submitBtn.textContent = 'Dodavanje...';
+                const result = await _posaljiOtpremu(uuid, fields, imageUrl);
 
-                // Collect form data
-                const formData = new URLSearchParams();
-                formData.append('path', 'add-otprema');
-                formData.append('username', currentUser.username);
-                formData.append('password', currentPassword);
-                formData.append('datum', document.getElementById('otprema-datum').value);
-                formData.append('odjel', document.getElementById('otprema-odjel').value);
-                formData.append('kupac', document.getElementById('otprema-kupac').value);
-                formData.append('brojOtpremnice', document.getElementById('otprema-broj-otpremnice').value);
-                formData.append('F/L Č', document.getElementById('otprema-FL-C').value);
-                formData.append('I Č', document.getElementById('otprema-I-C').value);
-                formData.append('II Č', document.getElementById('otprema-II-C').value);
-                formData.append('III Č', document.getElementById('otprema-III-C').value);
-                formData.append('RD', document.getElementById('otprema-RD').value);
-                formData.append('TRUPCI Č', document.getElementById('otprema-TRUPCI-C').value);
-                formData.append('CEL.DUGA', document.getElementById('otprema-CEL-DUGA').value);
-                formData.append('CEL.CIJEPANA', document.getElementById('otprema-CEL-CIJEPANA').value);
-                formData.append('ŠKART', document.getElementById('otprema-SKART').value);
-                formData.append('Σ ČETINARI', document.getElementById('otprema-CETINARI').value);
-                formData.append('F/L L', document.getElementById('otprema-FL-L').value);
-                formData.append('I L', document.getElementById('otprema-I-L').value);
-                formData.append('II L', document.getElementById('otprema-II-L').value);
-                formData.append('III L', document.getElementById('otprema-III-L').value);
-                formData.append('TRUPCI L', document.getElementById('otprema-TRUPCI-L').value);
-                formData.append('OGR.DUGI', document.getElementById('otprema-OGR-DUGI').value);
-                formData.append('OGR.CIJEPANI', document.getElementById('otprema-OGR-CIJEPANI').value);
-                formData.append('GULE', document.getElementById('otprema-GULE').value);
-                formData.append('LIŠĆARI', document.getElementById('otprema-LISCARI').value);
-
-                // Add image URL if uploaded
-                if (imageUrl) {
-                    formData.append('imageUrl', imageUrl);
-                }
-
-                // Send request (don't cache this)
-                const url = `${API_URL}?${formData.toString()}`;
-                const response = await fetch(url);
-                const result = await response.json();
-
-                if (result.success) {
+                if (result.queued) {
+                    messageDiv.innerHTML = '⏳ Nema veze — otprema je sačuvana i poslaće se automatski čim se veza vrati.';
+                    messageDiv.style.background = '#fef3c7';
+                    messageDiv.style.color = '#92400e';
+                    messageDiv.classList.remove('hidden');
+                    resetOtpremaForm();
+                } else if (result.success) {
                     messageDiv.innerHTML = `✅ ${result.message}<br>Ukupno: ${(Number(result.ukupno) || 0).toFixed(2)} m³`;
                     messageDiv.style.background = '#dbeafe';
                     messageDiv.style.color = '#1e40af';
@@ -12235,6 +12380,8 @@
                     clearCacheByPattern('stanje_odjela');
                     clearCacheByPattern('stanje_zaliha');
                     clearCacheByPattern('my_otpreme');
+
+                    drainOtpremaQueue();
                 } else {
                     throw new Error(result.error || 'Unknown error');
                 }
@@ -12424,6 +12571,7 @@
         // Load My Sjece (last 10 pending entries for current user)
         async function loadMySjece() {
             if (!isActiveTab('my-sjece')) return;
+            drainSjecaQueue(); // dobar trenutak za pokušaj slanja — korisnik gleda spisak
             var msCacheKey = `cache_my_sjece_${currentUser.username}`;
             // Turbo: skip loading screen if cache exists
             if (!localStorage.getItem(msCacheKey)) {
@@ -12443,7 +12591,13 @@
 
                 var html = '<div style="overflow-x: auto;">';
 
-                if (data.unosi && data.unosi.length > 0) {
+                // Sačuvano lokalno, još nije stiglo na server (offline red
+                // čekanja) — prikazuje se PRIJE potvrđenih unosa jer je to
+                // ono za šta korisnik najviše želi potvrdu da nije izgubljeno.
+                var queued = _loadQueue(_sjecaQueueKey());
+                var hasAny = (data.unosi && data.unosi.length > 0) || queued.length > 0;
+
+                if (hasAny) {
                     html += '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;">';
                     html += '<thead><tr style="background: #047857; color: white;">';
                     html += '<th style="padding: 12px; border: 1px solid #ddd;">Datum</th>';
@@ -12454,6 +12608,23 @@
                     html += '<th style="padding: 12px; border: 1px solid #ddd;">Vrijeme unosa</th>';
                     html += '<th style="padding: 12px; border: 1px solid #ddd;">Akcije</th>';
                     html += '</tr></thead><tbody>';
+
+                    for (var q = 0; q < queued.length; q++) {
+                        var st = queued[q];
+                        var qC = parseFloat(st.fields['Σ ČETINARI'] || 0);
+                        var qL = parseFloat(st.fields['LIŠĆARI'] || 0);
+                        html += '<tr style="background: #fef3c7;">';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + (st.fields.datum || '') + '</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + (st.fields.odjel || '') + '</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + qC.toFixed(2) + ' m³</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + qL.toFixed(2) + ' m³</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">' + (qC + qL).toFixed(2) + ' m³</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd; color: #92400e; font-weight: 600;">⏳ Čeka slanje</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd; text-align: center;">';
+                        html += '<button class="btn btn-secondary" onclick="discardQueuedSjeca(\'' + st.uuid + '\')">🗑️ Ukloni</button>';
+                        html += '</td>';
+                        html += '</tr>';
+                    }
 
                     for (var i = 0; i < data.unosi.length; i++) {
                         var unos = data.unosi[i];
@@ -12498,6 +12669,7 @@
         // Load My Otpreme (last 10 pending entries for current user)
         async function loadMyOtpreme() {
             if (!isActiveTab('my-otpreme')) return;
+            drainOtpremaQueue(); // dobar trenutak za pokušaj slanja — korisnik gleda spisak
             var moCacheKey = `cache_my_otpreme_${currentUser.username}`;
             // Turbo: skip loading screen if cache exists
             if (!localStorage.getItem(moCacheKey)) {
@@ -12517,7 +12689,12 @@
 
                 var html = '<div style="overflow-x: auto;">';
 
-                if (data.unosi && data.unosi.length > 0) {
+                // Sačuvano lokalno, još nije stiglo na server — vidi identičan
+                // komentar u loadMySjece.
+                var queuedO = _loadQueue(_otpremaQueueKey());
+                var hasAnyO = (data.unosi && data.unosi.length > 0) || queuedO.length > 0;
+
+                if (hasAnyO) {
                     html += '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;">';
                     html += '<thead><tr style="background: #2563eb; color: white;">';
                     html += '<th style="padding: 12px; border: 1px solid #ddd;">Datum</th>';
@@ -12530,6 +12707,25 @@
                     html += '<th style="padding: 12px; border: 1px solid #ddd;">Vrijeme unosa</th>';
                     html += '<th style="padding: 12px; border: 1px solid #ddd;">Akcije</th>';
                     html += '</tr></thead><tbody>';
+
+                    for (var q = 0; q < queuedO.length; q++) {
+                        var st = queuedO[q];
+                        var qC = parseFloat(st.fields['Σ ČETINARI'] || 0);
+                        var qL = parseFloat(st.fields['LIŠĆARI'] || 0);
+                        html += '<tr style="background: #fef3c7;">';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + (st.fields.datum || '') + '</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + (st.fields.odjel || '') + '</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + (st.fields.kupac || '-') + '</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + (st.fields.brojOtpremnice || '-') + '</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + qC.toFixed(2) + ' m³</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + qL.toFixed(2) + ' m³</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">' + (qC + qL).toFixed(2) + ' m³</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd; color: #92400e; font-weight: 600;">⏳ Čeka slanje</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd; text-align: center;">';
+                        html += '<button class="btn btn-secondary" onclick="discardQueuedOtprema(\'' + st.uuid + '\')">🗑️ Ukloni</button>';
+                        html += '</td>';
+                        html += '</tr>';
+                    }
 
                     for (var i = 0; i < data.unosi.length; i++) {
                         var unos = data.unosi[i];
@@ -12941,6 +13137,36 @@
                     } catch (error) {
                         showError('Greška', error.message);
                     }
+                }
+            );
+        }
+
+        // Ukloni unos iz lokalnog reda čekanja PRIJE nego što je poslan na
+        // server (npr. korisnik se predomislio ili je unos pogrešan) — nema
+        // šta brisati na serveru jer tamo još ne postoji, čisto lokalna
+        // operacija na localStorage redu.
+        function discardQueuedSjeca(uuid) {
+            showConfirmModal(
+                'Potvrda uklanjanja',
+                'Ukloniti ovaj unos iz reda za slanje? Podaci će biti izgubljeni.',
+                function() {
+                    var q = _loadQueue(_sjecaQueueKey()).filter(function(x) { return x.uuid !== uuid; });
+                    _saveQueue(_sjecaQueueKey(), q);
+                    if (window._tabRenderTime) delete window._tabRenderTime['my-sjece'];
+                    loadMySjece();
+                }
+            );
+        }
+
+        function discardQueuedOtprema(uuid) {
+            showConfirmModal(
+                'Potvrda uklanjanja',
+                'Ukloniti ovaj unos iz reda za slanje? Podaci će biti izgubljeni.',
+                function() {
+                    var q = _loadQueue(_otpremaQueueKey()).filter(function(x) { return x.uuid !== uuid; });
+                    _saveQueue(_otpremaQueueKey(), q);
+                    if (window._tabRenderTime) delete window._tabRenderTime['my-otpreme'];
+                    loadMyOtpreme();
                 }
             );
         }

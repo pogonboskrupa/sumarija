@@ -1510,6 +1510,25 @@ function handleOtpremacOdjeli(year, username, password, limit) {
 // 2. DATA INPUT HANDLERS
 // ========================================
 
+// Osiguraj UUID kolonu za idempotentne pokušaje slanja — frontend offline
+// red čekanja (submitSjeca/submitOtprema) retry-uje isti zahtjev dok ne
+// uspije; bez ovoga bi ponovni pokušaj poslije mrežnog kvara, čiji je PRVI
+// pokušaj ipak stigao do servera (odgovor se samo izgubio), duplicirao red.
+// Traži kolonu po IMENU u header redu (ne fiksnoj poziciji) da postojeći
+// sheet napravljen prije ove izmjene bude bezbjedno migriran — postojeći
+// redovi jednostavno nemaju UUID (prazno), što nikad ne matchuje stvaran
+// UUID pri dedup provjeri, pa se ne mogu lažno prepoznati kao duplikat.
+function _ensureUuidColumn(sheet) {
+  var lastCol = sheet.getLastColumn();
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var idx = headers.indexOf('UUID');
+  if (idx === -1) {
+    sheet.getRange(1, lastCol + 1).setValue('UUID');
+    idx = lastCol; // 0-based indeks novog (lastCol+1)-og stupca
+  }
+  return idx;
+}
+
 function handleAddSjeca(params) {
   try {
     // Autentikacija
@@ -1537,13 +1556,13 @@ function handleAddSjeca(params) {
     // Kreiraj PRIMAČ_UNOS sheet ako ne postoji
     if (!unosSheet) {
       unosSheet = ss.insertSheet("PRIMAČ_UNOS");
-      // Dodaj header red - ista struktura kao INDEKS_PRIMKA + STATUS + TIMESTAMP + IMAGE_URL
+      // Dodaj header red - ista struktura kao INDEKS_PRIMKA + STATUS + TIMESTAMP + IMAGE_URL + UUID
       const headers = ["DATUM", "RADNIK", "ODJEL", "RADILIŠTE", "IZVOĐAČ", "POSLOVOĐA",
                        "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
                        "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
                        "F/L L", "I L", "II L", "III L", "TRUPCI L",
                        "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L",
-                       "STATUS", "TIMESTAMP", "IMAGE_URL"];
+                       "STATUS", "TIMESTAMP", "IMAGE_URL", "UUID"];
       unosSheet.appendRow(headers);
 
       // Formatiraj header
@@ -1552,6 +1571,9 @@ function handleAddSjeca(params) {
       headerRange.setFontColor("white");
       headerRange.setFontWeight("bold");
     }
+
+    const uuidCol = _ensureUuidColumn(unosSheet);
+    const uuid = String(params.uuid || '').trim();
 
     // Pripremi red podataka - struktura kao INDEKS_PRIMKA
     const newRow = [
@@ -1576,13 +1598,33 @@ function handleAddSjeca(params) {
     const liscari = sortimentiValues[18];  // LIŠĆARI je na indeksu 18
     const ukupno = cetinari + liscari;
 
+    // Dedup — offline red čekanja na frontendu retry-uje isti zahtjev (isti
+    // UUID) ako mrežna greška izgubi odgovor prvog pokušaja iako je taj
+    // pokušaj ipak stigao do servera. Vraća uspjeh BEZ upisa novog reda —
+    // "ukupno" ovdje je matematički identičan onome što je već upisano jer
+    // je payload isti kao pri prvom pokušaju.
+    if (uuid) {
+      const existing = unosSheet.getDataRange().getValues();
+      for (let i = 1; i < existing.length; i++) {
+        if (String(existing[i][uuidCol] || '') === uuid) {
+          Logger.log('Sječa: duplikat UUID (retry), preskačem upis: ' + uuid);
+          return createJsonResponse({
+            success: true, duplicate: true,
+            message: "Sječa poslana rukovodiocu na pregled",
+            ukupno: ukupno
+          }, true);
+        }
+      }
+    }
+
     // Dodaj UKUPNO Č+L (Y)
     newRow.push(ukupno);
 
-    // Dodaj STATUS, TIMESTAMP i IMAGE_URL
+    // Dodaj STATUS, TIMESTAMP, IMAGE_URL i UUID
     newRow.push("PENDING");
     newRow.push(new Date());
     newRow.push(params.imageUrl || '');  // IMAGE_URL
+    newRow.push(uuid);
 
     // Dodaj red na kraj sheet-a
     unosSheet.appendRow(newRow);
@@ -1641,13 +1683,13 @@ function handleAddOtprema(params) {
     // Kreiraj OTPREMAČ_UNOS sheet ako ne postoji
     if (!unosSheet) {
       unosSheet = ss.insertSheet("OTPREMAČ_UNOS");
-      // Dodaj header red - ista struktura kao INDEKS_OTPREMA + BROJ_OTPREMNICE + STATUS + TIMESTAMP
+      // Dodaj header red - ista struktura kao INDEKS_OTPREMA + BROJ_OTPREMNICE + STATUS + TIMESTAMP + UUID
       const headers = ["DATUM", "OTPREMAČ", "KUPAC", "ODJEL", "RADILIŠTE", "IZVOĐAČ", "POSLOVOĐA",
                        "F/L Č", "I Č", "II Č", "III Č", "RD", "TRUPCI Č",
                        "CEL.DUGA", "CEL.CIJEPANA", "ŠKART", "Σ ČETINARI",
                        "F/L L", "I L", "II L", "III L", "TRUPCI L",
                        "OGR.DUGI", "OGR.CIJEPANI", "GULE", "LIŠĆARI", "UKUPNO Č+L",
-                       "BROJ_OTPREMNICE", "STATUS", "TIMESTAMP"];
+                       "BROJ_OTPREMNICE", "STATUS", "TIMESTAMP", "UUID"];
       unosSheet.appendRow(headers);
 
       // Formatiraj header
@@ -1656,6 +1698,9 @@ function handleAddOtprema(params) {
       headerRange.setFontColor("white");
       headerRange.setFontWeight("bold");
     }
+
+    const uuidCol = _ensureUuidColumn(unosSheet);
+    const uuid = String(params.uuid || '').trim();
 
     // Pripremi red podataka - struktura kao INDEKS_OTPREMA
     const newRow = [
@@ -1681,14 +1726,30 @@ function handleAddOtprema(params) {
     const liscari = sortimentiValues[18];  // LIŠĆARI je na indeksu 18
     const ukupno = cetinari + liscari;
 
+    // Dedup — vidi identičan komentar u handleAddSjeca.
+    if (uuid) {
+      const existing = unosSheet.getDataRange().getValues();
+      for (let i = 1; i < existing.length; i++) {
+        if (String(existing[i][uuidCol] || '') === uuid) {
+          Logger.log('Otprema: duplikat UUID (retry), preskačem upis: ' + uuid);
+          return createJsonResponse({
+            success: true, duplicate: true,
+            message: "Otprema poslana rukovodiocu na pregled",
+            ukupno: ukupno
+          }, true);
+        }
+      }
+    }
+
     // Dodaj UKUPNO Č+L (Z)
     newRow.push(ukupno);
 
-    // Dodaj BROJ_OTPREMNICE, STATUS, TIMESTAMP i IMAGE_URL
+    // Dodaj BROJ_OTPREMNICE, STATUS, TIMESTAMP, IMAGE_URL i UUID
     newRow.push(params.brojOtpremnice || '');
     newRow.push("PENDING");
     newRow.push(new Date());
     newRow.push(params.imageUrl || '');  // IMAGE_URL
+    newRow.push(uuid);
 
     // Dodaj red na kraj sheet-a
     unosSheet.appendRow(newRow);
@@ -1998,7 +2059,7 @@ function handleMyPending(username, password, tip) {
         headers.forEach((header, idx) => {
           if (header !== 'ODJEL' && header !== 'DATUM' && header !== 'PRIMAČ' &&
               header !== 'OTPREMAČ' && header !== 'KUPAC' && header !== 'BROJ_OTPREMNICE' && header !== 'STATUS' &&
-              header !== 'TIMESTAMP' && header !== 'ROW_ID' && header !== 'SVEUKUPNO') {
+              header !== 'TIMESTAMP' && header !== 'ROW_ID' && header !== 'SVEUKUPNO' && header !== 'UUID') {
             unos.sortimenti[header] = row[idx] || 0;
           }
         });
