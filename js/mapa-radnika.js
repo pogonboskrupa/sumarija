@@ -2877,7 +2877,7 @@
         _hideTragoviMenu();
         _openTragRecordingModal();
         _setRecBarLabel('🎨 Odjel ' + (_sjeceOdjelLabel || '?'));
-        _sjekWakeLockOn();
+        _recWakeLockOn();
     }
 
     function _onSjekPosition(pos) {
@@ -2952,7 +2952,7 @@
         _sjekRecording = false;
         _sjekPaused = false;
         _closeTragRecordingModal();
-        _sjekWakeLockOff();
+        _recWakeLockOff();
         if (_sjekDrawLayer) { _map.removeLayer(_sjekDrawLayer); _sjekDrawLayer = null; }
 
         var latlngs = _sjekPoints.map(function(p) { return p.ll; });
@@ -3021,17 +3021,20 @@
     }
 
     // Ekran se gasi => GPS staje. Progresivno: gdje postoji Wake Lock API,
-    // drži ekran budnim dok traje snimanje.
-    var _sjekWakeLock = null;
-    function _sjekWakeLockOn() {
+    // drži ekran budnim dok traje snimanje. Dijeljeno između OBA snimanja
+    // (obični trag i ofarbana sjekačka linija, vidi _recAktivno) — nikad oba
+    // istovremeno (_toggleTrag odbija drugo dok je jedno u toku), pa je jedan
+    // dijeljen wake lock siguran.
+    var _recWakeLock = null;
+    function _recWakeLockOn() {
         try {
             if (navigator.wakeLock && navigator.wakeLock.request) {
-                navigator.wakeLock.request('screen').then(function(wl) { _sjekWakeLock = wl; }).catch(function() {});
+                navigator.wakeLock.request('screen').then(function(wl) { _recWakeLock = wl; }).catch(function() {});
             }
         } catch (_) {}
     }
-    function _sjekWakeLockOff() {
-        try { if (_sjekWakeLock) { _sjekWakeLock.release(); _sjekWakeLock = null; } } catch (_) {}
+    function _recWakeLockOff() {
+        try { if (_recWakeLock) { _recWakeLock.release(); _recWakeLock = null; } } catch (_) {}
     }
 
     window.mapaRadnikaDeleteOfarbana = function(index) {
@@ -3738,6 +3741,7 @@
         _gpsUnsubscribe('trag');
         _recording = false;
         _tragPaused = false;
+        _recWakeLockOff();
         _closeTragRecordingModal();
         if (_tragBtnEl) {
             _tragBtnEl.textContent = '⏺️ Snimi trag';
@@ -3771,12 +3775,14 @@
         }
         _hideTragoviMenu(); // traka snimanja sjeda tačno na mjesto gdje stoji ovaj meni
         _openTragRecordingModal();
+        _recWakeLockOn();
     }
 
     function _stopTrag() {
         _gpsUnsubscribe('trag');
         _recording = false;
         _tragPaused = false;
+        _recWakeLockOff();
         if (_tragBtnEl) {
             _tragBtnEl.textContent = '⏺️ Snimi trag';
             _tragBtnEl.classList.remove('recording');
