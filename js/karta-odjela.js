@@ -491,10 +491,16 @@
   // KLJUČNO: getBoundsZoom zavisi od TRENUTNE veličine ekrana mape
   // (_map.getSize()) — ako se pozove prije nego što je kontejner dobio
   // svoju konačnu vidljivu veličinu (npr. odmah nakon otvaranja taba, prije
-  // layout/reflow-a), izračuna preusko ograničenje i "zaključa" korisnika
-  // na preveliki zum. Zato se poziva i na svaki 'resize' event (Leaflet ga
-  // sam emituje iz invalidateSize() kad primijeti promjenu veličine), ne
-  // samo jednom pri učitavanju podataka.
+  // layout/reflow-a), izračuna preusko ograničenje. Zato se poziva JEDNOM
+  // odmah pri renderovanju i JOŠ JEDNOM ~100ms kasnije (nakon invalidateSize)
+  // kao sigurnosna mreža za tu tačku u vremenu.
+  //
+  // NAMJERNO se NE poziva na Leaflet-ov 'resize' event trajno (probano i
+  // uklonjeno) — setMaxBounds/setMinZoom odmah prisilno vraćaju kartu u
+  // granice/zum, a na telefonu se 'resize' okida vrlo često dok korisnik
+  // panuje (adresna traka browsera se sklanja/vraća pri skrolanju), pa bi
+  // svaki takav event prekinuo aktivno povlačenje prstom — korisnik je to
+  // doživljavao kao da mapu uopšte ne može skrolati.
   function _applyKartaMaxBounds() {
     if (!_map || !_mapBounds || !_mapBounds.isValid()) return;
     const padded = _padBoundsKm(_mapBounds, 20);
@@ -2163,12 +2169,6 @@
       // Zoom-responsive labeli
       _map.on('zoomend', _updateLabelSizes);
       _updateLabelSizes();
-
-      // Ponovo izračunaj minZoom/maxBounds kad Leaflet detektuje stvarnu
-      // promjenu veličine kontejnera (invalidateSize) — vidi komentar uz
-      // _applyKartaMaxBounds zašto se ne može osloniti samo na jedan poziv
-      // pri učitavanju podataka.
-      _map.on('resize', _applyKartaMaxBounds);
 
       // Feromonske klopke — klik na prazan prostor mape dok je pick mod
       // aktivan (klik NA poligon se hvata u onEachFeature ispod, jer bi
