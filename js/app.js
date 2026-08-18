@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.8.3';
+        const APP_VERSION = '1.8.4';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -12628,7 +12628,7 @@
 
                     for (var i = 0; i < data.unosi.length; i++) {
                         var unos = data.unosi[i];
-                        var cetinari = parseFloat(unos.sortimenti['ČETINARI'] || 0);
+                        var cetinari = parseFloat(unos.sortimenti['Σ ČETINARI'] || 0);
                         var liscari = parseFloat(unos.sortimenti['LIŠĆARI'] || 0);
                         var ukupno = cetinari + liscari;
 
@@ -12729,7 +12729,7 @@
 
                     for (var i = 0; i < data.unosi.length; i++) {
                         var unos = data.unosi[i];
-                        var cetinari = parseFloat(unos.sortimenti['ČETINARI'] || 0);
+                        var cetinari = parseFloat(unos.sortimenti['Σ ČETINARI'] || 0);
                         var liscari = parseFloat(unos.sortimenti['LIŠĆARI'] || 0);
                         var ukupno = cetinari + liscari;
 
