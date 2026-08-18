@@ -209,6 +209,11 @@ function doGet(e) {
       return handleGetKlopkeOcitanja(e.parameter.username, e.parameter.password, e.parameter.odjel);
     } else if (path === 'delete-klopka-ocitanje') {
       return handleDeleteKlopkaOcitanje(e.parameter);
+    } else if (path === 'set-zavrsena-realizacija') {
+      // ✅ Ručno označavanje odjela kao "završena realizacija" (override statusa)
+      return handleSetZavrsenaRealizacija(e.parameter);
+    } else if (path === 'get-zavrsena-realizacija') {
+      return handleGetZavrsenaRealizacija(e.parameter.username, e.parameter.password, e.parameter.godina);
     }
 
     Logger.log('Unknown path: ' + path);

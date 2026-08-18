@@ -48,7 +48,14 @@
   let _sumarijaMark = null;
   let _currentLatlng     = null;
   let _currentOdjelLabel = null;
+  let _currentModalGj    = null; // info.gj/info.odjel otvorenog modala — vidi oznaciZavrsenaRealizacija
+  let _currentModalOdjel = null;
+  let _currentModalProps = null; // GeoJSON feature.properties otvorenog modala — da se modal može ponovo iscrtati poslije togglea
+  let _currentModalExtra = null;
   let _stanjeMap         = null; // normKey → puni odjel objekat iz handleStanjeZaliha (vidi _getStanjeMap)
+  let _zavrseniMap       = null; // normKey → { zavrseno, korisnik, datum } — ručni override statusa (vidi _getZavrseniMap)
+  let _lastPrimke        = null; // zadnje učitane primke/otpreme — za rebuild _statusMap poslije togglea bez ponovnog fetch-a
+  let _lastOtpreme       = null;
   let _odjelRutaMode = false;    // da li je aktivan režim rute između odjela
   let _odjelRutaFrom = null;     // { latlng, label }
   let _odjelRutaFromMark = null;
@@ -195,6 +202,7 @@
     const map            = new Map();
     _slucajniSet         = new Set();
     const stanjeMap      = _getStanjeMap(); // Stanje zaliha — projektovana masa, vidi _projektovanaMasa
+    const zavrseniMap    = _getZavrseniMap(); // Ručni override — vidi _prefetchZavrseniOdjeli
 
     const primkeTekuce  = (primke||[]).filter(p => _getYear(p) === PLAN_YEAR);
     const primkeOstale  = (primke||[]).filter(p => _getYear(p) !== PLAN_YEAR);
@@ -312,9 +320,17 @@
       const projMasa  = _projektovanaMasa(stanjeMap, entry.gj, entry.odjel);
       const ciljMasa  = projMasa != null ? projMasa : entry.neto;
       const masaIzvor = projMasa != null ? 'stanje-zaliha' : 'plan';
-      const pct    = ciljMasa > 0 ? sjeca.ukupno / ciljMasa * 100 : 0;
-      const status = pct >= 95 ? 'posjeceno' : pct > 5 ? 'u-sjeci' : 'planirano';
-      const entryData = { gj:entry.gj, odjel:entry.odjel, status, pct, sjeca, otpr, sjecaOst, otprOst, neto:entry.neto, bruto:entry.bruto, ciljMasa, masaIzvor, radiliste, izvodjac, poslovodja, datumPocetka, datumKraja };
+      const pct = ciljMasa > 0 ? sjeca.ukupno / ciljMasa * 100 : 0;
+      let status = pct >= 95 ? 'posjeceno' : pct > 5 ? 'u-sjeci' : 'planirano';
+
+      // Ručni override — vidi _prefetchZavrseniOdjeli/_getZavrseniMap. Neki
+      // odjeli nikad ne dostignu 95% (teren, procjena bila preoptimistična),
+      // pa admin može ručno potvrditi da je posao na terenu gotov.
+      const zOverride = zavrseniMap && zavrseniMap.get(key);
+      const rucnoZavrseno = !!(zOverride && zOverride.zavrseno);
+      if (rucnoZavrseno) status = 'posjeceno';
+
+      const entryData = { gj:entry.gj, odjel:entry.odjel, status, pct, sjeca, otpr, sjecaOst, otprOst, neto:entry.neto, bruto:entry.bruto, ciljMasa, masaIzvor, radiliste, izvodjac, poslovodja, datumPocetka, datumKraja, rucnoZavrseno, rucnoZavrsenoOd:zOverride||null };
 
       if (status === 'u-sjeci') _kpiUSjeci++;
       else if (status === 'posjeceno') _kpiPosjeceno++;
@@ -663,6 +679,41 @@
     return (!isNaN(v) && v > 0) ? v : null;
   }
 
+  // Ručni override statusa — neki odjeli nikad ne dostignu 95% projektovane
+  // mase (teren, procjena bila preoptimistična, itd.), pa automatski status
+  // ostaje "u sječi" iako je posao na terenu stvarno gotov. Admin u modalu
+  // odjela može ručno označiti "Završena realizacija" (checkbox); ta oznaka
+  // se čuva na serveru (ZAVRSENI_ODJELI sheet, po odjelu+godini) da je vide
+  // svi, ne samo lokalni uređaj. Vraća Map(normKey → { zavrseno, korisnik,
+  // datum }) sa SAMO aktivno označenim odjelima (zavrseno===true) — odjeli
+  // bez oznake ili sa uklonjenom oznakom jednostavno nisu u mapi.
+  async function _prefetchZavrseniOdjeli(force) {
+    try {
+      if (typeof buildApiUrl !== 'function' || typeof fetchWithCache !== 'function') return;
+      await fetchWithCache(buildApiUrl('get-zavrsena-realizacija', { godina: PLAN_YEAR }), 'cache_zavrsena_realizacija', force || false, 180000);
+    } catch (e) {
+      console.warn('[Mapa] zavrsena-realizacija failed:', e.message);
+    }
+  }
+
+  function _getZavrseniMap() {
+    if (_zavrseniMap) return _zavrseniMap;
+    try {
+      const raw = localStorage.getItem('cache_zavrsena_realizacija');
+      if (!raw) return null;
+      const wrapper = JSON.parse(raw);
+      const payload = wrapper && wrapper.data;
+      const odjeli = (payload && payload.odjeli) || [];
+      if (!Array.isArray(odjeli) || !odjeli.length) return null;
+      _zavrseniMap = new Map();
+      odjeli.forEach(o => {
+        if (!o.zavrseno) return;
+        _zavrseniMap.set(_normKey((o.gj||'') + ' ' + (o.odjel||'')), o);
+      });
+    } catch(_) {}
+    return _zavrseniMap || null;
+  }
+
   // ---- DETALJI MODAL ----
   function _openDetaljiModal(props, info, latlng, extra) {
     _currentLatlng     = latlng;
@@ -670,6 +721,14 @@
     _currentOdjelLabel = String(props.odjel || props.name || (info && info.odjel) || '?');
     const odjel  = _currentOdjelLabel;
     const gj     = props.gj   || '—';
+    // Za ručni override (oznaciZavrsenaRealizacija) MORA se koristiti isti
+    // gj/odjel par koji je _buildStatusMap koristio za ključ statusMap-a
+    // (info.gj/info.odjel), ne props.gj/props.odjel (sirovi GeoJSON) — inače
+    // toggle piše pod ključem koji se ne poklapa sa onim što status čita.
+    _currentModalGj    = info ? info.gj    : null;
+    _currentModalOdjel = info ? info.odjel : null;
+    _currentModalProps = props;
+    _currentModalExtra = extra;
     const odsjek = props.odsjek || '—';
     // Pozadina GJ značke u modalu — boja GJ iz configa, prozirno (25%).
     const gjBg = _gjBadgeBg(gj);
@@ -960,6 +1019,19 @@
           </div>
         </div>
 
+        <div style="background:${info.rucnoZavrseno?'#f0fdf4':'#fffbeb'};border:1px solid ${info.rucnoZavrseno?'#bbf7d0':'#fde68a'};border-radius:10px;padding:10px 12px;margin-bottom:10px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="checkbox" id="mapa-modal-zavrseno-checkbox" ${info.rucnoZavrseno?'checked':''} onchange="oznaciZavrsenaRealizacija(this.checked)" style="width:18px;height:18px;cursor:pointer;flex-shrink:0;" />
+            <span style="font-size:13px;font-weight:600;color:#374151;">✅ Završena realizacija (ručno)</span>
+          </label>
+          <div style="font-size:11px;color:#6b7280;margin-top:4px;margin-left:26px;">
+            ${info.rucnoZavrseno
+              ? 'Ručno označeno kao gotovo' + (info.rucnoZavrsenoOd && info.rucnoZavrsenoOd.korisnik ? ' — ' + escapeHtml(info.rucnoZavrsenoOd.korisnik) + (info.rucnoZavrsenoOd.datum ? ' (' + escapeHtml(info.rucnoZavrsenoOd.datum) + ')' : '') : '')
+              : 'Ako odjel neće dostići projektovanu masu (teren, procjena), a posao je stvarno gotov, označite ovdje.'}
+          </div>
+          <div id="mapa-modal-zavrseno-status" style="font-size:11px;margin-top:4px;margin-left:26px;display:none;"></div>
+        </div>
+
         ${s === 'posjeceno' && info.datumPocetka ? `
         <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;gap:6px;">
           <div style="background:white;border-radius:7px;padding:4px 8px;text-align:center;flex:1;border:1px solid #bbf7d0;">
@@ -1047,6 +1119,54 @@
 
   window.closeMapaModal = function() {
     document.getElementById('mapa-modal').style.display = 'none';
+  };
+
+  // Ručno označavanje/uklanjanje "Završena realizacija" — vidi komentar uz
+  // _getZavrseniMap. Šalje se pod info.gj/info.odjel (isti ključ kao
+  // _buildStatusMap, vidi _currentModalGj), NE sirovi GeoJSON props.gj/odjel.
+  window.oznaciZavrsenaRealizacija = async function(checked) {
+    const gj = _currentModalGj, odjel = _currentModalOdjel;
+    const checkboxEl = document.getElementById('mapa-modal-zavrseno-checkbox');
+    const statusEl   = document.getElementById('mapa-modal-zavrseno-status');
+    if (!gj || !odjel) return;
+
+    if (statusEl) { statusEl.textContent = '⏳ Čuvam...'; statusEl.style.color = '#6b7280'; statusEl.style.display = 'block'; }
+    if (checkboxEl) checkboxEl.disabled = true;
+
+    try {
+      const url = buildApiUrl('set-zavrsena-realizacija', {
+        odjelKey: _normKey(gj + ' ' + odjel), gj, odjel, godina: PLAN_YEAR, zavrseno: checked
+      });
+      const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
+      const data = await r.json();
+      if (!data || data.success !== true) throw new Error((data && data.error) || 'Greška');
+
+      // Osvježi keš, ponovo izgradi status mapu (bez punog re-fetch-a primki/
+      // otprema — koriste se zadnje učitane, vidi _lastPrimke/_lastOtpreme) i
+      // ponovo iscrtaj poligone da promjena boje bude odmah vidljiva na mapi.
+      await _prefetchZavrseniOdjeli(true);
+      _zavrseniMap = null;
+      if (_lastPrimke) {
+        _statusMap = _buildStatusMap(_lastPrimke, _lastOtpreme);
+        _renderLayer(_geojson, _statusMap);
+        _renderKpiBar();
+        _renderLegendCounts();
+      }
+
+      // Ponovo otvori isti modal da prikaže osvježen status/napomenu (isti
+      // props/extra kao prije, ali svjež info iz nove _statusMap).
+      if (_currentModalProps) {
+        const key = _normKey(gj + ' ' + odjel);
+        _openDetaljiModal(_currentModalProps, _statusMap.get(key), _currentLatlng, _currentModalExtra);
+      }
+    } catch (err) {
+      if (checkboxEl) { checkboxEl.checked = !checked; checkboxEl.disabled = false; }
+      if (statusEl) {
+        statusEl.textContent = '❌ ' + ((err && err.message) || 'Greška pri slanju');
+        statusEl.style.color = '#dc2626';
+        statusEl.style.display = 'block';
+      }
+    }
   };
 
   // ---- FOKUS MODE ----
@@ -2148,13 +2268,17 @@
       _loadArr('primke',  CACHE_SJECA, 'primke',  force),
       _loadArr('otpreme', CACHE_OTPR,  'otpreme', force),
       _prefetchStanjeZaliha(force),
+      _prefetchZavrseniOdjeli(force),
     ]);
+    _lastPrimke  = primke;
+    _lastOtpreme = otpreme;
 
-    // Resetuj memoizovani _stanjeMap da _getStanjeMap() (poziva ga
-    // _buildStatusMap niže) ponovo pročita localStorage — _prefetchStanjeZaliha
-    // gore je upravo mogao osvježiti cache_stanje_zaliha, stari memoizovan
-    // Map bi inače sakrio svježe podatke do sljedećeg punog reloada stranice.
-    _stanjeMap = null;
+    // Resetuj memoizovane mape da _getStanjeMap()/_getZavrseniMap() (poziva ih
+    // _buildStatusMap niže) ponovo pročitaju localStorage — prefetch pozivi
+    // gore su upravo mogli osvježiti keš, stari memoizovan Map bi inače
+    // sakrio svježe podatke do sljedećeg punog reloada stranice.
+    _stanjeMap   = null;
+    _zavrseniMap = null;
     _statusMap = _buildStatusMap(primke, otpreme);
     _renderLayer(geojson, _statusMap);
     _renderKpiBar();
