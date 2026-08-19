@@ -16,15 +16,17 @@ const ADMIN_USERNAME = 'admin';
 const ADMIN_PASSWORD = 'admin';
 
 // Cache TTL (Time To Live) - vrijeme zadržavanja podataka u kešu
-// 10 minuta (bilo 3) — korisnik potvrdio da svježina agregatnih pogleda
-// (dnevni/mjesečni zbirovi, pregled po odjelima, itd.) za primača/otpremača
-// nije kritična; targetna invalidacija (invalidateCacheZa u services.gs) i
-// dalje odmah čisti pogled koji je upravo izmijenjen unosom sječe/otpreme,
-// pa produžen TTL utiče samo na NEZAVISNE posmatrače (drugi korisnici koji
-// gledaju, ne mijenjaju). Duži TTL = rjeđi hladni startovi cijelog 26-pogled
-// preloada (na svake 3 min → na svakih 10 min), što direktno smanjuje broj
-// 404 grešaka od prekoračenja limita istovremenih Apps Script izvršavanja.
-const CACHE_TTL = 600;
+// 35 minuta — MORA biti duže od intervala triggera zagrijKeseve()
+// (utils-triggers.gs, svakih 30 min) da keš nikad ne istekne PRIJE nego
+// trigger stigne da ga ponovo zagrije; 5 min margine za slučaj da trigger
+// kasni. Korisnik potvrdio da svježina agregatnih pogleda (dnevni/mjesečni
+// zbirovi, pregled po odjelima, itd.) za primača/otpremača nije kritična;
+// targetna invalidacija (invalidateCacheZa u services.gs) i dalje odmah
+// čisti pogled koji je upravo izmijenjen unosom sječe/otpreme, pa dug TTL
+// utiče samo na NEZAVISNE posmatrače (drugi korisnici koji gledaju, ne
+// mijenjaju). Ako se interval triggera ikad promijeni, ovaj TTL mora rasti
+// s njim (isto tako i obrnuto).
+const CACHE_TTL = 2100;
 
 // ========================================
 // 📊 BAZA PODATAKA - Struktura kolona

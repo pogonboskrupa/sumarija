@@ -208,7 +208,7 @@ function zagrijKeseve() {
 }
 
 /**
- * Setup triggera za zagrijavanje keša — poziva se svakih 15 min tokom cijelog
+ * Setup triggera za zagrijavanje keša — poziva se svakih 30 min tokom cijelog
  * dana, ali zagrijKeseve() interno preskače sve van radnog prozora (pon-pet
  * 07-14h), pa izvan tog prozora ne troši ništa (samo provjeru datuma).
  * POKRENI RUČNO JEDNOM u Apps Script editoru nakon deploya ove verzije.
@@ -224,10 +224,10 @@ function setupZagrijavanjeKesevaTrigger() {
 
   ScriptApp.newTrigger('zagrijKeseve')
     .timeBased()
-    .everyMinutes(15)
+    .everyMinutes(30)
     .create();
 
-  Logger.log('Kreiran trigger za zagrijKeseve (svakih 15 min, aktivan samo pon-pet 07-14h)');
+  Logger.log('Kreiran trigger za zagrijKeseve (svakih 30 min, aktivan samo pon-pet 07-14h)');
 
   // Odmah izvrši prvi put (ako je trenutno u radnom prozoru)
   zagrijKeseve();
