@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.8.6';
+        const APP_VERSION = '1.8.7';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -700,13 +700,16 @@
             // percipirano čekanje, samo daje sporom ali radnom odgovoru
             // više vremena da stigne prije nego se odustane).
             //
-            // Isto tako: 1 pokušaj (bez retry-a) je bio prestrog — jedan
-            // spor odgovor je odmah značio "sve retry-e iscrpljene" i pad na
-            // stari keš. Sad se i uz postojeći keš kao sigurnosnu mrežu
-            // pokuša još jednom prije odustajanja.
+            // Broj pokušaja uz postojeći keš NAMJERNO ostaje 1: kad backend
+            // posustane, on ne visi nego ODBIJA dio zahtjeva (HTML greška
+            // umjesto JSON-a — vidi komentar o paralelizmu u preloadAllViews).
+            // Retry u tom stanju samo dodaje opterećenje sistemu koji je već
+            // preopterećen, a korisnik ionako odmah vidi keširane podatke.
+            // Bez keša se i dalje pokušava dvaput — tada nema šta drugo
+            // prikazati, pa se isplati insistirati.
             const hasSafetyNet = !!cached;
             const effectiveTimeout = hasSafetyNet ? Math.min(timeout, 30000) : timeout;
-            const MAX_RETRIES = 2;
+            const MAX_RETRIES = hasSafetyNet ? 1 : 2;
             let lastError = null;
 
             for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -1374,7 +1377,16 @@
 
                 const failedViews = [];
 
-                // OPTIMIZIRANO UČITAVANJE - max 8 paralelnih poziva
+                // PARALELIZAM: 4 (bilo 8). Apps Script ima ograničen broj
+                // istovremenih izvršavanja po korisniku — kad se prekorači, dio
+                // zahtjeva NE vrati JSON nego HTML stranicu greške (u konzoli:
+                // "404 (Not Found)" na script.googleusercontent.com/macros/echo
+                // + "SyntaxError: Unexpected token '<', "<!DOCTYPE"). To NIJE
+                // spor server nego odbijen zahtjev, pa ga duži timeout ne
+                // rješava — jedino manje istovremenih poziva. Sa 8 slotova je
+                // login burst (26 prikaza + manifest + sync + pending badge +
+                // radilišta) rutinski obarao dio poziva; sa 4 preload traje
+                // nešto duže ali prolazi u cjelini.
                 await processQueue(allViews, async (view) => {
                     const ok = await _loadOneView(view);
                     totalLoaded++;
@@ -1388,13 +1400,15 @@
                         if (msgEl) msgEl.textContent = `${totalLoaded} / ${totalViews} prikaza`;
                     }
                     return { success: ok, name: view.name };
-                }, 8); // Max 8 paralelnih poziva
+                }, 4); // Max 4 paralelna poziva — vidi komentar ispod
 
-                // RETRY neuspjelih — blago paralelno (4 istovremeno). Batch je upravo stao pa je
-                // mreža/GAS mirniji, a paralelizam (umjesto strogo sekvencijalnog) sprječava da
-                // veći broj neuspjelih stavki predugo čeka red kad ih ima puno (npr. 16/28).
+                // RETRY neuspjelih — blago paralelno (2 istovremeno, bilo 4). Batch je upravo
+                // stao pa je mreža/GAS mirniji, a paralelizam (umjesto strogo sekvencijalnog)
+                // sprječava da veći broj neuspjelih stavki predugo čeka red kad ih ima puno.
+                // Namjerno UŽE od glavnog prolaza: ako je glavni prolaz nešto oborio, backend
+                // je već bio na granici — retry ga ne smije ponovo zatrpati.
                 if (failedViews.length) {
-                    console.log(`[PRELOAD] Retry ${failedViews.length} neuspjelih prikaza (paralelno, max 4)...`);
+                    console.log(`[PRELOAD] Retry ${failedViews.length} neuspjelih prikaza (paralelno, max 2)...`);
                     if (!silent && progressToast) {
                         const msgEl = progressToast.querySelector('.toast-message');
                         if (msgEl) msgEl.textContent = `Ponovni pokušaj (${failedViews.length})...`;
@@ -1408,7 +1422,7 @@
                             stillFailed.push(view);
                         }
                         return ok;
-                    }, 4);
+                    }, 2);
                     failedViews.length = 0;
                     failedViews.push(...stillFailed);
                 }
@@ -11651,6 +11665,17 @@
                 const year = new Date().getFullYear();
                 const url = buildApiUrl('pending-unosi', { year });
                 const response = await fetch(url);
+                // Apps Script pod opterećenjem zna vratiti HTML stranicu greške
+                // umjesto JSON-a (vidi komentar o paralelizmu u preloadAllViews).
+                // Bez ove provjere response.json() baci SyntaxError ("Unexpected
+                // token '<'") koji je u konzoli izgledao kao prava greška, a radi
+                // se samo o tome da značka ostane na staroj vrijednosti do
+                // sljedeće provjere — bezopasno, ne treba galamiti.
+                const ct = response.headers.get('content-type') || '';
+                if (!response.ok || !ct.includes('application/json')) {
+                    console.warn('[PENDING] Server nije vratio JSON (vjerovatno preopterećen) — značka ostaje nepromijenjena.');
+                    return;
+                }
                 const data = await response.json();
 
                 if (data.success && data.unosi) {
