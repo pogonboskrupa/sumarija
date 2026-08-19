@@ -3511,12 +3511,11 @@
             <div id="karta-odjela-content" class="hidden">
                 <!-- Header + filteri u padded wrapperu -->
                 <div style="padding:16px 20px 0;">
-                    <div id="karta-page-header" class="page-header" style="margin-bottom:12px;">
+                    <div id="karta-page-header" class="page-header" style="margin-bottom:12px;flex-wrap:nowrap;align-items:center;">
                         <div class="page-header-left">
-                            <h1>🗺️ Mapa odjela 2026</h1>
-                            <p>Prostorni prikaz odjela po statusu realizacije plana sječe</p>
+                            <h1 style="margin-bottom:0;">🗺️ Mapa odjela 2026</h1>
                         </div>
-                        <div class="page-header-right" style="display:flex;align-items:center;gap:10px;">
+                        <div class="page-header-right" style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
                             <!-- "Odjela u sječi" — premješteno ovdje iz KPI trake (korisnički
                                  zahtjev), popunjava _renderKpiBar() (js/karta-odjela.js). -->
                             <span id="karta-header-usjeci-badge" class="karta-header-badge hidden"></span>
