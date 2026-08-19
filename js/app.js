@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.8.5';
+        const APP_VERSION = '1.8.6';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -173,7 +173,13 @@
             try {
                 const url = buildApiUrl('manifest');
                 const response = await fetch(url, {
-                    signal: AbortSignal.timeout(10000) // 10s timeout za manifest
+                    // 20s (bilo 10s) — teren backend (Apps Script) je znao
+                    // odgovoriti tek za 5-10s i pod normalnim opterećenjem,
+                    // pa je 10s prečesto isticao prije nego što je odgovor
+                    // uopšte stigao (korisnik prijavio "Manifest check failed:
+                    // TimeoutError" uz istovremena spora ali USPJEŠNA API
+                    // pozive od 5+ sekundi u istom logu).
+                    signal: AbortSignal.timeout(20000)
                 });
                 const manifest = await response.json();
 
@@ -683,12 +689,24 @@
             // skraćenja korisnik gleda "Učitavam podatke" ili prazan ekran po nekoliko
             // minuta umjesto da odmah vidi keširane podatke. Bez keša nema mreže za pasti
             // nazad, pa se tada čeka pun timeout — jedina šansa da se stvarno dobiju podaci.
-            // 20s je dovoljno za legitimno spore (ali funkcionalne) GAS upite na dobroj
-            // vezi — original timeout od 120-180s postoji za istinski hladan start bez
-            // ikakvog keša, ne za "osvježi u pozadini dok već imam nešto za prikazati".
+            // 30s (bilo 20s) — korisnik prijavio da backend (Apps Script) pod
+            // stvarnim opterećenjem legitimno odgovara za 5-20s (ne visi,
+            // samo je spor), pa je 20s prečesto isticalo prije nego što je
+            // odgovor uopšte stigao i pucalo pravo na keš star i preko sat
+            // vremena. Original timeout od 120-180s postoji za istinski
+            // hladan start bez ikakvog keša, ne za "osvježi u pozadini dok
+            // već imam nešto za prikazati" (korisnik i dalje vidi stari keš
+            // dok ovo traje u pozadini — duži timeout ovdje ne produžuje
+            // percipirano čekanje, samo daje sporom ali radnom odgovoru
+            // više vremena da stigne prije nego se odustane).
+            //
+            // Isto tako: 1 pokušaj (bez retry-a) je bio prestrog — jedan
+            // spor odgovor je odmah značio "sve retry-e iscrpljene" i pad na
+            // stari keš. Sad se i uz postojeći keš kao sigurnosnu mrežu
+            // pokuša još jednom prije odustajanja.
             const hasSafetyNet = !!cached;
-            const effectiveTimeout = hasSafetyNet ? Math.min(timeout, 20000) : timeout;
-            const MAX_RETRIES = hasSafetyNet ? 1 : 2;
+            const effectiveTimeout = hasSafetyNet ? Math.min(timeout, 30000) : timeout;
+            const MAX_RETRIES = 2;
             let lastError = null;
 
             for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
