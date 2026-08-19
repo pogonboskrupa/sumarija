@@ -1009,11 +1009,6 @@
           <span style="background:${statusBg[s]};color:${statusColor[s]};padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;align-self:flex-start;">${statusLabel[s]||s}</span>
         </div>
 
-        ${info.autoZavrseno ? `
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#166534;">
-          ⏱️ Automatski označeno kao završeno — nema sječe ${info.danaNeaktivnosti} dana (${_fmtDatum(info.datumKraja)}). Nastavak sječe vraća odjel na "U sječi".
-        </div>` : ''}
-
         ${projekatSection}
 
         <div style="background:#f8fafc;border-radius:10px;padding:10px 12px;margin-bottom:10px;">
