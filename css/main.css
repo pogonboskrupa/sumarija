@@ -42,6 +42,15 @@
            stoji desno, u istom redu sa naslovom. */
         .header-right { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
 
+        /* Napredak pozadinskog preload-a — vidi komentar uz #header-preload-indicator
+           u index.html. Kompaktna značka umjesto punog toasta, da ne prekriva
+           traku tabova ispod zaglavlja. */
+        .header-preload-indicator {
+            font-size: 12px; font-weight: 600; color: #4b5563;
+            background: #f3f4f6; border-radius: 999px; padding: 5px 11px;
+            white-space: nowrap; flex-shrink: 0;
+        }
+
         /* Korisnik umjesto nekadašnjih Desktop/Android dugmadi: krug sa
            inicijalima + ime i prezime, uloga ispod. */
         .header-user {

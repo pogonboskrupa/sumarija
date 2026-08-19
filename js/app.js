@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.8.7';
+        const APP_VERSION = '1.8.8';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1336,10 +1336,13 @@
                     return;
                 }
 
-                // Progress toast - ostaje vidljiv tokom učitavanja (duration=0 = ne briše se automatski)
-                let progressToast = null;
-                if (!silent) {
-                    progressToast = showInfo('⚡ Učitavanje...', `0 / ${totalViews} prikaza`, 0);
+                // Napredak preloada — kompaktna značka u zaglavlju (lijevo od "Ažuriraj"),
+                // NE opšti toast (gore desno) koji je znao prekriti traku tabova.
+                const preloadIndicator = !silent ? document.getElementById('header-preload-indicator') : null;
+                const preloadCountEl = !silent ? document.getElementById('header-preload-count') : null;
+                if (preloadIndicator) {
+                    if (preloadCountEl) preloadCountEl.textContent = `0 / ${totalViews}`;
+                    preloadIndicator.classList.remove('hidden');
                 }
 
                 console.log(`[PRELOAD] Starting preload of ${totalViews} views (silent=${silent})...`);
@@ -1395,10 +1398,7 @@
                     } else {
                         failedViews.push(view);
                     }
-                    if (!silent && progressToast) {
-                        const msgEl = progressToast.querySelector('.toast-message');
-                        if (msgEl) msgEl.textContent = `${totalLoaded} / ${totalViews} prikaza`;
-                    }
+                    if (preloadCountEl) preloadCountEl.textContent = `${totalLoaded} / ${totalViews}`;
                     return { success: ok, name: view.name };
                 }, 4); // Max 4 paralelna poziva — vidi komentar ispod
 
@@ -1409,10 +1409,7 @@
                 // je već bio na granici — retry ga ne smije ponovo zatrpati.
                 if (failedViews.length) {
                     console.log(`[PRELOAD] Retry ${failedViews.length} neuspjelih prikaza (paralelno, max 2)...`);
-                    if (!silent && progressToast) {
-                        const msgEl = progressToast.querySelector('.toast-message');
-                        if (msgEl) msgEl.textContent = `Ponovni pokušaj (${failedViews.length})...`;
-                    }
+                    if (preloadCountEl) preloadCountEl.textContent = `Ponovni pokušaj (${failedViews.length})...`;
                     const stillFailed = [];
                     await processQueue(failedViews.slice(), async (view) => {
                         const ok = await _loadOneView(view);
@@ -1460,13 +1457,9 @@
                     } catch(_) {}
                 }
 
-                // Ukloni progress toast i prikaži rezultat
+                // Sakrij značku napretka i prikaži rezultat
                 if (!silent) {
-                    if (progressToast) {
-                        progressToast.classList.remove('show');
-                        progressToast.classList.add('hide');
-                        setTimeout(() => progressToast && progressToast.remove(), 300);
-                    }
+                    if (preloadIndicator) preloadIndicator.classList.add('hidden');
                     const uspjesno = totalViews - totalFailed;
                     if (uspjesno > 0 && totalFailed === 0) {
                         showSuccess('⚡ Gotovo!', `✅ Učitano svih ${totalViews} prikaza 🎉`);

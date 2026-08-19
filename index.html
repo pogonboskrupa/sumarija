@@ -237,6 +237,10 @@
                     </div>
                 </div>
                 <div class="header-right">
+                    <!-- Napredak pozadinskog preload-a ("N / 26 prikaza") — ranije je ovo
+                         bio opšti toast (gore desno, preko trake tabova); sad stoji ovdje,
+                         lijevo od dugmeta "Ažuriraj", popunjava ga js/app.js (_preloadAllViews). -->
+                    <span id="header-preload-indicator" class="header-preload-indicator hidden">⚡ <span id="header-preload-count">0 / 0</span></span>
                     <button id="check-data-btn" class="cloud-sync-btn" onclick="checkForNewData(event)" title="Osvježi sve prikaze u pozadini (za offline pristup)">
                         <span class="cloud-sync-label">Ažuriraj</span>
                         <span id="check-data-icon">☁️</span>
