@@ -639,6 +639,13 @@ function handleOdjeli(year, username, password) {
     return createJsonResponse({ error: "Unauthorized" }, false);
   }
 
+  // Keš — ovo je bio najsporiji endpoint u aplikaciji (mjereno 21.9s na
+  // terenu). Ključ NE sadrži godinu jer je agregacija namjerno ALL-TIME
+  // (vidi komentar iznad) pa je odgovor isti bez obzira na traženu godinu.
+  const cacheKey = 'odjeli_alltime';
+  const cached = getCachedData(cacheKey);
+  if (cached) return createJsonResponse(cached, true);
+
   Logger.log('=== HANDLE ODJELI START (ALL-TIME) ===');
 
   try {
@@ -652,8 +659,37 @@ function handleOdjeli(year, username, password) {
       return createJsonResponse({ error: "INDEKS sheets not found in BAZA_PODATAKA" }, false);
     }
 
-    const primkaData = primkaSheet.getDataRange().getValues();
-    const otpremaData = otpremaSheet.getDataRange().getValues();
+    // Čitaj SAMO kolone koje se koriste, umjesto getDataRange() koji povlači
+    // i svih 20 sortiment kolona koje ovaj handler nikad ne gleda.
+    // PRIMKA treba A-E (datum/radnik/odjel/radilište/izvođač) + Z (ukupno),
+    // OTPREMA samo D (odjel) + AA (ukupno) — sa 26/27 kolona na 6 odnosno 2.
+    // Redovi se spajaju nazad u isti oblik (row[PRIMKA_COL.X]) koji petlje
+    // ispod već očekuju, pa se logika agregacije uopšte ne mijenja.
+    const primkaLastRow = primkaSheet.getLastRow();
+    const otpremaLastRow = otpremaSheet.getLastRow();
+
+    let primkaData = [];
+    if (primkaLastRow > 0) {
+      const pMeta = primkaSheet.getRange(1, 1, primkaLastRow, PRIMKA_COL.IZVODJAC + 1).getValues();
+      const pUkup = primkaSheet.getRange(1, PRIMKA_COL.UKUPNO + 1, primkaLastRow, 1).getValues();
+      primkaData = pMeta.map(function (r, i) {
+        const row = r.slice();
+        row[PRIMKA_COL.UKUPNO] = pUkup[i][0];
+        return row;
+      });
+    }
+
+    let otpremaData = [];
+    if (otpremaLastRow > 0) {
+      const oOdjel = otpremaSheet.getRange(1, OTPREMA_COL.ODJEL + 1, otpremaLastRow, 1).getValues();
+      const oUkup  = otpremaSheet.getRange(1, OTPREMA_COL.UKUPNO + 1, otpremaLastRow, 1).getValues();
+      otpremaData = oOdjel.map(function (r, i) {
+        const row = [];
+        row[OTPREMA_COL.ODJEL]  = r[0];
+        row[OTPREMA_COL.UKUPNO] = oUkup[i][0];
+        return row;
+      });
+    }
 
     Logger.log(`INDEKS_PRIMKA: ${primkaData.length} redova`);
     Logger.log(`INDEKS_OTPREMA: ${otpremaData.length} redova`);
@@ -830,9 +866,9 @@ function handleOdjeli(year, username, password) {
     Logger.log('=== HANDLE ODJELI END (ALL-TIME) ===');
     Logger.log(`Ukupno odjela: ${odjeliResult.length}`);
 
-    return createJsonResponse({
-      odjeli: odjeliResult
-    }, true);
+    const result = { odjeli: odjeliResult };
+    setCachedData(cacheKey, result, CACHE_TTL);
+    return createJsonResponse(result, true);
 
   } catch (error) {
     Logger.log('=== HANDLE ODJELI ERROR ===');
@@ -1629,8 +1665,8 @@ function handleAddSjeca(params) {
     // Dodaj red na kraj sheet-a
     unosSheet.appendRow(newRow);
 
-    // 🚀 CACHE: Invalidate all cache after successful write
-    invalidateAllCache();
+    // 🚀 CACHE: ciljano — unos sječe ne utiče na keš kupaca/otpremača
+    invalidateCacheZa('sjeca');
 
     Logger.log('=== HANDLE ADD SJECA END ===');
     Logger.log('Successfully added new sjeca entry to PRIMAČ_UNOS');
@@ -1754,8 +1790,8 @@ function handleAddOtprema(params) {
     // Dodaj red na kraj sheet-a
     unosSheet.appendRow(newRow);
 
-    // 🚀 CACHE: Invalidate all cache after successful write
-    invalidateAllCache();
+    // 🚀 CACHE: ciljano — vidi komentar u handleAddSjeca
+    invalidateCacheZa('otprema');
 
     Logger.log('=== HANDLE ADD OTPREMA END ===');
     Logger.log('Successfully added new otprema entry to OTPREMAČ_UNOS');
@@ -1782,8 +1818,23 @@ function handleAddOtprema(params) {
  * Briše PENDING unose starije od 14 dana iz oba sheet-a.
  * Poziva se automatski svaki put kad se učitaju pending unosi.
  */
-function deleteOldPendingUnosi() {
+// Čišćenje starih PENDING unosa. NAMJERNO se više ne poziva pri svakom
+// čitanju pending liste (bilo je u handlePendingUnosi): to je značilo da
+// svaki pregled rukovodioca pročita obje UNOS tabele, pa ih handler pročita
+// PONOVO — i sve to samo da bi se u 99% slučajeva ustanovilo da nema šta
+// brisati. Sad se poziva najviše jednom u 6 sati (ScriptProperties pamti
+// zadnje čišćenje), pa je normalno čitanje pending liste upola jeftinije.
+var _CISCENJE_INTERVAL_MS = 6 * 60 * 60 * 1000;
+
+function deleteOldPendingUnosi(force) {
   try {
+    const props = PropertiesService.getScriptProperties();
+    if (!force) {
+      const zadnje = parseInt(props.getProperty('PENDING_CLEANUP_TS') || '0', 10);
+      if (zadnje && (Date.now() - zadnje) < _CISCENJE_INTERVAL_MS) return;
+    }
+    props.setProperty('PENDING_CLEANUP_TS', String(Date.now()));
+
     const DAYS   = 14;
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - DAYS);
@@ -1802,14 +1853,28 @@ function deleteOldPendingUnosi() {
       const tsIdx     = headers.indexOf('TIMESTAMP');
       if (statusIdx < 0 || tsIdx < 0) return;
 
-      // Pronađi stare PENDING redove (od dna prema vrhu da indeksi ostanu ispravni)
+      // Skupi redove za brisanje pa ih briši u SUSJEDNIM BLOKOVIMA
+      // (deleteRows umjesto deleteRow po redu) — svaki deleteRow je zaseban
+      // poziv prema Sheets-u, pa je brisanje 30 starih redova bilo 30 poziva.
+      const zaBrisanje = [];
       for (let i = data.length - 1; i >= 1; i--) {
         const status = data[i][statusIdx];
         const ts     = data[i][tsIdx];
         if (status === 'PENDING' && ts && new Date(ts) < cutoff) {
-          sheet.deleteRow(i + 1); // Sheets su 1-indeksirani
-          deleted++;
+          zaBrisanje.push(i + 1); // Sheets su 1-indeksirani
         }
+      }
+      // zaBrisanje je već opadajući; grupiši uzastopne redove u jedan poziv
+      let k = 0;
+      while (k < zaBrisanje.length) {
+        const kraj = zaBrisanje[k];       // najveći red u bloku
+        let duzina = 1;
+        while (k + duzina < zaBrisanje.length && zaBrisanje[k + duzina] === kraj - duzina) {
+          duzina++;
+        }
+        sheet.deleteRows(kraj - duzina + 1, duzina);
+        deleted += duzina;
+        k += duzina;
       }
     });
 
@@ -1833,7 +1898,9 @@ function handlePendingUnosi(year, username, password) {
       return createJsonResponse({ error: "Unauthorized" }, false);
     }
 
-    // Automatski obriši unose starije od 14 dana
+    // Automatski obriši unose starije od 14 dana — sada sa ugrađenim
+    // ograničenjem na najviše jedno čišćenje u 6 sati (vidi funkciju), pa
+    // ovaj poziv u velikoj većini slučajeva odmah izađe bez ijednog čitanja.
     deleteOldPendingUnosi();
 
     Logger.log('=== HANDLE PENDING UNOSI START ===');
@@ -3270,6 +3337,11 @@ function handlePrimke(username, password) {
       return createJsonResponse({ error: "Unauthorized" }, false);
     }
 
+    // Keš — cijela INDEKS_PRIMKA tabela, raste svakim unosom kroz godinu
+    const cacheKeyPrimke = 'primke_all';
+    const cachedPrimke = getCachedData(cacheKeyPrimke);
+    if (cachedPrimke) return createJsonResponse(cachedPrimke, true);
+
     Logger.log('=== HANDLE PRIMKE START ===');
 
     const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
@@ -3321,7 +3393,9 @@ function handlePrimke(username, password) {
     Logger.log('=== HANDLE PRIMKE END ===');
     Logger.log('Broj primki: ' + primke.length);
 
-    return createJsonResponse({ primke: primke }, true);
+    const rezPrimke = { primke: primke };
+    setCachedData(cacheKeyPrimke, rezPrimke, CACHE_TTL);
+    return createJsonResponse(rezPrimke, true);
 
   } catch (error) {
     Logger.log('ERROR in handlePrimke: ' + error.toString());
@@ -3339,6 +3413,11 @@ function handleOtpreme(username, password) {
     if (!loginResult.success) {
       return createJsonResponse({ error: "Unauthorized" }, false);
     }
+
+    // Keš — vidi identičan komentar u handlePrimke
+    const cacheKeyOtpreme = 'otpreme_all';
+    const cachedOtpreme = getCachedData(cacheKeyOtpreme);
+    if (cachedOtpreme) return createJsonResponse(cachedOtpreme, true);
 
     Logger.log('=== HANDLE OTPREME START ===');
 
@@ -3393,7 +3472,9 @@ function handleOtpreme(username, password) {
     Logger.log('=== HANDLE OTPREME END ===');
     Logger.log('Broj otprema: ' + otpreme.length);
 
-    return createJsonResponse({ otpreme: otpreme }, true);
+    const rezOtpreme = { otpreme: otpreme };
+    setCachedData(cacheKeyOtpreme, rezOtpreme, CACHE_TTL);
+    return createJsonResponse(rezOtpreme, true);
 
   } catch (error) {
     Logger.log('ERROR in handleOtpreme: ' + error.toString());
@@ -3412,6 +3493,10 @@ function handleGetDinamika(year, username, password) {
     if (loginResult.type !== 'admin') {
       return createJsonResponse({ error: "Only admin can access dinamika" }, false);
     }
+
+    const cacheKeyDin = 'dinamika_' + year;
+    const cachedDin = getCachedData(cacheKeyDin);
+    if (cachedDin) return createJsonResponse(cachedDin, true);
 
     Logger.log('=== HANDLE GET DINAMIKA START ===');
     Logger.log('Year: ' + year);
@@ -3456,7 +3541,9 @@ function handleGetDinamika(year, username, password) {
     Logger.log('=== HANDLE GET DINAMIKA END ===');
     Logger.log('Found data: ' + (Object.keys(dinamika).length > 0));
 
-    return createJsonResponse({ dinamika: dinamika }, true);
+    const rezDin = { dinamika: dinamika };
+    setCachedData(cacheKeyDin, rezDin, CACHE_TTL);
+    return createJsonResponse(rezDin, true);
 
   } catch (error) {
     Logger.log('ERROR in handleGetDinamika: ' + error.toString());
@@ -4061,6 +4148,14 @@ function handleStanjeZaliha(username, password, poslovodja) {
       return createJsonResponse({ error: "Unauthorized" }, false);
     }
 
+    // Keš po poslovođi — isti sheet se parsira za svakog, a filtriranje se
+    // radi tek nakon parsiranja, pa odgovor zavisi od poslovođe.
+    // Varijanta bez filtera ('all') je jedina koja se eksplicitno briše u
+    // invalidateCacheZa; ostale isteknu same nakon CACHE_TTL (180s).
+    const cacheKeySZ = 'stanje_zaliha_' + (poslovodja ? String(poslovodja).replace(/\s+/g, '_') : 'all');
+    const cachedSZ = getCachedData(cacheKeySZ);
+    if (cachedSZ) return createJsonResponse(cachedSZ, true);
+
     Logger.log('=== HANDLE STANJE ZALIHA START ===');
     Logger.log('Poslovodja filter: ' + (poslovodja || 'NONE'));
 
@@ -4277,7 +4372,7 @@ function handleStanjeZaliha(username, password, poslovodja) {
     Logger.log('Broj odjela nakon filtriranja: ' + odjeli.length);
     Logger.log('Broj radilišta: ' + radilista.length);
 
-    return createJsonResponse({
+    const rezSZ = {
       odjeli: odjeli,
       radilista: radilista,
       sortimentiHeader: sortimentiHeader,
@@ -4285,7 +4380,9 @@ function handleStanjeZaliha(username, password, poslovodja) {
         blockCount: blockCount,
         firstBlockDiag: firstBlockDiag
       }
-    }, true);
+    };
+    setCachedData(cacheKeySZ, rezSZ, CACHE_TTL);
+    return createJsonResponse(rezSZ, true);
 
   } catch (error) {
     Logger.log('ERROR in handleStanjeZaliha: ' + error.toString());

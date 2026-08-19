@@ -276,8 +276,18 @@ function getCachedData(key) {
 
 function setCachedData(key, data, ttl = CACHE_TTL) {
   try {
+    const serialized = JSON.stringify(data);
+    // CacheService ima tvrdo ograničenje ~100KB po ključu i put() baca grešku
+    // preko toga. Veliki odgovori (primke/otpreme — više MB) tu jednostavno
+    // ne mogu stati, pa se preskaču bez pokušaja umjesto da svaki poziv
+    // završi u catch-u i zatrpa log lažnim greškama. Njih ionako kešira
+    // frontend (IndexedDB, vidi IDB_LARGE_KEYS u js/app.js).
+    if (serialized.length > 90000) {
+      Logger.log(`[CACHE] SKIP (prevelik, ${Math.round(serialized.length / 1024)}KB): ${key}`);
+      return false;
+    }
     const cache = CacheService.getScriptCache();
-    cache.put(key, JSON.stringify(data), ttl);
+    cache.put(key, serialized, ttl);
     Logger.log(`[CACHE] SET: ${key} (TTL: ${ttl}s)`);
     return true;
   } catch (error) {
@@ -286,14 +296,71 @@ function setCachedData(key, data, ttl = CACHE_TTL) {
   }
 }
 
+// Svi keš ključevi koje handleri koriste. Apps Script CacheService NEMA
+// brisanje po prefiksu ni nabrajanje ključeva, pa se lista mora držati
+// eksplicitno — zato je ovdje na jednom mjestu.
+//
+// VAŽNO: ranija verzija je zvala cache.removeAll() BEZ argumenta. Taj metod
+// po Apps Script API-ju zahtijeva niz ključeva, pa je poziv bacao grešku koju
+// je catch ispod gutao i samo logovao — invalidacija zapravo NIJE radila.
+// Posljedica: nakon unosa sječe/otpreme keš se nije čistio i korisnik je do
+// 3 minute (CACHE_TTL) mogao gledati stanje bez svog unosa.
+function _sviCacheKljucevi() {
+  var kljucevi = [];
+  var now = new Date().getFullYear();
+  // Tekuća i prošla godina — jedine koje aplikacija traži (vidi preloadAllViews)
+  [now, now - 1].forEach(function (y) {
+    kljucevi.push(
+      'dashboard_' + y, 'primaci_' + y, 'otpremaci_' + y, 'kupci_' + y,
+      'mjesecni_sortimenti_' + y, 'stats_' + y, 'dinamika_' + y
+    );
+  });
+  kljucevi.push('odjeli_alltime', 'primke_all', 'otpreme_all', 'stanje_zaliha_all');
+  return kljucevi;
+}
+
 function invalidateAllCache() {
   try {
     const cache = CacheService.getScriptCache();
-    cache.removeAll();
-    Logger.log('[CACHE] Invalidated all cache entries');
+    cache.removeAll(_sviCacheKljucevi());
+    Logger.log('[CACHE] Invalidated all known cache entries');
     return true;
   } catch (error) {
     Logger.log(`[CACHE] Error invalidating cache: ${error}`);
+    return false;
+  }
+}
+
+// Ciljano brisanje — nakon unosa sječe nema razloga rušiti keš kupaca ili
+// dinamike. Manje bespotrebnih hladnih čitanja = manje opterećenja na Sheets.
+// Ključevi vezani za poslovođu (stanje_zaliha_<ime>) se namjerno ne nabrajaju:
+// ne mogu se enumerisati, a CACHE_TTL je ionako samo 180s pa zastarjelost
+// traje najviše toliko.
+function invalidateCacheZa(tip) {
+  try {
+    const cache = CacheService.getScriptCache();
+    const now = new Date().getFullYear();
+    const y = [now, now - 1];
+    let kljucevi = [];
+
+    if (tip === 'sjeca' || tip === 'otprema') {
+      y.forEach(function (g) {
+        kljucevi.push('dashboard_' + g, 'mjesecni_sortimenti_' + g, 'stats_' + g, 'dinamika_' + g);
+        kljucevi.push(tip === 'sjeca' ? 'primaci_' + g : 'otpremaci_' + g);
+        if (tip === 'otprema') kljucevi.push('kupci_' + g);
+      });
+      kljucevi.push('odjeli_alltime', 'stanje_zaliha_all');
+      kljucevi.push(tip === 'sjeca' ? 'primke_all' : 'otpreme_all');
+    } else {
+      // Nepoznat tip — sigurnije je očistiti sve poznato nego pogoditi krivo
+      kljucevi = _sviCacheKljucevi();
+    }
+
+    cache.removeAll(kljucevi);
+    Logger.log('[CACHE] Invalidated (' + tip + '): ' + kljucevi.length + ' kljuceva');
+    return true;
+  } catch (error) {
+    Logger.log(`[CACHE] Error invalidating cache for ${tip}: ${error}`);
     return false;
   }
 }
