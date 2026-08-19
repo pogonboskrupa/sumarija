@@ -305,6 +305,18 @@ function setCachedData(key, data, ttl = CACHE_TTL) {
 // je catch ispod gutao i samo logovao — invalidacija zapravo NIJE radila.
 // Posljedica: nakon unosa sječe/otpreme keš se nije čistio i korisnik je do
 // 3 minute (CACHE_TTL) mogao gledati stanje bez svog unosa.
+// Tekući i prošli mjesec (0-indeksirano, isti obrazac kao parametri koje
+// handleri primaju) — dovoljno da pokrije i unos koji poslovođa naknadno
+// doda za prethodni mjesec. Tekuća/prošla godina se rješava odvojeno.
+function _mjeseciZaInvalidaciju() {
+  var d = new Date();
+  var m1 = d.getMonth();
+  var y1 = d.getFullYear();
+  var m0 = m1 - 1, y0 = y1;
+  if (m0 < 0) { m0 = 11; y0 = y1 - 1; }
+  return [{ y: y1, m: m1 }, { y: y0, m: m0 }];
+}
+
 function _sviCacheKljucevi() {
   var kljucevi = [];
   var now = new Date().getFullYear();
@@ -312,10 +324,18 @@ function _sviCacheKljucevi() {
   [now, now - 1].forEach(function (y) {
     kljucevi.push(
       'dashboard_' + y, 'primaci_' + y, 'otpremaci_' + y, 'kupci_' + y,
-      'mjesecni_sortimenti_' + y, 'stats_' + y, 'dinamika_' + y
+      'mjesecni_sortimenti_' + y, 'stats_' + y, 'dinamika_' + y,
+      'primaci_radiliste_' + y, 'otpremaci_radiliste_' + y, 'primaci_izvodjac_' + y
     );
   });
   kljucevi.push('odjeli_alltime', 'primke_all', 'otpreme_all', 'stanje_zaliha_all');
+  _mjeseciZaInvalidaciju().forEach(function (mj) {
+    kljucevi.push(
+      'primaci_daily_' + mj.y + '_' + mj.m, 'otpremaci_daily_' + mj.y + '_' + mj.m,
+      'daily_chart_' + mj.y + '_' + mj.m,
+      'primaci_sort_primac_' + mj.y + '_' + mj.m, 'otpremaci_sort_otpremac_' + mj.y + '_' + mj.m
+    );
+  });
   return kljucevi;
 }
 
@@ -347,10 +367,17 @@ function invalidateCacheZa(tip) {
       y.forEach(function (g) {
         kljucevi.push('dashboard_' + g, 'mjesecni_sortimenti_' + g, 'stats_' + g, 'dinamika_' + g);
         kljucevi.push(tip === 'sjeca' ? 'primaci_' + g : 'otpremaci_' + g);
+        kljucevi.push(tip === 'sjeca' ? 'primaci_radiliste_' + g : 'otpremaci_radiliste_' + g);
+        if (tip === 'sjeca') kljucevi.push('primaci_izvodjac_' + g);
         if (tip === 'otprema') kljucevi.push('kupci_' + g);
       });
       kljucevi.push('odjeli_alltime', 'stanje_zaliha_all');
       kljucevi.push(tip === 'sjeca' ? 'primke_all' : 'otpreme_all');
+      _mjeseciZaInvalidaciju().forEach(function (mj) {
+        kljucevi.push('daily_chart_' + mj.y + '_' + mj.m);
+        kljucevi.push(tip === 'sjeca' ? 'primaci_daily_' + mj.y + '_' + mj.m : 'otpremaci_daily_' + mj.y + '_' + mj.m);
+        kljucevi.push(tip === 'sjeca' ? 'primaci_sort_primac_' + mj.y + '_' + mj.m : 'otpremaci_sort_otpremac_' + mj.y + '_' + mj.m);
+      });
     } else {
       // Nepoznat tip — sigurnije je očistiti sve poznato nego pogoditi krivo
       kljucevi = _sviCacheKljucevi();

@@ -2509,6 +2509,10 @@ function handlePrimaciDaily(year, month, username, password) {
       return createJsonResponse({ error: "Unauthorized" }, false);
     }
 
+    const cacheKeyPD = 'primaci_daily_' + year + '_' + month;
+    const cachedPD = getCachedData(cacheKeyPD);
+    if (cachedPD) return createJsonResponse(cachedPD, true);
+
     const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
     const primkaSheet = ss.getSheetByName("INDEKS_PRIMKA");
 
@@ -2554,10 +2558,9 @@ function handlePrimaciDaily(year, month, username, password) {
     // Sort by date (newest first)
     dailyData.sort((a, b) => b.datumSort - a.datumSort);
 
-    return createJsonResponse({
-      sortimentiNazivi: SORTIMENTI_NAZIVI,
-      data: dailyData
-    }, true);
+    const rezPD = { sortimentiNazivi: SORTIMENTI_NAZIVI, data: dailyData };
+    setCachedData(cacheKeyPD, rezPD, CACHE_TTL);
+    return createJsonResponse(rezPD, true);
 
   } catch (error) {
     return createJsonResponse({
@@ -2576,6 +2579,10 @@ function handleOtremaciDaily(year, month, username, password) {
     if (!loginResult.success) {
       return createJsonResponse({ error: "Unauthorized" }, false);
     }
+
+    const cacheKeyOD = 'otpremaci_daily_' + year + '_' + month;
+    const cachedOD = getCachedData(cacheKeyOD);
+    if (cachedOD) return createJsonResponse(cachedOD, true);
 
     const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
     const otpremaSheet = ss.getSheetByName("INDEKS_OTPREMA");
@@ -2625,10 +2632,9 @@ function handleOtremaciDaily(year, month, username, password) {
     // Sort by date (newest first)
     dailyData.sort((a, b) => b.datumSort - a.datumSort);
 
-    return createJsonResponse({
-      sortimentiNazivi: SORTIMENTI_NAZIVI,
-      data: dailyData
-    }, true);
+    const rezOD = { sortimentiNazivi: SORTIMENTI_NAZIVI, data: dailyData };
+    setCachedData(cacheKeyOD, rezOD, CACHE_TTL);
+    return createJsonResponse(rezOD, true);
 
   } catch (error) {
     return createJsonResponse({
@@ -2658,6 +2664,10 @@ function handleDailyChart(year, month, username, password) {
 
     const yearInt = parseInt(year);
     const monthInt = parseInt(month); // 0-indexed (January = 0)
+
+    const cacheKeyDC = 'daily_chart_' + yearInt + '_' + monthInt;
+    const cachedDC = getCachedData(cacheKeyDC);
+    if (cachedDC) return createJsonResponse(cachedDC, true);
 
     // Get current date for limiting days (only for current month)
     const now = new Date();
@@ -2730,12 +2740,9 @@ function handleDailyChart(year, month, username, password) {
       })
       .sort((a, b) => a.day - b.day);
 
-    return createJsonResponse({
-      year: yearInt,
-      month: monthInt,
-      maxDay: maxDay,
-      data: result
-    }, true);
+    const rezDC = { year: yearInt, month: monthInt, maxDay: maxDay, data: result };
+    setCachedData(cacheKeyDC, rezDC, CACHE_TTL);
+    return createJsonResponse(rezDC, true);
 
   } catch (error) {
     return createJsonResponse({
@@ -2963,6 +2970,10 @@ function handlePrimaciByRadiliste(year, username, password) {
   Logger.log('=== HANDLE PRIMACI BY RADILISTE START ===');
   Logger.log('Year: ' + year);
 
+  const cacheKeyPR = 'primaci_radiliste_' + year;
+  const cachedPR = getCachedData(cacheKeyPR);
+  if (cachedPR) return createJsonResponse(cachedPR, true);
+
   try {
     // Učitaj podatke direktno iz BAZA_PODATAKA - radilište je sada u koloni D
     const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
@@ -3024,10 +3035,9 @@ function handlePrimaciByRadiliste(year, username, password) {
     Logger.log('=== HANDLE PRIMACI BY RADILISTE END ===');
     Logger.log('Broj radilišta: ' + radilista.length);
 
-    return createJsonResponse({
-      radilista: radilista,
-      sortimentiNazivi: SORTIMENTI_NAZIVI
-    }, true);
+    const rezPR = { radilista: radilista, sortimentiNazivi: SORTIMENTI_NAZIVI };
+    setCachedData(cacheKeyPR, rezPR, CACHE_TTL);
+    return createJsonResponse(rezPR, true);
 
   } catch (error) {
     Logger.log('ERROR in handlePrimaciByRadiliste: ' + error.toString());
@@ -3049,6 +3059,10 @@ function handleOtpremaciByRadiliste(year, username, password) {
 
   Logger.log('=== HANDLE OTPREMACI BY RADILISTE START ===');
   Logger.log('Year: ' + year);
+
+  const cacheKeyOR = 'otpremaci_radiliste_' + year;
+  const cachedOR = getCachedData(cacheKeyOR);
+  if (cachedOR) return createJsonResponse(cachedOR, true);
 
   try {
     const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
@@ -3106,10 +3120,9 @@ function handleOtpremaciByRadiliste(year, username, password) {
     Logger.log('=== HANDLE OTPREMACI BY RADILISTE END ===');
     Logger.log('Broj radilišta: ' + radilista.length);
 
-    return createJsonResponse({
-      radilista: radilista,
-      sortimentiNazivi: SORTIMENTI_NAZIVI
-    }, true);
+    const rezOR = { radilista: radilista, sortimentiNazivi: SORTIMENTI_NAZIVI };
+    setCachedData(cacheKeyOR, rezOR, CACHE_TTL);
+    return createJsonResponse(rezOR, true);
 
   } catch (error) {
     Logger.log('ERROR in handleOtpremaciByRadiliste: ' + error.toString());
@@ -3130,6 +3143,10 @@ function handlePrimaciByIzvodjac(year, username, password) {
 
   Logger.log('=== HANDLE PRIMACI BY IZVODJAC START ===');
   Logger.log('Year: ' + year);
+
+  const cacheKeyPI = 'primaci_izvodjac_' + year;
+  const cachedPI = getCachedData(cacheKeyPI);
+  if (cachedPI) return createJsonResponse(cachedPI, true);
 
   try {
     // Učitaj podatke direktno iz BAZA_PODATAKA - izvođač je sada u koloni E
@@ -3192,10 +3209,9 @@ function handlePrimaciByIzvodjac(year, username, password) {
     Logger.log('=== HANDLE PRIMACI BY IZVODJAC END ===');
     Logger.log('Broj izvođača: ' + izvodjaci.length);
 
-    return createJsonResponse({
-      izvodjaci: izvodjaci,
-      sortimentiNazivi: SORTIMENTI_NAZIVI
-    }, true);
+    const rezPI = { izvodjaci: izvodjaci, sortimentiNazivi: SORTIMENTI_NAZIVI };
+    setCachedData(cacheKeyPI, rezPI, CACHE_TTL);
+    return createJsonResponse(rezPI, true);
 
   } catch (error) {
     Logger.log('ERROR in handlePrimaciByIzvodjac: ' + error.toString());
@@ -4655,6 +4671,10 @@ function handlePrimaciSortimentiByPrimac(year, month, username, password) {
   Logger.log('=== HANDLE PRIMACI SORTIMENTI BY PRIMAC START ===');
   Logger.log('Year: ' + year + ', Month: ' + month);
 
+  const cacheKeyPSP = 'primaci_sort_primac_' + year + '_' + month;
+  const cachedPSP = getCachedData(cacheKeyPSP);
+  if (cachedPSP) return createJsonResponse(cachedPSP, true);
+
   try {
     const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
     const sheet = ss.getSheetByName("INDEKS_PRIMKA");
@@ -4702,7 +4722,9 @@ function handlePrimaciSortimentiByPrimac(year, month, username, password) {
 
     Logger.log('=== HANDLE PRIMACI SORTIMENTI BY PRIMAC END === Radilista: ' + radilista.length);
 
-    return createJsonResponse({ radilista: radilista, sortimentiNazivi: SORTIMENTI_NAZIVI }, true);
+    const rezPSP = { radilista: radilista, sortimentiNazivi: SORTIMENTI_NAZIVI };
+    setCachedData(cacheKeyPSP, rezPSP, CACHE_TTL);
+    return createJsonResponse(rezPSP, true);
 
   } catch (err) {
     Logger.log('ERROR in handlePrimaciSortimentiByPrimac: ' + err.toString());
@@ -4721,6 +4743,10 @@ function handleOtremaciSortimentiByOtpremac(year, month, username, password) {
 
   Logger.log('=== HANDLE OTPREMACI SORTIMENTI BY OTPREMAC START ===');
   Logger.log('Year: ' + year + ', Month: ' + month);
+
+  const cacheKeyOSO = 'otpremaci_sort_otpremac_' + year + '_' + month;
+  const cachedOSO = getCachedData(cacheKeyOSO);
+  if (cachedOSO) return createJsonResponse(cachedOSO, true);
 
   try {
     const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
@@ -4769,7 +4795,9 @@ function handleOtremaciSortimentiByOtpremac(year, month, username, password) {
 
     Logger.log('=== HANDLE OTPREMACI SORTIMENTI BY OTPREMAC END === Radilista: ' + radilista.length);
 
-    return createJsonResponse({ radilista: radilista, sortimentiNazivi: SORTIMENTI_NAZIVI }, true);
+    const rezOSO = { radilista: radilista, sortimentiNazivi: SORTIMENTI_NAZIVI };
+    setCachedData(cacheKeyOSO, rezOSO, CACHE_TTL);
+    return createJsonResponse(rezOSO, true);
 
   } catch (err) {
     Logger.log('ERROR in handleOtremaciSortimentiByOtpremac: ' + err.toString());
