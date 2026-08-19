@@ -16,7 +16,15 @@ const ADMIN_USERNAME = 'admin';
 const ADMIN_PASSWORD = 'admin';
 
 // Cache TTL (Time To Live) - vrijeme zadržavanja podataka u kešu
-const CACHE_TTL = 180; // 3 minute cache (180 seconds)
+// 10 minuta (bilo 3) — korisnik potvrdio da svježina agregatnih pogleda
+// (dnevni/mjesečni zbirovi, pregled po odjelima, itd.) za primača/otpremača
+// nije kritična; targetna invalidacija (invalidateCacheZa u services.gs) i
+// dalje odmah čisti pogled koji je upravo izmijenjen unosom sječe/otpreme,
+// pa produžen TTL utiče samo na NEZAVISNE posmatrače (drugi korisnici koji
+// gledaju, ne mijenjaju). Duži TTL = rjeđi hladni startovi cijelog 26-pogled
+// preloada (na svake 3 min → na svakih 10 min), što direktno smanjuje broj
+// 404 grešaka od prekoračenja limita istovremenih Apps Script izvršavanja.
+const CACHE_TTL = 600;
 
 // ========================================
 // 📊 BAZA PODATAKA - Struktura kolona
