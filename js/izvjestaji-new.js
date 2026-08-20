@@ -10,6 +10,7 @@ function switchIzvjestajiSubTab(subTab) {
 
     const sedmicniElem = document.getElementById('izvjestaji-sedmicni');
     const sedmicniRadnikElem = document.getElementById('izvjestaji-sedmicni-radnik');
+    const sedmicniRadnikOdjeliElem = document.getElementById('izvjestaji-sedmicni-radnik-odjeli');
     const mjesecniElem = document.getElementById('izvjestaji-mjesecni');
     const poOdjelimaElem = document.getElementById('izvjestaji-po-odjelima');
 
@@ -25,6 +26,7 @@ function switchIzvjestajiSubTab(subTab) {
     // Hide all sub-panels
     sedmicniElem.classList.add('hidden');
     if (sedmicniRadnikElem) sedmicniRadnikElem.classList.add('hidden');
+    if (sedmicniRadnikOdjeliElem) sedmicniRadnikOdjeliElem.classList.add('hidden');
     mjesecniElem.classList.add('hidden');
     if (poOdjelimaElem) poOdjelimaElem.classList.add('hidden');
 
@@ -50,6 +52,18 @@ function switchIzvjestajiSubTab(subTab) {
         if (moElem) moElem.value = currentDate.getMonth();
 
         loadIzvjestajiSedmicniRadnik();
+    } else if (subTab === 'sedmicni-radnik-odjeli') {
+        if (sedmicniRadnikOdjeliElem) sedmicniRadnikOdjeliElem.classList.remove('hidden');
+        const btn = document.querySelector('#izvjestaji-content .sub-tab[onclick="switchIzvjestajiSubTab(\'sedmicni-radnik-odjeli\')"]');
+        if (btn) btn.classList.add('active');
+
+        const currentDate = new Date();
+        const yrElem = document.getElementById('izvjestaji-sedmicni-radnik-odjeli-year');
+        const moElem = document.getElementById('izvjestaji-sedmicni-radnik-odjeli-month');
+        if (yrElem) yrElem.value = currentDate.getFullYear();
+        if (moElem) moElem.value = currentDate.getMonth();
+
+        loadIzvjestajiSedmicniRadnikOdjeli();
     } else if (subTab === 'mjesecni') {
         mjesecniElem.classList.remove('hidden');
         const btn = document.querySelector('#izvjestaji-content .sub-tab[onclick="switchIzvjestajiSubTab(\'mjesecni\')"]');
@@ -204,6 +218,234 @@ async function loadIzvjestajiSedmicniRadnik() {
         console.error('[IZVJEŠTAJI SEDMICNI RADNIK] Error:', error);
         showError('Greška', 'Greška pri učitavanju sedmičnog izvještaja po radniku: ' + error.message);
     }
+}
+
+// Load SEDMIČNI izvještaj PO RADNIKU, GRUPISANO I PO ODJELU — kao gornji
+// izvještaj po radniku, ali ako je radnik u istoj sedmici radio na više
+// odjela, ispod njegovog zbirnog reda prikaže raspodjelu po odjelu (umjesto
+// da se ti odjeli tiho stope u jedan zbir kao u "Sedmični po radniku").
+// Isti API poziv/keš kao sedmicni-radnik — samo se agregacija/prikaz razlikuju.
+async function loadIzvjestajiSedmicniRadnikOdjeli() {
+    console.log('[IZVJEŠTAJI SEDMICNI RADNIK ODJELI] Loading data...');
+
+    try {
+        const yearElem = document.getElementById('izvjestaji-sedmicni-radnik-odjeli-year');
+        const monthElem = document.getElementById('izvjestaji-sedmicni-radnik-odjeli-month');
+
+        if (!yearElem || !monthElem) {
+            console.error('[IZVJEŠTAJI SEDMICNI RADNIK ODJELI] ❌ Selectors not found!');
+            return;
+        }
+
+        const year = parseInt(yearElem.value);
+        const month = parseInt(monthElem.value);
+
+        const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+
+        const titlePrimka = document.getElementById('izvjestaji-sedmicni-radnik-odjeli-primka-title');
+        const titleOtprema = document.getElementById('izvjestaji-sedmicni-radnik-odjeli-otprema-title');
+        if (titlePrimka) titlePrimka.textContent = mjeseciNazivi[month] + ' ' + year;
+        if (titleOtprema) titleOtprema.textContent = mjeseciNazivi[month] + ' ' + year;
+
+        // Isti keš kao sedmicni-radnik/sedmicni — isti API, isti parametri
+        const primkaUrl = buildApiUrl('primaci-daily', { year, month });
+        const otpremaUrl = buildApiUrl('otpremaci-daily', { year, month });
+
+        const [primkaData, otpremaData] = await Promise.all([
+            fetchWithCache(primkaUrl, `cache_izvjestaji_sedmicni_primka_${year}_${month}`, false, 180000),
+            fetchWithCache(otpremaUrl, `cache_izvjestaji_sedmicni_otprema_${year}_${month}`, false, 180000)
+        ]);
+
+        if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
+        if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
+
+        const primkaRows = primkaData.data || [];
+        const otpremaRows = otpremaData.data || [];
+        const primkaSort  = primkaData.sortimentiNazivi || [];
+        const otpremaSort = otpremaData.sortimentiNazivi || [];
+
+        var primkaFiltered = filterByPoslovodjaRadilista(primkaRows);
+        var otpremaFiltered = filterByPoslovodjaRadilista(otpremaRows);
+
+        const weeks = calculateWeeksInMonth(year, month);
+
+        const primkaByWeek = aggregateByWeekRadnikOdjel(primkaFiltered, primkaSort, weeks, 'primac');
+        const otpremaByWeek = aggregateByWeekRadnikOdjel(otpremaFiltered, otpremaSort, weeks, 'otpremac');
+
+        renderIzvjestajiSedmicniRadnikOdjeliTable(primkaByWeek, primkaSort, 'sedmicni-radnik-odjeli-primka', weeks);
+        renderIzvjestajiSedmicniRadnikOdjeliTable(otpremaByWeek, otpremaSort, 'sedmicni-radnik-odjeli-otprema', weeks);
+
+        console.log('[IZVJEŠTAJI SEDMICNI RADNIK ODJELI] ✓ Data loaded successfully');
+        if (typeof markTabRendered === 'function') markTabRendered('izvjestaji');
+
+    } catch (error) {
+        console.error('[IZVJEŠTAJI SEDMICNI RADNIK ODJELI] Error:', error);
+        showError('Greška', 'Greška pri učitavanju izvještaja po radniku (po odjelima): ' + error.message);
+    }
+}
+
+// Grupiraj podatke po sedmicama, PA po radniku (primac/otpremac), PA po
+// odjelu unutar radnika — dvoslojna verzija aggregateByWeekAndOdjel-a.
+// result[weekNum][radnik] = { ukupno: {sortiment:vrijednost}, odjeli: { odjelNaziv: {sortiment:vrijednost} } }
+function aggregateByWeekRadnikOdjel(data, sortimentiNazivi, weeks, keyField) {
+    const result = {};
+    weeks.forEach(week => { result[week.weekNum] = {}; });
+
+    data.forEach(row => {
+        const datumStr = row.datum || '';
+        let day = null;
+
+        if (datumStr.includes('/')) {
+            day = parseInt(datumStr.split('/')[0]);
+        } else if (datumStr.includes('.')) {
+            day = parseInt(datumStr.split('.')[0]);
+        }
+
+        if (!day || day < 1 || day > 31) return;
+
+        const week = weeks.find(w => day >= w.start && day <= w.end);
+        if (!week) return;
+
+        const radnik = String(row[keyField] || 'Nepoznat');
+        const odjel = String(row.odjel || 'Nepoznat');
+        const weekData = result[week.weekNum];
+
+        if (!weekData[radnik]) {
+            weekData[radnik] = { ukupno: {}, odjeli: {} };
+            sortimentiNazivi.forEach(s => weekData[radnik].ukupno[s] = 0);
+        }
+        if (!weekData[radnik].odjeli[odjel]) {
+            weekData[radnik].odjeli[odjel] = {};
+            sortimentiNazivi.forEach(s => weekData[radnik].odjeli[odjel][s] = 0);
+        }
+
+        sortimentiNazivi.forEach(sortiment => {
+            const value = parseFloat(row.sortimenti?.[sortiment]) || 0;
+            weekData[radnik].ukupno[sortiment] += value;
+            weekData[radnik].odjeli[odjel][sortiment] += value;
+        });
+    });
+
+    return result;
+}
+
+// Renderuj sedmični izvještaj po radniku, s raspodjelom po odjelu. Za
+// radnika koji je u sedmici radio na SAMO JEDNOM odjelu, taj odjel se
+// ispiše uz njegovo ime (bez posebnog reda) — dodatni red ima smisla samo
+// kad stvarno ima šta razdvojiti (2+ odjela).
+function renderIzvjestajiSedmicniRadnikOdjeliTable(dataByWeek, sortimentiNazivi, tablePrefix, weeks) {
+    const headerElem = document.getElementById(`izvjestaji-${tablePrefix}-header`);
+    const bodyElem = document.getElementById(`izvjestaji-${tablePrefix}-body`);
+
+    let hasAnyData = false;
+    for (const weekNum in dataByWeek) {
+        if (Object.keys(dataByWeek[weekNum]).length > 0) { hasAnyData = true; break; }
+    }
+
+    if (!hasAnyData) {
+        headerElem.innerHTML = '';
+        bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka za odabrani period</td></tr>';
+        return;
+    }
+
+    let headerHtml = '<tr><th class="col-sedmica">SEDMICA</th><th>Radnik</th>';
+    sortimentiNazivi.forEach(sortiment => {
+        headerHtml += `<th class="${sortimentColClass(sortiment)}">${sortiment}</th>`;
+    });
+    headerHtml += '</tr>';
+    headerElem.innerHTML = headerHtml;
+
+    let bodyHtml = '';
+    let isFirstWeek = true;
+
+    weeks.forEach((week) => {
+        const weekData = dataByWeek[week.weekNum] || {};
+        const radnici = Object.keys(weekData).sort();
+
+        if (radnici.length === 0) return; // Preskoči prazne sedmice
+
+        // Rowspan = 1 (UKUPNO red) + po radniku: 1 (njegov red) + broj odjela
+        // AKO ih ima 2+ (inače 0 dodatnih redova — jedan odjel se ne razdvaja).
+        let totalRows = 1;
+        const odjeliKeysByRadnik = {};
+        radnici.forEach(radnik => {
+            const keys = Object.keys(weekData[radnik].odjeli).sort();
+            odjeliKeysByRadnik[radnik] = keys;
+            totalRows += 1 + (keys.length > 1 ? keys.length : 0);
+        });
+
+        const weekTotals = {};
+        sortimentiNazivi.forEach(s => weekTotals[s] = 0);
+        radnici.forEach(radnik => {
+            sortimentiNazivi.forEach(s => { weekTotals[s] += weekData[radnik].ukupno[s] || 0; });
+        });
+
+        const separatorClass = isFirstWeek ? '' : ' week-separator';
+        isFirstWeek = false;
+
+        bodyHtml += `<tr class="week-totals-row${separatorClass}">`;
+        bodyHtml += `<td class="week-label-cell" rowspan="${totalRows}">`;
+        bodyHtml += `<span class="week-date">${week.dateRange.replace(' - ', '<br>– ')}</span>`;
+        bodyHtml += `</td>`;
+        bodyHtml += `<td><strong>UKUPNO</strong></td>`;
+        sortimentiNazivi.forEach(s => {
+            const val = weekTotals[s];
+            const display = val > 0 ? val.toFixed(2) : '-';
+            bodyHtml += `<td>${display}</td>`;
+        });
+        bodyHtml += '</tr>';
+
+        radnici.forEach((radnik) => {
+            const rdata = weekData[radnik];
+            const odjeliKeys = odjeliKeysByRadnik[radnik];
+            const viseOdjela = odjeliKeys.length > 1;
+
+            bodyHtml += `<tr class="week-detail-row">`;
+            bodyHtml += `<td>${radnik}${!viseOdjela ? ` <span class="radnik-odjel-inline">(${odjeliKeys[0] || '—'})</span>` : ''}</td>`;
+            sortimentiNazivi.forEach(sortiment => {
+                const value = rdata.ukupno[sortiment] || 0;
+                const displayValue = value > 0 ? value.toFixed(2) : '-';
+                bodyHtml += `<td class="${sortimentColClass(sortiment)}">${displayValue}</td>`;
+            });
+            bodyHtml += '</tr>';
+
+            if (viseOdjela) {
+                odjeliKeys.forEach(odjel => {
+                    bodyHtml += `<tr class="week-detail-row odjel-subrow">`;
+                    bodyHtml += `<td>↳ ${odjel}</td>`;
+                    sortimentiNazivi.forEach(sortiment => {
+                        const value = rdata.odjeli[odjel][sortiment] || 0;
+                        const displayValue = value > 0 ? value.toFixed(2) : '-';
+                        bodyHtml += `<td class="${sortimentColClass(sortiment)}">${displayValue}</td>`;
+                    });
+                    bodyHtml += '</tr>';
+                });
+            }
+        });
+    });
+
+    // GRAND TOTAL na kraju
+    const grandTotals = {};
+    sortimentiNazivi.forEach(s => grandTotals[s] = 0);
+
+    weeks.forEach(week => {
+        const weekData = dataByWeek[week.weekNum] || {};
+        Object.values(weekData).forEach(rdata => {
+            sortimentiNazivi.forEach(s => { grandTotals[s] += rdata.ukupno[s] || 0; });
+        });
+    });
+
+    bodyHtml += `<tr class="grand-totals-row">`;
+    bodyHtml += `<td colspan="2">UKUPNO MJESEC</td>`;
+    sortimentiNazivi.forEach(s => {
+        const val = grandTotals[s];
+        const display = val > 0 ? val.toFixed(2) : '-';
+        bodyHtml += `<td>${display}</td>`;
+    });
+    bodyHtml += '</tr>';
+
+    bodyElem.innerHTML = bodyHtml;
+    console.log(`[RENDER ${tablePrefix}] ✓ Weekly table (radnik/odjeli) rendered`);
 }
 
 // Izračunaj sedmice u mjesecu - prva sedmica počinje od 1. i završava u nedjelju
@@ -636,19 +878,21 @@ function filterByPoslovodjaRadilista(data) {
 // 🖨️ ŠTAMPAJ - Profesionalni print prikaz
 // ============================================
 function printIzvjestaj(tip) {
-    const isSedmicni       = tip === 'sedmicni';
-    const isSedmicniRadnik = tip === 'sedmicni-radnik';
+    const isSedmicni             = tip === 'sedmicni';
+    const isSedmicniRadnik       = tip === 'sedmicni-radnik';
+    const isSedmicniRadnikOdjeli = tip === 'sedmicni-radnik-odjeli';
 
     const year = document.getElementById(`izvjestaji-${tip}-year`).value;
     const monthIdx = parseInt(document.getElementById(`izvjestaji-${tip}-month`).value);
     const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni',
                            'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
     const monthName = mjeseciNazivi[monthIdx];
-    const tipLabel = isSedmicniRadnik ? 'Sedmični izvještaj po radniku'
-                   : isSedmicni      ? 'Sedmični izvještaj'
-                                     : 'Mjesečni izvještaj';
-    const secSjeca  = isSedmicniRadnik ? '🌲 Sječa po radniku'  : '🌲 Sječa po odjelima';
-    const secOtprem = isSedmicniRadnik ? '🚛 Otprema po radniku' : '🚛 Otprema po odjelima';
+    const tipLabel = isSedmicniRadnikOdjeli ? 'Sedmični izvještaj po radniku (po odjelima)'
+                   : isSedmicniRadnik       ? 'Sedmični izvještaj po radniku'
+                   : isSedmicni             ? 'Sedmični izvještaj'
+                                             : 'Mjesečni izvještaj';
+    const secSjeca  = (isSedmicniRadnik || isSedmicniRadnikOdjeli) ? '🌲 Sječa po radniku'  : '🌲 Sječa po odjelima';
+    const secOtprem = (isSedmicniRadnik || isSedmicniRadnikOdjeli) ? '🚛 Otprema po radniku' : '🚛 Otprema po odjelima';
     const datumStampe = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
     // Kloniraj obje tabele iz DOM-a
@@ -751,7 +995,7 @@ function printIzvjestaj(tip) {
     letter-spacing: 0.3px;
   }
   thead th:first-child { text-align: left; }
-  ${isSedmicni || isSedmicniRadnik ? 'thead th { background: #f8fafc !important; color: #475569 !important; border-color: #e2e8f0 !important; }' : ''}
+  ${isSedmicni || isSedmicniRadnik || isSedmicniRadnikOdjeli ? 'thead th { background: #f8fafc !important; color: #475569 !important; border-color: #e2e8f0 !important; }' : ''}
   tbody tr { background: #fff; }
   tbody tr:nth-child(even) { background: #f0f4f8; }
   tbody td {
@@ -799,6 +1043,11 @@ function printIzvjestaj(tip) {
   tbody .week-totals-row td.col-cetinari,
   tbody .week-totals-row td.col-liscari,
   tbody .week-totals-row td.col-sveukupno { background: #bfdbfe; }
+
+  /* Odjel podredovi (Sedmični po radniku — po odjelima) */
+  .odjel-subrow td:first-child { padding-left: 18px; font-style: italic; font-weight: 500 !important; color: #6b7280 !important; }
+  .odjel-subrow td { color: #6b7280; }
+  .radnik-odjel-inline { font-weight: 400; color: #9ca3af; }
 
   /* ── FOOTER ── */
   .print-footer {
