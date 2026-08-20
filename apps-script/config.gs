@@ -10,6 +10,7 @@ const INDEX_SPREADSHEET_ID = '1nPkSx2fCbtHGcwdq8rDo9A3dsSt9QpcF7f0JBCg1K1I';    
 const BAZA_PODATAKA_ID = '1DIpllQlrMJwE9wpF1Gtwbnbh6ghYM5f1PimSK2gwVQQ';         // BAZA PODATAKA - glavni izvor
 const ODJELI_FOLDER_ID = '1NQ0s_F4j9iRDaZafexzP5Bwyv0NXfMMK';                      // Folder sa svim odjelima
 const IMAGES_FOLDER_ID = '1vtWCkjMoms4EO38zStZD9IADz859LmeI';                      // Folder za temp slike (auto-brisanje 5 dana)
+const KLOPKE_SPREADSHEET_ID = '1lshGP9lCFtk6j9g2xXmwjAKQ9-GFnzPVYD2FoWygw8g';       // FEROMONSKE KLOPKE - Ulov potkornjaka (odvojen fajl, ne BAZA PODATAKA)
 
 // Admin credentials
 const ADMIN_USERNAME = 'admin';

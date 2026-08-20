@@ -3,8 +3,10 @@
 // ============================================================
 // Admin (Mapa odjela → Šumsko uzgojni radovi) unosi očitanja klopki otprilike
 // svakih 10 dana: odjel, broj klopke, vrsta potkornjaka (slobodan tekst) i
-// broj ulova. Sheet: FEROMONSKE_KLOPKE u BAZA_PODATAKA_ID (nastaje sam pri
-// prvom unosu). Jednostavan flat zapis, jedan red = jedno očitanje —
+// broj ulova. Sheet: FEROMONSKE_KLOPKE u ODVOJENOM fajlu (KLOPKE_SPREADSHEET_ID,
+// config.gs) — NAMJERNO ne u BAZA_PODATAKA_ID, korisnički zahtjev da ovi podaci
+// budu odvojeni od glavne baze (nastaje sam pri prvom unosu). Jednostavan flat
+// zapis, jedan red = jedno očitanje —
 // template je handleAddPreklasiranje/handleGetPreklasiranja/
 // handleDeletePreklasiranje (api-handlers.gs), NE sjekacke-linije.gs (ta nosi
 // GPS-array/UUID-dedupe/offline-red kompleksnost koja ovdje nije potrebna —
@@ -63,7 +65,7 @@ function handleAddKlopkaOcitanje(params) {
       return createJsonResponse({ error: 'Server je zauzet, pokušajte ponovo' }, false);
     }
 
-    var ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    var ss = SpreadsheetApp.openById(KLOPKE_SPREADSHEET_ID);
     var sheet = ss.getSheetByName(KLOPKE_SHEET);
     if (!sheet) {
       sheet = ss.insertSheet(KLOPKE_SHEET);
@@ -100,7 +102,7 @@ function handleGetKlopkeOcitanja(username, password, odjel) {
     var loginResult = JSON.parse(handleLogin(username, password).getContent());
     if (!loginResult.success) return createJsonResponse({ error: 'Unauthorized' }, false);
 
-    var ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    var ss = SpreadsheetApp.openById(KLOPKE_SPREADSHEET_ID);
     var sheet = ss.getSheetByName(KLOPKE_SHEET);
     if (!sheet) return createJsonResponse({ success: true, klopke: [] }, true);
 
@@ -151,7 +153,7 @@ function handleDeleteKlopkaOcitanje(params) {
       return createJsonResponse({ error: 'Neispravan rowIndex' }, false);
     }
 
-    var ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    var ss = SpreadsheetApp.openById(KLOPKE_SPREADSHEET_ID);
     var sheet = ss.getSheetByName(KLOPKE_SHEET);
     if (!sheet) return createJsonResponse({ error: 'FEROMONSKE_KLOPKE sheet ne postoji' }, false);
     if (rowIndex > sheet.getLastRow()) return createJsonResponse({ error: 'Red ne postoji' }, false);
