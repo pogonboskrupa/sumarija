@@ -1048,6 +1048,7 @@ function printIzvjestaj(tip) {
   .odjel-subrow td:first-child { padding-left: 18px; font-style: italic; font-weight: 500 !important; color: #6b7280 !important; }
   .odjel-subrow td { color: #6b7280; }
   .radnik-odjel-inline { font-weight: 400; color: #9ca3af; }
+  ${isSedmicniRadnikOdjeli ? '.week-detail-row:not(.odjel-subrow) td { border-top: 2px solid #94a3b8; }' : ''}
 
   /* ── FOOTER ── */
   .print-footer {

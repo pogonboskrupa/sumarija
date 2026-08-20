@@ -965,6 +965,15 @@ table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-sedmica {
     color: #9ca3af;
 }
 
+/* Razdvajanje radnika (Sedmični po radniku — po odjelima) — jači gornji
+   obrub na SVAKOM radnikovom redu (ne na odjel-subrow) da se blokovi
+   radnik+njegovi odjeli jasno razdvoje jedan od drugog unutar iste sedmice.
+   ID-scoped — samo na ovom podtabu, ne dira ostale .izvjestaj-week-table
+   tabele (Sedmični po radniku bez odjela, Mjesečni, itd.). */
+table[id^="izvjestaji-sedmicni-radnik-odjeli"].izvjestaj-week-table tbody tr.week-detail-row:not(.odjel-subrow) td {
+    border-top: 2px solid #94a3b8;
+}
+
 /* ---- GRAND TOTAL (UKUPNO MJESEC) — najjači akcent u tabeli, pojačan
    (bio #e0e7ff, sad #a5b4fc; label ćelija #c7d2fe → #4f46e5 s bijelim
    tekstom) — i dalje svjetliji, moderniji dizajn, ne pun crni blok. ---- */
