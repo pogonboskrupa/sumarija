@@ -525,6 +525,7 @@
             <div class="submenu">
                 <button class="submenu-tab active" id="mjesecni-sortimenti-toggle-sjeca" onclick="switchMjesecniSortimentiView('sjeca')">📊 Sječa</button>
                 <button class="submenu-tab" id="mjesecni-sortimenti-toggle-otprema" onclick="switchMjesecniSortimentiView('otprema')">🚛 Otprema</button>
+                <button class="submenu-tab" id="mjesecni-sortimenti-toggle-kombinovano" onclick="switchMjesecniSortimentiView('kombinovano')">🔀 Kombinovano</button>
             </div>
             <!-- SJEČA PO MJESECIMA - Pro Card -->
             <div id="mjesecni-sjeca-card" class="mjesecni-card" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 32px; overflow: hidden;">
@@ -578,6 +579,34 @@
                     <table class="pro-mjesecna-table" id="mjesecna-otprema-table" style="width: 100%; border-collapse: separate; border-spacing: 0;">
                         <thead id="mjesecna-otprema-header"></thead>
                         <tbody id="mjesecna-otprema-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- KOMBINOVANO (Sječa/Otprema naizmjenično po mjesecu) - Pro Card -->
+            <div id="mjesecni-kombinovano-card" class="mjesecni-card hidden" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 32px; overflow: hidden;">
+                <!-- Card Header -->
+                <div style="background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="margin: 0; color: white; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">🔀</span> Sječa i otprema po mjesecima (kombinovano)
+                        </h2>
+                        <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Sječa i otprema naizmjenično, red po red, za svaki mjesec</p>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button onclick="printMjesecniCard('kombinovano')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                            🖨️ ŠTAMPAJ
+                        </button>
+                        <button onclick="exportKombinovanaToExcel()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                            <span>📥</span> Export
+                        </button>
+                    </div>
+                </div>
+                <!-- Table Container -->
+                <div class="mjesecna-scroll" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="pro-mjesecna-table" id="mjesecna-kombinovano-table" style="width: 100%; border-collapse: separate; border-spacing: 0;">
+                        <thead id="mjesecna-kombinovano-header"></thead>
+                        <tbody id="mjesecna-kombinovano-body"></tbody>
                     </table>
                 </div>
             </div>

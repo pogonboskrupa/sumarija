@@ -287,9 +287,10 @@ function printStanjeZalihaPoOdjelima() {
 
 function printMjesecniCard(tip) {
     const isSjeca = tip === 'sjeca';
-    const tableId   = isSjeca ? 'mjesecna-sjeca-table'  : 'mjesecna-otprema-table';
-    const cardTitle = isSjeca ? 'Sječa po mjesecima i sortimentima' : 'Otprema po mjesecima i sortimentima';
-    const accent    = isSjeca ? '#1e3a5f' : '#7c2d12';
+    const isKombinovano = tip === 'kombinovano';
+    const tableId   = isKombinovano ? 'mjesecna-kombinovano-table' : (isSjeca ? 'mjesecna-sjeca-table' : 'mjesecna-otprema-table');
+    const cardTitle = isKombinovano ? 'Sječa i otprema po mjesecima (kombinovano)' : (isSjeca ? 'Sječa po mjesecima i sortimentima' : 'Otprema po mjesecima i sortimentima');
+    const accent    = isKombinovano ? '#4338ca' : (isSjeca ? '#1e3a5f' : '#7c2d12');
 
     const tableEl = document.getElementById(tableId);
     if (!tableEl) { alert('Tabela nije učitana.'); return; }

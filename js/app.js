@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.9.5';
+        const APP_VERSION = '1.9.6';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -10489,6 +10489,31 @@
             }
         }
 
+        // Dijeljeno između renderMjesecnaTabela (Sječa/Otprema kartice) i
+        // renderMjesecnaKombinovanaTabela (treći, "Kombinovano" prikaz) — da
+        // se grupe sortimenata/format brojeva ne moraju održavati na dva mjesta.
+        const _MJESECI_KRATKI = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+        const _CETINARI_SORT    = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART'];
+        const _CETINARI_TRUPCI  = ['TRUPCI Č'];
+        const _CETINARI_UKUPNO  = ['Σ ČETINARI', 'ČETINARI'];
+        const _LISCARI_SORT     = ['F/L L', 'I L', 'II L', 'III L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE'];
+        const _LISCARI_TRUPCI   = ['TRUPCI L', 'TRUPCI'];
+        const _LISCARI_UKUPNO   = ['LIŠĆARI'];
+        const _MJ_GRAND_TOTAL   = ['SVEUKUPNO', 'UKUPNO Č+L'];
+        function _mjesecniClassFor(s) {
+            if (_CETINARI_SORT.includes(s))   return 'col-cetinari';
+            if (_CETINARI_TRUPCI.includes(s)) return 'col-cetinari is-subtotal';
+            if (_CETINARI_UKUPNO.includes(s)) return 'col-cetinari is-total';
+            if (_LISCARI_SORT.includes(s))    return 'col-liscari';
+            if (_LISCARI_TRUPCI.includes(s))  return 'col-liscari is-subtotal';
+            if (_LISCARI_UKUPNO.includes(s))  return 'col-liscari is-total';
+            if (_MJ_GRAND_TOTAL.includes(s))  return 'col-sveukupno';
+            return 'col-other';
+        }
+        // Nula → "–" umjesto "0.00", hiljade dobijaju tačku (de-DE konvencija).
+        const _mjesecniFmtBroj = v => v === 0 ? '–'
+            : v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
         // Load monthly sortimenti
         async function loadMjesecniSortimenti() {
             if (!isActiveTab('mjesecni-sortimenti')) return;
@@ -10501,6 +10526,7 @@
             if (msCached) {
                 renderMjesecnaTabela(msCached.sjeca, 'mjesecna-sjeca');
                 renderMjesecnaTabela(msCached.otprema, 'mjesecna-otprema');
+                renderMjesecnaKombinovanaTabela(msCached.sjeca, msCached.otprema);
                 msHasCached = true;
             }
 
@@ -10528,6 +10554,9 @@
 
                 // Render OTPREMA table
                 renderMjesecnaTabela(data.otprema, 'mjesecna-otprema');
+
+                // Render KOMBINOVANO table (sječa/otprema naizmjenično po mjesecu)
+                renderMjesecnaKombinovanaTabela(data.sjeca, data.otprema);
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 showTabContent('mjesecni-sortimenti-content');
@@ -10728,6 +10757,163 @@
 
             bodyElem.innerHTML = bodyHtml;
         }
+
+        // Treći prikaz na "Sječa/otprema" tabu — Sječa i Otprema naizmjenično,
+        // red po red, za svaki mjesec (umjesto dvije odvojene tabele). Koristi
+        // dijeljene _mjesecniClassFor/_mjesecniFmtBroj/_MJESECI_KRATKI (iznad
+        // loadMjesecniSortimenti) — ista podjela sortimenata u grupe/heat mapa
+        // kao renderMjesecnaTabela, samo dva izvora podataka umjesto jednog.
+        let _kombinovanoExportData = null;
+        function renderMjesecnaKombinovanaTabela(sjecaData, otpremaData) {
+            const headerElem = document.getElementById('mjesecna-kombinovano-header');
+            const bodyElem = document.getElementById('mjesecna-kombinovano-body');
+            if (!headerElem || !bodyElem) return;
+
+            const valid = d => d && d.sortimenti && d.sortimenti.length > 0 &&
+                d.mjeseci && Array.isArray(d.mjeseci) && d.mjeseci.length === 12;
+            if (!valid(sjecaData) || !valid(otpremaData)) {
+                headerElem.innerHTML = '';
+                bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #4b5563; font-family: Comfortaa, sans-serif;">Nema podataka</td></tr>';
+                _kombinovanoExportData = null;
+                return;
+            }
+
+            const sortimenti = sjecaData.sortimenti.filter(s => s && s.trim() !== '');
+            _kombinovanoExportData = { sortimenti, sjeca: sjecaData, otprema: otpremaData };
+
+            const grpStart = new Set();
+            let _prevGrupa = null;
+            sortimenti.forEach(s => {
+                const g = _mjesecniClassFor(s).split(' ')[0];
+                if (g !== _prevGrupa) { grpStart.add(s); _prevGrupa = g; }
+            });
+
+            // Zajednička skala za heat mapu — max se traži KROZ OBA seta
+            // podataka po koloni, da intenzitet ostane uporediv između
+            // sječa i otprema redova (jača sječa se ne bi "zagasila" pored
+            // slabije otpreme iste kolone i obrnuto).
+            const colMax = {};
+            sortimenti.forEach(s => {
+                let mx = 0;
+                for (let m = 0; m < 12; m++) {
+                    mx = Math.max(mx, sjecaData.mjeseci[m][s] || 0, otpremaData.mjeseci[m][s] || 0);
+                }
+                colMax[s] = mx;
+            });
+            const heatable = s => {
+                const c = _mjesecniClassFor(s);
+                return (c === 'col-cetinari' || c === 'col-liscari');
+            };
+
+            let headerHtml = '<tr><th class="col-mjesec">MJESEC</th><th class="col-vrsta">VRSTA</th>';
+            sortimenti.forEach(s => {
+                const cls = _mjesecniClassFor(s) + (grpStart.has(s) ? ' grp-start' : '');
+                headerHtml += `<th class="${cls}">${s}</th>`;
+            });
+            headerHtml += '</tr>';
+            headerElem.innerHTML = headerHtml;
+
+            function redCelije(data, m) {
+                let html = '';
+                sortimenti.forEach(s => {
+                    const value = data.mjeseci[m][s] || 0;
+                    let cls = _mjesecniClassFor(s);
+                    if (grpStart.has(s)) cls += ' grp-start';
+                    if (value === 0) cls += ' is-zero';
+                    let stil = '';
+                    if (value > 0 && heatable(s) && colMax[s] > 0) {
+                        const i = Math.sqrt(value / colMax[s]);
+                        cls += ' heat';
+                        stil = ` style="--i:${i.toFixed(3)}"`;
+                    }
+                    html += `<td class="${cls}"${stil}>${_mjesecniFmtBroj(value)}</td>`;
+                });
+                return html;
+            }
+
+            let bodyHtml = '';
+            const totalsSjeca = {}, totalsOtprema = {};
+            sortimenti.forEach(s => { totalsSjeca[s] = 0; totalsOtprema[s] = 0; });
+
+            for (let m = 0; m < 12; m++) {
+                bodyHtml += '<tr class="m-row komb-sjeca">';
+                bodyHtml += `<td class="col-mjesec" rowspan="2">${_MJESECI_KRATKI[m]}</td>`;
+                bodyHtml += '<td class="col-vrsta">🌲 Sječa</td>';
+                bodyHtml += redCelije(sjecaData, m);
+                bodyHtml += '</tr>';
+
+                bodyHtml += '<tr class="m-row komb-otprema">';
+                bodyHtml += '<td class="col-vrsta">🚛 Otprema</td>';
+                bodyHtml += redCelije(otpremaData, m);
+                bodyHtml += '</tr>';
+
+                sortimenti.forEach(s => {
+                    totalsSjeca[s]   += sjecaData.mjeseci[m][s] || 0;
+                    totalsOtprema[s] += otpremaData.mjeseci[m][s] || 0;
+                });
+            }
+
+            function ukupnoCelije(totals) {
+                let html = '';
+                sortimenti.forEach(s => {
+                    const total = totals[s] || 0;
+                    let cls = _mjesecniClassFor(s);
+                    if (grpStart.has(s)) cls += ' grp-start';
+                    if (total === 0) cls += ' is-zero';
+                    html += `<td class="${cls}">${_mjesecniFmtBroj(total)}</td>`;
+                });
+                return html;
+            }
+            bodyHtml += '<tr class="ukupno-row komb-sjeca">';
+            bodyHtml += '<td class="col-mjesec" rowspan="2">UKUPNO</td>';
+            bodyHtml += '<td class="col-vrsta">🌲 Sječa</td>';
+            bodyHtml += ukupnoCelije(totalsSjeca);
+            bodyHtml += '</tr>';
+
+            bodyHtml += '<tr class="ukupno-row komb-otprema">';
+            bodyHtml += '<td class="col-vrsta">🚛 Otprema</td>';
+            bodyHtml += ukupnoCelije(totalsOtprema);
+            bodyHtml += '</tr>';
+
+            bodyElem.innerHTML = bodyHtml;
+        }
+
+        window.exportKombinovanaToExcel = function() {
+            const data = _kombinovanoExportData;
+            if (!data) {
+                if (typeof showWarning === 'function') showWarning('Nema podataka', 'Tabela još nije učitana.');
+                return;
+            }
+            if (typeof XLSX === 'undefined') {
+                if (typeof showError === 'function') showError('Export nije dostupan', 'Excel biblioteka nije učitana.');
+                return;
+            }
+
+            const aoa = [['MJESEC', 'VRSTA'].concat(data.sortimenti)];
+            const totalsSjeca = {}, totalsOtprema = {};
+            for (let m = 0; m < 12; m++) {
+                const redSjeca = [_MJESECI_KRATKI[m], 'Sječa'];
+                const redOtprema = ['', 'Otprema'];
+                data.sortimenti.forEach(s => {
+                    const vs = data.sjeca.mjeseci[m][s] || 0;
+                    const vo = data.otprema.mjeseci[m][s] || 0;
+                    redSjeca.push(vs);
+                    redOtprema.push(vo);
+                    totalsSjeca[s] = (totalsSjeca[s] || 0) + vs;
+                    totalsOtprema[s] = (totalsOtprema[s] || 0) + vo;
+                });
+                aoa.push(redSjeca);
+                aoa.push(redOtprema);
+            }
+            aoa.push(['UKUPNO', 'Sječa'].concat(data.sortimenti.map(s => totalsSjeca[s] || 0)));
+            aoa.push(['', 'Otprema'].concat(data.sortimenti.map(s => totalsOtprema[s] || 0)));
+
+            const ws = XLSX.utils.aoa_to_sheet(aoa);
+            ws['!cols'] = [{ wch: 10 }, { wch: 10 }].concat(data.sortimenti.map(s => ({ wch: Math.max(10, s.length + 2) })));
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Podaci');
+            XLSX.writeFile(wb, `Sjeca-otprema-kombinovano_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        };
 
         // ---- EXPORT MJESEČNIH TABELA ----
         // Gradi .xlsx IZ IZVORNIH PODATAKA (aoa_to_sheet), a ne iz DOM-a kao

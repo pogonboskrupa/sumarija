@@ -3447,6 +3447,34 @@
     font-style: italic;
 }
 
+/* ---------- KOMBINOVANI PRIKAZ (Sječa/Otprema naizmjenično po mjesecu) ----------
+   Treći prikaz na Sječa/otprema tabu (js/app.js renderMjesecnaKombinovanaTabela).
+   Nasljeđuje svu gornju .pro-mjesecna-table bazu (zaglavlje/grupe/heat mapa),
+   samo dodaje VRSTA kolonu i tinta par redova po tipu — umjesto obične zebre —
+   da se sječa/otprema jasno razaznaju na prvi pogled. ID-scoped (veća
+   specifičnost bez !important) da pouzdano pregazi zebru/hover ispod, ali s
+   background-color (ne background shorthand) da heat mapa (background-image)
+   ostane vidljiva iznad. */
+#mjesecna-kombinovano-table tbody td.col-vrsta {
+    font-family: 'Comfortaa', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    text-align: left;
+    white-space: nowrap;
+}
+#mjesecna-kombinovano-table thead th.col-vrsta { text-align: left; }
+#mjesecna-kombinovano-table tbody tr.komb-sjeca td { background-color: #eff6ff; }
+#mjesecna-kombinovano-table tbody tr.komb-otprema td { background-color: #fff7ed; }
+#mjesecna-kombinovano-table tbody tr.komb-sjeca td.col-mjesec { background-color: #dbeafe; }
+#mjesecna-kombinovano-table tbody tr.komb-otprema td.col-vrsta { border-top: 1px dashed #fdba74; }
+#mjesecna-kombinovano-table tbody tr.komb-sjeca td.col-vrsta { color: #1e3a5f; }
+#mjesecna-kombinovano-table tbody tr.komb-otprema td.col-vrsta { color: #b45309; }
+#mjesecna-kombinovano-table tbody tr.komb-sjeca:hover td { background-color: #dbeafe; }
+#mjesecna-kombinovano-table tbody tr.komb-otprema:hover td { background-color: #fed7aa; }
+#mjesecna-kombinovano-table tbody tr.ukupno-row.komb-sjeca td { background-color: #1e3a5f; }
+#mjesecna-kombinovano-table tbody tr.ukupno-row.komb-otprema td { background-color: #7c2d12; }
+#mjesecna-kombinovano-table tbody tr.ukupno-row td.col-vrsta { color: #ffffff; }
+
 /* ==========================================================================
    ŠIHTARICA — mjesečna evidencija radnih dana (js/sihtarica.js)
    Prikazuje SVE dane u mjesecu; vikendi i nepopunjeni dani su namjerno
