@@ -96,13 +96,25 @@
     return { fillColor:c, fillOpacity:0.6, color:'#b45309', weight:4, opacity:1, dashArray:null };
   }
 
-  // Šumsko uzgojni radovi mod — poligoni se boje IDENTIČNO kao na Proizvodnji
-  // (isti _getStyle/_getHoverStyle za sve statuse, uključujući slucajni/
-  // zapisnik). Prije je ostatak odjela bio "zatamnjen" radi konteksta, ali
-  // blijeda siva (niska opacity) je na šarenoj topografskoj podlozi bila
-  // praktično nevidljiva — korisnik je tražio da izgleda kao Proizvodnja.
-  function _styleForMode(status) { return _getStyle(status); }
-  function _hoverStyleForMode(status) { return _getHoverStyle(status); }
+  // Šumsko uzgojni radovi mod — slucajni/zapisnik zadržavaju svoju punu boju
+  // (_getStyle, isto kao Proizvodnja), ali OSTALI odjeli NE smiju prikazivati
+  // svoju Proizvodnja status-boju (to je tuđa "logika podataka" — sječa/
+  // otprema status — koja ovdje samo zbunjuje). Kontura (linija) je namjerno
+  // ISTE debljine/providnosti kao Proizvodnja (weight 4, opacity 0.85) da
+  // poligoni ostanu jasno vidljivi na šarenoj topografskoj podlozi — ranija
+  // verzija je imala jako blijedu liniju (weight 4, opacity 0.5) koja se
+  // gubila; fillColor je namjerno neutralan (siva), ne status-boja.
+  const _UZGOJNI_KONTEKST_STYLE      = { fillColor:'#9ca3af', fillOpacity:0.15, color:'#1a1a1a', weight:4, opacity:0.85 };
+  const _UZGOJNI_KONTEKST_HOVER_STYLE = { fillColor:'#9ca3af', fillOpacity:0.3,  color:'#000',    weight:5, opacity:1 };
+  function _uzgojniIstaknut(status) { return status === 'slucajni' || status === 'zapisnik'; }
+  function _styleForMode(status) {
+    if (_prikazMode === 'uzgojni' && !_uzgojniIstaknut(status)) return _UZGOJNI_KONTEKST_STYLE;
+    return _getStyle(status);
+  }
+  function _hoverStyleForMode(status) {
+    if (_prikazMode === 'uzgojni' && !_uzgojniIstaknut(status)) return _UZGOJNI_KONTEKST_HOVER_STYLE;
+    return _getHoverStyle(status);
+  }
 
   // ---- NORMALIZACIJA ----
   function _normKey(s) {
@@ -1356,11 +1368,12 @@
 
   // ---- FILTER ----
   window.applyKartaFilter = function() {
-    // Šumsko uzgojni radovi mod — SVI poligoni ostaju vidljivi, obojeni
-    // identično kao na Proizvodnji (_styleForMode sad samo delegira na
-    // _getStyle). Proizvodnja-specifični filteri (GJ/status/pretraga/
-    // otprema/sanitar/legenda) su sakriveni u ovom modu, pa se ovdje ne
-    // primjenjuju.
+    // Šumsko uzgojni radovi mod — SVI poligoni ostaju vidljivi (kontura iste
+    // debljine kao Proizvodnja), ali samo slucajni/zapisnik nose Proizvodnja
+    // status-boju preko _styleForMode-a — ostali dobijaju neutralnu sivu
+    // konturu (nema status-boje, ta "logika podataka" ovdje nije relevantna).
+    // Proizvodnja-specifični filteri (GJ/status/pretraga/otprema/sanitar/
+    // legenda) su sakriveni u ovom modu, pa se ovdje ne primjenjuju.
     if (_prikazMode === 'uzgojni') {
       _allFeatures.forEach(lyr => {
         if (!_map.hasLayer(lyr)) lyr.addTo(_map);
