@@ -3475,6 +3475,14 @@
 #mjesecna-kombinovano-table tbody tr.ukupno-row.komb-otprema td { background-color: #7c2d12; }
 #mjesecna-kombinovano-table tbody tr.ukupno-row td.col-vrsta { color: #ffffff; }
 
+/* Razdvajanje mjeseci — deblji gornji obrub na PRVOM redu svakog para
+   (komb-sjeca, uvijek početak novog mjeseca) da se jasno vidi gdje jedan
+   mjesec završava a drugi počinje, umjesto da se 24 reda vizuelno sliju.
+   :first-child (Januar) je izuzet — sjedi odmah ispod zaglavlja, ne treba
+   mu dodatna linija. */
+#mjesecna-kombinovano-table tbody tr.m-row.komb-sjeca td { border-top: 2px solid #94a3b8; }
+#mjesecna-kombinovano-table tbody tr.m-row.komb-sjeca:first-child td { border-top: none; }
+
 /* ==========================================================================
    ŠIHTARICA — mjesečna evidencija radnih dana (js/sihtarica.js)
    Prikazuje SVE dane u mjesecu; vikendi i nepopunjeni dani su namjerno
