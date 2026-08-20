@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.9.6';
+        const APP_VERSION = '1.9.7';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -10490,26 +10490,14 @@
         }
 
         // Dijeljeno između renderMjesecnaTabela (Sječa/Otprema kartice) i
-        // renderMjesecnaKombinovanaTabela (treći, "Kombinovano" prikaz) — da
-        // se grupe sortimenata/format brojeva ne moraju održavati na dva mjesta.
+        // renderMjesecnaKombinovanaTabela (treći, "Kombinovano" prikaz). Grupna
+        // klasa po sortimentu koristi VEĆ POSTOJEĆU globalnu sortimentColClass
+        // (js/utils.js) — namjerno NIJE ponovo deklarisana ovdje: utils.js na
+        // top-level-u već ima const _CETINARI_TRUPCI/_CETINARI_UKUPNO/
+        // _LISCARI_TRUPCI/_LISCARI_UKUPNO, a top-level const s istim imenom u
+        // dva <script> fajla je SyntaxError ("already been declared") koji
+        // obara CIJELI script — tačno to se i desilo u prvoj verziji ovog fixa.
         const _MJESECI_KRATKI = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
-        const _CETINARI_SORT    = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART'];
-        const _CETINARI_TRUPCI  = ['TRUPCI Č'];
-        const _CETINARI_UKUPNO  = ['Σ ČETINARI', 'ČETINARI'];
-        const _LISCARI_SORT     = ['F/L L', 'I L', 'II L', 'III L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE'];
-        const _LISCARI_TRUPCI   = ['TRUPCI L', 'TRUPCI'];
-        const _LISCARI_UKUPNO   = ['LIŠĆARI'];
-        const _MJ_GRAND_TOTAL   = ['SVEUKUPNO', 'UKUPNO Č+L'];
-        function _mjesecniClassFor(s) {
-            if (_CETINARI_SORT.includes(s))   return 'col-cetinari';
-            if (_CETINARI_TRUPCI.includes(s)) return 'col-cetinari is-subtotal';
-            if (_CETINARI_UKUPNO.includes(s)) return 'col-cetinari is-total';
-            if (_LISCARI_SORT.includes(s))    return 'col-liscari';
-            if (_LISCARI_TRUPCI.includes(s))  return 'col-liscari is-subtotal';
-            if (_LISCARI_UKUPNO.includes(s))  return 'col-liscari is-total';
-            if (_MJ_GRAND_TOTAL.includes(s))  return 'col-sveukupno';
-            return 'col-other';
-        }
         // Nula → "–" umjesto "0.00", hiljade dobijaju tačku (de-DE konvencija).
         const _mjesecniFmtBroj = v => v === 0 ? '–'
             : v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -10760,7 +10748,7 @@
 
         // Treći prikaz na "Sječa/otprema" tabu — Sječa i Otprema naizmjenično,
         // red po red, za svaki mjesec (umjesto dvije odvojene tabele). Koristi
-        // dijeljene _mjesecniClassFor/_mjesecniFmtBroj/_MJESECI_KRATKI (iznad
+        // dijeljene sortimentColClass (js/utils.js) + _mjesecniFmtBroj/_MJESECI_KRATKI (iznad
         // loadMjesecniSortimenti) — ista podjela sortimenata u grupe/heat mapa
         // kao renderMjesecnaTabela, samo dva izvora podataka umjesto jednog.
         let _kombinovanoExportData = null;
@@ -10784,7 +10772,7 @@
             const grpStart = new Set();
             let _prevGrupa = null;
             sortimenti.forEach(s => {
-                const g = _mjesecniClassFor(s).split(' ')[0];
+                const g = sortimentColClass(s).split(' ')[0];
                 if (g !== _prevGrupa) { grpStart.add(s); _prevGrupa = g; }
             });
 
@@ -10801,13 +10789,13 @@
                 colMax[s] = mx;
             });
             const heatable = s => {
-                const c = _mjesecniClassFor(s);
+                const c = sortimentColClass(s);
                 return (c === 'col-cetinari' || c === 'col-liscari');
             };
 
             let headerHtml = '<tr><th class="col-mjesec">MJESEC</th><th class="col-vrsta">VRSTA</th>';
             sortimenti.forEach(s => {
-                const cls = _mjesecniClassFor(s) + (grpStart.has(s) ? ' grp-start' : '');
+                const cls = sortimentColClass(s) + (grpStart.has(s) ? ' grp-start' : '');
                 headerHtml += `<th class="${cls}">${s}</th>`;
             });
             headerHtml += '</tr>';
@@ -10817,7 +10805,7 @@
                 let html = '';
                 sortimenti.forEach(s => {
                     const value = data.mjeseci[m][s] || 0;
-                    let cls = _mjesecniClassFor(s);
+                    let cls = sortimentColClass(s);
                     if (grpStart.has(s)) cls += ' grp-start';
                     if (value === 0) cls += ' is-zero';
                     let stil = '';
@@ -10857,7 +10845,7 @@
                 let html = '';
                 sortimenti.forEach(s => {
                     const total = totals[s] || 0;
-                    let cls = _mjesecniClassFor(s);
+                    let cls = sortimentColClass(s);
                     if (grpStart.has(s)) cls += ' grp-start';
                     if (total === 0) cls += ' is-zero';
                     html += `<td class="${cls}">${_mjesecniFmtBroj(total)}</td>`;
