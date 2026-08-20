@@ -1043,6 +1043,36 @@ table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-sedmica {
     border-bottom: 3px solid #93c5fd !important;
 }
 
+/* Sedmični izvještaj + Sedmični po radniku imaju svjetliju header temu
+   (pravilo gore, "table[id^=izvjestaji-sedmicni]..."), ali .is-subtotal/
+   .is-total (TRUPCI Č/L, Σ ČETINARI/LIŠĆARI) pravila iznad (col-cetinari.
+   is-subtotal itd.) imaju VEĆU CSS specifičnost (3 klase) od tog svjetlog
+   pravila (1 atribut + 1 klasa + 3 elementa) pa su i dalje pobjeđivala —
+   ostavljala tamnozelenu/tamnobraon pozadinu s tamnim tekstom, praktično
+   nečitljivo. Ista svjetla tema ovdje, ali s obojenim akcentom da se
+   total/subtotal kolone i dalje razaznaju (isti princip kao tbody ćelije
+   ispod). */
+table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-cetinari.is-subtotal {
+    background: #d1fae5 !important;
+    color: #047857 !important;
+    border-bottom: 3px solid #34d399 !important;
+}
+table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-cetinari.is-total {
+    background: #a7f3d0 !important;
+    color: #065f46 !important;
+    border-bottom: 3px solid #059669 !important;
+}
+table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-liscari.is-subtotal {
+    background: #fef3c7 !important;
+    color: #b45309 !important;
+    border-bottom: 3px solid #fbbf24 !important;
+}
+table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-liscari.is-total {
+    background: #fde68a !important;
+    color: #92400e !important;
+    border-bottom: 3px solid #f59e0b !important;
+}
+
 /* Ispuna po ćeliji — namjerno isključena iz UKUPNO/UKUPNO MJESEC redova
    (imaju sopstvenu jaku pozadinu na nivou reda; kolona bi se tu samo
    sudarala s njom) preko :not() na sve tri varijante naziva total-reda
