@@ -518,8 +518,16 @@
 
         <!-- MJESEČNI SORTIMENTI CONTENT -->
         <div id="mjesecni-sortimenti-content" class="container hidden">
+            <!-- Toggle Sječa/Otprema — na širim ekranima su obje tabele (20 kolona
+                 sortimenata svaka) pune širine i previše se skroluje; korisnički
+                 zahtjev: prikaži jednu po jednu umjesto oba puštanja jedno ispod
+                 drugog, isti submenu-tab obrazac kao ostatak appa (js/ui.js). -->
+            <div class="submenu">
+                <button class="submenu-tab active" id="mjesecni-sortimenti-toggle-sjeca" onclick="switchMjesecniSortimentiView('sjeca')">📊 Sječa</button>
+                <button class="submenu-tab" id="mjesecni-sortimenti-toggle-otprema" onclick="switchMjesecniSortimentiView('otprema')">🚛 Otprema</button>
+            </div>
             <!-- SJEČA PO MJESECIMA - Pro Card -->
-            <div class="mjesecni-card" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 32px; overflow: hidden;">
+            <div id="mjesecni-sjeca-card" class="mjesecni-card" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 32px; overflow: hidden;">
                 <!-- Card Header -->
                 <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
                     <div>
@@ -547,7 +555,7 @@
             </div>
 
             <!-- OTPREMA PO MJESECIMA - Pro Card -->
-            <div class="mjesecni-card" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 32px; overflow: hidden;">
+            <div id="mjesecni-otprema-card" class="mjesecni-card hidden" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 32px; overflow: hidden;">
                 <!-- Card Header -->
                 <div style="background: linear-gradient(135deg, #7c2d12 0%, #b45309 100%); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
                     <div>

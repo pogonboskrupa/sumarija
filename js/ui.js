@@ -356,6 +356,18 @@
             }
         }
 
+        // Toggle Sječa/Otprema kartice na "Sječa/otprema" (mjesecni-sortimenti) tabu —
+        // obje tabele se učitaju zajedno (loadMjesecniSortimenti u app.js), ovo je
+        // čisto vizuelni prikaz jedne po jedne (korisnički zahtjev, širi ekran).
+        function switchMjesecniSortimentiView(view) {
+            const bSjeca   = document.getElementById('mjesecni-sortimenti-toggle-sjeca');
+            const bOtprema = document.getElementById('mjesecni-sortimenti-toggle-otprema');
+            if (bSjeca)   bSjeca.classList.toggle('active', view === 'sjeca');
+            if (bOtprema) bOtprema.classList.toggle('active', view === 'otprema');
+            document.getElementById('mjesecni-sjeca-card').classList.toggle('hidden', view !== 'sjeca');
+            document.getElementById('mjesecni-otprema-card').classList.toggle('hidden', view !== 'otprema');
+        }
+
         // Switch between primaci-admin submenus (Admin: Primači na šuma panju)
         function switchPrimaciAdminSubmenu(view) {
             // Update submenu buttons
