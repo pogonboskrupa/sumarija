@@ -1,6 +1,6 @@
 // ========== Service Worker - Offline Support ==========
 
-const CACHE_VERSION = 'v266';
+const CACHE_VERSION = 'v267';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
 // Install — pre-keširaj samo offline.html (fallback koji se inače nikad ne
@@ -74,10 +74,23 @@ self.addEventListener('fetch', (event) => {
     if (url.hostname === 'server.arcgisonline.com' ||
         /(^|\.)tile\.openstreetmap\.org$/.test(url.hostname) ||
         /(^|\.)tile\.opentopomap\.org$/.test(url.hostname)) {
+        // Izuzetak od "keš uvijek pobjeđuje": kad stranica EKSPLICITNO traži
+        // svježu pločicu ({cache:'reload'}), mora se ići na mrežu. Bez ovoga je
+        // opcija "Skinuti ponovo i osvježiti pločice?" (mapa-radnika.js) bila
+        // prazno obećanje — svaka pločica bi se pročitala iz keša, brojač bi
+        // odbrojao do kraja i javio "Karta preuzeta", a na disku bi ostale
+        // POTPUNO ISTE stare pločice. Leaflet svoje pločice traži bez ove
+        // opcije, pa mu keš i dalje odgovara odmah (offline rad netaknut).
+        // Pad mreže NAMJERNO vraća 503, a NE staru keširanu pločicu: preuzimanje
+        // broji samo odgovore sa resp.ok (mapa-radnika.js), pa bi vraćanje starog
+        // keša tu prošlo kao "osvježeno" iako se ništa nije skinulo — tačno ona
+        // vrsta lažnog "Karta preuzeta" zbog koje to brojanje i postoji.
+        const traziSvjeze = request.cache === 'reload' || request.cache === 'no-store';
         event.respondWith(
-            caches.match(request).then(cached => cached || fetch(request)
-                .then(resp => { _cacheIfOk(resp.clone(), request); return resp; })
-                .catch(() => new Response('', { status: 503 })))
+            (traziSvjeze ? Promise.resolve(null) : caches.match(request))
+                .then(cached => cached || fetch(request)
+                    .then(resp => { _cacheIfOk(resp.clone(), request); return resp; })
+                    .catch(() => new Response('', { status: 503 })))
         );
         return;
     }

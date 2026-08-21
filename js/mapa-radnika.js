@@ -661,6 +661,15 @@
     // da trajno stoji ispod checkboxa svaki put kad se popup otvori.
     var OFFLINE_STATUS_MS = 4000;
     var _offlineStatusTimer = null;
+    // Preuzimanje karte zna trajati minutama — mora se moći prekinuti (dugme
+    // "✕ Otkaži" u statusnoj liniji), a i samo mora stati kad korisnik napusti
+    // Kartu, da stotine zahtjeva ne nastave curiti u pozadini.
+    var _offlineAbort = false;
+    var _offlinePreuzimanjeUToku = false;
+    window.mapaRadnikaCancelOfflineDownload = function() {
+        if (!_offlinePreuzimanjeUToku) return;
+        _offlineAbort = true;
+    };
     function _refreshOfflineToggle() {
         var cb = document.getElementById('radnik-mapa-offline-toggle');
         var st = document.getElementById('radnik-mapa-offline-status');
@@ -702,7 +711,12 @@
         var zMax = _offlineZMax(mode);
         var boundsList = _allLayers.map(function(lyr) { return lyr.getBounds(); });
         var tiles = _tilesForBoundsList(boundsList, OFFLINE_Z_MIN, zMax, OFFLINE_BUFFER_M);
-        if (!tiles.length) return;
+        // Ranije `return` bez ijedne riječi — korisnik tapne i ne desi se
+        // baš ništa, bez naznake zašto.
+        if (!tiles.length) {
+            _notify('showWarning', 'Nema šta preuzeti', 'Za tekući prikaz nije izračunata nijedna pločica.');
+            return;
+        }
         _showTragConfirm(
             'Preuzeti ' + tiles.length + ' pločica (~' + _offlineSizeMb(tiles.length, mode) + ' MB, ' +
             _slojNaziv(mode) + ', zoom ' + OFFLINE_Z_MIN + '-' + zMax + ')? ' +
@@ -731,23 +745,67 @@
         if (cb) cb.disabled = true;
         if (st) st.classList.remove('rm-fade-out'); // vidljivo tokom cijelog preuzimanja, ne samo nakon refresha
         if (_offlineStatusTimer) clearTimeout(_offlineStatusTimer);
-        var done = 0;
-        for (var i = 0; i < tiles.length; i++) {
-            // Broji SAMO stvarno dobavljene pločice. Service Worker na neuspjeh
-            // vraća `new Response('', {status:503})` — a to je RIJEŠEN odgovor,
-            // ne odbačen, pa bi golo `await fetch(); done++` brojalo i pločice
-            // koje uopšte nisu skinute. Posljedica je bila najgora moguća: bez
-            // mreže bi javilo "Karta preuzeta, 950/950" i uključilo kvačicu, a
-            // radnik bi otišao na teren bez ijedne pločice.
-            // `type === 'opaque'` je legitiman slučaj (cross-origin pločica
-            // keširana iz <img> taga) — status joj je po spec-u uvijek 0.
-            try {
-                var resp = await fetch(_tileUrl(tiles[i]));
-                if (resp && (resp.ok || resp.type === 'opaque')) done++;
-            } catch (_) {}
-            if (st) st.textContent = 'Preuzimam... ' + (i + 1) + '/' + tiles.length;
+
+        _offlineAbort = false;
+        _offlinePreuzimanjeUToku = true;
+        var done = 0, zapoceto = 0, obradjeno = 0;
+
+        function _prikaziNapredak() {
+            if (!st) return;
+            // innerHTML (ne textContent) zbog dugmeta za otkazivanje — sadržaj je
+            // isključivo naš literal + brojevi, nema korisničkog unosa.
+            st.innerHTML = 'Preuzimam... ' + obradjeno + '/' + tiles.length +
+                ' <button type="button" onclick="mapaRadnikaCancelOfflineDownload()" ' +
+                'style="margin-left:8px;padding:2px 8px;border:1px solid #b91c1c;border-radius:6px;' +
+                'background:#fff;color:#b91c1c;font-size:11px;font-weight:700;cursor:pointer;">✕ Otkaži</button>';
         }
+        _prikaziNapredak();
+
+        // Preuzimanje u NEKOLIKO paralelnih tokova umjesto jedan-po-jedan.
+        // Sekvencijalno je za ~1000 pločica značilo više minuta čekanja iako
+        // je najveći dio tog vremena bio mrežni round-trip, ne propusni opseg.
+        // Skromnih 5 tokova: dovoljno za veliko ubrzanje, a daleko ispod
+        // granice pristojnosti prema besplatnim tile serverima (OSM/Topo).
+        var PARALELNO = 5;
+        async function _radnik() {
+            while (true) {
+                if (_offlineAbort) return;
+                var i = zapoceto++;
+                if (i >= tiles.length) return;
+                // Broji SAMO stvarno dobavljene pločice. Service Worker na neuspjeh
+                // vraća `new Response('', {status:503})` — a to je RIJEŠEN odgovor,
+                // ne odbačen, pa bi golo `await fetch(); done++` brojalo i pločice
+                // koje uopšte nisu skinute. Posljedica je bila najgora moguća: bez
+                // mreže bi javilo "Karta preuzeta, 950/950" i uključilo kvačicu, a
+                // radnik bi otišao na teren bez ijedne pločice.
+                // `type === 'opaque'` je legitiman slučaj (cross-origin pločica
+                // keširana iz <img> taga) — status joj je po spec-u uvijek 0.
+                //
+                // cache:'reload' — bez toga service worker vrati POSTOJEĆU keširanu
+                // pločicu i "osvježi pločice" ne osvježi baš ništa (vidi tile granu
+                // u service-worker.js).
+                try {
+                    var resp = await fetch(_tileUrl(tiles[i]), { cache: 'reload' });
+                    if (resp && (resp.ok || resp.type === 'opaque')) done++;
+                } catch (_) {}
+                obradjeno++;
+                if (obradjeno % 10 === 0 || obradjeno === tiles.length) _prikaziNapredak();
+            }
+        }
+        var radnici = [];
+        for (var w = 0; w < PARALELNO; w++) radnici.push(_radnik());
+        await Promise.all(radnici);
+
+        _offlinePreuzimanjeUToku = false;
         if (cb) cb.disabled = false;
+
+        if (_offlineAbort) {
+            // Otkazano na pola — zatečeno stanje NE smije nositi kvačicu
+            // "spremno za teren"; ostaje zapisano ono što je bilo prije.
+            _notify('showWarning', 'Preuzimanje otkazano', 'Preuzeto ' + done + ' od ' + tiles.length + ' pločica.');
+            _refreshOfflineToggle();
+            return;
+        }
         // Zabilježi samo ako je preuzeta bar velika većina — pola skinute karte
         // ne smije prikazivati kvačicu kao da je sve spremno za teren.
         if (done >= tiles.length * 0.9) {
@@ -3389,15 +3447,22 @@
     // Iscrtava/ažurira plavu tačku "moja lokacija".
     function _updateLocDisplay(pos) {
         var ll = [pos.coords.latitude, pos.coords.longitude];
-        if (_locMarker) { _map.removeLayer(_locMarker); _locMarker = null; }
-        _locMarker = L.marker(ll, {
-            icon: L.divIcon({ className: 'rm-loc-icon', html: _locIconHtml(), iconSize: [40, 40], iconAnchor: [20, 20] }),
-            interactive: true,
-            keyboard: false
-        }).on('click', function(e) {
-            L.DomEvent.stopPropagation(e);
-            _toggleHeadingView();
-        }).addTo(_map);
+        // POMJERI postojeći marker umjesto da ga rušiš i praviš novog. Ranije se
+        // na SVAKI GPS fix (watchPosition ume javljati i svake sekunde) brisao
+        // Leaflet marker pa se pravio novi — plava tačka je vidljivo treperila,
+        // a click handler se iznova registrovao 60 puta u minuti.
+        if (_locMarker) {
+            _locMarker.setLatLng(ll);
+        } else {
+            _locMarker = L.marker(ll, {
+                icon: L.divIcon({ className: 'rm-loc-icon', html: _locIconHtml(), iconSize: [40, 40], iconAnchor: [20, 20] }),
+                interactive: true,
+                keyboard: false
+            }).on('click', function(e) {
+                L.DomEvent.stopPropagation(e);
+                _toggleHeadingView();
+            }).addTo(_map);
+        }
         _headingLastLL = ll;
         // Lokacija se pomjerila (npr. "Prati me") — pomjeri i konus smjera
         // gledanja s njom, na zadnjem poznatom azimutu, bez čekanja na sljedeći
@@ -3689,6 +3754,15 @@
         if (_map) {
             _map.off('dragstart', _pauzirajFollow);
             _map.off('zoomstart', _pauzirajFollow);
+        }
+        // Ukloni plavu tačku i konus smjera — ranije su ostajali na mapi i nakon
+        // gašenja lokacije, pa je radnik na terenu gledao poziciju koja se više
+        // NE ažurira i djeluje kao da je trenutna. Samo ako nijedan drugi
+        // potrošač GPS-a nije aktivan: snimanje traga/ofarbane linije i "Vodi me
+        // do tačke" i dalje sami ažuriraju tačku i moraju je zadržati.
+        if (!Object.keys(_gpsConsumers).length) {
+            if (_locMarker) { _map.removeLayer(_locMarker); _locMarker = null; }
+            if (_headingActive) _stopHeadingView();
         }
         _osvjeziLocDugme();
     }
@@ -4749,6 +4823,9 @@
         if (typeof window.mapaRadnikaCancelIzvrsenoPoligon === 'function') window.mapaRadnikaCancelIzvrsenoPoligon();
         _stopLokacija(); // ne ostavljaj GPS watchPosition da radi u pozadini nakon izlaska s mape
         _stopHeadingView(); // ne ostavljaj deviceorientation listener da radi u pozadini
+        // Isto i za preuzimanje karte: bez ovoga bi stotine zahtjeva za pločice
+        // nastavile curiti u pozadini nakon što korisnik izađe s Karte.
+        if (_offlinePreuzimanjeUToku) _offlineAbort = true;
         // Vrati viewport na korisnikovu preferencu (Desktop/Android prikaz) ako
         // je bila uključena prije ulaska na mapu.
         var viewport = document.querySelector('meta[name=viewport]');

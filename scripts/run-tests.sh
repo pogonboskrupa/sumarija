@@ -44,7 +44,8 @@ node --test tests/name-matching.test.js \
               tests/karta-odjela-neaktivnost-zavrseno.test.js \
               tests/offline-red-cekanja.test.js \
               tests/slaba-veza.test.js \
-              tests/karta-gps-pracenje.test.js
+              tests/karta-gps-pracenje.test.js \
+              tests/offline-karta-preuzimanje.test.js
 
 echo ""
 echo "=============================================="
