@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.12.2';
+        const APP_VERSION = '1.12.3';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -3563,7 +3563,7 @@
             function buildBodyRows(sortedRows) {
                 return sortedRows.map(r => {
                     const preklSet = r['__preklSet'] || new Set();
-                    let cells = `<td style="padding:8px 10px;font-size:12px;font-weight:400;color:#1e3a5f;border:1px solid #e5e7eb;white-space:nowrap;">${r['__naziv']}</td>`;
+                    let cells = `<td style="padding:8px 10px;font-size:17px;font-weight:400;color:#1e3a5f;border:1px solid #e5e7eb;white-space:nowrap;">${r['__naziv']}</td>`;
                     cols.forEach(c => {
                         const val = r[c.key];
                         const isPrekl = !c.sum && preklSet.has(c.key);
