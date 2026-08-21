@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.12.6';
+        const APP_VERSION = '1.12.7';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -4047,6 +4047,20 @@
         const SORT_KOLONE = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'Σ ČETINARI', 'F/L L', 'I L', 'II L', 'III L', 'TRUPCI L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI'];
         const SORT_KOLONE_HEADER = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'TRUPCI Č', 'CEL.D', 'CEL.C', 'ŠKART', 'ČETINARI', 'F/L L', 'I L', 'II L', 'III L', 'TRUPCI L', 'OGR.D', 'OGR.C', 'GULE', 'LIŠĆARI'];
 
+        // Stil zaglavlja po grupi sortimenta — isti pristup kao dvoslojno
+        // grupisano zaglavlje u js/godišnji-plan.js (plavo za četinare, braon
+        // za lišćare, tamnije+uokvireno za zbirne kolone). Bez ovoga je svih
+        // 19 kolona izgledalo identično (sivi tekst na bijeloj pozadini,
+        // 10px font) — korisnički zahtjev da se sortimentno zaglavlje bolje vidi.
+        function _sortKolonaHeaderStil(idx) {
+            const naziv = SORT_KOLONE[idx];
+            const jeZbir = naziv === 'Σ ČETINARI' || naziv === 'LIŠĆARI';
+            const jeCetinar = idx < 9; // F/L Č...ŠKART (prije Σ ČETINARI na indexu 9)
+            const granica = (idx === 0 || idx === 10) ? 'border-left:2px solid rgba(255,255,255,.35);' : '';
+            if (jeZbir) return 'background:#0f172a;color:white;border-left:2px solid rgba(255,255,255,.6);';
+            return (jeCetinar ? 'background:#1e3a5f;' : 'background:#7c2d12;') + 'color:white;' + granica;
+        }
+
         // Helper: parse DD.MM.YYYY to Date object
         function parseDatumDDMMYYYY(dateStr) {
             if (!dateStr) return null;
@@ -4168,12 +4182,17 @@
                 return;
             }
 
-            // Zaglavlje
-            let headerHtml = '<tr><th style="min-width:80px;">Datum</th><th style="min-width:80px;">Odjel</th><th style="min-width:100px;">Primač</th>';
-            SORT_KOLONE_HEADER.forEach(s => {
-                headerHtml += `<th style="min-width:55px; font-size:10px; text-align:right; white-space:nowrap;">${s}</th>`;
+            // Zaglavlje — tamna traka za identitet kolone + boja po grupi
+            // sortimenta (_sortKolonaHeaderStil) da 19 kolona ne izgleda kao
+            // jedna sivo-bijela masa.
+            let headerHtml = '<tr style="background:#1e3a5f;">' +
+                '<th style="min-width:80px;background:#1e3a5f;color:white;">Datum</th>' +
+                '<th style="min-width:80px;background:#1e3a5f;color:white;">Odjel</th>' +
+                '<th style="min-width:100px;background:#1e3a5f;color:white;">Primač</th>';
+            SORT_KOLONE_HEADER.forEach((s, idx) => {
+                headerHtml += `<th style="min-width:55px; font-size:11px; text-align:right; white-space:nowrap; padding:8px 6px; ${_sortKolonaHeaderStil(idx)}">${s}</th>`;
             });
-            headerHtml += '<th style="min-width:70px; text-align:right; font-size:10px; white-space:nowrap;">UKUPNO Č+L</th></tr>';
+            headerHtml += '<th style="min-width:70px; text-align:right; font-size:11px; white-space:nowrap; background:#1e3a5f; color:white; border-left:2px solid rgba(255,255,255,.6);">UKUPNO Č+L</th></tr>';
             headerElem.innerHTML = headerHtml;
 
             // Subtotali po datumu
@@ -4372,12 +4391,17 @@
                 return;
             }
 
-            // Zaglavlje
-            let headerHtml = '<tr><th style="min-width:80px;">Datum</th><th style="min-width:80px;">Odjel</th><th style="min-width:100px;">Otpremač</th><th style="min-width:100px;">Kupac</th>';
-            SORT_KOLONE_HEADER.forEach(s => {
-                headerHtml += `<th style="min-width:55px; font-size:10px; text-align:right; white-space:nowrap;">${s}</th>`;
+            // Zaglavlje — tamna traka za identitet kolone + boja po grupi
+            // sortimenta (_sortKolonaHeaderStil), isti obrazac kao Sječa tab.
+            let headerHtml = '<tr style="background:#1e3a5f;">' +
+                '<th style="min-width:80px;background:#1e3a5f;color:white;">Datum</th>' +
+                '<th style="min-width:80px;background:#1e3a5f;color:white;">Odjel</th>' +
+                '<th style="min-width:100px;background:#1e3a5f;color:white;">Otpremač</th>' +
+                '<th style="min-width:100px;background:#1e3a5f;color:white;">Kupac</th>';
+            SORT_KOLONE_HEADER.forEach((s, idx) => {
+                headerHtml += `<th style="min-width:55px; font-size:11px; text-align:right; white-space:nowrap; padding:8px 6px; ${_sortKolonaHeaderStil(idx)}">${s}</th>`;
             });
-            headerHtml += '<th style="min-width:70px; text-align:right; font-size:10px; white-space:nowrap;">UKUPNO Č+L</th></tr>';
+            headerHtml += '<th style="min-width:70px; text-align:right; font-size:11px; white-space:nowrap; background:#1e3a5f; color:white; border-left:2px solid rgba(255,255,255,.6);">UKUPNO Č+L</th></tr>';
             headerElem.innerHTML = headerHtml;
 
             // Subtotali po datumu
