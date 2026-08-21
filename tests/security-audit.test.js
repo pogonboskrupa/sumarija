@@ -229,15 +229,31 @@ describe('Sigurnosni audit - staticka analiza', () => {
             assert.ok(hasVersion, 'APP_VERSION treba biti definisan u app.js');
         });
 
-        test('APP_VERSION sadrzi godinu (2025 ili 2026)', () => {
+        // Ranije se trazila GODINA u broju verzije (npr. "2026.1"). Projekat je
+        // odavno presao na major.minor.patch (patch 1-9 po commitu, pa minor +1),
+        // pa je taj test provjeravao pravilo koje vise ne postoji i padao na
+        // svakoj izmjeni bez veze sa onim sto se mijenja. Sad provjerava STVARNO
+        // pravilo — i usput da se VERSION fajl i APP_VERSION ne raziđu.
+        test('APP_VERSION je u formatu major.minor.patch', () => {
             const content = readFile(path.join(ROOT, 'js', 'app.js'));
             const versionMatch = content.match(/const\s+APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
-            if (versionMatch) {
-                const version = versionMatch[1];
-                const hasYear = /202[5-9]/.test(version);
-                assert.ok(hasYear, `APP_VERSION treba sadrzati godinu: ${version}`);
-                console.log(`Trenutna verzija: ${version}`);
-            }
+            assert.ok(versionMatch, 'APP_VERSION nije pronadjen u app.js');
+            const version = versionMatch[1];
+            assert.ok(/^\d+\.\d+\.\d+$/.test(version),
+                `APP_VERSION mora biti major.minor.patch: ${version}`);
+            console.log(`Trenutna verzija: ${version}`);
+        });
+
+        test('VERSION fajl se poklapa sa APP_VERSION', () => {
+            // Razilazenje ova dva znaci da baner "nova verzija dostupna"
+            // (checkManifest u app.js poredi VERSION sa APP_VERSION) ili nikad
+            // ne iskoci, ili iskace vjecno — oba su tiha, teska za primijetiti.
+            const appVer = readFile(path.join(ROOT, 'js', 'app.js'))
+                .match(/const\s+APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
+            const fileVer = readFile(path.join(ROOT, 'VERSION')).trim();
+            assert.ok(appVer, 'APP_VERSION nije pronadjen u app.js');
+            assert.strictEqual(fileVer, appVer[1],
+                `VERSION (${fileVer}) i APP_VERSION (${appVer[1]}) moraju biti isti`);
         });
     });
 
