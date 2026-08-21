@@ -2277,17 +2277,18 @@
   }
 
   // ---- Centriranje na aktivne (u sječi) odjele ----
-  // Korisnički zahtjev: pri svakom ulasku prikaz treba biti centriran na
-  // područje gdje se trenutno siječe (južno od Bosanske Krupe), ne uvijek
-  // na fiksnu tačku (SUMARIJA_LATLNG = ured Šumarije u gradu). Umjesto da se
-  // nagađa/hardkoduje koordinata (plan sječe se mijenja iz godine u godinu),
-  // računa se STVARNI bounding box svih poligona sa statusom 'u-sjeci' —
-  // to garantovano prati gdje god se trenutno radi. Fallback na cijelu mapu
-  // ako trenutno nijedan odjel nije 'u-sjeci' (npr. van sezone).
+  // Korisnički zahtjev: pri svakom ulasku prikaz treba UVIJEK biti centriran
+  // na odjel RISOVAC KRUPA 60 (fiksna referentna tačka), bez obzira gdje se
+  // trenutno siječe. Fallback na bounding box svih poligona ako taj odjel iz
+  // nekog razloga nije pronađen u geojson-u (npr. promjena naziva u sloju).
   function _centrirajNaAktivne() {
     if (!_map || !_allFeatures || !_allFeatures.length) return;
-    var aktivni = _allFeatures.filter(function(lyr) { return lyr._kartaStatus === 'u-sjeci'; });
-    var ciljni = aktivni.length ? aktivni : _allFeatures;
+    var ciljniKljuc = _labelKey('RISOVAC KRUPA 60');
+    var pogodak = _allFeatures.filter(function(lyr) {
+      var p = lyr._kartaProps || {};
+      return _labelKey((p.gj || '') + ' ' + (p.odjel || p.name || '')) === ciljniKljuc;
+    });
+    var ciljni = pogodak.length ? pogodak : _allFeatures;
     var bounds = null;
     ciljni.forEach(function(lyr) {
       try {
