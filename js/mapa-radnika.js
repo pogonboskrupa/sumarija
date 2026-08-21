@@ -386,10 +386,9 @@
         _labelMarkers.forEach(function(m) { _map.removeLayer(m); });
         _labelMarkers = [];
     }
-    function _renderLabels() {
-        _clearLabels();
+    function _renderLabelGroup(lyrs) {
         var groups = new Map();
-        _allLayers.forEach(function(lyr) {
+        lyrs.forEach(function(lyr) {
             var k = lyr._rmLabelKey;
             if (!groups.has(k)) groups.set(k, { lyrs: [], label: lyr._rmLabel });
             groups.get(k).lyrs.push(lyr);
@@ -407,9 +406,21 @@
             _labelMarkers.push(tip);
         });
     }
+    // Oznake odjela u kojima je radnik radio (lyr._rmRadio) su UVIJEK vidljive
+    // — isti princip kao admin karta (js/karta-odjela.js), koja po defaultu
+    // labelira samo odjele sa planom/statusom, ne baš svaki poligon. Checkbox
+    // "Prikaži sve odjele" dodaje i ostatak (odjele van radnikovih zaduženja),
+    // za slučaj da mu zatreba orijentacija po širem području.
+    function _renderLabels(showAll) {
+        _clearLabels();
+        _renderLabelGroup(_allLayers.filter(function(lyr) { return lyr._rmRadio; }));
+        if (showAll) {
+            _renderLabelGroup(_allLayers.filter(function(lyr) { return !lyr._rmRadio; }));
+        }
+    }
     window.mapaRadnikaToggleLabels = function() {
         var cb = document.getElementById('radnik-mapa-labels-toggle');
-        if (cb && cb.checked) _renderLabels(); else _clearLabels();
+        _renderLabels(!!(cb && cb.checked));
     };
 
     function _renderLayer(geojson) {
@@ -461,6 +472,7 @@
 
                 lyr._rmLabelKey = k.lk;
                 lyr._rmLabel = String(p.odjel || p.name || '?');
+                lyr._rmRadio = radio;
                 _allLayers.push(lyr);
 
                 lyr.bindTooltip(String(p.odjel || p.name || '?'), {
@@ -529,10 +541,12 @@
             _autoFitDone = true;
         }
 
-        // Ako je "Prikaži odjele" bio uključen prije osvježavanja podataka,
-        // ponovo iscrtaj oznake nad svježim slojem (inače bi ostale ugašene).
+        // Oznake odjela u kojima radnik radi su uvijek prikazane (vidi
+        // _renderLabels) — ponovo iscrtaj nad svježim slojem nakon svakog
+        // osvježavanja podataka, i dodaj i ostale ako je "Prikaži sve odjele"
+        // bio uključen prije osvježavanja (inače bi ta oznaka ostala ugašena).
         var labelsCb = document.getElementById('radnik-mapa-labels-toggle');
-        if (labelsCb && labelsCb.checked) _renderLabels();
+        _renderLabels(!!(labelsCb && labelsCb.checked));
 
         // Poligoni odjela su upravo dodati IZNAD korisnikovih slojeva (iste
         // Leaflet "pane") pa bi hvatali klik namijenjen površini/tragu ispod.
