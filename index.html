@@ -3633,17 +3633,20 @@
                     </div>
 
                     <!-- Sažeto zaglavlje (korisnički zahtjev) — KPI traka i Filteri/Prikaz/
-                         Legenda kartice idu iza ovog toggle-a umjesto da uvijek zauzimaju
-                         prostor. Pamti otvoreno/zatvoreno preko localStorage (window.
-                         toggleKartaControls, js/karta-odjela.js), podrazumijevano zatvoreno.
-                         Sažetak (karta-controls-summary) je UVIJEK vidljiv, čak i zatvoreno,
-                         da ključni brojevi ne nestanu — popunjava ga isti _renderKpiBar(). -->
+                         Legenda kartice se mogu sakriti iza ovog toggle-a. Pamti otvoreno/
+                         zatvoreno preko localStorage (window.toggleKartaControls,
+                         js/karta-odjela.js) — PODRAZUMIJEVANO OTVORENO (prvi pokušaj sa
+                         "zatvoreno po defaultu" je korisniku djelovao kao da su dugmad
+                         (OSM/Offline/Ruta/Reset/Fokus) potpuno nestala — collapse ostaje
+                         dostupan, ali ga korisnik sam bira, ne startuje sakriven).
+                         Sažetak (karta-controls-summary) je UVIJEK vidljiv, i otvoreno i
+                         zatvoreno — popunjava ga isti _renderKpiBar(). -->
                     <div id="karta-controls-toggle" class="karta-controls-toggle" onclick="toggleKartaControls()">
                         <span id="karta-controls-toggle-label">🔍 Filteri i pregled</span>
                         <span id="karta-controls-summary" class="karta-controls-summary"></span>
                         <span id="karta-controls-arrow">▾</span>
                     </div>
-                    <div id="karta-controls-wrap" class="hidden">
+                    <div id="karta-controls-wrap">
                     <!-- KPI pregled traka — brojevi popunjava _renderKpiBar() (js/karta-odjela.js),
                          sadržaj zavisi od aktivnog moda (Proizvodnja/Uzgojni). -->
                     <div id="karta-kpi-bar" class="karta-kpi-bar"></div>

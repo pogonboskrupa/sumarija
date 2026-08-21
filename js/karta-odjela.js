@@ -1193,7 +1193,12 @@
   // treba da počne skoro odmah ispod naslova); default (nema sačuvane
   // vrijednosti) je ZATVORENO. Poziva se i sa forceOpen (bool) pri inicijalizaciji
   // Mape da postavi stanje bez klika (vidi initKartaOdjela).
-  var KARTA_CONTROLS_LS_KEY = 'karta_kontrole_otvorene';
+  // _v2 — prva verzija je defaultovala na ZATVORENO i pri prvom ikad ulasku
+  // eksplicitno upisivala '0' u localStorage; korisniku je to djelovalo kao
+  // da su dugmad potpuno nestala. Promjena imena ključa garantuje da se ta
+  // stara vrijednost ignoriše i svi kreću sa novim (otvorenim) defaultom,
+  // bez potrebe da korisnik ručno čisti browser storage.
+  var KARTA_CONTROLS_LS_KEY = 'karta_kontrole_otvorene_v2';
   window.toggleKartaControls = function(forceOpen) {
     const wrap = document.getElementById('karta-controls-wrap');
     const bar  = document.getElementById('karta-controls-toggle');
@@ -2311,11 +2316,17 @@
 
       // Sažeto zaglavlje — postavi početno otvoreno/zatvoreno stanje iz
       // localStorage (samo pri prvoj inicijalizaciji taba; naknadni klikovi
-      // korisnika na toggle se ne diraju ovdje). Nema sačuvane vrijednosti
-      // (prvi ikad ulazak) → getItem vraća null → '=== 1' je false → zatvoreno.
+      // korisnika na toggle se ne diraju ovdje). PODRAZUMIJEVANO OTVORENO
+      // (nema sačuvane vrijednosti → prvi ikad ulazak) — "zatvoreno po
+      // defaultu" je korisniku djelovao kao da su OSM/Offline/Ruta/Reset/
+      // Fokus dugmad potpuno nestala; collapse ostaje dostupan, ali ga
+      // korisnik sam bira eksplicitnim klikom, ne kreće sakriven.
       if (typeof window.toggleKartaControls === 'function') {
-        let _kontroleOtvorene = false;
-        try { _kontroleOtvorene = localStorage.getItem('karta_kontrole_otvorene') === '1'; } catch (e) {}
+        let _kontroleOtvorene = true;
+        try {
+          const spremljeno = localStorage.getItem(KARTA_CONTROLS_LS_KEY);
+          if (spremljeno != null) _kontroleOtvorene = spremljeno === '1';
+        } catch (e) {}
         window.toggleKartaControls(_kontroleOtvorene);
       }
 
