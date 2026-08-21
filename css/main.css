@@ -3245,7 +3245,7 @@
     padding: 6px 10px;
 }
 #tabs-menu-mobile .tab {
-    min-height: 70px;
+    min-height: 80px;
     padding: 12px 18px;
     /* Raširi tabove da popune cijelu širinu reda kad ih ima manje nego što
        stane (npr. radnik/poslovođa sa svega par tabova) — flex-grow:1 sa
