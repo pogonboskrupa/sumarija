@@ -1207,8 +1207,46 @@
     wrap.classList.toggle('hidden', !open);
     bar.classList.toggle('open', open);
     try { localStorage.setItem(KARTA_CONTROLS_LS_KEY, open ? '1' : '0'); } catch (e) {}
-    if (_map) setTimeout(() => _map.invalidateSize(), 50);
+    _uskladiVisinuMape();
   };
+
+  // ---- VISINA MAPE = TAČNO ONO ŠTO OSTANE ISPOD ZAGLAVLJA ----
+  // CSS je visinu računao kao fiksnih `100vh - 220px`, a stvarno zaglavlje
+  // (app zaglavlje + traka tabova + naslov/mode + toggle + otvorene kartice
+  // filtera) zna biti i preko 350px. Razlika je značila da mapa "ispadne"
+  // ispod ekrana i stranica se skrola — pa je zaglavlje djelovalo preveliko
+  // bez obzira koliko se skraćivalo. Umjesto pogađanja konstante, mjeri se
+  // STVARNI vrh mape i uzme sve do dna prozora: skupljanje kartica sad odmah
+  // daje više mape, a mapa nikad ne prelazi preko dna.
+  function _uskladiVisinuMape() {
+    const mapEl = document.getElementById('karta-odjela-map');
+    if (!mapEl) return;
+    // Uzgojni mod (mapa je namjerno niža da panel ispod stane) i Fokus mod
+    // (svoja !important visina) imaju vlastita pravila — očisti inline visinu
+    // da ta pravila dođu do izražaja.
+    if (_prikazMode === 'uzgojni' || document.body.classList.contains('mapa-fokus')) {
+      mapEl.style.height = '';
+      if (_map) setTimeout(() => _map.invalidateSize(), 50);
+      return;
+    }
+    const vrh = mapEl.getBoundingClientRect().top;
+    const visina = Math.max(260, Math.round(window.innerHeight - vrh - 8));
+    mapEl.style.height = visina + 'px';
+    if (_map) setTimeout(() => _map.invalidateSize(), 50);
+  }
+  window._uskladiVisinuMape = _uskladiVisinuMape;
+
+  // Promjena veličine prozora / rotacija telefona — preračunaj. Debounce jer
+  // se resize okida u rafalima (a na telefonu i pri skrivanju adresne trake).
+  // NAPOMENA: ovaj listener SAMO postavlja visinu; ne dira pogled/zoom mape —
+  // ranije je resize-listener koji je pomjerao pogled lomio skrolanje na
+  // telefonu, pa se ta greška ovdje namjerno ne ponavlja.
+  var _resizeTimer = null;
+  window.addEventListener('resize', function() {
+    if (!document.getElementById('karta-odjela-map')) return;
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(_uskladiVisinuMape, 200);
+  });
 
   // ---- FOKUS MODE ----
   window.toggleMapaFokus = function() {
@@ -1219,7 +1257,7 @@
       btn.textContent = active ? '✕ Fokus' : '⛶ Fokus';
       btn.classList.toggle('active', active);
     }
-    if (_map) setTimeout(() => _map.invalidateSize(), 50);
+    _uskladiVisinuMape();
   };
 
   // Sigurnosna mreža — isti obrazac kao exitMapaRadnikaFullscreenIfActive/
@@ -1487,7 +1525,7 @@
     }
 
     applyKartaFilter();
-    if (_map) setTimeout(() => _map.invalidateSize(), 50);
+    _uskladiVisinuMape();   // Uzgojni ima svoju (nižu) visinu; Proizvodnja uzima sve do dna
     _renderKpiBar();
 
     if (_prikazMode === 'uzgojni') {
@@ -2331,14 +2369,17 @@
       }
 
     } else if (!force) {
-      _map.invalidateSize();
+      // Traka tabova/zaglavlje mogu imati drugu visinu nego pri prošlom ulasku
+      // (npr. prelom u dva reda na užem prozoru) — preračunaj prije nego mapa
+      // uzme zatečenu, pogrešnu visinu.
+      _uskladiVisinuMape();
       // "Svaki put" centriraj na aktivne odjele i pri brzom ponovnom ulasku
       // (bez ponovnog fetch-a — koristi već učitane _allFeatures).
       setTimeout(_centrirajNaAktivne, 60);
       return;
     }
 
-    setTimeout(() => { if (_map) _map.invalidateSize(); }, 100);
+    setTimeout(_uskladiVisinuMape, 100);
 
     const ld = document.getElementById('karta-loading');
     if (ld) { ld.style.display='flex'; ld.textContent= navigator.onLine ? '⏳ Učitavam podatke...' : '📦 Učitavam keširano stanje...'; }
