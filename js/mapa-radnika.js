@@ -1665,7 +1665,10 @@
     window.mapaRadnikaStopExplorer = _stopExplorer;
     function _startExplorer(t) {
         _stopExplorer(); // ne gomilaj listener ako je već aktivan za drugu tačku
-        _stopFollow();   // follow bi stalno vraćao mapu na korisnika — vidi _startFollow
+        // Samo auto-centriranje smeta Exploreru (vraćalo bi mapu na korisnika);
+        // praćenje se NE gasi — plava tačka mora ostati živa dok navigira.
+        // 'tiho' jer korisnik nije ništa pauzirao, mi smo (nije mu potreban hint).
+        _pauzirajFollow(true);
         _explorerTarget = { lat: t.lat, lng: t.lng, name: t.name || 'Tačka' };
         var nameEl = document.getElementById('radnik-mapa-explorer-name');
         if (nameEl) nameEl.textContent = String(_explorerTarget.name); // textContent — bez ručnog HTML-escapinga
@@ -3562,35 +3565,102 @@
         _startHeadingView();
     }
 
-    // ---- "PRATI ME" (follow mode) — kontinuirano praćenje umjesto
-    // jednokratnog centriranja. Tapni "Moja lokacija" da uključiš, tapni
-    // ponovo (ili ručno pomjeri mapu) da isključiš — isto ponašanje kao
-    // navigacione aplikacije (ručni pan prekida automatsko centriranje). ----
+    // ---- "MOJA LOKACIJA" ----
+    // PRAĆENJE (plava tačka se ažurira uživo) i AUTO-CENTRIRANJE (mapa te sama
+    // drži u sredini) su NAMJERNO razdvojena stanja. Ranije su bila jedno: ručni
+    // pan je gasio cijelo praćenje, pa bi plava tačka zamrzla na mjestu; da je
+    // oživi, korisnik je morao ponovo tapnuti "Moja lokacija" — što ga je opet
+    // centriralo. Efekat na terenu je bio "ne da mi da skrolam dalje, stalno me
+    // vraća na mene" (prijavljeno). Sada:
+    //   _lokacijaAktivna — GPS radi, plava tačka živi
+    //   _followMode      — mapa se DODATNO sama centrira
+    // Pan/zoom gasi SAMO auto-centriranje; tačka i dalje prati kretanje, a
+    // korisnik slobodno razgleda mapu. Tap na "Moja lokacija" tada centrira i
+    // nastavlja praćenje; tap dok je centriranje aktivno gasi lokaciju skroz.
+    var _lokacijaAktivna = false;
     var _followMode = false;
-    function _stopFollowOnManualPan() {
-        if (_followMode) _stopFollow();
+    var _pauzaHintPrikazan = false;
+    // Naš vlastiti setView (povratak na korisnika) mijenja zoom pa okine
+    // 'zoomstart' — bez ovog guarda bi sam sebi ugasio centriranje koje je
+    // upravo uključio. panTo iz praćenja ne okida ni dragstart ni zoomstart
+    // (ne mijenja zoom), pa njemu guard ne treba.
+    var _programskiPomjeraj = false;
+    function _pomjeriProgramski(fn) {
+        _programskiPomjeraj = true;
+        try { fn(); } finally {
+            // Kratak tajmer umjesto vezivanja za 'moveend' — moveend zna izostati
+            // ako Leaflet preskoči animaciju, a 'once' slušaoci bi se gomilali.
+            setTimeout(function() { _programskiPomjeraj = false; }, 700);
+        }
     }
-    function _startFollow() {
+
+    function _setLocBtn(ikona, tekst) {
+        if (!_locBtnEl) return;
+        // Dva <span>-a (ikona + tekst) su obavezna: .rm-bar-btn ih slaže jedan
+        // ispod drugog, a .rm-bar-icon daje ikoni veći font. Raniji
+        // `textContent = '📍 ...'` ih je brisao, pa bi dugme nakon prvog tapa
+        // ostalo bez te podjele (ikona iste veličine kao tekst, sve u jednom redu).
+        _locBtnEl.innerHTML = '<span class="rm-bar-icon">' + ikona + '</span><span>' + tekst + '</span>';
+    }
+
+    // Samo DVA naziva: "📍 Moja lokacija" ionako već znači "centriraj na mene",
+    // pa poseban naziv za pauzirano stanje ne bi donio ništa novo — samo još
+    // jedan izraz za istu radnju (korisnička primjedba).
+    function _osvjeziLocDugme() {
+        if (!_locBtnEl) return;
+        _locBtnEl.classList.toggle('following', _lokacijaAktivna && _followMode);
+        if (_lokacijaAktivna && _followMode) _setLocBtn('🎯', 'Prati me');
+        else                                 _setLocBtn('📍', 'Moja lokacija');
+    }
+
+    // Korisnik je pomjerio/zumirao mapu — prestani ga vraćati na njegovu
+    // lokaciju, ali NE gasi praćenje (plava tačka mora ostati živa).
+    function _pauzirajFollow(tiho) {
+        if (_programskiPomjeraj) return;   // naš pomjeraj, ne korisnikov
+        if (!_followMode) return;
+        _followMode = false;
+        _osvjeziLocDugme();
+        // Jednom po sesiji — bez objašnjenja korisnik ne zna da je dugme sad
+        // dobilo novo značenje (povratak na sebe); svaki put bi bilo dosadno.
+        if (tiho !== true && !_pauzaHintPrikazan) {
+            _pauzaHintPrikazan = true;
+            _notify('showInfo', 'Praćenje pauzirano',
+                'Mapa te više ne vraća na tvoju lokaciju — slobodno razgledaj. Tapni "Moja lokacija" kad se želiš vratiti na sebe.', 5000);
+        }
+    }
+
+    function _startLokacija() {
         // Follow i Explorer se OTIMAJU oko pogleda na mapu (follow stalno
         // centrira, Explorer očekuje da korisnik slobodno gleda/pomjera) —
         // ta dva su jedini par koji se stvarno isključuje. Snimanje traga
         // NIJE dirano (vidi _gpsSubscribe komentar).
         _stopExplorer();
+        _lokacijaAktivna = true;
         _followMode = true;
-        if (_locBtnEl) { _locBtnEl.textContent = '🎯 Prati me (uključeno)'; _locBtnEl.classList.add('following'); }
-        _gpsSubscribe('follow', function(pos) {
+        _gpsSubscribe('lokacija', function(pos) {
             var ll = _updateLocDisplay(pos);
-            if (_map) _map.panTo(ll, { animate: true });
+            // Centriranje je USLOVNO — praćenje same tačke ide dalje i kad je
+            // korisnik odskrolao. To je cijela poenta razdvajanja.
+            if (_followMode && _map) _map.panTo(ll, { animate: true });
         }, function(err) {
             console.error('[MapaRadnika] praćenje lokacije — greška:', err);
         });
-        if (_map) _map.on('dragstart', _stopFollowOnManualPan);
+        if (_map) {
+            _map.on('dragstart', _pauzirajFollow);
+            _map.on('zoomstart', _pauzirajFollow);
+        }
+        _osvjeziLocDugme();
     }
-    function _stopFollow() {
-        _gpsUnsubscribe('follow');
+
+    function _stopLokacija() {
+        _gpsUnsubscribe('lokacija');
+        _lokacijaAktivna = false;
         _followMode = false;
-        if (_map) _map.off('dragstart', _stopFollowOnManualPan);
-        if (_locBtnEl) { _locBtnEl.textContent = '📍 Moja lokacija'; _locBtnEl.classList.remove('following'); }
+        if (_map) {
+            _map.off('dragstart', _pauzirajFollow);
+            _map.off('zoomstart', _pauzirajFollow);
+        }
+        _osvjeziLocDugme();
     }
 
     function _locateMe() {
@@ -3600,22 +3670,39 @@
         }
         if (!_map) return;
 
-        // Drugi tap dok je "Prati me" aktivno — isključi praćenje (toggle,
-        // isti obrazac kao Snimi trag).
-        if (_followMode) { _stopFollow(); return; }
+        // Praćenje traje i mapa te centrira → tap gasi lokaciju (toggle, isti
+        // obrazac kao Snimi trag).
+        if (_lokacijaAktivna && _followMode) { _stopLokacija(); return; }
 
-        if (_locBtnEl) { _locBtnEl.disabled = true; _locBtnEl.textContent = '📍 Tražim...'; }
+        // Praćenje traje ali si odskrolao → tap te vraća: centriraj i nastavi
+        // praćenje. GPS već radi pa nema ponovnog čekanja na fix — koristi se
+        // zadnja poznata pozicija iz zajedničkog toka (_gpsLastPos).
+        if (_lokacijaAktivna && !_followMode) {
+            _followMode = true;
+            _osvjeziLocDugme();
+            if (_gpsLastPos) {
+                var zadnja = [_gpsLastPos.coords.latitude, _gpsLastPos.coords.longitude];
+                _pomjeriProgramski(function() {
+                    _map.setView(zadnja, Math.max(_map.getZoom(), 15));
+                });
+            }
+            return;
+        }
+
+        if (_locBtnEl) _locBtnEl.disabled = true;
+        _setLocBtn('📍', 'Tražim...');
 
         navigator.geolocation.getCurrentPosition(
             function(pos) {
                 var ll = _updateLocDisplay(pos);
                 _map.setView(ll, 15);
                 if (_locBtnEl) _locBtnEl.disabled = false;
-                _startFollow();
+                _startLokacija();
                 _startHeadingIfInactive();
             },
             function(err) {
-                if (_locBtnEl) { _locBtnEl.disabled = false; _locBtnEl.textContent = '📍 Moja lokacija'; }
+                if (_locBtnEl) _locBtnEl.disabled = false;
+                _osvjeziLocDugme();
                 var msg = err.code === 1
                     ? 'Pristup lokaciji je odbijen. Dozvolite lokaciju u postavkama uređaja/browsera.'
                     : (err.code === 3 ? 'Isteklo vrijeme čekanja na GPS signal. Pokušajte ponovo na otvorenom.' : 'Nije moguće dobiti lokaciju.');
@@ -4599,7 +4686,7 @@
         if (typeof window.mapaRadnikaCloseSjecePanel === 'function') window.mapaRadnikaCloseSjecePanel();
         if (typeof window.mapaRadnikaCloseMjerenjePanel === 'function') window.mapaRadnikaCloseMjerenjePanel();
         if (typeof window.mapaRadnikaCancelIzvrsenoPoligon === 'function') window.mapaRadnikaCancelIzvrsenoPoligon();
-        _stopFollow(); // ne ostavljaj GPS watchPosition da radi u pozadini nakon izlaska s mape
+        _stopLokacija(); // ne ostavljaj GPS watchPosition da radi u pozadini nakon izlaska s mape
         _stopHeadingView(); // ne ostavljaj deviceorientation listener da radi u pozadini
         // Vrati viewport na korisnikovu preferencu (Desktop/Android prikaz) ako
         // je bila uključena prije ulaska na mapu.
