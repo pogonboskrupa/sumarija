@@ -294,6 +294,7 @@ tr[style*="background: #0369a1"] td,
 tr[style*="background: #0891b2"] td,
 tr[style*="background: #0e7490"] td,
 tr[style*="background: #4338ca"] td,
+tr[style*="background:#4338ca"] td,
 tr[style*="background: linear-gradient"][style*="#047857"] td,
 tr[style*="background: linear-gradient"][style*="#065f46"] td,
 tr[style*="background: linear-gradient"][style*="#0369a1"] td {
@@ -445,6 +446,7 @@ tr[style*="background: #065f46"] td,
 tr[style*="background: #0891b2"] td,
 tr[style*="background: #0e7490"] td,
 tr[style*="background: #4338ca"] td,
+tr[style*="background:#4338ca"] td,
 tr[style*="background: linear-gradient"][style*="#047857"] td,
 tr[style*="background: linear-gradient"][style*="#065f46"] td {
     color: white !important;
