@@ -4159,31 +4159,41 @@
                          prekrila (nevidljiva donja traka). */
                       position:fixed; left:0; right:0; bottom:0; z-index:10600;
                       display:flex; overflow-x:hidden;
-                      background:rgba(255,255,255,.98); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-                      box-shadow:0 -8px 24px rgba(0,0,0,.2);
-                      border-top:2px solid #e5e7eb;
+                      /* Tamna "instrument panel" traka (AlpineQuest stil — terenski
+                         GPS/mapa alat, ne šareni potrošački UI) umjesto bijele trake:
+                         boja je REZERVISANA za "ovo je uključeno" signal na dugmadima
+                         ispod, ne za osnovni izgled trake. */
+                      background:linear-gradient(180deg, rgba(15,23,42,.97), rgba(2,6,23,.99));
+                      backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+                      box-shadow:0 -8px 24px rgba(0,0,0,.4);
+                      border-top:1px solid rgba(255,255,255,.08);
                       padding:7px 10px calc(7px + env(safe-area-inset-bottom)) 10px;
                   }
                   .rm-bar-btn {
                       flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-                      gap:3px; min-height:42px; border:none; border-radius:10px; margin:0 5px;
-                      font-size:10px; font-weight:800; cursor:pointer; font-family:inherit;
-                      letter-spacing:.2px; text-align:center; overflow-wrap:break-word;
-                      color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25);
-                      box-shadow:0 3px 8px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.25);
-                      transition:transform .1s ease, filter .15s ease;
+                      gap:3px; min-height:42px; border-radius:10px; margin:0 5px;
+                      font-size:10px; font-weight:700; cursor:pointer; font-family:inherit;
+                      letter-spacing:.3px; text-align:center; overflow-wrap:break-word;
+                      /* Neutralno/tamno po defaultu — suptilan obrub umjesto pune boje
+                         i sjenke, čita se kao "instrument" dugme, ne šarena pilula. */
+                      background:rgba(255,255,255,.05);
+                      border:1px solid rgba(255,255,255,.09);
+                      color:#cbd5e1; text-shadow:none;
+                      box-shadow:none;
+                      transition:transform .1s ease, background .15s ease, border-color .15s ease, color .15s ease;
                   }
                   .rm-bar-icon { font-size:15px; line-height:1; }
-                  .rm-bar-btn:active { transform:scale(.94); filter:brightness(.9); }
-                  .rm-bar-btn:disabled { opacity:.6; cursor:default; transform:none; }
-                  .rm-bar-loc { background:linear-gradient(180deg,#2563eb,#1d4ed8); }
-                  /* "Prati me" aktivno — zeleno umjesto plavo, ista "aktivno stanje"
-                     boja koja se već koristi drugdje u appu (npr. "radio" odjeli). */
-                  .rm-bar-loc.following { background:linear-gradient(180deg,#059669,#047857); animation:rm-follow-pulse 2s ease-in-out infinite; }
-                  @keyframes rm-follow-pulse { 0%,100% { filter:brightness(1); } 50% { filter:brightness(1.15); } }
-                  .rm-bar-trag { background:linear-gradient(180deg,#059669,#047857); }
-                  .rm-bar-trag.recording { background:linear-gradient(180deg,#ef4444,#dc2626); }
-                  .rm-bar-clear { background:linear-gradient(180deg,#6b7280,#4b5563); }
+                  .rm-bar-btn:active { transform:scale(.94); background:rgba(255,255,255,.1); }
+                  .rm-bar-btn:disabled { opacity:.5; cursor:default; transform:none; }
+                  /* Aktivna stanja — boja je akcenat SAMO dok je funkcija stvarno
+                     uključena (lokacija prati/je uključena, snimanje traga u toku).
+                     "Moja lokacija" svijetli zeleno kad je lokacija uključena (i dok
+                     korisnik samo prati vlastitu tačku, i dok mapu aktivno centrira
+                     na nju) — jasan on/off signal, ne samo promjena teksta. */
+                  .rm-bar-loc.loc-on { background:rgba(5,150,105,.28); border-color:rgba(16,185,129,.6); color:#6ee7b7; }
+                  .rm-bar-loc.following { animation:rm-follow-pulse 2s ease-in-out infinite; }
+                  @keyframes rm-follow-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(16,185,129,.55); } 50% { box-shadow:0 0 0 6px rgba(16,185,129,0); } }
+                  .rm-bar-trag.recording { background:rgba(220,38,38,.28); border-color:rgba(248,113,113,.6); color:#fca5a5; }
                   @media (max-width:360px) {
                       .rm-bar-btn { font-size:9px; min-height:37px; }
                       .rm-bar-icon { font-size:13px; }

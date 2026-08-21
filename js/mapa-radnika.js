@@ -3818,8 +3818,17 @@
     // Samo DVA naziva: "📍 Moja lokacija" ionako već znači "centriraj na mene",
     // pa poseban naziv za pauzirano stanje ne bi donio ništa novo — samo još
     // jedan izraz za istu radnju (korisnička primjedba).
+    //
+    // "loc-on" (zeleno) prati _lokacijaAktivna SAMU — dugme svijetli čim je
+    // GPS lokacija uključena, i dok mapa aktivno prati (i tad dodatno pulsira
+    // preko "following") i dok je korisnik pauzirao praćenje pomjeranjem
+    // mape (GPS i dalje radi u pozadini). Bez ovoga je pauzirano stanje
+    // izgledalo IDENTIČNO kao potpuno isključena lokacija — jasan on/off
+    // signal je bio samo za "aktivno prati", ne za "uključeno" uopšte
+    // (korisnički zahtjev).
     function _osvjeziLocDugme() {
         if (!_locBtnEl) return;
+        _locBtnEl.classList.toggle('loc-on', _lokacijaAktivna);
         _locBtnEl.classList.toggle('following', _lokacijaAktivna && _followMode);
         if (_lokacijaAktivna && _followMode) _setLocBtn('🎯', 'Prati me');
         else                                 _setLocBtn('📍', 'Moja lokacija');
