@@ -3611,9 +3611,17 @@
             <div id="karta-odjela-content" class="hidden">
                 <!-- Header + filteri u padded wrapperu -->
                 <div style="padding:16px 20px 0;">
-                    <div id="karta-page-header" class="page-header" style="margin-bottom:12px;flex-wrap:nowrap;align-items:center;">
-                        <div class="page-header-left">
+                    <div id="karta-page-header" class="page-header" style="margin-bottom:10px;flex-wrap:wrap;align-items:center;">
+                        <div class="page-header-left" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
                             <h1 style="margin-bottom:0;">🗺️ Mapa odjela 2026</h1>
+                            <!-- Switch Proizvodnja ⇄ Šumsko uzgojni radovi — isti .submenu-tab
+                                 obrazac kao ostali podtabovi u appu (js/ui.js switchPrimaciSubmenu).
+                                 Premješteno u isti red kao naslov (korisnički zahtjev, sažeto
+                                 zaglavlje) — bio je poseban red ispod. -->
+                            <div style="display:flex;gap:6px;">
+                                <button type="button" class="submenu-tab active" id="karta-mode-proizvodnja-btn" onclick="switchKartaOdjelaMode('proizvodnja')">🪵 Proizvodnja</button>
+                                <button type="button" class="submenu-tab" id="karta-mode-uzgojni-btn" onclick="switchKartaOdjelaMode('uzgojni')">🌱 Šumsko uzgojni radovi</button>
+                            </div>
                         </div>
                         <div class="page-header-right" style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
                             <!-- "Odjela u sječi" — premješteno ovdje iz KPI trake (korisnički
@@ -3623,12 +3631,19 @@
                             <button class="btn btn-primary" onclick="initKartaOdjela(true)">🔄 Osvježi</button>
                         </div>
                     </div>
-                    <!-- Switch Proizvodnja ⇄ Šumsko uzgojni radovi — isti .submenu-tab
-                         obrazac kao ostali podtabovi u appu (js/ui.js switchPrimaciSubmenu). -->
-                    <div id="karta-mode-switch-row" style="display:flex;gap:6px;margin-bottom:10px;">
-                        <button type="button" class="submenu-tab active" id="karta-mode-proizvodnja-btn" onclick="switchKartaOdjelaMode('proizvodnja')">🪵 Proizvodnja</button>
-                        <button type="button" class="submenu-tab" id="karta-mode-uzgojni-btn" onclick="switchKartaOdjelaMode('uzgojni')">🌱 Šumsko uzgojni radovi</button>
+
+                    <!-- Sažeto zaglavlje (korisnički zahtjev) — KPI traka i Filteri/Prikaz/
+                         Legenda kartice idu iza ovog toggle-a umjesto da uvijek zauzimaju
+                         prostor. Pamti otvoreno/zatvoreno preko localStorage (window.
+                         toggleKartaControls, js/karta-odjela.js), podrazumijevano zatvoreno.
+                         Sažetak (karta-controls-summary) je UVIJEK vidljiv, čak i zatvoreno,
+                         da ključni brojevi ne nestanu — popunjava ga isti _renderKpiBar(). -->
+                    <div id="karta-controls-toggle" class="karta-controls-toggle" onclick="toggleKartaControls()">
+                        <span id="karta-controls-toggle-label">🔍 Filteri i pregled</span>
+                        <span id="karta-controls-summary" class="karta-controls-summary"></span>
+                        <span id="karta-controls-arrow">▾</span>
                     </div>
+                    <div id="karta-controls-wrap" class="hidden">
                     <!-- KPI pregled traka — brojevi popunjava _renderKpiBar() (js/karta-odjela.js),
                          sadržaj zavisi od aktivnog moda (Proizvodnja/Uzgojni). -->
                     <div id="karta-kpi-bar" class="karta-kpi-bar"></div>
@@ -3731,11 +3746,26 @@
                             </div>
                         </div>
                     </div>
+                    </div><!-- /#karta-controls-wrap -->
                     <!-- Hint za ruta-mode -->
                     <div id="mapa-ruta-hint" style="display:none;padding:8px 14px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;font-size:13px;color:#dc2626;font-weight:600;margin-bottom:8px;"></div>
                 </div>
                 <!-- Leaflet mapa — puna širina -->
                 <style>
+                  /* ── Sažeto zaglavlje — toggle traka za KPI/Filteri/Prikaz/Legenda ──
+                     (korisnički zahtjev: "Mapa odjela pa ispod" — mapa treba da počne
+                     skoro odmah ispod naslova). Vidi window.toggleKartaControls
+                     (js/karta-odjela.js). */
+                  .karta-controls-toggle {
+                      display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none;
+                      padding:7px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;
+                      font-size:12px; font-weight:700; color:#374151; margin-bottom:10px; width:fit-content;
+                  }
+                  .karta-controls-toggle:hover { background:#f1f5f9; }
+                  .karta-controls-summary { font-weight:600; color:#6b7280; font-size:11.5px; }
+                  #karta-controls-arrow { transition:transform .15s; }
+                  .karta-controls-toggle.open #karta-controls-arrow { transform:rotate(180deg); }
+
                   /* ── KPI pregled traka + kartice filtera/prikaza/legende ──
                      Jedinstven "card" izgled za cijeli Mapa tab (isti obrazac kao
                      Uzgojni panel) umjesto ad-hoc flex redova sa inline stilom. */
@@ -4250,6 +4280,8 @@
                   body.mapa-fokus #check-data-btn { display:none !important; }
                   body.mapa-fokus .header-content { min-height:0 !important; padding:4px 0 !important; }
                   body.mapa-fokus #karta-page-header { display:none !important; }
+                  body.mapa-fokus #karta-controls-toggle { display:none !important; }
+                  body.mapa-fokus #karta-controls-wrap { display:none !important; }
                   body.mapa-fokus #karta-odjela-map { height:calc(100vh - 110px) !important; height:calc(100dvh - 110px) !important; }
                   body.mapa-fokus #mapa-modal { top:42px !important; }
                   @media (max-width:1024px) {

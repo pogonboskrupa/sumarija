@@ -1188,6 +1188,23 @@
     }
   };
 
+  // ---- SAŽETO ZAGLAVLJE — toggle za KPI/Filteri/Prikaz/Legenda ----
+  // Pamti otvoreno/zatvoreno preko localStorage (korisnički zahtjev — mapa
+  // treba da počne skoro odmah ispod naslova); default (nema sačuvane
+  // vrijednosti) je ZATVORENO. Poziva se i sa forceOpen (bool) pri inicijalizaciji
+  // Mape da postavi stanje bez klika (vidi initKartaOdjela).
+  var KARTA_CONTROLS_LS_KEY = 'karta_kontrole_otvorene';
+  window.toggleKartaControls = function(forceOpen) {
+    const wrap = document.getElementById('karta-controls-wrap');
+    const bar  = document.getElementById('karta-controls-toggle');
+    if (!wrap || !bar) return;
+    const open = forceOpen != null ? forceOpen : wrap.classList.contains('hidden');
+    wrap.classList.toggle('hidden', !open);
+    bar.classList.toggle('open', open);
+    try { localStorage.setItem(KARTA_CONTROLS_LS_KEY, open ? '1' : '0'); } catch (e) {}
+    if (_map) setTimeout(() => _map.invalidateSize(), 50);
+  };
+
   // ---- FOKUS MODE ----
   window.toggleMapaFokus = function() {
     document.body.classList.toggle('mapa-fokus');
@@ -1515,6 +1532,19 @@
         const n = k.uSjeci || 0;
         badge.textContent = '🔴 ' + n + ' u sječi';
         badge.classList.toggle('hidden', n === 0);
+      }
+    }
+
+    // Sažetak u toggle traci sažetog zaglavlja — UVIJEK vidljiv (i kad je
+    // #karta-controls-wrap zatvoren), da ključni brojevi ne nestanu iz vida
+    // samo zato što je korisnik sklonio KPI/filter kartice.
+    const summaryEl = document.getElementById('karta-controls-summary');
+    if (summaryEl) {
+      if (_prikazMode === 'uzgojni') {
+        summaryEl.textContent = '🌀' + _slucajniSet.size + ' slučajni · 📋' + _zapisnikSet.size + ' zapisnik';
+      } else {
+        const kp = (_statusMap && _statusMap._kpi) || {};
+        summaryEl.textContent = '🔴' + (kp.uSjeci || 0) + ' u sječi';
       }
     }
   }
@@ -2278,6 +2308,16 @@
       _map.on('click', function(e) {
         if (_klopkaPickMode) _zavrsiKlopkaPick(e.latlng);
       });
+
+      // Sažeto zaglavlje — postavi početno otvoreno/zatvoreno stanje iz
+      // localStorage (samo pri prvoj inicijalizaciji taba; naknadni klikovi
+      // korisnika na toggle se ne diraju ovdje). Nema sačuvane vrijednosti
+      // (prvi ikad ulazak) → getItem vraća null → '=== 1' je false → zatvoreno.
+      if (typeof window.toggleKartaControls === 'function') {
+        let _kontroleOtvorene = false;
+        try { _kontroleOtvorene = localStorage.getItem('karta_kontrole_otvorene') === '1'; } catch (e) {}
+        window.toggleKartaControls(_kontroleOtvorene);
+      }
 
     } else if (!force) {
       _map.invalidateSize();
