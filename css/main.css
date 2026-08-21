@@ -3247,11 +3247,20 @@
 #tabs-menu-mobile .tab {
     min-height: 70px;
     padding: 12px 18px;
-    /* Ikona/naslov su sad odvojeni <span>-ovi (isti markup kao desktop
+    /* Raširi tabove da popune cijelu širinu reda kad ih ima manje nego što
+       stane (npr. radnik/poslovođa sa svega par tabova) — flex-grow:1 sa
+       flex-basis:auto: svaki tab ostaje BAREM svoje prirodne (sadržajem
+       određene) širine, a VIŠAK prostora se ravnomjerno raspodijeli među
+       njima. flex-shrink OSTAJE 0 (iz osnovnog ".tab" pravila) — kad ima
+       previše tabova da stanu (admin), niko se ne stišće/reže, .tabs
+       overflow-x:auto i dalje preuzima kao i prije. Visina (min-height)
+       je nepromijenjena — samo širina.
+       Ikona/naslov su odvojeni <span>-ovi (isti markup kao desktop
        .sidebar-nav .tab, vidi js/auth.js) i slažu se jedan iznad drugog —
        izgleda kao pravi app tab-bar čip umjesto reda sitnog teksta.
        Font mora ići uz visinu — sama viša dugmad sa istim sitnim tekstom
        ne rješava čitljivost na terenu, samo pravi prazan prostor oko slova. */
+    flex: 1 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
