@@ -1870,8 +1870,7 @@
         _stopExplorer(); // ne gomilaj listener ako je već aktivan za drugu tačku
         // Samo auto-centriranje smeta Exploreru (vraćalo bi mapu na korisnika);
         // praćenje se NE gasi — plava tačka mora ostati živa dok navigira.
-        // 'tiho' jer korisnik nije ništa pauzirao, mi smo (nije mu potreban hint).
-        _pauzirajFollow(true);
+        _pauzirajFollow();
         _explorerTarget = { lat: t.lat, lng: t.lng, name: t.name || 'Tačka' };
         var nameEl = document.getElementById('radnik-mapa-explorer-name');
         if (nameEl) nameEl.textContent = String(_explorerTarget.name); // textContent — bez ručnog HTML-escapinga
@@ -3789,7 +3788,6 @@
     // nastavlja praćenje; tap dok je centriranje aktivno gasi lokaciju skroz.
     var _lokacijaAktivna = false;
     var _followMode = false;
-    var _pauzaHintPrikazan = false;
     // Naš vlastiti setView (povratak na korisnika) mijenja zoom pa okine
     // 'zoomstart' — bez ovog guarda bi sam sebi ugasio centriranje koje je
     // upravo uključio. panTo iz praćenja ne okida ni dragstart ni zoomstart
@@ -3825,18 +3823,11 @@
 
     // Korisnik je pomjerio/zumirao mapu — prestani ga vraćati na njegovu
     // lokaciju, ali NE gasi praćenje (plava tačka mora ostati živa).
-    function _pauzirajFollow(tiho) {
+    function _pauzirajFollow() {
         if (_programskiPomjeraj) return;   // naš pomjeraj, ne korisnikov
         if (!_followMode) return;
         _followMode = false;
         _osvjeziLocDugme();
-        // Jednom po sesiji — bez objašnjenja korisnik ne zna da je dugme sad
-        // dobilo novo značenje (povratak na sebe); svaki put bi bilo dosadno.
-        if (tiho !== true && !_pauzaHintPrikazan) {
-            _pauzaHintPrikazan = true;
-            _notify('showInfo', 'Praćenje pauzirano',
-                'Mapa te više ne vraća na tvoju lokaciju — slobodno razgledaj. Tapni "Moja lokacija" kad se želiš vratiti na sebe.', 5000);
-        }
     }
 
     function _startLokacija() {
