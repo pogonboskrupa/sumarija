@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.11.1';
+        const APP_VERSION = '1.11.2';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -274,6 +274,51 @@
         // koji nikad nisu keširani (nova sesija, propušten prikaz) ostali prazni zauvijek
         // jer se puni preload nikad nije okinuo. Sad se uvijek radi potpuno osvježavanje.
         let _checkingNewData = false;
+        // Skida izvanmrežnu kartu kao dio "Ažuriraj" (vidi poziv u checkForNewData).
+        // Samo za uloge koje IMAJU terenski Karta tab — admin/operativa/operateri
+        // rade iz kancelarije i njihova "Mapa" je drugi modul (js/karta-odjela.js),
+        // pa bi im ovo bilo čisto trošenje podataka.
+        const _TERENSKE_ULOGE = new Set(['primac', 'otpremac', 'poslovođa', 'poslovodja']);
+        async function _pripremiKartuZaTeren() {
+            const uloga = String((currentUser && currentUser.type) || '').trim().toLowerCase();
+            if (!_TERENSKE_ULOGE.has(uloga)) return;
+            if (typeof window.mapaRadnikaPripremiOfflineKartu !== 'function') return;
+
+            const indikator = document.getElementById('header-preload-indicator');
+            const brojac    = document.getElementById('header-preload-count');
+            try {
+                const ishod = await window.mapaRadnikaPripremiOfflineKartu({
+                    // Napredak ide u ISTU značku u zaglavlju koju koristi preload
+                    // prikaza — statusna linija samog preuzimanja živi unutar
+                    // Karta taba (⚙️ Ostalo) i odavde se uopšte ne vidi.
+                    onProgress: function(preuzeto, ukupno) {
+                        if (!indikator || !brojac) return;
+                        indikator.classList.remove('hidden');
+                        brojac.textContent = '🗺️ ' + preuzeto + ' / ' + ukupno;
+                    }
+                });
+                if (indikator) indikator.classList.add('hidden');
+
+                const sloj = (typeof window.mapaRadnikaAktivniSlojNaziv === 'function')
+                    ? window.mapaRadnikaAktivniSlojNaziv() : 'karta';
+                if (ishod === 'preuzeto') {
+                    if (typeof showSuccess === 'function') {
+                        showSuccess('Mapa spremna za teren', 'Izvanmrežna karta (' + sloj + ') je preuzeta.');
+                    }
+                } else if (ishod === 'nepotpuno') {
+                    if (typeof showWarning === 'function') {
+                        showWarning('Mapa nije u potpunosti preuzeta',
+                            'Pokušajte ponovo uz bolju vezu — bez toga u šumi nema karte.');
+                    }
+                }
+                // 'vec-skinuto'/'offline'/'nema-podataka'/'zauzeto' — tiho.
+                // Podaci su ionako osvježeni, a poruka o mapi bi tu samo zbunila.
+            } catch (e) {
+                console.error('[TEREN] Priprema izvanmrežne karte nije uspjela:', e);
+                if (indikator) indikator.classList.add('hidden');
+            }
+        }
+
         async function checkForNewData(event) {
             if (event) event.stopPropagation();
             if (_checkingNewData) return; // ne dupliraj klikove
@@ -294,6 +339,15 @@
                 // stari podaci ostaju vidljivi dok se novi ne preuzmu (_doRefreshAllData
                 // već ima svoj progress toast i imenuje neuspjele prikaze ako ih ima)
                 await _doRefreshAllData();
+
+                // Mapa je dio "pripremi me za teren" — ovo dugme je jedino
+                // mjesto gdje se radnik sprema za šumu, a pločice su do sada
+                // bile izvan njega (samo ručno, Karta → ⚙️ Ostalo, i to zasebno
+                // po sloju). Odlazak na teren "spreman" a bez mape je bio tih i
+                // čest promašaj. Skida se automatski, bez pitanja (korisnički
+                // zahtjev) — ali samo ako za aktivni sloj još nije skinuta, da
+                // svaki tap na "Ažuriraj" ne povuče desetine MB.
+                await _pripremiKartuZaTeren();
 
                 // Osvježi "viđenu" manifest verziju (samo za crvenu tačku pozadinskog checkera)
                 // skipInvalidation=true — upravo smo sve osvježili, ne diraj taj keš ponovo

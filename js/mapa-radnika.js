@@ -818,6 +818,98 @@
         _refreshOfflineToggle();
     }
 
+    // ---- MAPA KAO DIO "PRIPREMI ME ZA TEREN" ----
+    // Dugme "Ažuriraj" (checkForNewData, js/app.js) je korisnikovo "pripremi me
+    // za teren": povuče sve podatke u keš. Mapa je do sada bila JEDINA stvar van
+    // njega — skidala se samo ručno (Karta → ⚙️ Ostalo) i to zasebno po sloju,
+    // pa je radnik znao otići u šumu misleći da je spreman, a bez ijedne
+    // pločice (ili sa skinutim pogrešnim slojem). Korisnički zahtjev: neka to
+    // radi "Ažuriraj", automatski i bez pitanja.
+    //
+    // Mora raditi i kad Karta NIJE otvorena u ovoj sesiji — tada je _allLayers
+    // prazan i _map ne postoji. Zato se granice računaju iz GeoJSON-a preko
+    // L.geoJSON BEZ dodavanja na mapu (Leaflet to podržava; treba nam samo
+    // getBounds() po odjelu).
+    async function _granicePoOdjelu() {
+        if (_allLayers.length) {
+            return _allLayers.map(function(lyr) { return lyr.getBounds(); });
+        }
+        if (typeof L === 'undefined') return [];
+        var gj = await _loadGeojson();
+        if (!gj || !gj.features || !gj.features.length) return [];
+        var granice = [];
+        L.geoJSON(gj, {
+            onEachFeature: function(f, lyr) {
+                try {
+                    var b = lyr.getBounds();
+                    if (b && b.isValid()) granice.push(b);
+                } catch (_) {}
+            }
+        });
+        return granice;
+    }
+
+    // opts: { force, onProgress(preuzeto, ukupno) }
+    // Vraća: 'vec-skinuto' | 'preuzeto' | 'nepotpuno' | 'offline' | 'nema-podataka' | 'zauzeto'
+    window.mapaRadnikaPripremiOfflineKartu = async function(opts) {
+        var o = opts || {};
+        var mode = _baseMode;
+        // Već skinuto za aktivni sloj → ne diraj. Korisnik je tražio "bez
+        // pitanja", ali to ne smije značiti da svaki tap na "Ažuriraj" ponovo
+        // povuče desetine MB mobilnih podataka. Osvježavanje već skinutih
+        // pločica ostaje svjesna radnja (Karta → ⚙️ Ostalo).
+        if (!o.force && _offlineInfo(mode)) return 'vec-skinuto';
+        if (!navigator.onLine) return 'offline';
+        if (_offlinePreuzimanjeUToku) return 'zauzeto';
+
+        var granice = await _granicePoOdjelu();
+        if (!granice.length) return 'nema-podataka';
+
+        var tiles = _tilesForBoundsList(granice, OFFLINE_Z_MIN, _offlineZMax(mode), OFFLINE_BUFFER_M);
+        if (!tiles.length) return 'nema-podataka';
+
+        _offlineAbort = false;
+        _offlinePreuzimanjeUToku = true;
+        var done = 0, zapoceto = 0, obradjeno = 0;
+        var PARALELNO = 5;   // isti obrazac kao _doOfflineDownload
+
+        async function radnik() {
+            while (true) {
+                if (_offlineAbort) return;
+                var i = zapoceto++;
+                if (i >= tiles.length) return;
+                try {
+                    // cache:'reload' — vidi tile granu u service-worker.js
+                    var resp = await fetch(_tileUrl(tiles[i]), { cache: 'reload' });
+                    if (resp && (resp.ok || resp.type === 'opaque')) done++;
+                } catch (_) {}
+                obradjeno++;
+                if (o.onProgress && (obradjeno % 10 === 0 || obradjeno === tiles.length)) {
+                    try { o.onProgress(obradjeno, tiles.length); } catch (_) {}
+                }
+            }
+        }
+        var radnici = [];
+        for (var w = 0; w < PARALELNO; w++) radnici.push(radnik());
+        await Promise.all(radnici);
+        _offlinePreuzimanjeUToku = false;
+
+        if (_offlineAbort) return 'nepotpuno';
+        // Isti prag kao ručno preuzimanje: pola skinute karte ne smije nositi
+        // oznaku "spremno za teren".
+        if (done >= tiles.length * 0.9) {
+            _setOfflineInfo(mode, { datum: new Date().toLocaleDateString('bs-BA'), plocica: done });
+            _refreshOfflineToggle();
+            return 'preuzeto';
+        }
+        _setOfflineInfo(mode, null);
+        _refreshOfflineToggle();
+        return 'nepotpuno';
+    };
+
+    // Naziv aktivnog sloja — za poruku korisniku iz js/app.js.
+    window.mapaRadnikaAktivniSlojNaziv = function() { return _slojNaziv(_baseMode); };
+
     // ---- "VODI ME DO LOKACIJE" — ruta preko OSRM (isti javni servis i
     // tehnika parsiranja kao admin karta, js/karta-odjela.js _drawRoute) ----
     // Podržava DVA načina, po korisnikovom zahtjevu:
