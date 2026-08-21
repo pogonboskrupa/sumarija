@@ -257,6 +257,7 @@
                     { id: 'poslovodja-otprema', icon: '🚛', label: 'OTPREMA' },
                     { id: 'poslovodja-stanje', icon: '📦', label: 'Stanje zaliha' },
                     { id: 'poslovodja-mapa', icon: '🗺️', label: 'Karta' },
+                    { id: 'kubikator', icon: '📐', label: 'Kubikator' },
                     { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
                     { id: 'poslovodja-pregled', icon: '📑', label: 'PREGLED' },
                     { id: 'poslovodja-izvjestaj-odjeli', icon: '🏭', label: 'Izvještaj po odjelima' },

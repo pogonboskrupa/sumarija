@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.10.4';
+        const APP_VERSION = '1.10.5';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -387,6 +387,12 @@
 
         // ========== POVRATAK MREŽE — osvježi aktivni tab svježim podacima ==========
         window.addEventListener('online', () => {
+            // Novi 'online' događaj ne znači da signal STVARNO nosi podatke —
+            // ponovo izmjeri (vidi _probeVeza). Bez ovoga bi "slaba veza" režim
+            // ostao aktivan i nakon što se veza vrati, do sljedećeg periodičnog
+            // probe-a.
+            if (typeof _probeVeza === 'function') _probeVeza();
+
             // Red čekanja (offline sječa/otprema, vidi drainSjecaQueue/
             // drainOtpremaQueue) — nezavisno od toga koji je tab otvoren, za
             // razliku od osvježavanja taba ispod ovo ne dira formu na ekranu.
@@ -416,6 +422,72 @@
                 }
             }, 1500); // kratka pauza — konekcija zna zatreperiti pri povratku signala
         });
+
+        // ========== SLAB SIGNAL → ODMAH OFFLINE REŽIM ==========
+        // navigator.onLine je na terenu skoro beskorisan: javlja "online" čim
+        // telefon vidi mobilnu mrežu — i onda kad je signal pretanak da ijedan
+        // zahtjev ikad prođe. Bez ovoga korisnik pri ulasku u aplikaciju bulji u
+        // splash ("Učitavam podatke") dok se ne iscrpe puni timeouti (do 180s ×
+        // 2 po pozivu) prije nego se uopšte padne na keš. Rješenje: jedan kratak
+        // probni zahtjev — ako ne prođe za PROBE_MS, prelazi se u offline režim
+        // ODMAH (keširani podaci se prikažu instant), a mreža se dalje periodično
+        // provjerava u pozadini da se režim sam ugasi kad se signal vrati.
+        const PROBE_MS = 2500;
+        window._slabaVeza = false;
+
+        function _vezaSlabaPoAPIju() {
+            // Network Information API — Chrome/Android (nema ga iOS Safari).
+            // Kad postoji i javlja 2G, nema svrhe ni trošiti probni zahtjev.
+            const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            if (!c || !c.effectiveType) return false;
+            return c.effectiveType === 'slow-2g' || c.effectiveType === '2g';
+        }
+
+        async function _probeVeza() {
+            if (!navigator.onLine)     { window._slabaVeza = true;  return false; }
+            if (_vezaSlabaPoAPIju())   { window._slabaVeza = true;  return false; }
+            try {
+                // VERSION je najmanji fajl na istom originu (par bajtova) — mjeri
+                // se SAMO da li radio stvarno propušta podatke, ne brzina backenda.
+                // cache:'no-store' + jedinstven param da ni browser ni service
+                // worker ne odgovore lokalno i lažno prijave dobru vezu.
+                // VAŽNO: SW za neuspjelu mrežu vraća 503 umjesto da baci grešku
+                // (vidi "Sve ostalo — network-first" u service-worker.js), pa se
+                // MORA provjeriti r.ok — bez toga bi svaki pad prošao kao uspjeh.
+                const r = await fetch('VERSION?probe=' + Date.now(), {
+                    cache: 'no-store', signal: AbortSignal.timeout(PROBE_MS)
+                });
+                if (!r.ok) throw new Error('probe HTTP ' + r.status);
+                window._slabaVeza = false;
+                return true;
+            } catch (_) {
+                window._slabaVeza = true;
+                console.warn('[VEZA] Slab signal — prelazim u offline režim (keširani podaci)');
+                return false;
+            }
+        }
+        window._probeVeza = _probeVeza;
+
+        // Oporavak — dok je "slaba veza" aktivna svi pozivi se instant vraćaju iz
+        // keša i NIJEDAN ne ide na mrežu, pa ništa samo od sebe ne bi otkrilo da
+        // se signal vratio. Periodični probe je jedini put nazad u online režim.
+        setInterval(() => {
+            if (!window._slabaVeza || !navigator.onLine || !currentUser) return;
+            _probeVeza().then(ok => {
+                if (!ok) return;
+                console.log('[VEZA] Signal se vratio — izlazim iz offline režima');
+                if (typeof showInfo === 'function') {
+                    showInfo('Signal se vratio', 'Osvježavam podatke...', 3000);
+                }
+                // Isti obrazac kao 'online' handler iznad — poništi render-keš
+                // aktivnog taba da switchTab stvarno povuče svježe podatke.
+                const formTabs = ['add-sjeca', 'add-otprema', 'edit-sjeca', 'edit-otprema'];
+                if (window.currentTab && !formTabs.includes(window.currentTab)) {
+                    if (window._tabRenderTime) delete window._tabRenderTime[window.currentTab];
+                    if (typeof switchTab === 'function') switchTab(window.currentTab);
+                }
+            });
+        }, 60000);
 
         /**
          * Pametno cache vrijeme usklađeno sa radnim vremenom unosa podataka
@@ -657,8 +729,14 @@
                 perfMetrics.cacheMisses++;
             }
 
-            // Offline fast-path: skip network entirely, use stale cache immediately
-            if (!navigator.onLine) {
+            // Offline fast-path: skip network entirely, use stale cache immediately.
+            // _slabaVeza (vidi _probeVeza gore): navigator.onLine javlja "online"
+            // ali radio ne propušta podatke. Ako imamo keš, tretiraj to POTPUNO
+            // isto kao offline — korisnik odmah vidi podatke umjesto da gleda
+            // splash dok se ne iscrpe timeouti. Bez keša se i dalje pokušava
+            // mreža (nema šta drugo prikazati), samo sa kraćim timeoutom niže.
+            const slabaVezaSaKesom = window._slabaVeza && cached && cached.data;
+            if (!navigator.onLine || slabaVezaSaKesom) {
                 if (cached && cached.data) {
                     const age = Date.now() - cached.timestamp;
                     showCacheIndicator(age, true);
@@ -707,9 +785,19 @@
             // preopterećen, a korisnik ionako odmah vidi keširane podatke.
             // Bez keša se i dalje pokušava dvaput — tada nema šta drugo
             // prikazati, pa se isplati insistirati.
+            //
+            // Slaba veza BEZ keša (grana iznad je već presrela slabu vezu s
+            // kešom): nema šta prikazati pa se mreža i dalje pokušava, ali sa
+            // kratkim timeoutom i bez ponavljanja — pun scenario (180s × 2 = 6
+            // minuta) bi značio da korisnik bulji u splash minutama prije nego
+            // dobije bilo kakvu povratnu informaciju. 8s je NAMJERNO ispod
+            // watchdog-a od 10s (vidi DOMContentLoaded): tab tako stigne
+            // prikazati svoje prazno/offline stanje prije nego watchdog odluči
+            // da je pokretanje propalo i pokaže ekran greške.
             const hasSafetyNet = !!cached;
-            const effectiveTimeout = hasSafetyNet ? Math.min(timeout, 30000) : timeout;
-            const MAX_RETRIES = hasSafetyNet ? 1 : 2;
+            const effectiveTimeout = window._slabaVeza ? 8000
+                : (hasSafetyNet ? Math.min(timeout, 30000) : timeout);
+            const MAX_RETRIES = (hasSafetyNet || window._slabaVeza) ? 1 : 2;
             let lastError = null;
 
             for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -745,6 +833,12 @@
                     clearTimeout(timeoutId); // Čistimo tek nakon što je body u potpunosti pročitan
 
                     logPerformance(`API call: ${path}`, performance.now() - fetchStart);
+
+                    // Pun odgovor je stigao — veza očito radi. Gasi "slaba veza"
+                    // režim odmah, bez čekanja periodičnog probe-a (ovo je jedini
+                    // put nazad kad se slaba veza detektovala, a poziv bez keša
+                    // ipak uspio).
+                    window._slabaVeza = false;
 
                     // Do NOT cache API error responses - let them be retried fresh
                     if (data.error) {
@@ -1845,11 +1939,18 @@
                         .catch(() => {}); // mreža pala — pusti keširane podatke, ne odjavljuj
                 }
 
-                loadPoslovodjaRadilistaMapping(); // Dohvati poslovodja→radilista iz INFO sheeta
-                loadOdjeli(); // Load odjeli list after auto-login
-
-                // Učitaj početni prikaz PA TEK ONDA preload ostale
-                const initialLoad = loadData();
+                // Prije ijednog mrežnog poziva izmjeri da li veza STVARNO nosi
+                // podatke (vidi _probeVeza): na dobroj vezi probe traje ~100ms,
+                // na slaboj tačno PROBE_MS (2.5s) i tada se cijelo učitavanje
+                // odvija u offline režimu iz keša (instant) — umjesto da splash
+                // stoji desetinama sekundi dok se ne iscrpe timeouti svakog
+                // pojedinačnog poziva. Zato SVE početno učitavanje ide iza
+                // probe-a, da svi pozivi vide isti (izmjereni) status veze.
+                const initialLoad = _probeVeza().then(() => {
+                    loadPoslovodjaRadilistaMapping(); // Dohvati poslovodja→radilista iz INFO sheeta
+                    loadOdjeli(); // Load odjeli list after auto-login
+                    return loadData();               // Učitaj početni prikaz
+                });
 
                 // 🚀 AUTO-PRELOAD: Čekaj da početni prikaz završi, pa tek onda preloaduj ostalo
                 if (!preloadScheduled) {

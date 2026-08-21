@@ -42,7 +42,8 @@ node --test tests/name-matching.test.js \
               tests/karta-odjela-pad-bounds.test.js \
               tests/karta-odjela-zavrsena-realizacija.test.js \
               tests/karta-odjela-neaktivnost-zavrseno.test.js \
-              tests/offline-red-cekanja.test.js
+              tests/offline-red-cekanja.test.js \
+              tests/slaba-veza.test.js
 
 echo ""
 echo "=============================================="
