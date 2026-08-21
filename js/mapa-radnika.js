@@ -364,20 +364,24 @@
         // uključen, tretiraj kao "mobilno" (veće oznake) bez obzira na (nepouzdanu)
         // prijavljenu širinu — Mapa odjela je terenski alat, ne pravi desktop prikaz.
         var mobile = document.body.classList.contains('force-desktop-view') || window.innerWidth <= 1024;
+        // Korisnički zahtjev: oznake su bile prevelike — sve veličine (i
+        // padding, da se cijela "pilula" smanji proporcionalno, ne samo
+        // tekst) su prepolovljene u odnosu na prijašnje vrijednosti, uz
+        // zadržano skaliranje po zoom nivou (veće približeno, manje odzumirano).
         var size =
-            z >= 16 ? (mobile ? 26 : 15) :
-            z >= 15 ? (mobile ? 22 : 13) :
-            z >= 14 ? (mobile ? 19 : 11) :
-            z >= 13 ? (mobile ? 15 : 9)  :
-            z >= 12 ? (mobile ? 12 : 7)  :
-            z >= 11 ? (mobile ? 8  : 5)  : 0;
+            z >= 16 ? (mobile ? 13  : 7.5) :
+            z >= 15 ? (mobile ? 11  : 6.5) :
+            z >= 14 ? (mobile ? 9.5 : 5.5) :
+            z >= 13 ? (mobile ? 7.5 : 4.5) :
+            z >= 12 ? (mobile ? 6   : 3.5) :
+            z >= 11 ? (mobile ? 4   : 2.5) : 0;
         var vis = size > 0 ? 'visible' : 'hidden';
         if (!_labelStyleEl) {
             _labelStyleEl = document.createElement('style');
             _labelStyleEl.id = 'rm-label-zoom-style';
             document.head.appendChild(_labelStyleEl);
         }
-        var pad = size <= 0 ? '0' : (mobile ? '5px 12px' : '3px 8px');
+        var pad = size <= 0 ? '0' : (mobile ? '2.5px 6px' : '1.5px 4px');
         _labelStyleEl.textContent =
             '.rm-odjel-label { font-size:' + size + 'px !important; visibility:' + vis + '; padding:' + pad + ' !important; }';
     }
