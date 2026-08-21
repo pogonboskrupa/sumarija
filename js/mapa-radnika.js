@@ -515,6 +515,15 @@
                 if (radnikLayers.length) {
                     var b = L.featureGroup(radnikLayers).getBounds();
                     if (b.isValid()) _map.fitBounds(b, { padding: [30, 30], maxZoom: 14 });
+                } else {
+                    // Nema sačuvanog pogleda niti odjela na kojima radnik radi (npr.
+                    // novi korisnik, ili STANJE_ZALIHA za njega prazna) — umjesto da
+                    // mapa ostane centrirana na Šumariji (praznina, ne govori ništa
+                    // radniku), fokusiraj RISOVAC KRUPA 60 kao razuman podrazumijevani
+                    // odjel (korisnički zahtjev).
+                    var fallbackKey = _labelKey('RISOVAC KRUPA 60');
+                    var fallbackLyr = _allLayers.filter(function(lyr) { return lyr._rmLabelKey === fallbackKey; })[0];
+                    if (fallbackLyr) _map.fitBounds(fallbackLyr.getBounds(), { padding: [40, 40], maxZoom: 15 });
                 }
             } catch (_) {}
             _autoFitDone = true;
