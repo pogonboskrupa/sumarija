@@ -3246,25 +3246,46 @@
 }
 #tabs-menu-mobile .tab {
     min-height: 70px;
-    padding: 18px 20px;
-    /* Font mora ići uz visinu — sama viša dugmad sa istim sitnim tekstom
-       ne rješava čitljivost na terenu, samo pravi prazan prostor oko slova.
-       Zato i veličina i debljina, ne samo min-height. */
-    font-size: 18.4px;
+    padding: 12px 18px;
+    /* Ikona/naslov su sad odvojeni <span>-ovi (isti markup kao desktop
+       .sidebar-nav .tab, vidi js/auth.js) i slažu se jedan iznad drugog —
+       izgleda kao pravi app tab-bar čip umjesto reda sitnog teksta.
+       Font mora ići uz visinu — sama viša dugmad sa istim sitnim tekstom
+       ne rješava čitljivost na terenu, samo pravi prazan prostor oko slova. */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
     font-weight: 800;
     /* Crna umjesto osnovne sive (#4b5563) — na terenu, po suncu, siva na
        bijelom se slabo čita. Nadjačava i ".tab:hover" (0,2,0) jer je ovo
        (1,1,0), a ID kolona ima prednost. */
     color: #111827;
-    line-height: 1.25;
+    line-height: 1.2;
     /* Svaki tab je zaseban "čip" sa vlastitim obrubom — lakše se razaznaje
        gdje jedan počinje a drugi prestaje nego kad su svi u nizu bez granice.
        Obrub je uvijek 2px (neaktivni sivi) da se pri promjeni taba raspored
-       ne pomjeri za širinu okvira. */
+       ne pomjeri za širinu okvira. Suptilna sjenka daje čipu malo dubine
+       (ravna bijela ploča na ravnoj bijeloj pozadini se prije gubila). */
     border: 2px solid #e5e7eb;
-    border-radius: 12px;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(17, 24, 39, .08);
 }
-/* Aktivni tab — pun zeleni obrub, jasno vidljiv i na suncu/terenu.
+#tabs-menu-mobile .tab-icon {
+    font-size: 22px;
+    line-height: 1;
+    transition: transform .15s ease;
+}
+#tabs-menu-mobile .tab-label {
+    font-size: 12.5px;
+    font-weight: 800;
+    line-height: 1.15;
+}
+/* Aktivni tab — pun zeleni obrub, jasno vidljiv i na suncu/terenu, uz
+   izraženiju sjenku (podignut čip) i blago uvećanu ikonu kao dodatni signal
+   "ovdje si" koji ne zavisi samo od boje.
    (1,2,0) nadjačava osnovno ".tab.active" (0,2,0) iznad, koje boji samo
    donju ivicu. */
 #tabs-menu-mobile .tab.active {
@@ -3273,7 +3294,10 @@
     /* I aktivni tab ima crn tekst — zeleni obrub i pozadina već nose signal
        "ovdje si", pa tekst ne mora nositi i boju na račun čitljivosti. */
     color: #111827;
-    box-shadow: 0 0 0 1px rgba(4, 120, 87, .25);
+    box-shadow: 0 3px 10px rgba(4, 120, 87, .22), 0 0 0 1px rgba(4, 120, 87, .25);
+}
+#tabs-menu-mobile .tab.active .tab-icon {
+    transform: scale(1.1);
 }
 
 /* ==========================================================================

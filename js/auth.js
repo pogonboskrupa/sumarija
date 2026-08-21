@@ -317,11 +317,15 @@
                 </button>
             `).join('');
 
-            // Generate mobile tabs (horizontal)
+            // Generate mobile tabs (horizontal) — ikona/naslov u zasebnim
+            // <span>-ovima (isti markup kao desktop tabsMenu iznad) da CSS
+            // (#tabs-menu-mobile .tab-icon/.tab-label) može složiti ikonu
+            // iznad naslova kao pravi app tab-bar čip, umjesto reda teksta.
             if (tabsMenuMobile) {
                 tabsMenuMobile.innerHTML = tabsConfig.map(tab => `
                     <button class="tab${tab.active ? ' active' : ''}${tab.hasBadge ? ' notification-badge' : ''}" onclick="switchTab('${tab.id}')">
-                        ${tab.icon} ${tab.label}
+                        <span class="tab-icon">${tab.icon}</span>
+                        <span class="tab-label">${tab.label}</span>
                         ${tab.hasBadge ? '<span class="badge-count" id="pending-count-badge-mobile"></span>' : ''}
                     </button>
                 `).join('');
