@@ -27,6 +27,18 @@
                 }
             } catch (_) {}
         })();
+        // Prinudan reload pri povratku iz browser/mobilni bfcache ("nazad"
+        // gumb, ili OS koji je zamrznuo tab pa ga vraća bez pravog reload-a
+        // pri povratku u app switcher-u) — na dijeljenom uređaju (isti telefon,
+        // više naloga prijavljenih u različitim trenucima preko sačuvanih
+        // kredencijala) je bfcache znao na trenutak pokazati PRETHODNU,
+        // zamrznutu sesiju (npr. admina) prije nego se stranica stvarno
+        // ponovo učita za trenutno prijavljenog korisnika (korisnički
+        // prijavljen bag). pageshow sa persisted:true je standardan signal
+        // da je stranica obnovljena iz bfcache-a, a ne svježe parsirana.
+        window.addEventListener('pageshow', function (e) {
+            if (e.persisted) location.reload();
+        });
     </script>
     <style>
         html.auto-login-pending #login-screen { display: none !important; }
