@@ -3611,40 +3611,43 @@
             <div id="karta-odjela-content" class="hidden">
                 <!-- Header + filteri u padded wrapperu -->
                 <div style="padding:16px 20px 0;">
-                    <div id="karta-page-header" class="page-header" style="margin-bottom:10px;flex-wrap:wrap;align-items:center;">
-                        <div class="page-header-left" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-                            <h1 style="margin-bottom:0;">🗺️ Mapa odjela 2026</h1>
+                    <!-- SVE u JEDNOM redu (korisnički zahtjev — bilo je i dalje u dva reda
+                         iako je zaglavlje skraćeno). nowrap + overflow-x:auto je isti
+                         "sigurnosni fallback" obrazac kao .kub-header-row (Kubikator) —
+                         na desktopu (za koji je ovaj zahtjev) sve stane bez skrola; na
+                         jako uskom ekranu radije kratak horizontalni skrol nego prelom
+                         u drugi red, koji je tražen da nestane. -->
+                    <div id="karta-page-header" class="page-header" style="margin-bottom:10px;flex-wrap:nowrap;align-items:center;overflow-x:auto;-webkit-overflow-scrolling:touch;">
+                        <div class="page-header-left" style="display:flex;align-items:center;gap:10px;flex-wrap:nowrap;flex-shrink:0;">
+                            <h1 style="margin-bottom:0;white-space:nowrap;">🗺️ Mapa odjela 2026</h1>
                             <!-- Switch Proizvodnja ⇄ Šumsko uzgojni radovi — isti .submenu-tab
-                                 obrazac kao ostali podtabovi u appu (js/ui.js switchPrimaciSubmenu).
-                                 Premješteno u isti red kao naslov (korisnički zahtjev, sažeto
-                                 zaglavlje) — bio je poseban red ispod. -->
-                            <div style="display:flex;gap:6px;">
+                                 obrazac kao ostali podtabovi u appu (js/ui.js switchPrimaciSubmenu). -->
+                            <div style="display:flex;gap:6px;flex-shrink:0;">
                                 <button type="button" class="submenu-tab active" id="karta-mode-proizvodnja-btn" onclick="switchKartaOdjelaMode('proizvodnja')">🪵 Proizvodnja</button>
                                 <button type="button" class="submenu-tab" id="karta-mode-uzgojni-btn" onclick="switchKartaOdjelaMode('uzgojni')">🌱 Šumsko uzgojni radovi</button>
                             </div>
+                            <!-- Sažeto zaglavlje — KPI traka i Filteri/Prikaz/Legenda kartice se
+                                 mogu sakriti iza ovog toggle-a. Pamti otvoreno/zatvoreno preko
+                                 localStorage (window.toggleKartaControls, js/karta-odjela.js) —
+                                 PODRAZUMIJEVANO OTVORENO (prvi pokušaj sa "zatvoreno po defaultu"
+                                 je korisniku djelovao kao da su dugmad OSM/Offline/Ruta/Reset/
+                                 Fokus potpuno nestala — collapse ostaje dostupan, korisnik ga sam
+                                 bira, ne startuje sakriven). Brojevi (N u sječi / slučajni/zapisnik)
+                                 su UVIJEK vidljivi preko značke desno (#karta-header-usjeci-badge),
+                                 pa ovaj toggle više ne nosi svoj sažetak — bio bi dupliranje iste
+                                 informacije u istom redu. -->
+                            <div id="karta-controls-toggle" class="karta-controls-toggle" onclick="toggleKartaControls()">
+                                <span id="karta-controls-toggle-label">🔍 Filteri i pregled</span>
+                                <span id="karta-controls-arrow">▾</span>
+                            </div>
                         </div>
                         <div class="page-header-right" style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
-                            <!-- "Odjela u sječi" — premješteno ovdje iz KPI trake (korisnički
-                                 zahtjev), popunjava _renderKpiBar() (js/karta-odjela.js). -->
+                            <!-- Značka statusa — "N u sječi" (Proizvodnja) ili slučajni/zapisnik
+                                 (Uzgojni), popunjava _renderKpiBar() (js/karta-odjela.js). -->
                             <span id="karta-header-usjeci-badge" class="karta-header-badge hidden"></span>
-                            <span id="karta-zadnje-osvjezeno" style="font-size:11px;color:#9ca3af;font-weight:600;"></span>
-                            <button class="btn btn-primary" onclick="initKartaOdjela(true)">🔄 Osvježi</button>
+                            <span id="karta-zadnje-osvjezeno" style="font-size:11px;color:#9ca3af;font-weight:600;white-space:nowrap;"></span>
+                            <button class="btn btn-primary" onclick="initKartaOdjela(true)" style="white-space:nowrap;">🔄 Osvježi</button>
                         </div>
-                    </div>
-
-                    <!-- Sažeto zaglavlje (korisnički zahtjev) — KPI traka i Filteri/Prikaz/
-                         Legenda kartice se mogu sakriti iza ovog toggle-a. Pamti otvoreno/
-                         zatvoreno preko localStorage (window.toggleKartaControls,
-                         js/karta-odjela.js) — PODRAZUMIJEVANO OTVORENO (prvi pokušaj sa
-                         "zatvoreno po defaultu" je korisniku djelovao kao da su dugmad
-                         (OSM/Offline/Ruta/Reset/Fokus) potpuno nestala — collapse ostaje
-                         dostupan, ali ga korisnik sam bira, ne startuje sakriven).
-                         Sažetak (karta-controls-summary) je UVIJEK vidljiv, i otvoreno i
-                         zatvoreno — popunjava ga isti _renderKpiBar(). -->
-                    <div id="karta-controls-toggle" class="karta-controls-toggle" onclick="toggleKartaControls()">
-                        <span id="karta-controls-toggle-label">🔍 Filteri i pregled</span>
-                        <span id="karta-controls-summary" class="karta-controls-summary"></span>
-                        <span id="karta-controls-arrow">▾</span>
                     </div>
                     <div id="karta-controls-wrap">
                     <!-- KPI pregled traka — brojevi popunjava _renderKpiBar() (js/karta-odjela.js),

@@ -1553,7 +1553,13 @@
     const badge = document.getElementById('karta-header-usjeci-badge');
     if (!el) return;
     if (_prikazMode === 'uzgojni') {
-      if (badge) badge.classList.add('hidden');
+      // Značka u zaglavlju je sad JEDINO mjesto koje pokazuje ove brojeve
+      // (stara zasebna "Filteri i pregled" traka sa istim sažetkom je
+      // uklonjena — sve je spojeno u jedan red, korisnički zahtjev).
+      if (badge) {
+        badge.textContent = '🌀' + _slucajniSet.size + ' slučajni · 📋' + _zapisnikSet.size + ' zapisnik';
+        badge.classList.remove('hidden');
+      }
       el.style.display = 'flex';
       const brojKlopki = _klopke.length;
       const ukupanUlov = _klopke.reduce((s, k) => s + (parseInt(k.ulov, 10) || 0), 0);
@@ -1575,19 +1581,6 @@
         const n = k.uSjeci || 0;
         badge.textContent = '🔴 ' + n + ' u sječi';
         badge.classList.toggle('hidden', n === 0);
-      }
-    }
-
-    // Sažetak u toggle traci sažetog zaglavlja — UVIJEK vidljiv (i kad je
-    // #karta-controls-wrap zatvoren), da ključni brojevi ne nestanu iz vida
-    // samo zato što je korisnik sklonio KPI/filter kartice.
-    const summaryEl = document.getElementById('karta-controls-summary');
-    if (summaryEl) {
-      if (_prikazMode === 'uzgojni') {
-        summaryEl.textContent = '🌀' + _slucajniSet.size + ' slučajni · 📋' + _zapisnikSet.size + ' zapisnik';
-      } else {
-        const kp = (_statusMap && _statusMap._kpi) || {};
-        summaryEl.textContent = '🔴' + (kp.uSjeci || 0) + ' u sječi';
       }
     }
   }
