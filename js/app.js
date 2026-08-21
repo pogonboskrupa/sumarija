@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.12.1';
+        const APP_VERSION = '1.12.2';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6311,6 +6311,20 @@
             if (!d) return '—';
             return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear() + '.';
         }
+        // Za <input type="date"> (vrijednost/prikaz je "YYYY-MM-DD") — odvojeno
+        // od _parseDatumTl/_fmtDatumTl gore koji rade sa "DD.MM.YYYY." formatom
+        // iz primki/otprema zapisa. Ručni razdvoji umjesto new Date(str) da se
+        // izbjegne UTC parsiranje ISO stringa (new Date('YYYY-MM-DD') tumači kao
+        // UTC ponoć, što bi u zoni ispred UTC-a "skliznulo" na prethodni dan).
+        function _parseDatumIso(s) {
+            const parts = String(s || '').split('-');
+            if (parts.length !== 3) return null;
+            const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            return isNaN(d.getTime()) ? null : d;
+        }
+        function _fmtDatumIso(d) {
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
         function _dayOfYearTl(d) {
             return Math.floor((d - new Date(d.getFullYear(), 0, 1)) / 86400000);
         }
@@ -6668,14 +6682,25 @@
             return stavkeHtml + ukupnoHtml;
         }
 
-        // "Prilagođeno..." u #primaci-trend-overview-dana otkriva broj-input za
-        // proizvoljan broj radnih dana; ostale opcije ga sakrivaju. Odvojeno od
-        // običnog onchange="renderPrimaciTrendOverview()" (koji koriste ostali
-        // birači) jer ovaj mora prvo prebaciti vidljivost inputa.
+        // "Odaberi period (od-do)..." u #primaci-trend-overview-dana otkriva DVA
+        // datumska inputa za proizvoljan kalendarski opseg; ostale opcije ih
+        // sakrivaju. Odvojeno od običnog onchange="renderPrimaciTrendOverview()"
+        // (koji koriste ostali birači) jer ovaj mora prvo prebaciti vidljivost
+        // inputa i, pri PRVOM prelasku na prilagođeni period, popuniti ih
+        // razumnim zadnjih 7 radnih dana (prazni datumski inputi bi inače
+        // odmah prijavili nepotpun/nevažeći opseg dok korisnik ne popuni oba).
         function primaciTrendOverviewDanaChange() {
             const sel = document.getElementById('primaci-trend-overview-dana');
-            const customEl = document.getElementById('primaci-trend-overview-dana-custom');
-            if (customEl) customEl.classList.toggle('hidden', !sel || sel.value !== 'custom');
+            const isCustom = !!sel && sel.value === 'custom';
+            const odEl = document.getElementById('primaci-trend-overview-od');
+            const doEl = document.getElementById('primaci-trend-overview-do');
+            if (odEl) odEl.classList.toggle('hidden', !isCustom);
+            if (doEl) doEl.classList.toggle('hidden', !isCustom);
+            if (isCustom && odEl && doEl && !odEl.value && !doEl.value) {
+                const zadano = _radnihDanaProzor(TREND_OVERVIEW_DANA_DEFAULT);
+                odEl.value = _fmtDatumIso(zadano.od);
+                doEl.value = _fmtDatumIso(zadano.danas);
+            }
             renderPrimaciTrendOverview();
         }
 
@@ -6686,22 +6711,29 @@
             if (!sjecaEl || !otpremaEl || !zalihaEl) return;
 
             const danaSel = document.getElementById('primaci-trend-overview-dana');
-            let dana = TREND_OVERVIEW_DANA_DEFAULT;
-            if (danaSel) {
-                if (danaSel.value === 'custom') {
-                    const customEl = document.getElementById('primaci-trend-overview-dana-custom');
-                    dana = customEl && customEl.value !== '' ? parseInt(customEl.value, 10) || TREND_OVERVIEW_DANA_DEFAULT : TREND_OVERVIEW_DANA_DEFAULT;
-                } else {
-                    dana = parseInt(danaSel.value, 10) || TREND_OVERVIEW_DANA_DEFAULT;
+            let od, danas;
+            if (danaSel && danaSel.value === 'custom') {
+                // Prilagođeni period — korisnik bira KALENDARSKE datume direktno
+                // (od-do), umjesto broja radnih dana unazad od danas.
+                const odEl = document.getElementById('primaci-trend-overview-od');
+                const doEl = document.getElementById('primaci-trend-overview-do');
+                od    = odEl && odEl.value ? _parseDatumIso(odEl.value) : null;
+                danas = doEl && doEl.value ? _parseDatumIso(doEl.value) : null;
+                if (!od || !danas || od > danas) {
+                    // Nepotpun/nevažeći opseg (npr. samo jedan datum izabran, ili
+                    // "od" poslije "do") — padni na podrazumijevanih 7 radnih dana
+                    // dok korisnik ne popuni ispravan opseg.
+                    ({ od, danas } = _radnihDanaProzor(TREND_OVERVIEW_DANA_DEFAULT));
                 }
+            } else {
+                const dana = Math.max(1, danaSel ? (parseInt(danaSel.value, 10) || TREND_OVERVIEW_DANA_DEFAULT) : TREND_OVERVIEW_DANA_DEFAULT);
+                ({ od, danas } = _radnihDanaProzor(dana));
             }
-            dana = Math.max(1, dana);
             const pragEl = document.getElementById('primaci-trend-overview-prag');
             const prag = pragEl && pragEl.value !== '' ? Number(pragEl.value) : TREND_ZALIHA_PRAG_DEFAULT;
             const pragLabelEl = document.getElementById('primaci-trend-zalihe-prag-label');
             if (pragLabelEl) pragLabelEl.textContent = prag;
 
-            const { od, danas } = _radnihDanaProzor(dana);
             const periodEl = document.getElementById('primaci-trend-overview-period');
             if (periodEl) periodEl.textContent = _fmtDanKratko(od) + '  →  ' + _fmtDanKratko(danas);
 

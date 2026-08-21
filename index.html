@@ -923,20 +923,22 @@
                          do danas) i odjeli/sortimenti sa zalihom preko praga — vidi
                          renderPrimaciTrendOverview (js/app.js). Perioda dana i prag zalihe
                          su podesivi (birači ispod), nezavisno od mjesec/sortiment birača
-                         iznad i grafikona ispod. "Prilagođeno..." otkriva broj-input za
-                         proizvoljan broj radnih dana; konkretan datumski opseg izabranog
-                         perioda se prikazuje ispod birača (primaci-trend-overview-period). -->
+                         iznad i grafikona ispod. "Odaberi period (od-do)..." otkriva DVA
+                         datumska inputa za proizvoljan kalendarski opseg (umjesto broja
+                         radnih dana unazad); konkretan opseg se prikazuje ispod birača
+                         (primaci-trend-overview-period). -->
                     <div class="controls-bar" style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center; align-items:flex-end; margin-bottom:6px;">
                         <div class="month-selector month-selector--neutral">
-                            <label>📆 Period (radnih dana):</label>
+                            <label>📆 Period:</label>
                             <select id="primaci-trend-overview-dana" class="month-select" onchange="primaciTrendOverviewDanaChange()">
-                                <option value="3">3</option>
-                                <option value="7" selected>7</option>
-                                <option value="14">14</option>
-                                <option value="30">30</option>
-                                <option value="custom">Prilagođeno...</option>
+                                <option value="3">3 radna dana</option>
+                                <option value="7" selected>7 radnih dana</option>
+                                <option value="14">14 radnih dana</option>
+                                <option value="30">30 radnih dana</option>
+                                <option value="custom">Odaberi period (od-do)...</option>
                             </select>
-                            <input type="number" id="primaci-trend-overview-dana-custom" class="month-select hidden" value="7" min="1" max="90" onchange="renderPrimaciTrendOverview()" style="width:70px;">
+                            <input type="date" id="primaci-trend-overview-od" class="month-select hidden" onchange="renderPrimaciTrendOverview()" style="width:150px;">
+                            <input type="date" id="primaci-trend-overview-do" class="month-select hidden" onchange="renderPrimaciTrendOverview()" style="width:150px;">
                         </div>
                         <div class="month-selector month-selector--neutral">
                             <label>⚠️ Prag zalihe (m³):</label>

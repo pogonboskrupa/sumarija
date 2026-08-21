@@ -46,7 +46,8 @@ node --test tests/name-matching.test.js \
               tests/slaba-veza.test.js \
               tests/karta-gps-pracenje.test.js \
               tests/offline-karta-preuzimanje.test.js \
-              tests/priprema-za-teren.test.js
+              tests/priprema-za-teren.test.js \
+              tests/trend-period-od-do.test.js
 
 echo ""
 echo "=============================================="
