@@ -267,30 +267,22 @@ td[style*="color: #ef4444"] {
 }
 
 /* UKUPNO/Total rows - MAXIMUM emphasis
-   #dashboard-table (Šumarija tab, Mjesečni pregled) je izuzet — njegov UKUPNO
-   red je u posebnom <tfoot> (već pokriven pravilom "table tfoot td" ispod),
-   pa je zadnji red u <tbody> obični mjesec (Decembar), ne total — bez izuzetka
-   bi se Decembar uvijek boldirao bez obzira na to koji je mjesec stvarno tekući. */
-table:not(#dashboard-table) tbody tr:last-child td,
+   NAMJERNO bez "tbody tr:last-child" — ta pretpostavka ("zadnji red = total")
+   je bila netačna za desetine tabela u appu koje ili nemaju UKUPNO red uopšte
+   (npr. "Moje sječe/otpreme", liste primača/otpremača/kupaca, dnevni
+   kalendar u Šihtarici) ili imaju total negdje DRUGO (tfoot, ili red koji
+   nije stvarno posljednji dijete čvor). Rezultat je bio da se poslednja
+   OBIČNA stavka na listi (posljednji radnik, dan, odjel...) boldirala kao
+   da je zbir — korisnički prijavljen bug. Sad se boldira SAMO ono što je
+   eksplicitno označeno kao total (klasa ili tfoot) — svaka tabela koja
+   stvarno ima UKUPNO red mora imati class="ukupno-row" (ili "total-row")
+   na tom <tr>, ne osloniti se na poziciju. */
 table tfoot td,
 .ukupno-row td,
 .total-row td {
     font-family: 'Inter', -apple-system, sans-serif !important;
     font-weight: 900 !important;
     font-size: 15px !important;
-}
-
-/* Izvještaj po odjelima (Izvještaji tab) — tabele "Sječa/Otprema po radniku"
-   i "Otprema po kupcu" (.kupci-table) nemaju UKUPNO red, pa je zadnji red
-   uvijek samo posljednji radnik/kupac na listi — generičko pravilo iznad ga
-   je boldiralo JAČE (900/15px) nego sve ostale redove (koji dobiju 700/14px
-   preko ".kupci-table tbody td" pravila), pa je zadnji red izgledao vidljivo
-   drugačije. Ovdje ga svodimo na ISTU vrijednost (700/14px) kao ostali redovi
-   — svi redovi jednako boldirani, bez vizuelne razlike. UKUPNO red u tabeli
-   sortimenata (klasa .totals-row) ostaje netaknut, van dometa ovog pravila. */
-#izvjestaji-po-odjelima-prikaz table.kupci-table tbody tr:last-child:not(.totals-row) td {
-    font-weight: 700 !important;
-    font-size: 14px !important;
 }
 
 /* CRITICAL: Dark background rows MUST have white text */
