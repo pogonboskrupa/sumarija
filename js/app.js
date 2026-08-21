@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.13.7';
+        const APP_VERSION = '1.13.8';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -4443,14 +4443,14 @@
 
                 bodyHtml += `<tr style="background:${rowBg};">`;
                 bodyHtml += `<td style="font-weight:500; font-size:13px;">${item.datum}</td>`;
-                bodyHtml += `<td style="font-weight:600; color:#dc2626; font-size:13px;">${item.odjel}</td>`;
+                bodyHtml += `<td style="font-weight:600; color:#2563eb; font-size:13px;">${item.odjel}</td>`;
                 bodyHtml += `<td style="font-size:13px;">${item.otpremac}</td>`;
                 bodyHtml += `<td style="color:#7c3aed; font-weight:500; font-size:13px;">${item.kupac}</td>`;
                 SORT_KOLONE.forEach(s => {
                     const val = item.sort[s];
                     bodyHtml += `<td style="text-align:right; font-family:'Courier New',monospace; font-size:12px; color:${val > 0 ? '#1f2937' : '#d1d5db'};">${val > 0 ? val.toFixed(2) : '-'}</td>`;
                 });
-                bodyHtml += `<td style="text-align:right; font-family:'Courier New',monospace; font-size:13px; font-weight:700; color:#dc2626;">${item.ukupno > 0 ? item.ukupno.toFixed(2) : '-'}</td>`;
+                bodyHtml += `<td style="text-align:right; font-family:'Courier New',monospace; font-size:13px; font-weight:700; color:#b45309;">${item.ukupno > 0 ? item.ukupno.toFixed(2) : '-'}</td>`;
                 bodyHtml += '</tr>';
             });
 
@@ -4459,8 +4459,11 @@
                 bodyHtml += buildOtpremaSubtotalRow(currentDate, totalsByDate[currentDate], colspanInfo);
             }
 
-            // Grand total
-            bodyHtml += `<tr style="background:#dc2626; color:white; border-top:3px solid #b91c1c;">`;
+            // Grand total — indigo umjesto crvene (previše crvene boje na ovom
+            // tabu je bila korisnička primjedba; dnevni subtotal je zelen,
+            // odjel/ukupno kolone su plava/zlatna, grand total dobija svoju
+            // četvrtu, izrazito drugačiju boju).
+            bodyHtml += `<tr style="background:#4338ca; color:white; border-top:3px solid #3730a3;">`;
             bodyHtml += `<td colspan="${colspanInfo}" style="font-weight:700; text-align:right; font-size:13px;">UKUPNO OTPREMA:</td>`;
             SORT_KOLONE.forEach(s => {
                 const val = grandTotals[s];
@@ -4472,15 +4475,16 @@
             bodyElem.innerHTML = bodyHtml;
         }
 
-        // Helper: OTPREMA subtotal red
+        // Helper: OTPREMA subtotal red — zelena umjesto crvene (previše crvene
+        // boje na ovom tabu je bila korisnička primjedba).
         function buildOtpremaSubtotalRow(datum, totals, colspan) {
-            let html = `<tr style="background:#fee2e2; border-top:1px solid #ef4444;">`;
-            html += `<td colspan="${colspan}" style="font-weight:700; text-align:right; color:#dc2626; font-size:13px;">Ukupno ${datum}:</td>`;
+            let html = `<tr style="background:#ecfdf5; border-top:1px solid #10b981;">`;
+            html += `<td colspan="${colspan}" style="font-weight:700; text-align:right; color:#047857; font-size:13px;">Ukupno ${datum}:</td>`;
             SORT_KOLONE.forEach(s => {
                 const val = totals[s];
-                html += `<td style="text-align:right; font-family:'Courier New',monospace; font-size:12px; color:#dc2626; font-weight:700;">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+                html += `<td style="text-align:right; font-family:'Courier New',monospace; font-size:12px; color:#047857; font-weight:700;">${val > 0 ? val.toFixed(2) : '-'}</td>`;
             });
-            html += `<td style="text-align:right; font-family:'Courier New',monospace; font-size:13px; color:#dc2626; font-weight:700;">${totals['ukupno'].toFixed(2)}</td>`;
+            html += `<td style="text-align:right; font-family:'Courier New',monospace; font-size:13px; color:#047857; font-weight:700;">${totals['ukupno'].toFixed(2)}</td>`;
             html += '</tr>';
             return html;
         }
