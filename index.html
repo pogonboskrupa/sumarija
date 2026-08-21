@@ -4297,16 +4297,14 @@
                   #karta-fokus-btn.active { background:#1e40af !important; color:white !important; border-color:#1e40af !important; }
 
                   /* Izlaz iz Fokus moda — position:fixed (NE sticky, NE Leaflet
-                     control) namjerno: #karta-fokus-btn iznad je unutar
-                     #karta-page-header, koji se u fokus modu sakriva (display:none
-                     gore), pa na telefonu, ako panovanje/skrolanje mape ikad
-                     "odvuče" ostatak stranice, korisnik ostaje bez ijedne vidljive
-                     kontrole — mora zatvoriti aplikaciju da bi promijenio tab. Ovo
-                     dugme je fixed (garantovano na istom mjestu, bez obzira na
-                     scroll) i FIZIČKI VAN #karta-odjela-map/Leaflet DOM-a (isti
-                     razlog kao "obična HTML dugmad IZVAN Leaflet kontejnera" u
-                     js/mapa-radnika.js — Leaflet-ov pan gest inače otima dodir
-                     dugmadima koja su njegov L.Control ili mu vizuelno preblizu). */
+                     control) namjerno: dugme "⛶ Fokus" je unutar kartice Prikaz,
+                     koju fokus mod sakriva zajedno sa zaglavljem, pa je OVO jedina
+                     vidljiva kontrola u fokusu — mora biti garantovano na istom
+                     mjestu bez obzira na scroll, i FIZIČKI VAN #karta-odjela-map/
+                     Leaflet DOM-a (isti razlog kao "obična HTML dugmad IZVAN
+                     Leaflet kontejnera" u js/mapa-radnika.js — Leaflet-ov pan gest
+                     inače otima dodir dugmadima koja su njegov L.Control ili mu
+                     vizuelno preblizu). */
                   #karta-fokus-exit-btn {
                       display:none; position:fixed; top:calc(10px + env(safe-area-inset-top)); right:12px;
                       z-index:10060; width:38px; height:38px; border-radius:50%; border:none;
@@ -4322,7 +4320,16 @@
                     #mapa-modal-panel { width:460px; max-width:460px; }
                   }
                 </style>
-                <button id="karta-fokus-exit-btn" onclick="if (typeof switchTab === 'function') switchTab('dashboard');" title="Izađi iz mape">✕</button>
+                <!-- ✕ GASI FOKUS (vraća zaglavlje), ne napušta Mapu. Ranije je
+                     vodio na dashboard, što je bilo upotrebljivo samo dok je
+                     dugme "⛶ Fokus" u kartici Prikaz ostajalo vidljivo u fokus
+                     modu. Otkako su te kartice iza "Filteri i pregled" toggle-a
+                     (koji fokus takođe sakriva), ovo je JEDINA vidljiva kontrola
+                     — pa mora raditi ono što korisnik od ✕ i očekuje: vratiti
+                     normalan prikaz. switchTab je fallback ako modul karte iz
+                     bilo kog razloga nije učitan, da dugme nikad ne bude mrtvo. -->
+                <button id="karta-fokus-exit-btn" title="Izađi iz fokus prikaza"
+                        onclick="if (typeof toggleMapaFokus === 'function') toggleMapaFokus(); else if (typeof switchTab === 'function') switchTab('dashboard');">✕</button>
                 <div id="karta-odjela-map">
                     <div id="karta-loading" style="display:flex;align-items:center;justify-content:center;height:100%;color:#4b5563;font-size:14px;">⏳ Učitavam kartu...</div>
                 </div>
