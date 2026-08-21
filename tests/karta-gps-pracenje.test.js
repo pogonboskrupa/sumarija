@@ -157,3 +157,100 @@ test('Lokacija isključena', async (t) => {
         assert.deepStrictEqual(s, noviGps());
     });
 });
+
+// --- kopija iz js/mapa-radnika.js: _gpsSubscribe onErr / onPos ---
+// Prolazne GPS greske (TIMEOUT/POSITION_UNAVAILABLE) se gutaju GPS_GRACE_MS
+// prije nego se prijave potrosacima; PERMISSION_DENIED ide odmah.
+const GPS_GRACE_MS = 90000;
+
+function noviTok() {
+    // 'sada' NE smije krenuti od 0: prviProblemTs=0 znaci "nema problema", pa bi
+    // sat na nuli ucinio prvi zabiljezeni problem nevidljivim. Pravi Date.now()
+    // nikad nije 0, ovo samo vjerno modeluje tu pretpostavku.
+    return { prviProblemTs: 0, dojavljeno: 0, sada: 1700000000000 };
+}
+function gpsGreska(t, code) {
+    const fatalna = code === 1;
+    if (!fatalna) {
+        if (!t.prviProblemTs) t.prviProblemTs = t.sada;
+        if (t.sada - t.prviProblemTs < GPS_GRACE_MS) return t;   // progutano
+    }
+    return { ...t, dojavljeno: t.dojavljeno + 1 };
+}
+function gpsUspjeh(t) {
+    return { ...t, prviProblemTs: 0 };   // signal se vratio
+}
+function protekne(t, ms) {
+    return { ...t, sada: t.sada + ms };
+}
+
+test('Prolazne GPS greške se ne prijavljuju odmah', async (t) => {
+    await t.test('TIMEOUT se proguta unutar grace perioda', () => {
+        const s = gpsGreska(noviTok(), 3);
+        assert.strictEqual(s.dojavljeno, 0, 'korisnik ne smije vidjeti poruku');
+    });
+
+    await t.test('POSITION_UNAVAILABLE se takođe proguta', () => {
+        const s = gpsGreska(noviTok(), 2);
+        assert.strictEqual(s.dojavljeno, 0);
+    });
+
+    await t.test('niz timeouta pod krošnjom ostaje tih dok traje grace', () => {
+        let s = noviTok();
+        for (let i = 0; i < 5; i++) { s = gpsGreska(s, 3); s = protekne(s, 15000); }
+        assert.strictEqual(s.dojavljeno, 0, '75s prekida je i dalje samo šuma pod krošnjom');
+    });
+
+    await t.test('nakon grace perioda se ipak prijavi', () => {
+        let s = gpsGreska(noviTok(), 3);
+        s = protekne(s, GPS_GRACE_MS + 1000);
+        s = gpsGreska(s, 3);
+        assert.strictEqual(s.dojavljeno, 1, 'trajni gubitak signala se mora prijaviti');
+    });
+
+    await t.test('uspješan fix poništava grace period', () => {
+        let s = gpsGreska(noviTok(), 3);      // problem počeo
+        s = protekne(s, 80000);
+        s = gpsUspjeh(s);                     // signal se vratio
+        s = protekne(s, 80000);
+        s = gpsGreska(s, 3);                  // novi, nezavisan problem
+        assert.strictEqual(s.dojavljeno, 0, 'brojač kreće ispočetka nakon oporavka');
+    });
+
+    await t.test('PERMISSION_DENIED se prijavi ODMAH (nema oporavka)', () => {
+        const s = gpsGreska(noviTok(), 1);
+        assert.strictEqual(s.dojavljeno, 1);
+    });
+});
+
+// --- kopija iz js/mapa-radnika.js: _handleTragGpsError ---
+// Snimljene tacke se NIKAD ne bacaju — greska samo pauzira snimanje.
+function tragGpsGreska(trag) {
+    if (!trag.recording || trag.paused) return trag;
+    return { ...trag, paused: true };
+}
+
+test('GPS greška pri snimanju traga ne uništava snimljeno', async (t) => {
+    const uToku = { recording: true, paused: false, tacke: 420 };
+
+    await t.test('snimanje se pauzira, ne prekida', () => {
+        const s = tragGpsGreska(uToku);
+        assert.strictEqual(s.paused, true);
+        assert.strictEqual(s.recording, true, 'snimanje NE smije stati');
+    });
+
+    await t.test('prehodane tačke ostaju sačuvane', () => {
+        const s = tragGpsGreska(uToku);
+        assert.strictEqual(s.tacke, 420, 'nijedna tačka se ne smije izgubiti');
+    });
+
+    await t.test('greška dok je već pauzirano ne mijenja ništa', () => {
+        const pauzirano = { recording: true, paused: true, tacke: 420 };
+        assert.deepStrictEqual(tragGpsGreska(pauzirano), pauzirano);
+    });
+
+    await t.test('greška bez aktivnog snimanja ne mijenja ništa', () => {
+        const neaktivno = { recording: false, paused: false, tacke: 0 };
+        assert.deepStrictEqual(tragGpsGreska(neaktivno), neaktivno);
+    });
+});

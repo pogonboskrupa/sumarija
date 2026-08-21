@@ -195,6 +195,12 @@
     var _gpsConsumers = {};   // id -> { onPos, onErr }
     var _gpsWatchId = null;
     var _gpsLastPos = null;
+    var _gpsLastPosTs = 0;    // kad je zadnji fix stigao (Date.now())
+    // Koliko dugo se PROLAZNA GPS greška guta prije nego se prijavi potrošačima.
+    // Pod krošnjama je gubitak signala na po minutu sasvim normalan, a
+    // watchPosition sam nastavlja pokušavati — vidi obrazloženje u onErr ispod.
+    var GPS_GRACE_MS = 90000;
+    var _gpsPrviProblemTs = 0;
 
     function _gpsSubscribe(id, onPos, onErr) {
         if (!navigator.geolocation) return false;
@@ -205,18 +211,42 @@
         if (_gpsWatchId == null) {
             _gpsWatchId = navigator.geolocation.watchPosition(function(pos) {
                 _gpsLastPos = pos;
+                _gpsLastPosTs = Date.now();
+                _gpsPrviProblemTs = 0;   // signal se vratio — poništi grace period
                 Object.keys(_gpsConsumers).forEach(function(k) {
                     var c = _gpsConsumers[k];
                     if (c && c.onPos) { try { c.onPos(pos); } catch (e) { console.error('[MapaRadnika] GPS potrošač', k, e); } }
                 });
             }, function(err) {
-                // Greška (npr. odbijena dozvola) pogađa SVE potrošače — svaki
-                // sam odlučuje kako da reaguje (npr. snimanje traga vraća UI).
+                // TIMEOUT (code 3) i POSITION_UNAVAILABLE (code 2) su pod
+                // krošnjama NORMALNI i PROLAZNI — watchPosition ne prestaje
+                // raditi, sam nastavlja pokušavati i signal se obično vrati za
+                // koji trenutak. Ranije je svaka takva greška ODMAH išla svim
+                // potrošačima, pa je jedan propušten fix rušio snimanje traga i
+                // bacao poruku "Isteklo vrijeme čekanja na GPS signal"
+                // (prijavljeno: "nekad javi isteklo vrijeme čekanja na GPS").
+                // Zato se prosljeđuje tek ako signal ne dođe ni nakon
+                // GPS_GRACE_MS. PERMISSION_DENIED (code 1) je jedina greška bez
+                // oporavka — ona ide odmah.
+                var fatalna = err && err.code === 1;
+                if (!fatalna) {
+                    if (!_gpsPrviProblemTs) _gpsPrviProblemTs = Date.now();
+                    if (Date.now() - _gpsPrviProblemTs < GPS_GRACE_MS) {
+                        console.warn('[MapaRadnika] GPS prolazna greška (code ' +
+                            (err && err.code) + ') — čekam oporavak signala');
+                        return;
+                    }
+                }
                 Object.keys(_gpsConsumers).forEach(function(k) {
                     var c = _gpsConsumers[k];
                     if (c && c.onErr) { try { c.onErr(err); } catch (e) {} }
                 });
-            }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+            }, {
+                // maximumAge 5s (bilo 2s) i timeout 45s (bilo 20s): pod gustom
+                // krošnjom fix zna kasniti i preko 20s, a fix star 5 sekundi je
+                // za sve ovdje (prikaz tačke, trag, navigacija) sasvim dovoljan.
+                enableHighAccuracy: true, maximumAge: 5000, timeout: 45000
+            });
         }
         return true;
     }
@@ -3689,6 +3719,17 @@
             return;
         }
 
+        // Zajednički GPS tok je možda već aktivan (snimanje traga, navigacija)
+        // i ima svjež fix — onda nema nikakvog čekanja ni rizika od isteka
+        // vremena, kreni odmah s njim.
+        if (_gpsLastPos && (Date.now() - _gpsLastPosTs) < 60000) {
+            var ll0 = _updateLocDisplay(_gpsLastPos);
+            _map.setView(ll0, Math.max(_map.getZoom(), 15));
+            _startLokacija();
+            _startHeadingIfInactive();
+            return;
+        }
+
         if (_locBtnEl) _locBtnEl.disabled = true;
         _setLocBtn('📍', 'Tražim...');
 
@@ -3702,13 +3743,28 @@
             },
             function(err) {
                 if (_locBtnEl) _locBtnEl.disabled = false;
-                _osvjeziLocDugme();
-                var msg = err.code === 1
-                    ? 'Pristup lokaciji je odbijen. Dozvolite lokaciju u postavkama uređaja/browsera.'
-                    : (err.code === 3 ? 'Isteklo vrijeme čekanja na GPS signal. Pokušajte ponovo na otvorenom.' : 'Nije moguće dobiti lokaciju.');
-                _notify('showError', msg);
+                if (err.code === 1) {   // PERMISSION_DENIED — jedina greška bez oporavka
+                    _osvjeziLocDugme();
+                    _notify('showError', 'Pristup lokaciji je odbijen. Dozvolite lokaciju u postavkama uređaja/browsera.');
+                    return;
+                }
+                // TIMEOUT/POSITION_UNAVAILABLE: prvi fix zna kasniti pod
+                // krošnjama, ali watchPosition u _startLokacija() nastavlja
+                // pokušavati i sam će centrirati mapu čim signal stigne.
+                // Zato se praćenje SVEJEDNO pokreće umjesto da se stane sa
+                // porukom "Isteklo vrijeme čekanja na GPS signal" (prijavljeno)
+                // — dojava je informativna, ne greška, i korisnik ne mora
+                // ponovo tapkati dugme.
+                _startLokacija();
+                _startHeadingIfInactive();
+                _notify('showInfo', 'Tražim GPS signal',
+                    'Signal je slab (krošnje/zgrade). Mapa će se sama pomjeriti na tebe čim signal stigne.', 5000);
             },
-            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+            // 20s + prihvati fix star do 30s (bilo 12s / maximumAge 0): pod
+            // gustom krošnjom hladan fix često traje duže od 12s, a odbijanje
+            // sasvim upotrebljivog fixa od prije par sekundi je bilo čisto
+            // trošenje vremena i baterije.
+            { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 }
         );
     }
 
@@ -3823,21 +3879,26 @@
 
     // Zajednička GPS-greška i za start i za nastavak nakon pauze — dozvola
     // može biti povučena u bilo kom trenutku, ne samo na startu.
+    //
+    // Snimljene tačke se NE BACAJU (ranije jesu): greška ovdje stiže tek nakon
+    // GPS_GRACE_MS gutanja prolaznih grešaka (vidi _gpsSubscribe), ali i tada
+    // je jedini ispravan potez PAUZIRATI — radnik je možda prehodao kilometar
+    // prije nego je zašao pod gustu krošnju, i taj posao ne smije nestati zbog
+    // izgubljenog signala. Isto ponašanje kao _handleSjekGpsError; odatle i
+    // preuzet obrazac.
     function _handleTragGpsError(err) {
         console.error('[MapaRadnika] GPS greška pri snimanju traga:', err);
+        if (!_recording || _tragPaused) return;
         _gpsUnsubscribe('trag');
-        _recording = false;
-        _tragPaused = false;
-        _recWakeLockOff();
-        _closeTragRecordingModal();
-        if (_tragBtnEl) {
-            _tragBtnEl.textContent = '⏺️ Snimi trag';
-            _tragBtnEl.classList.remove('recording');
-        }
-        var msg = err.code === 1
-            ? 'Pristup lokaciji je odbijen. Dozvolite lokaciju u postavkama uređaja/browsera da bi snimanje traga radilo.'
-            : (err.code === 3 ? 'Isteklo vrijeme čekanja na GPS signal. Pokušajte ponovo na otvorenom.' : 'Nije moguće pratiti lokaciju za snimanje traga.');
-        _notify('showError', msg);
+        _tragActiveMs += Date.now() - _tragSegmentStartTs;
+        _tragPaused = true;
+        var btn = document.getElementById('trag-recording-pause-btn');
+        var rec = document.getElementById('trag-recording-bar');
+        if (btn) btn.textContent = '▶️ Nastavi';
+        if (rec) rec.classList.add('paused');
+        _notify('showWarning', 'GPS prekinut', err && err.code === 1
+            ? 'Pristup lokaciji je odbijen — snimanje je pauzirano. Snimljeno do sada je sačuvano; možete odmah pritisnuti "Završi".'
+            : 'Izgubljen GPS signal — snimanje je pauzirano. Snimljeno do sada je sačuvano; tapnite "Nastavi" kad se signal vrati.');
     }
 
     function _startTrag() {
