@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.10.5';
+        const APP_VERSION = '1.10.6';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -998,41 +998,13 @@
         // odjavni tok umjesto da duplira logiku.
         window._handleUnauthorized = _handleUnauthorized;
 
-        // Sigurnosni izlaz iz "cijeli ekran" modova (Karta radnika, Kubikator,
-        // Šihtarica) — njihova vlastita "✕ Zatvori" dugmad su UNUTAR sadržaja
-        // tog taba (position:absolute ili position:fixed ugniježdeno), pa na
-        // nekim telefonima (adresna traka browsera se sklanja/vraća, PWA se
-        // budi iz pozadine, itd.) taj sadržaj zna izračunati veću visinu od
-        // stvarno vidljivog ekrana — dugme tehnički postoji, ali je van
-        // dohvata, a scroll je namjerno isključen (overflow:hidden) dok je
-        // fullscreen aktivan. Korisnik je tad zaglavljen i mora ugasiti cijelu
-        // aplikaciju da izađe (prijavljeno više puta). Admin Mapa Fokus mod
-        // NIJE ovdje — ima svoj #karta-fokus-exit-btn (position:fixed, uvijek
-        // dohvatljiv), pa bi ovo dugme tu bilo čisto dupliranje.
-        // Ovo dugme je position:fixed i direktno dijete <body>-a — potpuno
-        // neovisno o layoutu bilo kojeg taba, pa je uvijek dohvatljivo bez obzira
-        // šta se dešava sa mapom/sadržajem.
-        window.globalFullscreenEmergencyExit = function() {
-            if (document.body.classList.contains('radnik-mapa-fullscreen') && typeof closeMapaRadnika === 'function') {
-                closeMapaRadnika();
-                return;
-            }
-            if (document.body.classList.contains('kubikator-fullscreen') && typeof closeKubikator === 'function') {
-                closeKubikator();
-                return;
-            }
-            if (document.body.classList.contains('sihtarica-fullscreen') && typeof closeSihtarica === 'function') {
-                var primacEl = document.getElementById('sihtarica-primac-content');
-                var tip = (primacEl && !primacEl.classList.contains('hidden')) ? 'primac' : 'otpremac';
-                closeSihtarica(tip);
-                return;
-            }
-            // Ne bi trebalo da se desi (dugme se prikazuje samo uz gornje klase),
-            // ali ako se ipak desi — najsigurniji fallback je da se sve poznate
-            // fullscreen klase uklone i vrati na dashboard.
-            document.body.classList.remove('radnik-mapa-fullscreen', 'kubikator-fullscreen', 'sihtarica-fullscreen', 'mapa-fokus');
-            if (typeof switchTab === 'function') switchTab('dashboard');
-        };
+        // globalFullscreenEmergencyExit() je UKLONJEN zajedno sa svojim "✕"
+        // dugmetom. Postojao je jer su vlastita "✕ Zatvori" dugmad fullscreen
+        // tabova znala odskrolati van dohvata — ali je u praksi bio DRUGO dugme
+        // za istu radnju na ekranu (kod Kubikatora tačno preko njegovog
+        // "Zatvori"). Umjesto dupliranja, svaki fullscreen mod sad ima vlastiti
+        // close pribijen za viewport (position:fixed) pa ne može odskrolati —
+        // vidi objašnjenje uz .kub-header-row/.sih-close-btn u css/main.css.
 
         // "Ažuriraj podatke" — OSVJEŽI-U-MJESTU (bez brisanja keša, bez reload-a):
         // povuci svježe podatke za SVE tabove u pozadini pa svaki tab poslije

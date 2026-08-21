@@ -3664,36 +3664,41 @@ body.sihtarica-fullscreen #sihtarica-otpremac-content {
     padding-right: 110px; /* prostor za "Zatvori" dugme da ga podnaslov ne prekrije kad se prelomi */
 }
 .sih-close-btn {
-    position: absolute; top: 14px; right: 16px; z-index: 5;
-    background: rgba(255, 255, 255, .18); color: #fff;
-    border: 2px solid rgba(255, 255, 255, .6); border-radius: 10px;
+    /* fixed (ne absolute unutar .worker-header) — sadržaj Šihtarice je duga
+       tabela dana; dok je dugme bilo vezano za zaglavlje, odskrolalo bi i
+       postalo nedohvatljivo. To je bio jedini razlog za globalni "✕" izlaz
+       (drugo dugme za istu radnju na ekranu) — pribijanje za viewport ga čini
+       nepotrebnim. Dugme je i ranije bilo van toka (absolute), pa se raspored
+       zaglavlja ne mijenja; padding-right na .worker-header ostaje da naslov
+       ne prolazi ispod njega. */
+    position: fixed; top: 14px; right: 16px; z-index: 10501;
+    /* Puna tamna pozadina umjesto providne bijele: providna je radila samo
+       dok je dugme stajalo na obojenom gradijent zaglavlju — sad lebdi i
+       preko svijetle tabele, gdje bi bijelo-na-bijelom bilo nevidljivo
+       (ista greška kao ranije kod .rm-explorer-close). */
+    background: #1e293b; color: #fff;
+    border: 2px solid rgba(255, 255, 255, .35); border-radius: 10px;
     padding: 7px 14px; font-size: 13px; font-weight: 800;
-    font-family: inherit; cursor: pointer; backdrop-filter: blur(2px);
+    font-family: inherit; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
 }
-.sih-close-btn:active { background: rgba(255, 255, 255, .32); transform: translateY(1px); }
+.sih-close-btn:active { background: #0f172a; transform: translateY(1px); }
 
-/* Globalni sigurnosni izlaz iz fullscreen modova — vidi komentar uz
-   #global-fullscreen-exit-btn u index.html i globalFullscreenEmergencyExit
-   u js/app.js. Prikazuje se ISKLJUČIVO preko body klase (nikakva JS logika
-   ne treba da se izvrši da bi dugme postalo vidljivo), pa je garantovano
-   dostupno čak i ako sadržaj konkretnog taba "poludi" i sam svoj "✕ Zatvori"
-   ostavi van dohvata. */
-#global-fullscreen-exit-btn {
-    display: none; position: fixed; top: calc(10px + env(safe-area-inset-top)); left: 12px;
-    z-index: 50000; width: 38px; height: 38px; border-radius: 50%; border: none;
-    background: #b91c1c; color: #fff; font-size: 18px; line-height: 1; cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .4); align-items: center; justify-content: center;
-}
-body.kubikator-fullscreen #global-fullscreen-exit-btn,
-body.sihtarica-fullscreen #global-fullscreen-exit-btn { display: flex; }
-/* Admin Mapa Fokus mod i Karta radnika (radnik-mapa-fullscreen) su NAMJERNO
-   izostavljeni iz gornje liste — oba imaju svoje fiksno pozicionirano
-   "✕ Zatvori" dugme (redom: #karta-fokus-exit-btn, #radnik-mapa-close-btn),
-   oba u gornjem lijevom uglu — isto mjesto gdje sjedi i ovo globalno dugme,
-   pa se preklapaju (korisnik prijavio kao zbunjujuće — "x preko zatvori").
-   Kubikator i Šihtarica i dalje nemaju sličnu garanciju (njihova vlastita
-   "✕ Zatvori" dugmad su ugniježdena unutar sadržaja i znaju biti van
-   dohvata), pa za njih globalno dugme ostaje. */
+/* Globalni sigurnosni "✕" izlaz iz fullscreen modova je UKLONJEN (dugme,
+   CSS i globalFullscreenEmergencyExit u js/app.js). Postojao je samo zato
+   što su vlastita "✕ Zatvori" dugmad pojedinih tabova znala odskrolati van
+   dohvata — a u praksi je stajao kao DRUGO dugme za istu radnju, kod
+   Kubikatora tačno preko njegovog "Zatvori" (isti top/left). Umjesto
+   dupliranja, svaki fullscreen mod ima TAČNO JEDAN close koji ne može
+   odskrolati van dohvata:
+     Karta radnika    → #radnik-mapa-close-btn (absolute, ali na Leaflet mapi
+                        koja se ne skrola — Leaflet pomjera sadržaj interno)
+     Admin Mapa Fokus → #karta-fokus-exit-btn  (fixed, gore desno)
+     Kubikator        → .kub-header-row        (fixed traka sa "Zatvori")
+     Šihtarica        → .sih-close-btn         (fixed, gore desno)
+   Ako se ikad doda novi fullscreen mod sa sadržajem koji se skrola, njegov
+   close MORA biti position:fixed — inače se vraća bug zbog kojeg je globalno
+   dugme uopšte i nastalo (korisnik zaglavljen, mora ugasiti aplikaciju). */
 
 /* Tabela dana na uskom telefonu — otkako je Šihtarica prešla na puni ekran
    sa STVARNOM širinom uređaja (umjesto fiksnog app viewporta 1280px koji je
@@ -3809,7 +3814,14 @@ body.kubikator-fullscreen #kubikator-content {
    dugme za mod mijenja tekst (pa i širinu) kad se mod prebaci, a flex red
    ih sam preslaguje bez potrebe za ručnim računanjem razmaka. */
 .kub-header-row {
-    position: absolute; top: 10px; left: 10px; right: 10px; z-index: 20;
+    /* fixed (ne absolute) — #kubikator-content je i sam position:fixed/inset:0
+       sa overflow-y:auto, pa bi absolute traka odskrolala zajedno sa sadržajem
+       i "Zatvori" bi postao nedohvatljiv. To je bio jedini razlog postojanja
+       globalnog "✕" izlaza koji je stajao TAČNO preko ovog dugmeta (isti
+       top/left) — traka pribijena za viewport rješava i jedno i drugo.
+       Geometrija je identična kao prije (kontejner pokriva cijeli viewport),
+       a traka je i ranije bila van toka pa se raspored sadržaja ne mijenja. */
+    position: fixed; top: 10px; left: 10px; right: 10px; z-index: 20;
     display: flex; align-items: center; gap: 6px;
     /* SVA TRI elementa (Zatvori/mod/sortiment) u jednom redu, uvijek — bez
        obzira na širinu ekrana. flex-wrap:wrap je ranije razdvajao dropdown
