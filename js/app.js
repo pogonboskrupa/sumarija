@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.12.8';
+        const APP_VERSION = '1.12.9';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -4489,27 +4489,12 @@
         // POSLOVODJA - PREGLED TAB (Mjesečni po odjelima)
         // ============================================
         // Helper: procesira primke + otpreme za poslovođa pregled tab
-        function processPregledData(primkeData, otpremeData) {
-            var radilista = getPoslovodjaRadilista();
-            var userFullName = currentUser.fullName.toUpperCase().trim();
+        // Zajednička agregacija za "Pregled" (po odjelu i mjesecu, grupisano po
+        // radilištu) — koriste je i poslovođin PREGLED tab (filtriran na njegova
+        // radilišta, vidi processPregledData) i admin "Sječa/otprema → Pregled
+        // sječe i otpreme po mjesecima" (bez filtera, vidi processPregledDataSve).
+        function _pregledAggregate(primke, otpreme) {
             var relevantSortimenti = new Set(SORT_KOLONE);
-
-            function filterByPoslovodja(entries) {
-                return entries.filter(function(entry) {
-                    var entryDatum = parseDatumDDMMYYYY(entry.datum);
-                    if (!entryDatum) return false;
-                    var entryPoslovodja = (entry.poslovodja || '').toUpperCase().trim();
-                    if (entryPoslovodja && entryPoslovodja === userFullName) return true;
-                    if (radilista.length > 0) {
-                        var entryRadiliste = (entry.radiliste || '').toUpperCase().trim();
-                        return radilista.some(function(r) { return entryRadiliste === r.toUpperCase(); });
-                    }
-                    return false;
-                });
-            }
-
-            var filteredPrimke = filterByPoslovodja(primkeData.primke || []);
-            var filteredOtpreme = filterByPoslovodja(otpremeData.otpreme || []);
 
             function aggregateByOdjelMonth(entries) {
                 var result = {};
@@ -4535,11 +4520,11 @@
                 return result;
             }
 
-            var sjecaByOdjelMonth = aggregateByOdjelMonth(filteredPrimke);
-            var otpremaByOdjelMonth = aggregateByOdjelMonth(filteredOtpreme);
+            var sjecaByOdjelMonth = aggregateByOdjelMonth(primke);
+            var otpremaByOdjelMonth = aggregateByOdjelMonth(otpreme);
 
             var odjelRadilisteMap = {};
-            filteredPrimke.concat(filteredOtpreme).forEach(function(entry) {
+            primke.concat(otpreme).forEach(function(entry) {
                 var odjel = entry.odjel || 'Nepoznato';
                 var rad = (entry.radiliste || '').trim();
                 if (rad && !odjelRadilisteMap[odjel]) {
@@ -4569,6 +4554,34 @@
             });
 
             return { radilisteOdjeli, sjecaByOdjelMonth, otpremaByOdjelMonth };
+        }
+
+        function processPregledData(primkeData, otpremeData) {
+            var radilista = getPoslovodjaRadilista();
+            var userFullName = currentUser.fullName.toUpperCase().trim();
+
+            function filterByPoslovodja(entries) {
+                return entries.filter(function(entry) {
+                    var entryDatum = parseDatumDDMMYYYY(entry.datum);
+                    if (!entryDatum) return false;
+                    var entryPoslovodja = (entry.poslovodja || '').toUpperCase().trim();
+                    if (entryPoslovodja && entryPoslovodja === userFullName) return true;
+                    if (radilista.length > 0) {
+                        var entryRadiliste = (entry.radiliste || '').toUpperCase().trim();
+                        return radilista.some(function(r) { return entryRadiliste === r.toUpperCase(); });
+                    }
+                    return false;
+                });
+            }
+
+            var filteredPrimke = filterByPoslovodja(primkeData.primke || []);
+            var filteredOtpreme = filterByPoslovodja(otpremeData.otpreme || []);
+            return _pregledAggregate(filteredPrimke, filteredOtpreme);
+        }
+
+        // Admin verzija — SVI odjeli/radilišta, bez filtera na jednog poslovođu.
+        function processPregledDataSve(primkeArr, otpremeArr) {
+            return _pregledAggregate(primkeArr || [], otpremeArr || []);
         }
 
         async function loadPoslovodjaPregled() {
@@ -4631,7 +4644,16 @@
         }
 
         function renderPoslovodjaPregled(radilisteOdjeli, sjecaData, otpremaData) {
-            var container = document.getElementById('poslovodja-pregled-container');
+            _renderPregledByRadiliste('poslovodja-pregled-container', radilisteOdjeli, sjecaData, otpremaData);
+        }
+
+        // Zajednički prikaz "Pregled" (grupisano po radilištu, pa po odjelu SJEČA
+        // + OTPREMA tabela) — koristi ga i poslovođin PREGLED tab i admin "Sječa/
+        // otprema → Pregled sječe i otpreme po mjesecima" (renderPregledSection
+        // ispod je već generičan, samo je container id bio hardkodiran ovdje).
+        function _renderPregledByRadiliste(containerId, radilisteOdjeli, sjecaData, otpremaData) {
+            var container = document.getElementById(containerId);
+            if (!container) return;
 
             if (Object.keys(radilisteOdjeli).length === 0) {
                 container.innerHTML = '<div style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka</div>';
@@ -10744,6 +10766,27 @@
                 showError('Greška', 'Greška pri učitavanju mjesečnih podataka: ' + error.message);
                 document.getElementById('loading-screen').classList.add('hidden');
                 showTabContent('mjesecni-sortimenti-content');
+            }
+        }
+
+        // "Pregled sječe i otpreme po mjesecima" — admin verzija poslovođinog
+        // PREGLED taba (isti prikaz po odjelu/mjesecu, ali SVI odjeli/radilišta,
+        // bez filtera na jednog poslovođu). _dohvatiPrimkeZaTimeline/
+        // _dohvatiOtpremeZaTimeline (js/app.js, koristi ih i Trendovi) već
+        // keširaju SIROVE primke/otpreme zapise — nema potrebe za novim API
+        // pozivom, samo se drugačije agregiraju (processPregledDataSve).
+        async function loadAdminPregledPoMjesecima() {
+            var container = document.getElementById('mjesecni-pregled-container');
+            if (!container) return;
+            container.innerHTML = '<div style="text-align:center;padding:40px;color:#4b5563;">⏳ Učitavam...</div>';
+            try {
+                var primke = await _dohvatiPrimkeZaTimeline();
+                var otpreme = await _dohvatiOtpremeZaTimeline();
+                var result = processPregledDataSve(primke, otpreme);
+                _renderPregledByRadiliste('mjesecni-pregled-container', result.radilisteOdjeli, result.sjecaByOdjelMonth, result.otpremaByOdjelMonth);
+            } catch (error) {
+                console.error('Error loading admin pregled po mjesecima:', error);
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626;">Greška pri učitavanju: ' + error.message + '</div>';
             }
         }
 

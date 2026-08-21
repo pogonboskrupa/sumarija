@@ -363,12 +363,20 @@
             const bSjeca       = document.getElementById('mjesecni-sortimenti-toggle-sjeca');
             const bOtprema     = document.getElementById('mjesecni-sortimenti-toggle-otprema');
             const bKombinovano = document.getElementById('mjesecni-sortimenti-toggle-kombinovano');
+            const bPregled     = document.getElementById('mjesecni-sortimenti-toggle-pregled');
             if (bSjeca)       bSjeca.classList.toggle('active', view === 'sjeca');
             if (bOtprema)     bOtprema.classList.toggle('active', view === 'otprema');
             if (bKombinovano) bKombinovano.classList.toggle('active', view === 'kombinovano');
+            if (bPregled)     bPregled.classList.toggle('active', view === 'pregled');
             document.getElementById('mjesecni-sjeca-card').classList.toggle('hidden', view !== 'sjeca');
             document.getElementById('mjesecni-otprema-card').classList.toggle('hidden', view !== 'otprema');
             document.getElementById('mjesecni-kombinovano-card').classList.toggle('hidden', view !== 'kombinovano');
+            document.getElementById('mjesecni-pregled-card').classList.toggle('hidden', view !== 'pregled');
+            // Pregled po odjelima/mjesecima — teži prikaz (svi odjeli firme), lazy
+            // load samo prvi put (isti obrazac kao primaci-admin-odjeli-container).
+            if (view === 'pregled' && !document.getElementById('mjesecni-pregled-container').innerHTML) {
+                if (typeof loadAdminPregledPoMjesecima === 'function') loadAdminPregledPoMjesecima();
+            }
         }
 
         // Switch between primaci-admin submenus (Admin: Primači na šuma panju)

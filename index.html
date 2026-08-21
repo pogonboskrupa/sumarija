@@ -526,6 +526,7 @@
                 <button class="submenu-tab active" id="mjesecni-sortimenti-toggle-sjeca" onclick="switchMjesecniSortimentiView('sjeca')">📊 Sječa</button>
                 <button class="submenu-tab" id="mjesecni-sortimenti-toggle-otprema" onclick="switchMjesecniSortimentiView('otprema')">🚛 Otprema</button>
                 <button class="submenu-tab" id="mjesecni-sortimenti-toggle-kombinovano" onclick="switchMjesecniSortimentiView('kombinovano')">🔀 Kombinovano</button>
+                <button class="submenu-tab" id="mjesecni-sortimenti-toggle-pregled" onclick="switchMjesecniSortimentiView('pregled')">📑 Pregled sječe i otpreme po mjesecima</button>
             </div>
             <!-- SJEČA PO MJESECIMA - Pro Card -->
             <div id="mjesecni-sjeca-card" class="mjesecni-card" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 32px; overflow: hidden;">
@@ -609,6 +610,23 @@
                         <tbody id="mjesecna-kombinovano-body"></tbody>
                     </table>
                 </div>
+            </div>
+
+            <!-- PREGLED SJEČE I OTPREME PO MJESECIMA (po odjelu, grupisano po radilištu)
+                 — isti prikaz kao poslovođin "PREGLED" tab (renderPregledSection,
+                 js/app.js), samo bez filtera na poslovođina radilišta: admin vidi
+                 SVE odjele. Lazy load pri prvom otvaranju (switchMjesecniSortimentiView). -->
+            <div id="mjesecni-pregled-card" class="mjesecni-card hidden" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 32px; overflow: hidden;">
+                <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="margin: 0; color: white; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">📑</span> Pregled sječe i otpreme po mjesecima
+                        </h2>
+                        <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Svi odjeli, grupisano po radilištu — sječa i otprema mjesec po mjesec</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="loadAdminPregledPoMjesecima()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);">🔄 Osvježi</button>
+                </div>
+                <div id="mjesecni-pregled-container" style="padding: 16px 20px;"></div>
             </div>
         </div>
 
