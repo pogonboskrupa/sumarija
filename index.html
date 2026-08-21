@@ -3818,6 +3818,15 @@
                      pa mapa zna biti viša od stvarno vidljivog ekrana bez ovoga. Browseri
                      koji ne poznaju dvh ignorišu tu liniju i ostaju na 100vh fallback-u. */
                   #karta-odjela-map { width:100%; height:calc(100vh - 220px); height:calc(100dvh - 220px); min-height:400px; background:#f1f5f9; }
+                  /* Zoom +/- MORA ostati vidljiv i klikabilan gore-lijevo bez obzira
+                     šta se otvori preko mape — "Detalji" modal (#mapa-modal, z-index
+                     9999) se na desktopu (≥1024px) prikazuje kao panel prikovan uz
+                     LIJEVU ivicu (justify-content:flex-start, vidi #mapa-modal niže),
+                     što doslovno prekriva Leaflet-ovu zoom kontrolu (podrazumijevani
+                     z-index oko 1000) čim korisnik približi i klikne odjel — otvoren
+                     modal je "gutao" dugmad. Isti z-index (10060) kao #karta-fokus-exit-btn
+                     ispod, da oba ugla ostanu iznad modala u svakom trenutku. -->
+                  #karta-odjela-map .leaflet-control-zoom { z-index:10060 !important; }
                   @media (max-width:1024px) { #karta-odjela-map { height:calc(100vh - 200px); height:calc(100dvh - 200px); min-height:320px; } }
                   @media (max-width:640px)  { #karta-odjela-map { height:calc(100vh - 230px); height:calc(100dvh - 230px); min-height:260px; } }
                   /* Šumsko uzgojni radovi mod — niža mapa da je panel (lista + feromonske
