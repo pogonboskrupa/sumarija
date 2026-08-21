@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.12.3';
+        const APP_VERSION = '1.12.4';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6642,11 +6642,17 @@
             return { od, danas: krajProzora };
         }
 
+        // NAPOMENA: ovdje se NE isključuju vikend datumi (za razliku od
+        // _radnihDanaProzor, gdje "radni dan" samo definiše KOLIKO DALEKO
+        // UNAZAD ide prozor) — subota/nedjelja NISU uvijek bez unosa (npr.
+        // hitna sječa), pa bi brisanje stvarno evidentiranog unosa samo zato
+        // što pada na vikend značilo da "Najviše sječeno/otpremljeno" tiho
+        // izostavi stvaran rad (korisnički nalaz: sječa 01.08.2026 — subota).
         function _topSortimentiPoslednjihDana(niz, od, danas) {
             const zbir = {};
             niz.forEach(p => {
                 const d = _parseDatumTl(p.datum);
-                if (!d || d < od || d > danas || _jeVikend(d)) return;
+                if (!d || d < od || d > danas) return;
                 if (TREND_TOP_ISKLJUCENI.has(p.sortiment)) return;
                 const kolicina = parseFloat(p.kolicina) || 0;
                 if (!kolicina) return;

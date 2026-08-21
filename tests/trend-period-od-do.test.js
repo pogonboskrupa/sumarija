@@ -89,3 +89,62 @@ test('Odluka o periodu — preset vs. prilagođeni (od-do)', async (t) => {
         assert.strictEqual(r.od.getTime(), r.danas.getTime());
     });
 });
+
+// --- kopija iz js/app.js: _parseDatumTl, TREND_TOP_ISKLJUCENI, _topSortimentiPoslednjihDana ---
+function parseDatumTl(s) {
+    const parts = String(s || '').split('.');
+    if (parts.length < 3) return null;
+    const d = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+    return isNaN(d.getTime()) ? null : d;
+}
+const TREND_TOP_ISKLJUCENI = new Set([
+    'F/L Č', 'I Č', 'II Č', 'III Č', 'RD',
+    'F/L L', 'I L', 'II L', 'III L',
+    'Σ ČETINARI', 'LIŠĆARI'
+]);
+function topSortimentiPoslednjihDana(niz, od, danas) {
+    const zbir = {};
+    niz.forEach(p => {
+        const d = parseDatumTl(p.datum);
+        if (!d || d < od || d > danas) return;
+        if (TREND_TOP_ISKLJUCENI.has(p.sortiment)) return;
+        const kolicina = parseFloat(p.kolicina) || 0;
+        if (!kolicina) return;
+        zbir[p.sortiment] = (zbir[p.sortiment] || 0) + kolicina;
+    });
+    return Object.entries(zbir).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+}
+
+test('_topSortimentiPoslednjihDana — vikend unosi se broje (korisnički nalaz: sječa subotom)', async (t) => {
+    await t.test('unos na subotu/nedjelju se RAČUNA u ukupno', () => {
+        // 01.08.2026. je subota.
+        const niz = [
+            { datum: '01.08.2026.', sortiment: 'TRUPCI Č', kolicina: '50' },
+            { datum: '03.08.2026.', sortiment: 'TRUPCI Č', kolicina: '20' }
+        ];
+        const rez = topSortimentiPoslednjihDana(niz, new Date(2026, 7, 1), new Date(2026, 7, 20));
+        assert.strictEqual(rez[0][1], 70);
+    });
+
+    await t.test('unosi van opsega (prije "od" ili poslije "danas") se i dalje isključuju', () => {
+        const niz = [
+            { datum: '31.07.2026.', sortiment: 'TRUPCI Č', kolicina: '999' }, // prije opsega
+            { datum: '01.08.2026.', sortiment: 'TRUPCI Č', kolicina: '50' },
+            { datum: '21.08.2026.', sortiment: 'TRUPCI Č', kolicina: '999' } // poslije opsega
+        ];
+        const rez = topSortimentiPoslednjihDana(niz, new Date(2026, 7, 1), new Date(2026, 7, 20));
+        assert.strictEqual(rez[0][1], 50);
+    });
+
+    await t.test('isključeni sortimenti (klase I/II/III/RD/F-L, zbirovi) se i dalje ne broje', () => {
+        const niz = [
+            { datum: '01.08.2026.', sortiment: 'TRUPCI Č', kolicina: '50' },
+            { datum: '01.08.2026.', sortiment: 'I Č', kolicina: '999' },
+            { datum: '01.08.2026.', sortiment: 'Σ ČETINARI', kolicina: '999' }
+        ];
+        const rez = topSortimentiPoslednjihDana(niz, new Date(2026, 7, 1), new Date(2026, 7, 20));
+        assert.strictEqual(rez.length, 1);
+        assert.strictEqual(rez[0][0], 'TRUPCI Č');
+        assert.strictEqual(rez[0][1], 50);
+    });
+});
