@@ -1308,3 +1308,40 @@ table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-liscari.is-to
     margin-left: 4px;
     font-size: 12px;
 }
+
+/* ============================================================
+   "Šumarija Krupa" (Dashboard) tab — SVI BROJEVI +15%
+   Korisnički zahtjev, eksperimentalno ("ako bude loše, vratićemo nazad").
+   Skalirano ISKLJUČIVO unutar #dashboard-content da ne dira iste
+   klase/ID-jeve dijeljene s drugim tabovima (.monthly-table,
+   .summary-card-value, #odjeli-table-body koriste i Kupci/Izvještaji/
+   Pregled). !important je nužan jer generičko pravilo za brojeve
+   iznad u ovom fajlu (table td[style*="text-align: right"] i sl.,
+   14px) samo je !important pregazi jače specifičnosti bez !important. */
+#dashboard-content .summary-card-value { font-size: 32px !important; }
+#dashboard-content .monthly-table tbody td,
+#dashboard-content #odjeli-table-body td,
+#dashboard-content .professional-monthly-table tbody td.number,
+#dashboard-content .professional-monthly-table tfoot td.number {
+    font-size: 16px !important;
+}
+#dashboard-content .professional-monthly-table tbody td:first-child { font-size: 17px !important; }
+#dashboard-content .professional-monthly-table .month-total td { font-size: 20px !important; }
+#dashboard-content .professional-monthly-table tfoot tr.ukupno-row td { font-size: 17px !important; }
+#dashboard-content .professional-monthly-table tfoot tr.ukupno-row td:first-child { font-size: 18px !important; }
+
+@media (max-width: 768px) {
+    #dashboard-content .summary-card-value { font-size: 28px !important; }
+    #dashboard-content .monthly-table td { font-size: 12px !important; }
+    #dashboard-content .professional-monthly-table tbody td,
+    #dashboard-content .professional-monthly-table tfoot td {
+        font-size: 15px !important;
+    }
+    #dashboard-content .professional-monthly-table tbody td.number,
+    #dashboard-content .professional-monthly-table tfoot td.number {
+        font-size: 16px !important;
+    }
+}
+@media (max-width: 576px) {
+    #dashboard-content .summary-card-value { font-size: 23px !important; }
+}
