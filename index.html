@@ -636,7 +636,12 @@
                         </h2>
                         <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Svi odjeli, grupisano po radilištu — sječa i otprema mjesec po mjesec</p>
                     </div>
-                    <button class="btn btn-primary" onclick="loadAdminPregledPoMjesecima()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);">🔄 Osvježi</button>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <select id="mjesecni-pregled-radiliste-filter" onchange="renderAdminPregledFiltered()" style="background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 8px 12px; font-size: 13px; font-weight: 600;">
+                            <option value="">Sva radilišta</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="loadAdminPregledPoMjesecima()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);">🔄 Osvježi</button>
+                    </div>
                 </div>
                 <div id="mjesecni-pregled-container" style="padding: 16px 20px;"></div>
             </div>

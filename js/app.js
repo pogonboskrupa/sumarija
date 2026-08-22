@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.14.2';
+        const APP_VERSION = '1.14.3';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -4554,8 +4554,23 @@
                 if (allKeys.length === 0) return '0000-00';
                 return allKeys.sort().pop();
             }
+            function getLatestSjecaKey(odjel) {
+                var sKeys = sjecaByOdjelMonth[odjel] ? Object.keys(sjecaByOdjelMonth[odjel]) : [];
+                if (sKeys.length === 0) return null;
+                return sKeys.sort().pop();
+            }
+            // Odjeli sa svježom sječom idu prvi (sortirano od najsvježijeg), pa tek
+            // onda odjeli koji imaju samo otpremu bez sječe u ovom periodu.
             Object.values(radilisteOdjeli).forEach(function(arr) {
                 arr.sort(function(a, b) {
+                    var sjecaA = getLatestSjecaKey(a);
+                    var sjecaB = getLatestSjecaKey(b);
+                    if (sjecaA && !sjecaB) return -1;
+                    if (!sjecaA && sjecaB) return 1;
+                    if (sjecaA && sjecaB) {
+                        var cmp = sjecaB.localeCompare(sjecaA);
+                        if (cmp !== 0) return cmp;
+                    }
                     return getLatestKey(b).localeCompare(getLatestKey(a));
                 });
             });
@@ -10782,6 +10797,8 @@
         // _dohvatiOtpremeZaTimeline (js/app.js, koristi ih i Trendovi) već
         // keširaju SIROVE primke/otpreme zapise — nema potrebe za novim API
         // pozivom, samo se drugačije agregiraju (processPregledDataSve).
+        var _adminPregledData = null;
+
         async function loadAdminPregledPoMjesecima() {
             var container = document.getElementById('mjesecni-pregled-container');
             if (!container) return;
@@ -10789,12 +10806,41 @@
             try {
                 var primke = await _dohvatiPrimkeZaTimeline();
                 var otpreme = await _dohvatiOtpremeZaTimeline();
-                var result = processPregledDataSve(primke, otpreme);
-                _renderPregledByRadiliste('mjesecni-pregled-container', result.radilisteOdjeli, result.sjecaByOdjelMonth, result.otpremaByOdjelMonth);
+                _adminPregledData = processPregledDataSve(primke, otpreme);
+                populateAdminPregledRadilisteDropdown(_adminPregledData.radilisteOdjeli);
+                renderAdminPregledFiltered();
             } catch (error) {
                 console.error('Error loading admin pregled po mjesecima:', error);
                 container.innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626;">Greška pri učitavanju: ' + error.message + '</div>';
             }
+        }
+
+        function populateAdminPregledRadilisteDropdown(radilisteOdjeli) {
+            var select = document.getElementById('mjesecni-pregled-radiliste-filter');
+            if (!select) return;
+            var radilista = Object.keys(radilisteOdjeli).sort();
+            var current = select.value;
+            select.innerHTML = '<option value="">Sva radilišta</option>' +
+                radilista.map(function(r) {
+                    var esc = r.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    return '<option value="' + esc + '">' + r + '</option>';
+                }).join('');
+            if (current && radilista.indexOf(current) !== -1) select.value = current;
+        }
+
+        // Ponovo iscrta admin "Pregled sječe i otpreme po mjesecima" prema
+        // trenutno odabranom radilištu u dropdownu (bez novog API poziva).
+        function renderAdminPregledFiltered() {
+            if (!_adminPregledData) return;
+            var select = document.getElementById('mjesecni-pregled-radiliste-filter');
+            var selected = select ? select.value : '';
+            var radilisteOdjeli = _adminPregledData.radilisteOdjeli;
+            if (selected) {
+                var filtered = {};
+                if (radilisteOdjeli[selected]) filtered[selected] = radilisteOdjeli[selected];
+                radilisteOdjeli = filtered;
+            }
+            _renderPregledByRadiliste('mjesecni-pregled-container', radilisteOdjeli, _adminPregledData.sjecaByOdjelMonth, _adminPregledData.otpremaByOdjelMonth);
         }
 
         // Render monthly table (SJEČA or OTPREMA) - PRO LEVEL with Comfortaa font
