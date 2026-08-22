@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.14.1';
+        const APP_VERSION = '1.14.2';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -2918,7 +2918,7 @@
 
                 bodyElem.innerHTML = bodyHtml;
 
-                renderZalihaDetaljiTabela('stanje-zaliha-detalji-section', odjeliData);
+                renderZalihaDetaljiTabela('stanje-zaliha-detalji-section', odjeliData, false);
 
             } catch (error) {
                 console.error('Error rendering stanje zaliha tabela:', error);
@@ -3505,9 +3505,10 @@
         }
 
         // Render Stanje Zaliha cards for poslovođa (identično admin view-u)
-        function renderZalihaDetaljiTabela(containerId, odjeliData) {
+        function renderZalihaDetaljiTabela(containerId, odjeliData, includeRadiliste) {
             const container = document.getElementById(containerId);
             if (!container || !odjeliData || !odjeliData.length) return;
+            if (includeRadiliste === undefined) includeRadiliste = true;
 
             const cols = [
                 { label: 'TRUPCI Č',  key: 'TRUPCI Č',    sum: false },
@@ -3526,7 +3527,9 @@
                 const values = {};
                 cols.forEach(c => { values[c.key] = z[c.key] || 0; });
                 values['__ukupno'] = values['Σ ČETINARI'] + values['LIŠĆARI'];
-                values['__naziv'] = (odjel.radiliste ? odjel.radiliste + ' / ' : '') + (odjel.odjel || '');
+                values['__naziv'] = includeRadiliste
+                    ? ((odjel.radiliste ? odjel.radiliste + ' / ' : '') + (odjel.odjel || ''))
+                    : (odjel.odjel || '');
                 // Sortimenti koji su bili preklasirani za ovaj odjel
                 const preklSet = new Set();
                 preklasiranjaPodaci
@@ -3550,7 +3553,7 @@
             };
 
             function buildHeaderRow(activeSortKey) {
-                let h = `<th style="${thBase(false,false)}">ODJEL / RADILIŠTE</th>`;
+                let h = `<th style="${thBase(false,false)}">${includeRadiliste ? 'ODJEL / RADILIŠTE' : 'ODJEL'}</th>`;
                 cols.forEach(c => {
                     const indicator = activeSortKey === c.key ? ' ▼' : '';
                     h += `<th data-sortkey="${c.key}" style="${thBase(c.sum, false)}">${c.label}${indicator}</th>`;
