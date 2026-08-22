@@ -79,6 +79,17 @@
             background: #d1fae5; padding: 1px 7px; border-radius: 999px;
             text-transform: uppercase; letter-spacing: .03em;
         }
+        .content-zoom-wrap {
+            display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+            background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 999px;
+            padding: 4px 6px 4px 12px;
+        }
+        .content-zoom-icon { font-size: 14px; line-height: 1; }
+        .content-zoom-select {
+            border: none; background: transparent; font-size: 13px; font-weight: 700;
+            color: #1f2937; padding: 6px 4px; border-radius: 999px; cursor: pointer;
+        }
+        .content-zoom-select:focus { outline: 2px solid #2563eb; outline-offset: 1px; }
         .cloud-sync-btn {
             position: relative;
             display: flex;
@@ -1236,7 +1247,7 @@
             .header-left { width: 100%; }
             .header-center { margin: 10px 0; }
             .company-logo { height: 50px; }
-            .header-right { width: 100%; justify-content: space-between; }
+            .header-right { width: 100%; justify-content: space-between; flex-wrap: wrap; row-gap: 8px; }
             .header-logo { height: 36px; }
             .header-title h1 { font-size: 16px; }
             .header-title p { font-size: 11px; }

@@ -268,6 +268,21 @@
                             <div class="header-user-role" id="user-role"></div>
                         </div>
                     </div>
+                    <!-- Zum sadržaja — SAMO za ulogu "poslovođa" (50+, žele veći tekst).
+                         Skriveno podrazumijevano; showApp() (js/auth.js) otkriva ga
+                         isključivo za ovu ulogu i vraća sačuvani nivo zuma iz localStorage.
+                         Native <select> namjerno (ne custom dropdown) — na mobilnom
+                         otvara sistemski birač sa velikim dodirnim ciljevima. -->
+                    <div class="content-zoom-wrap hidden" id="content-zoom-wrap" title="Veličina sadržaja">
+                        <span class="content-zoom-icon">🔍</span>
+                        <select id="content-zoom-select" class="content-zoom-select" onchange="applyContentZoom(this.value)">
+                            <option value="100">100%</option>
+                            <option value="125">125%</option>
+                            <option value="150">150%</option>
+                            <option value="175">175%</option>
+                            <option value="200">200%</option>
+                        </select>
+                    </div>
                     <div class="user-menu">
                         <button class="user-menu-button" onclick="toggleUserMenu(event)">
                             <span>⚙️</span>
@@ -3922,6 +3937,15 @@
                       padding:0 0 calc(60px + env(safe-area-inset-bottom)) 0 !important;
                       background:#fff; box-sizing:border-box;
                   }
+                  /* Karta (Leaflet) MORA ostati na 100% bez obzira na zum poslovođinog
+                     sadržaja (.main-content, js/ui.js applyContentZoom) — CSS `zoom`
+                     se kaskadno prenosi na potomke (kao font-size), a #radnik-mapa-content
+                     ostaje potomak i kad je position:fixed. Bez ovoga bi zum poremetio
+                     Leaflet-ovu pixel matematiku za pozicioniranje pločica i tap/klik
+                     koordinate, kao i nišan/HUD elemente unutar mape. Opšte pravilo (ne
+                     samo za poslovođu) jer #radnik-mapa-content dijele i primač/otpremač,
+                     kod kojih je ancestor-zoom uvijek 1 — bezopasno svuda. */
+                  #radnik-mapa-content { zoom: 1 !important; }
                   /* Zaglavlje je uklonjeno u potpunosti (v1.4.111) — "Prikaži odjele"
                      i "Zatvori" su sad u donjoj traci / #radnik-mapa-tragovi-menu
                      popup-u. Mapa (flex:1) zauzima cijeli prostor odmah od vrha. */

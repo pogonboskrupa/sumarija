@@ -4981,6 +4981,10 @@
 
     window.mapaRadnikaLocateMe = _locateMe;
     window.mapaRadnikaToggleTrag = _toggleTrag;
+    // Re-mjeri kartu poslije promjene .main-content zuma (js/ui.js applyContentZoom)
+    // — #radnik-mapa-content je izuzet iz zuma (index.html), ali okolni layout se
+    // ipak preračuna, pa Leaflet mora ponovo izmjeriti svoj kontejner.
+    window.mapaRadnikaInvalidateSize = function() { if (_map) _map.invalidateSize(); };
     window.closeMapaRadnika = function() {
         _exitMapaFullscreen();
         var home = _workerType === 'otpremac' ? 'otpremac-personal'

@@ -546,6 +546,27 @@
             window.scrollTo(0, 0);
         }
 
+        // Zum sadržaja (SAMO poslovođa, 50+) — CSS `zoom` na .main-content, NE na
+        // sidebar/mobilnu traku tabova (ostaju normalne veličine radi dodira i da ne
+        // guraju layout). `zoom` (ne `transform:scale`) namjerno: izaziva pravi
+        // layout reflow kao pravi browser zoom, pa sticky zaglavlja tabela/sidebar i
+        // dalje rade, i NE stvara novi containing block za position:fixed potomke
+        // (Kubikator/Karta fullscreen i dalje ispravno pokrivaju cijeli viewport).
+        // Karta ima eksplicitan izuzetak od ovog zuma — vidi #radnik-mapa-content
+        // pravilo u index.html (zoom se inače kaskadno prenosi na potomke i
+        // poremetio bi Leaflet-ovu pixel matematiku).
+        function applyContentZoom(pct, persist) {
+            var n = parseInt(pct, 10);
+            if ([100, 125, 150, 175, 200].indexOf(n) === -1) n = 100;
+            var main = document.querySelector('.main-content');
+            if (main) main.style.zoom = (n / 100);
+            if (persist !== false) localStorage.setItem('poslovodja-zoom-level', String(n));
+            if (window.currentTab === 'poslovodja-mapa' && typeof window.mapaRadnikaInvalidateSize === 'function') {
+                setTimeout(window.mapaRadnikaInvalidateSize, 60);
+            }
+        }
+        window.applyContentZoom = applyContentZoom;
+
         // Filter dashboard table
         function filterDashboardTable() {
             const input = document.getElementById('dashboard-search');

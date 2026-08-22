@@ -308,6 +308,24 @@
                 });
             }
 
+            // Zum sadržaja — SAMO za poslovođu (50+, žele veći tekst). `userType` je
+            // već normalizovan iznad (trim/lowercase).
+            var _isPoslovodja = (userType === 'poslovođa' || userType === 'poslovodja');
+            var _zoomWrap = document.getElementById('content-zoom-wrap');
+            if (_zoomWrap) _zoomWrap.classList.toggle('hidden', !_isPoslovodja);
+            if (typeof applyContentZoom === 'function') {
+                if (_isPoslovodja) {
+                    var _savedZoom = localStorage.getItem('poslovodja-zoom-level') || '100';
+                    var _zoomSelect = document.getElementById('content-zoom-select');
+                    if (_zoomSelect) _zoomSelect.value = _savedZoom;
+                    applyContentZoom(_savedZoom, false);
+                } else {
+                    // Dijeljeni uređaj: ako se poslije poslovođe prijavi neko drugi,
+                    // zum ne smije vizuelno "procuriti" u tuđu sesiju.
+                    applyContentZoom(100, false);
+                }
+            }
+
             // Generate sidebar tabs (desktop)
             tabsMenu.innerHTML = tabsConfig.map(tab => `
                 <button class="tab${tab.active ? ' active' : ''}${tab.hasBadge ? ' notification-badge' : ''}" onclick="switchTab('${tab.id}')">
