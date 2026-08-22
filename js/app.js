@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.14.3';
+        const APP_VERSION = '1.14.4';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -2909,11 +2909,11 @@
                     const color = val >= 0 ? '#059669' : '#dc2626';
                     const isSum = sort.display === 'ČETINARI' || sort.display === 'LIŠĆARI';
                     const bgColor = isSum ? '#d1fae5' : '';
-                    bodyHtml += `<td style="text-align: right; padding: 12px 8px; font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: ${isSum ? '700' : '600'}; color: ${color}; border: 1px solid #d1d5db; ${bgColor ? 'background:' + bgColor + ';' : ''}">${display}</td>`;
+                    bodyHtml += `<td style="text-align: right; padding: 12px 8px; font-family: 'Roboto Mono', monospace; font-size: 17px; font-weight: ${isSum ? '700' : '600'}; color: ${color}; border: 1px solid #d1d5db; ${bgColor ? 'background:' + bgColor + ';' : ''}">${display}</td>`;
                 });
                 // UKUPNO kolona
                 const ukupnoColor = zalihaUkupno >= 0 ? '#047857' : '#dc2626';
-                bodyHtml += `<td style="text-align: right; padding: 12px 12px; font-family: 'Roboto Mono', monospace; font-size: 14px; font-weight: 700; color: ${ukupnoColor}; background: #d1fae5; border: 1px solid #d1d5db;">${zalihaUkupno.toFixed(2)}</td>`;
+                bodyHtml += `<td style="text-align: right; padding: 12px 12px; font-family: 'Roboto Mono', monospace; font-size: 18px; font-weight: 700; color: ${ukupnoColor}; background: #d1fae5; border: 1px solid #d1d5db;">${zalihaUkupno.toFixed(2)}</td>`;
                 bodyHtml += '</tr>';
 
                 bodyElem.innerHTML = bodyHtml;
@@ -2995,11 +2995,11 @@
                     const color = val >= 0 ? '#059669' : '#dc2626';
                     const isSum = sort.display === 'ČETINARI' || sort.display === 'LIŠĆARI';
                     const bgColor = isSum ? '#d1fae5' : '';
-                    bodyHtml += `<td style="text-align: right; padding: 12px 8px; font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: ${isSum ? '700' : '600'}; color: ${color}; border: 1px solid #d1d5db; ${bgColor ? 'background:' + bgColor + ';' : ''}">${display}</td>`;
+                    bodyHtml += `<td style="text-align: right; padding: 12px 8px; font-family: 'Roboto Mono', monospace; font-size: 17px; font-weight: ${isSum ? '700' : '600'}; color: ${color}; border: 1px solid #d1d5db; ${bgColor ? 'background:' + bgColor + ';' : ''}">${display}</td>`;
                 });
                 // UKUPNO kolona
                 const ukupnoColor = zalihaUkupno >= 0 ? '#047857' : '#dc2626';
-                bodyHtml += `<td style="text-align: right; padding: 12px 12px; font-family: 'Roboto Mono', monospace; font-size: 14px; font-weight: 700; color: ${ukupnoColor}; background: #d1fae5; border: 1px solid #d1d5db;">${zalihaUkupno.toFixed(2)}</td>`;
+                bodyHtml += `<td style="text-align: right; padding: 12px 12px; font-family: 'Roboto Mono', monospace; font-size: 18px; font-weight: 700; color: ${ukupnoColor}; background: #d1fae5; border: 1px solid #d1d5db;">${zalihaUkupno.toFixed(2)}</td>`;
                 bodyHtml += '</tr>';
 
                 bodyElem.innerHTML = bodyHtml;
@@ -3549,7 +3549,7 @@
             const tdStyle = (isSum, isUkupno, val, isPrekl) => {
                 const bg = isUkupno ? '#d1fae5' : isSum ? '#ede9fe' : (isPrekl ? '#fef9c3' : '');
                 const color = isPrekl ? '#92400e' : (val < 0 ? '#dc2626' : val > 0 ? (isUkupno ? '#047857' : '#374151') : '#9ca3af');
-                return `text-align:right;padding:8px 6px;font-size:12px;font-weight:500;color:${color};border:1px solid #e5e7eb;${bg ? 'background:' + bg + ';' : ''}`;
+                return `text-align:right;padding:8px 6px;font-size:16px;font-weight:500;color:${color};border:1px solid #e5e7eb;${bg ? 'background:' + bg + ';' : ''}`;
             };
 
             function buildHeaderRow(activeSortKey) {
