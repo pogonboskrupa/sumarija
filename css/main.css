@@ -318,9 +318,10 @@
         }
 
         .sidebar-nav .tab .tab-icon {
-            font-size: 18px;
-            width: 24px;
+            font-size: 54px;
+            width: auto;
             text-align: center;
+            line-height: 1;
         }
 
         .sidebar-nav .tab .tab-label {
@@ -3294,7 +3295,7 @@
     box-shadow: 0 1px 3px rgba(17, 24, 39, .08);
 }
 #tabs-menu-mobile .tab-icon {
-    font-size: 22px;
+    font-size: 66px;
     line-height: 1;
     transition: transform .15s ease;
 }
@@ -3825,6 +3826,12 @@ body.is-desktop-screen #tabs-menu-mobile .tab {
        overflow-x:auto na .tabs i dalje uskače kao rezerva (horizontalni
        skrol), kao i do sada. */
     flex: 1 0 auto;
+}
+/* Ikone ostaju na ORIGINALNOJ (manjoj) veličini u ovom sabijenom prikazu —
+   #tabs-menu-mobile .tab-icon iznad je namjerno 3x uvećan za telefon, ali
+   ovdje bi to razbilo kompaktnu 52px traku (vidi komentar iznad bloka). */
+body.is-desktop-screen #tabs-menu-mobile .tab-icon {
+    font-size: 22px;
 }
 
 /* ==========================================================================
