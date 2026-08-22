@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.14.9';
+        const APP_VERSION = '1.15.1';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -14634,6 +14634,14 @@
 
         function maybeShowInstallPrompt() {
             if (isInstalledApp()) return;
+            // Modal nudi APK (Android-only) — desktop korisnici nemaju šta s njim,
+            // a iOS uopšte ne može instalirati APK (Apple ne dozvoljava sideload).
+            // is-desktop-screen dolazi iz markScreenClass() (index.html), zasnovano
+            // na STVARNOJ fizičkoj širini ekrana, ne na fiksiranom app viewportu
+            // (koji je isti — 1280px — na telefonu i PC-u). isIosDevice() već
+            // postoji (koristi se za PWA install dugme u meniju).
+            if (document.body.classList.contains('is-desktop-screen')) return;
+            if (isIosDevice()) return;
             // Već prikazano jednom (bilo "Kasnije" ili "Preuzmi") — ne vraćaj se više.
             try {
                 if (localStorage.getItem('install_prompt_seen') === '1') return;
