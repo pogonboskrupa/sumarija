@@ -386,7 +386,7 @@
     }
 
     const LABEL_COL_WIDTH = 260; // px — dovoljno široko da stane i "Grmeč Jasenica" naziv GJ
-    const monthNazivi = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+    const monthNazivi = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
     const monthStarts = monthNazivi.map((lbl, i) => ({ lbl, day: _dayOfYearGp(new Date(PLAN_YEAR, i, 1)) }));
     const totalDays = _dayOfYearGp(new Date(PLAN_YEAR, 11, 31)) + 1; // 365 ili 366 (prestupna)
     const pct = day => (day / totalDays * 100).toFixed(3);

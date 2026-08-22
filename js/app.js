@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.14.7';
+        const APP_VERSION = '1.14.8';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -5719,7 +5719,7 @@
                 }
 
                 // Render mjesečnu tabelu
-                const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+                const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
 
                 let headerHTML = `
                     <tr>
@@ -5864,7 +5864,7 @@
                 }
 
                 // Render mjesečnu tabelu
-                const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+                const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
 
                 let headerHTML = `
                     <tr>
@@ -6554,7 +6554,7 @@
             const prviDatumTl = stavke[0].segmenti[0] || stavke[0].segmentiOtprema[0];
             const godina = prviDatumTl.datumPocetka.getFullYear();
             const LABEL_COL_WIDTH = 260;
-            const monthNazivi = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+            const monthNazivi = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
             const monthStarts = monthNazivi.map((lbl, i) => ({ lbl, day: _dayOfYearTl(new Date(godina, i, 1)) }));
             const totalDays = _dayOfYearTl(new Date(godina, 11, 31)) + 1;
             const pct = day => (day / totalDays * 100).toFixed(3);
@@ -6958,7 +6958,7 @@
         function _primaciTrendMonthData(sortimentKey) {
             const mj = _primaciTrendState.mjesecni;
             if (!mj || !mj.mjeseci) return [];
-            const nazivi = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+            const nazivi = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
             const key = sortimentKey === '__UKUPNO__' ? TREND_TOTAL_KEY : sortimentKey;
             return mj.mjeseci.map((mObj, idx) => ({
                 label: nazivi[idx],
@@ -7234,7 +7234,7 @@
         function _otpremaciTrendMonthData(sortimentKey) {
             const mj = _otpremaciTrendState.mjesecni;
             if (!mj || !mj.mjeseci) return [];
-            const nazivi = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+            const nazivi = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
             const key = sortimentKey === '__UKUPNO__' ? TREND_TOTAL_KEY : sortimentKey;
             return mj.mjeseci.map((mObj, idx) => ({
                 label: nazivi[idx],
@@ -7438,7 +7438,7 @@
                 }
 
                 // Render mjesečnu tabelu
-                const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+                const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
 
                 let headerHTML = `
                     <tr>
@@ -10730,7 +10730,7 @@
         // _LISCARI_TRUPCI/_LISCARI_UKUPNO, a top-level const s istim imenom u
         // dva <script> fajla je SyntaxError ("already been declared") koji
         // obara CIJELI script — tačno to se i desilo u prvoj verziji ovog fixa.
-        const _MJESECI_KRATKI = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+        const _MJESECI_KRATKI = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
         // Nula → "–" umjesto "0.00", hiljade dobijaju tačku (de-DE konvencija).
         const _mjesecniFmtBroj = v => v === 0 ? '–'
             : v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -10868,7 +10868,7 @@
             }
 
             const sortimenti = data.sortimenti.filter(s => s && s.trim() !== '');
-            const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+            const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
 
             // Četinari sortimenti (plava grupa)
             const cetinariSortimenti = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART'];
@@ -10929,7 +10929,7 @@
                 return (c === 'col-cetinari' || c === 'col-liscari');
             };
 
-            // Nula → "–" umjesto "0.00": tabela je pretežno prazna (Avg-Dec),
+            // Nula → "–" umjesto "0.00": tabela je pretežno prazna (Aug-Dec),
             // pa nule inače dominiraju prikazom. Hiljade dobijaju tačku
             // (de-DE, ista konvencija kao _fmt u mapa-radnika.js/godisnji-plan.js).
             const fmtBroj = v => v === 0 ? '–'
@@ -11208,7 +11208,7 @@
             }
 
             const sortimenti = data.sortimenti.filter(s => s && s.trim() !== '');
-            const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+            const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
 
             const aoa = [['MJESEC'].concat(sortimenti)];
             const totals = {};
