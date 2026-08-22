@@ -552,9 +552,13 @@
         // layout reflow kao pravi browser zoom, pa sticky zaglavlja tabela/sidebar i
         // dalje rade, i NE stvara novi containing block za position:fixed potomke
         // (Kubikator/Karta fullscreen i dalje ispravno pokrivaju cijeli viewport).
-        // Karta ima eksplicitan izuzetak od ovog zuma — vidi #radnik-mapa-content
-        // pravilo u index.html (zoom se inače kaskadno prenosi na potomke i
-        // poremetio bi Leaflet-ovu pixel matematiku).
+        // Svi "puni ekran" tabovi (Karta, Kubikator, Šihtarica — imaju dugme
+        // "✕ Zatvori" pri ulasku) su eksplicitno izuzeti od ovog zuma (zoom:1
+        // na #radnik-mapa-content/#kubikator-content/#sihtarica-*-content, vidi
+        // index.html i css/main.css) — zoom se inače kaskadno prenosi na potomke
+        // čak i kad je position:fixed, pa bi poremetio Leaflet-ovu pixel
+        // matematiku na Karti i izgled bio neusklađen naspram fullscreen
+        // zaglavlja/dugmadi na ostalima.
         function applyContentZoom(pct, persist) {
             var n = parseInt(pct, 10);
             if ([100, 125, 150, 175, 200].indexOf(n) === -1) n = 100;

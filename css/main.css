@@ -3698,6 +3698,10 @@ body.sihtarica-fullscreen #sihtarica-otpremac-content {
     background: #f8fafc; box-sizing: border-box;
     overflow-y: auto; -webkit-overflow-scrolling: touch;
 }
+/* Isti razlog kao #kubikator-content iznad — puni ekran ostaje na 100% bez
+   obzira na zum poslovođinog sadržaja (.main-content, js/ui.js
+   applyContentZoom). */
+#sihtarica-primac-content, #sihtarica-otpremac-content { zoom: 1 !important; }
 
 /* "Zatvori" dugme — na obojenom gradijent zaglavlju taba (worker-header),
    zato providno-bijelo umjesto pune plave (kao kod Kubikatora, koji nema
@@ -3852,6 +3856,12 @@ body.kubikator-fullscreen #kubikator-content {
     background: #f8fafc; box-sizing: border-box;
     overflow-y: auto; -webkit-overflow-scrolling: touch;
 }
+/* Puni ekran (Zatvori dugme, isti obrazac kao Karta/Šihtarica) ostaje na 100%
+   bez obzira na zum poslovođinog sadržaja (.main-content, js/ui.js
+   applyContentZoom) — CSS `zoom` se kaskadno prenosi na potomke i kad je
+   position:fixed, pa bi inače kalkulator izgledao neusklađeno naspram svog
+   vlastitog fullscreen zaglavlja/dugmadi. */
+#kubikator-content { zoom: 1 !important; }
 
 /* Zaglavlje kalkulatora — "Zatvori" i izbor moda (Oblovina/Prostorno drvo)
    u jednom redu. Flex umjesto pojedinačnog position:absolute po dugmetu:
