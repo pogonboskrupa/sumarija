@@ -318,7 +318,7 @@
         }
 
         .sidebar-nav .tab .tab-icon {
-            font-size: 54px;
+            font-size: 41px;   /* bilo 54px — smanjeno ~25% */
             width: auto;
             text-align: center;
             line-height: 1;
@@ -326,7 +326,7 @@
 
         .sidebar-nav .tab .tab-label {
             flex: 1;
-            font-size: 28px;   /* bilo 14px (nasljeđeno sa .tab) — duplo, uz 3x uvećane ikone */
+            font-size: 21px;   /* bilo 28px — smanjeno ~25% */
         }
 
         /* Notification badge in sidebar */
@@ -3296,12 +3296,12 @@
     box-shadow: 0 1px 3px rgba(17, 24, 39, .08);
 }
 #tabs-menu-mobile .tab-icon {
-    font-size: 66px;
+    font-size: 50px;   /* bilo 66px — smanjeno ~25% */
     line-height: 1;
     transition: transform .15s ease;
 }
 #tabs-menu-mobile .tab-label {
-    font-size: 25px;   /* bilo 12.5px — duplo, uz 3x uvećane ikone */
+    font-size: 19px;   /* bilo 25px — smanjeno ~25% */
     font-weight: 800;
     line-height: 1.15;
 }

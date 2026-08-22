@@ -1,14 +1,48 @@
         // ========== AUTH MODULE ==========
         // Login, logout, showApp, auto-refresh, cross-tab sync
 
+        // ============================================================
+        // TAB IKONE — konzistentan set custom SVG ikona (zamjena za generičke
+        // emoji 🌲🏢📦📅👷🚛🗺️📐➕📝📋📑) za SVE tabove u sidebar/mobilnoj traci.
+        // Zajednička paleta (zelena šumarska tema): svijetla ispuna #a7f3d0/
+        // #6ee7b7, obrub #047857, tamni detalji #065f46 (uz smeđu #92400e
+        // samo za drvo/sjekiru gdje ima smisla). width/height="1em" — skalira
+        // se sa .tab-icon font-size (css/main.css), isti obrazac kao _ICON_ODJELI.
+        // ============================================================
+        const _ICON_TREE = '<svg width="1em" height="1em" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle"><path d="M12 2 L16.5 9.5 H14 L18 15.5 H15 L18.5 20 H5.5 L9 15.5 H6 L10 9.5 H7.5 Z" fill="#6ee7b7" stroke="#047857" stroke-width="1.3" stroke-linejoin="round"/><rect x="10.7" y="20" width="2.6" height="2" fill="#92400e"/></svg>';
+
+        const _ICON_BUILDING = '<svg width="1em" height="1em" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle"><rect x="5" y="4" width="14" height="17" rx="1" fill="#a7f3d0" stroke="#047857" stroke-width="1.3"/><rect x="8" y="7" width="2.6" height="2.6" fill="#047857"/><rect x="13.4" y="7" width="2.6" height="2.6" fill="#047857"/><rect x="8" y="11.5" width="2.6" height="2.6" fill="#047857"/><rect x="13.4" y="11.5" width="2.6" height="2.6" fill="#047857"/><rect x="9.8" y="16" width="4.4" height="5" fill="#065f46"/></svg>';
+
+        const _ICON_BOX = '<svg width="1em" height="1em" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle"><path d="M12 3 L21 7.5 V16.5 L12 21 L3 16.5 V7.5 Z" fill="#a7f3d0" stroke="#047857" stroke-width="1.3" stroke-linejoin="round"/><path d="M3 7.5 L12 12 L21 7.5" fill="none" stroke="#047857" stroke-width="1.3" stroke-linejoin="round"/><path d="M12 12 V21" stroke="#047857" stroke-width="1.3"/></svg>';
+
+        const _ICON_CALENDAR = '<svg width="1em" height="1em" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle"><rect x="3.5" y="5" width="17" height="15" rx="1.5" fill="#a7f3d0" stroke="#047857" stroke-width="1.3"/><rect x="3.5" y="5" width="17" height="4" fill="#047857"/><rect x="6.5" y="12" width="3" height="3" fill="#065f46"/><rect x="14.5" y="12" width="3" height="3" fill="#065f46"/></svg>';
+
+        const _ICON_CALENDAR_CHECK = '<svg width="1em" height="1em" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle"><rect x="3.5" y="5" width="17" height="15" rx="1.5" fill="#a7f3d0" stroke="#047857" stroke-width="1.3"/><rect x="3.5" y="5" width="17" height="4" fill="#047857"/><path d="M7 14 L10 17 L17 10" fill="none" stroke="#065f46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+        const _ICON_AXE = '<svg width="1em" height="1em" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle"><path d="M6 20 L16 4" stroke="#92400e" stroke-width="2" stroke-linecap="round"/><path d="M13 4 C17 3 20 5 21 8 C18 9 15 8.5 13 6 Z" fill="#a7f3d0" stroke="#047857" stroke-width="1.3" stroke-linejoin="round"/></svg>';
+
+        const _ICON_TRUCK = '<svg width="1em" height="1em" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle"><rect x="2" y="9" width="11" height="8" fill="#a7f3d0" stroke="#047857" stroke-width="1.3"/><path d="M13 11 H18 L21 14.5 V17 H13 Z" fill="#6ee7b7" stroke="#047857" stroke-width="1.3" stroke-linejoin="round"/><circle cx="7" cy="18.5" r="1.8" fill="#065f46"/><circle cx="17.5" cy="18.5" r="1.8" fill="#065f46"/></svg>';
+
+        const _ICON_MAP = '<svg width="1em" height="1em" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle"><path d="M9 4 L4 6 V20 L9 18 L15 20 L20 18 V4 L15 6 L9 4 Z" fill="#a7f3d0" stroke="#047857" stroke-width="1.3" stroke-linejoin="round"/><path d="M9 4 V18 M15 6 V20" stroke="#047857" stroke-width="1" stroke-dasharray="1.5 1.5"/><circle cx="12" cy="11" r="2" fill="#065f46"/></svg>';
+
+        const _ICON_KUBIKATOR = '<svg width="1em" height="1em" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle"><circle cx="12" cy="12" r="8.5" fill="#a7f3d0" stroke="#047857" stroke-width="1.3"/><circle cx="12" cy="12" r="4.5" fill="none" stroke="#047857" stroke-width="1"/><path d="M12 3.5 V6 M12 18 V20.5 M3.5 12 H6 M18 12 H20.5" stroke="#065f46" stroke-width="1.3"/></svg>';
+
+        const _ICON_ADD = '<svg width="1em" height="1em" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle"><circle cx="12" cy="12" r="9" fill="#a7f3d0" stroke="#047857" stroke-width="1.3"/><path d="M12 7 V17 M7 12 H17" stroke="#047857" stroke-width="2" stroke-linecap="round"/></svg>';
+
+        const _ICON_NOTEPAD = '<svg width="1em" height="1em" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle"><rect x="5" y="3" width="14" height="18" rx="1.5" fill="#a7f3d0" stroke="#047857" stroke-width="1.3"/><path d="M8 8 H16 M8 12 H16 M8 16 H13" stroke="#047857" stroke-width="1.3" stroke-linecap="round"/></svg>';
+
+        const _ICON_DOCUMENT = '<svg width="1em" height="1em" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle"><path d="M6 3 H14 L18 7 V21 H6 Z" fill="#a7f3d0" stroke="#047857" stroke-width="1.3" stroke-linejoin="round"/><path d="M14 3 V7 H18" fill="none" stroke="#047857" stroke-width="1.3" stroke-linejoin="round"/><path d="M9 12 H15 M9 15 H15 M9 18 H13" stroke="#065f46" stroke-width="1.2" stroke-linecap="round"/></svg>';
+
+        const _ICON_PREGLED = '<svg width="1em" height="1em" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle"><rect x="4" y="7" width="13" height="14" rx="1" fill="#a7f3d0" stroke="#047857" stroke-width="1.3"/><rect x="7" y="3" width="13" height="4" rx="1" fill="#6ee7b7" stroke="#047857" stroke-width="1.3"/><path d="M7 12 H14 M7 15 H14 M7 18 H11" stroke="#065f46" stroke-width="1.2" stroke-linecap="round"/></svg>';
+
         // Ikona za tabove "Prikaz/Izvještaj po odjelima" (SAMO .tab-icon u
         // sidebar/mobilnoj traci) — dva susjedna poligona (kao odjeli na
         // katastarskoj/šumskoj karti), svaki sa svojim brojem, umjesto
         // generičke 🏭 ikone koja nije imala veze sa značenjem.
         // width/height="1em" NAMJERNO — .tab-icon font-size je sad SAM PO SEBI
-        // 3x uvećan (54px sidebar / 66px mobilna traka, css/main.css), pa bi
-        // "3em" ovdje značilo 9x umjesto 3x. Ista ikona se koristi i statično
-        // (3em) u naslovima/dugmadima unutar tab SADRŽAJA (index.html) — tamo
+        // uvećan (41px sidebar / 50px mobilna traka, css/main.css), pa bi
+        // "3em" ovdje značilo previše. Ista ikona se koristi i statično (3em)
+        // u naslovima/dugmadima unutar tab SADRŽAJA (index.html) — tamo
         // font-size okoline NIJE uvećan, pa tamo ostaje 3em.
         // Brojevi centrirani na stvarni centroid svakog poligona (text-anchor
         // middle + dominant-baseline central), ne na proizvoljnu procjenu.
@@ -225,34 +259,34 @@
 
             if (userType === 'primac') {
                 tabsConfig = [
-                    { id: 'primac-personal', icon: '👷', label: 'Pregled sječe', active: true },
-                    { id: 'izvjestaji-primac', icon: '📋', label: 'Izvještaji' },
-                    { id: 'primac-mapa', icon: '🗺️', label: 'Karta' },
-                    { id: 'kubikator', icon: '📐', label: 'Kubikator' },
-                    { id: 'primac-godisnji', icon: '📅', label: 'Godišnji prikaz' },
+                    { id: 'primac-personal', icon: _ICON_AXE, label: 'Pregled sječe', active: true },
+                    { id: 'izvjestaji-primac', icon: _ICON_DOCUMENT, label: 'Izvještaji' },
+                    { id: 'primac-mapa', icon: _ICON_MAP, label: 'Karta' },
+                    { id: 'kubikator', icon: _ICON_KUBIKATOR, label: 'Kubikator' },
+                    { id: 'primac-godisnji', icon: _ICON_CALENDAR, label: 'Godišnji prikaz' },
                     { id: 'primac-odjeli', icon: _ICON_ODJELI, label: 'Prikaz po odjelima' },
-                    { id: 'sihtarica-primac', icon: '🗓️', label: 'Šihtarica' },
-                    { id: 'add-sjeca', icon: '➕', label: 'Dodaj sječu' },
-                    { id: 'my-sjece', icon: '📝', label: 'Moje sječe' }
+                    { id: 'sihtarica-primac', icon: _ICON_CALENDAR_CHECK, label: 'Šihtarica' },
+                    { id: 'add-sjeca', icon: _ICON_ADD, label: 'Dodaj sječu' },
+                    { id: 'my-sjece', icon: _ICON_NOTEPAD, label: 'Moje sječe' }
                 ];
             } else if (userType === 'otpremac') {
                 tabsConfig = [
-                    { id: 'otpremac-personal', icon: '🚛', label: 'Pregled otpreme', active: true },
-                    { id: 'izvjestaji-otpremac', icon: '📋', label: 'Izvještaji' },
-                    { id: 'otpremac-mapa', icon: '🗺️', label: 'Karta' },
-                    { id: 'kubikator', icon: '📐', label: 'Kubikator' },
-                    { id: 'otpremac-godisnji', icon: '📅', label: 'Godišnji prikaz' },
+                    { id: 'otpremac-personal', icon: _ICON_TRUCK, label: 'Pregled otpreme', active: true },
+                    { id: 'izvjestaji-otpremac', icon: _ICON_DOCUMENT, label: 'Izvještaji' },
+                    { id: 'otpremac-mapa', icon: _ICON_MAP, label: 'Karta' },
+                    { id: 'kubikator', icon: _ICON_KUBIKATOR, label: 'Kubikator' },
+                    { id: 'otpremac-godisnji', icon: _ICON_CALENDAR, label: 'Godišnji prikaz' },
                     { id: 'otpremac-odjeli', icon: _ICON_ODJELI, label: 'Prikaz po odjelima' },
-                    { id: 'sihtarica-otpremac', icon: '🗓️', label: 'Šihtarica' },
-                    { id: 'add-otprema', icon: '➕', label: 'Dodaj otpremu' },
-                    { id: 'my-otpreme', icon: '📝', label: 'Moje otpreme' }
+                    { id: 'sihtarica-otpremac', icon: _ICON_CALENDAR_CHECK, label: 'Šihtarica' },
+                    { id: 'add-otprema', icon: _ICON_ADD, label: 'Dodaj otpremu' },
+                    { id: 'my-otpreme', icon: _ICON_NOTEPAD, label: 'Moje otpreme' }
                 ];
             } else if (userType === 'operativa') {
                 tabsConfig = [
-                    { id: 'dashboard', icon: '🌲', label: 'Šumarija Krupa', active: true },
-                    { id: 'kupci', icon: '📦', label: 'Kupci' },
-                    { id: 'mjesecni-sortimenti', icon: '📅', label: 'Mjesečni pregled' },
-                    { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' }
+                    { id: 'dashboard', icon: _ICON_TREE, label: 'Šumarija Krupa', active: true },
+                    { id: 'kupci', icon: _ICON_BUILDING, label: 'Kupci' },
+                    { id: 'mjesecni-sortimenti', icon: _ICON_CALENDAR, label: 'Mjesečni pregled' },
+                    { id: 'izvjestaji', icon: _ICON_DOCUMENT, label: 'Izvještaji' }
                 ];
             } else if (userType === 'operateri') {
                 // Ograničena uloga — SAMO ova tri prikaza. Tabovi 'primaci'/'otpremaci'
@@ -260,36 +294,36 @@
                 // ulogu podmeniji sakrivaju i otvara se odmah "po danima" prikaz
                 // (vidi "OPERATERI: sakrij" niže u ovoj funkciji).
                 tabsConfig = [
-                    { id: 'kupci', icon: '🏢', label: 'Prikaz po kupcima', active: true },
-                    { id: 'primaci', icon: '📅', label: 'Sječa po danima' },
-                    { id: 'otpremaci', icon: '📅', label: 'Otprema po danima' }
+                    { id: 'kupci', icon: _ICON_BUILDING, label: 'Prikaz po kupcima', active: true },
+                    { id: 'primaci', icon: _ICON_CALENDAR, label: 'Sječa po danima' },
+                    { id: 'otpremaci', icon: _ICON_CALENDAR, label: 'Otprema po danima' }
                 ];
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
                 tabsConfig = [
-                    { id: 'poslovodja-sjeca', icon: '🪓', label: 'SJEČA', active: true },
-                    { id: 'poslovodja-otprema', icon: '🚛', label: 'OTPREMA' },
-                    { id: 'poslovodja-stanje', icon: '📦', label: 'Stanje zaliha' },
-                    { id: 'poslovodja-mapa', icon: '🗺️', label: 'Karta' },
-                    { id: 'kubikator', icon: '📐', label: 'Kubikator' },
-                    { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
-                    { id: 'poslovodja-pregled', icon: '📑', label: 'PREGLED' },
+                    { id: 'poslovodja-sjeca', icon: _ICON_AXE, label: 'SJEČA', active: true },
+                    { id: 'poslovodja-otprema', icon: _ICON_TRUCK, label: 'OTPREMA' },
+                    { id: 'poslovodja-stanje', icon: _ICON_BOX, label: 'Stanje zaliha' },
+                    { id: 'poslovodja-mapa', icon: _ICON_MAP, label: 'Karta' },
+                    { id: 'kubikator', icon: _ICON_KUBIKATOR, label: 'Kubikator' },
+                    { id: 'izvjestaji', icon: _ICON_DOCUMENT, label: 'Izvještaji' },
+                    { id: 'poslovodja-pregled', icon: _ICON_PREGLED, label: 'PREGLED' },
                     { id: 'poslovodja-izvjestaj-odjeli', icon: _ICON_ODJELI, label: 'Izvještaj po odjelima' },
-                    { id: 'poslovodja-unosi', icon: '📝', label: 'Dodani unosi', hasBadge: true }
+                    { id: 'poslovodja-unosi', icon: _ICON_NOTEPAD, label: 'Dodani unosi', hasBadge: true }
                 ];
             } else if (userType === 'admin') {
                 tabsConfig = [
-                    { id: 'dashboard', icon: '🌲', label: 'Šumarija Krupa', active: true },
-                    { id: 'kupci', icon: '🏢', label: 'Prikaz po kupcima' },
-                    { id: 'stanje-zaliha', icon: '📦', label: 'Stanje Zaliha' },
-                    { id: 'mjesecni-sortimenti', icon: '📅', label: 'Sječa/otprema' },
-                    { id: 'primaci', icon: '👷', label: 'SJEČA' },
-                    { id: 'otpremaci', icon: '🚛', label: 'OTPREMA' },
-                    { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
-                    { id: 'primaci-admin', icon: '🌲', label: 'Primači na šuma panju' },
-                    { id: 'godisnji-plan', icon: '📋', label: 'Godišnji plan' },
-                    { id: 'karta-odjela', icon: '🗺️', label: 'Mapa' },
-                    { id: 'pending-unosi', icon: '📋', label: 'Dodani unosi', hasBadge: true },
-                    { id: 'kubikator', icon: '📐', label: 'Kubikator' }
+                    { id: 'dashboard', icon: _ICON_TREE, label: 'Šumarija Krupa', active: true },
+                    { id: 'kupci', icon: _ICON_BUILDING, label: 'Prikaz po kupcima' },
+                    { id: 'stanje-zaliha', icon: _ICON_BOX, label: 'Stanje Zaliha' },
+                    { id: 'mjesecni-sortimenti', icon: _ICON_CALENDAR, label: 'Sječa/otprema' },
+                    { id: 'primaci', icon: _ICON_AXE, label: 'SJEČA' },
+                    { id: 'otpremaci', icon: _ICON_TRUCK, label: 'OTPREMA' },
+                    { id: 'izvjestaji', icon: _ICON_DOCUMENT, label: 'Izvještaji' },
+                    { id: 'primaci-admin', icon: _ICON_TREE, label: 'Primači na šuma panju' },
+                    { id: 'godisnji-plan', icon: _ICON_DOCUMENT, label: 'Godišnji plan' },
+                    { id: 'karta-odjela', icon: _ICON_MAP, label: 'Mapa' },
+                    { id: 'pending-unosi', icon: _ICON_DOCUMENT, label: 'Dodani unosi', hasBadge: true },
+                    { id: 'kubikator', icon: _ICON_KUBIKATOR, label: 'Kubikator' }
                 ];
             } else {
                 // Neprepoznata uloga (pogrešan/prazan upis u koloni "tip" šifrarnika
