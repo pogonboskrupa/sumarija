@@ -1,6 +1,13 @@
         // ========== AUTH MODULE ==========
         // Login, logout, showApp, auto-refresh, cross-tab sync
 
+        // Ikona za "Prikaz/Izvještaj po odjelima" (tabovi, submeniji, naslovi) —
+        // dva susjedna poligona (kao odjeli na katastarskoj/šumskoj karti), svaki
+        // sa svojim brojem, umjesto generičke 🏭 ikone koja nije imala veze sa
+        // značenjem. width/height="1em" — skalira se sa font-size okolnog
+        // konteksta (tab ikona, naslov, dugme), isto kao što je radio emoji.
+        const _ICON_ODJELI = '<svg width="1em" height="1em" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:-0.15em"><path d="M2 15 L8 3 L15 5 L13 16 L4 21 Z" fill="#a7f3d0" stroke="#047857" stroke-width="1.3" stroke-linejoin="round"/><path d="M15 5 L22 8 L20 21 L13 16 Z" fill="#6ee7b7" stroke="#047857" stroke-width="1.3" stroke-linejoin="round"/><text x="7.5" y="13" font-family="Arial, sans-serif" font-size="6.5" font-weight="800" fill="#065f46" text-anchor="middle">12</text><text x="17.5" y="13" font-family="Arial, sans-serif" font-size="6.5" font-weight="800" fill="#065f46" text-anchor="middle">7</text></svg>';
+
         // Pri prijavi: ako se prijavljuje DRUGI korisnik od vlasnika keša,
         // obriši sav cache_* (privatnost na dijeljenom uređaju). Isti korisnik
         // zadržava keš — to omogućava pun offline rad i poslije odjave.
@@ -217,7 +224,7 @@
                     { id: 'primac-mapa', icon: '🗺️', label: 'Karta' },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' },
                     { id: 'primac-godisnji', icon: '📅', label: 'Godišnji prikaz' },
-                    { id: 'primac-odjeli', icon: '🏭', label: 'Prikaz po odjelima' },
+                    { id: 'primac-odjeli', icon: _ICON_ODJELI, label: 'Prikaz po odjelima' },
                     { id: 'sihtarica-primac', icon: '🗓️', label: 'Šihtarica' },
                     { id: 'add-sjeca', icon: '➕', label: 'Dodaj sječu' },
                     { id: 'my-sjece', icon: '📝', label: 'Moje sječe' }
@@ -229,7 +236,7 @@
                     { id: 'otpremac-mapa', icon: '🗺️', label: 'Karta' },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' },
                     { id: 'otpremac-godisnji', icon: '📅', label: 'Godišnji prikaz' },
-                    { id: 'otpremac-odjeli', icon: '🏭', label: 'Prikaz po odjelima' },
+                    { id: 'otpremac-odjeli', icon: _ICON_ODJELI, label: 'Prikaz po odjelima' },
                     { id: 'sihtarica-otpremac', icon: '🗓️', label: 'Šihtarica' },
                     { id: 'add-otprema', icon: '➕', label: 'Dodaj otpremu' },
                     { id: 'my-otpreme', icon: '📝', label: 'Moje otpreme' }
@@ -260,7 +267,7 @@
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' },
                     { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
                     { id: 'poslovodja-pregled', icon: '📑', label: 'PREGLED' },
-                    { id: 'poslovodja-izvjestaj-odjeli', icon: '🏭', label: 'Izvještaj po odjelima' },
+                    { id: 'poslovodja-izvjestaj-odjeli', icon: _ICON_ODJELI, label: 'Izvještaj po odjelima' },
                     { id: 'poslovodja-unosi', icon: '📝', label: 'Dodani unosi', hasBadge: true }
                 ];
             } else if (userType === 'admin') {
