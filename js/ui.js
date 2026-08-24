@@ -552,18 +552,28 @@
         // layout reflow kao pravi browser zoom, pa sticky zaglavlja tabela/sidebar i
         // dalje rade, i NE stvara novi containing block za position:fixed potomke
         // (Kubikator/Karta fullscreen i dalje ispravno pokrivaju cijeli viewport).
+        //
         // Svi "puni ekran" tabovi (Karta, Kubikator, Šihtarica — imaju dugme
-        // "✕ Zatvori" pri ulasku) su eksplicitno izuzeti od ovog zuma (zoom:1
-        // na #radnik-mapa-content/#kubikator-content/#sihtarica-*-content, vidi
-        // index.html i css/main.css) — zoom se inače kaskadno prenosi na potomke
-        // čak i kad je position:fixed, pa bi poremetio Leaflet-ovu pixel
-        // matematiku na Karti i izgled bio neusklađen naspram fullscreen
-        // zaglavlja/dugmadi na ostalima.
+        // "✕ Zatvori" pri ulasku) MORAJU ostati na 100% bez obzira na zum —
+        // Karta zbog Leaflet pixel matematike, ostali da ne budu neusklađeni
+        // naspram vlastitog fullscreen zaglavlja/dugmadi.
+        // VAŽNO: CSS `zoom` se MNOŽI niz DOM stablo (isto ponašanje kao
+        // transform:scale) — "zoom:1" na potomku NE poništava zoom pretka
+        // (npr. 1 × 1.5 na .main-content i dalje daje efektivnih 1.5, ne 1).
+        // Zato se ovdje eksplicitno postavlja RECIPROČNA vrijednost (100/n) na
+        // te kontejnere — proizvod recipročne i .main-content vrijednosti je
+        // uvijek tačno 1, bez obzira na izabrani zum.
+        var _ZOOM_IZUZETI_SELEKTORI = ['#radnik-mapa-content', '#kubikator-content', '#sihtarica-primac-content', '#sihtarica-otpremac-content'];
         function applyContentZoom(pct, persist) {
             var n = parseInt(pct, 10);
             if ([100, 125, 150, 175, 200].indexOf(n) === -1) n = 100;
             var main = document.querySelector('.main-content');
             if (main) main.style.zoom = (n / 100);
+            var inverse = 100 / n;
+            _ZOOM_IZUZETI_SELEKTORI.forEach(function(sel) {
+                var el = document.querySelector(sel);
+                if (el) el.style.zoom = inverse;
+            });
             if (persist !== false) localStorage.setItem('poslovodja-zoom-level', String(n));
             if (window.currentTab === 'poslovodja-mapa' && typeof window.mapaRadnikaInvalidateSize === 'function') {
                 setTimeout(window.mapaRadnikaInvalidateSize, 60);

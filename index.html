@@ -3938,14 +3938,11 @@
                       background:#fff; box-sizing:border-box;
                   }
                   /* Karta (Leaflet) MORA ostati na 100% bez obzira na zum poslovođinog
-                     sadržaja (.main-content, js/ui.js applyContentZoom) — CSS `zoom`
-                     se kaskadno prenosi na potomke (kao font-size), a #radnik-mapa-content
-                     ostaje potomak i kad je position:fixed. Bez ovoga bi zum poremetio
-                     Leaflet-ovu pixel matematiku za pozicioniranje pločica i tap/klik
-                     koordinate, kao i nišan/HUD elemente unutar mape. Opšte pravilo (ne
-                     samo za poslovođu) jer #radnik-mapa-content dijele i primač/otpremač,
-                     kod kojih je ancestor-zoom uvijek 1 — bezopasno svuda. */
-                  #radnik-mapa-content { zoom: 1 !important; }
+                     sadržaja — izuzetak se postavlja iz JS (applyContentZoom, js/ui.js)
+                     kao recipročna vrijednost (100/n), NE fiksni "zoom:1" ovdje: CSS
+                     `zoom` se MNOŽI niz DOM stablo (kao transform:scale), pa bi
+                     "zoom:1 !important" na potomku i dalje ostavio efektivnih npr.
+                     1×1.5=1.5 umjesto da poništi zum roditelja (.main-content). */
                   /* Zaglavlje je uklonjeno u potpunosti (v1.4.111) — "Prikaži odjele"
                      i "Zatvori" su sad u donjoj traci / #radnik-mapa-tragovi-menu
                      popup-u. Mapa (flex:1) zauzima cijeli prostor odmah od vrha. */
