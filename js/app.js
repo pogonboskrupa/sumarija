@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.16.6';
+        const APP_VERSION = '1.16.7';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -10089,11 +10089,11 @@
                 const fs = isRazl ? 'font-style:italic;' : '';
                 const zv = isRazl ? '<span title="Razlika mjerenja" style="color:#92400e;font-style:italic;">' + (parseFloat(zal4[k])||0).toFixed(2) + '</span>' : f(zal4[k]);
                 return `<tr style="background:${bg};">
-                    <td style="padding:9px 12px;font-size:17px;${fw}${fs}color:${isRazl?'#92400e':'#374151'};">${k}</td>
-                    <td style="padding:9px 10px;text-align:right;font-size:17px;${fw}">${f(proj4[k])}</td>
-                    <td style="padding:9px 10px;text-align:right;font-size:17px;${fw}">${f(sjeca4[k])}</td>
-                    <td style="padding:9px 10px;text-align:right;font-size:17px;${fw}">${f(otpr4[k])}</td>
-                    <td style="padding:9px 10px;text-align:right;font-size:17px;${fw}">${zv}</td>
+                    <td style="padding:8px 10px;font-size:15px;${fw}${fs}color:${isRazl?'#92400e':'#374151'};">${k}</td>
+                    <td style="padding:8px 8px;text-align:right;font-size:15px;white-space:nowrap;${fw}">${f(proj4[k])}</td>
+                    <td style="padding:8px 8px;text-align:right;font-size:15px;white-space:nowrap;${fw}">${f(sjeca4[k])}</td>
+                    <td style="padding:8px 8px;text-align:right;font-size:15px;white-space:nowrap;${fw}">${f(otpr4[k])}</td>
+                    <td style="padding:8px 8px;text-align:right;font-size:15px;white-space:nowrap;${fw}">${zv}</td>
                 </tr>`;
             }).join('');
 
@@ -10125,16 +10125,23 @@
                         <div style="font-size:23px;font-weight:700;color:${zCol};">${pozZaliha.toFixed(2)}</div>
                     </div>
                 </div>
-                <!-- Tabela: sortimenti kao redovi, P/S/O/Z kao kolone -->
-                <div style="border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;">
-                    <table style="width:100%;border-collapse:collapse;font-size:17px;">
+                <!-- Tabela: sortimenti kao redovi, P/S/O/Z kao kolone. table-layout:fixed +
+                     eksplicitna širina prve kolone — bez ovoga auto-layout zna "Sortimentu"
+                     dodijeliti veći dio viška prostora nego što mu treba (nazivi nisu dugi),
+                     pa preostale 4 kolone (Proj./Sječa/Otpr./Zaliha) ostanu zbijene/nečitke. -->
+                <div style="border-radius:8px;overflow-x:auto;border:1px solid #e5e7eb;">
+                    <table style="width:100%;border-collapse:collapse;font-size:15px;table-layout:fixed;">
+                        <colgroup>
+                            <col style="width:30%;">
+                            <col style="width:17.5%;"><col style="width:17.5%;"><col style="width:17.5%;"><col style="width:17.5%;">
+                        </colgroup>
                         <thead>
                             <tr style="background:#1e3a5f;color:white;">
-                                <th style="padding:12px 12px;text-align:left;font-weight:600;">Sortiment</th>
-                                <th style="padding:12px 10px;text-align:right;font-weight:600;">Proj.</th>
-                                <th style="padding:12px 10px;text-align:right;font-weight:600;">Sječa</th>
-                                <th style="padding:12px 10px;text-align:right;font-weight:600;">Otpr.</th>
-                                <th style="padding:12px 10px;text-align:right;font-weight:600;">Zaliha</th>
+                                <th style="padding:11px 10px;text-align:left;font-weight:600;">Sortiment</th>
+                                <th style="padding:11px 8px;text-align:right;font-weight:600;white-space:nowrap;">Proj.</th>
+                                <th style="padding:11px 8px;text-align:right;font-weight:600;white-space:nowrap;">Sječa</th>
+                                <th style="padding:11px 8px;text-align:right;font-weight:600;white-space:nowrap;">Otpr.</th>
+                                <th style="padding:11px 8px;text-align:right;font-weight:600;white-space:nowrap;">Zaliha</th>
                             </tr>
                         </thead>
                         <tbody>${rows}</tbody>
