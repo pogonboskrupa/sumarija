@@ -935,11 +935,13 @@
                 </div>
             </div>
 
-            <!-- Trendovi sječe — po sedmicama (izabrani mjesec) i po mjesecima
-                 (cijela godina), filtrirano po sortimentu ili ukupno. Sedmični
-                 dio koristi primaci-daily (isti endpoint kao Sječa po danima),
-                 mjesečni dio koristi mjesecni-sortimenti (isti kešrandom podatak
-                 kao tab "Mjesečni pregled sortimenti") — bez novih API poziva. -->
+            <!-- Trendovi sječe — po sedmicama (izabrani mjesec), grafikon prikazuje
+                 SVE sortimente odjednom kao slaganu (stacked) traku po boji,
+                 umjesto jedne linije za ručno izabran filter. Koristi primaci-daily
+                 (isti endpoint kao Sječa po danima) — bez novih API poziva.
+                 Ranije je ovdje bio i drugi grafikon "Sječa po mjesecima" (cijela
+                 godina) — uklonjen po korisničkom zahtjevu, sortimentna raspodjela
+                 je premještena u preostali (sedmični) grafikon. -->
             <div id="primaci-trendovi-view" class="submenu-content hidden">
                 <div class="section">
                     <h3 style="color: #047857; text-align: center; margin-bottom: 20px;">📈 Trendovi sječe</h3>
@@ -959,12 +961,6 @@
                                 <option value="9">Oktobar</option>
                                 <option value="10">Novembar</option>
                                 <option value="11">Decembar</option>
-                            </select>
-                        </div>
-                        <div class="month-selector month-selector--neutral">
-                            <label>🏷️ Sortiment:</label>
-                            <select id="primaci-trend-sortiment-select" class="month-select" onchange="renderPrimaciTrendCharts()">
-                                <option value="__UKUPNO__">Ukupno (svi sortimenti)</option>
                             </select>
                         </div>
                     </div>
@@ -1014,15 +1010,10 @@
                     <div id="primaci-trend-loading" style="text-align:center; padding:40px; color:#4b5563;">⏳ Učitavam...</div>
 
                     <div id="primaci-trend-charts" class="hidden">
-                        <h4 style="color: #047857; margin: 28px 0 10px;">📅 Sječa po sedmicama — <span id="primaci-trend-week-title"></span></h4>
+                        <h4 style="color: #047857; margin: 28px 0 10px; text-align:center;">📅 Sječa po sedmicama — raspodjela po sortimentu <span id="primaci-trend-week-title"></span></h4>
                         <div id="primaci-trend-week-empty" class="hidden" style="text-align:center; color:#9ca3af; padding:30px;">Nema evidentirane sječe za izabrani mjesec.</div>
-                        <div id="primaci-trend-week-chart-wrap" style="position:relative; height:280px;">
+                        <div id="primaci-trend-week-chart-wrap" style="position:relative; height:360px; background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px;">
                             <canvas id="primaci-trend-week-chart"></canvas>
-                        </div>
-
-                        <h4 style="color: #047857; margin: 34px 0 10px;">📊 Sječa po mjesecima — <span id="primaci-trend-year-title"></span></h4>
-                        <div style="position:relative; height:280px;">
-                            <canvas id="primaci-trend-month-chart"></canvas>
                         </div>
                     </div>
                     <div id="primaci-trend-empty" class="hidden" style="text-align:center; padding:40px; color:#4b5563;">Nema podataka za odabrani period.</div>
