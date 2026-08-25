@@ -53,6 +53,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     var PRVI_PROSTORNI_KEY = 'kubikator_prvi_prostorni_gotov'; // isto, za "1,20"/"1,50" (prostorno drvo)
     var MEM_PRIKAZ = 30;          // koliko zadnjih unosa se prikazuje u memoriji
     var KUB_STRANICA = 20;        // "stranica" u službenoj knjizi = 20 unosa (mjerenja)
+    var UPOZORENJE_PRAG = 200;    // svakih 200 unosa (10 stranica) — podsjeti na izvoz/čišćenje
 
     // Dozvoljeni opsezi — sve van ovoga je gotovo sigurno omaška u kucanju
     // (npr. prečnik u milimetrima ili dužina u centimetrima).
@@ -109,6 +110,17 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             _unosi = raw ? JSON.parse(raw) : [];
             if (!Array.isArray(_unosi)) _unosi = [];
         } catch (_) { _unosi = []; }
+        // Migracija: stariji zapisi (prije nego je "stranica" postala TRAJNO
+        // svojstvo svakog unosa — vidi _trenutnaStranica/_renderRekap) nemaju
+        // u.stranica. Dodijeli im ga JEDNOM, po trenutnom redoslijedu u nizu
+        // (isti raspored kao dosadašnji pozicioni obračun) — od sad se taj broj
+        // više NE mijenja pri brisanju, čime rekap po stranicama postaje stabilan.
+        var trebaMigracija = false;
+        for (var mi = 0; mi < _unosi.length; mi++) { if (!_unosi[mi].stranica) { trebaMigracija = true; break; } }
+        if (trebaMigracija) {
+            _unosi.forEach(function(u, i) { if (!u.stranica) u.stranica = Math.floor(i / KUB_STRANICA) + 1; });
+            _save();
+        }
         try {
             var v = localStorage.getItem(VRSTA_KEY);
             _vrsta = (v === 'prostorno') ? 'prostorno' : 'oblovina';
@@ -309,6 +321,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         _osvjeziDecUI();
         _osvjeziRezultat();
         _renderMemorija();
+        _invalidirajRekapCache(); // DEC mijenja prikazane m3 na SVAKOJ stranici, uklj. već zatvorene
         _renderRekap();
     };
     function _osvjeziDecUI() {
@@ -398,11 +411,58 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         return html;
     }
 
+    // Koja "stranica" prima SLJEDEĆI unos. u.stranica je TRAJNO svojstvo
+    // (dodijeljeno jednom u kubikatorDodaj/migraciji u _load) — ne
+    // preračunava se po trenutnoj dužini niza, zato brisanje bilo kog unosa
+    // NE pomjera ostale unose na drugu stranicu (raniji bug: stranice su se
+    // računale čisto po poziciji u nizu, pa je brisanje jednog unosa sa
+    // stranice 1 "povuklo" prvi unos stranice 2 na stranicu 1, itd. — rekap
+    // po stranicama više nije odgovarao onome što je stvarno upisano na toj
+    // fizičkoj stranici). Ako je zadnja stranica već puna (ili unosa još
+    // nema), otvara se sljedeća; inače nastavlja popunjavati istu — čak i
+    // ako joj je broj stavki privremeno ispod 20 zbog brisanja (isto kao što
+    // bi radnik na terenu nastavio pisati na istoj papirnoj stranici poslije
+    // precrtavanja jednog reda).
+    function _trenutnaStranica() {
+        if (!_unosi.length) return 1;
+        var zadnja = _unosi[_unosi.length - 1];
+        var brStr = zadnja.stranica || 1;
+        var brojUStranici = 0;
+        for (var i = 0; i < _unosi.length; i++) { if ((_unosi[i].stranica || 1) === brStr) brojUStranici++; }
+        return brojUStranici >= KUB_STRANICA ? brStr + 1 : brStr;
+    }
+
+    // Predmemorija HTML-a za ZATVORENE stranice (sve osim trenutne, otvorene) —
+    // kubikatorDodaj poziva _renderRekap() na SVAKI unos, a na terenu se u
+    // jednoj sesiji zna nakupiti stotine unosa (desetine stranica). Bez ove
+    // predmemorije bi se pri svakom tapu na "Dodaj" iznova agregiralo i
+    // gradilo HTML za SVE već zatvorene stranice, iako se one više ne
+    // mijenjaju — čisto bačen posao koji na duže sesije primjetno uspori
+    // unos. Nevažeća (invalidate) se pri bilo kojoj promjeni koja MOŽE
+    // uticati na već zatvorenu stranicu (brisanje, promjena broja decimala,
+    // brisanje svega) — samo obično dodavanje ostavlja predmemoriju netaknutu.
+    var _rekapCacheValid = false;
+    var _rekapPageHtmlCache = {}; // stranica -> HTML string
+
+    function _invalidirajRekapCache() {
+        _rekapCacheValid = false;
+        _rekapPageHtmlCache = {};
+    }
+
+    function _rekapStranicaHtml(broj, grupa, uToku) {
+        var statusHtml = uToku
+            ? '<span class="kub-rekap-stranica-status">' + grupa.length + '/' + KUB_STRANICA + ' · u toku</span>'
+            : '<span class="kub-rekap-stranica-status kub-rekap-stranica-puna">popunjena</span>';
+        return '<div class="kub-rekap-stranica">' +
+            '<div class="kub-rekap-stranica-naslov"><span>📄 Stranica ' + broj + '</span>' + statusHtml + '</div>' +
+            _rekapGrupe(grupa) +
+            '</div>';
+    }
+
     // Rekap organizovan po "stranicama" od KUB_STRANICA (20) unosa — isto kao
     // u službenoj knjizi na terenu: puni se 20 redova, na kraju stranice ide
     // rekap po sortimentima, pa se nastavlja na sljedećoj stranici. Stranice
-    // se računaju hronološki (redoslijed unošenja), a prikazuju najnovija
-    // prva (isti obrazac kao "Zadnji unosi" ispod — najnovije uvijek gore).
+    // se prikazuju najnovija prva (isti obrazac kao "Zadnji unosi" ispod).
     // Nedovršena (trenutna) stranica se i dalje prikazuje, obilježena "u toku".
     function _renderRekap() {
         var lista = _el('kub-rekap-lista');
@@ -415,24 +475,32 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         if (!lista) return;
         if (!_unosi.length) {
             lista.innerHTML = '<div class="kub-rekap-prazno">Još nema unosa.</div>';
+            _invalidirajRekapCache();
             return;
         }
-        var brojStranica = Math.ceil(_unosi.length / KUB_STRANICA);
+        var grupePoStranici = {};
+        var redoslijedStranica = [];
+        _unosi.forEach(function(u) {
+            var s = u.stranica || 1;
+            if (!grupePoStranici[s]) { grupePoStranici[s] = []; redoslijedStranica.push(s); }
+            grupePoStranici[s].push(u);
+        });
+        var trenutna = _trenutnaStranica();
+        var poredane = redoslijedStranica.slice().sort(function(a, b) { return b - a; });
         var html = '';
-        for (var s = brojStranica; s >= 1; s--) {
-            var od = (s - 1) * KUB_STRANICA;
-            var grupa = _unosi.slice(od, od + KUB_STRANICA);
-            var nepotpuna = grupa.length < KUB_STRANICA;
-            html += '<div class="kub-rekap-stranica">';
-            html += '<div class="kub-rekap-stranica-naslov"><span>📄 Stranica ' + s + '</span>' +
-                (nepotpuna
-                    ? '<span class="kub-rekap-stranica-status">' + grupa.length + '/' + KUB_STRANICA + ' · u toku</span>'
-                    : '<span class="kub-rekap-stranica-status kub-rekap-stranica-puna">popunjena</span>') +
-                '</div>';
-            html += _rekapGrupe(grupa);
-            html += '</div>';
-        }
+        poredane.forEach(function(s) {
+            var grupa = grupePoStranici[s];
+            var uToku = (s === trenutna) && grupa.length < KUB_STRANICA;
+            if (!uToku && _rekapCacheValid && _rekapPageHtmlCache[s] !== undefined) {
+                html += _rekapPageHtmlCache[s];
+                return;
+            }
+            var blok = _rekapStranicaHtml(s, grupa, uToku);
+            if (!uToku) _rekapPageHtmlCache[s] = blok;
+            html += blok;
+        });
         lista.innerHTML = html;
+        _rekapCacheValid = true;
     }
 
     // ================== JAVNE FUNKCIJE ==================
@@ -452,7 +520,10 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             // odjel/napomena ostaju prazan string — vidi komentar na vrhu fajla
             // (printKubikator ih čita bezuslovno). sortiment se od sad PUNI iz
             // dropdowna (#kub-sortiment-select) umjesto da ostane trajno prazan.
-            odjel: '', sortiment: sortSel ? sortSel.value : '', napomena: ''
+            odjel: '', sortiment: sortSel ? sortSel.value : '', napomena: '',
+            // Trajno dodijeljena "stranica" — vidi _trenutnaStranica. Mora se
+            // izračunati PRIJE push-a (na osnovu dosadašnjeg stanja _unosi).
+            stranica: _trenutnaStranica()
         };
         if (_vrsta === 'prostorno') {
             unos.sirina = t.sirina; unos.visina = t.visina; unos.zapremina = t.zapremina;
@@ -475,6 +546,16 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         _justAdded = true;
         _renderMemorija();
         _renderRekap();
+
+        // Podaci su ISKLJUČIVO lokalni (localStorage, bez servera/backupa) i
+        // ništa ih automatski ne čisti — nakon sedmica/mjeseci terenskog rada
+        // bi mogli neopaženo narasti do granice localStorage prostora.
+        // Podsjeti (svakih UPOZORENJE_PRAG unosa = 10 punih stranica), ne
+        // spriječi — radnik i dalje odlučuje kad će stvarno izvesti/obrisati.
+        if (_unosi.length > 0 && _unosi.length % UPOZORENJE_PRAG === 0 && typeof showWarning === 'function') {
+            showWarning('Puno lokalnih unosa (' + _unosi.length + ')',
+                'Razmislite da izvezete (📤 Podijeli ili 🖨️ Štampaj) i obrišete stare unose (🗑️ Obriši sve) da oslobodite prostor na uređaju.');
+        }
 
         // Prečnik se uvijek prazni; dužina ostaje ako je zaključana (gomila je
         // obično jednake dužine) — sljedeći komad se onda kuca sa samo jednim
@@ -580,6 +661,12 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         // mogli obrisati (broj !== string).
         _unosi = _unosi.filter(function(u) { return String(u.id) !== String(id); });
         _save();
+        // Brisanje mijenja broj stavki na NJENOJ stranici — predmemorirani
+        // HTML te (i eventualno drugih, ako je izmjenjen ranije spor) stranice
+        // više ne bi odgovarao stvarnom stanju. Cijela stranica se ionako
+        // rijetko briše (nasuprot čestom "Dodaj"), pa puna invalidacija ovdje
+        // ne ugrožava perfomanse — samo garantuje tačnost.
+        _invalidirajRekapCache();
         _renderMemorija();
         _renderRekap();
     };
@@ -587,7 +674,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     window.kubikatorOcistiSve = function() {
         if (!_unosi.length) return;
         var poruka = 'Obrisati svih ' + _unosi.length + ' unosa? Ova radnja se ne može poništiti.';
-        var obrisi = function() { _unosi = []; _save(); _renderMemorija(); _renderRekap(); };
+        var obrisi = function() { _unosi = []; _save(); _invalidirajRekapCache(); _renderMemorija(); _renderRekap(); };
         if (typeof showConfirmModal === 'function') {
             showConfirmModal('Obriši sve unose', poruka, obrisi, { confirmText: '🗑️ Obriši sve', danger: true });
         } else if (confirm(poruka)) { obrisi(); }
@@ -596,6 +683,10 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     // Koristi ih printKubikator (js/print-utils.js)
     window.getKubikatorUnosi = function() { return _unosi; };
     window.getKubikatorDec = function() { return DEC; };
+    // Isti redoslijed sortimenata kao _rekapGrupe iznad (Oblovina pa Prostorno
+    // drvo) — koristi printKubikator (js/print-utils.js) da rekapitulacija na
+    // štampi sortira sortimente dosljedno sa ekranskim rekapom.
+    window.getKubikatorSortimentRedoslijed = function() { return KUB_SORT_OBLOVINA.concat(KUB_SORT_PROSTORNO); };
 
     // ---- Puni ekran (isti obrazac kao Karta) ----
     // Aplikacija inače drži viewport na width=1280 (setAppViewport, index.html)

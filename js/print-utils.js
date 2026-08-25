@@ -45,10 +45,11 @@ function printKubikator() {
         ? `Š ${fmt2(u.sirina)} × V ${fmt2(u.visina)} m`
         : `⌀ ${u.precnik} cm × ${fmt2(u.duzina)} m`;
 
-    // Rekapitulacija po vrsti drveta (Oblovina / Prostorno drvo). Zbir VEĆ
-    // ZAOKRUŽENIH vrijednosti (onih ispisanih po redu), ne zaokruženi zbir
-    // sirovih vrijednosti — inače zbir stavki na štampi ne odgovara
-    // prikazanom ukupnom (isti razlog kao _renderMemorija u kubikator.js).
+    // Rekapitulacija po vrsti drveta (Oblovina / Prostorno drvo) — brz
+    // ukupan pregled na vrhu. Zbir VEĆ ZAOKRUŽENIH vrijednosti (onih
+    // ispisanih po redu), ne zaokruženi zbir sirovih vrijednosti — inače
+    // zbir stavki na štampi ne odgovara prikazanom ukupnom (isti razlog kao
+    // _renderMemorija u kubikator.js).
     const mapa = {};
     unosi.forEach(u => {
         const key = vrstaNaziv(u.vrsta);
@@ -84,7 +85,80 @@ function printKubikator() {
             </tbody>
         </table>`;
 
-    // Tabela svih unosa
+    // Rekapitulacija po STRANICAMA i SORTIMENTU — isti prikaz kao "📖
+    // Rekapitulacija" na ekranu (js/kubikator.js _renderRekap/_rekapGrupe),
+    // do sada je štampa imala samo grubi zbir po vrsti drveta iznad, bez
+    // sortimenta i bez podjele po stranicama (fizička "stranica" = 20 unosa,
+    // isto kao u službenoj knjizi na terenu). u.stranica je od nedavno
+    // TRAJNO svojstvo svakog unosa (vidi kubikator.js _trenutnaStranica) —
+    // stariji zapisi (prije te izmjene) nemaju ga, pa se tretiraju kao
+    // stranica 1 (isto kao BEZ_SORTIMENTA fallback ispod).
+    const BEZ_SORTIMENTA = 'Bez sortimenta';
+    const sortimentRedoslijed = (typeof window.getKubikatorSortimentRedoslijed === 'function')
+        ? window.getKubikatorSortimentRedoslijed() : [];
+    const sortirajSortimente = kljucevi => kljucevi.sort((a, b) => {
+        if (a === BEZ_SORTIMENTA) return 1;
+        if (b === BEZ_SORTIMENTA) return -1;
+        const ia = sortimentRedoslijed.indexOf(a), ib = sortimentRedoslijed.indexOf(b);
+        if (ia === -1 && ib === -1) return a.localeCompare(b);
+        if (ia === -1) return 1;
+        if (ib === -1) return -1;
+        return ia - ib;
+    });
+
+    const poStranici = {};
+    const redoslijedStranica = [];
+    unosi.forEach(u => {
+        const s = u.stranica || 1;
+        if (!poStranici[s]) { poStranici[s] = []; redoslijedStranica.push(s); }
+        poStranici[s].push(u);
+    });
+    redoslijedStranica.sort((a, b) => b - a); // najnovija stranica prva — isto kao ekran
+
+    const stranicaHtml = redoslijedStranica.map(s => {
+        const grupa = poStranici[s];
+        const sortMapa = {};
+        grupa.forEach(u => {
+            const kljuc = u.sortiment || BEZ_SORTIMENTA;
+            if (!sortMapa[kljuc]) sortMapa[kljuc] = { kom: 0, m3: 0 };
+            sortMapa[kljuc].kom++;
+            sortMapa[kljuc].m3 += _roundHalfUp2(Number(u.zapremina) || 0);
+        });
+        const ukupnoStranice = grupa.reduce((s2, u) => s2 + _roundHalfUp2(Number(u.zapremina) || 0), 0);
+        const sortRows = sortirajSortimente(Object.keys(sortMapa)).map(k => `
+            <tr>
+                <td style="padding:6px 10px;">${escapeHtml(k)}</td>
+                <td style="padding:6px 10px;text-align:center;">${sortMapa[k].kom}</td>
+                <td style="padding:6px 10px;text-align:right;font-weight:700;color:${accent};">${fmt2(sortMapa[k].m3)}</td>
+            </tr>`).join('');
+        return `
+            <div style="margin-bottom:16px;break-inside:avoid;">
+                <div style="font-weight:700;margin-bottom:4px;">📄 Stranica ${s}
+                    <span style="font-weight:400;color:#6b7280;">(${grupa.length} kom)</span>
+                </div>
+                <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #d1d5db;">
+                    <thead>
+                        <tr style="background:#f0fdf4;">
+                            <th style="padding:6px 10px;text-align:left;">Sortiment</th>
+                            <th style="padding:6px 10px;text-align:center;">Komada</th>
+                            <th style="padding:6px 10px;text-align:right;">m³</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sortRows}
+                        <tr style="border-top:1px solid ${accent};">
+                            <td style="padding:6px 10px;font-weight:700;">Ukupno stranica ${s}</td>
+                            <td style="padding:6px 10px;text-align:center;font-weight:700;">${grupa.length}</td>
+                            <td style="padding:6px 10px;text-align:right;font-weight:700;color:${accent};">${fmt2(ukupnoStranice)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>`;
+    }).join('');
+
+    // Tabela svih unosa — Sortiment umjesto Napomene (napomena nema UI za
+    // unos u Kubikatoru, uvijek je prazna; sortiment je stvarni podatak koji
+    // svaki unos nosi otkad postoji #kub-sortiment-select).
     const tabelaRows = [...unosi].reverse().map((u, i) => `
         <tr style="border-bottom:1px solid #e5e7eb;">
             <td style="padding:7px 8px;text-align:center;color:#4b5563;">${unosi.length - i}</td>
@@ -92,7 +166,7 @@ function printKubikator() {
             <td style="padding:7px 8px;font-weight:600;">${vrstaNaziv(u.vrsta)}</td>
             <td style="padding:7px 8px;text-align:center;">${dimenzijeOpis(u)}</td>
             <td style="padding:7px 8px;text-align:right;font-weight:700;color:${accent};">${fmt2(u.zapremina)}</td>
-            <td style="padding:7px 8px;font-size:11px;color:#4b5563;">${escapeHtml(u.napomena || '')}</td>
+            <td style="padding:7px 8px;font-size:11px;color:#4b5563;">${escapeHtml(u.sortiment || '—')}</td>
         </tr>`).join('');
 
     const tabelaHtml = `
@@ -104,7 +178,7 @@ function printKubikator() {
                     <th style="padding:9px 8px;text-align:left;">Vrsta</th>
                     <th style="padding:9px 8px;text-align:center;">Dimenzije</th>
                     <th style="padding:9px 8px;text-align:right;">m³</th>
-                    <th style="padding:9px 8px;text-align:left;">Napomena</th>
+                    <th style="padding:9px 8px;text-align:left;">Sortiment</th>
                 </tr>
             </thead>
             <tbody>${tabelaRows}</tbody>
@@ -114,6 +188,10 @@ function printKubikator() {
         <div class="print-section">
             <div class="section-header" style="border-left:4px solid ${accent};">Rekapitulacija</div>
             ${rekapHtml}
+        </div>
+        <div class="print-section" style="page-break-before:always;">
+            <div class="section-header" style="border-left:4px solid ${accent};">Rekapitulacija po stranicama i sortimentu</div>
+            ${stranicaHtml}
         </div>
         <div class="print-section" style="page-break-before:always;">
             <div class="section-header" style="border-left:4px solid ${accent};">Svi unosi (${unosi.length} komada)</div>
