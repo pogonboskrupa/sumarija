@@ -1320,10 +1320,14 @@ table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-liscari.is-to
    14px) samo je !important pregazi jače specifičnosti bez !important. */
 #dashboard-content .summary-card-value { font-size: 32px !important; }
 #dashboard-content .monthly-table tbody td,
-#dashboard-content #odjeli-table-body td,
 #dashboard-content .professional-monthly-table tbody td.number,
 #dashboard-content .professional-monthly-table tfoot td.number {
     font-size: 16px !important;
+}
+/* "Pregled po odjelima" — zasebno od gornjeg pravila i ~5% manje (16px->15px),
+   korisnički zahtjev da tabela stane bez vodoravnog skrolanja. */
+#dashboard-content #odjeli-table-body td {
+    font-size: 15px !important;
 }
 #dashboard-content .professional-monthly-table tbody td:first-child { font-size: 17px !important; }
 #dashboard-content .professional-monthly-table .month-total td { font-size: 20px !important; }
