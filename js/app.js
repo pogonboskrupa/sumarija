@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.16.5';
+        const APP_VERSION = '1.16.6';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -10076,7 +10076,7 @@
 
             const f = v => {
                 const n = parseFloat(v) || 0;
-                if (n === 0) return '<span style="color:#d1d5db;font-size:13px;">—</span>';
+                if (n === 0) return '<span style="color:#d1d5db;font-size:14px;">—</span>';
                 const col = n < 0 ? '#dc2626' : 'inherit';
                 return `<span style="color:${col};">${n.toFixed(2)}</span>`;
             };
@@ -10089,11 +10089,11 @@
                 const fs = isRazl ? 'font-style:italic;' : '';
                 const zv = isRazl ? '<span title="Razlika mjerenja" style="color:#92400e;font-style:italic;">' + (parseFloat(zal4[k])||0).toFixed(2) + '</span>' : f(zal4[k]);
                 return `<tr style="background:${bg};">
-                    <td style="padding:7px 10px;font-size:15px;${fw}${fs}color:${isRazl?'#92400e':'#374151'};">${k}</td>
-                    <td style="padding:7px 8px;text-align:right;font-size:15px;${fw}">${f(proj4[k])}</td>
-                    <td style="padding:7px 8px;text-align:right;font-size:15px;${fw}">${f(sjeca4[k])}</td>
-                    <td style="padding:7px 8px;text-align:right;font-size:15px;${fw}">${f(otpr4[k])}</td>
-                    <td style="padding:7px 8px;text-align:right;font-size:15px;${fw}">${zv}</td>
+                    <td style="padding:9px 12px;font-size:17px;${fw}${fs}color:${isRazl?'#92400e':'#374151'};">${k}</td>
+                    <td style="padding:9px 10px;text-align:right;font-size:17px;${fw}">${f(proj4[k])}</td>
+                    <td style="padding:9px 10px;text-align:right;font-size:17px;${fw}">${f(sjeca4[k])}</td>
+                    <td style="padding:9px 10px;text-align:right;font-size:17px;${fw}">${f(otpr4[k])}</td>
+                    <td style="padding:9px 10px;text-align:right;font-size:17px;${fw}">${zv}</td>
                 </tr>`;
             }).join('');
 
@@ -10102,39 +10102,39 @@
 
             body.innerHTML = `
                 <!-- Kompaktni header -->
-                <div style="background:linear-gradient(135deg,#1e3a5f,#2d5a87);color:white;border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
-                    <div style="font-size:14px;opacity:.85;">📍 ${od.radiliste || 'N/A'}${od.zadnjaOtprema ? ' · 🚛 ' + od.zadnjaOtprema : ''}</div>
-                    <div style="font-size:22px;font-weight:700;">${statusIcon} ${pozZaliha.toFixed(2)} m³</div>
+                <div style="background:linear-gradient(135deg,#1e3a5f,#2d5a87);color:white;border-radius:10px;padding:14px 18px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                    <div style="font-size:16px;opacity:.9;">📍 ${od.radiliste || 'N/A'}${od.zadnjaOtprema ? ' · 🚛 ' + od.zadnjaOtprema : ''}</div>
+                    <div style="font-size:26px;font-weight:700;">${statusIcon} ${pozZaliha.toFixed(2)} m³</div>
                 </div>
                 <!-- 4 kartice u 2×2 gridu -->
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-                    <div style="background:#eff6ff;border-radius:8px;padding:10px 12px;text-align:center;">
-                        <div style="font-size:12px;color:#1e40af;font-weight:600;">📋 PROJEKAT</div>
-                        <div style="font-size:19px;font-weight:700;color:#1e40af;">${(od.ukupnoProjekat||0).toFixed(2)}</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+                    <div style="background:#eff6ff;border-radius:8px;padding:12px 14px;text-align:center;">
+                        <div style="font-size:13px;color:#1e40af;font-weight:600;">📋 PROJEKAT</div>
+                        <div style="font-size:23px;font-weight:700;color:#1e40af;">${(od.ukupnoProjekat||0).toFixed(2)}</div>
                     </div>
-                    <div style="background:#ecfdf5;border-radius:8px;padding:10px 12px;text-align:center;">
-                        <div style="font-size:12px;color:#065f46;font-weight:600;">🪓 SJEČA</div>
-                        <div style="font-size:19px;font-weight:700;color:#065f46;">${(od.ukupnoSjeca||0).toFixed(2)}</div>
+                    <div style="background:#ecfdf5;border-radius:8px;padding:12px 14px;text-align:center;">
+                        <div style="font-size:13px;color:#065f46;font-weight:600;">🪓 SJEČA</div>
+                        <div style="font-size:23px;font-weight:700;color:#065f46;">${(od.ukupnoSjeca||0).toFixed(2)}</div>
                     </div>
-                    <div style="background:#fffbeb;border-radius:8px;padding:10px 12px;text-align:center;">
-                        <div style="font-size:12px;color:#b45309;font-weight:600;">🚛 OTPREMA</div>
-                        <div style="font-size:19px;font-weight:700;color:#b45309;">${(od.ukupnoOtprema||0).toFixed(2)}</div>
+                    <div style="background:#fffbeb;border-radius:8px;padding:12px 14px;text-align:center;">
+                        <div style="font-size:13px;color:#b45309;font-weight:600;">🚛 OTPREMA</div>
+                        <div style="font-size:23px;font-weight:700;color:#b45309;">${(od.ukupnoOtprema||0).toFixed(2)}</div>
                     </div>
-                    <div style="background:${pozZaliha<0?'#fef2f2':'#f0fdf4'};border-radius:8px;padding:10px 12px;text-align:center;">
-                        <div style="font-size:12px;color:${zCol};font-weight:600;">📦 ZALIHA</div>
-                        <div style="font-size:19px;font-weight:700;color:${zCol};">${pozZaliha.toFixed(2)}</div>
+                    <div style="background:${pozZaliha<0?'#fef2f2':'#f0fdf4'};border-radius:8px;padding:12px 14px;text-align:center;">
+                        <div style="font-size:13px;color:${zCol};font-weight:600;">📦 ZALIHA</div>
+                        <div style="font-size:23px;font-weight:700;color:${zCol};">${pozZaliha.toFixed(2)}</div>
                     </div>
                 </div>
                 <!-- Tabela: sortimenti kao redovi, P/S/O/Z kao kolone -->
                 <div style="border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;">
-                    <table style="width:100%;border-collapse:collapse;font-size:15px;">
+                    <table style="width:100%;border-collapse:collapse;font-size:17px;">
                         <thead>
                             <tr style="background:#1e3a5f;color:white;">
-                                <th style="padding:10px 10px;text-align:left;font-weight:600;">Sortiment</th>
-                                <th style="padding:10px 8px;text-align:right;font-weight:600;">Proj.</th>
-                                <th style="padding:10px 8px;text-align:right;font-weight:600;">Sječa</th>
-                                <th style="padding:10px 8px;text-align:right;font-weight:600;">Otpr.</th>
-                                <th style="padding:10px 8px;text-align:right;font-weight:600;">Zaliha</th>
+                                <th style="padding:12px 12px;text-align:left;font-weight:600;">Sortiment</th>
+                                <th style="padding:12px 10px;text-align:right;font-weight:600;">Proj.</th>
+                                <th style="padding:12px 10px;text-align:right;font-weight:600;">Sječa</th>
+                                <th style="padding:12px 10px;text-align:right;font-weight:600;">Otpr.</th>
+                                <th style="padding:12px 10px;text-align:right;font-weight:600;">Zaliha</th>
                             </tr>
                         </thead>
                         <tbody>${rows}</tbody>
