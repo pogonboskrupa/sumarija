@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.15.8';
+        const APP_VERSION = '1.15.9';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6343,11 +6343,15 @@
         let _primkeRawTimeline = null; // keš sirovih primki, izbjegava ponovni fetch
         let _otpremeRawTimeline = null; // isto, za otpreme
 
-        async function _dohvatiPrimkeZaTimeline() {
-            if (_primkeRawTimeline) return _primkeRawTimeline;
+        // force=true zaobilazi i modul-level keš OVDJE i fetchWithCache-ov vlastiti
+        // keš (koristi ga eksplicitno dugme "🔄 Osvježi" — bez toga bi ovaj keš
+        // ostao "zamrznut" na prvim učitanim podacima do kraja sesije, jer se
+        // _primkeRawTimeline/_otpremeRawTimeline inače nikad ne resetuju).
+        async function _dohvatiPrimkeZaTimeline(force) {
+            if (_primkeRawTimeline && !force) return _primkeRawTimeline;
             try {
                 const url = buildApiUrl('primke', {});
-                const data = await fetchWithCache(url, 'cache_primke_sjeca', false, 150000);
+                const data = await fetchWithCache(url, 'cache_primke_sjeca', !!force, 150000);
                 _primkeRawTimeline = (data && data.primke) || [];
             } catch (e) {
                 console.error('Error loading primke for timeline:', e);
@@ -6356,11 +6360,11 @@
             return _primkeRawTimeline;
         }
 
-        async function _dohvatiOtpremeZaTimeline() {
-            if (_otpremeRawTimeline) return _otpremeRawTimeline;
+        async function _dohvatiOtpremeZaTimeline(force) {
+            if (_otpremeRawTimeline && !force) return _otpremeRawTimeline;
             try {
                 const url = buildApiUrl('otpreme', {});
-                const data = await fetchWithCache(url, 'cache_otpreme_tab', false, 150000);
+                const data = await fetchWithCache(url, 'cache_otpreme_tab', !!force, 150000);
                 _otpremeRawTimeline = (data && data.otpreme) || [];
             } catch (e) {
                 console.error('Error loading otpreme for timeline:', e);
@@ -7550,6 +7554,7 @@
                             kupciMjesecniRawData = parsed.data.mjesecni || [];
                             renderKupciGodisnjiTable(parsed.data.godisnji, parsed.data.sortimentiNazivi);
                             renderKupciMjesecniTable(parsed.data.mjesecni, parsed.data.sortimentiNazivi);
+                            renderKupciKvartalniTable();
                             hasCachedData = true;
 
                             // Show cache indicator
@@ -7583,6 +7588,12 @@
                 kupciMjesecniRawData = data.mjesecni || [];
                 renderKupciGodisnjiTable(data.godisnji, data.sortimentiNazivi);
                 renderKupciMjesecniTable(data.mjesecni, data.sortimentiNazivi);
+                // Kvartalni prikaz čita isti kupciMjesecniRawData ali se, za razliku
+                // od godišnjeg/mjesečnog, gradi samo na zahtjev (klik na podtab ili
+                // promjena dropdowna) — bez ovog poziva ostane zauvijek prazan/star
+                // ako korisnik na njega pređe prije nego pozadinski fetch završi,
+                // ili ako pozadinski refresh donese nove podatke dok je već otvoren.
+                renderKupciKvartalniTable();
                 hideCacheIndicator();
                 markTabRendered('kupci');
 
@@ -10799,13 +10810,13 @@
         // pozivom, samo se drugačije agregiraju (processPregledDataSve).
         var _adminPregledData = null;
 
-        async function loadAdminPregledPoMjesecima() {
+        async function loadAdminPregledPoMjesecima(force) {
             var container = document.getElementById('mjesecni-pregled-container');
             if (!container) return;
             container.innerHTML = '<div style="text-align:center;padding:40px;color:#4b5563;">⏳ Učitavam...</div>';
             try {
-                var primke = await _dohvatiPrimkeZaTimeline();
-                var otpreme = await _dohvatiOtpremeZaTimeline();
+                var primke = await _dohvatiPrimkeZaTimeline(force);
+                var otpreme = await _dohvatiOtpremeZaTimeline(force);
                 _adminPregledData = processPregledDataSve(primke, otpreme);
                 populateAdminPregledRadilisteDropdown(_adminPregledData.radilisteOdjeli);
                 renderAdminPregledFiltered();
