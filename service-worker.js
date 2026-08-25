@@ -1,6 +1,6 @@
 // ========== Service Worker - Offline Support ==========
 
-const CACHE_VERSION = 'v314';
+const CACHE_VERSION = 'v315';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
 // Install — pre-keširaj samo offline.html (fallback koji se inače nikad ne
@@ -128,7 +128,11 @@ function _cacheIfOk(response, request) {
     // obzira na stvarni HTTP status, ali Cache API dozvoljava da se ipak snimi
     // i posluži offline (standardan pristup za offline tile keširanje).
     if (response && (response.status === 200 || response.type === 'opaque')) {
-        caches.open(CACHE_NAME).then(c => c.put(request, response));
+        // .catch() je bitan za tile preuzimanje (mapa-radnika.js): bez njega
+        // odbijen cache.put() (npr. QuotaExceededError kad disk ostane bez
+        // prostora) propadne NEČUJNO — mrežni fetch je uspio pa se pločica
+        // broji kao "preuzeta", a na disku nikad nije zapisana.
+        caches.open(CACHE_NAME).then(c => c.put(request, response)).catch(() => {});
     }
 }
 

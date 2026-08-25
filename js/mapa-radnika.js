@@ -658,11 +658,15 @@
         var y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * Math.pow(2, z));
         return { x: x, y: y };
     }
-    function _tileUrl(t) {
+    // mode se MORA proslijediti (ne čitati iz žive _baseMode) — preuzimanje
+    // zna trajati minutama, a radnik u međuvremenu može promijeniti sloj
+    // (OSM/Satelit/Topo) dugmetom na traci. Bez ovoga bi preuzimanje početo
+    // za jedan sloj na pola potrošilo pločice iz DRUGOG sloja.
+    function _tileUrl(t, mode) {
         var subdomains = ['a', 'b', 'c'];
         var s = subdomains[(t.x + t.y) % subdomains.length];
-        if (_baseMode === 'sat') return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/' + t.z + '/' + t.y + '/' + t.x;
-        if (_baseMode === 'topo') return 'https://' + s + '.tile.opentopomap.org/' + t.z + '/' + t.x + '/' + t.y + '.png';
+        if (mode === 'sat') return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/' + t.z + '/' + t.y + '/' + t.x;
+        if (mode === 'topo') return 'https://' + s + '.tile.opentopomap.org/' + t.z + '/' + t.x + '/' + t.y + '.png';
         return 'https://' + s + '.tile.openstreetmap.org/' + t.z + '/' + t.x + '/' + t.y + '.png';
     }
     // Zabilješka o skinutoj karti — po sloju (OSM/Satelit/Topo se skidaju
@@ -693,6 +697,12 @@
     // Kartu, da stotine zahtjeva ne nastave curiti u pozadini.
     var _offlineAbort = false;
     var _offlinePreuzimanjeUToku = false;
+    // Ko je pokrenuo tekuće preuzimanje — 'manual' (Karta → ⚙️ Ostalo) ili
+    // 'background' (dugme "Ažuriraj", mapaRadnikaPripremiOfflineKartu).
+    // Bitno za _exitMapaFullscreen: ručno preuzimanje se prekida izlaskom s
+    // Karte, pozadinsko MORA nastaviti (to mu je i svrha — "Ažuriraj" radi
+    // i kad Karta uopšte nije otvorena).
+    var _offlineDownloadSource = null;
     window.mapaRadnikaCancelOfflineDownload = function() {
         if (!_offlinePreuzimanjeUToku) return;
         _offlineAbort = true;
@@ -767,6 +777,15 @@
             _refreshOfflineToggle();
             return;
         }
+        // Već je nešto u toku (npr. "Ažuriraj" je u pozadini pokrenuo
+        // preuzimanje) — dva paralelna preuzimanja bi dijelila isti
+        // _offlineAbort/_offlinePreuzimanjeUToku i mogla lažno prekinuti
+        // jedno drugo. mapaRadnikaPripremiOfflineKartu već ima ovu provjeru
+        // (vraća 'zauzeto'); ručno preuzimanje ju je do sada nemalo.
+        if (_offlinePreuzimanjeUToku) {
+            _notify('showWarning', 'Preuzimanje je već u toku', 'Sačekajte da se završi prethodno preuzimanje karte.');
+            return;
+        }
         var cb = document.getElementById('radnik-mapa-offline-toggle');
         var st = document.getElementById('radnik-mapa-offline-status');
         if (cb) cb.disabled = true;
@@ -775,6 +794,7 @@
 
         _offlineAbort = false;
         _offlinePreuzimanjeUToku = true;
+        _offlineDownloadSource = 'manual';
         var done = 0, zapoceto = 0, obradjeno = 0;
 
         function _prikaziNapredak() {
@@ -812,7 +832,7 @@
                 // pločicu i "osvježi pločice" ne osvježi baš ništa (vidi tile granu
                 // u service-worker.js).
                 try {
-                    var resp = await fetch(_tileUrl(tiles[i]), { cache: 'reload' });
+                    var resp = await fetch(_tileUrl(tiles[i], mode), { cache: 'reload' });
                     if (resp && (resp.ok || resp.type === 'opaque')) done++;
                 } catch (_) {}
                 obradjeno++;
@@ -824,6 +844,7 @@
         await Promise.all(radnici);
 
         _offlinePreuzimanjeUToku = false;
+        _offlineDownloadSource = null;
         if (cb) cb.disabled = false;
 
         if (_offlineAbort) {
@@ -897,6 +918,7 @@
 
         _offlineAbort = false;
         _offlinePreuzimanjeUToku = true;
+        _offlineDownloadSource = 'background';
         var done = 0, zapoceto = 0, obradjeno = 0;
         var PARALELNO = 5;   // isti obrazac kao _doOfflineDownload
 
@@ -907,7 +929,7 @@
                 if (i >= tiles.length) return;
                 try {
                     // cache:'reload' — vidi tile granu u service-worker.js
-                    var resp = await fetch(_tileUrl(tiles[i]), { cache: 'reload' });
+                    var resp = await fetch(_tileUrl(tiles[i], mode), { cache: 'reload' });
                     if (resp && (resp.ok || resp.type === 'opaque')) done++;
                 } catch (_) {}
                 obradjeno++;
@@ -920,6 +942,7 @@
         for (var w = 0; w < PARALELNO; w++) radnici.push(radnik());
         await Promise.all(radnici);
         _offlinePreuzimanjeUToku = false;
+        _offlineDownloadSource = null;
 
         if (_offlineAbort) return 'nepotpuno';
         // Isti prag kao ručno preuzimanje: pola skinute karte ne smije nositi
@@ -2331,7 +2354,12 @@
         if (odjelEl) odjelEl.textContent = _sjeceOdjelLabel ? ('Odjel ' + _sjeceOdjelLabel) : '— (izaberite odjel)';
         if (pickBtn) pickBtn.textContent = _sjecePicking ? '📍 Kliknite na odjel na mapi...' : '📍 Izaberi odjel';
         if (genBtn) {
-            var azOk = az && az.value !== '' && !isNaN(parseFloat(az.value));
+            // Isti opseg (0-359°) kao provjera u mapaRadnikaGenerisiSjeceLinije —
+            // dugme ranije ostajalo omogućeno i za 360°, koje ta provjera onda
+            // odbije uz zbunjujuću poruku iako je polje upravo (naizgled uspješno)
+            // popunjeno kompasom.
+            var azVal = az ? parseFloat(az.value) : NaN;
+            var azOk = az && az.value !== '' && !isNaN(azVal) && azVal >= 0 && azVal < 360;
             var spOk = sp && sp.value !== '' && parseFloat(sp.value) > 0;
             genBtn.disabled = !(_sjeceOdjelKey && azOk && spOk);
         }
@@ -2347,6 +2375,7 @@
         if (typeof window.mapaRadnikaCancelPoligon === 'function') window.mapaRadnikaCancelPoligon();
         if (typeof window.mapaRadnikaCancelTacka === 'function') window.mapaRadnikaCancelTacka();
         if (typeof window.mapaRadnikaStopExplorer === 'function') window.mapaRadnikaStopExplorer();
+        if (typeof window.mapaRadnikaCancelMjerenje === 'function') window.mapaRadnikaCancelMjerenje();
         if (typeof window.mapaRadnikaCancelIzvrsenoPoligon === 'function') window.mapaRadnikaCancelIzvrsenoPoligon();
         var panel = _sjecePanelEl();
         if (panel) panel.classList.remove('hidden');
@@ -2611,7 +2640,10 @@
         var eventName = ('ondeviceorientationabsolute' in window) ? 'deviceorientationabsolute' : 'deviceorientation';
         window.removeEventListener(eventName, _sjeceAzimuthOrientationHandler);
         var azEl = document.getElementById('sjece-azimuth-input');
-        if (azEl) azEl.value = Math.round(heading);
+        // Math.round na heading blizu 360° (npr. 359.6) daje TAČNO 360, van
+        // opsega 0-359 koji mapaRadnikaGenerisiSjeceLinije očekuje — 360°
+        // sjever je isto što i 0°, pa se normalizuje nazad u opseg.
+        if (azEl) azEl.value = Math.round(heading) % 360;
         _updateSjecePanel();
     }
     window.mapaRadnikaCaptureAzimuthForSjece = function() {
@@ -3978,6 +4010,59 @@
         try { localStorage.setItem(_tragStorageKey(), JSON.stringify(tracks)); } catch (_) {}
     }
 
+    // ---- Autosave traga u toku — snimanje traje i po sat vremena na terenu,
+    // a do sada se u localStorage upisivalo TEK na "Završi" (_stopTrag). Ako
+    // aplikacija/telefon u međuvremenu padne ili se ubije (malo baterije,
+    // Android ubije pozadinski tab), sve snimljene tačke nestaju bez traga.
+    // Periodični draft rješava to: pri sljedećem otvaranju Karte se ponudi
+    // za oporavak (_checkTragDraftRecovery), pa se onda obriše. ----
+    function _tragDraftStorageKey() {
+        var uname = (window.currentUser && window.currentUser.username) || 'anon';
+        return 'mapa_radnika_trag_draft_' + uname;
+    }
+    function _autosaveTragDraft() {
+        if (!_recording || _currentTrackPoints.length < 2) return;
+        try {
+            localStorage.setItem(_tragDraftStorageKey(), JSON.stringify({
+                name: _pendingTragName || 'Trag',
+                start: _tragStartIso || new Date().toISOString(),
+                points: _currentTrackPoints,
+                activeMs: _tragActiveMs
+            }));
+        } catch (_) {}
+    }
+    function _clearTragDraft() {
+        try { localStorage.removeItem(_tragDraftStorageKey()); } catch (_) {}
+    }
+    // Poziva se JEDNOM, pri prvom otvaranju Karte u ovoj posjeti aplikaciji
+    // (initMapaRadnika) — ako postoji ostavljen draft (znači: prošli put je
+    // aplikacija zatvorena usred snimanja), spasi ga kao završen trag i
+    // obavijesti radnika. Ključ se briše odmah nakon, pa se pitanje ne
+    // ponavlja pri sljedećim ulascima na Kartu iste posjete.
+    function _checkTragDraftRecovery() {
+        var raw;
+        try { raw = localStorage.getItem(_tragDraftStorageKey()); } catch (_) { raw = null; }
+        if (!raw) return;
+        try {
+            var draft = JSON.parse(raw);
+            if (draft && draft.points && draft.points.length >= 2) {
+                var tracks = _loadSavedTracks();
+                tracks.push({
+                    name: (draft.name || 'Trag') + ' (obnovljeno)',
+                    start: draft.start || new Date().toISOString(),
+                    end: new Date().toISOString(),
+                    points: draft.points,
+                    activeMs: draft.activeMs || 0
+                });
+                _saveTracks(tracks);
+                _notify('showWarning', 'Trag obnovljen',
+                    'Prethodno snimanje traga je prekinuto (aplikacija zatvorena usred snimanja) — ' +
+                    'sačuvano ' + draft.points.length + ' tačaka kao "' + (draft.name || 'Trag') + ' (obnovljeno)".');
+            }
+        } catch (_) {}
+        _clearTragDraft();
+    }
+
     // ---- PAMTI ZADNJI POGLED (centar + zoom) — po korisniku, preživljava
     // zatvaranje/ponovno otvaranje aplikacije, ne samo tab. ----
     function _mapViewStorageKey() {
@@ -4041,6 +4126,9 @@
         } else {
             _currentTrackPolyline.addLatLng(ll);
         }
+        // Svakih par tačaka (ne na svaku — tačke već stižu min. svakih 3s,
+        // localStorage upis na SVAKU bi bio nepotreban trošak na terenu).
+        if (_currentTrackPoints.length % 5 === 0) _autosaveTragDraft();
     }
 
     // ---- Modal za ime traga — prikazuje se PRIJE početka snimanja (ne pri
@@ -4140,6 +4228,7 @@
             });
             _saveTracks(tracks);
         }
+        _clearTragDraft(); // trag je sad ili trajno sačuvan ili odbačen (< 2 tačke) — draft više ne treba
         _pendingTragName = '';
         _tragActiveMs = 0;
         if (_currentTrackPolyline) { _map.removeLayer(_currentTrackPolyline); _currentTrackPolyline = null; }
@@ -4184,6 +4273,29 @@
         var rec = document.getElementById('trag-recording-bar');
         if (rec) { rec.classList.add('hidden'); rec.classList.remove('paused'); }
         if (_tragModalTimerId) { clearInterval(_tragModalTimerId); _tragModalTimerId = null; }
+    }
+    // Izlazak s Karte (druga vrsta "zatvaranja" od _closeTragRecordingModal
+    // iznad): snimanje NASTAVLJA raditi u pozadini, samo se traka sklanja s
+    // ekrana (i gasi interval koji je osvježava — nema smisla trošiti CPU na
+    // sat/km dok se ne vidi). "paused" klasa se namjerno NE dira, da se
+    // tačno stanje vrati pri povratku na Kartu.
+    function _hideTragRecordingBarOnExit() {
+        var rec = document.getElementById('trag-recording-bar');
+        if (rec) rec.classList.add('hidden');
+        if (_tragModalTimerId) { clearInterval(_tragModalTimerId); _tragModalTimerId = null; }
+    }
+    // Poziva se pri ULASKU na Kartu — ako je snimanje (trag ili sjekačka
+    // linija) ostalo aktivno dok je korisnik bio na drugom tabu, vrati traku
+    // i ponovo pokreni njeno osvježavanje.
+    function _restoreTragRecordingBarOnEnter() {
+        if (!_recAktivno()) return;
+        var rec = document.getElementById('trag-recording-bar');
+        if (!rec) return;
+        rec.classList.remove('hidden');
+        _positionRecBar();
+        _updateTragModalStats();
+        if (_tragModalTimerId) clearInterval(_tragModalTimerId);
+        _tragModalTimerId = setInterval(_updateTragModalStats, 1000);
     }
     function _msToClockStr(ms) {
         var totalSec = Math.max(0, Math.floor(ms / 1000));
@@ -4926,6 +5038,7 @@
         var viewport = document.querySelector('meta[name=viewport]');
         if (viewport) viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
         setTimeout(function() { if (_map) _map.invalidateSize(); }, 50);
+        _restoreTragRecordingBarOnEnter();
     }
     function _exitMapaFullscreen() {
         document.body.classList.remove('radnik-mapa-fullscreen');
@@ -4942,9 +5055,16 @@
         if (typeof window.mapaRadnikaCancelIzvrsenoPoligon === 'function') window.mapaRadnikaCancelIzvrsenoPoligon();
         _stopLokacija(); // ne ostavljaj GPS watchPosition da radi u pozadini nakon izlaska s mape
         _stopHeadingView(); // ne ostavljaj deviceorientation listener da radi u pozadini
-        // Isto i za preuzimanje karte: bez ovoga bi stotine zahtjeva za pločice
-        // nastavile curiti u pozadini nakon što korisnik izađe s Karte.
-        if (_offlinePreuzimanjeUToku) _offlineAbort = true;
+        // Isto i za RUČNO preuzimanje karte: bez ovoga bi stotine zahtjeva za
+        // pločice nastavile curiti u pozadini nakon što korisnik izađe s Karte.
+        // Pozadinsko preuzimanje (dugme "Ažuriraj", mapaRadnikaPripremiOfflineKartu)
+        // se NE prekida — njemu je svrha upravo da radi i kad Karta nije otvorena.
+        if (_offlinePreuzimanjeUToku && _offlineDownloadSource === 'manual') _offlineAbort = true;
+        // Traka snimanja traga NE smije se zaustaviti (snimanje ide dalje u
+        // pozadini — GPS 'trag' kanal ostaje pretplaćen), samo se sakriva dok
+        // korisnik nije na Karti; _enterMapaFullscreen je vraća ako snimanje
+        // još traje.
+        _hideTragRecordingBarOnExit();
         // Vrati viewport na korisnikovu preferencu (Desktop/Android prikaz) ako
         // je bila uključena prije ulaska na mapu.
         var viewport = document.querySelector('meta[name=viewport]');
@@ -5002,6 +5122,7 @@
         if (!mapDiv) return;
         var content = document.getElementById('radnik-mapa-content');
         if (content) content.classList.remove('hidden');
+        _checkTragDraftRecovery(); // samo prvi put ima šta naći — sam se briše nakon obrade
         _enterMapaFullscreen();
 
         if (!_map) {
