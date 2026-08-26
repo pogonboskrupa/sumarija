@@ -3837,6 +3837,34 @@ body.is-desktop-screen #tabs-menu-mobile .tab-label {
     font-size: 12.5px;
 }
 
+/* --------------------------------------------------------------------------
+   "STANJE ZALIHA PO ODJELU" MODAL (#odjel-stanje-modal, showOdjelStanjeModal
+   u js/app.js) — fontovi/padding su uvećani za terenski (telefon) prikaz,
+   ali na desktopu (isti markScreenClass() pokazatelj kao iznad) isti
+   krupni header+kartice guraju tabelu ispod vidljivog dijela modala i
+   primoravaju skrolanje čak i kad podataka nema puno. Desktop nema istu
+   potrebu za krupnim slovima (bliži ekran, miš umjesto prsta), pa se ovdje
+   vraća na kompaktnije mjere — !important je nužan jer su ovo INLINE
+   stilovi generisani u JS-u (index.html header + js/app.js body). Elementi
+   nose posebne klase (sz-*) samo zbog ovog cilјanja. -------------------- */
+body.is-desktop-screen .odjel-stanje-modal-header { padding: 10px 16px !important; }
+body.is-desktop-screen .odjel-stanje-modal-header .sz-eyebrow { font-size: 10px !important; }
+body.is-desktop-screen #odjel-stanje-modal-title { font-size: 15px !important; }
+body.is-desktop-screen .odjel-stanje-modal-header .sz-close-btn {
+    width: 28px !important; height: 28px !important; font-size: 15px !important;
+}
+body.is-desktop-screen #odjel-stanje-modal-body { padding: 10px 14px !important; }
+body.is-desktop-screen .sz-topbar { padding: 7px 12px !important; margin-bottom: 8px !important; }
+body.is-desktop-screen .sz-topbar-loc { font-size: 12px !important; }
+body.is-desktop-screen .sz-topbar-val { font-size: 16px !important; }
+body.is-desktop-screen .sz-kartice { gap: 6px !important; margin-bottom: 8px !important; }
+body.is-desktop-screen .sz-kartica { padding: 6px 8px !important; }
+body.is-desktop-screen .sz-kartica-label { font-size: 10px !important; }
+body.is-desktop-screen .sz-kartica-val { font-size: 15px !important; }
+body.is-desktop-screen .sz-table { font-size: 12px !important; }
+body.is-desktop-screen .sz-table th { padding: 6px 8px !important; }
+body.is-desktop-screen .sz-table td { padding: 4px 8px !important; font-size: 12px !important; }
+
 /* ==========================================================================
    KUBIKATOR — terensko kubiciranje (js/kubikator.js)
 

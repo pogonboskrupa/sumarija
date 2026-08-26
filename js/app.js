@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.16.7';
+        const APP_VERSION = '1.16.8';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -10102,27 +10102,27 @@
 
             body.innerHTML = `
                 <!-- Kompaktni header -->
-                <div style="background:linear-gradient(135deg,#1e3a5f,#2d5a87);color:white;border-radius:10px;padding:14px 18px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-                    <div style="font-size:16px;opacity:.9;">📍 ${od.radiliste || 'N/A'}${od.zadnjaOtprema ? ' · 🚛 ' + od.zadnjaOtprema : ''}</div>
-                    <div style="font-size:26px;font-weight:700;">${statusIcon} ${pozZaliha.toFixed(2)} m³</div>
+                <div class="sz-topbar" style="background:linear-gradient(135deg,#1e3a5f,#2d5a87);color:white;border-radius:10px;padding:14px 18px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                    <div class="sz-topbar-loc" style="font-size:16px;opacity:.9;">📍 ${od.radiliste || 'N/A'}${od.zadnjaOtprema ? ' · 🚛 ' + od.zadnjaOtprema : ''}</div>
+                    <div class="sz-topbar-val" style="font-size:26px;font-weight:700;">${statusIcon} ${pozZaliha.toFixed(2)} m³</div>
                 </div>
                 <!-- 4 kartice u 2×2 gridu -->
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-                    <div style="background:#eff6ff;border-radius:8px;padding:12px 14px;text-align:center;">
-                        <div style="font-size:13px;color:#1e40af;font-weight:600;">📋 PROJEKAT</div>
-                        <div style="font-size:23px;font-weight:700;color:#1e40af;">${(od.ukupnoProjekat||0).toFixed(2)}</div>
+                <div class="sz-kartice" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+                    <div class="sz-kartica" style="background:#eff6ff;border-radius:8px;padding:12px 14px;text-align:center;">
+                        <div class="sz-kartica-label" style="font-size:13px;color:#1e40af;font-weight:600;">📋 PROJEKAT</div>
+                        <div class="sz-kartica-val" style="font-size:23px;font-weight:700;color:#1e40af;">${(od.ukupnoProjekat||0).toFixed(2)}</div>
                     </div>
-                    <div style="background:#ecfdf5;border-radius:8px;padding:12px 14px;text-align:center;">
-                        <div style="font-size:13px;color:#065f46;font-weight:600;">🪓 SJEČA</div>
-                        <div style="font-size:23px;font-weight:700;color:#065f46;">${(od.ukupnoSjeca||0).toFixed(2)}</div>
+                    <div class="sz-kartica" style="background:#ecfdf5;border-radius:8px;padding:12px 14px;text-align:center;">
+                        <div class="sz-kartica-label" style="font-size:13px;color:#065f46;font-weight:600;">🪓 SJEČA</div>
+                        <div class="sz-kartica-val" style="font-size:23px;font-weight:700;color:#065f46;">${(od.ukupnoSjeca||0).toFixed(2)}</div>
                     </div>
-                    <div style="background:#fffbeb;border-radius:8px;padding:12px 14px;text-align:center;">
-                        <div style="font-size:13px;color:#b45309;font-weight:600;">🚛 OTPREMA</div>
-                        <div style="font-size:23px;font-weight:700;color:#b45309;">${(od.ukupnoOtprema||0).toFixed(2)}</div>
+                    <div class="sz-kartica" style="background:#fffbeb;border-radius:8px;padding:12px 14px;text-align:center;">
+                        <div class="sz-kartica-label" style="font-size:13px;color:#b45309;font-weight:600;">🚛 OTPREMA</div>
+                        <div class="sz-kartica-val" style="font-size:23px;font-weight:700;color:#b45309;">${(od.ukupnoOtprema||0).toFixed(2)}</div>
                     </div>
-                    <div style="background:${pozZaliha<0?'#fef2f2':'#f0fdf4'};border-radius:8px;padding:12px 14px;text-align:center;">
-                        <div style="font-size:13px;color:${zCol};font-weight:600;">📦 ZALIHA</div>
-                        <div style="font-size:23px;font-weight:700;color:${zCol};">${pozZaliha.toFixed(2)}</div>
+                    <div class="sz-kartica" style="background:${pozZaliha<0?'#fef2f2':'#f0fdf4'};border-radius:8px;padding:12px 14px;text-align:center;">
+                        <div class="sz-kartica-label" style="font-size:13px;color:${zCol};font-weight:600;">📦 ZALIHA</div>
+                        <div class="sz-kartica-val" style="font-size:23px;font-weight:700;color:${zCol};">${pozZaliha.toFixed(2)}</div>
                     </div>
                 </div>
                 <!-- Tabela: sortimenti kao redovi, P/S/O/Z kao kolone. table-layout:fixed +
@@ -10130,7 +10130,7 @@
                      dodijeliti veći dio viška prostora nego što mu treba (nazivi nisu dugi),
                      pa preostale 4 kolone (Proj./Sječa/Otpr./Zaliha) ostanu zbijene/nečitke. -->
                 <div style="border-radius:8px;overflow-x:auto;border:1px solid #e5e7eb;">
-                    <table style="width:100%;border-collapse:collapse;font-size:15px;table-layout:fixed;">
+                    <table class="sz-table" style="width:100%;border-collapse:collapse;font-size:15px;table-layout:fixed;">
                         <colgroup>
                             <col style="width:30%;">
                             <col style="width:17.5%;"><col style="width:17.5%;"><col style="width:17.5%;"><col style="width:17.5%;">
