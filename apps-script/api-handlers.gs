@@ -2212,24 +2212,29 @@ function handleUpdatePending(params) {
     }
 
     // Update all sortimenti
+    // NAPOMENA: stvarna zaglavlja kolona (vidi config.gs SORTIMENTI_ORDER) su
+    // 'Σ ČETINARI' i 'UKUPNO Č+L', NE 'ČETINARI'/'SVEUKUPNO' — te dvije kolone
+    // su ranije bile isključene ovdje pod pogrešnim imenom (ne bi ni upalilo
+    // jer se front-end poslani ključevi ionako zovu tačno kao zaglavlja), pa
+    // provjera niže eksplicitno koristi tačna imena radi jasnoće/sigurnosti.
     headers.forEach((header, idx) => {
       if (params[header] !== undefined && header !== 'ODJEL' && header !== 'DATUM' &&
           header !== 'PRIMAČ' && header !== 'OTPREMAČ' && header !== 'KUPAC' && header !== 'BROJ_OTPREMNICE' &&
-          header !== 'STATUS' && header !== 'TIMESTAMP' && header !== 'SVEUKUPNO') {
+          header !== 'STATUS' && header !== 'TIMESTAMP' && header !== 'UKUPNO Č+L') {
         const value = parseFloat(params[header]) || 0;
         updatedRow[idx] = value;
       }
     });
 
-    // Izračunaj SVEUKUPNO kao ČETINARI + LIŠĆARI
-    const cetinariCol = headers.indexOf('ČETINARI');
+    // Izračunaj UKUPNO Č+L kao Σ ČETINARI + LIŠĆARI
+    const cetinariCol = headers.indexOf('Σ ČETINARI');
     const liscariCol = headers.indexOf('LIŠĆARI');
     const cetinari = cetinariCol !== -1 ? (parseFloat(updatedRow[cetinariCol]) || 0) : 0;
     const liscari = liscariCol !== -1 ? (parseFloat(updatedRow[liscariCol]) || 0) : 0;
     const ukupno = cetinari + liscari;
 
-    // Update SVEUKUPNO if it exists
-    const sveukupnoCol = headers.indexOf('SVEUKUPNO');
+    // Update UKUPNO Č+L if it exists
+    const sveukupnoCol = headers.indexOf('UKUPNO Č+L');
     if (sveukupnoCol !== -1) {
       updatedRow[sveukupnoCol] = ukupno;
     }

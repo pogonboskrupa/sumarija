@@ -848,6 +848,19 @@ function filterIzvjestajiTable(tablePrefix) {
 // Filtriraj podatke po radilištima poslovođe (samo za poslovođa ulogu)
 function filterByPoslovodjaRadilista(data) {
     if (typeof getPoslovodjaRadilista !== 'function') return data;
+
+    // getPoslovodjaRadilista() vraća [] u DVA različita slučaja koja OVDJE
+    // moraju voditi do suprotnih ishoda: (1) korisnik NIJE poslovođa (admin
+    // i sl.) — filtriranje se ne primjenjuje, mora se vratiti SVE; (2)
+    // korisnik JE poslovođa ali mapping poslovođa→radilišta se još nije
+    // razriješio (npr. loadPoslovodjaRadilistaMapping još u toku, slab
+    // signal). Bez ove razlike bi (2) tiho pao na "vrati sve" — poslovođa bi
+    // vidio SVA radilišta, ne samo svoja (curenje tuđih podataka), tačno u
+    // trenutku kad bi trebalo biti najoprezniji (mapping nesiguran).
+    var userType = (typeof currentUser !== 'undefined' && currentUser && currentUser.type)
+        ? String(currentUser.type).trim().toLowerCase() : '';
+    if (userType !== 'poslovođa' && userType !== 'poslovodja') return data;
+
     var radilista = getPoslovodjaRadilista();
 
     // Fallback: ako getPoslovodjaRadilista() vrati prazan niz,
@@ -861,7 +874,13 @@ function filterByPoslovodjaRadilista(data) {
         console.log('[IZVJEŠTAJI] Radilišta iz Stanje zaliha fallback:', radilista.join(', '));
     }
 
-    if (!radilista || radilista.length === 0) return data;
+    // Poslovođa je ulogiran, ali radilišta se ni preko API-ja ni preko
+    // fallback-a nisu razriješila — NE vraćaj sve podatke (vidi komentar
+    // iznad), radije prazno dok se mapping ne razriješi.
+    if (!radilista || radilista.length === 0) {
+        console.warn('[IZVJEŠTAJI] Radilišta poslovođe nisu razriješena — prikazujem prazno umjesto svih podataka.');
+        return [];
+    }
 
     console.log('[IZVJEŠTAJI] Filtriranje po radilištima:', radilista.join(', '));
     var filtered = data.filter(function(row) {

@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.4';
+        const APP_VERSION = '1.17.5';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -5675,7 +5675,7 @@
                                     ${row.odjel}
                                 </td>
                                 <td style="font-weight: 600; font-size: 10px; border: 1px solid #a5f3fc; padding: 6px 5px; color: #0e7490; white-space: nowrap;">${row.otpremac}</td>
-                                <td style="border: 1px solid #a5f3fc; color: #155e75; font-weight: 600; font-size: 10px; padding: 6px 5px; white-space: nowrap;">${row.kupac || '-'}</td>
+                                <td style="border: 1px solid #a5f3fc; color: #155e75; font-weight: 600; font-size: 10px; padding: 6px 5px; white-space: nowrap;">${escapeHtml(row.kupac) || '-'}</td>
                                 ${sortimentiCells}
                             </tr>
                         `;
@@ -10436,8 +10436,8 @@
                     html += '<td class="col-freeze-2 cell-datum">' + unos.datum + '</td>';
                     html += '<td class="cell-odjel">' + unos.odjel + '</td>';
                     html += '<td>' + unos.radnik + '</td>';
-                    html += '<td>' + (unos.kupac || '-') + '</td>';
-                    html += '<td>' + (unos.brojOtpremnice || '-') + '</td>';
+                    html += '<td>' + (escapeHtml(unos.kupac) || '-') + '</td>';
+                    html += '<td>' + (escapeHtml(unos.brojOtpremnice) || '-') + '</td>';
 
                     if (unos.imageUrl) {
                         html += '<td style="text-align:center;padding:4px;">';
@@ -10689,8 +10689,8 @@
                     html += '<td class="col-freeze-2 cell-datum">' + unos.datum + '</td>';
                     html += '<td class="cell-odjel">' + unos.odjel + '</td>';
                     html += '<td>' + unos.radnik + '</td>';
-                    html += '<td>' + (unos.kupac || '-') + '</td>';
-                    html += '<td>' + (unos.brojOtpremnice || '-') + '</td>';
+                    html += '<td>' + (escapeHtml(unos.kupac) || '-') + '</td>';
+                    html += '<td>' + (escapeHtml(unos.brojOtpremnice) || '-') + '</td>';
 
                     if (unos.imageUrl) {
                         html += '<td style="text-align:center;padding:4px;">';
@@ -13275,7 +13275,11 @@
                         html += '<td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">' + ukupno.toFixed(2) + ' m³</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + new Date(unos.timestamp).toLocaleString('hr-HR') + '</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd; text-align: center;">';
-                        html += '<button class="btn btn-primary" style="margin-right: 8px;" onclick=\'editMySjeca(' + JSON.stringify(unos).replace(/'/g, "\\'") + ')\'>✏️ Uredi</button>';
+                        // escapeHtml (ne \'-escape) — backslash ne zatvara HTML atribut,
+                        // pa bi apostrof u bilo kom polju (npr. odjel/kupac) inače
+                        // slomio ovaj onclick. HTML entiteti se ispravno dekodiraju
+                        // nazad prije nego browser parsira sadržaj kao JS.
+                        html += '<button class="btn btn-primary" style="margin-right: 8px;" onclick=\'editMySjeca(' + escapeHtml(JSON.stringify(unos)) + ')\'>✏️ Uredi</button>';
                         html += '<button class="btn btn-secondary" onclick="deleteMySjeca(' + unos.rowIndex + ')">🗑️ Obriši</button>';
                         html += '</td>';
                         html += '</tr>';
@@ -13351,8 +13355,8 @@
                         html += '<tr style="background: #fef3c7;">';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + (st.fields.datum || '') + '</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + (st.fields.odjel || '') + '</td>';
-                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + (st.fields.kupac || '-') + '</td>';
-                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + (st.fields.brojOtpremnice || '-') + '</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + (escapeHtml(st.fields.kupac) || '-') + '</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + (escapeHtml(st.fields.brojOtpremnice) || '-') + '</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + qC.toFixed(2) + ' m³</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + qL.toFixed(2) + ' m³</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">' + (qC + qL).toFixed(2) + ' m³</td>';
@@ -13372,14 +13376,15 @@
                         html += '<tr style="' + (i % 2 === 0 ? 'background: #f9fafb;' : '') + '">';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + unos.datum + '</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + unos.odjel + '</td>';
-                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + (unos.kupac || '-') + '</td>';
-                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + (unos.brojOtpremnice || '-') + '</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + (escapeHtml(unos.kupac) || '-') + '</td>';
+                        html += '<td style="padding: 10px; border: 1px solid #ddd;">' + (escapeHtml(unos.brojOtpremnice) || '-') + '</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + cetinari.toFixed(2) + ' m³</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + liscari.toFixed(2) + ' m³</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">' + ukupno.toFixed(2) + ' m³</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + new Date(unos.timestamp).toLocaleString('hr-HR') + '</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd; text-align: center;">';
-                        html += '<button class="btn btn-primary" style="margin-right: 8px;" onclick=\'editMyOtprema(' + JSON.stringify(unos).replace(/'/g, "\\'") + ')\'>✏️ Uredi</button>';
+                        // Ista ispravka kao editMySjeca dugme — vidi komentar tamo.
+                        html += '<button class="btn btn-primary" style="margin-right: 8px;" onclick=\'editMyOtprema(' + escapeHtml(JSON.stringify(unos)) + ')\'>✏️ Uredi</button>';
                         html += '<button class="btn btn-secondary" onclick="deleteMyOtprema(' + unos.rowIndex + ')">🗑️ Obriši</button>';
                         html += '</td>';
                         html += '</tr>';
@@ -13421,14 +13426,23 @@
             document.getElementById('edit-sjeca-odjel').value = unos.odjel;
 
             // Build sortimenti fields dynamically
+            // NAPOMENA: nazivi ključeva OVDJE moraju TAČNO odgovarati stvarnim
+            // zaglavljima kolona u listu (vidi SORTIMENTI_ORDER, js/utils.js, i
+            // apps-script/config.gs) — 'RD' (ne 'RUDNO'), 'Σ ČETINARI' (ne
+            // 'ČETINARI'), 'TRUPCI L' (ne 'TRUPCI', to je za TRUPCI Č). Bili su
+            // pogrešni, pa unos.sortimenti[key] nikad nije pogodio pravu
+            // vrijednost (uvijek 0 fallback) i backend handleUpdatePending
+            // (apps-script/api-handlers.gs) nikad nije upisao te tri kolone —
+            // izmjena bi tiho ostavila RD/Σ ČETINARI/TRUPCI L na staroj
+            // vrijednosti dok se ostali sortimenti ažuriraju.
             var sortimentiHtml = '';
-            var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'ČETINARI',
-                                 'F/L L', 'I L', 'II L', 'III L', 'TRUPCI', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI'];
+            var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'Σ ČETINARI',
+                                 'F/L L', 'I L', 'II L', 'III L', 'TRUPCI L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI'];
 
             sortimentiKeys.forEach(function(key) {
                 var fieldId = 'edit-sjeca-' + key.replace(/\//g, '').replace(/ /g, '-');
                 var value = unos.sortimenti[key] || 0;
-                var isCalculated = ['TRUPCI Č', 'ČETINARI', 'TRUPCI', 'LIŠĆARI'].indexOf(key) !== -1;
+                var isCalculated = ['TRUPCI Č', 'Σ ČETINARI', 'TRUPCI L', 'LIŠĆARI'].indexOf(key) !== -1;
                 var readonlyAttr = isCalculated ? 'readonly' : '';
                 var styleExtra = isCalculated ? 'background: #f3f4f6; color: #374151; font-weight: 600;' : '';
 
@@ -13441,7 +13455,7 @@
             document.getElementById('edit-sjeca-sortimenti').innerHTML = sortimentiHtml;
 
             // Add event listeners for auto-calculation
-            var inputIds = ['edit-sjeca-FL-Č', 'edit-sjeca-I-Č', 'edit-sjeca-II-Č', 'edit-sjeca-III-Č', 'edit-sjeca-RUDNO',
+            var inputIds = ['edit-sjeca-FL-Č', 'edit-sjeca-I-Č', 'edit-sjeca-II-Č', 'edit-sjeca-III-Č', 'edit-sjeca-RD',
                            'edit-sjeca-CEL.DUGA', 'edit-sjeca-CEL.CIJEPANA', 'edit-sjeca-ŠKART',
                            'edit-sjeca-FL-L', 'edit-sjeca-I-L', 'edit-sjeca-II-L', 'edit-sjeca-III-L',
                            'edit-sjeca-OGR.DUGI', 'edit-sjeca-OGR.CIJEPANI', 'edit-sjeca-GULE'];
@@ -13463,7 +13477,7 @@
             var iC = parseFloat(document.getElementById('edit-sjeca-I-Č').value) || 0;
             var iiC = parseFloat(document.getElementById('edit-sjeca-II-Č').value) || 0;
             var iiiC = parseFloat(document.getElementById('edit-sjeca-III-Č').value) || 0;
-            var rudno = parseFloat(document.getElementById('edit-sjeca-RUDNO').value) || 0;
+            var rudno = parseFloat(document.getElementById('edit-sjeca-RD').value) || 0;
             var celDuga = parseFloat(document.getElementById('edit-sjeca-CEL.DUGA').value) || 0;
             var celCijepana = parseFloat(document.getElementById('edit-sjeca-CEL.CIJEPANA').value) || 0;
             var skart = parseFloat(document.getElementById('edit-sjeca-ŠKART').value) || 0;
@@ -13473,7 +13487,7 @@
 
             // Σ ČETINARI = TRUPCI Č + CEL.DUGA + CEL.CIJEPANA + ŠKART
             var cetinari = trupciC + celDuga + celCijepana + skart;
-            document.getElementById('edit-sjeca-ČETINARI').value = cetinari.toFixed(2);
+            document.getElementById('edit-sjeca-Σ-ČETINARI').value = cetinari.toFixed(2);
 
             var flL = parseFloat(document.getElementById('edit-sjeca-FL-L').value) || 0;
             var iL = parseFloat(document.getElementById('edit-sjeca-I-L').value) || 0;
@@ -13484,7 +13498,7 @@
             var gule = parseFloat(document.getElementById('edit-sjeca-GULE').value) || 0;
 
             var trupciL = flL + iL + iiL + iiiL;
-            document.getElementById('edit-sjeca-TRUPCI').value = trupciL.toFixed(2);
+            document.getElementById('edit-sjeca-TRUPCI-L').value = trupciL.toFixed(2);
 
             // LIŠĆARI = TRUPCI L + OGR.DUGI + OGR.CIJEPANI + GULE
             var liscari = trupciL + ogrDugi + ogrCijepani + gule;
@@ -13517,9 +13531,10 @@
                     odjel: document.getElementById('edit-sjeca-odjel').value
                 };
 
-                // Add all sortimenti
-                var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'ČETINARI',
-                                     'F/L L', 'I L', 'II L', 'III L', 'TRUPCI', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI'];
+                // Add all sortimenti — ključevi MORAJU odgovarati stvarnim
+                // zaglavljima kolona (isti razlog kao komentar u editMySjeca).
+                var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'Σ ČETINARI',
+                                     'F/L L', 'I L', 'II L', 'III L', 'TRUPCI L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI'];
 
                 sortimentiKeys.forEach(function(key) {
                     var fieldId = 'edit-sjeca-' + key.replace(/\//g, '').replace(/ /g, '-');
@@ -13587,14 +13602,17 @@
             document.getElementById('edit-otprema-kupac').value = unos.kupac || '';
             document.getElementById('edit-otprema-broj-otpremnice').value = unos.brojOtpremnice || '';
 
+            // NAPOMENA: ključevi moraju odgovarati stvarnim zaglavljima kolona
+            // ('RD'/'Σ ČETINARI'/'TRUPCI L', ne 'RUDNO'/'ČETINARI'/'TRUPCI') —
+            // isti razlog kao komentar u editMySjeca.
             var sortimentiHtml = '';
-            var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'ČETINARI',
-                                 'F/L L', 'I L', 'II L', 'III L', 'TRUPCI', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI'];
+            var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'Σ ČETINARI',
+                                 'F/L L', 'I L', 'II L', 'III L', 'TRUPCI L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI'];
 
             sortimentiKeys.forEach(function(key) {
                 var fieldId = 'edit-otprema-' + key.replace(/\//g, '').replace(/ /g, '-');
                 var value = unos.sortimenti[key] || 0;
-                var isCalculated = ['TRUPCI Č', 'ČETINARI', 'TRUPCI', 'LIŠĆARI'].indexOf(key) !== -1;
+                var isCalculated = ['TRUPCI Č', 'Σ ČETINARI', 'TRUPCI L', 'LIŠĆARI'].indexOf(key) !== -1;
                 var readonlyAttr = isCalculated ? 'readonly' : '';
                 var styleExtra = isCalculated ? 'background: #f3f4f6; color: #374151; font-weight: 600;' : '';
 
@@ -13606,7 +13624,7 @@
 
             document.getElementById('edit-otprema-sortimenti').innerHTML = sortimentiHtml;
 
-            var inputIds = ['edit-otprema-FL-Č', 'edit-otprema-I-Č', 'edit-otprema-II-Č', 'edit-otprema-III-Č', 'edit-otprema-RUDNO',
+            var inputIds = ['edit-otprema-FL-Č', 'edit-otprema-I-Č', 'edit-otprema-II-Č', 'edit-otprema-III-Č', 'edit-otprema-RD',
                            'edit-otprema-CEL.DUGA', 'edit-otprema-CEL.CIJEPANA', 'edit-otprema-ŠKART',
                            'edit-otprema-FL-L', 'edit-otprema-I-L', 'edit-otprema-II-L', 'edit-otprema-III-L',
                            'edit-otprema-OGR.DUGI', 'edit-otprema-OGR.CIJEPANI', 'edit-otprema-GULE'];
@@ -13626,7 +13644,7 @@
             var iC = parseFloat(document.getElementById('edit-otprema-I-Č').value) || 0;
             var iiC = parseFloat(document.getElementById('edit-otprema-II-Č').value) || 0;
             var iiiC = parseFloat(document.getElementById('edit-otprema-III-Č').value) || 0;
-            var rudno = parseFloat(document.getElementById('edit-otprema-RUDNO').value) || 0;
+            var rudno = parseFloat(document.getElementById('edit-otprema-RD').value) || 0;
             var celDuga = parseFloat(document.getElementById('edit-otprema-CEL.DUGA').value) || 0;
             var celCijepana = parseFloat(document.getElementById('edit-otprema-CEL.CIJEPANA').value) || 0;
             var skart = parseFloat(document.getElementById('edit-otprema-ŠKART').value) || 0;
@@ -13636,7 +13654,7 @@
 
             // Σ ČETINARI = TRUPCI Č + CEL.DUGA + CEL.CIJEPANA + ŠKART
             var cetinari = trupciC + celDuga + celCijepana + skart;
-            document.getElementById('edit-otprema-ČETINARI').value = cetinari.toFixed(2);
+            document.getElementById('edit-otprema-Σ-ČETINARI').value = cetinari.toFixed(2);
 
             var flL = parseFloat(document.getElementById('edit-otprema-FL-L').value) || 0;
             var iL = parseFloat(document.getElementById('edit-otprema-I-L').value) || 0;
@@ -13647,7 +13665,7 @@
             var gule = parseFloat(document.getElementById('edit-otprema-GULE').value) || 0;
 
             var trupciL = flL + iL + iiL + iiiL;
-            document.getElementById('edit-otprema-TRUPCI').value = trupciL.toFixed(2);
+            document.getElementById('edit-otprema-TRUPCI-L').value = trupciL.toFixed(2);
 
             // LIŠĆARI = TRUPCI L + OGR.DUGI + OGR.CIJEPANI + GULE
             var liscari = trupciL + ogrDugi + ogrCijepani + gule;
@@ -13681,8 +13699,10 @@
                     brojOtpremnice: document.getElementById('edit-otprema-broj-otpremnice').value
                 };
 
-                var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RUDNO', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'ČETINARI',
-                                     'F/L L', 'I L', 'II L', 'III L', 'TRUPCI', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI'];
+                // Ključevi moraju odgovarati stvarnim zaglavljima kolona — isti
+                // razlog kao komentar u editMyOtprema.
+                var sortimentiKeys = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'Σ ČETINARI',
+                                     'F/L L', 'I L', 'II L', 'III L', 'TRUPCI L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI'];
 
                 sortimentiKeys.forEach(function(key) {
                     var fieldId = 'edit-otprema-' + key.replace(/\//g, '').replace(/ /g, '-');

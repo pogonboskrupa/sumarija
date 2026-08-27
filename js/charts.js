@@ -1031,8 +1031,8 @@
                     return `
                         <tr class="mjesec-${mjesec}">
                             <td style="font-weight: 500;">${u.datum}</td>
-                            <td>${u.odjel}</td>
-                            <td>${u.kupac || '-'}</td>
+                            <td>${escapeHtml(u.odjel)}</td>
+                            <td>${escapeHtml(u.kupac) || '-'}</td>
                             ${sortimentiCells}
                             <td class="ukupno-col">${u.ukupno.toFixed(2)}</td>
                         </tr>
