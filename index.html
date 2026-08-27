@@ -91,9 +91,20 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.mini.min.js" defer></script>
 
 
-    <!-- Leaflet (karta odjela) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
+    <!-- Leaflet (karta odjela) — lokalno u vendor/leaflet/ (v1.9.4, preuzeto sa
+         npm registrija), NE sa unpkg.com CDN-a. <script defer> tagovi se
+         izvršavaju STROGO redoslijedom u dokumentu, a DOMContentLoaded (koji
+         okida cijeli auto-login/učitavanje u js/app.js) čeka da SVI deferred
+         skriptovi završe. Dok je Leaflet bio na unpkg-u, spor/mrtav CDN na
+         terenu (slab signal, prvi put na uređaju prije nego Service Worker
+         ima šta keširati) je blokirao izvršavanje BAŠ SVIH skriptova poslije
+         njega — uklj. js/app.js, js/mapa-radnika.js, js/kubikator.js — cijela
+         aplikacija bi ostala zaglavljena, ne samo Karta. Lokalni fajl se
+         učitava sa ISTOG porijekla kao i ostatak aplikacije (isti server,
+         isti Service Worker keš od prvog učitavanja), pa ne postoji treći
+         domen o čijoj dostupnosti cijeli app zavisi. -->
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css"/>
+    <script src="vendor/leaflet/leaflet.js" defer></script>
 
     <!-- Konfiguracija šumarije — MORA biti prvi js/ skript (ostali čitaju
          window.SUMARIJA_CONFIG iz njega). Za drugu šumariju mijenja se
