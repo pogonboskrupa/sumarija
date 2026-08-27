@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.16.8';
+        const APP_VERSION = '1.16.9';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1712,13 +1712,25 @@
                 return false;
             };
 
-            // Offline fast-path — ne troši 3 retry-a na mrežu koje nema
-            if (!navigator.onLine) { _readCachedMapping(); return; }
+            // Offline/slaba veza fast-path — navigator.onLine SAM NIJE dovoljan
+            // (vidi _probeVeza komentar: telefon javlja "online" i kad signal
+            // ne nosi podatke). Ovaj poziv se u DOMContentLoaded pokreće TEK
+            // nakon _probeVeza(), baš da window._slabaVeza već bude izmjeren —
+            // ranije se to ovdje uopšte nije provjeravalo, pa je funkcija na
+            // terenu znala "visjeti" bez timeouta kroz sva 3 pokušaja i
+            // usput zauzimati isti preopterećeni radio-signal koji trebaju i
+            // loadOdjeli()/loadData() koji se pokreću odmah iza nje.
+            if (!navigator.onLine || window._slabaVeza) { _readCachedMapping(); return; }
 
             var url = buildApiUrl('poslovodja-radilista', { poslovodja: currentUser.fullName });
-            for (let attempt = 1; attempt <= 3; attempt++) {
+            for (let attempt = 1; attempt <= 2; attempt++) {
                 try {
-                    var response = await fetch(url);
+                    // AbortSignal.timeout — bez ovoga je pojedinačni pokušaj mogao
+                    // "visjeti" na browser/OS-nivou TCP timeoutu (znatno duže od
+                    // par sekundi), pa je čak i kad _slabaVeza pogrešno ne uhvati
+                    // slab signal (rijedak trkački slučaj) ukupno vrijeme bilo
+                    // neomeđeno umjesto predvidljivo ograničeno.
+                    var response = await fetch(url, { signal: AbortSignal.timeout(8000) });
                     var data = await response.json();
                     if (data && data.radilista && data.radilista.length > 0) {
                         _poslovodjaRadilistaFromApi = data.radilista;
@@ -1727,11 +1739,11 @@
                     }
                     return; // Success, exit
                 } catch (e) {
-                    if (attempt < 3) {
-                        console.warn(`[RADILISTA] Fetch failed (attempt ${attempt}/3), retrying...`, e.message);
-                        await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+                    if (attempt < 2) {
+                        console.warn(`[RADILISTA] Fetch failed (attempt ${attempt}/2), retrying...`, e.message);
+                        await new Promise(resolve => setTimeout(resolve, 2000));
                     } else {
-                        console.warn('[RADILISTA] API fetch failed after 3 attempts, using cached mapping:', e.message);
+                        console.warn('[RADILISTA] API fetch failed after 2 attempts, using cached mapping:', e.message);
                         _readCachedMapping();
                     }
                 }
