@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.16.9';
+        const APP_VERSION = '1.17.1';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -381,8 +381,15 @@
                 return;
             }
 
+            // Automatski (pozadinski) poziv — za razliku od ☁️ "Ažuriraj" dugmeta
+            // (checkForNewData, eksplicitna korisnička radnja sa svojim spinnerom)
+            // ovo se dešava BEZ ikakve povratne informacije korisniku, pa nema
+            // razloga trošiti radio-signal na slaboj vezi: keširani podaci već
+            // rade, provjera "ima li novog" samo pričeka sljedeći ciklus.
+            const _autoCheckManifest = () => { if (navigator.onLine && !window._slabaVeza) checkManifest(); };
+
             // Provjeri odmah
-            checkManifest();
+            _autoCheckManifest();
 
             // Zatim provjeri periodično
             const hour = now.getHours();
@@ -394,7 +401,7 @@
                 clearInterval(manifestCheckInterval);
             }
 
-            manifestCheckInterval = setInterval(checkManifest, interval);
+            manifestCheckInterval = setInterval(_autoCheckManifest, interval);
             console.log(`🔄 [MANIFEST] Checker started (interval: ${interval/1000/60} min)`);
         }
 
@@ -1012,7 +1019,13 @@
                 } catch(_) {}
                 return { preklasiranja: [] };
             };
-            if (!navigator.onLine) return readCache();
+            // Isti fast-path kao fetchWithCache (window._slabaVeza, ne samo
+            // navigator.onLine — vidi _probeVeza komentar). Bez ovoga bi
+            // Promise.all u loadStanjeZaliha()/loadPoslovodjaStanje() čekao
+            // na OVAJ poziv do 30s čak i kad je fetchWithCache za glavne
+            // podatke u ISTOM Promise.all-u već instant vratio keš zbog
+            // izmjerene slabe veze — cijeli tab bi i dalje "visio".
+            if (!navigator.onLine || window._slabaVeza) return readCache();
             try {
                 const r = await fetch(buildApiUrl('get-preklasiranja'), { signal: AbortSignal.timeout(30000) });
                 const data = await r.json();
@@ -1968,8 +1981,15 @@
                 // Provjeri spremljene kredencijale u pozadini — ako je admin u
                 // međuvremenu promijenio lozinku, odmah odjavi umjesto da korisnik
                 // gleda praznu aplikaciju (svaki poziv bi vraćao Unauthorized)
-                if (navigator.onLine) {
-                    fetch(`${API_URL}?path=login&username=${encodeURIComponent(parsedUser.username || '')}&password=${encodeURIComponent(savedPass)}`)
+                // window._slabaVeza ovdje još nije izmjeren (probe kreće tek
+                // ispod) — provjera je ipak vrijedna za slučaj da je već
+                // postavljena iz prethodnog probe-a u istoj sesiji (npr. tab
+                // nije reloadovan). navigator.onLine sam ostaje slab pokazatelj,
+                // ali AbortSignal.timeout ograničava koliko ovaj (nebitan za
+                // prikaz) poziv može trošiti radio-signal u najgorem slučaju.
+                if (navigator.onLine && !window._slabaVeza) {
+                    fetch(`${API_URL}?path=login&username=${encodeURIComponent(parsedUser.username || '')}&password=${encodeURIComponent(savedPass)}`,
+                        { signal: AbortSignal.timeout(10000) })
                         .then(r => r.ok ? r.json() : null)
                         .then(res => {
                             if (res && res.success === false) _handleUnauthorized();
