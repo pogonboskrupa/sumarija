@@ -264,7 +264,15 @@
         if (_geojson) return _geojson;
         try {
             // Bez cache:'reload' — Service Worker cache-first servira offline kopiju
-            var r = await fetch(GEOJSON_URL);
+            // INSTANT ako je već keširana (uobičajen slučaj). Ako NIJE (prvi put
+            // ikad na ovom uređaju, ili keš izbačen), i Service Worker i ovaj
+            // fetch padaju na pravu mrežu — a fajl je ~3.8MB. Bez ikakvog
+            // timeouta bi na slabom/nikakvom signalu ovaj poziv (koji
+            // initMapaRadnika direktno čeka) znao "visjeti" neograničeno —
+            // cijela Karta ostaje prazna/zaglavljena umjesto da bar prikaže
+            // podlogu karte bez poligona. AbortSignal.timeout ograničava
+            // najgori slučaj; catch ispod već ima ispravan prazan fallback.
+            var r = await fetch(GEOJSON_URL, { signal: AbortSignal.timeout(25000) });
             if (!r.ok) throw new Error('HTTP ' + r.status);
             _geojson = JSON.parse(await r.text());
             return _geojson;
