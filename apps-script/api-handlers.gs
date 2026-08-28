@@ -3149,7 +3149,12 @@ function handlePrimaciByIzvodjac(year, username, password) {
   Logger.log('=== HANDLE PRIMACI BY IZVODJAC START ===');
   Logger.log('Year: ' + year);
 
-  const cacheKeyPI = 'primaci_izvodjac_' + year;
+  // v2 — dodano mjeseciSortimenti (mjesečna sječa po sortimentima, Izvođači
+  // tab). CacheService (getCachedData/setCachedData) je NEZAVISAN od
+  // deploy-a — stari (v1) keš bez tog polja bi se inače servirao do CACHE_TTL
+  // isteka (35 min) bez obzira na novi kod. Promjena ključa odmah prisili
+  // svježe računanje umjesto čekanja da istekne stari keš.
+  const cacheKeyPI = 'primaci_izvodjac_v2_' + year;
   const cachedPI = getCachedData(cacheKeyPI);
   if (cachedPI) return createJsonResponse(cachedPI, true);
 

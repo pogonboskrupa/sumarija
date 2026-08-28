@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.6';
+        const APP_VERSION = '1.17.7';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1334,7 +1334,10 @@
                         { name: 'Primaci - Daily + Izvještaji', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_primaci_daily_' + year + '_' + currentMonth, timeout: 180000,
                           alsoCache: ['cache_izvjestaji_sedmicni_primka_' + year + '_' + currentMonth, 'cache_izvjestaji_mjesecni_primka_' + year + '_' + currentMonth, 'cache_sedmicni_sjeca_' + year + '_' + currentMonth] },
                         { name: 'Primaci - Po radilištu', url: buildApiUrl('primaci-by-radiliste', { year }), cacheKey: 'cache_primaci_radiliste_' + year, timeout: 180000 },
-                        { name: 'Primaci - Po izvođaču', url: buildApiUrl('primaci-by-izvodjac', { year }), cacheKey: 'cache_primaci_izvodjac_' + year, timeout: 180000 },
+                        // _v2 — mjeseciSortimenti dodano u odgovor (Izvođači tab, mjesečni
+                        // sortimenti); ključ promijenjen da odmah istisne stari keširan
+                        // odgovor bez tog polja umjesto čekanja TTL isteka.
+                        { name: 'Primaci - Po izvođaču', url: buildApiUrl('primaci-by-izvodjac', { year }), cacheKey: 'cache_primaci_izvodjac_v2_' + year, timeout: 180000 },
                         { name: 'Primaci - Sortimenti po primaču', url: buildApiUrl('primaci-sortimenti-by-primac', { year, month: currentMonth }), cacheKey: 'cache_primaci_sort_primac_' + year + '_' + currentMonth, timeout: 180000 },
 
                         // OTPREMACI meni + sva 3 podmenija
@@ -5877,7 +5880,7 @@
                 const year = new Date().getFullYear();
                 const url = buildApiUrl('primaci-by-izvodjac', { year });
 
-                const data = await fetchWithCache(url, `cache_primaci_izvodjac_${year}`);
+                const data = await fetchWithCache(url, `cache_primaci_izvodjac_v2_${year}`);
 
 
                 if (data.error) {
