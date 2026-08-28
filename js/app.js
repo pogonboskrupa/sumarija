@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.7';
+        const APP_VERSION = '1.17.8';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6038,6 +6038,10 @@
                 `;
                 document.getElementById('primaci-izvodjaci-recap-body').innerHTML = recapBodyHTML;
 
+                // Mjesečna rekapitulacija po sortimentima — SVI izvođači, bez
+                // potrebe da se prvo izabere jedan (vidi #primaci-izvodjaci-recap-mjesec-select).
+                _populatePrimaciIzvodjaciRecapMjesecSelect();
+                renderPrimaciIzvodjaciMjesecniRecap();
 
             } catch (error) {
                 console.error('Error in loadPrimaciByIzvodjac:', error);
@@ -6047,6 +6051,91 @@
                     </td></tr>
                 `;
             }
+        }
+
+        // Popuni dropdown mjeseci za "Mjesečna rekapitulacija — svi izvođači" JEDNOM
+        // (isti obrazac kao _populatePrimaciIzvodjacMjesecSelect, zaseban dropdown
+        // jer je ovo NEZAVISNO od toga da li je neki izvođač izabran u detalju iznad).
+        function _populatePrimaciIzvodjaciRecapMjesecSelect() {
+            const sel = document.getElementById('primaci-izvodjaci-recap-mjesec-select');
+            if (!sel || sel.options.length) return;
+            const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+            sel.innerHTML = mjeseciNazivi.map((m, i) => '<option value="' + i + '">' + m + '</option>').join('');
+            sel.value = String(new Date().getMonth());
+        }
+
+        // Mjesečna rekapitulacija po sortimentima za SVE izvođače odjednom (dropdown
+        // #primaci-izvodjaci-recap-mjesec-select) — isti raspored kao godišnja
+        // rekapitulacija (primaci-izvodjaci-recap) iznad, samo iz
+        // izvodjac.mjeseciSortimenti[mjesec] umjesto izvodjac.sortimentiUkupno.
+        function renderPrimaciIzvodjaciMjesecniRecap() {
+            const sel = document.getElementById('primaci-izvodjaci-recap-mjesec-select');
+            const headerEl = document.getElementById('primaci-izvodjaci-mjesecni-recap-header');
+            const bodyEl = document.getElementById('primaci-izvodjaci-mjesecni-recap-body');
+            if (!sel || !headerEl || !bodyEl || !_primaciIzvodjaciData) return;
+            const izvodjaci = _primaciIzvodjaciData.izvodjaci || [];
+            const sortimentiNazivi = _primaciIzvodjaciData.sortimentiNazivi || [];
+            const mIdx = parseInt(sel.value, 10) || 0;
+
+            let headerHTML = `
+                <tr>
+                    <th style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 12px; position: sticky; top: 0; z-index: 20;">
+                        👷 Izvođač radova
+                    </th>
+            `;
+            sortimentiNazivi.forEach(s => {
+                headerHTML += `<th style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 10px;">${s}</th>`;
+            });
+            headerHTML += `</tr>`;
+            headerEl.innerHTML = headerHTML;
+
+            if (!izvodjaci.length) {
+                bodyEl.innerHTML = `<tr><td colspan="${sortimentiNazivi.length + 1}" style="text-align:center;padding:24px;color:#4b5563;">Nema podataka</td></tr>`;
+                return;
+            }
+
+            let bodyHTML = '';
+            izvodjaci.forEach((izvodjac, idx) => {
+                const rowBg = idx % 2 === 0 ? '#fff7ed' : '#ffffff';
+                // mjeseciSortimenti nedostaje u starijem keširanom odgovoru (prije
+                // ove izmjene) — prazan objekat umjesto greške dok se keš ne osvježi.
+                const mjesecPodaci = (izvodjac.mjeseciSortimenti || [])[mIdx] || {};
+
+                const sortimentiCells = sortimentiNazivi.map(s => {
+                    const val = mjesecPodaci[s] || 0;
+                    const displayVal = val > 0 ? val.toFixed(2) : '-';
+                    const fontWeight = val > 0 ? 'font-weight: 700; color: #7c2d12;' : 'color: #d1d5db;';
+                    return `<td style="${fontWeight} border: 1px solid #fed7aa; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 8px;">${displayVal}</td>`;
+                }).join('');
+
+                bodyHTML += `
+                    <tr style="background: ${rowBg};">
+                        <td style="font-weight: 700; font-size: 12px; border: 1px solid #fed7aa; padding: 10px; color: #7c2d12;">
+                            ${izvodjac.naziv}
+                        </td>
+                        ${sortimentiCells}
+                    </tr>
+                `;
+            });
+
+            // UKUPNO red — zbir svakog sortimenta preko svih izvođača, za IZABRANI mjesec
+            const recapTotalCells = sortimentiNazivi.map(s => {
+                const val = izvodjaci.reduce((acc, izv) => {
+                    const mp = (izv.mjeseciSortimenti || [])[mIdx] || {};
+                    return acc + (Number(mp[s]) || 0);
+                }, 0);
+                const displayVal = val > 0 ? val.toFixed(2) : '-';
+                return `<td style="border: 1px solid #7c2d12; font-family: 'Courier New', monospace; font-size: 11px; text-align: right; padding: 10px; font-weight: 800; color: white;">${displayVal}</td>`;
+            }).join('');
+            bodyHTML += `
+                <tr class="ukupno-row" style="background: linear-gradient(135deg, #7c2d12, #451a03);">
+                    <td style="font-weight: 900; font-size: 13px; border: 1px solid #7c2d12; padding: 12px; color: white;">
+                        📊 UKUPNO
+                    </td>
+                    ${recapTotalCells}
+                </tr>
+            `;
+            bodyEl.innerHTML = bodyHTML;
         }
 
         // Detaljan pregled izabranog izvođača (dropdown #primaci-izvodjac-select)
