@@ -3187,9 +3187,17 @@ function handlePrimaciByIzvodjac(year, username, password) {
           naziv: izvodjacNorm,
           mjeseci: Array(12).fill(0),
           sortimentiUkupno: {},
+          // Po mjesecu PA po sortimentu — za "Sječa po sortimentima mjesečno"
+          // u detaljnom pregledu izvođača (index.html/js/app.js).
+          mjeseciSortimenti: [],
           ukupno: 0
         };
         SORTIMENTI_NAZIVI.forEach(s => izvodjaciMap[izvodjacNorm].sortimentiUkupno[s] = 0);
+        for (let m = 0; m < 12; m++) {
+          const prazanMjesec = {};
+          SORTIMENTI_NAZIVI.forEach(s => prazanMjesec[s] = 0);
+          izvodjaciMap[izvodjacNorm].mjeseciSortimenti.push(prazanMjesec);
+        }
       }
 
       // Dodaj kubike po mjesecu
@@ -3197,10 +3205,12 @@ function handlePrimaciByIzvodjac(year, username, password) {
       izvodjaciMap[izvodjacNorm].mjeseci[mjesec] += kubik;
       izvodjaciMap[izvodjacNorm].ukupno += kubik;
 
-      // Dodaj sortimente (F-Y, indeksi 5-24)
+      // Dodaj sortimente (F-Y, indeksi 5-24) — i u godišnji ukupno i u
+      // odgovarajući mjesec.
       for (let j = 0; j < 20; j++) {
         const vrijednost = parseFloat(row[PRIMKA_COL.SORT_START + j]) || 0;
         izvodjaciMap[izvodjacNorm].sortimentiUkupno[SORTIMENTI_NAZIVI[j]] += vrijednost;
+        izvodjaciMap[izvodjacNorm].mjeseciSortimenti[mjesec][SORTIMENTI_NAZIVI[j]] += vrijednost;
       }
     }
 

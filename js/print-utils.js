@@ -217,6 +217,91 @@ function printKubikator() {
     win.document.close();
 }
 
+// ─── Izvođač — sječa po sortimentima (mjesečno) print ─────────
+// Štampa TAČNO ono što je trenutno izabrano u detaljnom pregledu izvođača
+// (index.html #primaci-izvodjac-select / #primaci-izvodjac-mjesec-select) —
+// čita direktno _primaciIzvodjaciData (js/app.js), isti podaci koje
+// renderPrimaciIzvodjacMjesecniSortimenti prikazuje na ekranu, bez novog
+// fetch-a. Sortimenti su ovdje REDOVI (ne kolone kao na ekranu) — 20 uskih
+// kolona jedna do druge se ne bi uklopilo na štampanu stranicu, dok ekran
+// ima vodoravni skrol kao sigurnu rezervu.
+function printPrimaciIzvodjacMjesecniSortimenti() {
+    if (typeof _primaciIzvodjaciData === 'undefined' || !_primaciIzvodjaciData) {
+        if (typeof showWarning === 'function') showWarning('Nema podataka za štampanje');
+        return;
+    }
+    const sel = document.getElementById('primaci-izvodjac-select');
+    if (!sel || !sel.value) {
+        if (typeof showWarning === 'function') showWarning('Prvo izaberite izvođača za detaljan pregled');
+        return;
+    }
+    const izvodjac = (_primaciIzvodjaciData.izvodjaci || []).find(iz => iz.naziv === sel.value);
+    if (!izvodjac) {
+        if (typeof showWarning === 'function') showWarning('Izvođač nije pronađen');
+        return;
+    }
+
+    const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+    const mjesecSel = document.getElementById('primaci-izvodjac-mjesec-select');
+    const mIdx = parseInt(mjesecSel ? mjesecSel.value : '0', 10) || 0;
+    const mjesecNaziv = mjeseciNazivi[mIdx] || mjeseciNazivi[0];
+    const godina = new Date().getFullYear();
+    const sortimentiNazivi = _primaciIzvodjaciData.sortimentiNazivi || [];
+    // mjeseciSortimenti nedostaje u starijem keširanom odgovoru (prije ove
+    // izmjene) — prazan objekat umjesto greške dok se keš ne osvježi.
+    const mjesecPodaci = (izvodjac.mjeseciSortimenti || [])[mIdx] || {};
+
+    const accent = '#ea580c';
+    const datumStampe   = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const vrijemeStampe = new Date().toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' });
+    const fmt2 = n => (Number(n) || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const rows = sortimentiNazivi.map(s => {
+        const v = mjesecPodaci[s] || 0;
+        return `
+        <tr>
+            <td style="padding:7px 10px;font-weight:600;">${escapeHtml(s)}</td>
+            <td style="padding:7px 10px;text-align:right;${v > 0 ? `font-weight:700;color:${accent};` : 'color:#9ca3af;'}">${v > 0 ? fmt2(v) : '-'}</td>
+        </tr>`;
+    }).join('');
+
+    const tableHtml = `
+        <table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #d1d5db;">
+            <thead>
+                <tr style="background:${accent};color:white;">
+                    <th style="padding:9px 10px;text-align:left;">Sortiment</th>
+                    <th style="padding:9px 10px;text-align:right;">m³</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+
+    const sectionsHtml = `
+        <div class="print-section">
+            <div class="section-header" style="border-left:4px solid ${accent};">Sječa po sortimentima — ${mjesecNaziv} ${godina}</div>
+            ${tableHtml}
+        </div>`;
+
+    const win = window.open('', '_blank', 'width=900,height=900,scrollbars=yes');
+    if (!win) {
+        if (typeof showError === 'function') showError('Popup blokiran', 'Dozvolite popup prozore za štampanje.');
+        else alert('Popup blokiran — dozvolite popup prozore za štampanje.');
+        return;
+    }
+    win.document.write(buildPrintDocument({
+        tabLabel: 'Izvođači radova',
+        activeTabLabel: 'Sječa po sortimentima — mjesečno',
+        accentColor: accent,
+        monthName: mjesecNaziv,
+        year: godina,
+        datumStampe,
+        vrijemeStampe,
+        personLabel: escapeHtml(izvodjac.naziv),
+        sectionsHtml
+    }));
+    win.document.close();
+}
+
 // ─── Dropdown izbornik ───────────────────────────────────────
 function toggleStanjeZalihaPrintMenu(e) {
     e.stopPropagation();

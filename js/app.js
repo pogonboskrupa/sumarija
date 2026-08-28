@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.5';
+        const APP_VERSION = '1.17.6';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6106,6 +6106,48 @@
                 }).join('') + '</tr>';
 
             renderPrimaciIzvodjacTrendChart(izvodjac, mjeseciNazivi);
+
+            // Sječa po sortimentima MJESEČNO — zaseban dropdown od gornjeg
+            // godišnjeg trenda (isti obrazac: godišnji ukupno ostaje uvijek
+            // vidljiv, mjesečni prikaz je dodatan izbor ispod).
+            _populatePrimaciIzvodjacMjesecSelect();
+            renderPrimaciIzvodjacMjesecniSortimenti();
+        }
+
+        // Popuni dropdown mjeseci JEDNOM (opcije se ne mijenjaju između izvođača,
+        // samo se ponovo čita izabrani mjesec pri promjeni izvođača).
+        function _populatePrimaciIzvodjacMjesecSelect() {
+            const mjesecSel = document.getElementById('primaci-izvodjac-mjesec-select');
+            if (!mjesecSel || mjesecSel.options.length) return;
+            const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+            mjesecSel.innerHTML = mjeseciNazivi.map((m, i) => '<option value="' + i + '">' + m + '</option>').join('');
+            mjesecSel.value = String(new Date().getMonth()); // podrazumijevano tekući mjesec
+        }
+
+        // Sječa po sortimentima za JEDAN mjesec (dropdown #primaci-izvodjac-mjesec-select)
+        // izabranog izvođača — isti raspored kolona kao godišnja "Sortimenti"
+        // tabela iznad, samo iz izvodjac.mjeseciSortimenti[mjesec] umjesto
+        // izvodjac.sortimentiUkupno (handlePrimaciByIzvodjac, apps-script/api-handlers.gs).
+        function renderPrimaciIzvodjacMjesecniSortimenti() {
+            const sel = document.getElementById('primaci-izvodjac-select');
+            const mjesecSel = document.getElementById('primaci-izvodjac-mjesec-select');
+            const headerEl = document.getElementById('primaci-izvodjac-mjesecni-sortimenti-header');
+            const bodyEl = document.getElementById('primaci-izvodjac-mjesecni-sortimenti-body');
+            if (!sel || !mjesecSel || !headerEl || !bodyEl || !_primaciIzvodjaciData) return;
+            const izvodjac = (_primaciIzvodjaciData.izvodjaci || []).find(iz => iz.naziv === sel.value);
+            if (!izvodjac) { headerEl.innerHTML = ''; bodyEl.innerHTML = ''; return; }
+
+            const sortimentiNazivi = _primaciIzvodjaciData.sortimentiNazivi || [];
+            const mIdx = parseInt(mjesecSel.value, 10) || 0;
+            // mjeseciSortimenti nedostaje u starijem keširanom odgovoru (prije
+            // ove izmjene) — prazan objekat umjesto greške dok se keš ne osvježi.
+            const mjesecPodaci = (izvodjac.mjeseciSortimenti || [])[mIdx] || {};
+
+            headerEl.innerHTML = '<tr>' + sortimentiNazivi.map(s => '<th style="text-align:right;font-size:11px;">' + s + '</th>').join('') + '</tr>';
+            bodyEl.innerHTML = '<tr>' + sortimentiNazivi.map(s => {
+                const v = mjesecPodaci[s] || 0;
+                return '<td style="text-align:right;' + (v > 0 ? 'font-weight:700;' : 'color:#d1d5db;') + '">' + (v > 0 ? v.toFixed(2) : '-') + '</td>';
+            }).join('') + '</tr>';
         }
 
         // Linijski grafikon — mjesečni trend izabranog izvođača (isti obrazac
