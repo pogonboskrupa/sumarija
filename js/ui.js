@@ -298,12 +298,6 @@
             submenuTabs.forEach(tab => tab.classList.remove('active'));
             if (event && event.target) event.target.classList.add('active');
 
-            // "Izvođači radova" ima široke tabele (12 mjeseci, 20 sortimenata) —
-            // proširi .container samo dok je ovaj podtab aktivan (vidi
-            // #primaci-content.wide-view u css/main.css), ostali podtabovi
-            // zadržavaju uobičajenu širinu.
-            document.getElementById('primaci-content').classList.toggle('wide-view', view === 'izvodjaci');
-
             // Hide all submenu content
             document.getElementById('primaci-monthly-view').classList.add('hidden');
             document.getElementById('primaci-daily-view').classList.add('hidden');
@@ -634,6 +628,12 @@
             const tr = table.getElementsByTagName('tr');
 
             for (let i = 1; i < tr.length; i++) {
+                // "📈 UKUPNO" red (klasa table-nofilter) ostaje uvijek vidljiv —
+                // inače pretraga po imenu primača sakrije i zbirni red.
+                if (tr[i].classList.contains('table-nofilter')) {
+                    tr[i].style.display = '';
+                    continue;
+                }
                 const td = tr[i].getElementsByTagName('td')[0];
                 if (td) {
                     const txtValue = td.textContent || td.innerText;
@@ -667,7 +667,17 @@
             if (!tbody) return;
             const tr = tbody.getElementsByTagName('tr');
 
-            for (let i = 0; i < tr.length - 1; i++) { // -1 to exclude UKUPNO row
+            // Datumska zaglavlja i "UKUPNO {datum}" podredovi (klasa
+            // daily-nofilter, vidi loadPrimaciDaily u app.js) ostaju uvijek
+            // vidljivi — inače bi pretraga po imenu primača sakrila grupisanje
+            // po danu čim taj tekst zaglavlja/podreda ne sadrži traženo ime.
+            // Zadnji red (UKUPNO mjesec) je uvijek zadnji i nema tu klasu, ali
+            // ostaje van filtera (-1) iz istog razloga.
+            for (let i = 0; i < tr.length - 1; i++) {
+                if (tr[i].classList.contains('daily-nofilter')) {
+                    tr[i].style.display = '';
+                    continue;
+                }
                 const tds = tr[i].getElementsByTagName('td');
                 let found = false;
                 // Search in datum, odjel, and primac columns

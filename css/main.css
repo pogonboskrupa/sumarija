@@ -4250,27 +4250,28 @@ body.kubikator-fullscreen #kubikator-content {
 .kub-rekap-prazno { padding: 22px 16px; text-align: center; color: #9ca3af; font-size: 14px; }
 
 /* ================================================
-   IZVOĐAČI RADOVA (Sječa → Izvođači radova) — šire tabele
-   na krupnim ekranima + "šumarski" karton stil za sekcije.
+   SJEČA TAB (svi podtabovi) — šire tabele na krupnim ekranima +
+   "šumarski" karton stil za sekcije. Prvobitno rađeno samo za
+   "Izvođači radova", proširено na cijeli #primaci-content da svi
+   podtabovi (dnevni, mjesečni, radilišta, period realizacije,
+   sortimentni po primačima) izgledaju dosljedno.
    ================================================ */
 
-/* .container ograničava sve tabove na 1200px — na Izvođačima radova to
-   ostavlja veliki prazan prostor lijevo/desno na širim monitorima dok
-   tabele (12 mjeseci, 20 sortimenata) ostaju sabijene. Klasa se dodaje/
-   uklanja SAMO dok je ovaj podtab aktivan (switchPrimaciSubmenu, js/ui.js)
-   — ostali podtabovi u istom "Sječa" tabu zadržavaju uobičajenu širinu. */
-#primaci-content.wide-view {
+/* .container ograničava sve tabove na 1200px — na Sječi to ostavlja
+   veliki prazan prostor lijevo/desno na širim monitorima dok tabele
+   (12 mjeseci, 20 sortimenata) ostaju sabijene. */
+#primaci-content {
     max-width: min(1700px, 96vw);
 }
 
 /* .monthly-table/.kupci-table imaju width:auto (skupe se na sadržaj) —
-   unutar ovog podtaba se rastežu na punu širinu kartice. */
-#primaci-izvodjaci-view .monthly-table,
-#primaci-izvodjaci-view .kupci-table {
+   unutar Sječe se rastežu na punu širinu kartice. */
+#primaci-content .monthly-table,
+#primaci-content .kupci-table {
     width: 100%;
 }
 
-#primaci-izvodjaci-view .izv-card {
+#primaci-content .izv-card {
     background: linear-gradient(180deg, #fffdf9, #ffffff);
     border: 1px solid #fde8cc;
     border-radius: 14px;
@@ -4278,7 +4279,10 @@ body.kubikator-fullscreen #kubikator-content {
     margin-top: 26px;
     overflow: hidden;
 }
-#primaci-izvodjaci-view .izv-card-header {
+#primaci-content .izv-card:first-child {
+    margin-top: 0;
+}
+#primaci-content .izv-card-header {
     display: flex;
     align-items: center;
     gap: 14px;
@@ -4288,46 +4292,46 @@ body.kubikator-fullscreen #kubikator-content {
     background: linear-gradient(135deg, #78350f, #451a03);
     border-bottom: 3px solid #ea580c;
 }
-#primaci-izvodjaci-view .izv-card-header-title {
+#primaci-content .izv-card-header-title {
     display: flex;
     align-items: center;
     gap: 10px;
 }
-#primaci-izvodjaci-view .izv-card-icon {
+#primaci-content .izv-card-icon {
     font-size: 20px;
     line-height: 1;
 }
-#primaci-izvodjaci-view .izv-card-header h4 {
+#primaci-content .izv-card-header h4 {
     margin: 0;
     font-size: 15px;
     color: #fff7ed;
     font-weight: 700;
 }
-#primaci-izvodjaci-view .izv-card-sub {
+#primaci-content .izv-card-sub {
     display: block;
     font-size: 11px;
     color: #fde8cc;
     margin-top: 2px;
 }
-#primaci-izvodjaci-view .izv-card-actions {
+#primaci-content .izv-card-actions {
     display: flex;
     gap: 8px;
     align-items: center;
     flex-wrap: wrap;
 }
-#primaci-izvodjaci-view .izv-card-body {
+#primaci-content .izv-card-body {
     padding: 18px 20px 20px;
 }
-#primaci-izvodjaci-view .izv-card-body > div[style*="overflow-x"] {
+#primaci-content .izv-card-body > div[style*="overflow-x"] {
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
 }
 
 @media (max-width: 768px) {
-    #primaci-izvodjaci-view .izv-card-header {
+    #primaci-content .izv-card-header {
         padding: 12px 14px;
     }
-    #primaci-izvodjaci-view .izv-card-body {
+    #primaci-content .izv-card-body {
         padding: 14px;
     }
 }

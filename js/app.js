@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.14';
+        const APP_VERSION = '1.17.15';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -4968,7 +4968,7 @@
                     return `
                         <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
                             <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #059669; padding: 10px; font-size: 11px;">
-                                ${p.primac || '-'}
+                                ${escapeHtml(p.primac) || '-'}
                             </td>
                             ${(p.mjeseci && Array.isArray(p.mjeseci) ? p.mjeseci : new Array(12).fill(0)).map((v, mIdx) => {
                                 const val = (v != null && !isNaN(v)) ? v : 0;
@@ -4985,7 +4985,7 @@
 
                 // Add totals row with softer colors
                 const totalsRow = `
-                    <tr style="background: linear-gradient(to bottom, #d1fae5, #a7f3d0); color: #065f46; font-weight: 700; border-top: 3px solid #34d399;">
+                    <tr class="table-nofilter" style="background: linear-gradient(to bottom, #d1fae5, #a7f3d0); color: #065f46; font-weight: 700; border-top: 3px solid #34d399;">
                         <td style="position: sticky; left: 0; background: #d1fae5; z-index: 10; border-right: 3px solid #34d399; padding: 12px; font-size: 12px;">
                             📈 UKUPNO
                         </td>
@@ -5057,7 +5057,7 @@
                     return `
                         <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
                             <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #2563eb; padding: 10px; font-size: 11px;">
-                                ${p.primac || '-'}
+                                ${escapeHtml(p.primac) || '-'}
                             </td>
                             ${cells}
                             <td class="right" style="font-weight: 700; background: linear-gradient(to right, #dbeafe, #bfdbfe); border: 2px solid #2563eb; padding: 10px; font-size: 11px; color: #1e3a5f;">
@@ -5129,7 +5129,7 @@
                     return `
                         <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
                             <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #d97706; padding: 10px; font-size: 11px;">
-                                ${p.primac || '-'}
+                                ${escapeHtml(p.primac) || '-'}
                             </td>
                             ${cells}
                             <td class="right" style="font-weight: 700; background: linear-gradient(to right, #fef3c7, #fde68a); border: 2px solid #d97706; padding: 10px; font-size: 11px; color: #92400e;">
@@ -5449,7 +5449,7 @@
                     // ✅ Zaglavlje datuma - čist, pro dizajn
                     const numSortimenti = data.sortimentiNazivi.length;
                     bodyHTML += `
-                        <tr style="background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.08);">
+                        <tr class="daily-nofilter" style="background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.08);">
                             <td colspan="${2 + numSortimenti}" style="font-weight: 700; font-size: 13px; padding: 10px 14px; text-align: left; border-top: 2px solid #f59e0b; color: #92400e; letter-spacing: 0.5px;">
                                 📅 ${datum} &mdash; ${dayName}
                             </td>
@@ -5482,9 +5482,9 @@
                         bodyHTML += `
                             <tr style="background: ${rowBg}; transition: background 0.15s ease;" onmouseover="this.style.background='${hoverBg}';" onmouseout="this.style.background='${rowBg}';">
                                 <td style="font-weight: 700; font-size: 11px; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #e2e8f0; padding: 7px 8px; border: 1px solid #e2e8f0; color: #334155; box-shadow: 2px 0 3px rgba(0,0,0,0.04);">
-                                    ${row.odjel}
+                                    ${escapeHtml(row.odjel)}
                                 </td>
-                                <td style="font-weight: 600; font-size: 11px; border: 1px solid #e2e8f0; padding: 7px 8px; color: #475569;">${row.primac}</td>
+                                <td style="font-weight: 600; font-size: 11px; border: 1px solid #e2e8f0; padding: 7px 8px; color: #475569;">${escapeHtml(row.primac)}</td>
                                 ${sortimentiCells}
                             </tr>
                         `;
@@ -5498,7 +5498,7 @@
                     }).join('');
 
                     bodyHTML += `
-                        <tr style="background: #fffbeb; border-bottom: 2px solid #f59e0b;">
+                        <tr class="daily-nofilter" style="background: #fffbeb; border-bottom: 2px solid #f59e0b;">
                             <td style="position: sticky; left: 0; background: #fffbeb; z-index: 10; border-right: 2px solid #e2e8f0; padding: 8px 8px; font-size: 11px; font-weight: 700; color: #92400e; box-shadow: 2px 0 3px rgba(0,0,0,0.04); border: 1px solid #f59e0b;">
                                 UKUPNO ${datum}
                             </td>
@@ -5811,7 +5811,7 @@
                     bodyHTML += `
                         <tr style="background: ${rowBg}; transition: all 0.15s ease;" onmouseover="this.style.background='${hoverBg}';" onmouseout="this.style.background='${rowBg}';">
                             <td style="font-weight: 700; font-size: 12px; border: 1px solid #fed7aa; padding: 10px; color: #7c2d12;">
-                                ${radiliste.naziv}
+                                ${escapeHtml(radiliste.naziv)}
                             </td>
                             ${mjeseciCells}
                             <td style="background: #fef3c7; border: 2px solid #f59e0b; font-family: 'Courier New', monospace; text-align: right; padding: 10px; font-weight: 900; font-size: 13px; color: #92400e;">
@@ -5849,7 +5849,7 @@
                     recapBodyHTML += `
                         <tr style="background: ${rowBg};">
                             <td style="font-weight: 700; font-size: 12px; border: 1px solid #fed7aa; padding: 10px; color: #7c2d12;">
-                                ${radiliste.naziv}
+                                ${escapeHtml(radiliste.naziv)}
                             </td>
                             ${sortimentiCells}
                         </tr>
@@ -6646,7 +6646,7 @@
             } else {
                 godinaData.odjeli.forEach(o => {
                     const udio = o.kubik / ukupnoOdjeli * 100;
-                    odjBody += '<tr><td>' + o.odjel + '</td>' +
+                    odjBody += '<tr><td>' + escapeHtml(o.odjel) + '</td>' +
                         '<td style="text-align:right;font-weight:700;">' + o.kubik.toFixed(2) + '</td>' +
                         '<td style="text-align:right;color:#6b7280;">' + udio.toFixed(1) + '%</td></tr>';
                 });
@@ -6929,7 +6929,7 @@
             });
 
             if (!stavke.length) {
-                view.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af;">Nema evidentirane sječe ni otpreme' + (izabraniIzvodjac ? ' za ' + izabraniIzvodjac : '') + '.</div>';
+                view.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af;">Nema evidentirane sječe ni otpreme' + (izabraniIzvodjac ? ' za ' + escapeHtml(izabraniIzvodjac) : '') + '.</div>';
                 return;
             }
 
@@ -6968,18 +6968,18 @@
                 const sjecaBarsHtml = s.segmenti.map(seg => {
                     const left = pct(seg.dayStart);
                     const width = pct(Math.max(seg.dayEnd - seg.dayStart + 1, 2));
-                    const naslov = 'Sječa — ' + s.odjel + ': ' + _fmtDatumTl(seg.datumPocetka) + ' → ' + _fmtDatumTl(seg.datumKraja);
+                    const naslov = escapeHtml('Sječa — ' + s.odjel + ': ' + _fmtDatumTl(seg.datumPocetka) + ' → ' + _fmtDatumTl(seg.datumKraja));
                     return '<div title="' + naslov + '" style="position:absolute;left:' + left + '%;width:' + width + '%;top:2px;height:11px;min-width:5px;background:#ea580c;border-radius:3px;box-shadow:0 1px 2px rgba(0,0,0,.15);"></div>';
                 }).join('');
                 const otpremaBarsHtml = s.segmentiOtprema.map(seg => {
                     const left = pct(seg.dayStart);
                     const width = pct(Math.max(seg.dayEnd - seg.dayStart + 1, 2));
-                    const naslov = 'Otprema — ' + s.odjel + ': ' + _fmtDatumTl(seg.datumPocetka) + ' → ' + _fmtDatumTl(seg.datumKraja);
+                    const naslov = escapeHtml('Otprema — ' + s.odjel + ': ' + _fmtDatumTl(seg.datumPocetka) + ' → ' + _fmtDatumTl(seg.datumKraja));
                     return '<div title="' + naslov + '" style="position:absolute;left:' + left + '%;width:' + width + '%;top:15px;height:11px;min-width:5px;background:#2563eb;border-radius:3px;box-shadow:0 1px 2px rgba(0,0,0,.15);"></div>';
                 }).join('');
                 const barsHtml = sjecaBarsHtml + otpremaBarsHtml;
                 return '<div data-sel="0" onclick="timelineRowSelect(this)" style="display:flex;align-items:center;border-bottom:1px solid #cbd5e1;cursor:pointer;transition:opacity .15s ease,background-color .15s ease;">' +
-                    '<div style="flex:0 0 ' + LABEL_COL_WIDTH + 'px;padding:6px 10px;font-size:13px;font-weight:600;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + s.odjel + '</div>' +
+                    '<div style="flex:0 0 ' + LABEL_COL_WIDTH + 'px;padding:6px 10px;font-size:13px;font-weight:600;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(s.odjel) + '</div>' +
                     '<div style="flex:1;position:relative;height:28px;' + gridBg + '">' + barsHtml + '</div></div>';
             }).join('');
 
@@ -6988,7 +6988,7 @@
                 '<span><span style="display:inline-block;width:10px;height:10px;background:#ea580c;border-radius:2px;margin-right:5px;vertical-align:middle;"></span>Sječa</span>' +
                 '<span><span style="display:inline-block;width:10px;height:10px;background:#2563eb;border-radius:2px;margin-right:5px;vertical-align:middle;"></span>Otprema</span>' +
                 '<span>Odjeli redani po datumu kad je sječa ili otprema počela' +
-                (izabraniIzvodjac ? ' — izvođač: <strong>' + izabraniIzvodjac + '</strong>' : ' — svi izvođači') +
+                (izabraniIzvodjac ? ' — izvođač: <strong>' + escapeHtml(izabraniIzvodjac) + '</strong>' : ' — svi izvođači') +
                 '. Pauza duža od ' + TL_SEGMENT_PAUZA_DANA + ' dana prikazana je kao dvije trake iste boje na istom redu.</span>' +
                 '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:auto;font-weight:600;color:#374151;white-space:nowrap;">' +
                 '<input type="checkbox" onchange="tlToggleOtprema(this.checked)"' + (_tlHideOtprema ? ' checked' : '') + '>' +
@@ -7423,46 +7423,47 @@
             }
 
             const sortNazivi = data.sortimentiNazivi; // 20 naziva
-            let html = `<p style="color:#4b5563;font-size:13px;margin-bottom:16px;">📅 Prikazani podaci za: <strong style="color:#2F343A;">${MJESECI_NAZIVI[month]} ${year}</strong></p>`;
+            let html = `<p style="color:#6b7280;font-size:13px;margin-bottom:16px;">📅 Prikazani podaci za: <strong style="color:#7c2d12;">${MJESECI_NAZIVI[month]} ${year}</strong></p>`;
 
             data.radilista.forEach(radiliste => {
-                html += `<h4 style="background:#2F343A;color:#F3F4F6;padding:11px 18px;border-radius:8px;margin:24px 0 10px;font-weight:600;font-size:14px;letter-spacing:0.02em;">🏗️ ${radiliste.naziv}</h4>`;
-                html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid #D1D5DB;">';
+                html += `<h4 style="background:linear-gradient(135deg, #78350f, #451a03);color:#fff7ed;padding:11px 18px;border-radius:8px;margin:24px 0 10px;font-weight:600;font-size:14px;letter-spacing:0.02em;">🏗️ ${escapeHtml(radiliste.naziv)}</h4>`;
+                html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid #fed7aa;">';
                 html += '<table class="monthly-table" style="min-width:900px;border-collapse:collapse;">';
                 html += '<thead><tr>';
-                html += `<th style="background:#2F343A;color:#F3F4F6;padding:10px 12px;position:sticky;left:0;z-index:10;min-width:160px;font-size:12px;font-weight:600;border-bottom:2px solid #4B5563;">👷 Primač</th>`;
+                html += `<th style="background:linear-gradient(135deg, #fef3c7, #fde68a);color:#92400e;padding:10px 12px;position:sticky;left:0;z-index:10;min-width:160px;font-size:12px;font-weight:600;border-bottom:2px solid #f59e0b;">👷 Primač</th>`;
                 sortNazivi.forEach((s, i) => {
                     const isTotal = i === 19;
-                    const bg = isTotal ? '#1F2937' : '#2F343A';
-                    html += `<th style="background:${bg};color:#F3F4F6;padding:8px 4px;font-size:10px;min-width:65px;white-space:nowrap;font-weight:600;border-bottom:2px solid #4B5563;">${s}</th>`;
+                    const bg = isTotal ? 'linear-gradient(135deg, #78350f, #451a03)' : 'linear-gradient(135deg, #fef3c7, #fde68a)';
+                    const fg = isTotal ? '#fff7ed' : '#92400e';
+                    html += `<th style="background:${bg};color:${fg};padding:8px 4px;font-size:10px;min-width:65px;white-space:nowrap;font-weight:600;border-bottom:2px solid #f59e0b;">${s}</th>`;
                 });
                 html += '</tr></thead><tbody>';
 
                 const radilisteUkupno = Array(20).fill(0);
                 radiliste.primaci.forEach((primac, idx) => {
-                    const bg = idx % 2 === 0 ? '#F8FAFC' : '#FFFFFF';
-                    html += `<tr style="background:${bg};transition:background 0.15s;" onmouseover="this.style.background='#EEF0F3'" onmouseout="this.style.background='${bg}'">`;
-                    html += `<td style="font-weight:600;font-size:12px;border-bottom:1px solid #E5E7EB;padding:9px 12px;color:#2F343A;position:sticky;left:0;background:${bg};z-index:5;">${primac.naziv}</td>`;
+                    const bg = idx % 2 === 0 ? '#fff7ed' : '#ffffff';
+                    html += `<tr style="background:${bg};transition:background 0.15s;" onmouseover="this.style.background='#ffedd5'" onmouseout="this.style.background='${bg}'">`;
+                    html += `<td style="font-weight:600;font-size:12px;border-bottom:1px solid #fed7aa;padding:9px 12px;color:#7c2d12;position:sticky;left:0;background:${bg};z-index:5;">${escapeHtml(primac.naziv)}</td>`;
                     primac.sortimentiVrijednosti.forEach((val, j) => {
                         radilisteUkupno[j] += val;
                         const disp = val > 0 ? val.toFixed(2) : '-';
                         const isTotal = j === 19;
                         const cellStyle = isTotal
-                            ? 'background:#EEF0F3;border-left:2px solid #9CA3AF;font-weight:800;font-size:12px;color:#1F2937;'
-                            : (val > 0 ? 'font-weight:600;color:#374151;' : 'color:#CBD5E1;');
-                        html += `<td style="${cellStyle}border-bottom:1px solid #E5E7EB;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:7px 6px;">${disp}</td>`;
+                            ? 'background:#fef3c7;border-left:2px solid #f59e0b;font-weight:800;font-size:12px;color:#92400e;'
+                            : (val > 0 ? 'font-weight:600;color:#374151;' : 'color:#d1d5db;');
+                        html += `<td style="${cellStyle}border-bottom:1px solid #fed7aa;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:7px 6px;">${disp}</td>`;
                     });
                     html += '</tr>';
                 });
 
                 // UKUPNO red za radilište
-                html += `<tr style="background:#3F4752;">`;
-                html += `<td style="font-weight:800;color:#FFFFFF;padding:10px 12px;border-top:2px solid #6B7280;position:sticky;left:0;background:#3F4752;z-index:5;font-size:12px;">UKUPNO</td>`;
+                html += `<tr style="background:#92400e;">`;
+                html += `<td style="font-weight:800;color:#fff7ed;padding:10px 12px;border-top:2px solid #78350f;position:sticky;left:0;background:#92400e;z-index:5;font-size:12px;">UKUPNO</td>`;
                 radilisteUkupno.forEach((val, j) => {
                     const disp = val > 0 ? val.toFixed(2) : '-';
                     const isTotal = j === 19;
-                    const cellStyle = isTotal ? 'background:#2F343A;font-size:13px;font-weight:900;' : 'font-weight:700;';
-                    html += `<td style="${cellStyle}color:#FFFFFF;border-top:2px solid #6B7280;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:8px 6px;">${disp}</td>`;
+                    const cellStyle = isTotal ? 'background:#451a03;font-size:13px;font-weight:900;' : 'font-weight:700;';
+                    html += `<td style="${cellStyle}color:#fff7ed;border-top:2px solid #78350f;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:8px 6px;">${disp}</td>`;
                 });
                 html += '</tr>';
 
