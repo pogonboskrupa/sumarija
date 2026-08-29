@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.15';
+        const APP_VERSION = '1.17.16';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6187,12 +6187,13 @@
             }
         }
 
-        function _dinamikeSortimentTable(naslov, bojaBg, redovi, sortimentiNazivi) {
+        function _dinamikeSortimentTable(naslov, ikonBoja, bojaBg, redovi, sortimentiNazivi) {
             // redovi = [{ labela, podaci, istaknut }] — 3 reda: prošli period, prošli mjesec, ukupno
             const ukupnoKey = sortimentiNazivi[sortimentiNazivi.length - 1];
-            let headerHTML = `<tr><th style="background:${bojaBg}; color:white; padding:8px; text-align:left; font-size:11px;">${naslov}</th>`;
+            let headerHTML = `<tr><th style="background:${bojaBg};">Sortiment</th>`;
             sortimentiNazivi.forEach(s => {
-                headerHTML += `<th style="background:${bojaBg}; color:white; padding:6px; font-size:9px;">${escapeHtml(s)}</th>`;
+                const isTotal = s === ukupnoKey;
+                headerHTML += `<th style="background:${bojaBg}; ${isTotal ? 'text-decoration:underline;' : ''}">${escapeHtml(s)}</th>`;
             });
             headerHTML += `</tr>`;
 
@@ -6202,12 +6203,19 @@
                     const val = Number(red.podaci[s]) || 0;
                     const displayVal = val > 0 ? val.toFixed(2) : '-';
                     const isTotal = s === ukupnoKey;
-                    return `<td style="border:1px solid #e5e7eb; font-family:'Courier New',monospace; font-size:10px; text-align:right; padding:6px; ${val > 0 ? 'font-weight:700; color:#1f2937;' : 'color:#d1d5db;'} ${isTotal ? 'background:#f9fafb; font-weight:800;' : ''}">${displayVal}</td>`;
+                    return `<td style="${val > 0 ? 'font-weight:700; color:#1f2937;' : 'color:#d1d5db;'} ${isTotal ? 'background:#f9fafb; font-weight:800; border-left:2px solid #e2e8f0;' : ''}">${displayVal}</td>`;
                 }).join('');
-                bodyHTML += `<tr style="${red.istaknut ? 'background:#f3f4f6;' : ''}"><td style="border:1px solid #e5e7eb; padding:8px; font-size:11px; font-weight:${red.istaknut ? '800' : '600'}; color:#374151;">${escapeHtml(red.labela)}</td>${cells}</tr>`;
+                bodyHTML += `<tr class="${red.istaknut ? 'dinamike-row-total' : ''}"><td>${escapeHtml(red.labela)}</td>${cells}</tr>`;
             });
 
-            return `<div style="overflow-x:auto; -webkit-overflow-scrolling:touch;"><table style="border-collapse:collapse; width:100%; min-width:900px;"><thead>${headerHTML}</thead><tbody>${bodyHTML}</tbody></table></div>`;
+            return `
+                <div>
+                    <p class="dinamike-subtable-title" style="color:${ikonBoja};">${naslov}</p>
+                    <div class="dinamike-subtable-wrap">
+                        <table class="dinamike-subtable"><thead>${headerHTML}</thead><tbody>${bodyHTML}</tbody></table>
+                    </div>
+                </div>
+            `;
         }
 
         function _renderDinamikeIzvodjaca() {
@@ -6242,47 +6250,53 @@
                 const otpremaUkupno = { ...o.otprema.prosliPeriod };
                 sortimentiNazivi.forEach(s => otpremaUkupno[s] = (Number(o.otprema.prosliPeriod[s]) || 0) + (Number(o.otprema.prosliMjesec[s]) || 0));
 
-                const sjecaTable = _dinamikeSortimentTable('🪓 SJEČA', 'linear-gradient(135deg, #059669, #047857)', [
-                    { labela: 'Izvršenje u prethodnom periodu', podaci: o.sjeca.prosliPeriod },
-                    { labela: `Izvršenje u ${nazivMjeseca.toLowerCase()}u`, podaci: o.sjeca.prosliMjesec },
-                    { labela: 'UKUPNO IZVRŠENJE', podaci: sjecaUkupno, istaknut: true }
+                const sjecaTable = _dinamikeSortimentTable('🪓 Sječa', '#047857', 'linear-gradient(135deg, #059669, #047857)', [
+                    { labela: 'Prethodni period', podaci: o.sjeca.prosliPeriod },
+                    { labela: nazivMjeseca, podaci: o.sjeca.prosliMjesec },
+                    { labela: 'Ukupno izvršenje', podaci: sjecaUkupno, istaknut: true }
                 ], sortimentiNazivi);
 
-                const otpremaTable = _dinamikeSortimentTable('🚛 OTPREMA', 'linear-gradient(135deg, #1e3a5f, #0f2942)', [
-                    { labela: 'Izvršenje u prethodnom periodu', podaci: o.otprema.prosliPeriod },
-                    { labela: `Izvršenje u ${nazivMjeseca.toLowerCase()}u`, podaci: o.otprema.prosliMjesec },
-                    { labela: 'UKUPNO IZVRŠENJE', podaci: otpremaUkupno, istaknut: true }
+                const otpremaTable = _dinamikeSortimentTable('🚛 Otprema', '#1e3a5f', 'linear-gradient(135deg, #1e3a5f, #0f2942)', [
+                    { labela: 'Prethodni period', podaci: o.otprema.prosliPeriod },
+                    { labela: nazivMjeseca, podaci: o.otprema.prosliMjesec },
+                    { labela: 'Ukupno izvršenje', podaci: otpremaUkupno, istaknut: true }
                 ], sortimentiNazivi);
 
                 const indexBadge = (val) => {
                     const boja = val >= 100 ? '#059669' : (val >= 70 ? '#d97706' : '#dc2626');
-                    return `<span style="background:${boja}; color:white; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:700;">${val.toFixed(0)}%</span>`;
+                    return `<span class="dinamike-index-badge" style="background:${boja};">${val.toFixed(0)}%</span>`;
                 };
 
                 return `
-                    <div class="section" style="margin-bottom:20px; border:1px solid #e5e7eb;">
-                        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:14px;">
-                            <div>
-                                <h4 style="margin:0 0 4px; color:#7c2d12;">🌲 Odjel: ${escapeHtml(o.odjel)}</h4>
-                                <div style="font-size:12px; color:#6b7280;">
-                                    ${o.radiliste ? 'G. Jedinica: <b>' + escapeHtml(String(o.radiliste)) + '</b> · ' : ''}
-                                    Izvođač: <b>${escapeHtml(o.izvodjac || '—')}</b> ·
-                                    Poslovođa: <b>${escapeHtml(o.poslovodja || '—')}</b>
+                    <div class="izv-card">
+                        <div class="izv-card-header">
+                            <div class="izv-card-header-title">
+                                <span class="izv-card-icon">🌲</span>
+                                <div>
+                                    <h4>Odjel ${escapeHtml(o.odjel)}</h4>
+                                    <span class="izv-card-sub">
+                                        ${o.radiliste ? 'G. Jedinica: ' + escapeHtml(String(o.radiliste)) + ' · ' : ''}
+                                        Izvođač: ${escapeHtml(o.izvodjac || '—')} · Poslovođa: ${escapeHtml(o.poslovodja || '—')}
+                                    </span>
                                 </div>
                             </div>
-                            <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#374151; cursor:pointer;">
-                                <input type="checkbox" id="dinamika-pregled-${idx}" onchange="toggleDinamikaPregled(${idx}, this.checked)">
-                                Završen pregled odjela
-                            </label>
+                            <div class="izv-card-actions">
+                                <label class="dinamike-pregled-toggle">
+                                    <input type="checkbox" id="dinamika-pregled-${idx}" onchange="toggleDinamikaPregled(${idx}, this.checked)">
+                                    Završen pregled odjela
+                                </label>
+                            </div>
                         </div>
-                        <span id="dinamika-pregled-status-${idx}" style="display:none; font-size:11px; margin-bottom:8px;"></span>
-                        <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; margin-bottom:14px; padding:10px; background:#fef3c7; border-radius:8px;">
-                            <div style="font-size:12px; color:#92400e;">Ugovorena (projektovana) masa: <b>${o.ugovorenoUkupno.toFixed(2)} m³</b></div>
-                            <div style="font-size:12px; color:#92400e;">Index izvršenja sječe: ${indexBadge(o.indexSjeca)}</div>
-                            <div style="font-size:12px; color:#92400e;">Index izvršenja otpreme: ${indexBadge(o.indexOtprema)}</div>
+                        <div class="izv-card-body">
+                            <span id="dinamika-pregled-status-${idx}" style="display:none; font-size:11px; margin-bottom:8px;"></span>
+                            <div class="dinamike-stat-strip">
+                                <div class="dinamike-stat-chip">🎯 Ugovorena masa: <b>${o.ugovorenoUkupno.toFixed(2)} m³</b></div>
+                                <div class="dinamike-stat-chip">🪓 Index sječe: ${indexBadge(o.indexSjeca)}</div>
+                                <div class="dinamike-stat-chip">🚛 Index otpreme: ${indexBadge(o.indexOtprema)}</div>
+                            </div>
+                            ${sjecaTable}
+                            ${otpremaTable}
                         </div>
-                        <div style="margin-bottom:14px;">${sjecaTable}</div>
-                        <div>${otpremaTable}</div>
                     </div>
                 `;
             }).join('');
