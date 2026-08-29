@@ -312,7 +312,6 @@
             document.getElementById('primaci-period-view').classList.add('hidden');
             document.getElementById('primaci-sortimenti-primac-view').classList.add('hidden');
             document.getElementById('primaci-trendovi-view').classList.add('hidden');
-            document.getElementById('primaci-dinamike-izvodjaca-view').classList.add('hidden');
 
             // Show selected view
             if (view === 'monthly') {
@@ -360,10 +359,6 @@
                 document.getElementById('primaci-trendovi-view').classList.remove('hidden');
                 // Load on first open (lazy) — vidi loadPrimaciTrendovi u app.js
                 if (typeof loadPrimaciTrendovi === 'function') loadPrimaciTrendovi();
-            } else if (view === 'dinamike-izvodjaca') {
-                document.getElementById('primaci-dinamike-izvodjaca-view').classList.remove('hidden');
-                // Load on first open (lazy) — vidi loadDinamikeIzvodjaca u app.js
-                if (!document.getElementById('dinamike-izvodjaca-list').innerHTML) loadDinamikeIzvodjaca();
             }
         }
 
@@ -375,18 +370,25 @@
             const bOtprema     = document.getElementById('mjesecni-sortimenti-toggle-otprema');
             const bKombinovano = document.getElementById('mjesecni-sortimenti-toggle-kombinovano');
             const bPregled     = document.getElementById('mjesecni-sortimenti-toggle-pregled');
+            const bDinamike    = document.getElementById('mjesecni-sortimenti-toggle-dinamike');
             if (bSjeca)       bSjeca.classList.toggle('active', view === 'sjeca');
             if (bOtprema)     bOtprema.classList.toggle('active', view === 'otprema');
             if (bKombinovano) bKombinovano.classList.toggle('active', view === 'kombinovano');
             if (bPregled)     bPregled.classList.toggle('active', view === 'pregled');
+            if (bDinamike)    bDinamike.classList.toggle('active', view === 'dinamike');
             document.getElementById('mjesecni-sjeca-card').classList.toggle('hidden', view !== 'sjeca');
             document.getElementById('mjesecni-otprema-card').classList.toggle('hidden', view !== 'otprema');
             document.getElementById('mjesecni-kombinovano-card').classList.toggle('hidden', view !== 'kombinovano');
             document.getElementById('mjesecni-pregled-card').classList.toggle('hidden', view !== 'pregled');
+            document.getElementById('mjesecni-dinamike-card').classList.toggle('hidden', view !== 'dinamike');
             // Pregled po odjelima/mjesecima — teži prikaz (svi odjeli firme), lazy
             // load samo prvi put (isti obrazac kao primaci-admin-odjeli-container).
             if (view === 'pregled' && !document.getElementById('mjesecni-pregled-container').innerHTML) {
                 if (typeof loadAdminPregledPoMjesecima === 'function') loadAdminPregledPoMjesecima();
+            }
+            // Dinamike izvođača — lazy load samo prvi put.
+            if (view === 'dinamike' && !document.getElementById('dinamike-izvodjaca-list').innerHTML) {
+                if (typeof loadDinamikeIzvodjaca === 'function') loadDinamikeIzvodjaca();
             }
         }
 

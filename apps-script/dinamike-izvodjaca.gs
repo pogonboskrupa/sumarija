@@ -87,54 +87,42 @@ function handleDinamikeIzvodjaca(year, username, password) {
   try {
     var granice = _dinamikePeriodGranice();
     var ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    var godinaFilter = parseInt(year, 10);
 
-    // 1) Lista odjela + ugovorena (projektovana) ukupna masa + izvođač/radilište
-    //    — iz STANJE_ODJELA_CACHE (isti izvor kao "Stanje zaliha po odjelu").
-    var cacheSheet = ss.getSheetByName('STANJE_ODJELA_CACHE');
-    if (!cacheSheet) {
-      syncStanjeOdjela();
-      cacheSheet = ss.getSheetByName('STANJE_ODJELA_CACHE');
-    }
+    // Lista odjela se gradi ISKLJUČIVO iz stvarne, žive sječe/otpreme
+    // (INDEKS_PRIMKA/INDEKS_OTPREMA) — NE iz STANJE_ODJELA_CACHE, koji je
+    // odvojen izvor (Drive folder sa po-odjel fajlovima) što nije nužno
+    // ažuran/sinhronizovan sa aktuelnim unosima (probano: odjeli sa sječom
+    // svaki mjesec ove godine su se ipak vidjeli kao "nema podataka" jer ih
+    // taj cache nije imao). STANJE_ODJELA_CACHE se dolje koristi SAMO kao
+    // opciona dopuna za ugovorenu masu, nikad da isključi odjel iz liste.
+    var odjeliMap = {};
+    var poredak = [];
 
-    var odjeliMap = {};   // KLJUČ (velika slova, trim) -> objekat
-    var poredak = [];     // redoslijed kako se pojavljuju u cache sheetu
-
-    if (cacheSheet) {
-      var allData = cacheSheet.getDataRange().getValues();
-      for (var i = 2; i < allData.length; i++) {
-        var row = allData[i];
-        var redTip = row[0];
-        var odjelNaziv = String(row[1] || '').trim();
-        if (!odjelNaziv) continue;
-        var odjelKljuc = odjelNaziv.toUpperCase();
-        var radiliste = row[2];
-        var izvodjac = row[3];
-        var dataRow = row.slice(5); // cijeli red iz per-odjel OTPREMA sheeta
-        var sveukupno = parseFloat(dataRow[dataRow.length - 1]) || 0;
-
-        if (!odjeliMap[odjelKljuc]) {
-          odjeliMap[odjelKljuc] = {
-            odjel: odjelNaziv,
-            radiliste: radiliste || '',
-            izvodjac: izvodjac || '',
-            poslovodja: '',
-            zadnjiDatumSjece: null,
-            zadnjiDatumOtpreme: null,
-            ugovorenoUkupno: 0,
-            sjeca: { prosliPeriod: _prazniSortimentiObjekat(), prosliMjesec: _prazniSortimentiObjekat() },
-            otprema: { prosliPeriod: _prazniSortimentiObjekat(), prosliMjesec: _prazniSortimentiObjekat() }
-          };
-          poredak.push(odjelKljuc);
-        }
-        if (redTip === 'PROJEKAT') {
-          odjeliMap[odjelKljuc].ugovorenoUkupno = sveukupno;
-        }
+    function _osiguraj(odjelNaziv) {
+      var odjelKljuc = odjelNaziv.toUpperCase();
+      if (!odjeliMap[odjelKljuc]) {
+        odjeliMap[odjelKljuc] = {
+          odjel: odjelNaziv,
+          radiliste: '',
+          izvodjac: '',
+          poslovodja: '',
+          zadnjiDatumSjece: null,
+          zadnjiDatumOtpreme: null,
+          ugovorenoUkupno: 0,
+          sjeca: { prosliPeriod: _prazniSortimentiObjekat(), prosliMjesec: _prazniSortimentiObjekat() },
+          otprema: { prosliPeriod: _prazniSortimentiObjekat(), prosliMjesec: _prazniSortimentiObjekat() }
+        };
+        poredak.push(odjelKljuc);
       }
+      return odjeliMap[odjelKljuc];
     }
 
-    // 2) Realizacija SJEČE — iz INDEKS_PRIMKA, podijeljena na prošli period / prošli mjesec.
-    //    Redovi iz STVARNOG tekućeg mjeseca (u toku) se namjerno isključuju —
-    //    izvještaj je uvijek za protekli mjesec.
+    // 1) SJEČA — iz INDEKS_PRIMKA (tekuća godina), gradi listu odjela i
+    //    realizaciju podijeljenu na prošli period / prošli mjesec. Redovi iz
+    //    STVARNOG tekućeg mjeseca (u toku) se isključuju iz realizacije —
+    //    izvještaj je uvijek za protekli mjesec — ali odjel i dalje ulazi u
+    //    listu čim ima bilo kakav red ove godine.
     var primkaSheet = ss.getSheetByName('INDEKS_PRIMKA');
     if (primkaSheet) {
       var primkaData = primkaSheet.getDataRange().getValues();
@@ -144,26 +132,29 @@ function handleDinamikeIzvodjaca(year, username, password) {
         if (!pdatum) continue;
         var pdatumObj = parseDate(pdatum);
         if (!pdatumObj || isNaN(pdatumObj.getTime())) continue;
+        if (pdatumObj.getFullYear() !== godinaFilter) continue;
+
+        var pOdjelNaziv = String(prow[PRIMKA_COL.ODJEL] || '').trim();
+        if (!pOdjelNaziv) continue;
+        var podj = _osiguraj(pOdjelNaziv);
+
+        if (!podj.zadnjiDatumSjece || pdatumObj > podj.zadnjiDatumSjece) {
+          podj.zadnjiDatumSjece = pdatumObj;
+          podj.radiliste = String(prow[PRIMKA_COL.RADILISTE] || '').trim() || podj.radiliste;
+          podj.izvodjac = String(prow[PRIMKA_COL.IZVODJAC] || '').trim() || podj.izvodjac;
+          var pposl = String(prow[PRIMKA_COL.POSLOVODJA] || '').trim();
+          if (pposl) podj.poslovodja = pposl;
+        }
+
         if (pdatumObj >= granice.krajProslogMjeseca) continue;
-
-        var pOdjelKljuc = String(prow[PRIMKA_COL.ODJEL] || '').trim().toUpperCase();
-        if (!pOdjelKljuc || !odjeliMap[pOdjelKljuc]) continue;
-
-        var podj = odjeliMap[pOdjelKljuc];
         var pbucket = (pdatumObj >= granice.pocetakProslogMjeseca) ? podj.sjeca.prosliMjesec : podj.sjeca.prosliPeriod;
         for (var pj = 0; pj < SORTIMENTI_NAZIVI.length; pj++) {
           pbucket[SORTIMENTI_NAZIVI[pj]] += parseFloat(prow[PRIMKA_COL.SORT_START + pj]) || 0;
         }
-
-        if (!podj.zadnjiDatumSjece || pdatumObj > podj.zadnjiDatumSjece) {
-          podj.zadnjiDatumSjece = pdatumObj;
-          var pposl = String(prow[PRIMKA_COL.POSLOVODJA] || '').trim();
-          if (pposl) podj.poslovodja = pposl;
-        }
       }
     }
 
-    // 3) Realizacija OTPREME — iz INDEKS_OTPREMA, isto grananje.
+    // 2) OTPREMA — iz INDEKS_OTPREMA (tekuća godina), isto grananje.
     var otpremaSheet = ss.getSheetByName('INDEKS_OTPREMA');
     if (otpremaSheet) {
       var otpremaData = otpremaSheet.getDataRange().getValues();
@@ -173,24 +164,46 @@ function handleDinamikeIzvodjaca(year, username, password) {
         if (!odatum) continue;
         var odatumObj = parseDate(odatum);
         if (!odatumObj || isNaN(odatumObj.getTime())) continue;
-        if (odatumObj >= granice.krajProslogMjeseca) continue;
+        if (odatumObj.getFullYear() !== godinaFilter) continue;
 
-        var oOdjelKljuc = String(orow[OTPREMA_COL.ODJEL] || '').trim().toUpperCase();
-        if (!oOdjelKljuc || !odjeliMap[oOdjelKljuc]) continue;
-
-        var oodj = odjeliMap[oOdjelKljuc];
-        var obucket = (odatumObj >= granice.pocetakProslogMjeseca) ? oodj.otprema.prosliMjesec : oodj.otprema.prosliPeriod;
-        for (var oj = 0; oj < SORTIMENTI_NAZIVI.length; oj++) {
-          obucket[SORTIMENTI_NAZIVI[oj]] += parseFloat(orow[OTPREMA_COL.SORT_START + oj]) || 0;
-        }
+        var oOdjelNaziv = String(orow[OTPREMA_COL.ODJEL] || '').trim();
+        if (!oOdjelNaziv) continue;
+        var oodj = _osiguraj(oOdjelNaziv);
 
         if (!oodj.zadnjiDatumOtpreme || odatumObj > oodj.zadnjiDatumOtpreme) {
           oodj.zadnjiDatumOtpreme = odatumObj;
+          if (!oodj.radiliste) oodj.radiliste = String(orow[OTPREMA_COL.RADILISTE] || '').trim();
+          if (!oodj.izvodjac) oodj.izvodjac = String(orow[OTPREMA_COL.IZVODJAC] || '').trim();
           if (!oodj.poslovodja) {
             var oposl = String(orow[OTPREMA_COL.POSLOVODJA] || '').trim();
             if (oposl) oodj.poslovodja = oposl;
           }
         }
+
+        if (odatumObj >= granice.krajProslogMjeseca) continue;
+        var obucket = (odatumObj >= granice.pocetakProslogMjeseca) ? oodj.otprema.prosliMjesec : oodj.otprema.prosliPeriod;
+        for (var oj = 0; oj < SORTIMENTI_NAZIVI.length; oj++) {
+          obucket[SORTIMENTI_NAZIVI[oj]] += parseFloat(orow[OTPREMA_COL.SORT_START + oj]) || 0;
+        }
+      }
+    }
+
+    // 3) Ugovorena (projektovana) masa — best-effort dopuna iz STANJE_ODJELA_CACHE
+    //    (isti izvor kao "Stanje zaliha po odjelu"). Odjel koji nema odgovarajući
+    //    red tamo (ili sheet uopšte ne postoji) ostaje na listi sa ugovorenoUkupno=0
+    //    umjesto da nestane sa liste.
+    var cacheSheet = ss.getSheetByName('STANJE_ODJELA_CACHE');
+    if (cacheSheet) {
+      var allData = cacheSheet.getDataRange().getValues();
+      for (var i = 2; i < allData.length; i++) {
+        var row = allData[i];
+        if (row[0] !== 'PROJEKAT') continue;
+        var odjelNaziv = String(row[1] || '').trim();
+        if (!odjelNaziv) continue;
+        var odjelKljuc = odjelNaziv.toUpperCase();
+        if (!odjeliMap[odjelKljuc]) continue; // dopuni samo postojeće, ne dodaji nove
+        var dataRow = row.slice(5);
+        odjeliMap[odjelKljuc].ugovorenoUkupno = parseFloat(dataRow[dataRow.length - 1]) || 0;
       }
     }
 
