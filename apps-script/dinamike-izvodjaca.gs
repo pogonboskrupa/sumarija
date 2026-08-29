@@ -80,10 +80,10 @@ function handleDinamikeIzvodjaca(year, username, password) {
   var loginResult = JSON.parse(handleLogin(username, password).getContent());
   if (!loginResult.success) return createJsonResponse({ error: 'Unauthorized' }, false);
 
-  // v2 — lista odjela sad dolazi iz INDEKS_PRIMKA/OTPREMA umjesto
-  // STANJE_ODJELA_CACHE (vidi komentar niže). Ključ promijenjen da odmah
-  // istisne stari keširan (prazan) odgovor umjesto čekanja TTL isteka.
-  var cacheKey = 'dinamike_izvodjaca_v2_' + year;
+  // v3 — odjeli se sad sortiraju po izvođaču (grupe idu redoslijedom
+  // najnovije aktivnosti). Ključ promijenjen da odmah istisne stariji
+  // keširan odgovor (drugačiji redoslijed) umjesto čekanja TTL isteka.
+  var cacheKey = 'dinamike_izvodjaca_v3_' + year;
   var cached = getCachedData(cacheKey);
   if (cached) return createJsonResponse(cached, true);
 
@@ -214,6 +214,13 @@ function handleDinamikeIzvodjaca(year, username, password) {
     var pregledMap = _citajDinamikePregledMap(year);
     var ukupnoKey = SORTIMENTI_NAZIVI[SORTIMENTI_NAZIVI.length - 1]; // "UKUPNO Č+L"
 
+    // Zadnja aktivnost odjela = kasniji od zadnjeg datuma sječe/otpreme.
+    function _zadnjaAktivnost(o) {
+      var a = o.zadnjiDatumSjece, b = o.zadnjiDatumOtpreme;
+      if (a && b) return a > b ? a : b;
+      return a || b || null;
+    }
+
     var odjeli = poredak
       .filter(function(kljuc) { return !pregledMap[kljuc]; })
       .map(function(kljuc) {
@@ -229,9 +236,31 @@ function handleDinamikeIzvodjaca(year, username, password) {
           sjeca: o.sjeca,
           otprema: o.otprema,
           indexSjeca: o.ugovorenoUkupno > 0 ? (sjecaUkupno / o.ugovorenoUkupno) * 100 : 0,
-          indexOtprema: o.ugovorenoUkupno > 0 ? (otpremaUkupno / o.ugovorenoUkupno) * 100 : 0
+          indexOtprema: o.ugovorenoUkupno > 0 ? (otpremaUkupno / o.ugovorenoUkupno) * 100 : 0,
+          _zadnjaAktivnost: _zadnjaAktivnost(o)
         };
       });
+
+    // Poredaj po izvođaču — grupe izvođača idu redoslijedom njihove
+    // NAJNOVIJE aktivnosti (bilo koji njihov odjel), a unutar grupe odjeli
+    // idu od najnovije ka najstarijoj aktivnosti.
+    var izvodjacMaxDatum = {};
+    odjeli.forEach(function(o) {
+      var kljuc = String(o.izvodjac || '').trim().toUpperCase();
+      var t = o._zadnjaAktivnost ? o._zadnjaAktivnost.getTime() : 0;
+      if (!(kljuc in izvodjacMaxDatum) || t > izvodjacMaxDatum[kljuc]) izvodjacMaxDatum[kljuc] = t;
+    });
+    odjeli.sort(function(a, b) {
+      var ka = String(a.izvodjac || '').trim().toUpperCase();
+      var kb = String(b.izvodjac || '').trim().toUpperCase();
+      var diffIzvodjac = izvodjacMaxDatum[kb] - izvodjacMaxDatum[ka];
+      if (diffIzvodjac !== 0) return diffIzvodjac;
+      if (ka !== kb) return ka < kb ? -1 : 1; // isti max datum, različiti izvođači — stabilnost
+      var ta = a._zadnjaAktivnost ? a._zadnjaAktivnost.getTime() : 0;
+      var tb = b._zadnjaAktivnost ? b._zadnjaAktivnost.getTime() : 0;
+      return tb - ta;
+    });
+    odjeli.forEach(function(o) { delete o._zadnjaAktivnost; });
 
     var rezultat = {
       odjeli: odjeli,

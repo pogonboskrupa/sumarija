@@ -326,7 +326,7 @@ function _sviCacheKljucevi() {
       'dashboard_' + y, 'primaci_' + y, 'otpremaci_' + y, 'kupci_' + y,
       'mjesecni_sortimenti_' + y, 'stats_' + y, 'dinamika_' + y,
       'primaci_radiliste_' + y, 'otpremaci_radiliste_' + y, 'primaci_izvodjac_v2_' + y,
-      'dinamike_izvodjaca_v2_' + y
+      'dinamike_izvodjaca_v3_' + y
     );
   });
   kljucevi.push('odjeli_alltime', 'primke_all', 'otpreme_all', 'stanje_zaliha_all');
@@ -371,7 +371,7 @@ function invalidateCacheZa(tip) {
         kljucevi.push(tip === 'sjeca' ? 'primaci_radiliste_' + g : 'otpremaci_radiliste_' + g);
         if (tip === 'sjeca') kljucevi.push('primaci_izvodjac_v2_' + g);
         if (tip === 'otprema') kljucevi.push('kupci_' + g);
-        kljucevi.push('dinamike_izvodjaca_v2_' + g);
+        kljucevi.push('dinamike_izvodjaca_v3_' + g);
       });
       kljucevi.push('odjeli_alltime', 'stanje_zaliha_all');
       kljucevi.push(tip === 'sjeca' ? 'primke_all' : 'otpreme_all');

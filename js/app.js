@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.16';
+        const APP_VERSION = '1.17.17';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6168,7 +6168,7 @@
             try {
                 const year = new Date().getFullYear();
                 const url = buildApiUrl('dinamike-izvodjaca', { year });
-                const data = await fetchWithCache(url, `cache_dinamike_izvodjaca_v2_${year}`, false, 120000);
+                const data = await fetchWithCache(url, `cache_dinamike_izvodjaca_v3_${year}`, false, 120000);
 
                 if (loadingEl) loadingEl.classList.add('hidden');
 
@@ -6323,7 +6323,7 @@
                 if (!result || result.success !== true) throw new Error((result && result.error) || 'Greška');
 
                 // Osvježi keš i ponovo učitaj listu — pregledani odjel nestaje sa liste
-                await fetchWithCache(buildApiUrl('dinamike-izvodjaca', { year: godina }), `cache_dinamike_izvodjaca_v2_${godina}`, true, 120000);
+                await fetchWithCache(buildApiUrl('dinamike-izvodjaca', { year: godina }), `cache_dinamike_izvodjaca_v3_${godina}`, true, 120000);
                 loadDinamikeIzvodjaca();
             } catch (err) {
                 if (checkboxEl) { checkboxEl.checked = !checked; checkboxEl.disabled = false; }
