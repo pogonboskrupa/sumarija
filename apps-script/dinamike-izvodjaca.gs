@@ -80,7 +80,10 @@ function handleDinamikeIzvodjaca(year, username, password) {
   var loginResult = JSON.parse(handleLogin(username, password).getContent());
   if (!loginResult.success) return createJsonResponse({ error: 'Unauthorized' }, false);
 
-  var cacheKey = 'dinamike_izvodjaca_' + year;
+  // v2 — lista odjela sad dolazi iz INDEKS_PRIMKA/OTPREMA umjesto
+  // STANJE_ODJELA_CACHE (vidi komentar niže). Ključ promijenjen da odmah
+  // istisne stari keširan (prazan) odgovor umjesto čekanja TTL isteka.
+  var cacheKey = 'dinamike_izvodjaca_v2_' + year;
   var cached = getCachedData(cacheKey);
   if (cached) return createJsonResponse(cached, true);
 
