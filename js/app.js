@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.17';
+        const APP_VERSION = '1.17.18';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6150,25 +6150,41 @@
 
         // ═══════════════════════════════════════════════════════════════
         // 📊 DINAMIKE IZVOĐAČA — plan (ugovorena masa) vs realizacija po
-        // odjelu, razdvojeno na "prošli period" i "prošli mjesec". Izvještajni
-        // mjesec ovog podtaba je UVIJEK protekli kalendarski mjesec (vidi
-        // apps-script/dinamike-izvodjaca.gs) — za razliku od ostatka appa.
+        // odjelu, razdvojeno na "prošli period" (sve prije izabranog mjeseca)
+        // i izabrani mjesec (dropdown — može biti i stvarni tekući, u toku).
+        // Podrazumijevani izbor je protekli kalendarski mjesec, ali korisnik
+        // može izabrati bilo koji drugi (vidi apps-script/dinamike-izvodjaca.gs).
         // ═══════════════════════════════════════════════════════════════
         let _dinamikeIzvodjacaData = null;
 
-        async function loadDinamikeIzvodjaca() {
+        function _populateDinamikeIzvodjacaMjesecSelect() {
+            const sel = document.getElementById('dinamike-izvodjaca-mjesec-select');
+            if (!sel || sel.options.length) return;
+            const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+            sel.innerHTML = mjeseciNazivi.map((m, i) => '<option value="' + i + '">' + m + '</option>').join('');
+            // Podrazumijevano: protekli kalendarski mjesec (staro ponašanje)
+            const now = new Date();
+            let zadnji = now.getMonth() - 1;
+            if (zadnji < 0) zadnji = 11;
+            sel.value = String(zadnji);
+        }
+
+        async function loadDinamikeIzvodjaca(forceRefresh = false) {
             const loadingEl = document.getElementById('dinamike-izvodjaca-loading');
             const emptyEl = document.getElementById('dinamike-izvodjaca-empty');
             const listEl = document.getElementById('dinamike-izvodjaca-list');
             if (!listEl) return;
+            _populateDinamikeIzvodjacaMjesecSelect();
             if (loadingEl) loadingEl.classList.remove('hidden');
             if (emptyEl) emptyEl.classList.add('hidden');
             listEl.innerHTML = '';
 
             try {
                 const year = new Date().getFullYear();
-                const url = buildApiUrl('dinamike-izvodjaca', { year });
-                const data = await fetchWithCache(url, `cache_dinamike_izvodjaca_v3_${year}`, false, 120000);
+                const mjesecSel = document.getElementById('dinamike-izvodjaca-mjesec-select');
+                const mjesec = mjesecSel ? mjesecSel.value : '';
+                const url = buildApiUrl('dinamike-izvodjaca', { year, mjesec });
+                const data = await fetchWithCache(url, `cache_dinamike_izvodjaca_v4_${year}_${mjesec}`, forceRefresh, 120000);
 
                 if (loadingEl) loadingEl.classList.add('hidden');
 
@@ -6228,7 +6244,7 @@
             const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
             const nazivMjeseca = mjeseciNazivi[data.mjesecIzvjestaja] || '';
             if (podnaslovEl) {
-                podnaslovEl.textContent = `Izvještajni period: do kraja ${nazivMjeseca} ${data.godinaIzvjestaja}. — "prošli mjesec" u tabelama = ${nazivMjeseca}`;
+                podnaslovEl.textContent = `Izvještajni mjesec: ${nazivMjeseca} ${data.godinaIzvjestaja}. — "prošli period" u tabelama = sve prije mjeseca ${nazivMjeseca}`;
             }
 
             const odjeli = data.odjeli || [];
@@ -6322,9 +6338,8 @@
                 const result = await r.json();
                 if (!result || result.success !== true) throw new Error((result && result.error) || 'Greška');
 
-                // Osvježi keš i ponovo učitaj listu — pregledani odjel nestaje sa liste
-                await fetchWithCache(buildApiUrl('dinamike-izvodjaca', { year: godina }), `cache_dinamike_izvodjaca_v3_${godina}`, true, 120000);
-                loadDinamikeIzvodjaca();
+                // Ponovo učitaj listu uz forsirano osvježavanje keša — pregledani odjel nestaje sa liste
+                loadDinamikeIzvodjaca(true);
             } catch (err) {
                 if (checkboxEl) { checkboxEl.checked = !checked; checkboxEl.disabled = false; }
                 if (statusEl) {

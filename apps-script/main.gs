@@ -216,7 +216,7 @@ function doGet(e) {
       return handleGetZavrsenaRealizacija(e.parameter.username, e.parameter.password, e.parameter.godina);
     } else if (path === 'dinamike-izvodjaca') {
       // 📊 DINAMIKE IZVOĐAČA — plan vs realizacija po odjelu (Sječa tab)
-      return handleDinamikeIzvodjaca(e.parameter.year, e.parameter.username, e.parameter.password);
+      return handleDinamikeIzvodjaca(e.parameter.year, e.parameter.mjesec, e.parameter.username, e.parameter.password);
     } else if (path === 'set-dinamika-pregled') {
       // ✅ Ručno označavanje odjela kao "pregledan" u Dinamikama izvođača
       return handleSetDinamikaPregled(e.parameter);

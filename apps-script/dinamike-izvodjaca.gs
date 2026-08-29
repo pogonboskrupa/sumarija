@@ -1,18 +1,20 @@
 // ============================================================
 // 📊 DINAMIKE IZVOĐAČA — plan vs realizacija po odjelu (mjesečni pregled)
 // ============================================================
-// Podtab u SJEČA tabu ("📊 Dinamike izvođača"). Za svaki odjel koji ima
-// sječu/otpremu (lista odjela preuzeta iz STANJE_ODJELA_CACHE — vidi
-// syncStanjeOdjela u services.gs, isti izvor kao "Stanje zaliha po odjelu")
-// prikazuje: naziv odjela, radilište/GJ, izvođač, poslovođa, ugovorenu
-// (projektovanu) drvnu masu (SVEUKUPNO iz PROJEKAT reda), i realizaciju
-// razdvojenu na "prošli period" (sve prije prošlog mjeseca) i "prošli
-// mjesec" — odvojeno za SJEČU (INDEKS_PRIMKA) i OTPREMU (INDEKS_OTPREMA).
+// Podtab u Sječa/otprema tabu ("📊 Dinamike izvođača"). Za svaki odjel koji
+// ima sječu/otpremu (lista odjela izvedena direktno iz INDEKS_PRIMKA/
+// INDEKS_OTPREMA za izabranu godinu) prikazuje: naziv odjela, radilište/GJ,
+// izvođač, poslovođa, ugovorenu (projektovanu) drvnu masu (SVEUKUPNO iz
+// STANJE_ODJELA_CACHE PROJEKAT reda), i realizaciju razdvojenu na "prošli
+// period" (sve prije izabranog mjeseca) i izabrani mjesec — odvojeno za
+// SJEČU (INDEKS_PRIMKA) i OTPREMU (INDEKS_OTPREMA).
 //
-// VAŽNO — namjerni pomak mjeseca: izvještaji za ovaj podtab se rade za
-// PROTEKLI kalendarski mjesec (ne za tekući u toku), pa je "tekući mjesec"
-// ovdje zapravo prošli mjesec — za razliku od svih drugih tabova u
-// aplikaciji. Ovaj pomak je NAMJERNO izolovan samo u ovaj fajl.
+// VAŽNO — izbor izvještajnog mjeseca: korisnik bira mjesec u dropdownu
+// (index.html #dinamike-izvodjaca-mjesec-select). Sve prije izabranog
+// mjeseca ide u "prošli period", sam izabrani mjesec (može biti i stvarni
+// tekući, u toku) ide u red imenovan po njemu. Ako mjesec nije poslan
+// (stariji poziv), podrazumijeva se protekli kalendarski mjesec — staro
+// ponašanje, zadržano kao fallback.
 //
 // VAŽNO — ugovorena masa je SAMO ukupan broj (SVEUKUPNO), ne po sortimentu:
 // STANJE_ODJELA_CACHE (Drive fajlovi po odjelu) koristi drugačiji,
@@ -28,23 +30,27 @@
 var DINAMIKE_PREGLED_SHEET   = 'DINAMIKE_PREGLED_ODJELA';
 var DINAMIKE_PREGLED_HEADERS = ['ODJEL', 'GODINA', 'PREGLEDAN', 'KORISNIK', 'DATUM'];
 
-function _dinamikePeriodGranice() {
-  var now = new Date();
-  var godTekuca = now.getFullYear();
-  var mjTekuci = now.getMonth(); // 0-11, stvarni tekući mjesec
+function _dinamikePeriodGranice(mjesec, godina) {
+  var mjIzv, godIzv;
+  if (mjesec !== undefined && mjesec !== null && mjesec !== '') {
+    mjIzv = parseInt(mjesec, 10);
+    godIzv = (godina !== undefined && godina !== null && godina !== '') ? parseInt(godina, 10) : new Date().getFullYear();
+  } else {
+    // Fallback (mjesec nije poslan): protekli kalendarski mjesec
+    var now = new Date();
+    mjIzv = now.getMonth() - 1;
+    godIzv = now.getFullYear();
+    if (mjIzv < 0) { mjIzv = 11; godIzv -= 1; }
+  }
 
-  // "Izvještajni mjesec" ovog podtaba = protekli kalendarski mjesec
-  var mjProsli = mjTekuci - 1, godProsli = godTekuca;
-  if (mjProsli < 0) { mjProsli = 11; godProsli = godTekuca - 1; }
-
-  var pocetakProslogMjeseca = new Date(godProsli, mjProsli, 1, 0, 0, 0);
-  var krajProslogMjeseca = new Date(godProsli, mjProsli + 1, 1, 0, 0, 0); // ekskluzivna gornja granica
+  var pocetakProslogMjeseca = new Date(godIzv, mjIzv, 1, 0, 0, 0);
+  var krajProslogMjeseca = new Date(godIzv, mjIzv + 1, 1, 0, 0, 0); // ekskluzivna gornja granica
 
   return {
     pocetakProslogMjeseca: pocetakProslogMjeseca,
     krajProslogMjeseca: krajProslogMjeseca,
-    godinaIzvjestaja: godProsli,
-    mjesecIzvjestaja: mjProsli
+    godinaIzvjestaja: godIzv,
+    mjesecIzvjestaja: mjIzv
   };
 }
 
@@ -76,19 +82,21 @@ function _citajDinamikePregledMap(godina) {
 }
 
 // ---------- GLAVNI PODACI (GET) ----------
-function handleDinamikeIzvodjaca(year, username, password) {
+function handleDinamikeIzvodjaca(year, mjesec, username, password) {
   var loginResult = JSON.parse(handleLogin(username, password).getContent());
   if (!loginResult.success) return createJsonResponse({ error: 'Unauthorized' }, false);
 
-  // v3 — odjeli se sad sortiraju po izvođaču (grupe idu redoslijedom
-  // najnovije aktivnosti). Ključ promijenjen da odmah istisne stariji
-  // keširan odgovor (drugačiji redoslijed) umjesto čekanja TTL isteka.
-  var cacheKey = 'dinamike_izvodjaca_v3_' + year;
+  // v4 — izvještajni mjesec je sad biran u dropdownu (mjesec parametar),
+  // ne uvijek protekli kalendarski mjesec. Ključ uključuje mjesec da svaki
+  // izbor ima svoj keš (i da promjena ovog ponašanja odmah istisne stari
+  // keširan odgovor).
+  var mjesecZaKljuc = (mjesec !== undefined && mjesec !== null && mjesec !== '') ? mjesec : 'zadnji';
+  var cacheKey = 'dinamike_izvodjaca_v4_' + year + '_' + mjesecZaKljuc;
   var cached = getCachedData(cacheKey);
   if (cached) return createJsonResponse(cached, true);
 
   try {
-    var granice = _dinamikePeriodGranice();
+    var granice = _dinamikePeriodGranice(mjesec, year);
     var ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
     var godinaFilter = parseInt(year, 10);
 
