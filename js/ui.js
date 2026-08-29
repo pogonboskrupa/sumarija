@@ -306,6 +306,7 @@
             document.getElementById('primaci-period-view').classList.add('hidden');
             document.getElementById('primaci-sortimenti-primac-view').classList.add('hidden');
             document.getElementById('primaci-trendovi-view').classList.add('hidden');
+            document.getElementById('primaci-dinamike-izvodjaca-view').classList.add('hidden');
 
             // Show selected view
             if (view === 'monthly') {
@@ -353,6 +354,10 @@
                 document.getElementById('primaci-trendovi-view').classList.remove('hidden');
                 // Load on first open (lazy) — vidi loadPrimaciTrendovi u app.js
                 if (typeof loadPrimaciTrendovi === 'function') loadPrimaciTrendovi();
+            } else if (view === 'dinamike-izvodjaca') {
+                document.getElementById('primaci-dinamike-izvodjaca-view').classList.remove('hidden');
+                // Load on first open (lazy) — vidi loadDinamikeIzvodjaca u app.js
+                if (!document.getElementById('dinamike-izvodjaca-list').innerHTML) loadDinamikeIzvodjaca();
             }
         }
 

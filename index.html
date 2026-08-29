@@ -692,6 +692,7 @@
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('izvodjaci')">👷 Izvođači</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('period-realizacije')">📅 Period realizacije odjela</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('sortimenti-by-primac')">🏷️ Sortimentni po primačima</button>
+                <button class="submenu-tab" onclick="switchPrimaciSubmenu('dinamike-izvodjaca')">📊 Dinamike izvođača</button>
             </div>
 
             <!-- Mjesečni prikaz -->
@@ -1062,6 +1063,23 @@
                         </div>
                     </div>
                     <div id="primaci-trend-empty" class="hidden" style="text-align:center; padding:40px; color:#4b5563;">Nema podataka za odabrani period.</div>
+                </div>
+            </div>
+
+            <!-- Dinamike izvođača — plan (ugovorena masa iz "Stanje zaliha") vs
+                 realizacija po odjelu, razdvojeno na "prošli period" i "prošli
+                 mjesec" (izvještajni mjesec je UVIJEK protekli kalendarski mjesec
+                 u ovom podtabu — vidi apps-script/dinamike-izvodjaca.gs i
+                 loadDinamikeIzvodjaca u js/app.js). Svaki odjel je kartica sa
+                 dvije tabele (Sječa / Otprema) i checkboxom koji ga trajno
+                 uklanja sa liste kad je pregled završen. -->
+            <div id="primaci-dinamike-izvodjaca-view" class="submenu-content hidden">
+                <div class="section">
+                    <h3 style="color: #7c2d12; text-align: center; margin-bottom: 8px;">📊 Dinamike izvođača — plan vs realizacija po odjelu</h3>
+                    <div id="dinamike-izvodjaca-podnaslov" style="text-align:center; font-size:13px; color:#6b7280; margin-bottom:20px;"></div>
+                    <div id="dinamike-izvodjaca-loading" style="text-align:center; padding:40px; color:#4b5563;">⏳ Učitavam...</div>
+                    <div id="dinamike-izvodjaca-empty" class="hidden" style="text-align:center; padding:40px; color:#4b5563;">Nema odjela za prikaz — svi su ili bez sječe/otpreme, ili već označeni kao pregledani.</div>
+                    <div id="dinamike-izvodjaca-list"></div>
                 </div>
             </div>
         </div>

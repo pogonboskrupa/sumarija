@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.8';
+        const APP_VERSION = '1.17.9';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6136,6 +6136,179 @@
                 </tr>
             `;
             bodyEl.innerHTML = bodyHTML;
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // 📊 DINAMIKE IZVOĐAČA — plan (ugovorena masa) vs realizacija po
+        // odjelu, razdvojeno na "prošli period" i "prošli mjesec". Izvještajni
+        // mjesec ovog podtaba je UVIJEK protekli kalendarski mjesec (vidi
+        // apps-script/dinamike-izvodjaca.gs) — za razliku od ostatka appa.
+        // ═══════════════════════════════════════════════════════════════
+        let _dinamikeIzvodjacaData = null;
+
+        async function loadDinamikeIzvodjaca() {
+            const loadingEl = document.getElementById('dinamike-izvodjaca-loading');
+            const emptyEl = document.getElementById('dinamike-izvodjaca-empty');
+            const listEl = document.getElementById('dinamike-izvodjaca-list');
+            if (!listEl) return;
+            if (loadingEl) loadingEl.classList.remove('hidden');
+            if (emptyEl) emptyEl.classList.add('hidden');
+            listEl.innerHTML = '';
+
+            try {
+                const year = new Date().getFullYear();
+                const url = buildApiUrl('dinamike-izvodjaca', { year });
+                const data = await fetchWithCache(url, `cache_dinamike_izvodjaca_${year}`, false, 120000);
+
+                if (loadingEl) loadingEl.classList.add('hidden');
+
+                if (data.error) {
+                    listEl.innerHTML = `<div style="text-align:center; padding:40px; color:#dc2626;">Greška: ${escapeHtml(data.error)}</div>`;
+                    return;
+                }
+
+                _dinamikeIzvodjacaData = data;
+                _renderDinamikeIzvodjaca();
+
+            } catch (error) {
+                if (loadingEl) loadingEl.classList.add('hidden');
+                console.error('Error in loadDinamikeIzvodjaca:', error);
+                listEl.innerHTML = `<div style="text-align:center; padding:40px; color:#dc2626;">Greška pri učitavanju: ${escapeHtml(error.message)}</div>`;
+            }
+        }
+
+        function _dinamikeSortimentTable(naslov, bojaBg, redovi, sortimentiNazivi) {
+            // redovi = [{ labela, podaci, istaknut }] — 3 reda: prošli period, prošli mjesec, ukupno
+            const ukupnoKey = sortimentiNazivi[sortimentiNazivi.length - 1];
+            let headerHTML = `<tr><th style="background:${bojaBg}; color:white; padding:8px; text-align:left; font-size:11px;">${naslov}</th>`;
+            sortimentiNazivi.forEach(s => {
+                headerHTML += `<th style="background:${bojaBg}; color:white; padding:6px; font-size:9px;">${escapeHtml(s)}</th>`;
+            });
+            headerHTML += `</tr>`;
+
+            let bodyHTML = '';
+            redovi.forEach(red => {
+                const cells = sortimentiNazivi.map(s => {
+                    const val = Number(red.podaci[s]) || 0;
+                    const displayVal = val > 0 ? val.toFixed(2) : '-';
+                    const isTotal = s === ukupnoKey;
+                    return `<td style="border:1px solid #e5e7eb; font-family:'Courier New',monospace; font-size:10px; text-align:right; padding:6px; ${val > 0 ? 'font-weight:700; color:#1f2937;' : 'color:#d1d5db;'} ${isTotal ? 'background:#f9fafb; font-weight:800;' : ''}">${displayVal}</td>`;
+                }).join('');
+                bodyHTML += `<tr style="${red.istaknut ? 'background:#f3f4f6;' : ''}"><td style="border:1px solid #e5e7eb; padding:8px; font-size:11px; font-weight:${red.istaknut ? '800' : '600'}; color:#374151;">${escapeHtml(red.labela)}</td>${cells}</tr>`;
+            });
+
+            return `<div style="overflow-x:auto; -webkit-overflow-scrolling:touch;"><table style="border-collapse:collapse; width:100%; min-width:900px;"><thead>${headerHTML}</thead><tbody>${bodyHTML}</tbody></table></div>`;
+        }
+
+        function _renderDinamikeIzvodjaca() {
+            const data = _dinamikeIzvodjacaData;
+            const listEl = document.getElementById('dinamike-izvodjaca-list');
+            const emptyEl = document.getElementById('dinamike-izvodjaca-empty');
+            const podnaslovEl = document.getElementById('dinamike-izvodjaca-podnaslov');
+            if (!listEl || !data) return;
+
+            const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+            const nazivMjeseca = mjeseciNazivi[data.mjesecIzvjestaja] || '';
+            if (podnaslovEl) {
+                podnaslovEl.textContent = `Izvještajni period: do kraja ${nazivMjeseca} ${data.godinaIzvjestaja}. — "prošli mjesec" u tabelama = ${nazivMjeseca}`;
+            }
+
+            const odjeli = data.odjeli || [];
+            const sortimentiNazivi = data.sortimentiNazivi || [];
+            const godina = new Date().getFullYear();
+
+            if (!odjeli.length) {
+                listEl.innerHTML = '';
+                if (emptyEl) emptyEl.classList.remove('hidden');
+                return;
+            }
+            if (emptyEl) emptyEl.classList.add('hidden');
+
+            const ukupnoKey = sortimentiNazivi[sortimentiNazivi.length - 1];
+
+            listEl.innerHTML = odjeli.map((o, idx) => {
+                const sjecaUkupno = { ...o.sjeca.prosliPeriod };
+                sortimentiNazivi.forEach(s => sjecaUkupno[s] = (Number(o.sjeca.prosliPeriod[s]) || 0) + (Number(o.sjeca.prosliMjesec[s]) || 0));
+                const otpremaUkupno = { ...o.otprema.prosliPeriod };
+                sortimentiNazivi.forEach(s => otpremaUkupno[s] = (Number(o.otprema.prosliPeriod[s]) || 0) + (Number(o.otprema.prosliMjesec[s]) || 0));
+
+                const sjecaTable = _dinamikeSortimentTable('🪓 SJEČA', 'linear-gradient(135deg, #059669, #047857)', [
+                    { labela: 'Izvršenje u prethodnom periodu', podaci: o.sjeca.prosliPeriod },
+                    { labela: `Izvršenje u ${nazivMjeseca.toLowerCase()}u`, podaci: o.sjeca.prosliMjesec },
+                    { labela: 'UKUPNO IZVRŠENJE', podaci: sjecaUkupno, istaknut: true }
+                ], sortimentiNazivi);
+
+                const otpremaTable = _dinamikeSortimentTable('🚛 OTPREMA', 'linear-gradient(135deg, #1e3a5f, #0f2942)', [
+                    { labela: 'Izvršenje u prethodnom periodu', podaci: o.otprema.prosliPeriod },
+                    { labela: `Izvršenje u ${nazivMjeseca.toLowerCase()}u`, podaci: o.otprema.prosliMjesec },
+                    { labela: 'UKUPNO IZVRŠENJE', podaci: otpremaUkupno, istaknut: true }
+                ], sortimentiNazivi);
+
+                const indexBadge = (val) => {
+                    const boja = val >= 100 ? '#059669' : (val >= 70 ? '#d97706' : '#dc2626');
+                    return `<span style="background:${boja}; color:white; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:700;">${val.toFixed(0)}%</span>`;
+                };
+
+                return `
+                    <div class="section" style="margin-bottom:20px; border:1px solid #e5e7eb;">
+                        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:14px;">
+                            <div>
+                                <h4 style="margin:0 0 4px; color:#7c2d12;">🌲 Odjel: ${escapeHtml(o.odjel)}</h4>
+                                <div style="font-size:12px; color:#6b7280;">
+                                    ${o.radiliste ? 'G. Jedinica: <b>' + escapeHtml(String(o.radiliste)) + '</b> · ' : ''}
+                                    Izvođač: <b>${escapeHtml(o.izvodjac || '—')}</b> ·
+                                    Poslovođa: <b>${escapeHtml(o.poslovodja || '—')}</b>
+                                </div>
+                            </div>
+                            <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#374151; cursor:pointer;">
+                                <input type="checkbox" id="dinamika-pregled-${idx}" onchange="toggleDinamikaPregled(${idx}, this.checked)">
+                                Završen pregled odjela
+                            </label>
+                        </div>
+                        <span id="dinamika-pregled-status-${idx}" style="display:none; font-size:11px; margin-bottom:8px;"></span>
+                        <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; margin-bottom:14px; padding:10px; background:#fef3c7; border-radius:8px;">
+                            <div style="font-size:12px; color:#92400e;">Ugovorena (projektovana) masa: <b>${o.ugovorenoUkupno.toFixed(2)} m³</b></div>
+                            <div style="font-size:12px; color:#92400e;">Index izvršenja sječe: ${indexBadge(o.indexSjeca)}</div>
+                            <div style="font-size:12px; color:#92400e;">Index izvršenja otpreme: ${indexBadge(o.indexOtprema)}</div>
+                        </div>
+                        <div style="margin-bottom:14px;">${sjecaTable}</div>
+                        <div>${otpremaTable}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Sačuvaj odjel-po-indexu mapu za checkbox handler (izbjegava
+            // ugrađivanje naziva odjela sa navodnicima direktno u onclick).
+            window._dinamikeIzvodjacaOdjeliByIdx = odjeli.map(o => o.odjel);
+        }
+
+        async function toggleDinamikaPregled(idx, checked) {
+            const odjel = (window._dinamikeIzvodjacaOdjeliByIdx || [])[idx];
+            const checkboxEl = document.getElementById(`dinamika-pregled-${idx}`);
+            const statusEl = document.getElementById(`dinamika-pregled-status-${idx}`);
+            if (!odjel) return;
+
+            if (statusEl) { statusEl.textContent = '⏳ Čuvam...'; statusEl.style.color = '#6b7280'; statusEl.style.display = 'inline'; }
+            if (checkboxEl) checkboxEl.disabled = true;
+
+            try {
+                const godina = new Date().getFullYear();
+                const url = buildApiUrl('set-dinamika-pregled', { odjel, godina, pregledan: checked });
+                const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
+                const result = await r.json();
+                if (!result || result.success !== true) throw new Error((result && result.error) || 'Greška');
+
+                // Osvježi keš i ponovo učitaj listu — pregledani odjel nestaje sa liste
+                await fetchWithCache(buildApiUrl('dinamike-izvodjaca', { year: godina }), `cache_dinamike_izvodjaca_${godina}`, true, 120000);
+                loadDinamikeIzvodjaca();
+            } catch (err) {
+                if (checkboxEl) { checkboxEl.checked = !checked; checkboxEl.disabled = false; }
+                if (statusEl) {
+                    statusEl.textContent = '❌ ' + ((err && err.message) || 'Greška pri slanju');
+                    statusEl.style.color = '#dc2626';
+                    statusEl.style.display = 'inline';
+                }
+            }
         }
 
         // Detaljan pregled izabranog izvođača (dropdown #primaci-izvodjac-select)
