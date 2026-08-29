@@ -298,6 +298,12 @@
             submenuTabs.forEach(tab => tab.classList.remove('active'));
             if (event && event.target) event.target.classList.add('active');
 
+            // "Izvođači radova" ima široke tabele (12 mjeseci, 20 sortimenata) —
+            // proširi .container samo dok je ovaj podtab aktivan (vidi
+            // #primaci-content.wide-view u css/main.css), ostali podtabovi
+            // zadržavaju uobičajenu širinu.
+            document.getElementById('primaci-content').classList.toggle('wide-view', view === 'izvodjaci');
+
             // Hide all submenu content
             document.getElementById('primaci-monthly-view').classList.add('hidden');
             document.getElementById('primaci-daily-view').classList.add('hidden');

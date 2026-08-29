@@ -689,7 +689,7 @@
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('trendovi')">📈 Trendovi</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('monthly')">📊 Mjesečni prikaz po radnicima</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('radilista')">🏗️ Radilišta</button>
-                <button class="submenu-tab" onclick="switchPrimaciSubmenu('izvodjaci')">👷 Izvođači</button>
+                <button class="submenu-tab" onclick="switchPrimaciSubmenu('izvodjaci')">👷 Izvođači radova</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('period-realizacije')">📅 Period realizacije odjela</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('sortimenti-by-primac')">🏷️ Sortimentni po primačima</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('dinamike-izvodjaca')">📊 Dinamike izvođača</button>
@@ -932,18 +932,44 @@
                         </div>
                     </div>
 
-                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top:30px;">
-                        <table class="monthly-table" id="primaci-izvodjaci-table">
-                            <thead id="primaci-izvodjaci-header"></thead>
-                            <tbody id="primaci-izvodjaci-body"></tbody>
-                        </table>
+                    <div class="izv-card">
+                        <div class="izv-card-header">
+                            <div class="izv-card-header-title">
+                                <span class="izv-card-icon">🌲</span>
+                                <div>
+                                    <h4>Sječa po mjesecima — svi izvođači</h4>
+                                    <span class="izv-card-sub">Ukupna m³ po izvođaču, tekuća godina</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="izv-card-body">
+                            <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                                <table class="monthly-table" id="primaci-izvodjaci-table">
+                                    <thead id="primaci-izvodjaci-header"></thead>
+                                    <tbody id="primaci-izvodjaci-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-                    <h4 style="color: #7c2d12; margin-top: 30px; margin-bottom: 15px;">📊 Godišnja rekapitulacija po sortimentima</h4>
-                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                        <table class="monthly-table" id="primaci-izvodjaci-recap">
-                            <thead id="primaci-izvodjaci-recap-header"></thead>
-                            <tbody id="primaci-izvodjaci-recap-body"></tbody>
-                        </table>
+
+                    <div class="izv-card">
+                        <div class="izv-card-header">
+                            <div class="izv-card-header-title">
+                                <span class="izv-card-icon">📊</span>
+                                <div>
+                                    <h4>Godišnja rekapitulacija po sortimentima</h4>
+                                    <span class="izv-card-sub">Ukupno po sortimentu, svi izvođači, tekuća godina</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="izv-card-body">
+                            <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                                <table class="monthly-table" id="primaci-izvodjaci-recap">
+                                    <thead id="primaci-izvodjaci-recap-header"></thead>
+                                    <tbody id="primaci-izvodjaci-recap-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Mjesečna rekapitulacija po sortimentima — SVI izvođači odjednom
@@ -951,15 +977,27 @@
                          izvor podataka (izvodjac.mjeseciSortimenti) kao mjesečna tabela u
                          detaljnom pregledu iznad, samo agregirano po SVIM izvođačima —
                          vidi renderPrimaciIzvodjaciMjesecniRecap (js/app.js). -->
-                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-top: 30px; margin-bottom: 15px;">
-                        <h4 style="color: #7c2d12; margin:0;">📊 Mjesečna rekapitulacija po sortimentima — svi izvođači</h4>
-                        <select id="primaci-izvodjaci-recap-mjesec-select" class="month-select" onchange="renderPrimaciIzvodjaciMjesecniRecap()"></select>
-                    </div>
-                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                        <table class="monthly-table" id="primaci-izvodjaci-mjesecni-recap">
-                            <thead id="primaci-izvodjaci-mjesecni-recap-header"></thead>
-                            <tbody id="primaci-izvodjaci-mjesecni-recap-body"></tbody>
-                        </table>
+                    <div class="izv-card">
+                        <div class="izv-card-header">
+                            <div class="izv-card-header-title">
+                                <span class="izv-card-icon">📅</span>
+                                <div>
+                                    <h4>Mjesečna rekapitulacija po sortimentima</h4>
+                                    <span class="izv-card-sub">Svi izvođači, izabrani mjesec</span>
+                                </div>
+                            </div>
+                            <div class="izv-card-actions">
+                                <select id="primaci-izvodjaci-recap-mjesec-select" class="month-select" onchange="renderPrimaciIzvodjaciMjesecniRecap()"></select>
+                            </div>
+                        </div>
+                        <div class="izv-card-body">
+                            <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                                <table class="monthly-table" id="primaci-izvodjaci-mjesecni-recap">
+                                    <thead id="primaci-izvodjaci-mjesecni-recap-header"></thead>
+                                    <tbody id="primaci-izvodjaci-mjesecni-recap-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
