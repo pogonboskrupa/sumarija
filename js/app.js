@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.9';
+        const APP_VERSION = '1.17.10';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6094,6 +6094,16 @@
                 return;
             }
 
+            // Samodijagnostika: nijedan izvođač nema mjeseciSortimenti polje →
+            // backend koji je stvarno deployovan još nema ovaj kod (ili je
+            // odgovor iz starog keša), a ne "nema sječe ovaj mjesec".
+            if (!izvodjaci.some(iz => Array.isArray(iz.mjeseciSortimenti))) {
+                bodyEl.innerHTML = `<tr><td colspan="${sortimentiNazivi.length + 1}" style="text-align:center;padding:24px;color:#dc2626;font-weight:600;">` +
+                    `⚠️ Server još ne šalje ovaj podatak (backend nije redeployovan sa najnovijim kodom, ili je odgovor iz starog keša). ` +
+                    `Klikni "🔄 Ažuriraj podatke" u meniju; ako i dalje piše ovo, backend deploy nije stvarno prihvaćen.</td></tr>`;
+                return;
+            }
+
             let bodyHTML = '';
             izvodjaci.forEach((izvodjac, idx) => {
                 const rowBg = idx % 2 === 0 ? '#fff7ed' : '#ffffff';
@@ -6404,9 +6414,21 @@
 
             const sortimentiNazivi = _primaciIzvodjaciData.sortimentiNazivi || [];
             const mIdx = parseInt(mjesecSel.value, 10) || 0;
-            // mjeseciSortimenti nedostaje u starijem keširanom odgovoru (prije
-            // ove izmjene) — prazan objekat umjesto greške dok se keš ne osvježi.
-            const mjesecPodaci = (izvodjac.mjeseciSortimenti || [])[mIdx] || {};
+
+            // Samodijagnostika: ako polje mjeseciSortimenti UOPŠTE ne postoji u
+            // odgovoru (za razliku od postojanja ali sa nulama), to znači da
+            // backend koji je stvarno deployovan još nema ovaj kod — jasna
+            // poruka umjesto tihog "-" u svakoj ćeliji koje izgleda kao "nema
+            // sječe" a zapravo je "podatak nikad nije ni stigao".
+            if (!Array.isArray(izvodjac.mjeseciSortimenti)) {
+                headerEl.innerHTML = '';
+                bodyEl.innerHTML = '<tr><td style="text-align:center;padding:16px;color:#dc2626;font-weight:600;">' +
+                    '⚠️ Server još ne šalje ovaj podatak (backend nije redeployovan sa najnovijim kodom, ili je odgovor iz starog keša). ' +
+                    'Klikni "🔄 Ažuriraj podatke" u meniju; ako i dalje piše ovo, backend deploy nije stvarno prihvaćen.</td></tr>';
+                return;
+            }
+
+            const mjesecPodaci = izvodjac.mjeseciSortimenti[mIdx] || {};
 
             headerEl.innerHTML = '<tr>' + sortimentiNazivi.map(s => '<th style="text-align:right;font-size:11px;">' + s + '</th>').join('') + '</tr>';
             bodyEl.innerHTML = '<tr>' + sortimentiNazivi.map(s => {
