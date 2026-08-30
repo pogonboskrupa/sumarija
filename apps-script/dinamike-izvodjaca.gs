@@ -86,12 +86,12 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
   var loginResult = JSON.parse(handleLogin(username, password).getContent());
   if (!loginResult.success) return createJsonResponse({ error: 'Unauthorized' }, false);
 
-  // v4 — izvještajni mjesec je sad biran u dropdownu (mjesec parametar),
-  // ne uvijek protekli kalendarski mjesec. Ključ uključuje mjesec da svaki
-  // izbor ima svoj keš (i da promjena ovog ponašanja odmah istisne stari
-  // keširan odgovor).
+  // v5 — dodano _debugUgovorenoMasa dijagnostičko polje (privremeno, za
+  // "ugovorena masa uvijek 0" problem). Ključ uključuje mjesec (v4) da
+  // svaki izbor ima svoj keš, i bump-uje se sa svakom promjenom odgovora
+  // da odmah istisne stari keširan rezultat.
   var mjesecZaKljuc = (mjesec !== undefined && mjesec !== null && mjesec !== '') ? mjesec : 'zadnji';
-  var cacheKey = 'dinamike_izvodjaca_v4_' + year + '_' + mjesecZaKljuc;
+  var cacheKey = 'dinamike_izvodjaca_v5_' + year + '_' + mjesecZaKljuc;
   var cached = getCachedData(cacheKey);
   if (cached) return createJsonResponse(cached, true);
 
@@ -204,19 +204,28 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
     //    red tamo (ili sheet uopšte ne postoji) ostaje na listi sa ugovorenoUkupno=0
     //    umjesto da nestane sa liste.
     var cacheSheet = ss.getSheetByName('STANJE_ODJELA_CACHE');
+    var debugProjekatRedova = 0;
+    var debugPoklopljeno = 0;
+    var debugNepoklopljeniCache = []; // ključevi iz STANJE_ODJELA_CACHE koji se ne nalaze u odjeliMap
     if (cacheSheet) {
       var allData = cacheSheet.getDataRange().getValues();
       for (var i = 2; i < allData.length; i++) {
         var row = allData[i];
         if (row[0] !== 'PROJEKAT') continue;
+        debugProjekatRedova++;
         var odjelNaziv = String(row[1] || '').trim();
         if (!odjelNaziv) continue;
         var odjelKljuc = odjelNaziv.toUpperCase();
-        if (!odjeliMap[odjelKljuc]) continue; // dopuni samo postojeće, ne dodaji nove
+        if (!odjeliMap[odjelKljuc]) {
+          if (debugNepoklopljeniCache.length < 8) debugNepoklopljeniCache.push(odjelNaziv);
+          continue; // dopuni samo postojeće, ne dodaji nove
+        }
+        debugPoklopljeno++;
         var dataRow = row.slice(5);
         odjeliMap[odjelKljuc].ugovorenoUkupno = parseFloat(dataRow[dataRow.length - 1]) || 0;
       }
     }
+    var debugNepoklopljeniOdjeli = poredak.filter(function(k) { return !odjeliMap[k].ugovorenoUkupno; }).map(function(k) { return odjeliMap[k].odjel; }).slice(0, 8);
 
     // 4) Izbaci odjele ručno označene kao "pregledani" za ovu godinu
     var pregledMap = _citajDinamikePregledMap(year);
@@ -274,7 +283,16 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
       odjeli: odjeli,
       sortimentiNazivi: SORTIMENTI_NAZIVI,
       mjesecIzvjestaja: granice.mjesecIzvjestaja,
-      godinaIzvjestaja: granice.godinaIzvjestaja
+      godinaIzvjestaja: granice.godinaIzvjestaja,
+      // Privremeni dijagnostički podaci za "ugovorena masa uvijek 0" problem —
+      // ukloniti kad se uzrok potvrdi i ispravi.
+      _debugUgovorenoMasa: {
+        cacheSheetPostoji: !!cacheSheet,
+        projekatRedova: debugProjekatRedova,
+        poklopljeno: debugPoklopljeno,
+        primjerNepoklopljenihIzCache: debugNepoklopljeniCache,
+        primjerNepoklopljenihOdjela: debugNepoklopljeniOdjeli
+      }
     };
 
     setCachedData(cacheKey, rezultat, CACHE_TTL);
