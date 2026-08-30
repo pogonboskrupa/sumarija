@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.29';
+        const APP_VERSION = '1.17.30';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -2513,35 +2513,48 @@
                             12: { bg: '#e0f2fe', color: '#075985' }   // Dec - sky
                         };
 
-                        const getSjecaMonthStyle = (datumStr) => {
-                            if (!datumStr || datumStr === '-') return '';
+                        const getSjecaMonth = (datumStr) => {
+                            if (!datumStr || datumStr === '-') return null;
                             const parts = datumStr.split('.');
-                            if (parts.length < 2) return '';
+                            if (parts.length < 2) return null;
                             const month = parseInt(parts[1], 10);
+                            return mjesecBoje[month] ? month : null;
+                        };
+                        const getSjecaMonthStyle = (month) => {
+                            if (!month) return '';
                             const m = mjesecBoje[month];
-                            if (!m) return '';
                             return `background-color: ${m.bg}; color: ${m.color}; font-weight: 600; border-radius: 4px; padding: 4px 8px;`;
                         };
 
+                        // Odjeli su već poredani po zadnjoj sječi (najsvježiji prvi), pa
+                        // se mjeseci pojavljuju u blokovima uzastopnih redova — kad se
+                        // mjesec promijeni u odnosu na prethodni red, red dobija deblji
+                        // gornji obrub (u boji NOVOG mjeseca) da se blokovi vizuelno
+                        // razdvoje, ne samo bojom pozadine na "Zadnja sječa" koloni.
+                        let prevMjesec = null;
                         const odjeliHTML = odjeliData.odjeli.map(o => {
                             if (!o) return '';
                             const radilisteClass = radilisteColorMap[o.radiliste] || '';
                             const realizacijaClass = getRealizacijaClass(o.realizacija);
                             const izvodjacBg = izvodjacColorMap[o.izvođač] || '';
                             const izvodjacStyle = izvodjacBg ? `background-color: ${izvodjacBg};` : '';
-                            const sjecaDateStyle = getSjecaMonthStyle(o.datumZadnjeSjece);
+                            const sjecaMonth = getSjecaMonth(o.datumZadnjeSjece);
+                            const sjecaDateStyle = getSjecaMonthStyle(sjecaMonth);
+                            const isNoviMjesecBlok = sjecaMonth !== null && prevMjesec !== null && sjecaMonth !== prevMjesec;
+                            if (sjecaMonth !== null) prevMjesec = sjecaMonth;
+                            const dividerStyle = isNoviMjesecBlok ? `border-top: 3px solid ${mjesecBoje[sjecaMonth].color};` : '';
                             // Escapuj i navodnike i < — ime ide u onclick atribut (JS string u HTML atributu)
                             const odjelEsc = (o.odjel || '').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;');
                             return `
                                 <tr style="cursor:pointer;" onclick="showOdjelStanjeModal('${odjelEsc}')" title="Klikni za stanje zaliha">
-                                    <td class="${radilisteClass}" style="font-weight: 500;">${o.odjel || '-'}</td>
-                                    <td class="right ${radilisteClass}">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
-                                    <td class="right ${radilisteClass}">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
-                                    <td class="right ${radilisteClass}">${(o.sumaPanj != null && !isNaN(o.sumaPanj)) ? o.sumaPanj.toFixed(2) : '0.00'}</td>
-                                    <td class="${radilisteClass}">${o.radiliste || '-'}</td>
-                                    <td style="${izvodjacStyle}">${o.izvođač || '-'}</td>
-                                    <td><span style="${sjecaDateStyle}">${o.datumZadnjeSjece || '-'}</span></td>
-                                    <td class="right ${realizacijaClass}">${(o.realizacija != null && o.realizacija > 0) ? o.realizacija.toFixed(1) + '%' : '-'}</td>
+                                    <td class="${radilisteClass}" style="font-weight: 500; ${dividerStyle}">${o.odjel || '-'}</td>
+                                    <td class="right ${radilisteClass}" style="${dividerStyle}">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
+                                    <td class="right ${radilisteClass}" style="${dividerStyle}">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
+                                    <td class="right ${radilisteClass}" style="${dividerStyle}">${(o.sumaPanj != null && !isNaN(o.sumaPanj)) ? o.sumaPanj.toFixed(2) : '0.00'}</td>
+                                    <td class="${radilisteClass}" style="${dividerStyle}">${o.radiliste || '-'}</td>
+                                    <td style="${izvodjacStyle}${dividerStyle}">${o.izvođač || '-'}</td>
+                                    <td style="${dividerStyle}"><span style="${sjecaDateStyle}">${o.datumZadnjeSjece || '-'}</span></td>
+                                    <td class="right ${realizacijaClass}" style="${dividerStyle}">${(o.realizacija != null && o.realizacija > 0) ? o.realizacija.toFixed(1) + '%' : '-'}</td>
                                 </tr>
                             `;
                         }).join('');
