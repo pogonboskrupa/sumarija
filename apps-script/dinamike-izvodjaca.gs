@@ -207,9 +207,6 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
     //    blok (ili sheet uopšte ne postoji) ostaje na listi sa
     //    ugovorenoUkupno=0 umjesto da nestane sa liste.
     var zalihaSheet = ss.getSheetByName('STANJE_ZALIHA');
-    var debugProjekatRedova = 0;
-    var debugPoklopljeno = 0;
-    var debugNepoklopljeniCache = []; // ključevi iz STANJE_ZALIHA koji se ne nalaze u odjeliMap
     if (zalihaSheet) {
       var zalihaData = zalihaSheet.getDataRange().getValues();
       var zi = 0;
@@ -227,21 +224,16 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
             if (blockColC === 'PROJEKAT') projekatRow = blockRow;
           }
           if (odjelNaziv && projekatRow) {
-            debugProjekatRedova++;
             var odjelKljuc = odjelNaziv.toUpperCase();
             if (odjeliMap[odjelKljuc]) {
-              debugPoklopljeno++;
               // Kolone D:W (indeksi 3-22) = 20 sortimenata, zadnja je "UKUPNO Č+L"
               odjeliMap[odjelKljuc].ugovorenoUkupno = parseFloat(projekatRow[3 + SORTIMENTI_NAZIVI.length - 1]) || 0;
-            } else if (debugNepoklopljeniCache.length < 8) {
-              debugNepoklopljeniCache.push(odjelNaziv);
             }
           }
         }
         zi++;
       }
     }
-    var debugNepoklopljeniOdjeli = poredak.filter(function(k) { return !odjeliMap[k].ugovorenoUkupno; }).map(function(k) { return odjeliMap[k].odjel; }).slice(0, 8);
 
     // 4) Izbaci odjele ručno označene kao "pregledani" za ovu godinu
     var pregledMap = _citajDinamikePregledMap(year);
@@ -299,16 +291,7 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
       odjeli: odjeli,
       sortimentiNazivi: SORTIMENTI_NAZIVI,
       mjesecIzvjestaja: granice.mjesecIzvjestaja,
-      godinaIzvjestaja: granice.godinaIzvjestaja,
-      // Privremeni dijagnostički podaci za "ugovorena masa uvijek 0" problem —
-      // ukloniti kad se uzrok potvrdi i ispravi.
-      _debugUgovorenoMasa: {
-        cacheSheetPostoji: !!zalihaSheet,
-        projekatRedova: debugProjekatRedova,
-        poklopljeno: debugPoklopljeno,
-        primjerNepoklopljenihIzCache: debugNepoklopljeniCache,
-        primjerNepoklopljenihOdjela: debugNepoklopljeniOdjeli
-      }
+      godinaIzvjestaja: granice.godinaIzvjestaja
     };
 
     setCachedData(cacheKey, rezultat, CACHE_TTL);

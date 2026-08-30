@@ -687,9 +687,9 @@
                             <span style="font-size: 24px;">📊</span> Dinamike izvođača — plan vs realizacija po odjelu
                         </h2>
                         <p id="dinamike-izvodjaca-podnaslov" style="margin: 6px 0 0 0; color: rgba(255,247,237,0.85); font-size: 13px;"></p>
-                        <p id="dinamike-izvodjaca-debug" class="hidden" style="margin: 6px 0 0 0; color: #fde68a; font-size: 11px; line-height: 1.5;"></p>
                     </div>
-                    <div style="display:flex; gap:8px; align-items:center;">
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <button id="dinamike-izvodjaca-bulk-btn" type="button" class="btn btn-primary" onclick="primijeniIzabraneDinamikePregledane()" disabled style="background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); opacity:0.5; cursor:not-allowed;">✅ Označi izabrane kao pregledane (0)</button>
                         <select id="dinamike-izvodjaca-mjesec-select" class="month-select" onchange="loadDinamikeIzvodjaca()"></select>
                         <button class="btn btn-primary" onclick="loadDinamikeIzvodjaca(true)" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);">🔄 Osvježi</button>
                     </div>
