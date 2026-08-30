@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.19';
+        const APP_VERSION = '1.17.20';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6184,7 +6184,7 @@
                 const mjesecSel = document.getElementById('dinamike-izvodjaca-mjesec-select');
                 const mjesec = mjesecSel ? mjesecSel.value : '';
                 const url = buildApiUrl('dinamike-izvodjaca', { year, mjesec });
-                const data = await fetchWithCache(url, `cache_dinamike_izvodjaca_v5_${year}_${mjesec}`, forceRefresh, 120000);
+                const data = await fetchWithCache(url, `cache_dinamike_izvodjaca_v6_${year}_${mjesec}`, forceRefresh, 120000);
 
                 if (loadingEl) loadingEl.classList.add('hidden');
 
@@ -6255,6 +6255,7 @@
                 if (dbg) {
                     debugEl.classList.remove('hidden');
                     debugEl.innerHTML = `🔧 Debug: Stanje zaliha sheet ${dbg.cacheSheetPostoji ? 'postoji' : '<b style="color:#fca5a5;">NE POSTOJI</b>'} · ` +
+                        `${dbg.syncPokrenut ? 'sinhronizacija pokrenuta ovim pozivom · ' : ''}` +
                         `${dbg.projekatRedova} PROJEKAT redova · ${dbg.poklopljeno} poklopljeno.` +
                         (dbg.primjerNepoklopljenihIzCache.length ? `<br>Primjeri iz Stanje zaliha koji se NE poklapaju: ${dbg.primjerNepoklopljenihIzCache.map(escapeHtml).join(' | ')}` : '') +
                         (dbg.primjerNepoklopljenihOdjela.length ? `<br>Primjeri odjela (iz sječe/otpreme) bez poklapanja: ${dbg.primjerNepoklopljenihOdjela.map(escapeHtml).join(' | ')}` : '');
