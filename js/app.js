@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.23';
+        const APP_VERSION = '1.17.24';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6183,7 +6183,7 @@
                 const mjesecSel = document.getElementById('dinamike-izvodjaca-mjesec-select');
                 const mjesec = mjesecSel ? mjesecSel.value : '';
                 const url = buildApiUrl('dinamike-izvodjaca', { year, mjesec });
-                const data = await fetchWithCache(url, `cache_dinamike_izvodjaca_v7_${year}_${mjesec}`, forceRefresh, 120000);
+                const data = await fetchWithCache(url, `cache_dinamike_izvodjaca_v8_${year}_${mjesec}`, forceRefresh, 120000);
 
                 if (loadingEl) loadingEl.classList.add('hidden');
 
@@ -6253,13 +6253,10 @@
                 const dbg = data._debugUgovorenoMasa;
                 if (dbg) {
                     debugEl.classList.remove('hidden');
-                    debugEl.innerHTML = `🔧 Debug: Stanje zaliha sheet ${dbg.cacheSheetPostoji ? 'postoji' : '<b style="color:#fca5a5;">NE POSTOJI</b>'} · ` +
+                    debugEl.innerHTML = `🔧 Debug: STANJE_ZALIHA sheet ${dbg.cacheSheetPostoji ? 'postoji' : '<b style="color:#fca5a5;">NE POSTOJI</b>'} · ` +
                         `${dbg.projekatRedova} PROJEKAT redova · ${dbg.poklopljeno} poklopljeno.` +
                         (dbg.primjerNepoklopljenihIzCache.length ? `<br>Primjeri iz Stanje zaliha koji se NE poklapaju: ${dbg.primjerNepoklopljenihIzCache.map(escapeHtml).join(' | ')}` : '') +
-                        (dbg.primjerNepoklopljenihOdjela.length ? `<br>Primjeri odjela (iz sječe/otpreme) bez poklapanja: ${dbg.primjerNepoklopljenihOdjela.map(escapeHtml).join(' | ')}` : '') +
-                        (dbg.projekatRedova === 0
-                            ? `<br><button type="button" onclick="_sinhronizujStanjeZalihaZaDinamike(this)" style="margin-top:6px; background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.35); border-radius:6px; padding:5px 10px; font-size:11px; cursor:pointer;">🔄 Sinhronizuj Stanje zaliha (može potrajati)</button>`
-                            : '');
+                        (dbg.primjerNepoklopljenihOdjela.length ? `<br>Primjeri odjela (iz sječe/otpreme) bez poklapanja: ${dbg.primjerNepoklopljenihOdjela.map(escapeHtml).join(' | ')}` : '');
                 } else {
                     debugEl.classList.add('hidden');
                 }
@@ -6338,20 +6335,6 @@
             // Sačuvaj odjel-po-indexu mapu za checkbox handler (izbjegava
             // ugrađivanje naziva odjela sa navodnicima direktno u onclick).
             window._dinamikeIzvodjacaOdjeliByIdx = odjeli.map(o => o.odjel);
-        }
-
-        // Dugme u debug traci ("0 PROJEKAT redova") — koristi POSTOJEĆI,
-        // provjereno-spor sync (syncStanjeOdjelaCache, otvara desetine
-        // Drive fajlova pojedinačno) umjesto da ga Dinamike izvođača
-        // pokušava sama pozvati kroz fetchWithCache (tamo je 30s cap kad
-        // postoji zastarjeli keš — vidi komentar u dinamike-izvodjaca.gs).
-        async function _sinhronizujStanjeZalihaZaDinamike(btnEl) {
-            if (btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳ Sinhronizujem (može potrajati)...'; }
-            try {
-                await syncStanjeOdjelaCache();
-            } finally {
-                await loadDinamikeIzvodjaca(true);
-            }
         }
 
         async function toggleDinamikaPregled(idx, checked) {

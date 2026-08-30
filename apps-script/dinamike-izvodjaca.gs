@@ -4,8 +4,8 @@
 // Podtab u Sječa/otprema tabu ("📊 Dinamike izvođača"). Za svaki odjel koji
 // ima sječu/otpremu (lista odjela izvedena direktno iz INDEKS_PRIMKA/
 // INDEKS_OTPREMA za izabranu godinu) prikazuje: naziv odjela, radilište/GJ,
-// izvođač, poslovođa, ugovorenu (projektovanu) drvnu masu (SVEUKUPNO iz
-// STANJE_ODJELA_CACHE PROJEKAT reda), i realizaciju razdvojenu na "prošli
+// izvođač, poslovođa, ugovorenu (projektovanu) drvnu masu (UKUPNO Č+L iz
+// STANJE_ZALIHA PROJEKAT bloka), i realizaciju razdvojenu na "prošli
 // period" (sve prije izabranog mjeseca) i izabrani mjesec — odvojeno za
 // SJEČU (INDEKS_PRIMKA) i OTPREMU (INDEKS_OTPREMA).
 //
@@ -16,16 +16,13 @@
 // (stariji poziv), podrazumijeva se protekli kalendarski mjesec — staro
 // ponašanje, zadržano kao fallback.
 //
-// VAŽNO — ugovorena masa je SAMO ukupan broj (SVEUKUPNO), ne po sortimentu:
-// STANJE_ODJELA_CACHE (Drive fajlovi po odjelu) koristi drugačiji,
-// nepotpun set naziva sortimenata (18, bez ŠKART/GULE, "ČETINARI" umjesto
-// "Σ ČETINARI") od kanonskog SORTIMENTI_NAZIVI (20, config.gs) koji
-// koriste INDEKS_PRIMKA/INDEKS_OTPREMA. Miješanje ta dva bi moglo tiho
-// pogrešno spojiti pogrešne kolone (ista vrsta greške koja je već jednom
-// nađena i ispravljena u ovoj aplikaciji) — zato se ugovorena masa uzima
-// samo kao već sigurno izdvojen SVEUKUPNO totalni broj (zadnja kolona
-// PROJEKAT reda), a puna sortimentna razrada se prikazuje samo za
-// REALIZACIJU (SJEČA/OTPREMA), koja dolazi direktno iz kanonskih 20 kolona.
+// VAŽNO — izvor ugovorene mase: STANJE_ZALIHA (isti sheet koji čita
+// handleStanjeZaliha za "Stanje zaliha po odjelu" prikaz), NE
+// STANJE_ODJELA_CACHE (drugi, stariji sheet — probom utvrđeno da je u ovoj
+// instalaciji prazan/nekorišten, iako po imenu zvuči kao pravi izvor).
+// STANJE_ZALIHA već koristi kanonski SORTIMENTI_NAZIVI redoslijed (20
+// kolona), pa bi se lako mogla dodati i puna sortimentna razrada ugovorene
+// mase ako ikad zatreba — trenutno se koristi samo "UKUPNO Č+L" total.
 
 var DINAMIKE_PREGLED_SHEET   = 'DINAMIKE_PREGLED_ODJELA';
 var DINAMIKE_PREGLED_HEADERS = ['ODJEL', 'GODINA', 'PREGLEDAN', 'KORISNIK', 'DATUM'];
@@ -86,15 +83,13 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
   var loginResult = JSON.parse(handleLogin(username, password).getContent());
   if (!loginResult.success) return createJsonResponse({ error: 'Unauthorized' }, false);
 
-  // v7 — v6 je probao da sinhronizuje STANJE_ODJELA_CACHE ovdje kad je
-  // prazan, ali syncStanjeOdjela() otvara desetine Drive fajlova pojedinačno
-  // i traje duže od frontend timeouta (izazvalo "Timeout after 30s" i pad
-  // na zastarjeli keš) — vraćeno na best-effort čitanje bez sinhronizacije
-  // (vidi komentar niže). Ključ uključuje mjesec (v4) da svaki izbor ima
-  // svoj keš, i bump-uje se sa svakom promjenom odgovora da odmah istisne
-  // stari keširan rezultat.
+  // v8 — ugovorena masa se sad čita iz STANJE_ZALIHA umjesto
+  // STANJE_ODJELA_CACHE (vidi komentar iznad funkcije — pogrešan sheet je
+  // bio uzrok "ugovorena masa uvijek 0"). Ključ uključuje mjesec (v4) da
+  // svaki izbor ima svoj keš, i bump-uje se sa svakom promjenom odgovora
+  // da odmah istisne stari keširan rezultat.
   var mjesecZaKljuc = (mjesec !== undefined && mjesec !== null && mjesec !== '') ? mjesec : 'zadnji';
-  var cacheKey = 'dinamike_izvodjaca_v7_' + year + '_' + mjesecZaKljuc;
+  var cacheKey = 'dinamike_izvodjaca_v8_' + year + '_' + mjesecZaKljuc;
   var cached = getCachedData(cacheKey);
   if (cached) return createJsonResponse(cached, true);
 
@@ -104,12 +99,10 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
     var godinaFilter = parseInt(year, 10);
 
     // Lista odjela se gradi ISKLJUČIVO iz stvarne, žive sječe/otpreme
-    // (INDEKS_PRIMKA/INDEKS_OTPREMA) — NE iz STANJE_ODJELA_CACHE, koji je
-    // odvojen izvor (Drive folder sa po-odjel fajlovima) što nije nužno
-    // ažuran/sinhronizovan sa aktuelnim unosima (probano: odjeli sa sječom
-    // svaki mjesec ove godine su se ipak vidjeli kao "nema podataka" jer ih
-    // taj cache nije imao). STANJE_ODJELA_CACHE se dolje koristi SAMO kao
-    // opciona dopuna za ugovorenu masu, nikad da isključi odjel iz liste.
+    // (INDEKS_PRIMKA/INDEKS_OTPREMA), NE iz nekog "stanje" sheeta — ti su
+    // odvojeni izvori i ne moraju sadržavati baš svaki trenutno aktivan
+    // odjel. STANJE_ZALIHA se dolje koristi SAMO kao opciona dopuna za
+    // ugovorenu masu, nikad da isključi odjel iz liste.
     var odjeliMap = {};
     var poredak = [];
 
@@ -202,38 +195,50 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
       }
     }
 
-    // 3) Ugovorena (projektovana) masa — best-effort dopuna iz STANJE_ODJELA_CACHE
-    //    (isti izvor kao "Stanje zaliha po odjelu"). Odjel koji nema odgovarajući
-    //    red tamo (ili sheet uopšte ne postoji) ostaje na listi sa ugovorenoUkupno=0
-    //    umjesto da nestane sa liste.
-    var cacheSheet = ss.getSheetByName('STANJE_ODJELA_CACHE');
-    // NAMJERNO se NE sinhronizuje ovdje ako je STANJE_ODJELA_CACHE prazan:
-    // syncStanjeOdjela() otvara SVAKI odjel-fajl pojedinačno (desetine Drive
-    // API poziva) i zna trajati duže od frontend timeouta za ovaj poziv —
-    // probano, izazvalo je "Timeout after 30s" i pad na zastarjeli keš.
-    // Sinhronizacija ostaje eksplicitna radnja (dugme "Sinhronizuj Stanje
-    // zaliha" — vidi syncStanjeOdjelaCache u js/app.js, isti endpoint kao
-    // admin "Stanje zaliha po odjelu" panel), nikad implicitna unutar ovog
-    // brzog, često pozivanog čitanja.
+    // 3) Ugovorena (projektovana) masa — best-effort dopuna iz STANJE_ZALIHA
+    //    (ISTI sheet koji čita handleStanjeZaliha — "Stanje zaliha po
+    //    odjelu" prikaz. VAŽNO: ovo NIJE STANJE_ODJELA_CACHE — probom je
+    //    utvrđeno da je taj (drugi, stariji) sheet prazan/nekorišten u ovoj
+    //    instalaciji; STANJE_ZALIHA je stvarni, aktivno održavan izvor.
+    //    Blok od 6 redova po odjelu, markeri u koloni A/C (ODJEL/RADILIŠTE/
+    //    IZVOĐAČ/POSLOVOĐA/ZADNJA OTPREMA i PROJEKAT/SJEČA/OTPREMA/ZALIHA),
+    //    sortimenti u kolonama D:W (indeksi 3-22, 20 vrijednosti, KANONSKI
+    //    isti redoslijed kao SORTIMENTI_NAZIVI). Odjel koji nema odgovarajući
+    //    blok (ili sheet uopšte ne postoji) ostaje na listi sa
+    //    ugovorenoUkupno=0 umjesto da nestane sa liste.
+    var zalihaSheet = ss.getSheetByName('STANJE_ZALIHA');
     var debugProjekatRedova = 0;
     var debugPoklopljeno = 0;
-    var debugNepoklopljeniCache = []; // ključevi iz STANJE_ODJELA_CACHE koji se ne nalaze u odjeliMap
-    if (cacheSheet) {
-      var allData = cacheSheet.getDataRange().getValues();
-      for (var i = 2; i < allData.length; i++) {
-        var row = allData[i];
-        if (row[0] !== 'PROJEKAT') continue;
-        debugProjekatRedova++;
-        var odjelNaziv = String(row[1] || '').trim();
-        if (!odjelNaziv) continue;
-        var odjelKljuc = odjelNaziv.toUpperCase();
-        if (!odjeliMap[odjelKljuc]) {
-          if (debugNepoklopljeniCache.length < 8) debugNepoklopljeniCache.push(odjelNaziv);
-          continue; // dopuni samo postojeće, ne dodaji nove
+    var debugNepoklopljeniCache = []; // ključevi iz STANJE_ZALIHA koji se ne nalaze u odjeliMap
+    if (zalihaSheet) {
+      var zalihaData = zalihaSheet.getDataRange().getValues();
+      var zi = 0;
+      while (zi < zalihaData.length) {
+        var zrow = zalihaData[zi];
+        var zColA = String(zrow[0] || '').toUpperCase().trim();
+        if (zColA === 'ODJEL') {
+          var odjelNaziv = String(zrow[1] || '').trim();
+          var projekatRow = null;
+          for (var zoff = 0; zoff < 6 && (zi + zoff) < zalihaData.length; zoff++) {
+            var blockRow = zalihaData[zi + zoff];
+            var blockColA = String(blockRow[0] || '').toUpperCase().trim();
+            if (zoff > 0 && blockColA === 'ODJEL') break;
+            var blockColC = String(blockRow[2] || '').toUpperCase().trim();
+            if (blockColC === 'PROJEKAT') projekatRow = blockRow;
+          }
+          if (odjelNaziv && projekatRow) {
+            debugProjekatRedova++;
+            var odjelKljuc = odjelNaziv.toUpperCase();
+            if (odjeliMap[odjelKljuc]) {
+              debugPoklopljeno++;
+              // Kolone D:W (indeksi 3-22) = 20 sortimenata, zadnja je "UKUPNO Č+L"
+              odjeliMap[odjelKljuc].ugovorenoUkupno = parseFloat(projekatRow[3 + SORTIMENTI_NAZIVI.length - 1]) || 0;
+            } else if (debugNepoklopljeniCache.length < 8) {
+              debugNepoklopljeniCache.push(odjelNaziv);
+            }
+          }
         }
-        debugPoklopljeno++;
-        var dataRow = row.slice(5);
-        odjeliMap[odjelKljuc].ugovorenoUkupno = parseFloat(dataRow[dataRow.length - 1]) || 0;
+        zi++;
       }
     }
     var debugNepoklopljeniOdjeli = poredak.filter(function(k) { return !odjeliMap[k].ugovorenoUkupno; }).map(function(k) { return odjeliMap[k].odjel; }).slice(0, 8);
@@ -298,7 +303,7 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
       // Privremeni dijagnostički podaci za "ugovorena masa uvijek 0" problem —
       // ukloniti kad se uzrok potvrdi i ispravi.
       _debugUgovorenoMasa: {
-        cacheSheetPostoji: !!cacheSheet,
+        cacheSheetPostoji: !!zalihaSheet,
         projekatRedova: debugProjekatRedova,
         poklopljeno: debugPoklopljeno,
         primjerNepoklopljenihIzCache: debugNepoklopljeniCache,
