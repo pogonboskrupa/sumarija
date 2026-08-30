@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.22';
+        const APP_VERSION = '1.17.23';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -3409,14 +3409,13 @@
             try {
                 requestLoadingScreen();
 
-                // Pozovi sync API endpoint
+                // Pozovi sync API endpoint. NAMJERNO bez custom headera: bilo koji
+                // header (npr. Content-Type) na GET zahtjevu tjera browser da prvo
+                // pošalje CORS preflight (OPTIONS), a GAS web app ne zna ispravno
+                // odgovoriti na to — rezultat je "blocked by CORS policy" i
+                // TypeError: Failed to fetch, iako je sam endpoint ispravan.
                 const url = buildApiUrl('sync-stanje-odjela');
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
+                const response = await fetch(url);
 
                 if (!response.ok) {
                     throw new Error('Network response was not ok: ' + response.statusText);
