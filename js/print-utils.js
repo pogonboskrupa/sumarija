@@ -530,6 +530,163 @@ function printKupacDetails() {
     win.document.close();
 }
 
+// ─── "Pregled sječe i otpreme po mjesecima" (mjesecni-pregled-card) print ──
+// Container je već ispunjen gotovim HTML-om (_renderPregledByRadiliste,
+// js/app.js) — po radilištu grupisan naslov, pa po odjelu SJEČA/OTPREMA
+// tabela. Ovdje se samo klonira i čisti od event handlera, isti obrazac
+// kao printStanjeZalihaPoOdjelima/printMjesecniCard.
+function printMjesecniPregled() {
+    const container = document.getElementById('mjesecni-pregled-container');
+    if (!container || !container.querySelector('table')) {
+        if (typeof showWarning === 'function') showWarning('Nema podataka za štampanje');
+        else alert('Nema podataka za štampanje. Molimo sačekajte učitavanje.');
+        return;
+    }
+
+    const accent = '#1e3a5f';
+    const year = new Date().getFullYear();
+    const datumStampe   = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const vrijemeStampe = new Date().toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' });
+
+    const radilisteEl = document.getElementById('mjesecni-pregled-radiliste-filter');
+    const radiliste = radilisteEl && radilisteEl.value ? radilisteEl.value : 'Sva radilišta';
+
+    const clone = container.cloneNode(true);
+    clone.querySelectorAll('*').forEach(el => {
+        ['onclick', 'onmouseover', 'onmouseout', 'onkeyup'].forEach(attr => el.removeAttribute(attr));
+    });
+
+    const sectionsHtml = `
+        <div class="print-section">
+            <div class="section-header" style="border-left:4px solid ${accent};">
+                Pregled sječe i otpreme po mjesecima — ${escapeHtml(radiliste)}
+            </div>
+            ${clone.innerHTML}
+        </div>`;
+
+    const win = window.open('', '_blank', 'width=1200,height=900,scrollbars=yes');
+    if (!win) {
+        if (typeof showError === 'function') showError('Popup blokiran', 'Dozvolite popup prozore za štampanje.');
+        else alert('Popup blokiran — dozvolite popup prozore za štampanje.');
+        return;
+    }
+    win.document.write(buildPrintDocument({
+        tabLabel: 'Sječa / Otprema',
+        activeTabLabel: 'Pregled po mjesecima — ' + radiliste,
+        accentColor: accent,
+        monthName: String(year),
+        year: '',
+        datumStampe,
+        vrijemeStampe,
+        sectionsHtml
+    }));
+    win.document.close();
+}
+
+// ─── Dinamike izvođača print ────────────────────────────────
+// Štampa TAČNO ono što je trenutno učitano (_dinamikeIzvodjacaData,
+// js/app.js) — svaki odjel kao zasebna kartica sa Sječa/Otprema
+// mini-tabelama (prethodni period / izvještajni mjesec / ukupno), ista
+// kalkulacija "ukupno" reda kao _renderDinamikeIzvodjaca na ekranu.
+function printDinamikeIzvodjaca() {
+    const data = (typeof _dinamikeIzvodjacaData !== 'undefined') ? _dinamikeIzvodjacaData : null;
+    const odjeli = (data && data.odjeli) || [];
+    if (!odjeli.length) {
+        if (typeof showWarning === 'function') showWarning('Nema podataka za štampanje');
+        else alert('Nema podataka za štampanje. Molimo sačekajte učitavanje.');
+        return;
+    }
+
+    const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+    const nazivMjeseca = mjeseciNazivi[data.mjesecIzvjestaja] || '';
+    const sortimentiNazivi = data.sortimentiNazivi || [];
+    const ukupnoKey = sortimentiNazivi[sortimentiNazivi.length - 1];
+    const accent = '#059669';
+    const datumStampe   = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const vrijemeStampe = new Date().toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' });
+
+    const subTable = (naslov, bojaAkcenta, redovi) => {
+        const headerCells = sortimentiNazivi.map(s =>
+            `<th style="${s === ukupnoKey ? 'text-decoration:underline;' : ''}">${escapeHtml(s)}</th>`
+        ).join('');
+        const bodyRows = redovi.map(r => {
+            const cells = sortimentiNazivi.map(s => {
+                const val = Number(r.podaci[s]) || 0;
+                const isTotal = s === ukupnoKey;
+                return `<td style="${val > 0 ? 'font-weight:700;color:#1f2937;' : 'color:#d1d5db;'}${isTotal ? 'background:#f9fafb;font-weight:800;' : ''}">${val > 0 ? val.toFixed(2) : '-'}</td>`;
+            }).join('');
+            return `<tr${r.istaknut ? ' class="ukupno-row"' : ''}><td style="text-align:left;font-weight:600;">${escapeHtml(r.labela)}</td>${cells}</tr>`;
+        }).join('');
+        return `
+            <div style="margin-bottom:10px;">
+                <div style="font-weight:700;font-size:11px;color:${bojaAkcenta};margin-bottom:4px;">${naslov}</div>
+                <table style="width:100%;border-collapse:collapse;font-size:10px;border:1px solid #d1d5db;">
+                    <thead><tr><th style="text-align:left;">Sortiment</th>${headerCells}</tr></thead>
+                    <tbody>${bodyRows}</tbody>
+                </table>
+            </div>`;
+    };
+
+    const sectionsHtml = odjeli.map((o, idx) => {
+        const sjecaUkupno = { ...o.sjeca.prosliPeriod };
+        sortimentiNazivi.forEach(s => sjecaUkupno[s] = (Number(o.sjeca.prosliPeriod[s]) || 0) + (Number(o.sjeca.prosliMjesec[s]) || 0));
+        const otpremaUkupno = { ...o.otprema.prosliPeriod };
+        sortimentiNazivi.forEach(s => otpremaUkupno[s] = (Number(o.otprema.prosliPeriod[s]) || 0) + (Number(o.otprema.prosliMjesec[s]) || 0));
+
+        const sjecaHtml = subTable('🪓 Sječa', '#065f46', [
+            { labela: 'Prethodni period', podaci: o.sjeca.prosliPeriod },
+            { labela: nazivMjeseca, podaci: o.sjeca.prosliMjesec },
+            { labela: 'Ukupno izvršenje', podaci: sjecaUkupno, istaknut: true }
+        ]);
+        const otpremaHtml = subTable('🚛 Otprema', '#92400e', [
+            { labela: 'Prethodni period', podaci: o.otprema.prosliPeriod },
+            { labela: nazivMjeseca, podaci: o.otprema.prosliMjesec },
+            { labela: 'Ukupno izvršenje', podaci: otpremaUkupno, istaknut: true }
+        ]);
+
+        const meta = [
+            o.radiliste ? 'G. Jedinica: ' + escapeHtml(String(o.radiliste)) : '',
+            'Izvođač: ' + escapeHtml(o.izvodjac || '—'),
+            'Poslovođa: ' + escapeHtml(o.poslovodja || '—')
+        ].filter(Boolean).join(' &middot; ');
+
+        return `
+        <div class="print-section" style="${idx ? 'page-break-before:always;' : ''}">
+            <div style="background:linear-gradient(135deg,#a7f3d0,#fde68a);padding:10px 14px;border-radius:6px 6px 0 0;">
+                <div style="font-size:14px;font-weight:700;color:#065f46;">🌲 Odjel ${escapeHtml(o.odjel)}</div>
+                <div style="font-size:10px;color:#78350f;margin-top:2px;">${meta}</div>
+            </div>
+            <div style="border:1px solid #e5e7eb;border-top:none;padding:10px 14px 14px;">
+                <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:11px;font-weight:600;color:#374151;margin-bottom:10px;">
+                    <span>🎯 Ugovorena masa: <b style="color:${accent};">${(o.ugovorenoUkupno || 0).toFixed(2)} m³</b></span>
+                    <span>🪓 Index sječe: <b>${(o.indexSjeca || 0).toFixed(0)}%</b></span>
+                    <span>🚛 Index otpreme: <b>${(o.indexOtprema || 0).toFixed(0)}%</b></span>
+                </div>
+                ${sjecaHtml}
+                ${otpremaHtml}
+            </div>
+        </div>`;
+    }).join('');
+
+    const win = window.open('', '_blank', 'width=1100,height=900,scrollbars=yes');
+    if (!win) {
+        if (typeof showError === 'function') showError('Popup blokiran', 'Dozvolite popup prozore za štampanje.');
+        else alert('Popup blokiran — dozvolite popup prozore za štampanje.');
+        return;
+    }
+    win.document.write(buildPrintDocument({
+        tabLabel: 'Dinamike izvođača',
+        activeTabLabel: 'Plan vs realizacija po odjelu',
+        accentColor: accent,
+        monthName: nazivMjeseca,
+        year: data.godinaIzvjestaja || new Date().getFullYear(),
+        datumStampe,
+        vrijemeStampe,
+        sectionsHtml
+    }));
+    win.document.close();
+}
+
 function printActiveView(contentId, tabLabel, accentColor) {
     const container = document.getElementById(contentId);
     if (!container) return;
