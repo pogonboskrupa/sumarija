@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.26';
+        const APP_VERSION = '1.17.27';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6202,13 +6202,13 @@
             }
         }
 
-        function _dinamikeSortimentTable(naslov, ikonBoja, bojaBg, redovi, sortimentiNazivi) {
+        function _dinamikeSortimentTable(naslov, ikonBoja, bojaBg, tekstBoja, redovi, sortimentiNazivi) {
             // redovi = [{ labela, podaci, istaknut }] — 3 reda: prošli period, prošli mjesec, ukupno
             const ukupnoKey = sortimentiNazivi[sortimentiNazivi.length - 1];
-            let headerHTML = `<tr><th style="background:${bojaBg};">Sortiment</th>`;
+            let headerHTML = `<tr><th style="background:${bojaBg}; color:${tekstBoja};">Sortiment</th>`;
             sortimentiNazivi.forEach(s => {
                 const isTotal = s === ukupnoKey;
-                headerHTML += `<th style="background:${bojaBg}; ${isTotal ? 'text-decoration:underline;' : ''}">${escapeHtml(s)}</th>`;
+                headerHTML += `<th style="background:${bojaBg}; color:${tekstBoja}; ${isTotal ? 'text-decoration:underline;' : ''}">${escapeHtml(s)}</th>`;
             });
             headerHTML += `</tr>`;
 
@@ -6265,13 +6265,13 @@
                 const otpremaUkupno = { ...o.otprema.prosliPeriod };
                 sortimentiNazivi.forEach(s => otpremaUkupno[s] = (Number(o.otprema.prosliPeriod[s]) || 0) + (Number(o.otprema.prosliMjesec[s]) || 0));
 
-                const sjecaTable = _dinamikeSortimentTable('🪓 Sječa', '#047857', 'linear-gradient(135deg, #059669, #047857)', [
+                const sjecaTable = _dinamikeSortimentTable('🪓 Sječa', '#065f46', 'linear-gradient(135deg, #a7f3d0, #6ee7b7)', '#065f46', [
                     { labela: 'Prethodni period', podaci: o.sjeca.prosliPeriod },
                     { labela: nazivMjeseca, podaci: o.sjeca.prosliMjesec },
                     { labela: 'Ukupno izvršenje', podaci: sjecaUkupno, istaknut: true }
                 ], sortimentiNazivi);
 
-                const otpremaTable = _dinamikeSortimentTable('🚛 Otprema', '#1e3a5f', 'linear-gradient(135deg, #1e3a5f, #0f2942)', [
+                const otpremaTable = _dinamikeSortimentTable('🚛 Otprema', '#92400e', 'linear-gradient(135deg, #fde68a, #fbbf24)', '#78350f', [
                     { labela: 'Prethodni period', podaci: o.otprema.prosliPeriod },
                     { labela: nazivMjeseca, podaci: o.otprema.prosliMjesec },
                     { labela: 'Ukupno izvršenje', podaci: otpremaUkupno, istaknut: true }

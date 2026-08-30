@@ -4369,20 +4369,26 @@ body.kubikator-fullscreen #kubikator-content {
     color: #fff;
     letter-spacing: .01em;
 }
-.dinamike-pregled-toggle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: #fde8cc;
-    cursor: pointer;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.25);
-    border-radius: 999px;
-    padding: 6px 12px;
+/* Kartice pojedinačnih odjela unutar Dinamika izvođača — svjetlo
+   zelena/zlatna paleta, kompaktnija od zajedničkog .izv-card-header
+   (koji je tamnosmeđ, korišten svugdje drugo u Sječa tabu). */
+#mjesecni-dinamike-card .izv-card-header {
+    background: linear-gradient(135deg, #d1fae5, #fef3c7);
+    border-bottom: 3px solid #fbbf24;
+    padding: 10px 16px;
 }
-.dinamike-pregled-toggle input {
-    accent-color: #ea580c;
+#mjesecni-dinamike-card .izv-card-header h4 {
+    color: #065f46;
+    font-size: 14px;
+}
+#mjesecni-dinamike-card .izv-card-icon {
+    font-size: 17px;
+}
+#mjesecni-dinamike-card .izv-card-sub {
+    color: #92400e;
+}
+#mjesecni-dinamike-card .izv-card-body {
+    padding: 14px 16px 16px;
 }
 .dinamike-subtable-title {
     display: flex;

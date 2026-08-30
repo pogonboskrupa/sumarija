@@ -681,17 +681,17 @@
                  dvije tabele (Sječa / Otprema) i checkboxom koji ga trajno
                  uklanja sa liste kad je pregled završen. -->
             <div id="mjesecni-dinamike-card" class="mjesecni-card hidden" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 32px; overflow: hidden;">
-                <div style="background: linear-gradient(135deg, #78350f 0%, #451a03 100%); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div style="background: linear-gradient(135deg, #bbf7d0 0%, #fde68a 100%); padding: 10px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                     <div>
-                        <h2 style="margin: 0; color: white; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 24px;">📊</span> Dinamike izvođača — plan vs realizacija po odjelu
+                        <h2 style="margin: 0; color: #065f46; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px;">📊</span> Dinamike izvođača — plan vs realizacija po odjelu
                         </h2>
-                        <p id="dinamike-izvodjaca-podnaslov" style="margin: 6px 0 0 0; color: rgba(255,247,237,0.85); font-size: 13px;"></p>
+                        <p id="dinamike-izvodjaca-podnaslov" style="margin: 3px 0 0 0; color: #92400e; font-size: 12px;"></p>
                     </div>
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                        <button type="button" class="btn btn-primary" onclick="openDinamikePregledModal()" style="background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3);">✅ Označi odjele kao pregledane</button>
-                        <select id="dinamike-izvodjaca-mjesec-select" class="month-select" onchange="loadDinamikeIzvodjaca()"></select>
-                        <button class="btn btn-primary" onclick="loadDinamikeIzvodjaca(true)" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);">🔄 Osvježi</button>
+                        <button type="button" class="btn btn-primary" onclick="openDinamikePregledModal()" style="background: #ffffff; color: #065f46; border: 1px solid #6ee7b7; font-size: 12px; padding: 6px 12px;">✅ Označi odjele kao pregledane</button>
+                        <select id="dinamike-izvodjaca-mjesec-select" class="month-select" onchange="loadDinamikeIzvodjaca()" style="font-size: 12px;"></select>
+                        <button class="btn btn-primary" onclick="loadDinamikeIzvodjaca(true)" style="background: #ffffff; color: #92400e; border: 1px solid #fbbf24; font-size: 12px; padding: 6px 12px;">🔄 Osvježi</button>
                     </div>
                 </div>
                 <div style="padding: 20px 24px;">
@@ -4806,10 +4806,10 @@
          openDinamikePregledModal/_potvrdiDinamikePregled u js/app.js). -->
     <div class="modal-overlay" id="dinamike-pregled-modal" style="display:none;" onclick="if(event.target===this) closeDinamikePregledModal();">
         <div class="modal" style="max-width:520px;width:95vw;">
-            <div class="modal-header" style="background:linear-gradient(135deg,#78350f 0%,#451a03 100%);color:white;padding:16px 20px;border-radius:12px 12px 0 0;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#bbf7d0 0%,#fde68a 100%);color:#065f46;padding:14px 20px;border-radius:12px 12px 0 0;">
                 <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
-                    <span style="font-size:16px;font-weight:700;">Označi odjele kao pregledane</span>
-                    <button onclick="closeDinamikePregledModal()" style="background:rgba(255,255,255,0.2);border:none;color:white;font-size:22px;cursor:pointer;padding:2px 10px;border-radius:6px;">&times;</button>
+                    <span style="font-size:15px;font-weight:700;">Označi odjele kao pregledane</span>
+                    <button onclick="closeDinamikePregledModal()" style="background:rgba(6,95,70,0.12);border:none;color:#065f46;font-size:20px;cursor:pointer;padding:2px 10px;border-radius:6px;">&times;</button>
                 </div>
             </div>
             <div class="modal-body" style="padding:20px;">
