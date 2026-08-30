@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.25';
+        const APP_VERSION = '1.17.26';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6183,7 +6183,7 @@
                 const mjesecSel = document.getElementById('dinamike-izvodjaca-mjesec-select');
                 const mjesec = mjesecSel ? mjesecSel.value : '';
                 const url = buildApiUrl('dinamike-izvodjaca', { year, mjesec });
-                const data = await fetchWithCache(url, `cache_dinamike_izvodjaca_v8_${year}_${mjesec}`, forceRefresh, 120000);
+                const data = await fetchWithCache(url, `cache_dinamike_izvodjaca_v9_${year}_${mjesec}`, forceRefresh, 120000);
 
                 if (loadingEl) loadingEl.classList.add('hidden');
 
@@ -6295,12 +6295,6 @@
                                     </span>
                                 </div>
                             </div>
-                            <div class="izv-card-actions">
-                                <label class="dinamike-pregled-toggle">
-                                    <input type="checkbox" id="dinamika-select-${idx}" onchange="_toggleDinamikeSelekcija(${idx}, this.checked)">
-                                    Izaberi
-                                </label>
-                            </div>
                         </div>
                         <div class="izv-card-body">
                             <div class="dinamike-stat-strip">
@@ -6314,66 +6308,98 @@
                     </div>
                 `;
             }).join('');
-
-            // Sačuvaj odjel-po-indexu mapu za checkbox handler (izbjegava
-            // ugrađivanje naziva odjela sa navodnicima direktno u onclick).
-            window._dinamikeIzvodjacaOdjeliByIdx = odjeli.map(o => o.odjel);
-            window._dinamikeIzabraniIdx = new Set();
-            _azurirajDinamikeBulkDugme();
         }
 
-        // Selekcija odjela (checkbox po kartici) — NE šalje ništa odmah,
-        // samo prati izbor; slanje se radi jednom za sve preko dugmeta
-        // "Označi izabrane kao pregledane" (izv-card-actions u zaglavlju).
-        function _toggleDinamikeSelekcija(idx, checked) {
-            if (!window._dinamikeIzabraniIdx) window._dinamikeIzabraniIdx = new Set();
-            if (checked) window._dinamikeIzabraniIdx.add(idx);
-            else window._dinamikeIzabraniIdx.delete(idx);
-            _azurirajDinamikeBulkDugme();
+        // "Označi odjele kao pregledane" — klik na dugme u zaglavlju otvara
+        // modal sa checkboxom po odjelu (svi trenutno prikazani, iz zadnjeg
+        // učitanog _dinamikeIzvodjacaData). Potvrda šalje sve izabrane
+        // odjednom i briše ih sa liste (isti set-dinamika-pregled poziv kao
+        // ranije, samo grupno umjesto pojedinačno).
+        function openDinamikePregledModal() {
+            const odjeli = (_dinamikeIzvodjacaData && _dinamikeIzvodjacaData.odjeli) || [];
+            const listEl = document.getElementById('dinamike-pregled-modal-list');
+            const allCb = document.getElementById('dinamike-pregled-modal-select-all');
+            const errEl = document.getElementById('dinamike-pregled-modal-error');
+            if (!listEl) return;
+
+            if (!odjeli.length) {
+                listEl.innerHTML = '<div style="padding:16px;text-align:center;color:#9ca3af;font-size:13px;">Nema odjela za prikaz.</div>';
+            } else {
+                listEl.innerHTML = odjeli.map((o, idx) => `
+                    <label style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-bottom:1px solid #f1f5f9; cursor:pointer; font-size:13px;">
+                        <input type="checkbox" class="dinamike-pregled-modal-cb" data-odjel="${escapeHtml(o.odjel)}" onchange="_dinamikePregledModalUpdateCount()">
+                        <span>
+                            <b>${escapeHtml(o.odjel)}</b>
+                            <span style="color:#6b7280;"> — ${o.radiliste ? escapeHtml(String(o.radiliste)) + ' · ' : ''}${escapeHtml(o.izvodjac || '—')}</span>
+                        </span>
+                    </label>
+                `).join('');
+            }
+            if (allCb) allCb.checked = false;
+            if (errEl) errEl.style.display = 'none';
+            _dinamikePregledModalUpdateCount();
+
+            document.getElementById('dinamike-pregled-modal').style.display = 'flex';
         }
 
-        function _azurirajDinamikeBulkDugme() {
-            const btn = document.getElementById('dinamike-izvodjaca-bulk-btn');
-            if (!btn) return;
-            const n = (window._dinamikeIzabraniIdx || new Set()).size;
-            btn.textContent = `✅ Označi izabrane kao pregledane (${n})`;
-            btn.disabled = n === 0;
-            btn.style.opacity = n === 0 ? '0.5' : '1';
-            btn.style.cursor = n === 0 ? 'not-allowed' : 'pointer';
+        function closeDinamikePregledModal() {
+            document.getElementById('dinamike-pregled-modal').style.display = 'none';
         }
 
-        async function primijeniIzabraneDinamikePregledane() {
-            const idxSet = window._dinamikeIzabraniIdx;
-            if (!idxSet || !idxSet.size) return;
-            const nazivi = window._dinamikeIzvodjacaOdjeliByIdx || [];
-            const izabraniOdjeli = Array.from(idxSet).map(i => nazivi[i]).filter(Boolean);
+        function _dinamikePregledModalToggleAll(checked) {
+            document.querySelectorAll('.dinamike-pregled-modal-cb').forEach(cb => { cb.checked = checked; });
+            _dinamikePregledModalUpdateCount();
+        }
+
+        function _dinamikePregledModalUpdateCount() {
+            const boxes = Array.from(document.querySelectorAll('.dinamike-pregled-modal-cb'));
+            const n = boxes.filter(cb => cb.checked).length;
+            const countEl = document.getElementById('dinamike-pregled-modal-count');
+            if (countEl) countEl.textContent = n ? `${n} izabrano` : '';
+            const submitBtn = document.getElementById('dinamike-pregled-modal-submit');
+            if (submitBtn) submitBtn.disabled = n === 0;
+            const allCb = document.getElementById('dinamike-pregled-modal-select-all');
+            if (allCb) allCb.checked = boxes.length > 0 && n === boxes.length;
+        }
+
+        async function _potvrdiDinamikePregled() {
+            const boxes = Array.from(document.querySelectorAll('.dinamike-pregled-modal-cb')).filter(cb => cb.checked);
+            const izabraniOdjeli = boxes.map(cb => cb.dataset.odjel).filter(Boolean);
             if (!izabraniOdjeli.length) return;
 
-            showConfirmModal(
-                'Označi kao pregledano',
-                `Označiti ${izabraniOdjeli.length} odjela kao "završen pregled"? Odmah nestaju sa liste.\n\n${izabraniOdjeli.join(', ')}`,
-                async function() {
-                    const btn = document.getElementById('dinamike-izvodjaca-bulk-btn');
-                    const godina = new Date().getFullYear();
-                    let done = 0;
-                    for (const odjel of izabraniOdjeli) {
-                        if (btn) btn.textContent = `⏳ Označavam (${done}/${izabraniOdjeli.length})...`;
-                        try {
-                            const url = buildApiUrl('set-dinamika-pregled', { odjel, godina, pregledan: true });
-                            const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
-                            const result = await r.json();
-                            if (!result || result.success !== true) throw new Error((result && result.error) || 'Greška');
-                        } catch (err) {
-                            console.error('Greška pri označavanju odjela "' + odjel + '":', err);
-                            showWarning('Greška', `Nije uspjelo za odjel "${odjel}": ${(err && err.message) || 'nepoznata greška'}`, 6000);
-                        }
-                        done++;
-                    }
-                    window._dinamikeIzabraniIdx = new Set();
-                    await loadDinamikeIzvodjaca(true);
-                },
-                { large: true, confirmText: 'Označi', danger: false }
-            );
+            const submitBtn = document.getElementById('dinamike-pregled-modal-submit');
+            const errEl = document.getElementById('dinamike-pregled-modal-error');
+            if (errEl) errEl.style.display = 'none';
+            if (submitBtn) submitBtn.disabled = true;
+
+            const godina = new Date().getFullYear();
+            const greske = [];
+            let done = 0;
+            for (const odjel of izabraniOdjeli) {
+                if (submitBtn) submitBtn.textContent = `⏳ Označavam (${done}/${izabraniOdjeli.length})...`;
+                try {
+                    const url = buildApiUrl('set-dinamika-pregled', { odjel, godina, pregledan: true });
+                    const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
+                    const result = await r.json();
+                    if (!result || result.success !== true) throw new Error((result && result.error) || 'Greška');
+                } catch (err) {
+                    console.error('Greška pri označavanju odjela "' + odjel + '":', err);
+                    greske.push(odjel);
+                }
+                done++;
+            }
+
+            if (submitBtn) { submitBtn.textContent = 'Potvrdi'; submitBtn.disabled = false; }
+
+            if (greske.length) {
+                if (errEl) {
+                    errEl.textContent = `Nije uspjelo za: ${greske.join(', ')}. Ostali su uspješno označeni.`;
+                    errEl.style.display = 'block';
+                }
+            } else {
+                closeDinamikePregledModal();
+            }
+            await loadDinamikeIzvodjaca(true);
         }
 
         // Detaljan pregled izabranog izvođača (dropdown #primaci-izvodjac-select)

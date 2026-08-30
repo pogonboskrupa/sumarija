@@ -83,13 +83,12 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
   var loginResult = JSON.parse(handleLogin(username, password).getContent());
   if (!loginResult.success) return createJsonResponse({ error: 'Unauthorized' }, false);
 
-  // v8 — ugovorena masa se sad čita iz STANJE_ZALIHA umjesto
-  // STANJE_ODJELA_CACHE (vidi komentar iznad funkcije — pogrešan sheet je
-  // bio uzrok "ugovorena masa uvijek 0"). Ključ uključuje mjesec (v4) da
-  // svaki izbor ima svoj keš, i bump-uje se sa svakom promjenom odgovora
-  // da odmah istisne stari keširan rezultat.
+  // v9 — odjeli se sad kaskadno sortiraju po GJ → izvođač → svježina sječe
+  // (vidi komentar niže) umjesto samo po izvođaču. Ključ uključuje mjesec
+  // (v4) da svaki izbor ima svoj keš, i bump-uje se sa svakom promjenom
+  // odgovora da odmah istisne stari keširan rezultat.
   var mjesecZaKljuc = (mjesec !== undefined && mjesec !== null && mjesec !== '') ? mjesec : 'zadnji';
-  var cacheKey = 'dinamike_izvodjaca_v8_' + year + '_' + mjesecZaKljuc;
+  var cacheKey = 'dinamike_izvodjaca_v9_' + year + '_' + mjesecZaKljuc;
   var cached = getCachedData(cacheKey);
   if (cached) return createJsonResponse(cached, true);
 
@@ -239,13 +238,6 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
     var pregledMap = _citajDinamikePregledMap(year);
     var ukupnoKey = SORTIMENTI_NAZIVI[SORTIMENTI_NAZIVI.length - 1]; // "UKUPNO Č+L"
 
-    // Zadnja aktivnost odjela = kasniji od zadnjeg datuma sječe/otpreme.
-    function _zadnjaAktivnost(o) {
-      var a = o.zadnjiDatumSjece, b = o.zadnjiDatumOtpreme;
-      if (a && b) return a > b ? a : b;
-      return a || b || null;
-    }
-
     var odjeli = poredak
       .filter(function(kljuc) { return !pregledMap[kljuc]; })
       .map(function(kljuc) {
@@ -262,30 +254,43 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
           otprema: o.otprema,
           indexSjeca: o.ugovorenoUkupno > 0 ? (sjecaUkupno / o.ugovorenoUkupno) * 100 : 0,
           indexOtprema: o.ugovorenoUkupno > 0 ? (otpremaUkupno / o.ugovorenoUkupno) * 100 : 0,
-          _zadnjaAktivnost: _zadnjaAktivnost(o)
+          _zadnjaSjeca: o.zadnjiDatumSjece || null
         };
       });
 
-    // Poredaj po izvođaču — grupe izvođača idu redoslijedom njihove
-    // NAJNOVIJE aktivnosti (bilo koji njihov odjel), a unutar grupe odjeli
-    // idu od najnovije ka najstarijoj aktivnosti.
-    var izvodjacMaxDatum = {};
+    // Poredaj kaskadno: GJ (radilište) → izvođač radova → svježina sječe.
+    // Svaki nivo grupe ide redoslijedom svoje NAJNOVIJE sječe (bilo koji
+    // odjel/izvođač u toj GJ, odn. bilo koji odjel tog izvođača unutar te
+    // GJ) — ne alfabetski — jer je cilj da se najsvježija aktivnost odmah
+    // vidi na vrhu na sva tri nivoa, a unutar iste GJ+izvođač kombinacije
+    // odjeli idu od najsvježije ka najstarijoj sječi.
+    function _kljucGJ(o) { return String(o.radiliste || '').trim().toUpperCase(); }
+    function _kljucIzv(o) { return String(o.izvodjac || '').trim().toUpperCase(); }
+    function _vrijeme(o) { return o._zadnjaSjeca ? o._zadnjaSjeca.getTime() : 0; }
+
+    var maxZaGJ = {};
+    var maxZaGJIzv = {};
     odjeli.forEach(function(o) {
-      var kljuc = String(o.izvodjac || '').trim().toUpperCase();
-      var t = o._zadnjaAktivnost ? o._zadnjaAktivnost.getTime() : 0;
-      if (!(kljuc in izvodjacMaxDatum) || t > izvodjacMaxDatum[kljuc]) izvodjacMaxDatum[kljuc] = t;
+      var gjK = _kljucGJ(o), izvK = _kljucIzv(o), t = _vrijeme(o);
+      var giK = gjK + '|' + izvK;
+      if (!(gjK in maxZaGJ) || t > maxZaGJ[gjK]) maxZaGJ[gjK] = t;
+      if (!(giK in maxZaGJIzv) || t > maxZaGJIzv[giK]) maxZaGJIzv[giK] = t;
     });
+
     odjeli.sort(function(a, b) {
-      var ka = String(a.izvodjac || '').trim().toUpperCase();
-      var kb = String(b.izvodjac || '').trim().toUpperCase();
-      var diffIzvodjac = izvodjacMaxDatum[kb] - izvodjacMaxDatum[ka];
-      if (diffIzvodjac !== 0) return diffIzvodjac;
-      if (ka !== kb) return ka < kb ? -1 : 1; // isti max datum, različiti izvođači — stabilnost
-      var ta = a._zadnjaAktivnost ? a._zadnjaAktivnost.getTime() : 0;
-      var tb = b._zadnjaAktivnost ? b._zadnjaAktivnost.getTime() : 0;
-      return tb - ta;
+      var gjA = _kljucGJ(a), gjB = _kljucGJ(b);
+      var diffGJ = maxZaGJ[gjB] - maxZaGJ[gjA];
+      if (diffGJ !== 0) return diffGJ;
+      if (gjA !== gjB) return gjA < gjB ? -1 : 1; // isti max datum, različita GJ — stabilnost
+
+      var giA = gjA + '|' + _kljucIzv(a), giB = gjB + '|' + _kljucIzv(b);
+      var diffIzv = maxZaGJIzv[giB] - maxZaGJIzv[giA];
+      if (diffIzv !== 0) return diffIzv;
+      if (giA !== giB) return giA < giB ? -1 : 1; // isti max datum, različit izvođač — stabilnost
+
+      return _vrijeme(b) - _vrijeme(a);
     });
-    odjeli.forEach(function(o) { delete o._zadnjaAktivnost; });
+    odjeli.forEach(function(o) { delete o._zadnjaSjeca; });
 
     var rezultat = {
       odjeli: odjeli,

@@ -689,7 +689,7 @@
                         <p id="dinamike-izvodjaca-podnaslov" style="margin: 6px 0 0 0; color: rgba(255,247,237,0.85); font-size: 13px;"></p>
                     </div>
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                        <button id="dinamike-izvodjaca-bulk-btn" type="button" class="btn btn-primary" onclick="primijeniIzabraneDinamikePregledane()" disabled style="background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); opacity:0.5; cursor:not-allowed;">✅ Označi izabrane kao pregledane (0)</button>
+                        <button type="button" class="btn btn-primary" onclick="openDinamikePregledModal()" style="background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3);">✅ Označi odjele kao pregledane</button>
                         <select id="dinamike-izvodjaca-mjesec-select" class="month-select" onchange="loadDinamikeIzvodjaca()"></select>
                         <button class="btn btn-primary" onclick="loadDinamikeIzvodjaca(true)" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);">🔄 Osvježi</button>
                     </div>
@@ -4801,6 +4801,34 @@
         </div>
     </div>
 
+    <!-- Dinamike izvođača — "Označi odjele kao pregledane" modal. Checkbox
+         po odjelu, potvrda šalje sve izabrane odjednom (vidi
+         openDinamikePregledModal/_potvrdiDinamikePregled u js/app.js). -->
+    <div class="modal-overlay" id="dinamike-pregled-modal" style="display:none;" onclick="if(event.target===this) closeDinamikePregledModal();">
+        <div class="modal" style="max-width:520px;width:95vw;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#78350f 0%,#451a03 100%);color:white;padding:16px 20px;border-radius:12px 12px 0 0;">
+                <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                    <span style="font-size:16px;font-weight:700;">Označi odjele kao pregledane</span>
+                    <button onclick="closeDinamikePregledModal()" style="background:rgba(255,255,255,0.2);border:none;color:white;font-size:22px;cursor:pointer;padding:2px 10px;border-radius:6px;">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body" style="padding:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <label style="font-size:13px; display:flex; align-items:center; gap:6px; cursor:pointer;">
+                        <input type="checkbox" id="dinamike-pregled-modal-select-all" onchange="_dinamikePregledModalToggleAll(this.checked)">
+                        Izaberi sve
+                    </label>
+                    <span id="dinamike-pregled-modal-count" style="font-size:12px; color:#6b7280;"></span>
+                </div>
+                <div id="dinamike-pregled-modal-list" style="max-height:50vh; overflow-y:auto; border:1px solid #e5e7eb; border-radius:8px;"></div>
+                <div id="dinamike-pregled-modal-error" style="color:#dc2626; font-size:12px; margin-top:10px; display:none;"></div>
+                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:16px;">
+                    <button onclick="closeDinamikePregledModal()" class="btn btn-secondary" style="font-size:13px;">Odustani</button>
+                    <button onclick="_potvrdiDinamikePregled()" id="dinamike-pregled-modal-submit" class="btn btn-primary" style="font-size:13px;" disabled>Potvrdi</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 
     <!-- Stanje zaliha odjela Modal (Dashboard klik na odjel) -->
