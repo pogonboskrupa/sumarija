@@ -322,8 +322,8 @@ function _mjeseciZaInvalidaciju() {
 // mogućih ključeva po godini, pa se generišu ovom pomoćnom funkcijom
 // umjesto nabrajanja jednog fiksnog ključa.
 function _dinamikeIzvodjacaKljucevi(godina) {
-  var kljucevi = ['dinamike_izvodjaca_v6_' + godina + '_zadnji'];
-  for (var m = 0; m < 12; m++) kljucevi.push('dinamike_izvodjaca_v6_' + godina + '_' + m);
+  var kljucevi = ['dinamike_izvodjaca_v7_' + godina + '_zadnji'];
+  for (var m = 0; m < 12; m++) kljucevi.push('dinamike_izvodjaca_v7_' + godina + '_' + m);
   return kljucevi;
 }
 

@@ -86,14 +86,15 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
   var loginResult = JSON.parse(handleLogin(username, password).getContent());
   if (!loginResult.success) return createJsonResponse({ error: 'Unauthorized' }, false);
 
-  // v6 — dijagnostika (v5) otkrila da STANJE_ODJELA_CACHE zna biti prazan
-  // (0 PROJEKAT redova) jer se puni SAMO kad neko otvori "Stanje zaliha po
-  // odjelu" — sad se ovdje isto sinhronizuje na zahtjev ako je prazan
-  // (vidi ispod). Ključ uključuje mjesec (v4) da svaki izbor ima svoj keš,
-  // i bump-uje se sa svakom promjenom odgovora da odmah istisne stari
-  // keširan rezultat.
+  // v7 — v6 je probao da sinhronizuje STANJE_ODJELA_CACHE ovdje kad je
+  // prazan, ali syncStanjeOdjela() otvara desetine Drive fajlova pojedinačno
+  // i traje duže od frontend timeouta (izazvalo "Timeout after 30s" i pad
+  // na zastarjeli keš) — vraćeno na best-effort čitanje bez sinhronizacije
+  // (vidi komentar niže). Ključ uključuje mjesec (v4) da svaki izbor ima
+  // svoj keš, i bump-uje se sa svakom promjenom odgovora da odmah istisne
+  // stari keširan rezultat.
   var mjesecZaKljuc = (mjesec !== undefined && mjesec !== null && mjesec !== '') ? mjesec : 'zadnji';
-  var cacheKey = 'dinamike_izvodjaca_v6_' + year + '_' + mjesecZaKljuc;
+  var cacheKey = 'dinamike_izvodjaca_v7_' + year + '_' + mjesecZaKljuc;
   var cached = getCachedData(cacheKey);
   if (cached) return createJsonResponse(cached, true);
 
@@ -206,16 +207,14 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
     //    red tamo (ili sheet uopšte ne postoji) ostaje na listi sa ugovorenoUkupno=0
     //    umjesto da nestane sa liste.
     var cacheSheet = ss.getSheetByName('STANJE_ODJELA_CACHE');
-    var debugSyncPokrenut = false;
-    // STANJE_ODJELA_CACHE se puni SAMO kad neko otvori "Stanje zaliha po
-    // odjelu" (handleStanjeOdjela ima isti fallback) — ako niko to nije
-    // uradio od zadnjeg čišćenja keša, sheet postoji ali je prazan. Umjesto
-    // da tiho ostane prazan, sinhronizuj ga ovdje isto kao i tamo.
-    if (!cacheSheet || cacheSheet.getDataRange().getNumRows() <= 2) {
-      debugSyncPokrenut = true;
-      syncStanjeOdjela();
-      cacheSheet = ss.getSheetByName('STANJE_ODJELA_CACHE');
-    }
+    // NAMJERNO se NE sinhronizuje ovdje ako je STANJE_ODJELA_CACHE prazan:
+    // syncStanjeOdjela() otvara SVAKI odjel-fajl pojedinačno (desetine Drive
+    // API poziva) i zna trajati duže od frontend timeouta za ovaj poziv —
+    // probano, izazvalo je "Timeout after 30s" i pad na zastarjeli keš.
+    // Sinhronizacija ostaje eksplicitna radnja (dugme "Sinhronizuj Stanje
+    // zaliha" — vidi syncStanjeOdjelaCache u js/app.js, isti endpoint kao
+    // admin "Stanje zaliha po odjelu" panel), nikad implicitna unutar ovog
+    // brzog, često pozivanog čitanja.
     var debugProjekatRedova = 0;
     var debugPoklopljeno = 0;
     var debugNepoklopljeniCache = []; // ključevi iz STANJE_ODJELA_CACHE koji se ne nalaze u odjeliMap
@@ -300,7 +299,6 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
       // ukloniti kad se uzrok potvrdi i ispravi.
       _debugUgovorenoMasa: {
         cacheSheetPostoji: !!cacheSheet,
-        syncPokrenut: debugSyncPokrenut,
         projekatRedova: debugProjekatRedova,
         poklopljeno: debugPoklopljeno,
         primjerNepoklopljenihIzCache: debugNepoklopljeniCache,
