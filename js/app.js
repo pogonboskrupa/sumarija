@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.27';
+        const APP_VERSION = '1.17.28';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -4944,15 +4944,15 @@
                 // Create header with sticky styling
                 const headerHTML = `
                     <tr>
-                        <th style="position: sticky; left: 0; background: #059669; z-index: 20; border-right: 3px solid #047857; min-width: 150px;">
+                        <th style="position: sticky; left: 0; background: linear-gradient(135deg, #a7f3d0, #6ee7b7); color: #065f46; z-index: 20; border-right: 3px solid #059669; min-width: 150px;">
                             👷 Primač
                         </th>
                         ${data.mjeseci.map((m, idx) => `
-                            <th class="right" style="min-width: 80px; background: #059669; color: white; font-weight: 700; border: 1px solid #047857;">
+                            <th class="right" style="min-width: 80px; background: linear-gradient(135deg, #a7f3d0, #6ee7b7); color: #065f46; font-weight: 700; border: 1px solid #059669;">
                                 ${m}
                             </th>
                         `).join('')}
-                        <th class="right" style="min-width: 100px; background: #047857; color: white; font-weight: 900; border: 2px solid #065f46;">
+                        <th class="right" style="min-width: 100px; background: linear-gradient(135deg, #fde68a, #fbbf24); color: #78350f; font-weight: 900; border: 2px solid #d97706;">
                             📊 UKUPNO
                         </th>
                     </tr>
@@ -5006,15 +5006,15 @@
                 // ===== TABELA 2: Prosječna sječa po radnom danu =====
                 const prosjekHeaderHTML = `
                     <tr>
-                        <th style="position: sticky; left: 0; background: #2563eb; z-index: 20; border-right: 3px solid #1d4ed8; min-width: 150px; color: white;">
+                        <th style="position: sticky; left: 0; background: linear-gradient(135deg, #fde68a, #fbbf24); color: #78350f; z-index: 20; border-right: 3px solid #d97706; min-width: 150px;">
                             👷 Primač
                         </th>
                         ${data.mjeseci.map((m, idx) => `
-                            <th class="right" style="min-width: 80px; background: #2563eb; color: white; font-weight: 700; border: 1px solid #1d4ed8;">
+                            <th class="right" style="min-width: 80px; background: linear-gradient(135deg, #fde68a, #fbbf24); color: #78350f; font-weight: 700; border: 1px solid #d97706;">
                                 ${m}
                             </th>
                         `).join('')}
-                        <th class="right" style="min-width: 100px; background: #1d4ed8; color: white; font-weight: 900; border: 2px solid #1e3a5f;">
+                        <th class="right" style="min-width: 100px; background: linear-gradient(135deg, #a7f3d0, #6ee7b7); color: #065f46; font-weight: 900; border: 2px solid #059669;">
                             📊 PROSJEK
                         </th>
                     </tr>
@@ -5026,8 +5026,8 @@
                 const prosjekMonthDays = new Array(12).fill(0);
 
                 const prosjekBodyHTML = data.primaci.map((p, idx) => {
-                    const rowBg = idx % 2 === 0 ? '#eff6ff' : 'white';
-                    const hoverBg = idx % 2 === 0 ? '#dbeafe' : '#eff6ff';
+                    const rowBg = idx % 2 === 0 ? '#fffbeb' : 'white';
+                    const hoverBg = idx % 2 === 0 ? '#fef3c7' : '#fffbeb';
                     const radniDani = p.radniDani || new Array(12).fill(0);
                     const mjeseci = (p.mjeseci && Array.isArray(p.mjeseci)) ? p.mjeseci : new Array(12).fill(0);
 
@@ -5048,18 +5048,18 @@
 
                         const displayVal = prosjek > 0 ? prosjek.toFixed(2) : '-';
                         const cellStyle = prosjek > 0 ? 'font-weight: 600; color: #000000;' : 'color: #6b7280;';
-                        return `<td class="right" style="${cellStyle} border: 1px solid #bfdbfe; padding: 8px; font-size: 11px; font-family: 'Roboto Mono', ui-monospace, monospace;">${displayVal}</td>`;
+                        return `<td class="right" style="${cellStyle} border: 1px solid #fde68a; padding: 8px; font-size: 11px; font-family: 'Roboto Mono', ui-monospace, monospace;">${displayVal}</td>`;
                     }).join('');
 
                     const ukupniProsjek = totalDana > 0 ? (totalKubika / totalDana).toFixed(2) : '0.00';
 
                     return `
                         <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
-                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #2563eb; padding: 10px; font-size: 11px;">
+                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #d97706; padding: 10px; font-size: 11px;">
                                 ${escapeHtml(p.primac) || '-'}
                             </td>
                             ${cells}
-                            <td class="right" style="font-weight: 700; background: linear-gradient(to right, #dbeafe, #bfdbfe); border: 2px solid #2563eb; padding: 10px; font-size: 11px; color: #1e3a5f;">
+                            <td class="right" style="font-weight: 700; background: linear-gradient(to right, #fef3c7, #fde68a); border: 2px solid #d97706; padding: 10px; font-size: 11px; color: #78350f;">
                                 ${ukupniProsjek} m³/dan
                             </td>
                         </tr>
@@ -5067,19 +5067,19 @@
                 }).join('');
 
                 const prosjekTotalsRow = `
-                    <tr style="background: linear-gradient(to bottom, #dbeafe, #bfdbfe); color: #1e3a5f; font-weight: 700; border-top: 3px solid #60a5fa;">
-                        <td style="position: sticky; left: 0; background: #dbeafe; z-index: 10; border-right: 3px solid #60a5fa; padding: 12px; font-size: 12px;">
+                    <tr style="background: linear-gradient(to bottom, #fef3c7, #fde68a); color: #78350f; font-weight: 700; border-top: 3px solid #fbbf24;">
+                        <td style="position: sticky; left: 0; background: #fef3c7; z-index: 10; border-right: 3px solid #fbbf24; padding: 12px; font-size: 12px;">
                             📈 PROSJEK
                         </td>
                         ${prosjekMonthTotals.map((total, idx) => {
                             const dani = prosjekMonthDays[idx];
                             const prosjek = dani > 0 ? total / dani : 0;
                             return `
-                            <td class="right" style="border: 1px solid #93c5fd; padding: 10px; font-size: 12px; font-weight: 700; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace;">
+                            <td class="right" style="border: 1px solid #fcd34d; padding: 10px; font-size: 12px; font-weight: 700; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace;">
                                 ${prosjek > 0 ? prosjek.toFixed(2) : '-'}
                             </td>`;
                         }).join('')}
-                        <td class="right" style="background: #bfdbfe; border: 2px solid #60a5fa; padding: 12px; font-size: 13px; font-weight: 900; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace;">
+                        <td class="right" style="background: #fde68a; border: 2px solid #fbbf24; padding: 12px; font-size: 13px; font-weight: 900; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace;">
                             ${(() => { const tK = prosjekMonthTotals.reduce((a,b) => a+b, 0); const tD = prosjekMonthDays.reduce((a,b) => a+b, 0); return tD > 0 ? (tK/tD).toFixed(2) : '0.00'; })()} m³/dan
                         </td>
                     </tr>
@@ -5090,15 +5090,15 @@
                 // ===== TABELA 3: Broj radnih dana po mjesecima =====
                 const daniHeaderHTML = `
                     <tr>
-                        <th style="position: sticky; left: 0; background: #d97706; z-index: 20; border-right: 3px solid #b45309; min-width: 150px; color: white;">
+                        <th style="position: sticky; left: 0; background: linear-gradient(135deg, #a7f3d0, #6ee7b7); color: #065f46; z-index: 20; border-right: 3px solid #059669; min-width: 150px;">
                             👷 Primač
                         </th>
                         ${data.mjeseci.map((m, idx) => `
-                            <th class="right" style="min-width: 80px; background: #d97706; color: white; font-weight: 700; border: 1px solid #b45309;">
+                            <th class="right" style="min-width: 80px; background: linear-gradient(135deg, #a7f3d0, #6ee7b7); color: #065f46; font-weight: 700; border: 1px solid #059669;">
                                 ${m}
                             </th>
                         `).join('')}
-                        <th class="right" style="min-width: 100px; background: #b45309; color: white; font-weight: 900; border: 2px solid #92400e;">
+                        <th class="right" style="min-width: 100px; background: linear-gradient(135deg, #fde68a, #fbbf24); color: #78350f; font-weight: 900; border: 2px solid #d97706;">
                             📊 UKUPNO
                         </th>
                     </tr>
@@ -5109,8 +5109,8 @@
                 let daniGrandTotal = 0;
 
                 const daniBodyHTML = data.primaci.map((p, idx) => {
-                    const rowBg = idx % 2 === 0 ? '#fffbeb' : 'white';
-                    const hoverBg = idx % 2 === 0 ? '#fef3c7' : '#fffbeb';
+                    const rowBg = idx % 2 === 0 ? '#f0fdf4' : 'white';
+                    const hoverBg = idx % 2 === 0 ? '#dcfce7' : '#f0fdf4';
                     const radniDani = p.radniDani || new Array(12).fill(0);
                     let ukupnoDana = 0;
 
@@ -5120,18 +5120,18 @@
                         ukupnoDana += val;
                         const displayVal = val > 0 ? val : '-';
                         const cellStyle = val > 0 ? 'font-weight: 600; color: #000000;' : 'color: #6b7280;';
-                        return `<td class="right" style="${cellStyle} border: 1px solid #fde68a; padding: 8px; font-size: 11px; font-family: 'Roboto Mono', ui-monospace, monospace;">${displayVal}</td>`;
+                        return `<td class="right" style="${cellStyle} border: 1px solid #d1fae5; padding: 8px; font-size: 11px; font-family: 'Roboto Mono', ui-monospace, monospace;">${displayVal}</td>`;
                     }).join('');
 
                     daniGrandTotal = Math.max(daniGrandTotal, ukupnoDana);
 
                     return `
                         <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
-                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #d97706; padding: 10px; font-size: 11px;">
+                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #059669; padding: 10px; font-size: 11px;">
                                 ${escapeHtml(p.primac) || '-'}
                             </td>
                             ${cells}
-                            <td class="right" style="font-weight: 700; background: linear-gradient(to right, #fef3c7, #fde68a); border: 2px solid #d97706; padding: 10px; font-size: 11px; color: #92400e;">
+                            <td class="right" style="font-weight: 700; background: linear-gradient(to right, #d1fae5, #a7f3d0); border: 2px solid #059669; padding: 10px; font-size: 11px; color: #065f46;">
                                 ${ukupnoDana} dana
                             </td>
                         </tr>
@@ -5139,17 +5139,17 @@
                 }).join('');
 
                 const daniTotalsRow = `
-                    <tr style="background: linear-gradient(to bottom, #fef3c7, #fde68a); color: #92400e; font-weight: 700; border-top: 3px solid #fbbf24;">
-                        <td style="position: sticky; left: 0; background: #fef3c7; z-index: 10; border-right: 3px solid #fbbf24; padding: 12px; font-size: 12px;">
+                    <tr style="background: linear-gradient(to bottom, #d1fae5, #a7f3d0); color: #065f46; font-weight: 700; border-top: 3px solid #34d399;">
+                        <td style="position: sticky; left: 0; background: #d1fae5; z-index: 10; border-right: 3px solid #34d399; padding: 12px; font-size: 12px;">
                             📈 MAX DANA
                         </td>
                         ${daniMonthTotals.map(total => {
                             return `
-                            <td class="right" style="border: 1px solid #fcd34d; padding: 10px; font-size: 12px; font-weight: 700; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace;">
+                            <td class="right" style="border: 1px solid #6ee7b7; padding: 10px; font-size: 12px; font-weight: 700; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace;">
                                 ${total > 0 ? total : '-'}
                             </td>`;
                         }).join('')}
-                        <td class="right" style="background: #fde68a; border: 2px solid #fbbf24; padding: 12px; font-size: 13px; font-weight: 900; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace;">
+                        <td class="right" style="background: #a7f3d0; border: 2px solid #34d399; padding: 12px; font-size: 13px; font-weight: 900; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace;">
                             ${daniGrandTotal} dana
                         </td>
                     </tr>
@@ -5382,7 +5382,7 @@
                 if (!data.data || data.data.length === 0) {
                     document.getElementById('primaci-daily-header').innerHTML = `
                         <tr>
-                            <th style="background: #1e293b; color: #f8fafc; padding: 12px; font-weight: 700;">
+                            <th style="background: linear-gradient(135deg, #a7f3d0, #6ee7b7); color: #065f46; padding: 12px; font-weight: 700;">
                                 📅 Sječa po danima - ${getMonthName(month)} ${year}
                             </th>
                         </tr>
@@ -5398,14 +5398,14 @@
                 // ✅ Header - pro level design
                 const headerHTML = `
                     <tr>
-                        <th style="position: sticky; top: 0; left: 0; background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); z-index: 30; border-right: 2px solid #334155; min-width: 75px; box-shadow: 2px 2px 6px rgba(0,0,0,0.2); font-size: 11px; padding: 10px 8px; font-weight: 700; color: #f8fafc; text-transform: uppercase; letter-spacing: 0.8px;">
+                        <th style="position: sticky; top: 0; left: 0; background: linear-gradient(135deg, #a7f3d0, #6ee7b7); z-index: 30; border-right: 2px solid #059669; min-width: 75px; box-shadow: 2px 2px 6px rgba(6,95,70,0.1); font-size: 11px; padding: 10px 8px; font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: 0.8px;">
                             Odjel
                         </th>
-                        <th style="position: sticky; top: 0; min-width: 120px; background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); color: #f8fafc; font-weight: 700; border: 1px solid #334155; font-size: 11px; padding: 10px 8px; z-index: 20; box-shadow: 0 2px 6px rgba(0,0,0,0.2); text-transform: uppercase; letter-spacing: 0.8px;">
+                        <th style="position: sticky; top: 0; min-width: 120px; background: linear-gradient(135deg, #a7f3d0, #6ee7b7); color: #065f46; font-weight: 700; border: 1px solid #059669; font-size: 11px; padding: 10px 8px; z-index: 20; box-shadow: 0 2px 6px rgba(6,95,70,0.1); text-transform: uppercase; letter-spacing: 0.8px;">
                             Primač
                         </th>
                         ${data.sortimentiNazivi.map(s => `
-                            <th style="position: sticky; top: 0; min-width: 58px; background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); color: #e2e8f0; font-weight: 600; border: 1px solid #334155; font-size: 9.5px; padding: 10px 4px; z-index: 20; box-shadow: 0 2px 6px rgba(0,0,0,0.2); text-transform: uppercase; line-height: 1.2; letter-spacing: 0.3px;">
+                            <th style="position: sticky; top: 0; min-width: 58px; background: linear-gradient(135deg, #fde68a, #fbbf24); color: #78350f; font-weight: 600; border: 1px solid #d97706; font-size: 9.5px; padding: 10px 4px; z-index: 20; box-shadow: 0 2px 6px rgba(120,53,15,0.1); text-transform: uppercase; line-height: 1.2; letter-spacing: 0.3px;">
                                 ${s}
                             </th>
                         `).join('')}
@@ -5574,7 +5574,7 @@
                 if (!data.data || data.data.length === 0) {
                     document.getElementById('otpremaci-daily-header').innerHTML = `
                         <tr>
-                            <th style="background: #0891b2; color: white; padding: 12px;">
+                            <th style="background: linear-gradient(135deg, #fde68a, #fbbf24); color: #78350f; padding: 12px;">
                                 📅 Otprema po danima - ${getMonthName(month)} ${year}
                             </th>
                         </tr>
@@ -5590,17 +5590,17 @@
                 // ✅ NOVO: Header sa kolonama ODJEL, OTPREMAČ, KUPAC + sortimenti
                 const headerHTML = `
                     <tr>
-                        <th style="position: sticky; top: 0; left: 0; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); z-index: 30; border-right: 3px solid #164e63; width: 1%; white-space: nowrap; box-shadow: 2px 0 5px rgba(0,0,0,0.1); font-size: 10px; padding: 8px 6px; font-weight: 800; color: white; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th style="position: sticky; top: 0; left: 0; background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%); z-index: 30; border-right: 3px solid #92400e; width: 1%; white-space: nowrap; box-shadow: 2px 0 5px rgba(120,53,15,0.1); font-size: 10px; padding: 8px 6px; font-weight: 800; color: #78350f; text-transform: uppercase; letter-spacing: 0.5px;">
                             🏢 Odjel
                         </th>
-                        <th style="position: sticky; top: 0; width: 1%; white-space: nowrap; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; font-weight: 800; border: 1px solid #164e63; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th style="position: sticky; top: 0; width: 1%; white-space: nowrap; background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%); color: #78350f; font-weight: 800; border: 1px solid #92400e; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(120,53,15,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
                             🚛 Otpremač
                         </th>
-                        <th style="position: sticky; top: 0; width: 1%; white-space: nowrap; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; font-weight: 800; border: 1px solid #164e63; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th style="position: sticky; top: 0; width: 1%; white-space: nowrap; background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%); color: #78350f; font-weight: 800; border: 1px solid #92400e; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(120,53,15,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
                             👤 Kupac
                         </th>
                         ${data.sortimentiNazivi.map(s => `
-                            <th style="position: sticky; top: 0; min-width: 52px; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; font-weight: 700; border: 1px solid #164e63; font-size: 8.5px; padding: 8px 3px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; line-height: 1.1;">
+                            <th style="position: sticky; top: 0; min-width: 52px; background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%); color: #78350f; font-weight: 700; border: 1px solid #92400e; font-size: 8.5px; padding: 8px 3px; z-index: 20; box-shadow: 0 2px 4px rgba(120,53,15,0.1); text-transform: uppercase; line-height: 1.1;">
                                 ${s}
                             </th>
                         `).join('')}
@@ -5643,8 +5643,8 @@
                     // ✅ Zaglavlje datuma (3 fiksne kolone: odjel, otpremač, kupac + sortimenti)
                     const numSortimenti = data.sortimentiNazivi.length;
                     bodyHTML += `
-                        <tr style="background: linear-gradient(135deg, #0e7490 0%, #155e75 50%, #164e63 100%); box-shadow: 0 2px 8px rgba(22, 78, 99, 0.4);">
-                            <td colspan="${3 + numSortimenti}" style="font-weight: 800; font-size: 14px; padding: 10px 12px; text-align: center; border-top: 3px solid #083344; color: white; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+                        <tr style="background: linear-gradient(135deg, #d97706 0%, #b45309 50%, #92400e 100%); box-shadow: 0 2px 8px rgba(120, 53, 15, 0.3);">
+                            <td colspan="${3 + numSortimenti}" style="font-weight: 800; font-size: 14px; padding: 10px 12px; text-align: center; border-top: 3px solid #78350f; color: white; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.35);">
                                 📅 ${datum} - ${dayName}
                             </td>
                         </tr>
@@ -5661,23 +5661,23 @@
 
                     // ✅ Redovi za ovaj dan sa kolonama: Odjel, Otpremač, Kupac + sortimenti
                     rows.forEach((row, idx) => {
-                        const rowBg = idx % 2 === 0 ? '#ecfeff' : '#ffffff';
-                        const hoverBg = '#cffafe';
+                        const rowBg = idx % 2 === 0 ? '#fffbeb' : '#ffffff';
+                        const hoverBg = '#fef3c7';
 
                         const sortimentiCells = data.sortimentiNazivi.map(sortiment => {
                             const val = row.sortimenti[sortiment] || 0;
                             const displayVal = val > 0 ? val.toFixed(2) : '-';
-                            const fontWeight = val > 0 ? 'font-weight: 600; color: #164e63;' : 'color: #d1d5db;';
-                            return `<td style="${fontWeight} border: 1px solid #a5f3fc; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 6px 3px; transition: all 0.15s;">${displayVal}</td>`;
+                            const fontWeight = val > 0 ? 'font-weight: 600; color: #78350f;' : 'color: #d1d5db;';
+                            return `<td style="${fontWeight} border: 1px solid #fde68a; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 6px 3px; transition: all 0.15s;">${displayVal}</td>`;
                         }).join('');
 
                         bodyHTML += `
-                            <tr style="background: ${rowBg}; transition: all 0.15s ease;" onmouseover="this.style.background='${hoverBg}'; this.style.transform='scale(1.005)'; this.style.boxShadow='0 2px 8px rgba(8,145,178,0.15)';" onmouseout="this.style.background='${rowBg}'; this.style.transform='scale(1)'; this.style.boxShadow='none';">
-                                <td style="font-weight: 700; font-size: 10px; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #0891b2; padding: 6px 5px; border: 1px solid #a5f3fc; color: #164e63; box-shadow: 2px 0 3px rgba(0,0,0,0.05); white-space: nowrap;">
+                            <tr style="background: ${rowBg}; transition: all 0.15s ease;" onmouseover="this.style.background='${hoverBg}'; this.style.transform='scale(1.005)'; this.style.boxShadow='0 2px 8px rgba(217,119,6,0.15)';" onmouseout="this.style.background='${rowBg}'; this.style.transform='scale(1)'; this.style.boxShadow='none';">
+                                <td style="font-weight: 700; font-size: 10px; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #d97706; padding: 6px 5px; border: 1px solid #fde68a; color: #78350f; box-shadow: 2px 0 3px rgba(0,0,0,0.05); white-space: nowrap;">
                                     ${row.odjel}
                                 </td>
-                                <td style="font-weight: 600; font-size: 10px; border: 1px solid #a5f3fc; padding: 6px 5px; color: #0e7490; white-space: nowrap;">${row.otpremac}</td>
-                                <td style="border: 1px solid #a5f3fc; color: #155e75; font-weight: 600; font-size: 10px; padding: 6px 5px; white-space: nowrap;">${escapeHtml(row.kupac) || '-'}</td>
+                                <td style="font-weight: 600; font-size: 10px; border: 1px solid #fde68a; padding: 6px 5px; color: #92400e; white-space: nowrap;">${row.otpremac}</td>
+                                <td style="border: 1px solid #fde68a; color: #92400e; font-weight: 600; font-size: 10px; padding: 6px 5px; white-space: nowrap;">${escapeHtml(row.kupac) || '-'}</td>
                                 ${sortimentiCells}
                             </tr>
                         `;
@@ -5687,16 +5687,16 @@
                     const dailyTotalsCells = data.sortimentiNazivi.map(s => {
                         const val = dailyTotals[s];
                         const displayVal = val > 0 ? val.toFixed(2) : '-';
-                        return `<td style="border: 1px solid #22d3ee; font-family: 'Courier New', monospace; text-align: right; padding: 7px 3px; font-size: 10px; font-weight: 800; color: #164e63; background: #a5f3fc;">${displayVal}</td>`;
+                        return `<td style="border: 1px solid #fbbf24; font-family: 'Courier New', monospace; text-align: right; padding: 7px 3px; font-size: 10px; font-weight: 800; color: #78350f; background: #fde68a;">${displayVal}</td>`;
                     }).join('');
 
                     bodyHTML += `
-                        <tr style="background: linear-gradient(to bottom, #a5f3fc, #67e8f9); color: #0b1b2b; font-weight: 800;">
-                            <td style="position: sticky; left: 0; background: #a5f3fc; z-index: 10; border-right: 2px solid #0891b2; padding: 10px; font-size: 13px; font-weight: 800; color: #0b1b2b;">
+                        <tr style="background: linear-gradient(to bottom, #fde68a, #fbbf24); color: #78350f; font-weight: 800;">
+                            <td style="position: sticky; left: 0; background: #fde68a; z-index: 10; border-right: 2px solid #d97706; padding: 10px; font-size: 13px; font-weight: 800; color: #78350f;">
                                 📊 UKUPNO ${datum}
                             </td>
-                            <td style="background: #a5f3fc;"></td>
-                            <td style="background: #a5f3fc;"></td>
+                            <td style="background: #fde68a;"></td>
+                            <td style="background: #fde68a;"></td>
                             ${dailyTotalsCells}
                         </tr>
                     `;
@@ -5714,11 +5714,11 @@
                 const grandTotalsCells = data.sortimentiNazivi.map(s => {
                     const val = grandTotals[s];
                     const displayVal = val > 0 ? val.toFixed(2) : '-';
-                    return `<td style="border: 2px solid #164e63; font-family: 'Courier New', monospace; text-align: right; padding: 9px 3px; font-weight: 800; font-size: 11px; background: #bfdbfe; color: #1e3a8a;">${displayVal}</td>`;
+                    return `<td style="border: 2px solid #92400e; font-family: 'Courier New', monospace; text-align: right; padding: 9px 3px; font-weight: 800; font-size: 11px; background: #fde68a; color: #78350f;">${displayVal}</td>`;
                 }).join('');
 
                 bodyHTML += `
-                    <tr style="background: linear-gradient(135deg, #0e7490, #0891b2); color: white; font-weight: 700; border-top: 4px solid #164e63;">
+                    <tr style="background: linear-gradient(135deg, #b45309, #d97706); color: white; font-weight: 700; border-top: 4px solid #92400e;">
                         <td colspan="3" style="padding: 12px; font-size: 13px; font-weight: 900; letter-spacing: 1.5px; text-shadow: 0 1px 3px rgba(0,0,0,0.4); text-align: center;">
                             📈 UKUPNO ${getMonthName(month).toUpperCase()}
                         </td>
@@ -5789,7 +5789,7 @@
                     headerHTML += `<th style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 12px;">${mj}</th>`;
                 });
                 headerHTML += `
-                    <th style="background: linear-gradient(135deg, #7c2d12, #451a03); color: white; padding: 12px; font-weight: 900; position: sticky; top: 0; z-index: 20;">
+                    <th style="background: linear-gradient(135deg, #047857, #065f46); color: white; padding: 12px; font-weight: 900; position: sticky; top: 0; z-index: 20;">
                         UKUPNO
                     </th>
                 </tr>
@@ -5934,7 +5934,7 @@
                     headerHTML += `<th style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 12px;">${mj}</th>`;
                 });
                 headerHTML += `
-                    <th style="background: linear-gradient(135deg, #7c2d12, #451a03); color: white; padding: 12px; font-weight: 900; position: sticky; top: 0; z-index: 20;">
+                    <th style="background: linear-gradient(135deg, #047857, #065f46); color: white; padding: 12px; font-weight: 900; position: sticky; top: 0; z-index: 20;">
                         UKUPNO
                     </th>
                 </tr>
@@ -5975,8 +5975,8 @@
                     return `<td style="border: 1px solid #7c2d12; font-family: 'Courier New', monospace; font-size: 12px; text-align: right; padding: 10px; font-weight: 800; color: white;">${displayVal}</td>`;
                 }).join('');
                 bodyHTML += `
-                    <tr class="ukupno-row" style="background: linear-gradient(135deg, #7c2d12, #451a03);">
-                        <td style="font-weight: 900; font-size: 13px; border: 1px solid #7c2d12; padding: 12px; color: white;">
+                    <tr class="ukupno-row" style="background: linear-gradient(135deg, #047857, #065f46);">
+                        <td style="font-weight: 900; font-size: 13px; border: 1px solid #047857; padding: 12px; color: white;">
                             📊 UKUPNO
                         </td>
                         ${totalCells}
@@ -6028,8 +6028,8 @@
                     return `<td style="border: 1px solid #7c2d12; font-family: 'Courier New', monospace; font-size: 11px; text-align: right; padding: 10px; font-weight: 800; color: white;">${displayVal}</td>`;
                 }).join('');
                 recapBodyHTML += `
-                    <tr class="ukupno-row" style="background: linear-gradient(135deg, #7c2d12, #451a03);">
-                        <td style="font-weight: 900; font-size: 13px; border: 1px solid #7c2d12; padding: 12px; color: white;">
+                    <tr class="ukupno-row" style="background: linear-gradient(135deg, #047857, #065f46);">
+                        <td style="font-weight: 900; font-size: 13px; border: 1px solid #047857; padding: 12px; color: white;">
                             📊 UKUPNO
                         </td>
                         ${recapTotalCells}
@@ -6137,8 +6137,8 @@
                 return `<td style="border: 1px solid #7c2d12; font-family: 'Courier New', monospace; font-size: 11px; text-align: right; padding: 10px; font-weight: 800; color: white;">${displayVal}</td>`;
             }).join('');
             bodyHTML += `
-                <tr class="ukupno-row" style="background: linear-gradient(135deg, #7c2d12, #451a03);">
-                    <td style="font-weight: 900; font-size: 13px; border: 1px solid #7c2d12; padding: 12px; color: white;">
+                <tr class="ukupno-row" style="background: linear-gradient(135deg, #047857, #065f46);">
+                    <td style="font-weight: 900; font-size: 13px; border: 1px solid #047857; padding: 12px; color: white;">
                         📊 UKUPNO
                     </td>
                     ${recapTotalCells}
@@ -6447,7 +6447,7 @@
                     '<td style="text-align:right;">' + trend + '</td></tr>';
                 prevVal = val;
             });
-            bodyHtml += '<tr class="ukupno-row" style="background:linear-gradient(135deg,#7c2d12,#451a03);color:#fff;">' +
+            bodyHtml += '<tr class="ukupno-row" style="background:linear-gradient(135deg,#047857,#065f46);color:#fff;">' +
                 '<td style="font-weight:900;padding:10px;">📊 UKUPNO</td>' +
                 '<td style="text-align:right;font-weight:900;padding:10px;">' + (izvodjac.ukupno || 0).toFixed(2) + '</td><td></td></tr>';
             document.getElementById('primaci-izvodjac-detalj-body').innerHTML = bodyHtml;
@@ -7504,27 +7504,27 @@
             }
 
             const sortNazivi = data.sortimentiNazivi; // 20 naziva
-            let html = `<p style="color:#6b7280;font-size:13px;margin-bottom:16px;">📅 Prikazani podaci za: <strong style="color:#7c2d12;">${MJESECI_NAZIVI[month]} ${year}</strong></p>`;
+            let html = `<p style="color:#6b7280;font-size:13px;margin-bottom:16px;">📅 Prikazani podaci za: <strong style="color:#065f46;">${MJESECI_NAZIVI[month]} ${year}</strong></p>`;
 
             data.radilista.forEach(radiliste => {
-                html += `<h4 style="background:linear-gradient(135deg, #78350f, #451a03);color:#fff7ed;padding:11px 18px;border-radius:8px;margin:24px 0 10px;font-weight:600;font-size:14px;letter-spacing:0.02em;">🏗️ ${escapeHtml(radiliste.naziv)}</h4>`;
-                html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid #fed7aa;">';
+                html += `<h4 style="background:linear-gradient(135deg, #047857, #065f46);color:#ecfdf5;padding:11px 18px;border-radius:8px;margin:24px 0 10px;font-weight:600;font-size:14px;letter-spacing:0.02em;">🏗️ ${escapeHtml(radiliste.naziv)}</h4>`;
+                html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;box-shadow:0 1px 4px rgba(6,95,70,0.08);border:1px solid #d1fae5;">';
                 html += '<table class="monthly-table" style="min-width:900px;border-collapse:collapse;">';
                 html += '<thead><tr>';
                 html += `<th style="background:linear-gradient(135deg, #fef3c7, #fde68a);color:#92400e;padding:10px 12px;position:sticky;left:0;z-index:10;min-width:160px;font-size:12px;font-weight:600;border-bottom:2px solid #f59e0b;">👷 Primač</th>`;
                 sortNazivi.forEach((s, i) => {
                     const isTotal = i === 19;
-                    const bg = isTotal ? 'linear-gradient(135deg, #78350f, #451a03)' : 'linear-gradient(135deg, #fef3c7, #fde68a)';
-                    const fg = isTotal ? '#fff7ed' : '#92400e';
+                    const bg = isTotal ? 'linear-gradient(135deg, #047857, #065f46)' : 'linear-gradient(135deg, #fef3c7, #fde68a)';
+                    const fg = isTotal ? '#ecfdf5' : '#92400e';
                     html += `<th style="background:${bg};color:${fg};padding:8px 4px;font-size:10px;min-width:65px;white-space:nowrap;font-weight:600;border-bottom:2px solid #f59e0b;">${s}</th>`;
                 });
                 html += '</tr></thead><tbody>';
 
                 const radilisteUkupno = Array(20).fill(0);
                 radiliste.primaci.forEach((primac, idx) => {
-                    const bg = idx % 2 === 0 ? '#fff7ed' : '#ffffff';
-                    html += `<tr style="background:${bg};transition:background 0.15s;" onmouseover="this.style.background='#ffedd5'" onmouseout="this.style.background='${bg}'">`;
-                    html += `<td style="font-weight:600;font-size:12px;border-bottom:1px solid #fed7aa;padding:9px 12px;color:#7c2d12;position:sticky;left:0;background:${bg};z-index:5;">${escapeHtml(primac.naziv)}</td>`;
+                    const bg = idx % 2 === 0 ? '#f0fdf4' : '#ffffff';
+                    html += `<tr style="background:${bg};transition:background 0.15s;" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='${bg}'">`;
+                    html += `<td style="font-weight:600;font-size:12px;border-bottom:1px solid #d1fae5;padding:9px 12px;color:#065f46;position:sticky;left:0;background:${bg};z-index:5;">${escapeHtml(primac.naziv)}</td>`;
                     primac.sortimentiVrijednosti.forEach((val, j) => {
                         radilisteUkupno[j] += val;
                         const disp = val > 0 ? val.toFixed(2) : '-';
@@ -7532,19 +7532,19 @@
                         const cellStyle = isTotal
                             ? 'background:#fef3c7;border-left:2px solid #f59e0b;font-weight:800;font-size:12px;color:#92400e;'
                             : (val > 0 ? 'font-weight:600;color:#374151;' : 'color:#d1d5db;');
-                        html += `<td style="${cellStyle}border-bottom:1px solid #fed7aa;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:7px 6px;">${disp}</td>`;
+                        html += `<td style="${cellStyle}border-bottom:1px solid #d1fae5;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:7px 6px;">${disp}</td>`;
                     });
                     html += '</tr>';
                 });
 
                 // UKUPNO red za radilište
-                html += `<tr style="background:#92400e;">`;
-                html += `<td style="font-weight:800;color:#fff7ed;padding:10px 12px;border-top:2px solid #78350f;position:sticky;left:0;background:#92400e;z-index:5;font-size:12px;">UKUPNO</td>`;
+                html += `<tr style="background:#047857;">`;
+                html += `<td style="font-weight:800;color:#ecfdf5;padding:10px 12px;border-top:2px solid #065f46;position:sticky;left:0;background:#047857;z-index:5;font-size:12px;">UKUPNO</td>`;
                 radilisteUkupno.forEach((val, j) => {
                     const disp = val > 0 ? val.toFixed(2) : '-';
                     const isTotal = j === 19;
-                    const cellStyle = isTotal ? 'background:#451a03;font-size:13px;font-weight:900;' : 'font-weight:700;';
-                    html += `<td style="${cellStyle}color:#fff7ed;border-top:2px solid #78350f;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:8px 6px;">${disp}</td>`;
+                    const cellStyle = isTotal ? 'background:#065f46;font-size:13px;font-weight:900;' : 'font-weight:700;';
+                    html += `<td style="${cellStyle}color:#ecfdf5;border-top:2px solid #065f46;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:8px 6px;">${disp}</td>`;
                 });
                 html += '</tr>';
 
