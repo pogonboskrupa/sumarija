@@ -108,37 +108,16 @@ function processPrimkaData(data, stats, year) {
   // INDEKS_PRIMKA nova struktura:
   // A: DATE, B: RADNIK, C: ODJEL, D: RADILIŠTE, E: IZVOĐAČ, F-Y: SORTIMENTI, Y: UKUPNO Č+L
 
-  Logger.log('=== PRIMKA DEBUG ===');
-  Logger.log('Total rows in PRIMKA: ' + data.length);
-
-  let processedRows = 0;
-  let skippedNoDatum = 0;
-  let skippedWrongYear = 0;
-  let totalSum = 0;
-
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
     const odjel = row[PRIMKA_COL.ODJEL];     // C - Odjel
     const datum = row[PRIMKA_COL.DATE];      // A - Datum
     const kubik = parseFloat(row[PRIMKA_COL.UKUPNO]) || 0; // Y - UKUPNO Č+L
 
-    if (!datum || !odjel) {
-      skippedNoDatum++;
-      continue;
-    }
+    if (!datum || !odjel) continue;
 
     const datumObj = parseDate(datum);
-    if (datumObj.getFullYear() !== parseInt(year)) {
-      skippedWrongYear++;
-      continue;
-    }
-
-    processedRows++;
-    totalSum += kubik;
-
-    if (processedRows <= 5) {
-      Logger.log('Row ' + i + ': Odjel=' + odjel + ', Datum=' + datum + ', Kubik=' + kubik);
-    }
+    if (datumObj.getFullYear() !== parseInt(year)) continue;
 
     // Ukupna primka
     stats.totalPrimka += kubik;
@@ -169,25 +148,11 @@ function processPrimkaData(data, stats, year) {
       stats.odjeliStats[odjel].datumZadnjeSjece = formatDate(datumObj);
     }
   }
-
-  Logger.log('Processed rows: ' + processedRows);
-  Logger.log('Skipped (no datum/odjel): ' + skippedNoDatum);
-  Logger.log('Skipped (wrong year): ' + skippedWrongYear);
-  Logger.log('Total PRIMKA sum: ' + totalSum);
-  Logger.log('=== END PRIMKA DEBUG ===');
 }
 
 function processOtpremaData(data, stats, year) {
   // INDEKS_OTPREMA nova struktura:
   // A: DATE, B: OTPREMAČ, C: KUPAC, D: ODJEL, E: RADILIŠTE, F: IZVOĐAČ, G-Z: SORTIMENTI, Z: UKUPNO Č+L
-
-  Logger.log('=== OTPREMA DEBUG ===');
-  Logger.log('Total rows in OTPREMA: ' + data.length);
-
-  let processedRows = 0;
-  let skippedNoDatum = 0;
-  let skippedWrongYear = 0;
-  let totalSum = 0;
 
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
@@ -195,23 +160,10 @@ function processOtpremaData(data, stats, year) {
     const datum = row[OTPREMA_COL.DATE];     // A - Datum
     const kubik = parseFloat(row[OTPREMA_COL.UKUPNO]) || 0; // Z - UKUPNO Č+L
 
-    if (!datum || !odjel) {
-      skippedNoDatum++;
-      continue;
-    }
+    if (!datum || !odjel) continue;
 
     const datumObj = parseDate(datum);
-    if (datumObj.getFullYear() !== parseInt(year)) {
-      skippedWrongYear++;
-      continue;
-    }
-
-    processedRows++;
-    totalSum += kubik;
-
-    if (processedRows <= 5) {
-      Logger.log('Row ' + i + ': Odjel=' + odjel + ', Datum=' + datum + ', Kubik=' + kubik);
-    }
+    if (datumObj.getFullYear() !== parseInt(year)) continue;
 
     stats.totalOtprema += kubik;
 
@@ -231,12 +183,6 @@ function processOtpremaData(data, stats, year) {
 
     stats.odjeliStats[odjel].otprema += kubik;
   }
-
-  Logger.log('Processed rows: ' + processedRows);
-  Logger.log('Skipped (no datum/odjel): ' + skippedNoDatum);
-  Logger.log('Skipped (wrong year): ' + skippedWrongYear);
-  Logger.log('Total OTPREMA sum: ' + totalSum);
-  Logger.log('=== END OTPREMA DEBUG ===');
 }
 
 function processOdjeliDetails(primkaSheet, stats) {
@@ -512,21 +458,9 @@ function syncIndexSheet() {
               const datum = row[1]; // kolona B - datum
               const primac = row[2]; // kolona C - primač
 
-              // Debug logging za prvi spreadsheet (prvih 20 redova)
-              if (processedCount === 1 && i <= 20) {
-                Logger.log(`    Red ${i}: datum="${datum}" (${typeof datum}), primac="${primac}"`);
-              }
-
               // Preskači redove bez datuma ili primaca
-              if (!datum || datum === '' || datum === 0) {
-                if (processedCount === 1 && i <= 20) Logger.log(`      → Skip: nema datum`);
-                continue;
-              }
-
-              if (!primac || primac === '' || primac === 0) {
-                if (processedCount === 1 && i <= 20) Logger.log(`      → Skip: nema primac`);
-                continue;
-              }
+              if (!datum || datum === '' || datum === 0) continue;
+              if (!primac || primac === '' || primac === 0) continue;
 
               // Preskači header redove - provjeri i datum i primača
               const datumStr = String(datum).toUpperCase();
@@ -537,7 +471,6 @@ function syncIndexSheet() {
                   datumStr.includes('DATUM') || datumStr === 'DATUM' ||
                   primacStr.includes('PRIMAC') || primacStr === 'PRIMAC' ||
                   primacStr.includes('PRIMAČ') || primacStr === 'PRIMAČ') {
-                if (processedCount === 1 && i <= 20) Logger.log(`      → Skip: header (datum="${datum}", primac="${primac}")`);
                 continue;
               }
 
@@ -546,10 +479,6 @@ function syncIndexSheet() {
               const newRow = [datum, primac, odjelNaziv, radiliste, izvodjac, ...sortimenti];
               primkaRows.push(newRow);
               addedRows++;
-
-              if (processedCount === 1 && addedRows <= 3) {
-                Logger.log(`      ✓ Dodano red ${addedRows}: "${datum}" | "${primac}" | "${odjelNaziv}" | "${radiliste}" | "${izvodjac}"`);
-              }
             }
             Logger.log(`  PRIMKA: dodano ${addedRows} redova`);
           } else {
@@ -577,21 +506,9 @@ function syncIndexSheet() {
               const datum = row[1]; // kolona B - datum
               const otpremac = row[2]; // kolona C - otpremač
 
-              // Debug logging za prvi spreadsheet (prvih 20 redova)
-              if (processedCount === 1 && i <= 20) {
-                Logger.log(`    Red ${i}: kupac="${kupac}", datum="${datum}" (${typeof datum}), otpremac="${otpremac}"`);
-              }
-
               // Preskači redove bez datuma ili otpremača
-              if (!datum || datum === '' || datum === 0) {
-                if (processedCount === 1 && i <= 20) Logger.log(`      → Skip: nema datum`);
-                continue;
-              }
-
-              if (!otpremac || otpremac === '' || otpremac === 0) {
-                if (processedCount === 1 && i <= 20) Logger.log(`      → Skip: nema otpremač`);
-                continue;
-              }
+              if (!datum || datum === '' || datum === 0) continue;
+              if (!otpremac || otpremac === '' || otpremac === 0) continue;
 
               // Preskači header redove - provjeri i datum i otpremača
               const datumStr = String(datum).toUpperCase();
@@ -603,7 +520,6 @@ function syncIndexSheet() {
                   datumStr.includes('UČINCI') || datumStr === 'DATUM' ||
                   otpremacStr.includes('OTPREMAČ') || otpremacStr === 'OTPREMAČ' ||
                   otpremacStr.includes('OTPREMAC') || otpremacStr === 'OTPREMAC') {
-                if (processedCount === 1 && i <= 20) Logger.log(`      → Skip: header (datum="${datum}", otpremac="${otpremac}")`);
                 continue;
               }
 
@@ -612,10 +528,6 @@ function syncIndexSheet() {
               const newRow = [datum, otpremac, kupac, odjelNaziv, radiliste, izvodjac, ...sortimenti];
               otpremaRows.push(newRow);
               addedRows++;
-
-              if (processedCount === 1 && addedRows <= 3) {
-                Logger.log(`      ✓ Dodano red ${addedRows}: "${datum}" | "${otpremac}" | kupac="${kupac}" | "${odjelNaziv}" | "${radiliste}" | "${izvodjac}"`);
-              }
             }
             Logger.log(`  OTPREMA: dodano ${addedRows} redova`);
           } else {

@@ -1114,11 +1114,6 @@ function handlePrimacOdjeli(year, username, password, limit) {
 
     const datumObj = parseDate(datum);
 
-    // 🔍 DEBUG: Log prvi par redova da vidimo format podataka
-    if (i <= 3) {
-      Logger.log(`Row ${i}: primac="${primac}" vs userFullName="${userFullName}"`);
-    }
-
     // ✅ CASE-INSENSITIVE matching za primača
     const primacNormalized = String(primac).trim().toLowerCase();
     const userNormalized = String(userFullName).trim().toLowerCase();
@@ -1448,11 +1443,6 @@ function handleOtpremacOdjeli(year, username, password, limit) {
     if (!datum || !otpremac || !odjel) continue;
 
     const datumObj = parseDate(datum);
-
-    // 🔍 DEBUG: Log prvi par redova da vidimo format podataka
-    if (i <= 3) {
-      Logger.log(`Row ${i}: otpremac="${otpremac}" vs userFullName="${userFullName}"`);
-    }
 
     // ✅ CASE-INSENSITIVE matching za otpremača
     const otpremacNormalized = String(otpremac).trim().toLowerCase();
@@ -4248,10 +4238,6 @@ function handleStanjeZaliha(username, password, poslovodja) {
       return sortimenti;
     };
 
-    // Dijagnostika za prvi blok
-    let blockCount = 0;
-    let firstBlockDiag = null;
-
     let i = 0;
     while (i < data.length) {
       const row = data[i];
@@ -4259,7 +4245,6 @@ function handleStanjeZaliha(username, password, poslovodja) {
 
       // Početak bloka: kolona A == "ODJEL"
       if (colA === 'ODJEL') {
-        blockCount++;
         const blockStartRow = i;
         const odjelNaziv = String(row[1] || '').trim();
 
@@ -4321,31 +4306,6 @@ function handleStanjeZaliha(username, password, poslovodja) {
           }
         }
 
-        // Dijagnostika za prvi blok
-        if (blockCount === 1) {
-          const getFirst3 = (rowData) => {
-            if (!rowData) return 'NOT_FOUND';
-            const vals = [];
-            for (let k = 3; k < 6 && k < rowData.row.length; k++) {
-              vals.push(rowData.row[k]);
-            }
-            return `row=${rowData.idx}, first3=[${vals.join(', ')}]`;
-          };
-          firstBlockDiag = {
-            odjel: odjelNaziv,
-            PROJEKAT: getFirst3(projekatRow),
-            SJECA: getFirst3(sjecaRow),
-            OTPREMA: getFirst3(otpremaRow),
-            ZALIHA: getFirst3(zalihaRow)
-          };
-          Logger.log('=== DIJAGNOSTIKA PRVI BLOK ===');
-          Logger.log('Odjel: ' + odjelNaziv);
-          Logger.log('PROJEKAT: ' + firstBlockDiag.PROJEKAT);
-          Logger.log('SJEČA: ' + firstBlockDiag.SJECA);
-          Logger.log('OTPREMA: ' + firstBlockDiag.OTPREMA);
-          Logger.log('ZALIHA: ' + firstBlockDiag.ZALIHA);
-        }
-
         // Parsiraj sortimente ako su nađeni redovi
         const projekatData = projekatRow ? parseSortimenti(projekatRow.row) : parseSortimenti([]);
         const sjecaData = sjecaRow ? parseSortimenti(sjecaRow.row) : parseSortimenti([]);
@@ -4403,19 +4363,10 @@ function handleStanjeZaliha(username, password, poslovodja) {
     // Pretvori Set u Array za radilišta
     const radilista = Array.from(radilistaSet).sort();
 
-    Logger.log('=== HANDLE STANJE ZALIHA END ===');
-    Logger.log('Broj blokova (ODJEL): ' + blockCount);
-    Logger.log('Broj odjela nakon filtriranja: ' + odjeli.length);
-    Logger.log('Broj radilišta: ' + radilista.length);
-
     const rezSZ = {
       odjeli: odjeli,
       radilista: radilista,
-      sortimentiHeader: sortimentiHeader,
-      _diag: {
-        blockCount: blockCount,
-        firstBlockDiag: firstBlockDiag
-      }
+      sortimentiHeader: sortimentiHeader
     };
     setCachedData(cacheKeySZ, rezSZ, CACHE_TTL);
     return createJsonResponse(rezSZ, true);
