@@ -4256,12 +4256,13 @@ body.kubikator-fullscreen #kubikator-content {
    Sječa tab (svi podtabovi) i Dinamike izvođača (Sječa/otprema tab).
    ================================================ */
 
-/* .container ograničava sve tabove na 1200px — na Sječi to ostavlja
-   veliki prazan prostor lijevo/desno na širim monitorima dok tabele
-   (12 mjeseci, 20 sortimenata) ostaju sabijene. */
-#primaci-content {
-    max-width: min(1700px, 96vw);
-}
+/* NAPOMENA: #primaci-content max-width je NAMJERNO ostavljen na "100%"
+   (postavljeno ranije u fajlu, oko pravila za sve *-content tabove) —
+   NE dodavati ovdje fiksni px ili vw plafon. Roditelj (.main-content)
+   je grid/flex stavka širine "1fr" pored 260px sidebar-a, sa
+   overflow-x:hidden — bilo koji vw-zasnovan max-width ovdje ignoriše
+   sidebar i tiho ODSIJECA desni dio tabele na širim ekranima umjesto
+   scrollbar-a. "100%" ispravno prati stvarno dostupnu širinu ekrana. */
 
 /* .monthly-table/.kupci-table imaju width:auto (skupe se na sadržaj) —
    unutar Sječe se rastežu na punu širinu kartice. */
