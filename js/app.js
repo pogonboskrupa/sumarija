@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.31';
+        const APP_VERSION = '1.17.32';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6295,6 +6295,11 @@
                     return `<span class="dinamike-index-badge" style="background:${boja};">${val.toFixed(0)}%</span>`;
                 };
 
+                // Odjel ide u onclick atribut kao JS string u jednostrukim navodnicima
+                // — escapuj i njih i dvostruke navodnike/< (isti obrazac kao dashboard
+                // odjeli-table, js/app.js ~2534).
+                const odjelEsc = (o.odjel || '').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;');
+
                 return `
                     <div class="izv-card">
                         <div class="izv-card-header">
@@ -6307,6 +6312,9 @@
                                         Izvođač: ${escapeHtml(o.izvodjac || '—')} · Poslovođa: ${escapeHtml(o.poslovodja || '—')}
                                     </span>
                                 </div>
+                            </div>
+                            <div class="izv-card-actions">
+                                <button type="button" class="btn btn-secondary" onclick="printDinamikeIzvodjaca('${odjelEsc}')" style="font-size:11px; padding:5px 10px; white-space:nowrap;">🖨️ Štampaj</button>
                             </div>
                         </div>
                         <div class="izv-card-body">

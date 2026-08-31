@@ -588,9 +588,13 @@ function printMjesecniPregled() {
 // js/app.js) — svaki odjel kao zasebna kartica sa Sječa/Otprema
 // mini-tabelama (prethodni period / izvještajni mjesec / ukupno), ista
 // kalkulacija "ukupno" reda kao _renderDinamikeIzvodjaca na ekranu.
-function printDinamikeIzvodjaca() {
+// odjelFilter (opciono) — naziv jednog odjela: dugme na svakoj kartici
+// zove ovo da odštampa SAMO tu stavku; dugme u zaglavlju zove bez
+// argumenta i štampa sve odjele odjednom (svaki na svojoj stranici).
+function printDinamikeIzvodjaca(odjelFilter) {
     const data = (typeof _dinamikeIzvodjacaData !== 'undefined') ? _dinamikeIzvodjacaData : null;
-    const odjeli = (data && data.odjeli) || [];
+    const sviOdjeli = (data && data.odjeli) || [];
+    const odjeli = odjelFilter ? sviOdjeli.filter(o => o.odjel === odjelFilter) : sviOdjeli;
     if (!odjeli.length) {
         if (typeof showWarning === 'function') showWarning('Nema podataka za štampanje');
         else alert('Nema podataka za štampanje. Molimo sačekajte učitavanje.');
@@ -676,7 +680,7 @@ function printDinamikeIzvodjaca() {
     }
     win.document.write(buildPrintDocument({
         tabLabel: 'Dinamike izvođača',
-        activeTabLabel: 'Plan vs realizacija po odjelu',
+        activeTabLabel: odjelFilter ? ('Plan vs realizacija — Odjel ' + odjelFilter) : 'Plan vs realizacija po odjelu',
         accentColor: accent,
         monthName: nazivMjeseca,
         year: data.godinaIzvjestaja || new Date().getFullYear(),
