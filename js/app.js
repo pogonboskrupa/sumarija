@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.39';
+        const APP_VERSION = '1.17.40';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -5411,7 +5411,10 @@
                 // ✅ Header - pro level design
                 const headerHTML = `
                     <tr>
-                        <th style="position: sticky; top: 0; left: 0; background: linear-gradient(135deg, #a7f3d0, #6ee7b7); z-index: 30; border-right: 2px solid #059669; min-width: 75px; box-shadow: 2px 2px 6px rgba(6,95,70,0.1); font-size: 11px; padding: 10px 8px; font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: 0.8px;">
+                        <th style="position: sticky; top: 0; left: 0; background: linear-gradient(135deg, #a7f3d0, #6ee7b7); z-index: 30; border-right: 2px solid #059669; min-width: 64px; box-shadow: 2px 2px 6px rgba(6,95,70,0.1); font-size: 10px; padding: 10px 6px; font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">
+                            Datum
+                        </th>
+                        <th style="position: sticky; top: 0; min-width: 90px; background: linear-gradient(135deg, #a7f3d0, #6ee7b7); color: #065f46; font-weight: 700; border: 1px solid #059669; font-size: 11px; padding: 10px 8px; z-index: 20; box-shadow: 0 2px 6px rgba(6,95,70,0.1); text-transform: uppercase; letter-spacing: 0.8px;">
                             Odjel
                         </th>
                         <th style="position: sticky; top: 0; min-width: 120px; background: linear-gradient(135deg, #a7f3d0, #6ee7b7); color: #065f46; font-weight: 700; border: 1px solid #059669; font-size: 11px; padding: 10px 8px; z-index: 20; box-shadow: 0 2px 6px rgba(6,95,70,0.1); text-transform: uppercase; letter-spacing: 0.8px;">
@@ -5462,7 +5465,7 @@
                     const numSortimenti = data.sortimentiNazivi.length;
                     bodyHTML += `
                         <tr class="daily-nofilter" style="background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.08);">
-                            <td colspan="${2 + numSortimenti}" style="font-weight: 700; font-size: 13px; padding: 10px 14px; text-align: left; border-top: 2px solid #f59e0b; color: #92400e; letter-spacing: 0.5px;">
+                            <td colspan="${3 + numSortimenti}" style="font-weight: 700; font-size: 13px; padding: 10px 14px; text-align: left; border-top: 2px solid #f59e0b; color: #92400e; letter-spacing: 0.5px;">
                                 📅 ${datum} &mdash; ${dayName}
                             </td>
                         </tr>
@@ -5493,7 +5496,10 @@
 
                         bodyHTML += `
                             <tr style="background: ${rowBg}; transition: background 0.15s ease;" onmouseover="this.style.background='${hoverBg}';" onmouseout="this.style.background='${rowBg}';">
-                                <td style="font-weight: 700; font-size: 11px; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #e2e8f0; padding: 7px 8px; border: 1px solid #e2e8f0; color: #334155; box-shadow: 2px 0 3px rgba(0,0,0,0.04);">
+                                <td style="font-weight: 600; font-size: 10px; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #e2e8f0; padding: 7px 6px; border: 1px solid #e2e8f0; color: #475569; box-shadow: 2px 0 3px rgba(0,0,0,0.04); white-space: nowrap;">
+                                    ${escapeHtml(row.datum)}
+                                </td>
+                                <td style="font-weight: 700; font-size: 11px; padding: 7px 8px; border: 1px solid #e2e8f0; color: #334155;">
                                     ${escapeHtml(row.odjel)}
                                 </td>
                                 <td style="font-weight: 600; font-size: 11px; border: 1px solid #e2e8f0; padding: 7px 8px; color: #475569;">${escapeHtml(row.primac)}</td>
@@ -5511,9 +5517,10 @@
 
                     bodyHTML += `
                         <tr class="daily-nofilter" style="background: #fffbeb; border-bottom: 2px solid #f59e0b;">
-                            <td style="position: sticky; left: 0; background: #fffbeb; z-index: 10; border-right: 2px solid #e2e8f0; padding: 8px 8px; font-size: 11px; font-weight: 700; color: #92400e; box-shadow: 2px 0 3px rgba(0,0,0,0.04); border: 1px solid #f59e0b;">
-                                UKUPNO ${datum}
+                            <td style="position: sticky; left: 0; background: #fffbeb; z-index: 10; border-right: 2px solid #e2e8f0; padding: 8px 6px; font-size: 10px; font-weight: 700; color: #92400e; box-shadow: 2px 0 3px rgba(0,0,0,0.04); border: 1px solid #f59e0b; white-space: nowrap;">
+                                UKUPNO
                             </td>
+                            <td style="background: #fffbeb; border: 1px solid #f59e0b;"></td>
                             <td style="background: #fffbeb; border: 1px solid #f59e0b;"></td>
                             ${dailyTotalsCells}
                         </tr>
@@ -5537,7 +5544,7 @@
 
                 bodyHTML += `
                     <tr id="primaci-daily-grand-total-row" style="background: #065f46; border-top: 3px solid #047857;">
-                        <td id="primaci-daily-grand-total-label" data-original-label="UKUPNO ${getMonthName(month).toUpperCase()}" colspan="2" style="padding: 12px 14px; font-size: 13px; text-align: left; font-weight: 700; letter-spacing: 1px; color: #ecfdf5; background: #065f46;">
+                        <td id="primaci-daily-grand-total-label" data-original-label="UKUPNO ${getMonthName(month).toUpperCase()}" colspan="3" style="padding: 12px 14px; font-size: 13px; text-align: left; font-weight: 700; letter-spacing: 1px; color: #ecfdf5; background: #065f46;">
                             UKUPNO ${getMonthName(month).toUpperCase()}
                         </td>
                         ${grandTotalsCells}
@@ -5600,10 +5607,13 @@
                     return;
                 }
 
-                // ✅ NOVO: Header sa kolonama ODJEL, OTPREMAČ, KUPAC + sortimenti
+                // ✅ NOVO: Header sa kolonama DATUM, ODJEL, OTPREMAČ, KUPAC + sortimenti
                 const headerHTML = `
                     <tr>
-                        <th style="position: sticky; top: 0; left: 0; background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%); z-index: 30; border-right: 3px solid #92400e; width: 1%; white-space: nowrap; box-shadow: 2px 0 5px rgba(120,53,15,0.1); font-size: 10px; padding: 8px 6px; font-weight: 800; color: #78350f; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th style="position: sticky; top: 0; left: 0; background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%); z-index: 30; border-right: 3px solid #92400e; width: 1%; white-space: nowrap; box-shadow: 2px 0 5px rgba(120,53,15,0.1); font-size: 9px; padding: 8px 6px; font-weight: 800; color: #78350f; text-transform: uppercase; letter-spacing: 0.3px;">
+                            Datum
+                        </th>
+                        <th style="position: sticky; top: 0; width: 1%; white-space: nowrap; background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%); color: #78350f; font-weight: 800; border: 1px solid #92400e; font-size: 10px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(120,53,15,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
                             🏢 Odjel
                         </th>
                         <th style="position: sticky; top: 0; width: 1%; white-space: nowrap; background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%); color: #78350f; font-weight: 800; border: 1px solid #92400e; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(120,53,15,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
@@ -5653,11 +5663,11 @@
                     const rows = groupedByDate[datum];
                     const dayName = getDayName(datum);
 
-                    // ✅ Zaglavlje datuma (3 fiksne kolone: odjel, otpremač, kupac + sortimenti)
+                    // ✅ Zaglavlje datuma (4 fiksne kolone: datum, odjel, otpremač, kupac + sortimenti)
                     const numSortimenti = data.sortimentiNazivi.length;
                     bodyHTML += `
                         <tr style="background: linear-gradient(135deg, #d97706 0%, #b45309 50%, #92400e 100%); box-shadow: 0 2px 8px rgba(120, 53, 15, 0.3);">
-                            <td colspan="${3 + numSortimenti}" style="font-weight: 800; font-size: 14px; padding: 10px 12px; text-align: center; border-top: 3px solid #78350f; color: white; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.35);">
+                            <td colspan="${4 + numSortimenti}" style="font-weight: 800; font-size: 14px; padding: 10px 12px; text-align: center; border-top: 3px solid #78350f; color: white; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.35);">
                                 📅 ${datum} - ${dayName}
                             </td>
                         </tr>
@@ -5686,7 +5696,10 @@
 
                         bodyHTML += `
                             <tr style="background: ${rowBg}; transition: all 0.15s ease;" onmouseover="this.style.background='${hoverBg}'; this.style.transform='scale(1.005)'; this.style.boxShadow='0 2px 8px rgba(217,119,6,0.15)';" onmouseout="this.style.background='${rowBg}'; this.style.transform='scale(1)'; this.style.boxShadow='none';">
-                                <td style="font-weight: 700; font-size: 10px; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #d97706; padding: 6px 5px; border: 1px solid #fde68a; color: #78350f; box-shadow: 2px 0 3px rgba(0,0,0,0.05); white-space: nowrap;">
+                                <td style="font-weight: 600; font-size: 9px; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #d97706; padding: 6px 5px; border: 1px solid #fde68a; color: #92400e; box-shadow: 2px 0 3px rgba(0,0,0,0.05); white-space: nowrap;">
+                                    ${escapeHtml(row.datum)}
+                                </td>
+                                <td style="font-weight: 700; font-size: 10px; padding: 6px 5px; border: 1px solid #fde68a; color: #78350f; white-space: nowrap;">
                                     ${row.odjel}
                                 </td>
                                 <td style="font-weight: 600; font-size: 10px; border: 1px solid #fde68a; padding: 6px 5px; color: #92400e; white-space: nowrap;">${row.otpremac}</td>
@@ -5705,9 +5718,10 @@
 
                     bodyHTML += `
                         <tr style="background: linear-gradient(to bottom, #fde68a, #fbbf24); color: #78350f; font-weight: 800;">
-                            <td style="position: sticky; left: 0; background: #fde68a; z-index: 10; border-right: 2px solid #d97706; padding: 10px; font-size: 13px; font-weight: 800; color: #78350f;">
-                                📊 UKUPNO ${datum}
+                            <td style="position: sticky; left: 0; background: #fde68a; z-index: 10; border-right: 2px solid #d97706; padding: 10px 6px; font-size: 10px; font-weight: 800; color: #78350f; white-space: nowrap;">
+                                UKUPNO
                             </td>
+                            <td style="background: #fde68a;"></td>
                             <td style="background: #fde68a;"></td>
                             <td style="background: #fde68a;"></td>
                             ${dailyTotalsCells}
@@ -5732,7 +5746,7 @@
 
                 bodyHTML += `
                     <tr id="otpremaci-daily-grand-total-row" style="background: linear-gradient(135deg, #b45309, #d97706); color: white; font-weight: 700; border-top: 4px solid #92400e;">
-                        <td id="otpremaci-daily-grand-total-label" data-original-label="📈 UKUPNO ${getMonthName(month).toUpperCase()}" colspan="3" style="padding: 12px; font-size: 13px; font-weight: 900; letter-spacing: 1.5px; text-shadow: 0 1px 3px rgba(0,0,0,0.4); text-align: center;">
+                        <td id="otpremaci-daily-grand-total-label" data-original-label="📈 UKUPNO ${getMonthName(month).toUpperCase()}" colspan="4" style="padding: 12px; font-size: 13px; font-weight: 900; letter-spacing: 1.5px; text-shadow: 0 1px 3px rgba(0,0,0,0.4); text-align: center;">
                             📈 UKUPNO ${getMonthName(month).toUpperCase()}
                         </td>
                         ${grandTotalsCells}

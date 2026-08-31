@@ -697,7 +697,7 @@
             const grandTotalRow = document.getElementById('primaci-daily-grand-total-row');
             const numSortimenti = grandTotalRow ? grandTotalRow.getElementsByTagName('td').length - 1 : 0;
             const columnSums = new Array(numSortimenti).fill(0);
-            const sortStartIdx = 2; // Odjel(0), Primač(1), sortimenti(2+)
+            const sortStartIdx = 3; // Datum(0), Odjel(1), Primač(2), sortimenti(3+)
 
             // Datumska zaglavlja i "UKUPNO {datum}" podredovi (klasa
             // daily-nofilter, vidi loadPrimaciDaily u app.js) ostaju uvijek
@@ -748,7 +748,7 @@
             const grandTotalRow = document.getElementById('otpremaci-daily-grand-total-row');
             const numSortimenti = grandTotalRow ? grandTotalRow.getElementsByTagName('td').length - 1 : 0;
             const columnSums = new Array(numSortimenti).fill(0);
-            const sortStartIdx = 3; // Odjel(0), Otpremač(1), Kupac(2), sortimenti(3+)
+            const sortStartIdx = 4; // Datum(0), Odjel(1), Otpremač(2), Kupac(3), sortimenti(4+)
 
             let brojRedova = 0;
             for (let i = 0; i < tr.length - 1; i++) { // -1 to exclude UKUPNO row
