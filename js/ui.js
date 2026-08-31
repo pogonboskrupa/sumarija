@@ -652,33 +652,36 @@
             }
         }
 
-        // Zbroji sve numeričke ćelije (sortimenti, kolone od sortStartIdx nadalje)
-        // za jedan red — koristi se za "suma za pretragu" u filterPrimaciDailyTable/
-        // filterOtremaciDailyTable ispod. Ćelije bez unosa prikazuju '-' (parseFloat
-        // vrati NaN, tretira se kao 0).
-        function _sumRowCells(tds, sortStartIdx) {
-            let suma = 0;
-            for (let j = sortStartIdx; j < tds.length; j++) {
-                const v = parseFloat((tds[j].textContent || tds[j].innerText).replace(',', '.'));
-                if (!isNaN(v)) suma += v;
+        // Ponovo izračunaj UKUPNO red (grand total) SAMO iz trenutno vidljivih
+        // (filtriranih) redova, kolona po kolona — isti obrazac kao originalni
+        // grandTotals u loadPrimaciDaily/loadOtremaciDaily (js/app.js), samo
+        // čitano direktno iz DOM-a umjesto iz sirovih podataka. VAŽNO: sabira se
+        // PO KOLONI (svaka sortiment kolona posebno), NE po redu — zadnja kolona
+        // "UKUPNO Č+L" je već sama zbir ostalih kolona u tom redu, pa bi sabiranje
+        // SVIH kolona u jednom redu (umjesto po koloni preko redova) duplo
+        // brojalo tu kolonu i preuveličalo sumu.
+        //
+        // Kad je filter prazan, "found" je true za svaki pravi red pa se ovim
+        // istim putem dobije identičan broj kao originalni cijeli-mjesec zbir —
+        // nema potrebe posebno čuvati/vraćati originalne vrijednosti.
+        function _osvjeziGrandTotal(grandTotalRowId, grandTotalLabelId, columnSums, brojRedova, filter) {
+            const row = document.getElementById(grandTotalRowId);
+            const labelCell = document.getElementById(grandTotalLabelId);
+            if (!row) return;
+            const tds = row.getElementsByTagName('td');
+            // tds[0] je labela (colspan), sortiment ćelije počinju od tds[1]
+            for (let k = 0; k < columnSums.length; k++) {
+                const cell = tds[k + 1];
+                if (!cell) continue;
+                cell.textContent = columnSums[k] > 0 ? columnSums[k].toFixed(2) : '-';
             }
-            return suma;
-        }
-
-        // Prikaži/sakrij "suma za pretragu" značku — vidljiva samo dok je filter
-        // aktivan (korisnički zahtjev: kad se pretraga suzi na jedan odjel, UKUPNO
-        // red i dalje pokazuje cijeli mjesec, pa ovdje treba posebna suma SAMO za
-        // ono što je trenutno filtrirano/vidljivo).
-        function _prikaziFilterSumu(elId, filter, brojRedova, suma) {
-            const el = document.getElementById(elId);
-            if (!el) return;
-            if (!filter) {
-                el.style.display = 'none';
-                return;
+            if (!labelCell) return;
+            if (filter) {
+                const rijec = brojRedova === 1 ? 'unos' : 'unosa';
+                labelCell.textContent = `🔍 UKUPNO — ${brojRedova} ${rijec}`;
+            } else {
+                labelCell.textContent = labelCell.dataset.originalLabel || labelCell.textContent;
             }
-            el.style.display = 'inline-block';
-            const rijec = brojRedova === 1 ? 'unos' : 'unosa';
-            el.textContent = `🔍 ${brojRedova} ${rijec} — suma: ${suma.toFixed(2)} m³`;
         }
 
         // Filter primaci daily table
@@ -689,6 +692,12 @@
             const tbody = table.getElementsByTagName('tbody')[0];
             if (!tbody) return;
             const tr = tbody.getElementsByTagName('tr');
+            if (tr.length === 0) return;
+
+            const grandTotalRow = document.getElementById('primaci-daily-grand-total-row');
+            const numSortimenti = grandTotalRow ? grandTotalRow.getElementsByTagName('td').length - 1 : 0;
+            const columnSums = new Array(numSortimenti).fill(0);
+            const sortStartIdx = 2; // Odjel(0), Primač(1), sortimenti(2+)
 
             // Datumska zaglavlja i "UKUPNO {datum}" podredovi (klasa
             // daily-nofilter, vidi loadPrimaciDaily u app.js) ostaju uvijek
@@ -697,7 +706,6 @@
             // Zadnji red (UKUPNO mjesec) je uvijek zadnji i nema tu klasu, ali
             // ostaje van filtera (-1) iz istog razloga.
             let brojRedova = 0;
-            let suma = 0;
             for (let i = 0; i < tr.length - 1; i++) {
                 if (tr[i].classList.contains('daily-nofilter')) {
                     tr[i].style.display = '';
@@ -716,11 +724,15 @@
                 tr[i].style.display = found ? '' : 'none';
                 if (found) {
                     brojRedova++;
-                    // Kolone: Odjel(0), Primač(1), sortimenti(2+)
-                    suma += _sumRowCells(tds, 2);
+                    for (let k = 0; k < numSortimenti; k++) {
+                        const cell = tds[sortStartIdx + k];
+                        if (!cell) continue;
+                        const v = parseFloat((cell.textContent || cell.innerText).replace(',', '.'));
+                        if (!isNaN(v)) columnSums[k] += v;
+                    }
                 }
             }
-            _prikaziFilterSumu('primaci-daily-filter-sum', filter, brojRedova, suma);
+            _osvjeziGrandTotal('primaci-daily-grand-total-row', 'primaci-daily-grand-total-label', columnSums, brojRedova, filter);
         }
 
         // Filter otpremaci daily table
@@ -731,9 +743,14 @@
             const tbody = table.getElementsByTagName('tbody')[0];
             if (!tbody) return;
             const tr = tbody.getElementsByTagName('tr');
+            if (tr.length === 0) return;
+
+            const grandTotalRow = document.getElementById('otpremaci-daily-grand-total-row');
+            const numSortimenti = grandTotalRow ? grandTotalRow.getElementsByTagName('td').length - 1 : 0;
+            const columnSums = new Array(numSortimenti).fill(0);
+            const sortStartIdx = 3; // Odjel(0), Otpremač(1), Kupac(2), sortimenti(3+)
 
             let brojRedova = 0;
-            let suma = 0;
             for (let i = 0; i < tr.length - 1; i++) { // -1 to exclude UKUPNO row
                 const tds = tr[i].getElementsByTagName('td');
                 let found = false;
@@ -748,11 +765,15 @@
                 tr[i].style.display = found ? '' : 'none';
                 if (found) {
                     brojRedova++;
-                    // Kolone: Odjel(0), Otpremač(1), Kupac(2), sortimenti(3+)
-                    suma += _sumRowCells(tds, 3);
+                    for (let k = 0; k < numSortimenti; k++) {
+                        const cell = tds[sortStartIdx + k];
+                        if (!cell) continue;
+                        const v = parseFloat((cell.textContent || cell.innerText).replace(',', '.'));
+                        if (!isNaN(v)) columnSums[k] += v;
+                    }
                 }
             }
-            _prikaziFilterSumu('otpremaci-daily-filter-sum', filter, brojRedova, suma);
+            _osvjeziGrandTotal('otpremaci-daily-grand-total-row', 'otpremaci-daily-grand-total-label', columnSums, brojRedova, filter);
         }
 
         // Filter primac personal table

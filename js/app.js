@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.38';
+        const APP_VERSION = '1.17.39';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -5536,8 +5536,8 @@
                 }).join('');
 
                 bodyHTML += `
-                    <tr style="background: #065f46; border-top: 3px solid #047857;">
-                        <td colspan="2" style="padding: 12px 14px; font-size: 13px; text-align: left; font-weight: 700; letter-spacing: 1px; color: #ecfdf5; background: #065f46;">
+                    <tr id="primaci-daily-grand-total-row" style="background: #065f46; border-top: 3px solid #047857;">
+                        <td id="primaci-daily-grand-total-label" data-original-label="UKUPNO ${getMonthName(month).toUpperCase()}" colspan="2" style="padding: 12px 14px; font-size: 13px; text-align: left; font-weight: 700; letter-spacing: 1px; color: #ecfdf5; background: #065f46;">
                             UKUPNO ${getMonthName(month).toUpperCase()}
                         </td>
                         ${grandTotalsCells}
@@ -5731,8 +5731,8 @@
                 }).join('');
 
                 bodyHTML += `
-                    <tr style="background: linear-gradient(135deg, #b45309, #d97706); color: white; font-weight: 700; border-top: 4px solid #92400e;">
-                        <td colspan="3" style="padding: 12px; font-size: 13px; font-weight: 900; letter-spacing: 1.5px; text-shadow: 0 1px 3px rgba(0,0,0,0.4); text-align: center;">
+                    <tr id="otpremaci-daily-grand-total-row" style="background: linear-gradient(135deg, #b45309, #d97706); color: white; font-weight: 700; border-top: 4px solid #92400e;">
+                        <td id="otpremaci-daily-grand-total-label" data-original-label="📈 UKUPNO ${getMonthName(month).toUpperCase()}" colspan="3" style="padding: 12px; font-size: 13px; font-weight: 900; letter-spacing: 1.5px; text-shadow: 0 1px 3px rgba(0,0,0,0.4); text-align: center;">
                             📈 UKUPNO ${getMonthName(month).toUpperCase()}
                         </td>
                         ${grandTotalsCells}
