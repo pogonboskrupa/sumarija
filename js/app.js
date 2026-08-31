@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.34';
+        const APP_VERSION = '1.17.35';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -4965,7 +4965,7 @@
                                 ${m}
                             </th>
                         `).join('')}
-                        <th class="right" style="min-width: 100px; background: linear-gradient(135deg, #fde68a, #fbbf24); color: #78350f; font-weight: 900; border: 2px solid #d97706;">
+                        <th class="right" style="min-width: 100px; background: linear-gradient(135deg, #fde68a, #fbbf24); color: #000000; font-weight: 900; border: 2px solid #d97706;">
                             📊 UKUPNO
                         </th>
                     </tr>
@@ -4988,7 +4988,7 @@
                                 const cellStyle = val > 0 ? 'font-weight: 600; color: #000000; text-shadow: 0 0 1px rgba(255,255,255,0.8);' : 'color: #6b7280;';
                                 return `<td class="right" style="${cellStyle} border: 1px solid #d1fae5; padding: 8px; font-size: 11px; font-family: 'Roboto Mono', ui-monospace, monospace;">${displayVal}</td>`;
                             }).join('')}
-                            <td class="right" style="font-weight: 700; background: linear-gradient(to right, #d1fae5, #a7f3d0); border: 2px solid #059669; padding: 10px; font-size: 11px; color: #065f46;">
+                            <td class="right" style="font-weight: 700; background: linear-gradient(to right, #d1fae5, #a7f3d0); border: 2px solid #059669; padding: 10px; font-size: 11px; color: #000000;">
                                 ${(p.ukupno != null && !isNaN(p.ukupno)) ? p.ukupno.toFixed(2) : '0.00'} m³
                             </td>
                         </tr>
@@ -4997,7 +4997,7 @@
 
                 // Add totals row with softer colors
                 const totalsRow = `
-                    <tr class="table-nofilter" style="background: linear-gradient(to bottom, #d1fae5, #a7f3d0); color: #065f46; font-weight: 700; border-top: 3px solid #34d399;">
+                    <tr class="table-nofilter" style="background: linear-gradient(to bottom, #d1fae5, #a7f3d0); color: #000000; font-weight: 700; border-top: 3px solid #34d399;">
                         <td style="position: sticky; left: 0; background: #d1fae5; z-index: 10; border-right: 3px solid #34d399; padding: 12px; font-size: 12px;">
                             📈 UKUPNO
                         </td>
@@ -5111,7 +5111,7 @@
                                 ${m}
                             </th>
                         `).join('')}
-                        <th class="right" style="min-width: 100px; background: linear-gradient(135deg, #fde68a, #fbbf24); color: #78350f; font-weight: 900; border: 2px solid #d97706;">
+                        <th class="right" style="min-width: 100px; background: linear-gradient(135deg, #fde68a, #fbbf24); color: #000000; font-weight: 900; border: 2px solid #d97706;">
                             📊 UKUPNO
                         </th>
                     </tr>
@@ -5144,7 +5144,7 @@
                                 ${escapeHtml(p.primac) || '-'}
                             </td>
                             ${cells}
-                            <td class="right" style="font-weight: 700; background: linear-gradient(to right, #d1fae5, #a7f3d0); border: 2px solid #059669; padding: 10px; font-size: 11px; color: #065f46;">
+                            <td class="right" style="font-weight: 700; background: linear-gradient(to right, #d1fae5, #a7f3d0); border: 2px solid #059669; padding: 10px; font-size: 11px; color: #000000;">
                                 ${ukupnoDana} dana
                             </td>
                         </tr>
@@ -5152,7 +5152,7 @@
                 }).join('');
 
                 const daniTotalsRow = `
-                    <tr style="background: linear-gradient(to bottom, #d1fae5, #a7f3d0); color: #065f46; font-weight: 700; border-top: 3px solid #34d399;">
+                    <tr style="background: linear-gradient(to bottom, #d1fae5, #a7f3d0); color: #000000; font-weight: 700; border-top: 3px solid #34d399;">
                         <td style="position: sticky; left: 0; background: #d1fae5; z-index: 10; border-right: 3px solid #34d399; padding: 12px; font-size: 12px;">
                             📈 MAX DANA
                         </td>

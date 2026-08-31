@@ -302,6 +302,116 @@ function printPrimaciIzvodjacMjesecniSortimenti() {
     win.document.close();
 }
 
+// ─── Izvođači radova — pojedinačno/sve print ──────────────────
+// tableToCleanHtml + section-header, isti obrazac kao printMjesecniCard.
+// Vraća section HTML ili null (nema podataka) — koristi ga i pojedinačni
+// print (printIzvodjaciTabela) i "štampaj sve" (printIzvodjaciSve).
+function _izvodjaciPrintSection(tableId, naslov, accent) {
+    const tableEl = document.getElementById(tableId);
+    if (!tableEl) return null;
+    const tbody = tableEl.querySelector('tbody');
+    if (!tbody || !tbody.querySelector('tr td')) return null;
+    return `
+        <div class="print-section">
+            <div class="section-header" style="border-left:4px solid ${accent};">${naslov}</div>
+            ${tableToCleanHtml(tableEl)}
+        </div>`;
+}
+
+function _openIzvodjaciPrint(activeTabLabel, sectionsHtml, personLabel) {
+    const accent = '#ea580c';
+    const datumStampe   = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const vrijemeStampe = new Date().toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' });
+
+    const win = window.open('', '_blank', 'width=1200,height=900,scrollbars=yes');
+    if (!win) {
+        if (typeof showError === 'function') showError('Popup blokiran', 'Dozvolite popup prozore za štampanje.');
+        else alert('Popup blokiran — dozvolite popup prozore za štampanje.');
+        return;
+    }
+    win.document.write(buildPrintDocument({
+        tabLabel: 'Izvođači radova',
+        activeTabLabel,
+        accentColor: accent,
+        monthName: String(new Date().getFullYear()),
+        year: '',
+        datumStampe,
+        vrijemeStampe,
+        personLabel,
+        sectionsHtml
+    }));
+    win.document.close();
+}
+
+// Štampa JEDNU stavku (tabelu) — dugme u zaglavlju svake kartice.
+function printIzvodjaciTabela(tableId, naslov) {
+    const section = _izvodjaciPrintSection(tableId, naslov, '#ea580c');
+    if (!section) {
+        if (typeof showWarning === 'function') showWarning('Nema podataka za štampanje');
+        else alert('Nema podataka za štampanje. Molimo sačekajte učitavanje.');
+        return;
+    }
+    _openIzvodjaciPrint(naslov, section, '');
+}
+
+// Štampa "Detaljan pregled izabranog izvođača" kao jednu stavku — sve tri
+// njegove tabele (mjesečni trend, sortimenti godišnje, sortimenti mjesečno)
+// zajedno, s imenom izvođača kao kontekstom.
+function printIzvodjaciDetalj() {
+    const card = document.getElementById('primaci-izvodjac-detalj');
+    if (!card || card.classList.contains('hidden')) {
+        if (typeof showWarning === 'function') showWarning('Prvo izaberite izvođača za detaljan pregled');
+        else alert('Prvo izaberite izvođača za detaljan pregled.');
+        return;
+    }
+    const naslovEl = document.getElementById('primaci-izvodjac-detalj-naziv');
+    const izvodjacNaziv = naslovEl ? cleanPrintText(naslovEl.textContent).replace(/^📊\s*/, '') : 'Izvođač';
+
+    const sections = [
+        _izvodjaciPrintSection('primaci-izvodjac-detalj-table', 'Mjesečni pregled i trend', '#ea580c'),
+        _izvodjaciPrintSection('primaci-izvodjac-sortimenti-table', 'Sortimenti — godišnji ukupno', '#ea580c'),
+        _izvodjaciPrintSection('primaci-izvodjac-mjesecni-sortimenti-table', 'Sječa po sortimentima — mjesečno', '#ea580c')
+    ].filter(Boolean);
+
+    if (!sections.length) {
+        if (typeof showWarning === 'function') showWarning('Nema podataka za štampanje');
+        else alert('Nema podataka za štampanje. Molimo sačekajte učitavanje.');
+        return;
+    }
+    _openIzvodjaciPrint('Detaljan pregled', sections.join(''), escapeHtml(izvodjacNaziv));
+}
+
+// Štampa SVE stavke podtaba odjednom (uključujući "Detaljan pregled" ako je
+// trenutno prikazan), svaka na svojoj stranici — isti obrazac kao
+// printKubikator (page-break-before na sve osim prve sekcije).
+function printIzvodjaciSve() {
+    const accent = '#ea580c';
+    const sections = [];
+
+    const detaljCard = document.getElementById('primaci-izvodjac-detalj');
+    if (detaljCard && !detaljCard.classList.contains('hidden')) {
+        sections.push(_izvodjaciPrintSection('primaci-izvodjac-detalj-table', 'Detaljan pregled — mjesečni trend', accent));
+        sections.push(_izvodjaciPrintSection('primaci-izvodjac-sortimenti-table', 'Detaljan pregled — sortimenti (godišnji ukupno)', accent));
+        sections.push(_izvodjaciPrintSection('primaci-izvodjac-mjesecni-sortimenti-table', 'Detaljan pregled — sječa po sortimentima (mjesečno)', accent));
+    }
+    sections.push(_izvodjaciPrintSection('primaci-izvodjaci-table', 'Sječa po mjesecima — svi izvođači', accent));
+    sections.push(_izvodjaciPrintSection('primaci-izvodjaci-recap', 'Godišnja rekapitulacija po sortimentima', accent));
+    sections.push(_izvodjaciPrintSection('primaci-izvodjaci-mjesecni-recap', 'Mjesečna rekapitulacija po sortimentima', accent));
+
+    const valid = sections.filter(Boolean);
+    if (!valid.length) {
+        if (typeof showWarning === 'function') showWarning('Nema podataka za štampanje');
+        else alert('Nema podataka za štampanje. Molimo sačekajte učitavanje.');
+        return;
+    }
+
+    const sectionsHtml = valid.map((html, idx) =>
+        idx === 0 ? html : html.replace('class="print-section"', 'class="print-section" style="page-break-before:always;"')
+    ).join('');
+
+    _openIzvodjaciPrint('Svi prikazi — Izvođači radova', sectionsHtml, '');
+}
+
 // ─── Dropdown izbornik ───────────────────────────────────────
 function toggleStanjeZalihaPrintMenu(e) {
     e.stopPropagation();

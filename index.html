@@ -984,10 +984,11 @@
             <div id="primaci-izvodjaci-view" class="submenu-content hidden">
                 <div class="section">
                     <h3 style="color: #ea580c; text-align: center; margin-bottom: 20px;">👷 Prikaz sječe po izvođačima radova</h3>
-                    <div class="controls-bar">
+                    <div class="controls-bar" style="justify-content: space-between;">
                         <select id="primaci-izvodjac-select" class="month-select" onchange="loadPrimaciIzvodjacDetalj()">
                             <option value="">— Odaberite izvođača za detaljan pregled —</option>
                         </select>
+                        <button type="button" class="btn btn-primary" onclick="printIzvodjaciSve()" style="background:#ea580c; font-size:13px; padding:8px 16px;">🖨️ Štampaj sve</button>
                     </div>
 
                     <!-- Detaljan pregled izabranog izvođača — vidljivo samo kad je
@@ -999,6 +1000,7 @@
                                 <h2 id="primaci-izvodjac-detalj-naziv">📊 Detaljan pregled</h2>
                                 <span class="card-subtitle">Mjesečni trend i pregled po sortimentima za tekuću godinu</span>
                             </div>
+                            <button type="button" class="btn btn-secondary" onclick="printIzvodjaciDetalj()" style="font-size:12px; padding:6px 14px; white-space:nowrap;">🖨️ Štampaj</button>
                         </div>
                         <div class="enterprise-card-body">
                             <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:20px;">
@@ -1049,6 +1051,9 @@
                                     <span class="izv-card-sub">Ukupna m³ po izvođaču, tekuća godina</span>
                                 </div>
                             </div>
+                            <div class="izv-card-actions">
+                                <button type="button" class="btn btn-secondary" onclick="printIzvodjaciTabela('primaci-izvodjaci-table', 'Sječa po mjesecima — svi izvođači')" style="font-size:11px; padding:5px 10px; white-space:nowrap;">🖨️ Štampaj</button>
+                            </div>
                         </div>
                         <div class="izv-card-body">
                             <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
@@ -1068,6 +1073,9 @@
                                     <h4>Godišnja rekapitulacija po sortimentima</h4>
                                     <span class="izv-card-sub">Ukupno po sortimentu, svi izvođači, tekuća godina</span>
                                 </div>
+                            </div>
+                            <div class="izv-card-actions">
+                                <button type="button" class="btn btn-secondary" onclick="printIzvodjaciTabela('primaci-izvodjaci-recap', 'Godišnja rekapitulacija po sortimentima')" style="font-size:11px; padding:5px 10px; white-space:nowrap;">🖨️ Štampaj</button>
                             </div>
                         </div>
                         <div class="izv-card-body">
@@ -1096,6 +1104,7 @@
                             </div>
                             <div class="izv-card-actions">
                                 <select id="primaci-izvodjaci-recap-mjesec-select" class="month-select" onchange="renderPrimaciIzvodjaciMjesecniRecap()"></select>
+                                <button type="button" class="btn btn-secondary" onclick="printIzvodjaciTabela('primaci-izvodjaci-mjesecni-recap', 'Mjesečna rekapitulacija po sortimentima')" style="font-size:11px; padding:5px 10px; white-space:nowrap;">🖨️ Štampaj</button>
                             </div>
                         </div>
                         <div class="izv-card-body">
