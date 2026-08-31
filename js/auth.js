@@ -273,8 +273,7 @@
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' },
                     { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
                     { id: 'poslovodja-pregled', icon: '📑', label: 'PREGLED' },
-                    { id: 'poslovodja-izvjestaj-odjeli', icon: _ICON_ODJELI, label: 'Izvještaj po odjelima' },
-                    { id: 'poslovodja-unosi', icon: '📝', label: 'Dodani unosi', hasBadge: true }
+                    { id: 'poslovodja-izvjestaj-odjeli', icon: _ICON_ODJELI, label: 'Izvještaj po odjelima' }
                 ];
             } else if (userType === 'admin') {
                 tabsConfig = [
@@ -288,7 +287,6 @@
                     { id: 'primaci-admin', icon: '🌲', label: 'Primači na šuma panju' },
                     { id: 'godisnji-plan', icon: '📋', label: 'Godišnji plan' },
                     { id: 'karta-odjela', icon: '🗺️', label: 'Mapa' },
-                    { id: 'pending-unosi', icon: '📋', label: 'Dodani unosi', hasBadge: true },
                     { id: 'kubikator', icon: '📐', label: 'Kubikator' }
                 ];
             } else {
@@ -319,6 +317,17 @@
                     var h = document.querySelector(sel + ' h2');
                     if (h) h.textContent = _naslovi[sel];
                 });
+            }
+
+            // "Dodani unosi" podtab unutar Izvještaja postoji SAMO za admin i
+            // poslovođu (svaka uloga vidi svoj panel — pregled/filter admina
+            // vs. filtrirano po radilištima za poslovođu). "izvjestaji" tab
+            // je dijeljen i sa 'operativa' ulogom, koja tu funkciju nikad
+            // nije imala — sakrij dugme za nju istim DOM-sakrivanje obrascem
+            // kao gore, umjesto filtriranja tabsConfig-a.
+            if (userType !== 'admin' && userType !== 'poslovođa' && userType !== 'poslovodja') {
+                var _dodaniUnosiBtn = document.getElementById('izvjestaji-subtab-dodani-unosi');
+                if (_dodaniUnosiBtn) _dodaniUnosiBtn.classList.add('hidden');
             }
 
             // Zum sadržaja — SAMO za poslovođu (50+, žele veći tekst). `userType` je
@@ -576,11 +585,11 @@
                 'add-sjeca-content', 'add-otprema-content',
                 'my-sjece-content', 'my-otpreme-content',
                 'edit-sjeca-content', 'edit-otprema-content',
-                'pending-unosi-content',
                 'poslovodja-stanje-content',
                 'poslovodja-sjeca-content', 'poslovodja-otprema-content',
-                'poslovodja-pregled-content', 'poslovodja-izvjestaj-odjeli-content', 'poslovodja-unosi-content',
+                'poslovodja-pregled-content', 'poslovodja-izvjestaj-odjeli-content',
                 'izvjestaji-content', 'izvjestaji-primac-content', 'izvjestaji-otpremac-content',
+                'izvjestaji-dodani-unosi-admin', 'izvjestaji-dodani-unosi-poslovodja',
                 'mjesecni-sortimenti-content', 'stanje-odjela-admin-content',
                 'dinamika-content', 'kubikator-content', 'stanje-zaliha-content',
                 'sihtarica-primac-content', 'sihtarica-otpremac-content',

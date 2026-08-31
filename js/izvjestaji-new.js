@@ -13,6 +13,8 @@ function switchIzvjestajiSubTab(subTab) {
     const sedmicniRadnikOdjeliElem = document.getElementById('izvjestaji-sedmicni-radnik-odjeli');
     const mjesecniElem = document.getElementById('izvjestaji-mjesecni');
     const poOdjelimaElem = document.getElementById('izvjestaji-po-odjelima');
+    const dodaniUnosiAdminElem = document.getElementById('izvjestaji-dodani-unosi-admin');
+    const dodaniUnosiPoslovodjaElem = document.getElementById('izvjestaji-dodani-unosi-poslovodja');
 
     // ✅ SAFETY CHECK: Elementi moraju postojati
     if (!sedmicniElem || !mjesecniElem) {
@@ -29,6 +31,8 @@ function switchIzvjestajiSubTab(subTab) {
     if (sedmicniRadnikOdjeliElem) sedmicniRadnikOdjeliElem.classList.add('hidden');
     mjesecniElem.classList.add('hidden');
     if (poOdjelimaElem) poOdjelimaElem.classList.add('hidden');
+    if (dodaniUnosiAdminElem) dodaniUnosiAdminElem.classList.add('hidden');
+    if (dodaniUnosiPoslovodjaElem) dodaniUnosiPoslovodjaElem.classList.add('hidden');
 
     if (subTab === 'sedmicni') {
         sedmicniElem.classList.remove('hidden');
@@ -86,6 +90,25 @@ function switchIzvjestajiSubTab(subTab) {
         if (moElem) moElem.value = currentDate.getMonth();
 
         loadIzvjestajiPoOdjelima();
+    } else if (subTab === 'dodani-unosi') {
+        const btn = document.getElementById('izvjestaji-subtab-dodani-unosi');
+        if (btn) btn.classList.add('active');
+
+        // "Dodani unosi" ima dva sasvim različita prikaza (admin vidi SVE
+        // unose sa filterima i "obriši sve"; poslovođa vidi samo unose za
+        // svoja radilišta) — koji se panel/loader koristi zavisi od uloge
+        // prijavljenog korisnika (currentUser, js/auth.js).
+        const userType = (typeof currentUser !== 'undefined' && currentUser && currentUser.type)
+            ? String(currentUser.type).trim().toLowerCase() : '';
+        const isPoslovodja = (userType === 'poslovođa' || userType === 'poslovodja');
+
+        if (isPoslovodja) {
+            if (dodaniUnosiPoslovodjaElem) dodaniUnosiPoslovodjaElem.classList.remove('hidden');
+            if (typeof loadPoslovodjaUnosi === 'function') loadPoslovodjaUnosi();
+        } else {
+            if (dodaniUnosiAdminElem) dodaniUnosiAdminElem.classList.remove('hidden');
+            if (typeof loadPendingUnosi === 'function') loadPendingUnosi();
+        }
     }
 }
 

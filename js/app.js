@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.33';
+        const APP_VERSION = '1.17.34';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -10942,9 +10942,11 @@
         }
 
         async function loadPendingUnosi() {
-            if (!isActiveTab('pending-unosi')) return;
+            // "Dodani unosi" je sad podtab unutar Izvještaja (ne zaseban glavni
+            // tab) — vlasnik je "izvjestaji" (vidi switchIzvjestajiSubTab).
+            if (!isActiveTab('izvjestaji')) return;
             requestLoadingScreen();
-            document.getElementById('pending-unosi-content').classList.add('hidden');
+            document.getElementById('izvjestaji-dodani-unosi-admin').classList.add('hidden');
 
             try {
                 const year = new Date().getFullYear();
@@ -10972,14 +10974,14 @@
                 markTabRendered('pending-unosi');
 
                 document.getElementById('loading-screen').classList.add('hidden');
-                showTabContent('pending-unosi-content');
+                if (isActiveTab('izvjestaji')) document.getElementById('izvjestaji-dodani-unosi-admin').classList.remove('hidden');
 
             } catch (error) {
                 console.error('Error loading dodani unosi:', error);
                 document.getElementById('pending-unosi-container').innerHTML =
                     '<p style="color: #dc2626; text-align: center; padding: 40px;">Greška: ' + error.message + '</p>';
                 document.getElementById('loading-screen').classList.add('hidden');
-                showTabContent('pending-unosi-content');
+                if (isActiveTab('izvjestaji')) document.getElementById('izvjestaji-dodani-unosi-admin').classList.remove('hidden');
             }
         }
 
@@ -10987,13 +10989,15 @@
         var unfilteredPoslovodjaUnosiData = [];
 
         async function loadPoslovodjaUnosi() {
-            if (!isActiveTab('poslovodja-unosi')) return;
+            // "Dodani unosi" je sad podtab unutar Izvještaja (ne zaseban glavni
+            // tab) — vlasnik je "izvjestaji" (vidi switchIzvjestajiSubTab).
+            if (!isActiveTab('izvjestaji')) return;
             // Turbo: skip loading screen if supporting caches exist
             if (!localStorage.getItem('cache_primke_sjeca') || !localStorage.getItem('cache_otpreme_tab')) {
                 requestLoadingScreen();
-                document.getElementById('poslovodja-unosi-content').classList.add('hidden');
+                document.getElementById('izvjestaji-dodani-unosi-poslovodja').classList.add('hidden');
             } else {
-                showTabContent('poslovodja-unosi-content');
+                document.getElementById('izvjestaji-dodani-unosi-poslovodja').classList.remove('hidden');
             }
 
             try {
@@ -11070,14 +11074,14 @@
                 markTabRendered('poslovodja-unosi');
 
                 document.getElementById('loading-screen').classList.add('hidden');
-                showTabContent('poslovodja-unosi-content');
+                if (isActiveTab('izvjestaji')) document.getElementById('izvjestaji-dodani-unosi-poslovodja').classList.remove('hidden');
 
             } catch (error) {
                 console.error('Error loading poslovođa dodani unosi:', error);
                 document.getElementById('poslovodja-unosi-container').innerHTML =
                     '<p style="color: #dc2626; text-align: center; padding: 40px;">Greška: ' + error.message + '</p>';
                 document.getElementById('loading-screen').classList.add('hidden');
-                showTabContent('poslovodja-unosi-content');
+                if (isActiveTab('izvjestaji')) document.getElementById('izvjestaji-dodani-unosi-poslovodja').classList.remove('hidden');
             }
         }
 

@@ -22,7 +22,6 @@
                 'otpremac-odjeli': 'otpremac-odjeli-content',
                 'my-sjece': 'my-sjece-content',
                 'my-otpreme': 'my-otpreme-content',
-                'pending-unosi': 'pending-unosi-content',
                 'mjesecni-sortimenti': 'mjesecni-sortimenti-content',
                 'dinamika': 'dinamika-content',
                 'poslovodja-stanje': 'poslovodja-stanje-content',
@@ -30,7 +29,6 @@
                 'poslovodja-otprema': 'poslovodja-otprema-content',
                 'poslovodja-pregled': 'poslovodja-pregled-content',
                 'poslovodja-izvjestaj-odjeli': 'poslovodja-izvjestaj-odjeli-content',
-                'poslovodja-unosi': 'poslovodja-unosi-content',
                 'stanje-zaliha': 'stanje-zaliha-content',
                 'primaci-admin': 'primaci-admin-content',
                 'izvjestaji': 'izvjestaji-content',
@@ -182,8 +180,6 @@
                 loadMySjece();
             } else if (tab === 'my-otpreme') {
                 loadMyOtpreme();
-            } else if (tab === 'pending-unosi') {
-                loadPendingUnosi();
             } else if (tab === 'mjesecni-sortimenti') {
                 loadMjesecniSortimenti();
             } else if (tab === 'dinamika') {
@@ -210,8 +206,6 @@
                 if (_yr) _yr.value = _cd.getFullYear();
                 if (_mo) _mo.value = _cd.getMonth();
                 loadIzvjestajiPoOdjelima('poslovodja-odjeli', 'poslovodja-izvjestaj-odjeli');
-            } else if (tab === 'poslovodja-unosi') {
-                loadPoslovodjaUnosi();
             } else if (tab === 'izvjestaji') {
                 // IZVJEŠTAJI - Sedmični i Mjesečni prikaz po odjelima
                 document.getElementById('izvjestaji-content').classList.remove('hidden');
