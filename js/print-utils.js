@@ -1181,3 +1181,110 @@ ${sectionsHtml}
 </body>
 </html>`;
 }
+
+// ─── Sječa/Otprema "po danima" print ──────────────────────────
+// Generički printActiveView (gornje dugme ŠTAMPAJ na tabu) i dalje radi na
+// ovim tabelama, ali sa ~20 uskih sortimentnih kolona + dugim imenima
+// (Primač/Otpremač/Kupac) generički print CSS ima dva problema baš ovdje:
+// 1) svuda forsira white-space:nowrap, pa duže ime/naziv sortimenta gura
+//    tabelu šire od stranice umjesto da se prelomi u red;
+// 2) font boost za "sortimentne" kolone je fiksno vezan za redoslijed
+//    kolone (nth-child) koji više ne odgovara otkad je dodana "Datum"
+//    kolona (primaci-daily/otpremaci-daily sad imaju 3, odn. 4 vodeće
+//    kolone prije sortimenata, ne 2 kao ranije).
+// Ova dva dugmeta (na karticama) ispravljaju oboje ciljano, po ID-ju
+// tabele, bez diranja generičkog print CSS-a koji koriste druge tabele.
+function _dailyPrintStyleBlock(tableId, sortimentiOd, wrapCols) {
+    const wrapRules = (wrapCols || []).map(n =>
+        `#${tableId} tbody td:nth-child(${n}) { white-space: normal !important; max-width: 34mm; word-break: break-word; }`
+    ).join('\n        ');
+    return `
+    <style>
+        #${tableId} thead th { white-space: normal !important; line-height: 1.15 !important; vertical-align: bottom !important; }
+        #${tableId} tbody td:nth-child(1) { font-size: 10px !important; color: #475569 !important; }
+        #${tableId} tbody td:nth-child(n+${sortimentiOd}) { font-size: 11.5px !important; font-weight: 600 !important; }
+        ${wrapRules}
+    </style>`;
+}
+
+function printPrimaciDaily() {
+    const tableEl = document.getElementById('primaci-daily-table');
+    const tbody = tableEl && tableEl.querySelector('tbody');
+    if (!tbody || !tbody.querySelector('tr td')) {
+        if (typeof showWarning === 'function') showWarning('Nema podataka za štampanje');
+        else alert('Nema podataka za štampanje. Molimo sačekajte učitavanje.');
+        return;
+    }
+
+    const accent = '#047857';
+    const MONTHS = ['Januar','Februar','Mart','April','Maj','Juni','Juli','August','Septembar','Oktobar','Novembar','Decembar'];
+    const monthSel = document.getElementById('primaci-month-select');
+    const monthName = monthSel ? MONTHS[parseInt(monthSel.value)] : MONTHS[new Date().getMonth()];
+    const godina = new Date().getFullYear();
+    const datumStampe   = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const vrijemeStampe = new Date().toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' });
+
+    const searchEl = document.getElementById('primaci-daily-search');
+    const filterTerm = searchEl ? searchEl.value.trim() : '';
+    const naslov = 'Sječa po danima' + (filterTerm ? ` — filtrirano: "${escapeHtml(filterTerm)}"` : '');
+
+    const sectionsHtml = `
+        ${_dailyPrintStyleBlock('primaci-daily-table', 4, [3])}
+        <div class="print-section">
+            <div class="section-header" style="border-left:4px solid ${accent};">${naslov}</div>
+            ${tableToCleanHtml(tableEl)}
+        </div>`;
+
+    const win = window.open('', '_blank', 'width=1200,height=900,scrollbars=yes');
+    if (!win) {
+        if (typeof showError === 'function') showError('Popup blokiran', 'Dozvolite popup prozore za štampanje.');
+        else alert('Popup blokiran — dozvolite popup prozore za štampanje.');
+        return;
+    }
+    win.document.write(buildPrintDocument({
+        tabLabel: 'Sječa', activeTabLabel: 'Po danima', accentColor: accent,
+        monthName, year: godina, datumStampe, vrijemeStampe, sectionsHtml
+    }));
+    win.document.close();
+}
+
+function printOtpremaciDaily() {
+    const tableEl = document.getElementById('otpremaci-daily-table');
+    const tbody = tableEl && tableEl.querySelector('tbody');
+    if (!tbody || !tbody.querySelector('tr td')) {
+        if (typeof showWarning === 'function') showWarning('Nema podataka za štampanje');
+        else alert('Nema podataka za štampanje. Molimo sačekajte učitavanje.');
+        return;
+    }
+
+    const accent = '#92400e';
+    const MONTHS = ['Januar','Februar','Mart','April','Maj','Juni','Juli','August','Septembar','Oktobar','Novembar','Decembar'];
+    const monthSel = document.getElementById('otpremaci-month-select');
+    const monthName = monthSel ? MONTHS[parseInt(monthSel.value)] : MONTHS[new Date().getMonth()];
+    const godina = new Date().getFullYear();
+    const datumStampe   = new Date().toLocaleDateString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const vrijemeStampe = new Date().toLocaleTimeString('bs-BA', { hour: '2-digit', minute: '2-digit' });
+
+    const searchEl = document.getElementById('otpremaci-daily-search');
+    const filterTerm = searchEl ? searchEl.value.trim() : '';
+    const naslov = 'Otprema po danima' + (filterTerm ? ` — filtrirano: "${escapeHtml(filterTerm)}"` : '');
+
+    const sectionsHtml = `
+        ${_dailyPrintStyleBlock('otpremaci-daily-table', 5, [3, 4])}
+        <div class="print-section">
+            <div class="section-header" style="border-left:4px solid ${accent};">${naslov}</div>
+            ${tableToCleanHtml(tableEl)}
+        </div>`;
+
+    const win = window.open('', '_blank', 'width=1200,height=900,scrollbars=yes');
+    if (!win) {
+        if (typeof showError === 'function') showError('Popup blokiran', 'Dozvolite popup prozore za štampanje.');
+        else alert('Popup blokiran — dozvolite popup prozore za štampanje.');
+        return;
+    }
+    win.document.write(buildPrintDocument({
+        tabLabel: 'Otprema', activeTabLabel: 'Po danima', accentColor: accent,
+        monthName, year: godina, datumStampe, vrijemeStampe, sectionsHtml
+    }));
+    win.document.close();
+}

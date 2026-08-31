@@ -891,6 +891,7 @@
                                 <option value="11">Decembar</option>
                             </select>
                             <input type="text" class="search-input" id="primaci-daily-search" placeholder="🔍 Pretraži..." onkeyup="filterPrimaciDailyTable()">
+                            <button type="button" class="btn btn-secondary" onclick="printPrimaciDaily()" style="font-size:12px; padding:6px 14px; white-space:nowrap;">🖨️ Štampaj</button>
                         </div>
                     </div>
                     <div class="izv-card-body">
@@ -1315,6 +1316,7 @@
                     </div>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="otpremaci-daily-search" placeholder="🔍 Pretraži..." onkeyup="filterOtremaciDailyTable()">
+                        <button type="button" class="btn btn-secondary" onclick="printOtpremaciDaily()" style="font-size:12px; padding:6px 14px; white-space:nowrap;">🖨️ Štampaj</button>
                     </div>
                     <div class="kupci-table-wrapper">
                         <table class="kupci-table" id="otpremaci-daily-table">
