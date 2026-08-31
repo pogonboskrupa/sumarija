@@ -891,6 +891,7 @@
                                 <option value="11">Decembar</option>
                             </select>
                             <input type="text" class="search-input" id="primaci-daily-search" placeholder="🔍 Pretraži..." onkeyup="filterPrimaciDailyTable()">
+                            <span id="primaci-daily-filter-sum" style="display:none; font-size:12px; font-weight:700; color:#065f46; background:#d1fae5; border:1px solid #6ee7b7; border-radius:8px; padding:6px 12px; white-space:nowrap;"></span>
                         </div>
                     </div>
                     <div class="izv-card-body">
@@ -940,6 +941,28 @@
                             <table class="monthly-table" id="primaci-radilista-recap">
                                 <thead id="primaci-radilista-recap-header"></thead>
                                 <tbody id="primaci-radilista-recap-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="izv-card">
+                    <div class="izv-card-header">
+                        <div class="izv-card-header-title">
+                            <span class="izv-card-icon">📅</span>
+                            <div>
+                                <h4>Mjesečna rekapitulacija po sortimentima</h4>
+                                <span class="izv-card-sub">Sva radilišta, izabrani mjesec</span>
+                            </div>
+                        </div>
+                        <div class="izv-card-actions">
+                            <select id="primaci-radilista-recap-mjesec-select" class="month-select" onchange="renderPrimaciRadilistaMjesecniRecap()"></select>
+                        </div>
+                    </div>
+                    <div class="izv-card-body">
+                        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                            <table class="monthly-table" id="primaci-radilista-mjesecni-recap">
+                                <thead id="primaci-radilista-mjesecni-recap-header"></thead>
+                                <tbody id="primaci-radilista-mjesecni-recap-body"></tbody>
                             </table>
                         </div>
                     </div>
@@ -1293,6 +1316,7 @@
                     </div>
                     <div class="controls-bar">
                         <input type="text" class="search-input" id="otpremaci-daily-search" placeholder="🔍 Pretraži..." onkeyup="filterOtremaciDailyTable()">
+                        <span id="otpremaci-daily-filter-sum" style="display:none; font-size:12px; font-weight:700; color:#78350f; background:#fde68a; border:1px solid #fbbf24; border-radius:8px; padding:6px 12px; white-space:nowrap;"></span>
                     </div>
                     <div class="kupci-table-wrapper">
                         <table class="kupci-table" id="otpremaci-daily-table">
@@ -1320,6 +1344,16 @@
                         <table class="monthly-table" id="otpremaci-radilista-recap">
                             <thead id="otpremaci-radilista-recap-header"></thead>
                             <tbody id="otpremaci-radilista-recap-body"></tbody>
+                        </table>
+                    </div>
+                    <h4 style="color: #155e75; margin-top: 30px; margin-bottom: 15px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                        <span>📅 Mjesečna rekapitulacija po sortimentima</span>
+                        <select id="otpremaci-radilista-recap-mjesec-select" class="month-select" onchange="renderOtpremaRadilistaMjesecniRecap()" style="font-size:13px;"></select>
+                    </h4>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="monthly-table" id="otpremaci-radilista-mjesecni-recap">
+                            <thead id="otpremaci-radilista-mjesecni-recap-header"></thead>
+                            <tbody id="otpremaci-radilista-mjesecni-recap-body"></tbody>
                         </table>
                     </div>
                 </div>

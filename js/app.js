@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.37';
+        const APP_VERSION = '1.17.38';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1333,7 +1333,7 @@
                         { name: 'Primaci - Monthly', url: buildApiUrl('primaci', { year }), cacheKey: 'cache_primaci_' + year, timeout: 180000 },
                         { name: 'Primaci - Daily + Izvještaji', url: buildApiUrl('primaci-daily', { year, month: currentMonth }), cacheKey: 'cache_primaci_daily_' + year + '_' + currentMonth, timeout: 180000,
                           alsoCache: ['cache_izvjestaji_sedmicni_primka_' + year + '_' + currentMonth, 'cache_izvjestaji_mjesecni_primka_' + year + '_' + currentMonth, 'cache_sedmicni_sjeca_' + year + '_' + currentMonth] },
-                        { name: 'Primaci - Po radilištu', url: buildApiUrl('primaci-by-radiliste', { year }), cacheKey: 'cache_primaci_radiliste_' + year, timeout: 180000 },
+                        { name: 'Primaci - Po radilištu', url: buildApiUrl('primaci-by-radiliste', { year }), cacheKey: 'cache_primaci_radiliste_v2_' + year, timeout: 180000 },
                         // _v2 — mjeseciSortimenti dodano u odgovor (Izvođači tab, mjesečni
                         // sortimenti); ključ promijenjen da odmah istisne stari keširan
                         // odgovor bez tog polja umjesto čekanja TTL isteka.
@@ -1344,7 +1344,7 @@
                         { name: 'Otpremaci - Monthly', url: buildApiUrl('otpremaci', { year }), cacheKey: 'cache_otpremaci_' + year, timeout: 180000 },
                         { name: 'Otpremaci - Daily + Izvještaji', url: buildApiUrl('otpremaci-daily', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_daily_' + year + '_' + currentMonth, timeout: 180000,
                           alsoCache: ['cache_izvjestaji_sedmicni_otprema_' + year + '_' + currentMonth, 'cache_izvjestaji_mjesecni_otprema_' + year + '_' + currentMonth, 'cache_sedmicni_otprema_' + year + '_' + currentMonth] },
-                        { name: 'Otpremaci - Po radilištu', url: buildApiUrl('otpremaci-by-radiliste', { year }), cacheKey: 'cache_otpremaci_radiliste_' + year, timeout: 180000 },
+                        { name: 'Otpremaci - Po radilištu', url: buildApiUrl('otpremaci-by-radiliste', { year }), cacheKey: 'cache_otpremaci_radiliste_v2_' + year, timeout: 180000 },
                         { name: 'Otpremaci - Sortimenti po otpremaču', url: buildApiUrl('otpremaci-sortimenti-by-otpremac', { year, month: currentMonth }), cacheKey: 'cache_otpremaci_sort_otpremac_' + year + '_' + currentMonth, timeout: 180000 },
 
                         // STANJE ZALIHA + korekcije
@@ -5756,13 +5756,18 @@
         // PRIKAZI PO RADILIŠTIMA I IZVOĐAČIMA
         // ========================================
 
+        // Podaci učitani preko loadPrimaciByRadiliste — čuva se globalno da
+        // "Mjesečna rekapitulacija po sortimentima" (dropdown mjeseca) može
+        // ponovo koristiti isti odgovor bez novog fetch-a.
+        let _primaciRadilistaData = null;
+
         // Load primaci by radiliste
         async function loadPrimaciByRadiliste() {
             try {
                 const year = new Date().getFullYear();
                 const url = buildApiUrl('primaci-by-radiliste', { year });
 
-                const data = await fetchWithCache(url, `cache_primaci_radiliste_${year}`);
+                const data = await fetchWithCache(url, `cache_primaci_radiliste_v2_${year}`);
 
 
                 if (data.error) {
@@ -5869,6 +5874,10 @@
                 });
                 document.getElementById('primaci-radilista-recap-body').innerHTML = recapBodyHTML;
 
+                // Mjesečna rekapitulacija po sortimentima — sva radilišta, izabrani mjesec
+                _primaciRadilistaData = data;
+                _populatePrimaciRadilistaRecapMjesecSelect();
+                renderPrimaciRadilistaMjesecniRecap();
 
             } catch (error) {
                 console.error('Error in loadPrimaciByRadiliste:', error);
@@ -5878,6 +5887,97 @@
                     </td></tr>
                 `;
             }
+        }
+
+        // Popuni dropdown mjeseci za "Mjesečna rekapitulacija — sva radilišta" JEDNOM
+        function _populatePrimaciRadilistaRecapMjesecSelect() {
+            const sel = document.getElementById('primaci-radilista-recap-mjesec-select');
+            if (!sel || sel.options.length) return;
+            const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+            sel.innerHTML = mjeseciNazivi.map((m, i) => '<option value="' + i + '">' + m + '</option>').join('');
+            sel.value = String(new Date().getMonth());
+        }
+
+        // Mjesečna rekapitulacija po sortimentima za SVA radilišta odjednom (dropdown
+        // #primaci-radilista-recap-mjesec-select) — isti raspored kao godišnja
+        // rekapitulacija (primaci-radilista-recap) iznad, samo iz
+        // radiliste.mjeseciSortimenti[mjesec] umjesto radiliste.sortimentiUkupno.
+        function renderPrimaciRadilistaMjesecniRecap() {
+            const sel = document.getElementById('primaci-radilista-recap-mjesec-select');
+            const headerEl = document.getElementById('primaci-radilista-mjesecni-recap-header');
+            const bodyEl = document.getElementById('primaci-radilista-mjesecni-recap-body');
+            if (!sel || !headerEl || !bodyEl || !_primaciRadilistaData) return;
+            const radilista = _primaciRadilistaData.radilista || [];
+            const sortimentiNazivi = _primaciRadilistaData.sortimentiNazivi || [];
+            const mIdx = parseInt(sel.value, 10) || 0;
+
+            let headerHTML = `
+                <tr>
+                    <th style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 12px; position: sticky; top: 0; z-index: 20;">
+                        🏗️ Radilište
+                    </th>
+            `;
+            sortimentiNazivi.forEach(s => {
+                headerHTML += `<th style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 10px;">${s}</th>`;
+            });
+            headerHTML += `</tr>`;
+            headerEl.innerHTML = headerHTML;
+
+            if (!radilista.length) {
+                bodyEl.innerHTML = `<tr><td colspan="${sortimentiNazivi.length + 1}" style="text-align:center;padding:24px;color:#4b5563;">Nema podataka</td></tr>`;
+                return;
+            }
+
+            // Samodijagnostika: nijedno radilište nema mjeseciSortimenti polje →
+            // backend koji je stvarno deployovan još nema ovaj kod (ili je
+            // odgovor iz starog keša), a ne "nema sječe ovaj mjesec".
+            if (!radilista.some(r => Array.isArray(r.mjeseciSortimenti))) {
+                bodyEl.innerHTML = `<tr><td colspan="${sortimentiNazivi.length + 1}" style="text-align:center;padding:24px;color:#dc2626;font-weight:600;">` +
+                    `⚠️ Server još ne šalje ovaj podatak (backend nije redeployovan sa najnovijim kodom, ili je odgovor iz starog keša). ` +
+                    `Klikni "🔄 Ažuriraj podatke" u meniju; ako i dalje piše ovo, backend deploy nije stvarno prihvaćen.</td></tr>`;
+                return;
+            }
+
+            let bodyHTML = '';
+            radilista.forEach((radiliste, idx) => {
+                const rowBg = idx % 2 === 0 ? '#fff7ed' : '#ffffff';
+                const mjesecPodaci = (radiliste.mjeseciSortimenti || [])[mIdx] || {};
+
+                const sortimentiCells = sortimentiNazivi.map(s => {
+                    const val = mjesecPodaci[s] || 0;
+                    const displayVal = val > 0 ? val.toFixed(2) : '-';
+                    const fontWeight = val > 0 ? 'font-weight: 700; color: #7c2d12;' : 'color: #d1d5db;';
+                    return `<td style="${fontWeight} border: 1px solid #fed7aa; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 8px;">${displayVal}</td>`;
+                }).join('');
+
+                bodyHTML += `
+                    <tr style="background: ${rowBg};">
+                        <td style="font-weight: 700; font-size: 12px; border: 1px solid #fed7aa; padding: 10px; color: #7c2d12;">
+                            ${escapeHtml(radiliste.naziv)}
+                        </td>
+                        ${sortimentiCells}
+                    </tr>
+                `;
+            });
+
+            // UKUPNO red — zbir svakog sortimenta preko svih radilišta, za IZABRANI mjesec
+            const recapTotalCells = sortimentiNazivi.map(s => {
+                const val = radilista.reduce((acc, r) => {
+                    const mp = (r.mjeseciSortimenti || [])[mIdx] || {};
+                    return acc + (Number(mp[s]) || 0);
+                }, 0);
+                const displayVal = val > 0 ? val.toFixed(2) : '-';
+                return `<td style="border: 1px solid #047857; font-family: 'Courier New', monospace; font-size: 11px; text-align: right; padding: 10px; font-weight: 800; color: white;">${displayVal}</td>`;
+            }).join('');
+            bodyHTML += `
+                <tr class="ukupno-row" style="background: linear-gradient(135deg, #047857, #065f46);">
+                    <td style="font-weight: 900; font-size: 13px; border: 1px solid #047857; padding: 12px; color: white;">
+                        📊 UKUPNO
+                    </td>
+                    ${recapTotalCells}
+                </tr>
+            `;
+            bodyEl.innerHTML = bodyHTML;
         }
 
         // Podaci učitani preko loadPrimaciByIzvodjac (svih izvođača, cijela
@@ -7852,12 +7952,17 @@
         }
 
         // Load otpremaci by radiliste
+        // Podaci učitani preko loadOtremaciByRadiliste — čuva se globalno da
+        // "Mjesečna rekapitulacija po sortimentima" (dropdown mjeseca) može
+        // ponovo koristiti isti odgovor bez novog fetch-a.
+        let _otpremaRadilistaData = null;
+
         async function loadOtremaciByRadiliste() {
             try {
                 const year = new Date().getFullYear();
                 const url = buildApiUrl('otpremaci-by-radiliste', { year });
 
-                const data = await fetchWithCache(url, `cache_otpremaci_radiliste_${year}`);
+                const data = await fetchWithCache(url, `cache_otpremaci_radiliste_v2_${year}`);
 
 
                 if (data.error) {
@@ -7964,6 +8069,10 @@
                 });
                 document.getElementById('otpremaci-radilista-recap-body').innerHTML = recapBodyHTML;
 
+                // Mjesečna rekapitulacija po sortimentima — sva radilišta, izabrani mjesec
+                _otpremaRadilistaData = data;
+                _populateOtpremaRadilistaRecapMjesecSelect();
+                renderOtpremaRadilistaMjesecniRecap();
 
             } catch (error) {
                 console.error('Error in loadOtremaciByRadiliste:', error);
@@ -7973,6 +8082,97 @@
                     </td></tr>
                 `;
             }
+        }
+
+        // Popuni dropdown mjeseci za "Mjesečna rekapitulacija — sva radilišta" (otprema) JEDNOM
+        function _populateOtpremaRadilistaRecapMjesecSelect() {
+            const sel = document.getElementById('otpremaci-radilista-recap-mjesec-select');
+            if (!sel || sel.options.length) return;
+            const mjeseciNazivi = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+            sel.innerHTML = mjeseciNazivi.map((m, i) => '<option value="' + i + '">' + m + '</option>').join('');
+            sel.value = String(new Date().getMonth());
+        }
+
+        // Mjesečna rekapitulacija po sortimentima za SVA radilišta odjednom (otprema,
+        // dropdown #otpremaci-radilista-recap-mjesec-select) — isti raspored kao
+        // godišnja rekapitulacija (otpremaci-radilista-recap) iznad, samo iz
+        // radiliste.mjeseciSortimenti[mjesec] umjesto radiliste.sortimentiUkupno.
+        function renderOtpremaRadilistaMjesecniRecap() {
+            const sel = document.getElementById('otpremaci-radilista-recap-mjesec-select');
+            const headerEl = document.getElementById('otpremaci-radilista-mjesecni-recap-header');
+            const bodyEl = document.getElementById('otpremaci-radilista-mjesecni-recap-body');
+            if (!sel || !headerEl || !bodyEl || !_otpremaRadilistaData) return;
+            const radilista = _otpremaRadilistaData.radilista || [];
+            const sortimentiNazivi = _otpremaRadilistaData.sortimentiNazivi || [];
+            const mIdx = parseInt(sel.value, 10) || 0;
+
+            let headerHTML = `
+                <tr>
+                    <th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
+                        🏗️ Radilište
+                    </th>
+            `;
+            sortimentiNazivi.forEach(s => {
+                headerHTML += `<th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 10px;">${s}</th>`;
+            });
+            headerHTML += `</tr>`;
+            headerEl.innerHTML = headerHTML;
+
+            if (!radilista.length) {
+                bodyEl.innerHTML = `<tr><td colspan="${sortimentiNazivi.length + 1}" style="text-align:center;padding:24px;color:#4b5563;">Nema podataka</td></tr>`;
+                return;
+            }
+
+            // Samodijagnostika: nijedno radilište nema mjeseciSortimenti polje →
+            // backend koji je stvarno deployovan još nema ovaj kod (ili je
+            // odgovor iz starog keša), a ne "nema otpreme ovaj mjesec".
+            if (!radilista.some(r => Array.isArray(r.mjeseciSortimenti))) {
+                bodyEl.innerHTML = `<tr><td colspan="${sortimentiNazivi.length + 1}" style="text-align:center;padding:24px;color:#dc2626;font-weight:600;">` +
+                    `⚠️ Server još ne šalje ovaj podatak (backend nije redeployovan sa najnovijim kodom, ili je odgovor iz starog keša). ` +
+                    `Klikni "🔄 Ažuriraj podatke" u meniju; ako i dalje piše ovo, backend deploy nije stvarno prihvaćen.</td></tr>`;
+                return;
+            }
+
+            let bodyHTML = '';
+            radilista.forEach((radiliste, idx) => {
+                const rowBg = idx % 2 === 0 ? '#cffafe' : '#ffffff';
+                const mjesecPodaci = (radiliste.mjeseciSortimenti || [])[mIdx] || {};
+
+                const sortimentiCells = sortimentiNazivi.map(s => {
+                    const val = mjesecPodaci[s] || 0;
+                    const displayVal = val > 0 ? val.toFixed(2) : '-';
+                    const fontWeight = val > 0 ? 'font-weight: 700; color: #155e75;' : 'color: #d1d5db;';
+                    return `<td style="${fontWeight} border: 1px solid #a5f3fc; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 8px;">${displayVal}</td>`;
+                }).join('');
+
+                bodyHTML += `
+                    <tr style="background: ${rowBg};">
+                        <td style="font-weight: 700; font-size: 12px; border: 1px solid #a5f3fc; padding: 10px; color: #155e75;">
+                            ${escapeHtml(radiliste.naziv)}
+                        </td>
+                        ${sortimentiCells}
+                    </tr>
+                `;
+            });
+
+            // UKUPNO red — zbir svakog sortimenta preko svih radilišta, za IZABRANI mjesec
+            const recapTotalCells = sortimentiNazivi.map(s => {
+                const val = radilista.reduce((acc, r) => {
+                    const mp = (r.mjeseciSortimenti || [])[mIdx] || {};
+                    return acc + (Number(mp[s]) || 0);
+                }, 0);
+                const displayVal = val > 0 ? val.toFixed(2) : '-';
+                return `<td style="border: 1px solid #164e63; font-family: 'Courier New', monospace; font-size: 11px; text-align: right; padding: 10px; font-weight: 800; color: white;">${displayVal}</td>`;
+            }).join('');
+            bodyHTML += `
+                <tr class="ukupno-row" style="background: linear-gradient(135deg, #0e7490, #164e63);">
+                    <td style="font-weight: 900; font-size: 13px; border: 1px solid #164e63; padding: 12px; color: white;">
+                        📊 UKUPNO
+                    </td>
+                    ${recapTotalCells}
+                </tr>
+            `;
+            bodyEl.innerHTML = bodyHTML;
         }
 
 

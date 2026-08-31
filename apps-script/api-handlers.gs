@@ -2965,7 +2965,10 @@ function handlePrimaciByRadiliste(year, username, password) {
   Logger.log('=== HANDLE PRIMACI BY RADILISTE START ===');
   Logger.log('Year: ' + year);
 
-  const cacheKeyPR = 'primaci_radiliste_' + year;
+  // v2 — dodano mjeseciSortimenti (mjesečna rekapitulacija po sortimentima,
+  // Radilišta podtab). Bump ključa da se stari (v1) keš bez tog polja ne
+  // servira do isteka CACHE_TTL (isti razlog kao primaci_izvodjac_v2).
+  const cacheKeyPR = 'primaci_radiliste_v2_' + year;
   const cachedPR = getCachedData(cacheKeyPR);
   if (cachedPR) return createJsonResponse(cachedPR, true);
 
@@ -3003,9 +3006,18 @@ function handlePrimaciByRadiliste(year, username, password) {
           naziv: radilisteNorm,
           mjeseci: Array(12).fill(0),
           sortimentiUkupno: {},
+          // Po mjesecu PA po sortimentu — za "Mjesečna rekapitulacija po
+          // sortimentima" (index.html/js/app.js), isti obrazac kao
+          // izvodjac.mjeseciSortimenti u handlePrimaciByIzvodjac.
+          mjeseciSortimenti: [],
           ukupno: 0
         };
         SORTIMENTI_NAZIVI.forEach(s => radilistaMap[radilisteNorm].sortimentiUkupno[s] = 0);
+        for (let m = 0; m < 12; m++) {
+          const prazanMjesec = {};
+          SORTIMENTI_NAZIVI.forEach(s => prazanMjesec[s] = 0);
+          radilistaMap[radilisteNorm].mjeseciSortimenti.push(prazanMjesec);
+        }
       }
 
       // Dodaj kubike po mjesecu
@@ -3013,10 +3025,12 @@ function handlePrimaciByRadiliste(year, username, password) {
       radilistaMap[radilisteNorm].mjeseci[mjesec] += kubik;
       radilistaMap[radilisteNorm].ukupno += kubik;
 
-      // Dodaj sortimente (F-Y, indeksi 5-24)
+      // Dodaj sortimente (F-Y, indeksi 5-24) — i u godišnji ukupno i u
+      // odgovarajući mjesec.
       for (let j = 0; j < 20; j++) {
         const vrijednost = parseFloat(row[PRIMKA_COL.SORT_START + j]) || 0;
         radilistaMap[radilisteNorm].sortimentiUkupno[SORTIMENTI_NAZIVI[j]] += vrijednost;
+        radilistaMap[radilisteNorm].mjeseciSortimenti[mjesec][SORTIMENTI_NAZIVI[j]] += vrijednost;
       }
     }
 
@@ -3055,7 +3069,9 @@ function handleOtpremaciByRadiliste(year, username, password) {
   Logger.log('=== HANDLE OTPREMACI BY RADILISTE START ===');
   Logger.log('Year: ' + year);
 
-  const cacheKeyOR = 'otpremaci_radiliste_' + year;
+  // v2 — dodano mjeseciSortimenti (mjesečna rekapitulacija po sortimentima),
+  // vidi napomenu uz handlePrimaciByRadiliste.
+  const cacheKeyOR = 'otpremaci_radiliste_v2_' + year;
   const cachedOR = getCachedData(cacheKeyOR);
   if (cachedOR) return createJsonResponse(cachedOR, true);
 
@@ -3090,19 +3106,26 @@ function handleOtpremaciByRadiliste(year, username, password) {
           naziv: radilisteNorm,
           mjeseci: Array(12).fill(0),
           sortimentiUkupno: {},
+          mjeseciSortimenti: [],
           ukupno: 0
         };
         SORTIMENTI_NAZIVI.forEach(s => radilistaMap[radilisteNorm].sortimentiUkupno[s] = 0);
+        for (let m = 0; m < 12; m++) {
+          const prazanMjesec = {};
+          SORTIMENTI_NAZIVI.forEach(s => prazanMjesec[s] = 0);
+          radilistaMap[radilisteNorm].mjeseciSortimenti.push(prazanMjesec);
+        }
       }
 
       const kubik = parseFloat(row[OTPREMA_COL.UKUPNO]) || 0; // AA - UKUPNO Č+L
       radilistaMap[radilisteNorm].mjeseci[mjesec] += kubik;
       radilistaMap[radilisteNorm].ukupno += kubik;
 
-      // Sortimenti (H-AA, indeksi 7-26)
+      // Sortimenti (H-AA, indeksi 7-26) — i u godišnji ukupno i u odgovarajući mjesec
       for (let j = 0; j < 20; j++) {
         const vrijednost = parseFloat(row[OTPREMA_COL.SORT_START + j]) || 0;
         radilistaMap[radilisteNorm].sortimentiUkupno[SORTIMENTI_NAZIVI[j]] += vrijednost;
+        radilistaMap[radilisteNorm].mjeseciSortimenti[mjesec][SORTIMENTI_NAZIVI[j]] += vrijednost;
       }
     }
 
