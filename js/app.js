@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.41';
+        const APP_VERSION = '1.17.42';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1310,7 +1310,7 @@
 
                     allViews = [
                         // DASHBOARD
-                        { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year + '_m' + currentMonthNum, timeout: 180000 },
+                        { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_v2_' + year + '_m' + currentMonthNum, timeout: 180000 },
                         // Dodani unosi — VISOK PRIORITET za offline (queue je FIFO,
                         // rane stavke se skinu prve i prežive i djelimičan preload)
                         { name: 'Pending Unosi', url: buildApiUrl('pending-unosi', { year }), cacheKey: 'cache_pending_unosi', timeout: 120000 },
@@ -1397,7 +1397,7 @@
                     const currentMonth = new Date().getMonth(); // 0-11
                     const currentMonthNum = currentMonth + 1;
                     allViews = [
-                        { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_' + year + '_m' + currentMonthNum, timeout: 180000 },
+                        { name: 'Dashboard', url: buildApiUrl('dashboard', { year }), cacheKey: 'cache_dashboard_v2_' + year + '_m' + currentMonthNum, timeout: 180000 },
                         { name: 'Stanje Odjela (odjeli)', url: buildApiUrl('odjeli', { year }), cacheKey: 'cache_odjeli_' + year, timeout: 180000 },
                         { name: 'Stanje Zaliha', url: buildApiUrl('stanje-zaliha'), cacheKey: 'cache_stanje_zaliha', timeout: 180000 },
                         { name: 'Kupci', url: buildApiUrl('kupci', { year }), cacheKey: 'cache_kupci_' + year, timeout: 180000 },
@@ -2077,7 +2077,7 @@
                 const year = now.getFullYear();
                 const month = now.getMonth() + 1; // 1-12
                 // Cache key uključuje mjesec - automatski se invalidira kad se promijeni mjesec
-                const cacheKey = 'cache_dashboard_' + year + '_m' + month;
+                const cacheKey = 'cache_dashboard_v2_' + year + '_m' + month;
                 const url = buildApiUrl('dashboard', { year });
 
                 // 🚀 TURBO MODE: INSTANT SHOW CACHED DATA (zero delay!)
@@ -14900,7 +14900,7 @@
 
                     // Clear cache and reload
                     localStorage.removeItem('cache_dinamika_' + year);
-                    localStorage.removeItem('cache_dashboard_' + year);
+                    localStorage.removeItem('cache_dashboard_v2_' + year);
                     loadDinamika();
                 } else {
                     throw new Error(result.error || 'Greška pri spremanju');

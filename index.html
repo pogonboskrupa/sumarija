@@ -3863,10 +3863,11 @@
                     <button class="submenu-tab"         data-tab="pregled"   onclick="switchGpTab('pregled')">📋 Pregled plana</button>
                     <button class="submenu-tab"         data-tab="projekat"  onclick="switchGpTab('projekat')">📐 Plan po projektu</button>
                     <button class="submenu-tab"         data-tab="timeline"  onclick="switchGpTab('timeline')">📅 Timeline realizacije</button>
+                    <button class="submenu-tab"         data-tab="dinamike"  onclick="switchGpTab('dinamike')">📈 Dinamike sječe i otpreme</button>
                 </div>
 
-                <!-- Filters -->
-                <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+                <!-- Filters (odnosi se samo na podtabove sa spiskom odjela — sakriva se na "Dinamike") -->
+                <div id="gp-filters-bar" style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
                     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
                         <span style="font-size:12px;color:#4b5563;font-weight:600;">GJ:</span>
                         <button data-gj-btn="sve" onclick="filterGpGj('sve')" style="padding:4px 12px;border-radius:99px;border:2px solid #6b7280;background:white;color:#374151;font-size:12px;cursor:pointer;font-weight:700;">Sve GJ</button>
@@ -3900,6 +3901,7 @@
                 <div id="gp-pregled-view" class="hidden"></div>
                 <div id="gp-projekat-view" class="hidden"></div>
                 <div id="gp-timeline-view" class="hidden"></div>
+                <div id="gp-dinamike-view" class="hidden"></div>
             </div>
 
             <!-- KARTA ODJELA CONTENT -->

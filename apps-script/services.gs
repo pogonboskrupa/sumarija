@@ -9,9 +9,11 @@
 /**
  * Dohvati dinamiku (plan) za godinu iz DINAMIKA sheeta
  * Čita iz K3:K14 (Jan=K3 ... Dec=K14) - vertikalni raspon
- * Prikazuje samo mjesece <= trenutni mjesec (budući mjeseci = 0)
+ * Vraća i "do danas" (budući mjeseci = 0, za tempo/pace poređenje) i
+ * puni (neobrezani) godišnji plan (za "od ukupno ~65.000 m³" prikaz) -
+ * jedno čitanje raspona, dva izvedena oblika.
  * @param {number} year - Godina za koju se traži dinamika
- * @returns {Array} - Niz od 12 vrijednosti za svaki mjesec
+ * @returns {Object} - { mjesecna: Array(12) "do danas", punaMjesecna: Array(12) neobrezano, punaUkupno: number }
  */
 function getDinamikaForYear(year) {
   try {
@@ -21,7 +23,7 @@ function getDinamikaForYear(year) {
     // Ako sheet ne postoji, vrati nule
     if (!dinamikaSheet) {
       Logger.log('DINAMIKA sheet does not exist, returning zeros');
-      return Array(12).fill(0);
+      return { mjesecna: Array(12).fill(0), punaMjesecna: Array(12).fill(0), punaUkupno: 0 };
     }
 
     // Dohvati trenutni mjesec (1-12) u Europe/Sarajevo timezone
@@ -39,6 +41,8 @@ function getDinamikaForYear(year) {
     // Primijeni pravilo: prikaži samo mjesece <= currentMonth (za trenutnu godinu)
     // Za prošle godine prikaži sve, za buduće godine prikaži ništa
     const mjesecneVrijednosti = [];
+    const punaMjesecna = [];
+    let punaUkupno = 0;
     for (let i = 0; i < 12; i++) {
       const mjesec = i + 1; // 1-12
       const planValue = parseFloat(planValues[i][0]) || 0;
@@ -54,14 +58,16 @@ function getDinamikaForYear(year) {
       // Buduća godina - sve ostaje 0
 
       mjesecneVrijednosti.push(dinamikaShown);
+      punaMjesecna.push(planValue);
+      punaUkupno += planValue;
     }
 
     Logger.log('getDinamikaForYear: Returning dinamika for year ' + year + ': ' + JSON.stringify(mjesecneVrijednosti));
-    return mjesecneVrijednosti;
+    return { mjesecna: mjesecneVrijednosti, punaMjesecna: punaMjesecna, punaUkupno: punaUkupno };
 
   } catch (error) {
     Logger.log('ERROR in getDinamikaForYear: ' + error.toString());
-    return Array(12).fill(0);
+    return { mjesecna: Array(12).fill(0), punaMjesecna: Array(12).fill(0), punaUkupno: 0 };
   }
 }
 
@@ -279,7 +285,7 @@ function _sviCacheKljucevi() {
   // Tekuća i prošla godina — jedine koje aplikacija traži (vidi preloadAllViews)
   [now, now - 1].forEach(function (y) {
     kljucevi.push(
-      'dashboard_' + y, 'primaci_' + y, 'otpremaci_' + y, 'kupci_' + y,
+      'dashboard_v2_' + y, 'primaci_' + y, 'otpremaci_' + y, 'kupci_' + y,
       'mjesecni_sortimenti_' + y, 'stats_' + y, 'dinamika_' + y,
       'primaci_radiliste_v2_' + y, 'otpremaci_radiliste_v2_' + y, 'primaci_izvodjac_v2_' + y
     );
@@ -322,7 +328,7 @@ function invalidateCacheZa(tip) {
 
     if (tip === 'sjeca' || tip === 'otprema') {
       y.forEach(function (g) {
-        kljucevi.push('dashboard_' + g, 'mjesecni_sortimenti_' + g, 'stats_' + g, 'dinamika_' + g);
+        kljucevi.push('dashboard_v2_' + g, 'mjesecni_sortimenti_' + g, 'stats_' + g, 'dinamika_' + g);
         kljucevi.push(tip === 'sjeca' ? 'primaci_' + g : 'otpremaci_' + g);
         kljucevi.push(tip === 'sjeca' ? 'primaci_radiliste_v2_' + g : 'otpremaci_radiliste_v2_' + g);
         if (tip === 'sjeca') kljucevi.push('primaci_izvodjac_v2_' + g);
@@ -355,7 +361,7 @@ function invalidateCacheForYear(year) {
     const cache = CacheService.getScriptCache();
     // Remove all common cache keys for this year
     const keysToRemove = [
-      `dashboard_${year}`,
+      `dashboard_v2_${year}`,
       `primaci_${year}`,
       `otpremaci_${year}`,
       `kupci_${year}`,

@@ -26,6 +26,10 @@
   let _loaded  = false;
   let _loading = false;
   let _activeTab  = 'grupe';
+  // "Dinamike sječe i otpreme" podtab — potpuno odvojen izvor podataka
+  // (dashboard endpoint, company-wide mjesečni zbirovi), ne PLAN_ENTRIES.
+  let _dinamikaData    = null;
+  let _dinamikaLoading = false;
   let _gjFilter   = 'sve';
   let _stFilter   = 'sve';
   let _izvFilter  = 'sve';
@@ -557,7 +561,7 @@
   }
 
   function showLoading() {
-    ['grupe','sortimenti','pregled','projekat','timeline'].forEach(t=>{
+    ['grupe','sortimenti','pregled','projekat','timeline','dinamike'].forEach(t=>{
       const v = document.getElementById('gp-'+t+'-view');
       if (v && t===_activeTab) v.innerHTML = '<div style="text-align:center;padding:60px;color:#4b5563;"><div style="font-size:32px;margin-bottom:12px;">⏳</div>Učitavam podatke...</div>';
     });
@@ -569,10 +573,22 @@
     document.querySelectorAll('#gp-submenu .submenu-tab').forEach(b=>{
       b.classList.toggle('active', b.dataset.tab===tab);
     });
-    ['grupe','sortimenti','pregled','projekat','timeline'].forEach(t=>{
+    ['grupe','sortimenti','pregled','projekat','timeline','dinamike'].forEach(t=>{
       const v = document.getElementById('gp-'+t+'-view');
       if (v) v.classList.toggle('hidden', t!==tab);
     });
+    // Filter traka (GJ/Status/Izvođač/pretraga) se odnosi samo na spisak
+    // odjela (PLAN_ENTRIES) — na "Dinamike" (mjesečni company-wide zbir)
+    // ne filtrira ništa, pa se sakriva da ne zbunjuje.
+    const filtersBar = document.getElementById('gp-filters-bar');
+    if (filtersBar) filtersBar.classList.toggle('hidden', tab==='dinamike');
+
+    if (tab === 'dinamike') {
+      if (_dinamikaData) renderDinamike();
+      else loadGpDinamike(false);
+      return;
+    }
+
     if (_loaded) renderActiveTab();
     else loadGodisnjiPlan(false);
   }
@@ -584,6 +600,7 @@
     else if (_activeTab==='pregled')    renderPregled(rows);
     else if (_activeTab==='projekat')   renderProjekat(rows);
     else if (_activeTab==='timeline')   renderTimeline(rows);
+    else if (_activeTab==='dinamike')   renderDinamike();
   }
 
   // ---- RENDER: GRUPE ----
@@ -1113,6 +1130,185 @@
       <td style="${WR}color:#94a3b8;">${fmtN(Math.max(0,gNeto-grand.ukupno))}</td><td></td>
     </tr>
     </tbody></table></div></div>`;
+
+    view.innerHTML = html;
+  }
+
+  // ---- RENDER: DINAMIKE SJEČE I OTPREME ----
+  // Odvojen izvor podataka od ostatka taba (PLAN_ENTRIES/primke): koristi
+  // isti 'dashboard' endpoint i isti frontend keš ključ kao Dashboard tab
+  // (js/app.js loadDashboard) — company-wide mjesečni zbir sječe/otpreme
+  // nasuprot Dinamici (plan). Dva broja za "godišnje":
+  //  - puni godišnji cilj (data.dinamikaGodisnjaPuna, npr. ~65.000 m³,
+  //    isti za sječu i otpremu) — koliko je % od CIJELE godine ostvareno
+  //  - "tempo" (YTD stvarno vs. YTD plan-do-danas, budući mjeseci ne
+  //    ulaze u cilj) — da li se ide u korak s planom OVOG TRENUTKA u godini
+
+  async function loadGpDinamike(force) {
+    if (_dinamikaLoading) return;
+    _dinamikaLoading = true;
+    if (!_dinamikaData || force) showLoading();
+    try {
+      const now = new Date();
+      const year = PLAN_YEAR;
+      const month = now.getMonth() + 1; // 1-12, isti obrazac kao loadDashboard() u js/app.js
+      const cacheKey = 'cache_dashboard_v2_' + year + '_m' + month;
+      const url = buildApiUrl('dashboard', { year });
+      const data = await fetchWithCache(url, cacheKey, force || false, 60000);
+      if (data.error) throw new Error(data.error);
+      _dinamikaData = data;
+      if (_activeTab === 'dinamike') renderDinamike();
+    } catch (err) {
+      console.error('[GP-Dinamike]', err);
+      const v = document.getElementById('gp-dinamike-view');
+      if (v) v.innerHTML = `<div style="text-align:center;padding:60px;color:#dc2626;"><div style="font-size:32px;margin-bottom:12px;">❌</div>Server je spor ili nedostupan.<br><small style="color:#4b5563;">${err.message}</small><br><br><button class="btn btn-primary" onclick="switchGpTab('dinamike')">Pokušaj ponovo</button></div>`;
+    } finally {
+      _dinamikaLoading = false;
+    }
+  }
+
+  function _dinamikeOstalo(ostalo) {
+    if (ostalo > 0) return `<span style="color:#dc2626;">−${fmtN(ostalo)} m³</span>`;
+    if (ostalo < 0) return `<span style="color:#059669;">+${fmtN(Math.abs(ostalo))} m³</span>`;
+    return `<span style="color:#059669;">✓ 0 m³</span>`;
+  }
+
+  function _dinamikeStatCard(naziv, boja, ukupno, punaCilj, ytdVrijednost, ytdCilj) {
+    const pctPuna = punaCilj > 0 ? (ukupno / punaCilj * 100) : null;
+    const pctTempo = ytdCilj > 0 ? (ytdVrijednost / ytdCilj * 100) : null;
+    return `
+      <div style="flex:1;min-width:240px;background:white;border:1px solid #e5e7eb;border-radius:12px;padding:16px 18px;">
+        <div style="font-size:13px;font-weight:700;color:${boja};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">${naziv}</div>
+        <div style="font-size:26px;font-weight:800;color:#1e293b;">${fmtN(ukupno)} <span style="font-size:13px;font-weight:600;color:#94a3b8;">m³</span></div>
+        <div style="margin-top:8px;font-size:12px;color:#6b7280;">
+          Godišnji cilj: <b>${punaCilj>0 ? fmtN(punaCilj)+' m³' : '—'}</b> ${pctPuna!=null ? realizacijaBadge(pctPuna) : ''}
+        </div>
+        <div style="margin-top:4px;font-size:12px;color:#6b7280;">
+          Tempo (do ${formatDayShort()}): ${pctTempo!=null ? realizacijaBadge(pctTempo) : '<span style="color:#9ca3af;">—</span>'}
+          ${ytdCilj>0 ? `<span style="margin-left:4px;">${_dinamikeOstalo(ytdCilj-ytdVrijednost)}</span>` : ''}
+        </div>
+      </div>`;
+  }
+
+  function formatDayShort() {
+    const mjesecNamesKratko = ['jan','feb','mar','apr','maj','jun','jul','avg','sep','okt','nov','dec'];
+    const now = new Date();
+    return mjesecNamesKratko[now.getMonth()] + '.';
+  }
+
+  function renderDinamike() {
+    const view = document.getElementById('gp-dinamike-view');
+    if (!view) return;
+    const data = _dinamikaData;
+    if (!data || !data.mjesecnaStatistika) {
+      view.innerHTML = '<div style="text-align:center;padding:60px;color:#4b5563;">Nema podataka.</div>';
+      return;
+    }
+
+    const mjeseci = data.mjesecnaStatistika;
+    const now = new Date();
+    const currentMonthIdx = now.getMonth(); // 0-11
+    const mjesecNames = ['Januar','Februar','Mart','April','Maj','Juni','Juli','August','Septembar','Oktobar','Novembar','Decembar'];
+    const getMonthIndex = naziv => mjesecNames.findIndex(m => m.toLowerCase() === String(naziv||'').trim().toLowerCase());
+
+    let totalSjeca=0, totalOtprema=0, ytdSjeca=0, ytdOtprema=0, ytdDinamika=0;
+    mjeseci.forEach(m => {
+      const sjeca = m.sjeca||0, otprema = m.otprema||0, dinamika = m.dinamika||0;
+      totalSjeca += sjeca; totalOtprema += otprema;
+      const idx = getMonthIndex(m.mjesec);
+      if (idx>=0 && idx<=currentMonthIdx) { ytdSjeca += sjeca; ytdOtprema += otprema; ytdDinamika += dinamika; }
+    });
+
+    const punaGodisnja = data.dinamikaGodisnjaPuna;
+    const hasPuna = punaGodisnja != null && !isNaN(punaGodisnja) && punaGodisnja > 0;
+
+    // Samodijagnostika — stariji keš/backend prije redeploy-a nema ovo polje
+    const upozorenjeStariBackend = !hasPuna ? `
+      <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#92400e;">
+        ⚠️ Server još ne šalje puni godišnji cilj (backend nije redeployovan sa najnovijim kodom, ili je odgovor iz starog keša).
+        Klikni "🔄 Osvježi" u meniju; ako i dalje piše ovo, backend deploy nije stvarno prihvaćen.
+      </div>` : '';
+
+    let html = upozorenjeStariBackend + `
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;">
+        ${_dinamikeStatCard('🪓 Sječa', '#059669', totalSjeca, punaGodisnja, ytdSjeca, ytdDinamika)}
+        ${_dinamikeStatCard('🚛 Otprema', '#2563eb', totalOtprema, punaGodisnja, ytdOtprema, ytdDinamika)}
+      </div>
+      <div class="enterprise-card">
+        <div class="enterprise-card-header">
+          <div><h2>📈 Mjesečni pregled — ${PLAN_YEAR}</h2></div>
+        </div>
+        <div class="enterprise-card-body">
+        <div style="overflow-x:auto;">
+        <table class="monthly-table" style="width:100%;min-width:760px;font-size:12px;">
+        <thead><tr>
+          <th>Mjesec</th>
+          <th class="right">Sječa m³</th>
+          <th class="right">Otprema m³</th>
+          <th class="right">Stanje</th>
+          <th>Dinamika — Sječa</th>
+          <th>Dinamika — Otprema</th>
+        </tr></thead><tbody>`;
+
+    mjeseci.forEach(m => {
+      const idx = getMonthIndex(m.mjesec);
+      const sjeca = m.sjeca||0, otprema = m.otprema||0, stanje = m.stanje||0, dinamika = m.dinamika||0;
+      const isFuture = idx > currentMonthIdx;
+      const isCurrent = idx === currentMonthIdx;
+
+      if (isFuture) {
+        html += `<tr>
+          <td style="padding:7px 8px;">${m.mjesec}</td>
+          <td class="right" style="padding:7px 8px;color:#059669;">${fmt(sjeca)}</td>
+          <td class="right" style="padding:7px 8px;color:#2563eb;">${fmt(otprema)}</td>
+          <td class="right" style="padding:7px 8px;">${fmt(stanje)}</td>
+          <td style="padding:7px 8px;text-align:center;color:#cbd5e1;">—</td>
+          <td style="padding:7px 8px;text-align:center;color:#cbd5e1;">—</td>
+        </tr>`;
+        return;
+      }
+
+      const pctSjeca = dinamika>0 ? (sjeca/dinamika*100) : 0;
+      const pctOtprema = dinamika>0 ? (otprema/dinamika*100) : 0;
+      const rowStyle = isCurrent ? 'background:#f0fdf4;' : '';
+
+      html += `<tr style="${rowStyle}">
+        <td style="padding:7px 8px;font-weight:${isCurrent?'700':'400'};">${m.mjesec}</td>
+        <td class="right" style="padding:7px 8px;color:#059669;font-weight:600;">${fmt(sjeca)}</td>
+        <td class="right" style="padding:7px 8px;color:#2563eb;font-weight:600;">${fmt(otprema)}</td>
+        <td class="right" style="padding:7px 8px;">${fmt(stanje)}</td>
+        <td style="padding:7px 8px;">
+          ${fmt(dinamika)} m³
+          <div class="table-progress-bar"><div class="table-progress-fill" style="width:${Math.min(pctSjeca,100)}%;background:#059669;"></div></div>
+          <small style="color:#4b5563;">${_dinamikeOstalo(dinamika-sjeca)} ; ${pctSjeca.toFixed(1)}%</small>
+        </td>
+        <td style="padding:7px 8px;">
+          ${fmt(dinamika)} m³
+          <div class="table-progress-bar"><div class="table-progress-fill" style="width:${Math.min(pctOtprema,100)}%;background:#2563eb;"></div></div>
+          <small style="color:#4b5563;">${_dinamikeOstalo(dinamika-otprema)} ; ${pctOtprema.toFixed(1)}%</small>
+        </td>
+      </tr>`;
+    });
+
+    const ukupnoPctSjeca = ytdDinamika>0 ? (ytdSjeca/ytdDinamika*100) : 0;
+    const ukupnoPctOtprema = ytdDinamika>0 ? (ytdOtprema/ytdDinamika*100) : 0;
+
+    html += `<tr style="background:#1e293b;color:white;font-weight:700;">
+      <td style="color:white;padding:8px;text-transform:uppercase;">UKUPNO</td>
+      <td style="${WR}">${fmtN(totalSjeca)}</td>
+      <td style="${WR}">${fmtN(totalOtprema)}</td>
+      <td style="${WR}">${fmtN(totalSjeca-totalOtprema)}</td>
+      <td style="padding:8px;color:white;">
+        ${fmtN(ytdDinamika)} m³
+        <div class="table-progress-bar"><div class="table-progress-fill" style="width:${Math.min(ukupnoPctSjeca,100)}%;"></div></div>
+        <small>${_dinamikeOstalo(ytdDinamika-ytdSjeca)} ; ${ukupnoPctSjeca.toFixed(1)}%</small>
+      </td>
+      <td style="padding:8px;color:white;">
+        ${fmtN(ytdDinamika)} m³
+        <div class="table-progress-bar"><div class="table-progress-fill" style="width:${Math.min(ukupnoPctOtprema,100)}%;"></div></div>
+        <small>${_dinamikeOstalo(ytdDinamika-ytdOtprema)} ; ${ukupnoPctOtprema.toFixed(1)}%</small>
+      </td>
+    </tr></tbody></table></div></div></div>`;
 
     view.innerHTML = html;
   }

@@ -20,7 +20,9 @@ function handleDashboard(year, username, password) {
   }
 
   // 🚀 CACHE: Try to get from cache first
-  const cacheKey = `dashboard_${year}`;
+  // v2 — dodano polje dinamikaGodisnjaPuna (puni godišnji cilj, ne samo
+  // "do danas"), bump da se stari (bez tog polja) keš odmah ne poslužuje.
+  const cacheKey = `dashboard_v2_${year}`;
   const cached = getCachedData(cacheKey);
   if (cached) {
     return createJsonResponse(cached, true);
@@ -38,7 +40,8 @@ function handleDashboard(year, username, password) {
   const otpremaData = otpremaSheet.getDataRange().getValues();
 
   const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
-  const dinamika = getDinamikaForYear(year); // Učitaj dinamiku iz DINAMIKA sheet-a
+  const dinamikaInfo = getDinamikaForYear(year); // Učitaj dinamiku iz DINAMIKA sheet-a
+  const dinamika = dinamikaInfo.mjesecna; // "do danas" (budući mjeseci = 0) — postojeća logika ispod nepromijenjena
 
   // Inicijalizuj mjesečne sume
   let mjesecnePrimke = Array(12).fill(0);
@@ -140,7 +143,10 @@ function handleDashboard(year, username, password) {
   // 🚀 CACHE: Store result before returning
   const result = {
     mjesecnaStatistika: mjesecnaStatistika,
-    odjeli: odjeliPrikaz
+    odjeli: odjeliPrikaz,
+    // Puni godišnji cilj (neobrezan planom "do danas") — npr. ~65.000 m³,
+    // ista cifra važi i za sječu i za otpremu
+    dinamikaGodisnjaPuna: dinamikaInfo.punaUkupno
   };
   setCachedData(cacheKey, result, CACHE_TTL);
 
