@@ -135,13 +135,19 @@ async function loadIzvjestajiSedmicni() {
         document.getElementById('izvjestaji-sedmicni-primka-title').textContent = mjeseciNazivi[month] + ' ' + year;
         document.getElementById('izvjestaji-sedmicni-otprema-title').textContent = mjeseciNazivi[month] + ' ' + year;
 
-        // Fetch data
+        // Fetch data — forceRefresh=navigator.onLine (uvijek svjež fetch dok smo
+        // online). BEZ ovoga: getSmartCacheTTL() (js/app.js) tretira petak
+        // popodne kao "kraj radne sedmice" i drži keš važećim SVE DO ponedjeljka
+        // 6:30 (cijeli vikend) — pretpostavka da se vikendom ne radi. Kod ove
+        // firme se subotom siječe/otprema, pa bi taj keš tiho sakrio subotnje
+        // unose iz sedmičnog zbira sve do ponedjeljka ujutro (korisnički nalaz:
+        // "Sedmični izvještaji ne uzimaju subotu u sabirak").
         const primkaUrl = buildApiUrl('primaci-daily', { year, month });
         const otpremaUrl = buildApiUrl('otpremaci-daily', { year, month });
 
         const [primkaData, otpremaData] = await Promise.all([
-            fetchWithCache(primkaUrl, `cache_izvjestaji_sedmicni_primka_${year}_${month}`, false, 180000),
-            fetchWithCache(otpremaUrl, `cache_izvjestaji_sedmicni_otprema_${year}_${month}`, false, 180000)
+            fetchWithCache(primkaUrl, `cache_izvjestaji_sedmicni_primka_${year}_${month}`, navigator.onLine, 180000),
+            fetchWithCache(otpremaUrl, `cache_izvjestaji_sedmicni_otprema_${year}_${month}`, navigator.onLine, 180000)
         ]);
 
         if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
@@ -204,13 +210,15 @@ async function loadIzvjestajiSedmicniRadnik() {
         if (titlePrimka) titlePrimka.textContent = mjeseciNazivi[month] + ' ' + year;
         if (titleOtprema) titleOtprema.textContent = mjeseciNazivi[month] + ' ' + year;
 
-        // Reuse same cache keys as sedmični po odjelu (isti API, isti parametri)
+        // Reuse same cache keys as sedmični po odjelu (isti API, isti parametri).
+        // forceRefresh=navigator.onLine — vidi napomenu o vikend-kešu u
+        // loadIzvjestajiSedmicni() iznad.
         const primkaUrl = buildApiUrl('primaci-daily', { year, month });
         const otpremaUrl = buildApiUrl('otpremaci-daily', { year, month });
 
         const [primkaData, otpremaData] = await Promise.all([
-            fetchWithCache(primkaUrl, `cache_izvjestaji_sedmicni_primka_${year}_${month}`, false, 180000),
-            fetchWithCache(otpremaUrl, `cache_izvjestaji_sedmicni_otprema_${year}_${month}`, false, 180000)
+            fetchWithCache(primkaUrl, `cache_izvjestaji_sedmicni_primka_${year}_${month}`, navigator.onLine, 180000),
+            fetchWithCache(otpremaUrl, `cache_izvjestaji_sedmicni_otprema_${year}_${month}`, navigator.onLine, 180000)
         ]);
 
         if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
@@ -270,13 +278,15 @@ async function loadIzvjestajiSedmicniRadnikOdjeli() {
         if (titlePrimka) titlePrimka.textContent = mjeseciNazivi[month] + ' ' + year;
         if (titleOtprema) titleOtprema.textContent = mjeseciNazivi[month] + ' ' + year;
 
-        // Isti keš kao sedmicni-radnik/sedmicni — isti API, isti parametri
+        // Isti keš kao sedmicni-radnik/sedmicni — isti API, isti parametri.
+        // forceRefresh=navigator.onLine — vidi napomenu o vikend-kešu u
+        // loadIzvjestajiSedmicni() iznad.
         const primkaUrl = buildApiUrl('primaci-daily', { year, month });
         const otpremaUrl = buildApiUrl('otpremaci-daily', { year, month });
 
         const [primkaData, otpremaData] = await Promise.all([
-            fetchWithCache(primkaUrl, `cache_izvjestaji_sedmicni_primka_${year}_${month}`, false, 180000),
-            fetchWithCache(otpremaUrl, `cache_izvjestaji_sedmicni_otprema_${year}_${month}`, false, 180000)
+            fetchWithCache(primkaUrl, `cache_izvjestaji_sedmicni_primka_${year}_${month}`, navigator.onLine, 180000),
+            fetchWithCache(otpremaUrl, `cache_izvjestaji_sedmicni_otprema_${year}_${month}`, navigator.onLine, 180000)
         ]);
 
         if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
@@ -692,13 +702,15 @@ async function loadIzvjestajiMjesecni() {
         document.getElementById('izvjestaji-mjesecni-primka-title').textContent = mjeseciNazivi[month] + ' ' + year;
         document.getElementById('izvjestaji-mjesecni-otprema-title').textContent = mjeseciNazivi[month] + ' ' + year;
 
-        // Fetch data (full month)
+        // Fetch data (full month) — forceRefresh=navigator.onLine, vidi napomenu
+        // o vikend-kešu u loadIzvjestajiSedmicni() (isti razlog: subotnji unosi
+        // ne smiju čekati do ponedjeljka 6:30 da se pojave u mjesečnom zbiru).
         const primkaUrl = buildApiUrl('primaci-daily', { year, month });
         const otpremaUrl = buildApiUrl('otpremaci-daily', { year, month });
 
         const [primkaData, otpremaData] = await Promise.all([
-            fetchWithCache(primkaUrl, `cache_izvjestaji_mjesecni_primka_${year}_${month}`, false, 180000),
-            fetchWithCache(otpremaUrl, `cache_izvjestaji_mjesecni_otprema_${year}_${month}`, false, 180000)
+            fetchWithCache(primkaUrl, `cache_izvjestaji_mjesecni_primka_${year}_${month}`, navigator.onLine, 180000),
+            fetchWithCache(otpremaUrl, `cache_izvjestaji_mjesecni_otprema_${year}_${month}`, navigator.onLine, 180000)
         ]);
 
         if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
@@ -1216,13 +1228,15 @@ async function loadIzvjestajiPoOdjelima(prefix = 'izvjestaji-po-odjelima', tabId
 
         content.innerHTML = '<div style="text-align:center;padding:40px;color:#4b5563;"><div style="font-size:32px;margin-bottom:12px;">⏳</div>Učitavanje podataka za ' + monthName + '...</div>';
 
-        // Isti endpoint i keš kao mjesečni izvještaj — dijeli topli keš, radi offline
+        // Isti endpoint i keš kao mjesečni izvještaj — dijeli topli keš, radi offline.
+        // forceRefresh=navigator.onLine — vidi napomenu o vikend-kešu u
+        // loadIzvjestajiSedmicni() iznad.
         const primkaUrl = buildApiUrl('primaci-daily', { year, month });
         const otpremaUrl = buildApiUrl('otpremaci-daily', { year, month });
 
         const [primkaData, otpremaData] = await Promise.all([
-            fetchWithCache(primkaUrl, `cache_izvjestaji_mjesecni_primka_${year}_${month}`, false, 180000),
-            fetchWithCache(otpremaUrl, `cache_izvjestaji_mjesecni_otprema_${year}_${month}`, false, 180000)
+            fetchWithCache(primkaUrl, `cache_izvjestaji_mjesecni_primka_${year}_${month}`, navigator.onLine, 180000),
+            fetchWithCache(otpremaUrl, `cache_izvjestaji_mjesecni_otprema_${year}_${month}`, navigator.onLine, 180000)
         ]);
 
         if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
