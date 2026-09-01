@@ -1873,13 +1873,15 @@ function handleUnosOdjelSjeca(params) {
 
     primkaSheet.appendRow(newRow);
 
-    // Odmah indeksiraj (isti kod kao ručno "sync-index" dugme) da se unos
-    // vidi u izvještajima bez dodatnog koraka.
+    // Odmah indeksiraj SAMO ovaj fajl (brzo — preskače DriveApp iteraciju
+    // kroz cijeli folder odjela koju radi puni INDEKS_DODAJ_NOVE(), pa se
+    // ne rizikuje timeout na frontend fetch-u) da se unos vidi u
+    // izvještajima bez dodatnog koraka.
     let indeksInfo = null;
     try {
-      indeksInfo = INDEKS_DODAJ_NOVE();
+      indeksInfo = INDEKS_DODAJ_JEDAN_FAJL_(file.getId());
     } catch (e) {
-      Logger.log('handleUnosOdjelSjeca: INDEKS_DODAJ_NOVE greška (red je ipak upisan u fajl odjela): ' + e.toString());
+      Logger.log('handleUnosOdjelSjeca: INDEKS_DODAJ_JEDAN_FAJL_ greška (red je ipak upisan u fajl odjela): ' + e.toString());
     }
 
     invalidateCacheZa('sjeca');
@@ -1937,11 +1939,12 @@ function handleUnosOdjelOtprema(params) {
 
     otpremaSheet.appendRow(newRow);
 
+    // Vidi komentar u handleUnosOdjelSjeca — brzi single-file indeksing.
     let indeksInfo = null;
     try {
-      indeksInfo = INDEKS_DODAJ_NOVE();
+      indeksInfo = INDEKS_DODAJ_JEDAN_FAJL_(file.getId());
     } catch (e) {
-      Logger.log('handleUnosOdjelOtprema: INDEKS_DODAJ_NOVE greška (red je ipak upisan u fajl odjela): ' + e.toString());
+      Logger.log('handleUnosOdjelOtprema: INDEKS_DODAJ_JEDAN_FAJL_ greška (red je ipak upisan u fajl odjela): ' + e.toString());
     }
 
     invalidateCacheZa('otprema');
@@ -2537,6 +2540,61 @@ function handleGetOdjeliList() {
     Logger.log('ERROR in handleGetOdjeliList: ' + error.toString());
     return createJsonResponse({
       error: "Greška pri učitavanju liste odjela: " + error.toString()
+    }, false);
+  }
+}
+
+// Lista poznatih imena primača/otpremača — izvedena iz istorijskih redova
+// INDEKS_PRIMKA/INDEKS_OTPREMA (BAZA_PODATAKA), za dropdown/predlog u
+// "Unos sječe/otpreme" (izbor imena "kao u Sheets fajlu", bez ograničavanja
+// na samo ta imena — polje ostaje slobodan tekst, ovo je samo prijedlog).
+function handleGetRadniciList(username, password) {
+  const loginResult = JSON.parse(handleLogin(username, password).getContent());
+  if (!loginResult.success) {
+    return createJsonResponse({ error: "Unauthorized" }, false);
+  }
+
+  const cacheKey = 'radnici_list';
+  const cached = getCachedData(cacheKey);
+  if (cached) {
+    return createJsonResponse(cached, true);
+  }
+
+  try {
+    const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
+    const primkaSheet = ss.getSheetByName('INDEKS_PRIMKA');
+    const otpremaSheet = ss.getSheetByName('INDEKS_OTPREMA');
+
+    const primaciSet = {};
+    if (primkaSheet && primkaSheet.getLastRow() > 1) {
+      const data = primkaSheet.getRange(2, 1, primkaSheet.getLastRow() - 1, primkaSheet.getLastColumn()).getValues();
+      data.forEach(function(row) {
+        const ime = String(row[PRIMKA_COL.RADNIK] || '').trim();
+        if (ime) primaciSet[ime] = true;
+      });
+    }
+
+    const otpremaciSet = {};
+    if (otpremaSheet && otpremaSheet.getLastRow() > 1) {
+      const data = otpremaSheet.getRange(2, 1, otpremaSheet.getLastRow() - 1, otpremaSheet.getLastColumn()).getValues();
+      data.forEach(function(row) {
+        const ime = String(row[OTPREMA_COL.OTPREMAC] || '').trim();
+        if (ime) otpremaciSet[ime] = true;
+      });
+    }
+
+    const result = {
+      primaci: Object.keys(primaciSet).sort(function(a, b) { return a.localeCompare(b, 'bs'); }),
+      otpremaci: Object.keys(otpremaciSet).sort(function(a, b) { return a.localeCompare(b, 'bs'); })
+    };
+
+    setCachedData(cacheKey, result, CACHE_TTL);
+    return createJsonResponse(result, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleGetRadniciList: ' + error.toString());
+    return createJsonResponse({
+      error: "Greška pri učitavanju liste radnika: " + error.toString()
     }, false);
   }
 }

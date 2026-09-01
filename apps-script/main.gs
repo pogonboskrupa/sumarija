@@ -122,6 +122,8 @@ function doGet(e) {
       return handleDeleteAllPending(e.parameter);
     } else if (path === 'get-odjeli-list') {
       return handleGetOdjeliList();
+    } else if (path === 'get-radnici-list') {
+      return handleGetRadniciList(e.parameter.username, e.parameter.password);
     } else if (path === 'mjesecni-sortimenti') {
       return handleMjesecniSortimenti(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'primaci-daily') {

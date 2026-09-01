@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.43';
+        const APP_VERSION = '1.17.44';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -13727,12 +13727,51 @@
         // odjela pa odmah pozivaju INDEKS_DODAJ_NOVE() (isto što radi ručno
         // "sync-index" dugme), tako da se unos odmah vidi u izvještajima.
 
+        // Predlozi imena primača/otpremača (iz istorije INDEKS_PRIMKA/
+        // INDEKS_OTPREMA) — datalist uz uo-sjeca-primac/uo-otprema-otpremac.
+        // Polje ostaje slobodan tekst; ovo samo nudi poznata imena, isto kao
+        // dropdown u Sheets fajlu, bez ograničavanja na nova imena.
+        let _radniciList = null;
+        async function loadRadniciList() {
+            try {
+                const url = buildApiUrl('get-radnici-list');
+                const data = await fetchWithCache(url, 'cache_radnici_list', false, 30000);
+                if (data.error) { console.error('Error loading radnici list:', data.error); return; }
+                _radniciList = data;
+                const fillDatalist = (id, names) => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.innerHTML = (names || []).map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+                };
+                fillDatalist('uo-primaci-datalist', data.primaci);
+                fillDatalist('uo-otpremaci-datalist', data.otpremaci);
+            } catch (error) {
+                console.error('Error loading radnici list:', error);
+            }
+        }
+
+        // Nakon uspješnog unosa, dodaj ime u lokalnu listu (ako je novo) tako
+        // da se odmah nudi kao prijedlog za sljedeći red — bez čekanja na
+        // ponovni fetch sa servera.
+        function _uoDodajRadnikaUListu(tip, ime) {
+            if (!ime || !_radniciList) return;
+            const arr = _radniciList[tip];
+            if (!Array.isArray(arr) || arr.includes(ime)) return;
+            arr.push(ime);
+            arr.sort((a, b) => a.localeCompare(b, 'bs'));
+            const datalistId = tip === 'primaci' ? 'uo-primaci-datalist' : 'uo-otpremaci-datalist';
+            const el = document.getElementById(datalistId);
+            if (el) el.innerHTML = arr.map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+        }
+
         function showUnosOdjeliForm() {
             const today = new Date().toISOString().split('T')[0];
             const sjecaDatum = document.getElementById('uo-sjeca-datum');
             const otpremaDatum = document.getElementById('uo-otprema-datum');
             if (sjecaDatum && !sjecaDatum.value) sjecaDatum.value = today;
             if (otpremaDatum && !otpremaDatum.value) otpremaDatum.value = today;
+
+            if (!_radniciList) loadRadniciList();
 
             const sjecaInputIds = ['uo-sjeca-FL-C', 'uo-sjeca-I-C', 'uo-sjeca-II-C', 'uo-sjeca-III-C', 'uo-sjeca-RD',
                                    'uo-sjeca-CEL-DUGA', 'uo-sjeca-CEL-CIJEPANA', 'uo-sjeca-SKART',
@@ -13880,7 +13919,7 @@
 
             try {
                 const url = buildApiUrl('unos-odjel-sjeca', fields);
-                const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
+                const response = await fetch(url, { signal: AbortSignal.timeout(45000) });
                 const result = await response.json();
 
                 if (result.success) {
@@ -13888,6 +13927,7 @@
                     messageDiv.style.background = '#d1fae5';
                     messageDiv.style.color = '#047857';
                     messageDiv.classList.remove('hidden');
+                    _uoDodajRadnikaUListu('primaci', primac);
                     resetUnosOdjelSjecaForm();
                     setTimeout(() => messageDiv.classList.add('hidden'), 3000);
 
@@ -13898,6 +13938,7 @@
                     clearCacheByPattern('sedmicni_sjeca');
                     clearCacheByPattern('stanje_odjela');
                     clearCacheByPattern('stanje_zaliha');
+                    clearCacheByPattern('radnici_list');
                 } else {
                     throw new Error(result.error || 'Nepoznata greška');
                 }
@@ -13959,7 +14000,7 @@
 
             try {
                 const url = buildApiUrl('unos-odjel-otprema', fields);
-                const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
+                const response = await fetch(url, { signal: AbortSignal.timeout(45000) });
                 const result = await response.json();
 
                 if (result.success) {
@@ -13967,6 +14008,7 @@
                     messageDiv.style.background = '#d1fae5';
                     messageDiv.style.color = '#047857';
                     messageDiv.classList.remove('hidden');
+                    _uoDodajRadnikaUListu('otpremaci', otpremac);
                     resetUnosOdjelOtpremaForm();
                     setTimeout(() => messageDiv.classList.add('hidden'), 3000);
 
@@ -13978,6 +14020,7 @@
                     clearCacheByPattern('stanje_odjela');
                     clearCacheByPattern('stanje_zaliha');
                     clearCacheByPattern('kupci');
+                    clearCacheByPattern('radnici_list');
                 } else {
                     throw new Error(result.error || 'Nepoznata greška');
                 }

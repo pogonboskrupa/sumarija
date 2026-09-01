@@ -291,7 +291,7 @@ function _sviCacheKljucevi() {
     );
     kljucevi = kljucevi.concat(_dinamikeIzvodjacaKljucevi(y));
   });
-  kljucevi.push('odjeli_alltime', 'primke_all', 'otpreme_all', 'stanje_zaliha_all');
+  kljucevi.push('odjeli_alltime', 'primke_all', 'otpreme_all', 'stanje_zaliha_all', 'radnici_list');
   _mjeseciZaInvalidaciju().forEach(function (mj) {
     kljucevi.push(
       'primaci_daily_' + mj.y + '_' + mj.m, 'otpremaci_daily_' + mj.y + '_' + mj.m,
@@ -335,7 +335,7 @@ function invalidateCacheZa(tip) {
         if (tip === 'otprema') kljucevi.push('kupci_' + g);
         kljucevi = kljucevi.concat(_dinamikeIzvodjacaKljucevi(g));
       });
-      kljucevi.push('odjeli_alltime', 'stanje_zaliha_all');
+      kljucevi.push('odjeli_alltime', 'stanje_zaliha_all', 'radnici_list');
       kljucevi.push(tip === 'sjeca' ? 'primke_all' : 'otpreme_all');
       _mjeseciZaInvalidaciju().forEach(function (mj) {
         kljucevi.push('daily_chart_' + mj.y + '_' + mj.m);
@@ -955,6 +955,64 @@ function INDEKS_DODAJ_NOVE() {
   } catch (error) {
     Logger.log('=== INDEKS_DODAJ_NOVE ERROR ===');
     Logger.log(error.toString());
+    return { success: false, error: error.toString() };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * INDEKS_DODAJ_JEDAN_FAJL_ - kao INDEKS_DODAJ_NOVE(), ali za JEDAN već
+ * poznat fajl (fileId) — preskače DriveApp iteraciju kroz CIJEL folder
+ * odjela (najskuplji dio INDEKS_DODAJ_NOVE kad ima puno odjela), pa je
+ * dovoljno brza da se pozove SINHRONO odmah nakon upisa u fajl odjela
+ * (handleUnosOdjelSjeca/handleUnosOdjelOtprema, api-handlers.gs) bez
+ * rizika od timeout-a na frontend fetch-u. Koristi iste IDX_* helpere kao
+ * INDEKS_DODAJ_NOVE — identična dedup/sort/format logika, samo za jedan
+ * fajl. Kraći lock timeout (10s ne 30s) — ako je zauzet, ne blokira
+ * korisnika: red je već sigurno upisan u fajl odjela, sljedeći
+ * INDEKS_DODAJ_NOVE() (ručni ili budući) će ga pokupiti.
+ */
+function INDEKS_DODAJ_JEDAN_FAJL_(fileId) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) {
+    Logger.log('INDEKS_DODAJ_JEDAN_FAJL_: zaključano, preskačem (naredno indeksiranje će ionako pokupiti ovaj fajl)');
+    return { success: false, message: 'Lock active - skipped' };
+  }
+
+  try {
+    const tss = SpreadsheetApp.openById(IDX_CFG.TARGET_SS_ID);
+    const shP = IDX_getOrCreateSheet_(tss, IDX_CFG.INDEX_PRIMKA);
+    const shO = IDX_getOrCreateSheet_(tss, IDX_CFG.INDEX_OTPREMA);
+
+    if (shP.getLastRow() < 1) IDX_writeHeaderPrimka_(shP);
+    if (shO.getLastRow() < 1) IDX_writeHeaderOtprema_(shO);
+
+    const res = IDX_readOneFileBoth_(fileId);
+    const primkaAdded = IDX_appendUnique_(shP, res.primka, IDX_primkaKey_);
+    const otpremaAdded = IDX_appendUnique_(shO, res.otprema, IDX_otpremaKey_);
+
+    IDX_sortIndexByDate_(shP);
+    IDX_sortIndexByDate_(shO);
+    IDX_formatDateCol_(shP, 1);
+    IDX_formatDateCol_(shO, 1);
+
+    // Ažuriraj "zadnje ažurirano" mapu za ovaj fajl — sljedeći puni
+    // INDEKS_DODAJ_NOVE() neće nepotrebno duplirati posao za njega.
+    try {
+      const props = PropertiesService.getScriptProperties();
+      const map = JSON.parse(props.getProperty(IDX_PROP.DODAJ_LAST_UPDATED_MAP) || '{}');
+      map[fileId] = DriveApp.getFileById(fileId).getLastUpdated().getTime();
+      props.setProperty(IDX_PROP.DODAJ_LAST_UPDATED_MAP, JSON.stringify(map));
+    } catch (e) {
+      Logger.log('INDEKS_DODAJ_JEDAN_FAJL_: greška pri ažuriranju mape: ' + e.toString());
+    }
+
+    invalidateAllCache();
+
+    return { success: true, primkaAdded: primkaAdded, otpremaAdded: otpremaAdded };
+  } catch (error) {
+    Logger.log('INDEKS_DODAJ_JEDAN_FAJL_ ERROR: ' + error.toString());
     return { success: false, error: error.toString() };
   } finally {
     lock.releaseLock();
