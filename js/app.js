@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.49';
+        const APP_VERSION = '1.17.50';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -13653,9 +13653,10 @@
         // odjela — potpuno odvojeno od "Dodaj sječu"/"Dodaj otpremu" iznad
         // (ta forma+red za odobrenje se ne koristi). Backend:
         // handleUnosOdjelSjeca/handleUnosOdjelOtprema (apps-script/api-handlers.gs),
-        // path unos-odjel-sjeca/unos-odjel-otprema — pišu direktno u fajl
-        // odjela pa odmah pozivaju INDEKS_DODAJ_NOVE() (isto što radi ručno
-        // "sync-index" dugme), tako da se unos odmah vidi u izvještajima.
+        // path unos-odjel-sjeca/unos-odjel-otprema — pišu SAMO u fajl odjela,
+        // NAMJERNO bez auto-indeksiranja u BAZA PODATAKA (INDEKS_PRIMKA/
+        // INDEKS_OTPREMA se i dalje ažurira ručno, postojeće "Osvježi"/
+        // sync-index dugme, isto kao i do sada).
 
         // Predlozi za SVA polja u "Unos sječe/otpreme" (Odjel/Primač/
         // Otpremač/Kupac) — input+datalist (tipovanje ime ili broj filtrira

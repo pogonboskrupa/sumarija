@@ -1810,6 +1810,9 @@ function handleAddOtprema(params) {
 // UNOS U FAJL ODJELA - direktan upis kancelarije u PRIMKA/OTPREMA
 // list fajla odjela (ODJELI_FOLDER_ID), bez veze sa PRIMAČ_UNOS/
 // OTPREMAČ_UNOS/redom za odobrenje iznad (odvojena, nekorišćena funkcija).
+// NAMJERNO bez auto-indeksiranja u BAZA PODATAKA — piše SAMO u fajl
+// odjela; INDEKS_PRIMKA/INDEKS_OTPREMA se i dalje ažurira isključivo
+// ručno (postojeće "sync-index"/"Osvježi" dugme, INDEKS_DODAJ_NOVE).
 // ========================================
 
 // Tolerantno kao frontend _jeOperater() (js/auth.js) — prihvata
@@ -1890,25 +1893,18 @@ function handleUnosOdjelSjeca(params) {
 
     const ciljaniRed = _prviSlobodniRed(primkaSheet);
     primkaSheet.getRange(ciljaniRed, 1, 1, newRow.length).setValues([newRow]);
+    SpreadsheetApp.flush();
 
-    // Odmah indeksiraj SAMO ovaj fajl (brzo — preskače DriveApp iteraciju
-    // kroz cijeli folder odjela koju radi puni INDEKS_DODAJ_NOVE(), pa se
-    // ne rizikuje timeout na frontend fetch-u) da se unos vidi u
-    // izvještajima bez dodatnog koraka.
-    let indeksInfo = null;
-    try {
-      indeksInfo = INDEKS_DODAJ_JEDAN_FAJL_(file.getId());
-    } catch (e) {
-      Logger.log('handleUnosOdjelSjeca: INDEKS_DODAJ_JEDAN_FAJL_ greška (red je ipak upisan u fajl odjela): ' + e.toString());
-    }
-
+    // NAMJERNO bez auto-indeksiranja — piše SAMO u fajl odjela. Prepisivanje
+    // u INDEKS_PRIMKA/INDEKS_OTPREMA (BAZA PODATAKA) ostaje ručni, poseban
+    // korak (postojeće "sync-index"/"Osvježi" dugme), kao i do sada.
     invalidateCacheZa('sjeca');
 
     return createJsonResponse({
       success: true,
-      message: "Upisano u fajl odjela i indeksirano",
+      message: "Upisano u fajl odjela (red " + ciljaniRed + ")",
       ukupno: ukupno,
-      indeksiranje: indeksInfo
+      red: ciljaniRed
     }, true);
 
   } catch (error) {
@@ -1957,22 +1953,16 @@ function handleUnosOdjelOtprema(params) {
 
     const ciljaniRed = _prviSlobodniRed(otpremaSheet);
     otpremaSheet.getRange(ciljaniRed, 1, 1, newRow.length).setValues([newRow]);
+    SpreadsheetApp.flush();
 
-    // Vidi komentar u handleUnosOdjelSjeca — brzi single-file indeksing.
-    let indeksInfo = null;
-    try {
-      indeksInfo = INDEKS_DODAJ_JEDAN_FAJL_(file.getId());
-    } catch (e) {
-      Logger.log('handleUnosOdjelOtprema: INDEKS_DODAJ_JEDAN_FAJL_ greška (red je ipak upisan u fajl odjela): ' + e.toString());
-    }
-
+    // NAMJERNO bez auto-indeksiranja — vidi komentar u handleUnosOdjelSjeca.
     invalidateCacheZa('otprema');
 
     return createJsonResponse({
       success: true,
-      message: "Upisano u fajl odjela i indeksirano",
+      message: "Upisano u fajl odjela (red " + ciljaniRed + ")",
       ukupno: ukupno,
-      indeksiranje: indeksInfo
+      red: ciljaniRed
     }, true);
 
   } catch (error) {
