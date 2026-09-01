@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.44';
+        const APP_VERSION = '1.17.45';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1808,7 +1808,8 @@
                 'otprema-odjel',
                 'edit-sjeca-odjel',
                 'edit-otprema-odjel',
-                'uo-odjel-select'
+                'uo-sjeca-odjel-select',
+                'uo-otprema-odjel-select'
             ];
 
             dropdowns.forEach(dropdownId => {
@@ -13880,7 +13881,7 @@
             const getVal = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
             const getNum = (id) => { const el = document.getElementById(id); return el ? parseNumInput(el.value) : 0; };
 
-            const odjel = getVal('uo-odjel-select');
+            const odjel = getVal('uo-sjeca-odjel-select');
             const datum = getVal('uo-sjeca-datum');
             const primac = getVal('uo-sjeca-primac').trim();
 
@@ -13960,7 +13961,7 @@
             const getVal = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
             const getNum = (id) => { const el = document.getElementById(id); return el ? parseNumInput(el.value) : 0; };
 
-            const odjel = getVal('uo-odjel-select');
+            const odjel = getVal('uo-otprema-odjel-select');
             const datum = getVal('uo-otprema-datum');
             const kupac = getVal('uo-otprema-kupac').trim();
             const otpremac = getVal('uo-otprema-otpremac').trim();

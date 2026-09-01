@@ -2425,16 +2425,7 @@
                         <span>📝</span>
                         Unos sječe/otpreme
                     </h2>
-                    <p class="worker-form-subtitle">Izaberite odjel jednom — upisujte i u Sječu i u Otpremu sa istog mjesta. Upisuje se direktno u fajl odjela i odmah se indeksira.</p>
-                </div>
-
-                <div class="worker-form-grid" style="margin-bottom: 16px;">
-                    <div class="worker-form-group">
-                        <label class="worker-form-label">🏭 Odjel</label>
-                        <select id="uo-odjel-select" class="worker-form-select">
-                            <option value="">Izaberi odjel...</option>
-                        </select>
-                    </div>
+                    <p class="worker-form-subtitle">Sječa i Otprema su odvojeni podtabovi — svaki ima svoj izbor odjela. Upisuje se direktno u fajl odjela i odmah se indeksira.</p>
                 </div>
 
                 <div class="submenu" id="uo-submenu" style="margin-bottom: 16px;">
@@ -2446,6 +2437,12 @@
                 <div id="uo-sjeca-view">
                     <form id="uo-sjeca-form" class="worker-form" onsubmit="submitUnosOdjelSjeca(event)">
                         <div class="worker-form-grid">
+                            <div class="worker-form-group">
+                                <label class="worker-form-label">🏭 Odjel</label>
+                                <select id="uo-sjeca-odjel-select" required class="worker-form-select">
+                                    <option value="">Izaberi odjel...</option>
+                                </select>
+                            </div>
                             <div class="worker-form-group">
                                 <label class="worker-form-label">📅 Datum</label>
                                 <input type="date" id="uo-sjeca-datum" required class="worker-form-input">
@@ -2564,6 +2561,12 @@
                 <div id="uo-otprema-view" class="hidden">
                     <form id="uo-otprema-form" class="worker-form otpremac" onsubmit="submitUnosOdjelOtprema(event)">
                         <div class="worker-form-grid">
+                            <div class="worker-form-group">
+                                <label class="worker-form-label">🏭 Odjel</label>
+                                <select id="uo-otprema-odjel-select" required class="worker-form-select">
+                                    <option value="">Izaberi odjel...</option>
+                                </select>
+                            </div>
                             <div class="worker-form-group">
                                 <label class="worker-form-label">📅 Datum</label>
                                 <input type="date" id="uo-otprema-datum" required class="worker-form-input">
