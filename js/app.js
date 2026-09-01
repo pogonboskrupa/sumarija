@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.46';
+        const APP_VERSION = '1.17.47';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -13664,7 +13664,7 @@
         async function loadRadniciList() {
             try {
                 const url = buildApiUrl('get-radnici-list');
-                const data = await fetchWithCache(url, 'cache_radnici_list', false, 30000);
+                const data = await fetchWithCache(url, 'cache_radnici_list_v2', false, 30000);
                 if (data.error) { console.error('Error loading radnici list:', data.error); return; }
                 _radniciList = data;
                 const fillDatalist = (id, names) => {

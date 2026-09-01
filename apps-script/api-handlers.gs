@@ -2556,7 +2556,10 @@ function handleGetRadniciList(username, password) {
     return createJsonResponse({ error: "Unauthorized" }, false);
   }
 
-  const cacheKey = 'radnici_list';
+  // v2 — dodano polje kupci (SPISAK KUPACA), izvor primaci/otpremaci
+  // promijenjen sa INDEKS_PRIMKA/OTPREMA na INFO list; bump da stari keš
+  // (bez kupci polja) ne blokira novi oblik odgovora do isteka TTL-a.
+  const cacheKey = 'radnici_list_v2';
   const cached = getCachedData(cacheKey);
   if (cached) {
     return createJsonResponse(cached, true);
