@@ -2999,6 +2999,11 @@
 
             <div class="kub-wrap">
                 <div class="kub-card">
+                    <div class="kub-card-header">
+                        <span aria-hidden="true">🪵</span>
+                        <span id="kub-card-header-title">Oblovina</span>
+                    </div>
+
                     <div class="kub-samo-oblovina">
                         <label class="kub-label" for="kub-precnik">Prečnik (cm) <span class="kub-opseg">7 – 150</span></label>
                         <input type="text" id="kub-precnik" inputmode="none" class="kub-input"
@@ -4132,7 +4137,7 @@
                      js/karta-odjela.js), pa nema konflikta sa Fokusovim !important
                      visinama definisanim niže u ovom fajlu. */
                   #karta-odjela-map.kod-uzgojni { height:45vh !important; min-height:320px !important; }
-                  #klopka-pozicija-btn.active { background:#0d9488 !important; color:white !important; }
+                  #klopka-pozicija-btn.active { background:#047857 !important; color:white !important; border-color:#047857 !important; }
                   /* Feromonska klopka na mapi — kružna značka sa siluetom kutije-klopke
                      (bijela kutija sa prorezima + posuda ispod, po uzoru na stvarnu
                      feromonsku klopku) umjesto emoji/teksta — jasnije prepoznatljivo
@@ -4147,7 +4152,7 @@
                       box-shadow:0 1px 4px rgba(0,0,0,.45); box-sizing:border-box;
                   }
                   .klopka-badge svg { width:68%; height:68%; display:block; }
-                  .klopka-pick-marker .klopka-badge  { background:#0d9488; color:#0d9488; border:2px dashed #fff; }
+                  .klopka-pick-marker .klopka-badge  { background:#047857; color:#047857; border:2px dashed #fff; }
                   .klopka-saved-marker .klopka-badge { width:22px; height:22px; background:#7c2d12; color:#7c2d12; border:2px solid #fff; }
 
                   /* Radnik mapa odjela — visina umanjena za donju traku dugmadi (~112-120px,
@@ -4618,7 +4623,7 @@
                     body.mapa-fokus #karta-odjela-map { height:calc(100vh - 120px) !important; height:calc(100dvh - 120px) !important; }
                     body.mapa-fokus #mapa-modal { top:38px !important; }
                   }
-                  #karta-fokus-btn.active { background:#1e40af !important; color:white !important; border-color:#1e40af !important; }
+                  #karta-fokus-btn.active { background:#047857 !important; color:white !important; border-color:#047857 !important; }
 
                   /* Izlaz iz Fokus moda — position:fixed (NE sticky, NE Leaflet
                      control) namjerno: dugme "⛶ Fokus" je unutar kartice Prikaz,
@@ -4677,8 +4682,11 @@
                         <span style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:12px;height:12px;background:#cbd5e1;border-radius:2px;"></span>Ostali odjeli (kontekst)</span>
                     </div>
 
-                    <div style="margin-top:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;">
-                        <div style="font-size:14px;font-weight:700;color:#1f2937;margin-bottom:10px;">🪤 Feromonske klopke — evidencija ulova potkornjaka</div>
+                    <div class="enterprise-card" style="margin-top:16px;">
+                        <div class="enterprise-card-header">
+                            <div><h2>🪤 Feromonske klopke — evidencija ulova potkornjaka</h2></div>
+                        </div>
+                        <div class="enterprise-card-body">
                         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:8px;">
                             <div>
                                 <label style="display:block;font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">GJ</label>
@@ -4714,9 +4722,9 @@
                              marker se poslije može ručno povući (draggable) za fino
                              podešavanje. Dugme onemogućeno dok nisu izabrani GJ+odjel. -->
                         <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px;padding:8px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
-                            <button type="button" id="klopka-pozicija-btn" onclick="toggleKlopkaPickMode()" disabled style="font-size:12px;font-weight:700;padding:6px 12px;border:2px solid #0d9488;border-radius:6px;background:white;color:#0d9488;cursor:pointer;">🎯 Postavi poziciju</button>
+                            <button type="button" id="klopka-pozicija-btn" onclick="toggleKlopkaPickMode()" disabled style="font-size:12px;font-weight:700;padding:6px 12px;border:2px solid #047857;border-radius:6px;background:white;color:#047857;cursor:pointer;">🎯 Postavi poziciju</button>
                             <span id="klopka-pozicija-info" style="font-size:12px;font-weight:600;color:#dc2626;">⚠️ Pozicija nije postavljena</span>
-                            <button type="button" onclick="dodajKlopkaOcitanje()" style="margin-left:auto;font-size:12px;font-weight:700;padding:7px 14px;border:none;border-radius:6px;background:#0d9488;color:white;cursor:pointer;">➕ Dodaj očitanje</button>
+                            <button type="button" onclick="dodajKlopkaOcitanje()" style="margin-left:auto;font-size:12px;font-weight:700;padding:7px 14px;border:none;border-radius:6px;background:#047857;color:white;cursor:pointer;">➕ Dodaj očitanje</button>
                         </div>
                         <div id="klopka-status" style="font-size:12px;font-weight:600;display:none;margin-bottom:8px;"></div>
                         <!-- Ulov po vrsti potkornjaka — popunjava _renderKlopkePoVrsti()
@@ -4726,11 +4734,16 @@
                             <button type="button" onclick="podijeliKlopke()" class="karta-ctrl-btn">📤 Izvezi CSV</button>
                         </div>
                         <div id="klopka-tabela" style="overflow-x:auto;"></div>
+                        </div>
                     </div>
 
-                    <div style="margin-top:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;">
-                        <div style="font-size:14px;font-weight:700;color:#1f2937;margin-bottom:10px;">🌱 Slučajni užici i zapisnik odjeli</div>
+                    <div class="enterprise-card" style="margin-top:16px;">
+                        <div class="enterprise-card-header">
+                            <div><h2>🌱 Slučajni užici i zapisnik odjeli</h2></div>
+                        </div>
+                        <div class="enterprise-card-body">
                         <div id="karta-uzgojni-lista" style="overflow-x:auto;"></div>
+                        </div>
                     </div>
                 </div>
             </div>

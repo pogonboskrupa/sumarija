@@ -626,6 +626,9 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         var btn = _el('kub-mode-btn');
         // Dugme uvijek nudi PRELAZAK u drugi mod, ne opisuje trenutni.
         if (btn) btn.textContent = _vrsta === 'prostorno' ? '🪵 Oblovina' : '🪵 Prostorno drvo';
+        // Za razliku od dugmeta gore, naslov u kartici OPISUJE trenutni mod.
+        var naslov = _el('kub-card-header-title');
+        if (naslov) naslov.textContent = _vrsta === 'prostorno' ? 'Prostorno drvo' : 'Oblovina';
         ['kub-precnik', 'kub-duzina', 'kub-sirina', 'kub-visina'].forEach(function(id) {
             var el = _el(id);
             if (el) el.value = '';

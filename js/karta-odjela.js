@@ -1626,22 +1626,22 @@
     }
 
     let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
-      '<thead><tr style="text-align:left;color:#6b7280;">' +
-      '<th style="padding:6px 8px;">Odjel</th><th style="padding:6px 8px;">GJ</th>' +
-      '<th style="padding:6px 8px;">Kategorija</th>' +
-      '<th style="padding:6px 8px;text-align:right;">Sječa</th>' +
-      '<th style="padding:6px 8px;text-align:right;">Otprema</th></tr></thead><tbody>';
+      '<thead><tr style="text-align:left;color:#374151;background:#f8fafc;">' +
+      '<th style="padding:8px;border-bottom:1px solid #e5e7eb;">Odjel</th><th style="padding:8px;border-bottom:1px solid #e5e7eb;">GJ</th>' +
+      '<th style="padding:8px;border-bottom:1px solid #e5e7eb;">Kategorija</th>' +
+      '<th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:right;">Sječa</th>' +
+      '<th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:right;">Otprema</th></tr></thead><tbody>';
     _uzgojniRedovi.forEach((r, i) => {
       const sj    = (r.extra && r.extra.sjeca && r.extra.sjeca.ukupno) || 0;
       const ot    = (r.extra && r.extra.otpr  && r.extra.otpr.ukupno)  || 0;
       const boja  = r.kategorija === 'slucajni' ? '#7c3aed' : '#0d9488';
       const naziv = r.kategorija === 'slucajni' ? 'Slučajni' : 'Zapisnik';
-      html += `<tr style="border-top:1px solid #f1f5f9;cursor:pointer;" onclick="_klikUzgojniRed(${i})">` +
-        `<td style="padding:6px 8px;font-weight:600;">${r.odjel}</td>` +
-        `<td style="padding:6px 8px;">${r.gj}</td>` +
-        `<td style="padding:6px 8px;"><span style="background:${boja}22;color:${boja};font-weight:700;padding:2px 8px;border-radius:10px;">${naziv}</span></td>` +
-        `<td style="padding:6px 8px;text-align:right;">${_fmt(sj)}</td>` +
-        `<td style="padding:6px 8px;text-align:right;">${_fmt(ot)}</td></tr>`;
+      html += `<tr style="border-top:1px solid #f1f5f9;cursor:pointer;transition:background .12s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''" onclick="_klikUzgojniRed(${i})">` +
+        `<td style="padding:8px;font-weight:600;">${r.odjel}</td>` +
+        `<td style="padding:8px;">${r.gj}</td>` +
+        `<td style="padding:8px;"><span style="background:${boja}22;color:${boja};font-weight:700;padding:2px 8px;border-radius:10px;">${naziv}</span></td>` +
+        `<td style="padding:8px;text-align:right;">${_fmt(sj)}</td>` +
+        `<td style="padding:8px;text-align:right;">${_fmt(ot)}</td></tr>`;
     });
     html += '</tbody></table>';
     lista.innerHTML = html;
