@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.45';
+        const APP_VERSION = '1.17.46';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -20,79 +20,6 @@
         // IndexedDB (vidi IDB_LARGE_KEYS) — stari localStorage zapisi pod istim
         // ključevima se više nikad ne čitaju, ali i dalje troše kvotu ako ostanu.
         try { localStorage.removeItem('cache_primke_sjeca'); localStorage.removeItem('cache_otpreme_tab'); } catch(_) {}
-
-        // ========== DETEKCIJA NOVE VERZIJE APLIKACIJE ==========
-        // Većina korisnika koristi običan link u browseru (ne instaliranu PWA) —
-        // Service Worker im servira stare JS/CSS fajlove (stale-while-revalidate)
-        // pa bez ovoga novu verziju dobiju tek nakon 2-3 ručna refresha, ili nikad.
-        // Rješenje: VERSION fajl na serveru se poredi s APP_VERSION upečenim u ovaj
-        // JS. Razlika → trajni baner "Nova verzija" → klik očisti SW asset keš,
-        // ažurira SW registraciju i reloaduje. localStorage podaci se NE brišu —
-        // offline pristup podacima preživljava update.
-        let _updateBannerShown = false;
-        async function checkAppVersion() {
-            // NAMJERNO bez "if (!navigator.onLine) return" — navigator.onLine
-            // zna pogrešno ostati "false" na terenu (slab/isprekidan signal,
-            // neki Android WebView-ovi), i pošto se ovdje ne oslanja na
-            // 'online' event nego samo na taj flag, provjera bi se onda TRAJNO
-            // preskakala dok god ne dođe do stvarnog offline→online prelaza u
-            // istoj sesiji — što objašnjava baner koji se nikad ne pojavi iako
-            // je mreža stvarno dostupna. fetch ispod ionako ima svoj timeout
-            // i catch, pa je gate bio čisto dodatni (i lažni) rizik.
-            if (_updateBannerShown) return;
-            try {
-                // cache:'no-store' + ts param — zaobiđi i browser i SW keš
-                const r = await fetch('VERSION?ts=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(10000) });
-                if (!r.ok) return;
-                const serverVer = (await r.text()).trim();
-                // Validan broj verzije (major.minor, npr. "2.1") i različit od
-                // upečene verzije → nova verzija je deployana. Prihvata i stari
-                // major.minor.patch format (npr. "1.4.134") radi kompatibilnosti
-                // ako neki keširan klijent još uvijek šalje taj oblik.
-                if (/^\d+\.\d+(\.\d+)?$/.test(serverVer) && serverVer !== APP_VERSION) {
-                    console.log(`[UPDATE] Nova verzija dostupna: ${serverVer} (trenutna: ${APP_VERSION})`);
-                    _showUpdateBanner(serverVer);
-                }
-            } catch(_) { /* mreža/timeout — pokušaće ponovo pri sljedećoj provjeri */ }
-        }
-
-        function _showUpdateBanner(newVer) {
-            if (_updateBannerShown) return;
-            _updateBannerShown = true;
-            const banner = document.getElementById('app-update-banner');
-            const verEl  = document.getElementById('app-update-version');
-            if (verEl) verEl.textContent = 'v' + newVer;
-            if (banner) banner.style.display = 'flex';
-        }
-
-        // Klik na "Ažuriraj" u baneru — očisti asset keševe i povuci novu verziju.
-        // NAMJERNO ne briše localStorage (cache_* podatke, prijavu, offline snapshot):
-        // podaci moraju ostati dostupni offline i nakon update-a.
-        async function applyAppUpdate() {
-            const btn = document.getElementById('app-update-btn');
-            if (btn) { btn.disabled = true; btn.textContent = '⏳ Ažuriram...'; }
-            try {
-                // 1. Obriši SVE Service Worker asset keševe (stari JS/CSS/HTML)
-                if ('caches' in window) {
-                    const names = await caches.keys();
-                    await Promise.all(names.map(n => caches.delete(n)));
-                }
-                // 2. Zatraži update SW registracije (novi service-worker.js → novi CACHE_VERSION)
-                if ('serviceWorker' in navigator) {
-                    const regs = await navigator.serviceWorker.getRegistrations();
-                    await Promise.all(regs.map(reg => reg.update().catch(() => {})));
-                }
-            } catch(e) { console.warn('[UPDATE] Cache clear warning:', e); }
-            // 3. Hard reload s cache-buster parametrom — browser mora povući svježe fajlove
-            const url = new URL(window.location.href);
-            url.searchParams.set('nocache', Date.now());
-            window.location.replace(url.toString());
-        }
-
-        // Provjere: pri učitavanju, pri povratku mreže, i periodično svakih 30 min
-        window.addEventListener('DOMContentLoaded', () => { setTimeout(checkAppVersion, 5000); });
-        window.addEventListener('online', () => { setTimeout(checkAppVersion, 3000); });
-        setInterval(checkAppVersion, 30 * 60 * 1000);
 
         // Helper: provjeri da li je tab još uvijek aktivan (sprečava bleeding async sadržaja)
         function isActiveTab(tabName) {
@@ -13728,11 +13655,12 @@
         // odjela pa odmah pozivaju INDEKS_DODAJ_NOVE() (isto što radi ručno
         // "sync-index" dugme), tako da se unos odmah vidi u izvještajima.
 
-        // Predlozi imena primača/otpremača (iz istorije INDEKS_PRIMKA/
-        // INDEKS_OTPREMA) — datalist uz uo-sjeca-primac/uo-otprema-otpremac.
-        // Polje ostaje slobodan tekst; ovo samo nudi poznata imena, isto kao
-        // dropdown u Sheets fajlu, bez ograničavanja na nova imena.
+        // Predlozi imena primača/otpremača i kupaca — čitaju se direktno iz
+        // šifarnika u BAZA_PODATAKA (listovi INFO i SPISAK KUPACA — isti
+        // spisak koji postoji i u samom fajlu). Polja ostaju slobodan tekst;
+        // ovo samo nudi poznata imena, ne ograničava na njih.
         let _radniciList = null;
+        const _UO_DATALIST_ID = { primaci: 'uo-primaci-datalist', otpremaci: 'uo-otpremaci-datalist', kupci: 'uo-kupci-datalist' };
         async function loadRadniciList() {
             try {
                 const url = buildApiUrl('get-radnici-list');
@@ -13744,24 +13672,24 @@
                     if (!el) return;
                     el.innerHTML = (names || []).map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
                 };
-                fillDatalist('uo-primaci-datalist', data.primaci);
-                fillDatalist('uo-otpremaci-datalist', data.otpremaci);
+                fillDatalist(_UO_DATALIST_ID.primaci, data.primaci);
+                fillDatalist(_UO_DATALIST_ID.otpremaci, data.otpremaci);
+                fillDatalist(_UO_DATALIST_ID.kupci, data.kupci);
             } catch (error) {
                 console.error('Error loading radnici list:', error);
             }
         }
 
-        // Nakon uspješnog unosa, dodaj ime u lokalnu listu (ako je novo) tako
-        // da se odmah nudi kao prijedlog za sljedeći red — bez čekanja na
-        // ponovni fetch sa servera.
+        // Nakon uspješnog unosa, dodaj ime/naziv u lokalnu listu (ako je
+        // novo) tako da se odmah nudi kao prijedlog za sljedeći red — bez
+        // čekanja na ponovni fetch sa servera.
         function _uoDodajRadnikaUListu(tip, ime) {
             if (!ime || !_radniciList) return;
             const arr = _radniciList[tip];
             if (!Array.isArray(arr) || arr.includes(ime)) return;
             arr.push(ime);
             arr.sort((a, b) => a.localeCompare(b, 'bs'));
-            const datalistId = tip === 'primaci' ? 'uo-primaci-datalist' : 'uo-otpremaci-datalist';
-            const el = document.getElementById(datalistId);
+            const el = document.getElementById(_UO_DATALIST_ID[tip]);
             if (el) el.innerHTML = arr.map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
         }
 
@@ -13801,8 +13729,8 @@
             calculateUnosOdjelOtprema();
         }
 
-        // Prebacivanje Sječa/Otprema pod-tab — izabrani odjel OSTAJE (dropdown
-        // je zajednički, van oba pod-taba).
+        // Prebacivanje Sječa/Otprema pod-tab — svaki ima svoj vlastiti izbor
+        // odjela, potpuno nezavisan od drugog pod-taba.
         function switchUnosOdjelTab(tab) {
             document.querySelectorAll('#uo-submenu .submenu-tab').forEach(function(b) {
                 b.classList.toggle('active', b.dataset.tab === tab);
@@ -14010,6 +13938,7 @@
                     messageDiv.style.color = '#047857';
                     messageDiv.classList.remove('hidden');
                     _uoDodajRadnikaUListu('otpremaci', otpremac);
+                    _uoDodajRadnikaUListu('kupci', kupac);
                     resetUnosOdjelOtpremaForm();
                     setTimeout(() => messageDiv.classList.add('hidden'), 3000);
 

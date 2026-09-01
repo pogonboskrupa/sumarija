@@ -2544,10 +2544,12 @@ function handleGetOdjeliList() {
   }
 }
 
-// Lista poznatih imena primača/otpremača — izvedena iz istorijskih redova
-// INDEKS_PRIMKA/INDEKS_OTPREMA (BAZA_PODATAKA), za dropdown/predlog u
-// "Unos sječe/otpreme" (izbor imena "kao u Sheets fajlu", bez ograničavanja
-// na samo ta imena — polje ostaje slobodan tekst, ovo je samo prijedlog).
+// Lista poznatih imena primača/otpremača i kupaca — čita direktno iz
+// šifarnika u BAZA_PODATAKA (isti fajl, listovi INFO i SPISAK KUPACA), za
+// dropdown/predlog u "Unos sječe/otpreme". Polja ostaju slobodan tekst,
+// ovo su samo prijedlozi.
+// INFO list: B (indeks 1) = PRIMAČ, C (indeks 2) = OTPREMAČ, red 1 = header.
+// SPISAK KUPACA list: A (indeks 0) = naziv kupca, red 1 = header ("KUPAC:").
 function handleGetRadniciList(username, password) {
   const loginResult = JSON.parse(handleLogin(username, password).getContent());
   if (!loginResult.success) {
@@ -2562,30 +2564,35 @@ function handleGetRadniciList(username, password) {
 
   try {
     const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
-    const primkaSheet = ss.getSheetByName('INDEKS_PRIMKA');
-    const otpremaSheet = ss.getSheetByName('INDEKS_OTPREMA');
+    const infoSheet = ss.getSheetByName('INFO');
+    const kupciSheet = ss.getSheetByName('SPISAK KUPACA');
 
     const primaciSet = {};
-    if (primkaSheet && primkaSheet.getLastRow() > 1) {
-      const data = primkaSheet.getRange(2, 1, primkaSheet.getLastRow() - 1, primkaSheet.getLastColumn()).getValues();
-      data.forEach(function(row) {
-        const ime = String(row[PRIMKA_COL.RADNIK] || '').trim();
-        if (ime) primaciSet[ime] = true;
-      });
-    }
-
     const otpremaciSet = {};
-    if (otpremaSheet && otpremaSheet.getLastRow() > 1) {
-      const data = otpremaSheet.getRange(2, 1, otpremaSheet.getLastRow() - 1, otpremaSheet.getLastColumn()).getValues();
+    if (infoSheet && infoSheet.getLastRow() > 1) {
+      const data = infoSheet.getRange(2, 1, infoSheet.getLastRow() - 1, infoSheet.getLastColumn()).getValues();
       data.forEach(function(row) {
-        const ime = String(row[OTPREMA_COL.OTPREMAC] || '').trim();
-        if (ime) otpremaciSet[ime] = true;
+        const primac = String(row[1] || '').trim();
+        if (primac) primaciSet[primac] = true;
+        const otpremac = String(row[2] || '').trim();
+        if (otpremac) otpremaciSet[otpremac] = true;
       });
     }
 
+    const kupciSet = {};
+    if (kupciSheet && kupciSheet.getLastRow() > 1) {
+      const data = kupciSheet.getRange(2, 1, kupciSheet.getLastRow() - 1, 1).getValues();
+      data.forEach(function(row) {
+        const kupac = String(row[0] || '').trim();
+        if (kupac) kupciSet[kupac] = true;
+      });
+    }
+
+    const sortBs = function(a, b) { return a.localeCompare(b, 'bs'); };
     const result = {
-      primaci: Object.keys(primaciSet).sort(function(a, b) { return a.localeCompare(b, 'bs'); }),
-      otpremaci: Object.keys(otpremaciSet).sort(function(a, b) { return a.localeCompare(b, 'bs'); })
+      primaci: Object.keys(primaciSet).sort(sortBs),
+      otpremaci: Object.keys(otpremaciSet).sort(sortBs),
+      kupci: Object.keys(kupciSet).sort(sortBs)
     };
 
     setCachedData(cacheKey, result, CACHE_TTL);
