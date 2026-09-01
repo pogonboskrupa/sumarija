@@ -2439,9 +2439,7 @@
                         <div class="worker-form-grid">
                             <div class="worker-form-group">
                                 <label class="worker-form-label">🏭 Odjel</label>
-                                <select id="uo-sjeca-odjel-select" required class="worker-form-select">
-                                    <option value="">Izaberi odjel...</option>
-                                </select>
+                                <input type="text" id="uo-sjeca-odjel-select" required class="worker-form-input" list="uo-odjel-datalist" placeholder="Ukucaj ili izaberi odjel..." autocomplete="off">
                             </div>
                             <div class="worker-form-group">
                                 <label class="worker-form-label">📅 Datum</label>
@@ -2563,9 +2561,7 @@
                         <div class="worker-form-grid">
                             <div class="worker-form-group">
                                 <label class="worker-form-label">🏭 Odjel</label>
-                                <select id="uo-otprema-odjel-select" required class="worker-form-select">
-                                    <option value="">Izaberi odjel...</option>
-                                </select>
+                                <input type="text" id="uo-otprema-odjel-select" required class="worker-form-input" list="uo-odjel-datalist" placeholder="Ukucaj ili izaberi odjel..." autocomplete="off">
                             </div>
                             <div class="worker-form-group">
                                 <label class="worker-form-label">📅 Datum</label>
@@ -2687,6 +2683,7 @@
 
                 <!-- Predlozi imena (iz istorije INDEKS_PRIMKA/INDEKS_OTPREMA) —
                      polje ostaje slobodan tekst, ovo samo nudi prijedloge. -->
+                <datalist id="uo-odjel-datalist"></datalist>
                 <datalist id="uo-primaci-datalist"></datalist>
                 <datalist id="uo-otpremaci-datalist"></datalist>
                 <datalist id="uo-kupci-datalist"></datalist>

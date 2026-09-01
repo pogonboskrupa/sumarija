@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.48';
+        const APP_VERSION = '1.17.49';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1734,9 +1734,7 @@
                 'sjeca-odjel',
                 'otprema-odjel',
                 'edit-sjeca-odjel',
-                'edit-otprema-odjel',
-                'uo-sjeca-odjel-select',
-                'uo-otprema-odjel-select'
+                'edit-otprema-odjel'
             ];
 
             dropdowns.forEach(dropdownId => {
@@ -1759,6 +1757,10 @@
                     }
                 }
             });
+
+            // Unos sječe/otpreme — Odjel polja su input+datalist (tipovanje i
+            // filter dok kucaš), ne <select>, pa se pune posebno.
+            if (typeof _uoRenderDatalist === 'function') _uoRenderDatalist('odjel');
         }
 
         // Initialize year selectors with current year
@@ -13655,42 +13657,76 @@
         // odjela pa odmah pozivaju INDEKS_DODAJ_NOVE() (isto što radi ručno
         // "sync-index" dugme), tako da se unos odmah vidi u izvještajima.
 
-        // Predlozi imena primača/otpremača i kupaca — čitaju se direktno iz
-        // šifarnika u BAZA_PODATAKA (listovi INFO i SPISAK KUPACA — isti
-        // spisak koji postoji i u samom fajlu). Polja ostaju slobodan tekst;
-        // ovo samo nudi poznata imena, ne ograničava na njih.
+        // Predlozi za SVA polja u "Unos sječe/otpreme" (Odjel/Primač/
+        // Otpremač/Kupac) — input+datalist (tipovanje ime ili broj filtrira
+        // ponuđene stavke, isto kao Sheets dropdown, ali bez ograničavanja
+        // na postojeće). Odjel dolazi iz odjeliList (get-odjeli-list),
+        // Primač/Otpremač/Kupac iz šifarnika (INFO/SPISAK KUPACA,
+        // loadRadniciList). Zadnje korišteno po polju se pamti u
+        // localStorage i uvijek ide na vrh liste.
         let _radniciList = null;
-        const _UO_DATALIST_ID = { primaci: 'uo-primaci-datalist', otpremaci: 'uo-otpremaci-datalist', kupci: 'uo-kupci-datalist' };
+        const _UO_DATALIST_ID = {
+            odjel: 'uo-odjel-datalist', primaci: 'uo-primaci-datalist',
+            otpremaci: 'uo-otpremaci-datalist', kupci: 'uo-kupci-datalist'
+        };
+        const _UO_RECENT_KEY = {
+            odjel: 'uo_recent_odjel', primaci: 'uo_recent_primaci',
+            otpremaci: 'uo_recent_otpremaci', kupci: 'uo_recent_kupci'
+        };
+        const UO_RECENT_MAX = 6;
+
+        function _uoFullList(tip) {
+            if (tip === 'odjel') return odjeliList || [];
+            return (_radniciList && _radniciList[tip]) || [];
+        }
+        function _uoGetRecent(tip) {
+            try { return JSON.parse(localStorage.getItem(_UO_RECENT_KEY[tip]) || '[]'); } catch (_) { return []; }
+        }
+        function _uoSaveRecent(tip, vrijednost) {
+            if (!vrijednost) return;
+            let arr = _uoGetRecent(tip).filter(v => v !== vrijednost);
+            arr.unshift(vrijednost);
+            arr = arr.slice(0, UO_RECENT_MAX);
+            try { localStorage.setItem(_UO_RECENT_KEY[tip], JSON.stringify(arr)); } catch (_) {}
+        }
+        // Puna lista, ali sa zadnje korištenim stavkama na vrhu (istim
+        // redoslijedom kao u historiji), ostatak abecedno iza.
+        function _uoSortMruFirst(tip, punaLista) {
+            const recent = _uoGetRecent(tip).filter(v => punaLista.includes(v));
+            const ostatak = punaLista.filter(v => !recent.includes(v)).sort((a, b) => a.localeCompare(b, 'bs'));
+            return recent.concat(ostatak);
+        }
+        function _uoRenderDatalist(tip) {
+            const el = document.getElementById(_UO_DATALIST_ID[tip]);
+            if (!el) return;
+            const sorted = _uoSortMruFirst(tip, _uoFullList(tip));
+            el.innerHTML = sorted.map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+        }
+        // Poziva se nakon uspješnog unosa — upamti kao zadnje korišteno (ide
+        // na vrh sljedeći put), i ako je novo ime/naziv (za primača/
+        // otpremača/kupca — odjeli uvijek dolaze sa servera), dodaj ga u
+        // punu listu odmah, bez čekanja na ponovni fetch.
+        function _uoPoslijeUnosa(tip, vrijednost) {
+            if (!vrijednost) return;
+            if (tip !== 'odjel' && _radniciList && Array.isArray(_radniciList[tip]) && !_radniciList[tip].includes(vrijednost)) {
+                _radniciList[tip].push(vrijednost);
+            }
+            _uoSaveRecent(tip, vrijednost);
+            _uoRenderDatalist(tip);
+        }
+
         async function loadRadniciList() {
             try {
                 const url = buildApiUrl('get-radnici-list');
                 const data = await fetchWithCache(url, 'cache_radnici_list_v2', false, 30000);
                 if (data.error) { console.error('Error loading radnici list:', data.error); return; }
                 _radniciList = data;
-                const fillDatalist = (id, names) => {
-                    const el = document.getElementById(id);
-                    if (!el) return;
-                    el.innerHTML = (names || []).map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
-                };
-                fillDatalist(_UO_DATALIST_ID.primaci, data.primaci);
-                fillDatalist(_UO_DATALIST_ID.otpremaci, data.otpremaci);
-                fillDatalist(_UO_DATALIST_ID.kupci, data.kupci);
+                _uoRenderDatalist('primaci');
+                _uoRenderDatalist('otpremaci');
+                _uoRenderDatalist('kupci');
             } catch (error) {
                 console.error('Error loading radnici list:', error);
             }
-        }
-
-        // Nakon uspješnog unosa, dodaj ime/naziv u lokalnu listu (ako je
-        // novo) tako da se odmah nudi kao prijedlog za sljedeći red — bez
-        // čekanja na ponovni fetch sa servera.
-        function _uoDodajRadnikaUListu(tip, ime) {
-            if (!ime || !_radniciList) return;
-            const arr = _radniciList[tip];
-            if (!Array.isArray(arr) || arr.includes(ime)) return;
-            arr.push(ime);
-            arr.sort((a, b) => a.localeCompare(b, 'bs'));
-            const el = document.getElementById(_UO_DATALIST_ID[tip]);
-            if (el) el.innerHTML = arr.map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
         }
 
         function showUnosOdjeliForm() {
@@ -13856,7 +13892,8 @@
                     messageDiv.style.background = '#d1fae5';
                     messageDiv.style.color = '#047857';
                     messageDiv.classList.remove('hidden');
-                    _uoDodajRadnikaUListu('primaci', primac);
+                    _uoPoslijeUnosa('odjel', odjel);
+                    _uoPoslijeUnosa('primaci', primac);
                     resetUnosOdjelSjecaForm();
                     setTimeout(() => messageDiv.classList.add('hidden'), 3000);
 
@@ -13937,8 +13974,9 @@
                     messageDiv.style.background = '#d1fae5';
                     messageDiv.style.color = '#047857';
                     messageDiv.classList.remove('hidden');
-                    _uoDodajRadnikaUListu('otpremaci', otpremac);
-                    _uoDodajRadnikaUListu('kupci', kupac);
+                    _uoPoslijeUnosa('odjel', odjel);
+                    _uoPoslijeUnosa('otpremaci', otpremac);
+                    _uoPoslijeUnosa('kupci', kupac);
                     resetUnosOdjelOtpremaForm();
                     setTimeout(() => messageDiv.classList.add('hidden'), 3000);
 
