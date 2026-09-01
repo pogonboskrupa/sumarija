@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.50';
+        const APP_VERSION = '1.17.51';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -13889,14 +13889,15 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    messageDiv.innerHTML = `✅ ${result.message}<br>Ukupno: ${(Number(result.ukupno) || 0).toFixed(2)} m³`;
+                    const linkHtml = result.fileUrl ? `<br><a href="${escapeHtml(result.fileUrl)}" target="_blank" rel="noopener" style="color:#047857;text-decoration:underline;">🔗 Otvori fajl odjela</a>` : '';
+                    messageDiv.innerHTML = `✅ ${result.message}<br>Ukupno: ${(Number(result.ukupno) || 0).toFixed(2)} m³${linkHtml}`;
                     messageDiv.style.background = '#d1fae5';
                     messageDiv.style.color = '#047857';
                     messageDiv.classList.remove('hidden');
                     _uoPoslijeUnosa('odjel', odjel);
                     _uoPoslijeUnosa('primaci', primac);
                     resetUnosOdjelSjecaForm();
-                    setTimeout(() => messageDiv.classList.add('hidden'), 3000);
+                    if (!linkHtml) setTimeout(() => messageDiv.classList.add('hidden'), 3000);
 
                     clearCacheByPattern('primac');
                     clearCacheByPattern('primaci');
@@ -13971,7 +13972,8 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    messageDiv.innerHTML = `✅ ${result.message}<br>Ukupno: ${(Number(result.ukupno) || 0).toFixed(2)} m³`;
+                    const linkHtml = result.fileUrl ? `<br><a href="${escapeHtml(result.fileUrl)}" target="_blank" rel="noopener" style="color:#047857;text-decoration:underline;">🔗 Otvori fajl odjela</a>` : '';
+                    messageDiv.innerHTML = `✅ ${result.message}<br>Ukupno: ${(Number(result.ukupno) || 0).toFixed(2)} m³${linkHtml}`;
                     messageDiv.style.background = '#d1fae5';
                     messageDiv.style.color = '#047857';
                     messageDiv.classList.remove('hidden');
@@ -13979,7 +13981,7 @@
                     _uoPoslijeUnosa('otpremaci', otpremac);
                     _uoPoslijeUnosa('kupci', kupac);
                     resetUnosOdjelOtpremaForm();
-                    setTimeout(() => messageDiv.classList.add('hidden'), 3000);
+                    if (!linkHtml) setTimeout(() => messageDiv.classList.add('hidden'), 3000);
 
                     clearCacheByPattern('otpremac');
                     clearCacheByPattern('otpremaci');

@@ -1895,6 +1895,18 @@ function handleUnosOdjelSjeca(params) {
     primkaSheet.getRange(ciljaniRed, 1, 1, newRow.length).setValues([newRow]);
     SpreadsheetApp.flush();
 
+    // Provjera upisa — pročitaj upravo upisanu ćeliju (Primač, kolona C) i
+    // uporedi sa poslatim podatkom. Ako se ne poklapa, upis stvarno NIJE
+    // prošao (npr. zaštićen raspon/Protected range blokira izmjenu preko
+    // skripte) — NE vraća se lažni "uspjeh".
+    const provjera = String(primkaSheet.getRange(ciljaniRed, 3).getValue() || '').trim();
+    if (provjera !== String(params.primac || '').trim()) {
+      return createJsonResponse({
+        error: "Upis nije uspio — red " + ciljaniRed + " u fajlu '" + params.odjel + "' (list PRIMKA) ne sadrži poslate podatke nakon pokušaja upisa. " +
+               "Najčešći uzrok: zaštićen raspon (Data → Protected sheets and ranges) koji blokira izmjenu preko skripte. Fajl: " + file.getUrl()
+      }, false);
+    }
+
     // NAMJERNO bez auto-indeksiranja — piše SAMO u fajl odjela. Prepisivanje
     // u INDEKS_PRIMKA/INDEKS_OTPREMA (BAZA PODATAKA) ostaje ručni, poseban
     // korak (postojeće "sync-index"/"Osvježi" dugme), kao i do sada.
@@ -1902,9 +1914,10 @@ function handleUnosOdjelSjeca(params) {
 
     return createJsonResponse({
       success: true,
-      message: "Upisano u fajl odjela (red " + ciljaniRed + ")",
+      message: "Upisano u fajl odjela (list PRIMKA, red " + ciljaniRed + ")",
       ukupno: ukupno,
-      red: ciljaniRed
+      red: ciljaniRed,
+      fileUrl: file.getUrl()
     }, true);
 
   } catch (error) {
@@ -1955,14 +1968,25 @@ function handleUnosOdjelOtprema(params) {
     otpremaSheet.getRange(ciljaniRed, 1, 1, newRow.length).setValues([newRow]);
     SpreadsheetApp.flush();
 
+    // Provjera upisa — vidi komentar u handleUnosOdjelSjeca. Otpremač je
+    // ovdje kolona C (isto kao Primač u PRIMKA).
+    const provjera = String(otpremaSheet.getRange(ciljaniRed, 3).getValue() || '').trim();
+    if (provjera !== String(params.otpremac || '').trim()) {
+      return createJsonResponse({
+        error: "Upis nije uspio — red " + ciljaniRed + " u fajlu '" + params.odjel + "' (list OTPREMA) ne sadrži poslate podatke nakon pokušaja upisa. " +
+               "Najčešći uzrok: zaštićen raspon (Data → Protected sheets and ranges) koji blokira izmjenu preko skripte. Fajl: " + file.getUrl()
+      }, false);
+    }
+
     // NAMJERNO bez auto-indeksiranja — vidi komentar u handleUnosOdjelSjeca.
     invalidateCacheZa('otprema');
 
     return createJsonResponse({
       success: true,
-      message: "Upisano u fajl odjela (red " + ciljaniRed + ")",
+      message: "Upisano u fajl odjela (list OTPREMA, red " + ciljaniRed + ")",
       ukupno: ukupno,
-      red: ciljaniRed
+      red: ciljaniRed,
+      fileUrl: file.getUrl()
     }, true);
 
   } catch (error) {
