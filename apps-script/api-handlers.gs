@@ -1834,6 +1834,23 @@ function _pronadjiOdjelFajl(odjelNaziv) {
   return null;
 }
 
+// Prvi slobodan red za upis — fajlovi odjela imaju stotine unaprijed
+// formatiranih redova ispod stvarnih podataka (dropdown validacija na
+// koloni Primač/Otpremač bez upisane vrijednosti), pa se getLastRow()
+// (i time appendRow) NE koristi direktno — umjesto toga se eksplicitno
+// traži prvi red gdje je DATUM kolona (uvijek kolona B, i u PRIMKA i u
+// OTPREMA) stvarno prazna, počevši od reda 2.
+function _prviSlobodniRed(sheet) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 2;
+  const datumi = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
+  for (let i = 0; i < datumi.length; i++) {
+    const v = datumi[i][0];
+    if (v === '' || v === null || v === undefined) return i + 2;
+  }
+  return lastRow + 1;
+}
+
 function handleUnosOdjelSjeca(params) {
   try {
     const loginResult = JSON.parse(handleLogin(params.username, params.password).getContent());
@@ -1871,7 +1888,8 @@ function handleUnosOdjelSjeca(params) {
     const ukupno = cetinari + liscari;
     newRow.push(ukupno);
 
-    primkaSheet.appendRow(newRow);
+    const ciljaniRed = _prviSlobodniRed(primkaSheet);
+    primkaSheet.getRange(ciljaniRed, 1, 1, newRow.length).setValues([newRow]);
 
     // Odmah indeksiraj SAMO ovaj fajl (brzo — preskače DriveApp iteraciju
     // kroz cijeli folder odjela koju radi puni INDEKS_DODAJ_NOVE(), pa se
@@ -1937,7 +1955,8 @@ function handleUnosOdjelOtprema(params) {
     const ukupno = cetinari + liscari;
     newRow.push(ukupno);
 
-    otpremaSheet.appendRow(newRow);
+    const ciljaniRed = _prviSlobodniRed(otpremaSheet);
+    otpremaSheet.getRange(ciljaniRed, 1, 1, newRow.length).setValues([newRow]);
 
     // Vidi komentar u handleUnosOdjelSjeca — brzi single-file indeksing.
     let indeksInfo = null;
