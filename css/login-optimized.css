@@ -3,11 +3,11 @@
 /* Desktop & Mobile Responsive Design */
 /* ============================================ */
 
-/* Body background sa gradientom — blago svjetlija nijansa od brand
-   gradijenta na dugmetu/naslovu (koji ostaju originalne boje ispod, u
-   .login-box), jer ovaj proviruje i ispod sadržaja na kraćim tabovima. */
+/* Body background sa gradientom — ista zelena kombinacija kao
+   .header-user-avatar (main.css), da login ekran (i splash iz index.html)
+   odmah djeluju kao dio iste aplikacije, ne odvojena "welcome" stranica. */
 body.login-active {
-    background: linear-gradient(135deg, #8598ee 0%, #916fb5 100%);
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
     background-attachment: fixed;
     overflow-x: hidden;
     min-height: 100vh;
@@ -127,13 +127,14 @@ body.login-active {
     letter-spacing: 0.5px;
 }
 
-/* Vizuelni separator između brandinga i forme */
+/* Vizuelni separator između brandinga i forme — isti gradient kao
+   .company-name-header (main.css), reciklirano radi dosljednosti. */
 .login-box .logo-container::after {
     content: '';
     display: block;
     width: 40px;
     height: 3px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #047857 0%, #059669 50%, #10b981 100%);
     border-radius: 2px;
     margin: 16px auto 0;
 }
@@ -145,7 +146,7 @@ body.login-active {
     font-weight: 700;
     color: #1f2937;
     margin-bottom: 6px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #047857 0%, #059669 50%, #10b981 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -183,19 +184,20 @@ body.login-active {
 
 .form-group input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #047857;
     background: white;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.12);
 }
 
 .form-group input::placeholder {
     color: #6b7280;
 }
 
-/* Submit button */
+/* Submit button — isti gradient/smjer kao .kub-dodaj (glavna zelena radnja
+   u appu), reciklirano radi dosljednosti. */
 .login-box .btn {
     width: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(180deg, #059669 0%, #047857 100%);
     color: white;
     padding: 16px;
     border-radius: 12px;
@@ -206,12 +208,12 @@ body.login-active {
     transition: all 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 15px rgba(4, 120, 87, 0.4);
 }
 
 .login-box .btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 25px rgba(102, 126, 234, 0.5);
+    box-shadow: 0 6px 25px rgba(4, 120, 87, 0.5);
 }
 
 .login-box .btn:active {
