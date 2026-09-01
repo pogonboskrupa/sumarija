@@ -1807,6 +1807,161 @@ function handleAddOtprema(params) {
 }
 
 // ========================================
+// UNOS U FAJL ODJELA - direktan upis kancelarije u PRIMKA/OTPREMA
+// list fajla odjela (ODJELI_FOLDER_ID), bez veze sa PRIMAČ_UNOS/
+// OTPREMAČ_UNOS/redom za odobrenje iznad (odvojena, nekorišćena funkcija).
+// ========================================
+
+// Tolerantno kao frontend _jeOperater() (js/auth.js) — prihvata
+// "operater"/"operateri" (sa/bez dijakritike, bilo kog slova) i "admin".
+function _smijeUnositiUOdjelFajl(loginResult) {
+  const tip = String((loginResult && loginResult.type) || '').trim().toLowerCase();
+  return tip === 'admin' || tip === 'operater' || tip === 'operateri';
+}
+
+// Pronađi fajl odjela u ODJELI_FOLDER_ID po nazivu (isti obrazac kao
+// handleGetOdjeliList — naziv fajla bez ekstenzije).
+function _pronadjiOdjelFajl(odjelNaziv) {
+  const trazeni = String(odjelNaziv || '').trim();
+  if (!trazeni) return null;
+  const folder = DriveApp.getFolderById(ODJELI_FOLDER_ID);
+  const files = folder.getFilesByType(MimeType.GOOGLE_SHEETS);
+  while (files.hasNext()) {
+    const file = files.next();
+    const naziv = file.getName().replace(/\.(xlsx|xls|gsheet)$/i, '');
+    if (naziv === trazeni) return file;
+  }
+  return null;
+}
+
+function handleUnosOdjelSjeca(params) {
+  try {
+    const loginResult = JSON.parse(handleLogin(params.username, params.password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+    if (!_smijeUnositiUOdjelFajl(loginResult)) {
+      return createJsonResponse({ error: "Nemate ovlaštenje za unos u fajlove odjela" }, false);
+    }
+
+    const file = _pronadjiOdjelFajl(params.odjel);
+    if (!file) {
+      return createJsonResponse({ error: "Fajl za odjel '" + params.odjel + "' nije pronađen u folderu odjela" }, false);
+    }
+
+    const ss = SpreadsheetApp.open(file);
+    const primkaSheet = ss.getSheetByName('PRIMKA');
+    if (!primkaSheet) {
+      return createJsonResponse({ error: "List 'PRIMKA' nije pronađen u fajlu odjela '" + params.odjel + "'" }, false);
+    }
+
+    // Red: PRAZNA(A) | DATUM(B) | PRIMAČ(C) | sortimenti(D-W, 20 kolona)
+    const newRow = ['', parseDate(params.datum), params.primac || ''];
+
+    const sortimentiValues = [];
+    for (let i = 0; i < 19; i++) { // prvih 19 sortimenti (bez UKUPNO)
+      const value = parseFloat(params[SORTIMENTI_NAZIVI[i]]) || 0;
+      newRow.push(value);
+      sortimentiValues.push(value);
+    }
+
+    // UKUPNO Č+L = Σ ČETINARI (indeks 9) + LIŠĆARI (indeks 18) — isti obrazac kao handleAddSjeca
+    const cetinari = sortimentiValues[9];
+    const liscari = sortimentiValues[18];
+    const ukupno = cetinari + liscari;
+    newRow.push(ukupno);
+
+    primkaSheet.appendRow(newRow);
+
+    // Odmah indeksiraj (isti kod kao ručno "sync-index" dugme) da se unos
+    // vidi u izvještajima bez dodatnog koraka.
+    let indeksInfo = null;
+    try {
+      indeksInfo = INDEKS_DODAJ_NOVE();
+    } catch (e) {
+      Logger.log('handleUnosOdjelSjeca: INDEKS_DODAJ_NOVE greška (red je ipak upisan u fajl odjela): ' + e.toString());
+    }
+
+    invalidateCacheZa('sjeca');
+
+    return createJsonResponse({
+      success: true,
+      message: "Upisano u fajl odjela i indeksirano",
+      ukupno: ukupno,
+      indeksiranje: indeksInfo
+    }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleUnosOdjelSjeca: ' + error.toString());
+    return createJsonResponse({
+      error: "Greška pri upisu sječe u fajl odjela: " + error.toString()
+    }, false);
+  }
+}
+
+function handleUnosOdjelOtprema(params) {
+  try {
+    const loginResult = JSON.parse(handleLogin(params.username, params.password).getContent());
+    if (!loginResult.success) {
+      return createJsonResponse({ error: "Unauthorized" }, false);
+    }
+    if (!_smijeUnositiUOdjelFajl(loginResult)) {
+      return createJsonResponse({ error: "Nemate ovlaštenje za unos u fajlove odjela" }, false);
+    }
+
+    const file = _pronadjiOdjelFajl(params.odjel);
+    if (!file) {
+      return createJsonResponse({ error: "Fajl za odjel '" + params.odjel + "' nije pronađen u folderu odjela" }, false);
+    }
+
+    const ss = SpreadsheetApp.open(file);
+    const otpremaSheet = ss.getSheetByName('OTPREMA');
+    if (!otpremaSheet) {
+      return createJsonResponse({ error: "List 'OTPREMA' nije pronađen u fajlu odjela '" + params.odjel + "'" }, false);
+    }
+
+    // Red: KUPAC(A) | DATUM(B) | OTPREMAČ(C) | sortimenti(D-W, 20 kolona)
+    const newRow = [params.kupac || '', parseDate(params.datum), params.otpremac || ''];
+
+    const sortimentiValues = [];
+    for (let i = 0; i < 19; i++) {
+      const value = parseFloat(params[SORTIMENTI_NAZIVI[i]]) || 0;
+      newRow.push(value);
+      sortimentiValues.push(value);
+    }
+
+    const cetinari = sortimentiValues[9];
+    const liscari = sortimentiValues[18];
+    const ukupno = cetinari + liscari;
+    newRow.push(ukupno);
+
+    otpremaSheet.appendRow(newRow);
+
+    let indeksInfo = null;
+    try {
+      indeksInfo = INDEKS_DODAJ_NOVE();
+    } catch (e) {
+      Logger.log('handleUnosOdjelOtprema: INDEKS_DODAJ_NOVE greška (red je ipak upisan u fajl odjela): ' + e.toString());
+    }
+
+    invalidateCacheZa('otprema');
+
+    return createJsonResponse({
+      success: true,
+      message: "Upisano u fajl odjela i indeksirano",
+      ukupno: ukupno,
+      indeksiranje: indeksInfo
+    }, true);
+
+  } catch (error) {
+    Logger.log('ERROR in handleUnosOdjelOtprema: ' + error.toString());
+    return createJsonResponse({
+      error: "Greška pri upisu otpreme u fajl odjela: " + error.toString()
+    }, false);
+  }
+}
+
+// ========================================
 // PENDING UNOSI API - Prikaz pending unosa za rukovodioca
 // ========================================
 

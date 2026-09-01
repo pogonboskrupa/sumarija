@@ -42,6 +42,7 @@
                 'kubikator': 'kubikator-content',
                 'godisnji-plan': 'godisnji-plan-content',
                 'karta-odjela': 'karta-odjela-content',
+                'unos-odjeli': 'unos-odjeli-content',
         };
 
         // Switch between tabs
@@ -243,6 +244,8 @@
                 loadPrimaciAdminTab();
             } else if (tab === 'godisnji-plan') {
                 if (typeof loadGodisnjiPlan === 'function') loadGodisnjiPlan(false);
+            } else if (tab === 'unos-odjeli') {
+                if (typeof showUnosOdjeliForm === 'function') showUnosOdjeliForm();
             } else if (tab === 'karta-odjela') {
                 if (typeof initKartaOdjela === 'function') initKartaOdjela(false);
                 // Auto-aktiviraj fokus mode pri ulasku na mapu

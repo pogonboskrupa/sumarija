@@ -106,6 +106,10 @@ function doGet(e) {
       return handleAddSjeca(e.parameter);
     } else if (path === 'add-otprema') {
       return handleAddOtprema(e.parameter);
+    } else if (path === 'unos-odjel-sjeca') {
+      return handleUnosOdjelSjeca(e.parameter);
+    } else if (path === 'unos-odjel-otprema') {
+      return handleUnosOdjelOtprema(e.parameter);
     } else if (path === 'pending-unosi') {
       return handlePendingUnosi(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'my-pending') {

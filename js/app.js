@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.42';
+        const APP_VERSION = '1.17.43';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1807,7 +1807,8 @@
                 'sjeca-odjel',
                 'otprema-odjel',
                 'edit-sjeca-odjel',
-                'edit-otprema-odjel'
+                'edit-otprema-odjel',
+                'uo-odjel-select'
             ];
 
             dropdowns.forEach(dropdownId => {
@@ -13715,6 +13716,280 @@
 
             // Reset image
             removeOtpremaImage();
+        }
+
+        // ==================== UNOS U FAJLOVE ODJELA ====================
+        // Direktan upis (kancelarija/operateri) u PRIMKA/OTPREMA list fajla
+        // odjela — potpuno odvojeno od "Dodaj sječu"/"Dodaj otpremu" iznad
+        // (ta forma+red za odobrenje se ne koristi). Backend:
+        // handleUnosOdjelSjeca/handleUnosOdjelOtprema (apps-script/api-handlers.gs),
+        // path unos-odjel-sjeca/unos-odjel-otprema — pišu direktno u fajl
+        // odjela pa odmah pozivaju INDEKS_DODAJ_NOVE() (isto što radi ručno
+        // "sync-index" dugme), tako da se unos odmah vidi u izvještajima.
+
+        function showUnosOdjeliForm() {
+            const today = new Date().toISOString().split('T')[0];
+            const sjecaDatum = document.getElementById('uo-sjeca-datum');
+            const otpremaDatum = document.getElementById('uo-otprema-datum');
+            if (sjecaDatum && !sjecaDatum.value) sjecaDatum.value = today;
+            if (otpremaDatum && !otpremaDatum.value) otpremaDatum.value = today;
+
+            const sjecaInputIds = ['uo-sjeca-FL-C', 'uo-sjeca-I-C', 'uo-sjeca-II-C', 'uo-sjeca-III-C', 'uo-sjeca-RD',
+                                   'uo-sjeca-CEL-DUGA', 'uo-sjeca-CEL-CIJEPANA', 'uo-sjeca-SKART',
+                                   'uo-sjeca-FL-L', 'uo-sjeca-I-L', 'uo-sjeca-II-L', 'uo-sjeca-III-L',
+                                   'uo-sjeca-OGR-DUGI', 'uo-sjeca-OGR-CIJEPANI', 'uo-sjeca-GULE'];
+            sjecaInputIds.forEach(function(id) {
+                const el = document.getElementById(id);
+                if (el && !el.hasAttribute('data-listener-added')) {
+                    el.addEventListener('input', calculateUnosOdjelSjeca);
+                    el.setAttribute('data-listener-added', 'true');
+                }
+            });
+            calculateUnosOdjelSjeca();
+
+            const otpremaInputIds = ['uo-otprema-FL-C', 'uo-otprema-I-C', 'uo-otprema-II-C', 'uo-otprema-III-C', 'uo-otprema-RD',
+                                     'uo-otprema-CEL-DUGA', 'uo-otprema-CEL-CIJEPANA', 'uo-otprema-SKART',
+                                     'uo-otprema-FL-L', 'uo-otprema-I-L', 'uo-otprema-II-L', 'uo-otprema-III-L',
+                                     'uo-otprema-OGR-DUGI', 'uo-otprema-OGR-CIJEPANI', 'uo-otprema-GULE'];
+            otpremaInputIds.forEach(function(id) {
+                const el = document.getElementById(id);
+                if (el && !el.hasAttribute('data-listener-added')) {
+                    el.addEventListener('input', calculateUnosOdjelOtprema);
+                    el.setAttribute('data-listener-added', 'true');
+                }
+            });
+            calculateUnosOdjelOtprema();
+        }
+
+        // Prebacivanje Sječa/Otprema pod-tab — izabrani odjel OSTAJE (dropdown
+        // je zajednički, van oba pod-taba).
+        function switchUnosOdjelTab(tab) {
+            document.querySelectorAll('#uo-submenu .submenu-tab').forEach(function(b) {
+                b.classList.toggle('active', b.dataset.tab === tab);
+            });
+            const sjecaView = document.getElementById('uo-sjeca-view');
+            const otpremaView = document.getElementById('uo-otprema-view');
+            if (sjecaView) sjecaView.classList.toggle('hidden', tab !== 'sjeca');
+            if (otpremaView) otpremaView.classList.toggle('hidden', tab !== 'otprema');
+        }
+
+        function calculateUnosOdjelSjeca() {
+            const getNum = (id) => { const el = document.getElementById(id); return el ? parseNumInput(el.value) : 0; };
+            const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val.toFixed(2); };
+
+            const trupciC = getNum('uo-sjeca-FL-C') + getNum('uo-sjeca-I-C') + getNum('uo-sjeca-II-C') + getNum('uo-sjeca-III-C') + getNum('uo-sjeca-RD');
+            setVal('uo-sjeca-TRUPCI-C', trupciC);
+            const cetinari = trupciC + getNum('uo-sjeca-CEL-DUGA') + getNum('uo-sjeca-CEL-CIJEPANA') + getNum('uo-sjeca-SKART');
+            setVal('uo-sjeca-CETINARI', cetinari);
+
+            const trupciL = getNum('uo-sjeca-FL-L') + getNum('uo-sjeca-I-L') + getNum('uo-sjeca-II-L') + getNum('uo-sjeca-III-L');
+            setVal('uo-sjeca-TRUPCI-L', trupciL);
+            const liscari = trupciL + getNum('uo-sjeca-OGR-DUGI') + getNum('uo-sjeca-OGR-CIJEPANI') + getNum('uo-sjeca-GULE');
+            setVal('uo-sjeca-LISCARI', liscari);
+
+            setVal('uo-sjeca-UKUPNO-CL', cetinari + liscari);
+        }
+
+        function calculateUnosOdjelOtprema() {
+            const getNum = (id) => { const el = document.getElementById(id); return el ? parseNumInput(el.value) : 0; };
+            const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val.toFixed(2); };
+
+            const trupciC = getNum('uo-otprema-FL-C') + getNum('uo-otprema-I-C') + getNum('uo-otprema-II-C') + getNum('uo-otprema-III-C') + getNum('uo-otprema-RD');
+            setVal('uo-otprema-TRUPCI-C', trupciC);
+            const cetinari = trupciC + getNum('uo-otprema-CEL-DUGA') + getNum('uo-otprema-CEL-CIJEPANA') + getNum('uo-otprema-SKART');
+            setVal('uo-otprema-CETINARI', cetinari);
+
+            const trupciL = getNum('uo-otprema-FL-L') + getNum('uo-otprema-I-L') + getNum('uo-otprema-II-L') + getNum('uo-otprema-III-L');
+            setVal('uo-otprema-TRUPCI-L', trupciL);
+            const liscari = trupciL + getNum('uo-otprema-OGR-DUGI') + getNum('uo-otprema-OGR-CIJEPANI') + getNum('uo-otprema-GULE');
+            setVal('uo-otprema-LISCARI', liscari);
+
+            setVal('uo-otprema-UKUPNO-CL', cetinari + liscari);
+        }
+
+        // Ne pun reset — odjel dropdown OSTAJE izabran, kancelarija tipično
+        // upisuje više redova zaredom za isti odjel.
+        function resetUnosOdjelSjecaForm() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('uo-sjeca-datum').value = today;
+            document.getElementById('uo-sjeca-primac').value = '';
+            document.querySelectorAll('#uo-sjeca-form input[type="number"]').forEach(input => { input.value = 0; });
+            calculateUnosOdjelSjeca();
+        }
+
+        function resetUnosOdjelOtpremaForm() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('uo-otprema-datum').value = today;
+            document.getElementById('uo-otprema-kupac').value = '';
+            document.getElementById('uo-otprema-otpremac').value = '';
+            document.querySelectorAll('#uo-otprema-form input[type="number"]').forEach(input => { input.value = 0; });
+            calculateUnosOdjelOtprema();
+        }
+
+        function _uoValidiraj(odjel, datum, extraErrors) {
+            const errors = [];
+            if (!odjel) errors.push('Izaberi odjel');
+            if (!datum) errors.push('Datum je obavezan');
+            errors.push(...extraErrors);
+            return errors;
+        }
+
+        async function submitUnosOdjelSjeca(event) {
+            event.preventDefault();
+            const submitBtn = document.getElementById('uo-submit-sjeca-btn');
+            const messageDiv = document.getElementById('uo-sjeca-message');
+            const getVal = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
+            const getNum = (id) => { const el = document.getElementById(id); return el ? parseNumInput(el.value) : 0; };
+
+            const odjel = getVal('uo-odjel-select');
+            const datum = getVal('uo-sjeca-datum');
+            const primac = getVal('uo-sjeca-primac').trim();
+
+            const sortimentIds = ['FL-C', 'I-C', 'II-C', 'III-C', 'RD', 'CEL-DUGA', 'CEL-CIJEPANA', 'SKART',
+                                   'FL-L', 'I-L', 'II-L', 'III-L', 'OGR-DUGI', 'OGR-CIJEPANI', 'GULE'];
+            let hasAnyValue = false;
+            const extraErrors = [];
+            sortimentIds.forEach(sid => { if (getNum('uo-sjeca-' + sid) > 0) hasAnyValue = true; });
+            if (!primac) extraErrors.push('Unesite ime primača');
+            if (!hasAnyValue) extraErrors.push('Unesite barem jedan sortiment (količina > 0)');
+
+            const errors = _uoValidiraj(odjel, datum, extraErrors);
+            if (errors.length > 0) {
+                messageDiv.innerHTML = '❌ ' + errors.join('<br>❌ ');
+                messageDiv.style.background = '#fee2e2';
+                messageDiv.style.color = '#991b1b';
+                messageDiv.classList.remove('hidden');
+                return;
+            }
+
+            const fields = {
+                odjel: odjel, datum: datum, primac: primac,
+                'F/L Č': getNum('uo-sjeca-FL-C'), 'I Č': getNum('uo-sjeca-I-C'), 'II Č': getNum('uo-sjeca-II-C'),
+                'III Č': getNum('uo-sjeca-III-C'), 'RD': getNum('uo-sjeca-RD'), 'TRUPCI Č': getNum('uo-sjeca-TRUPCI-C'),
+                'CEL.DUGA': getNum('uo-sjeca-CEL-DUGA'), 'CEL.CIJEPANA': getNum('uo-sjeca-CEL-CIJEPANA'),
+                'ŠKART': getNum('uo-sjeca-SKART'), 'Σ ČETINARI': getNum('uo-sjeca-CETINARI'),
+                'F/L L': getNum('uo-sjeca-FL-L'), 'I L': getNum('uo-sjeca-I-L'), 'II L': getNum('uo-sjeca-II-L'),
+                'III L': getNum('uo-sjeca-III-L'), 'TRUPCI L': getNum('uo-sjeca-TRUPCI-L'),
+                'OGR.DUGI': getNum('uo-sjeca-OGR-DUGI'), 'OGR.CIJEPANI': getNum('uo-sjeca-OGR-CIJEPANI'),
+                'GULE': getNum('uo-sjeca-GULE'), 'LIŠĆARI': getNum('uo-sjeca-LISCARI')
+            };
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Upisujem...';
+            messageDiv.classList.add('hidden');
+
+            try {
+                const url = buildApiUrl('unos-odjel-sjeca', fields);
+                const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
+                const result = await response.json();
+
+                if (result.success) {
+                    messageDiv.innerHTML = `✅ ${result.message}<br>Ukupno: ${(Number(result.ukupno) || 0).toFixed(2)} m³`;
+                    messageDiv.style.background = '#d1fae5';
+                    messageDiv.style.color = '#047857';
+                    messageDiv.classList.remove('hidden');
+                    resetUnosOdjelSjecaForm();
+                    setTimeout(() => messageDiv.classList.add('hidden'), 3000);
+
+                    clearCacheByPattern('primac');
+                    clearCacheByPattern('primaci');
+                    clearCacheByPattern('dashboard');
+                    clearCacheByPattern('izvjestaji');
+                    clearCacheByPattern('sedmicni_sjeca');
+                    clearCacheByPattern('stanje_odjela');
+                    clearCacheByPattern('stanje_zaliha');
+                } else {
+                    throw new Error(result.error || 'Nepoznata greška');
+                }
+            } catch (error) {
+                messageDiv.innerHTML = `❌ Greška: ${error.message}`;
+                messageDiv.style.background = '#fee2e2';
+                messageDiv.style.color = '#991b1b';
+                messageDiv.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Upiši sječu';
+            }
+        }
+
+        async function submitUnosOdjelOtprema(event) {
+            event.preventDefault();
+            const submitBtn = document.getElementById('uo-submit-otprema-btn');
+            const messageDiv = document.getElementById('uo-otprema-message');
+            const getVal = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
+            const getNum = (id) => { const el = document.getElementById(id); return el ? parseNumInput(el.value) : 0; };
+
+            const odjel = getVal('uo-odjel-select');
+            const datum = getVal('uo-otprema-datum');
+            const kupac = getVal('uo-otprema-kupac').trim();
+            const otpremac = getVal('uo-otprema-otpremac').trim();
+
+            const sortimentIds = ['FL-C', 'I-C', 'II-C', 'III-C', 'RD', 'CEL-DUGA', 'CEL-CIJEPANA', 'SKART',
+                                   'FL-L', 'I-L', 'II-L', 'III-L', 'OGR-DUGI', 'OGR-CIJEPANI', 'GULE'];
+            let hasAnyValue = false;
+            const extraErrors = [];
+            sortimentIds.forEach(sid => { if (getNum('uo-otprema-' + sid) > 0) hasAnyValue = true; });
+            if (!otpremac) extraErrors.push('Unesite ime otpremača');
+            if (!hasAnyValue) extraErrors.push('Unesite barem jedan sortiment (količina > 0)');
+
+            const errors = _uoValidiraj(odjel, datum, extraErrors);
+            if (errors.length > 0) {
+                messageDiv.innerHTML = '❌ ' + errors.join('<br>❌ ');
+                messageDiv.style.background = '#fee2e2';
+                messageDiv.style.color = '#991b1b';
+                messageDiv.classList.remove('hidden');
+                return;
+            }
+
+            const fields = {
+                odjel: odjel, datum: datum, kupac: kupac, otpremac: otpremac,
+                'F/L Č': getNum('uo-otprema-FL-C'), 'I Č': getNum('uo-otprema-I-C'), 'II Č': getNum('uo-otprema-II-C'),
+                'III Č': getNum('uo-otprema-III-C'), 'RD': getNum('uo-otprema-RD'), 'TRUPCI Č': getNum('uo-otprema-TRUPCI-C'),
+                'CEL.DUGA': getNum('uo-otprema-CEL-DUGA'), 'CEL.CIJEPANA': getNum('uo-otprema-CEL-CIJEPANA'),
+                'ŠKART': getNum('uo-otprema-SKART'), 'Σ ČETINARI': getNum('uo-otprema-CETINARI'),
+                'F/L L': getNum('uo-otprema-FL-L'), 'I L': getNum('uo-otprema-I-L'), 'II L': getNum('uo-otprema-II-L'),
+                'III L': getNum('uo-otprema-III-L'), 'TRUPCI L': getNum('uo-otprema-TRUPCI-L'),
+                'OGR.DUGI': getNum('uo-otprema-OGR-DUGI'), 'OGR.CIJEPANI': getNum('uo-otprema-OGR-CIJEPANI'),
+                'GULE': getNum('uo-otprema-GULE'), 'LIŠĆARI': getNum('uo-otprema-LISCARI')
+            };
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Upisujem...';
+            messageDiv.classList.add('hidden');
+
+            try {
+                const url = buildApiUrl('unos-odjel-otprema', fields);
+                const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
+                const result = await response.json();
+
+                if (result.success) {
+                    messageDiv.innerHTML = `✅ ${result.message}<br>Ukupno: ${(Number(result.ukupno) || 0).toFixed(2)} m³`;
+                    messageDiv.style.background = '#d1fae5';
+                    messageDiv.style.color = '#047857';
+                    messageDiv.classList.remove('hidden');
+                    resetUnosOdjelOtpremaForm();
+                    setTimeout(() => messageDiv.classList.add('hidden'), 3000);
+
+                    clearCacheByPattern('otpremac');
+                    clearCacheByPattern('otpremaci');
+                    clearCacheByPattern('dashboard');
+                    clearCacheByPattern('izvjestaji');
+                    clearCacheByPattern('sedmicni_otprema');
+                    clearCacheByPattern('stanje_odjela');
+                    clearCacheByPattern('stanje_zaliha');
+                    clearCacheByPattern('kupci');
+                } else {
+                    throw new Error(result.error || 'Nepoznata greška');
+                }
+            } catch (error) {
+                messageDiv.innerHTML = `❌ Greška: ${error.message}`;
+                messageDiv.style.background = '#fee2e2';
+                messageDiv.style.color = '#991b1b';
+                messageDiv.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Upiši otpremu';
+            }
         }
 
         // ==================== IMAGE UPLOAD FUNCTIONS ====================

@@ -262,7 +262,8 @@
                 tabsConfig = [
                     { id: 'kupci', icon: '🏢', label: 'Prikaz po kupcima', active: true },
                     { id: 'primaci', icon: '📅', label: 'Sječa po danima' },
-                    { id: 'otpremaci', icon: '📅', label: 'Otprema po danima' }
+                    { id: 'otpremaci', icon: '📅', label: 'Otprema po danima' },
+                    { id: 'unos-odjeli', icon: '📝', label: 'Unos u fajlove odjela' }
                 ];
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
                 tabsConfig = [
@@ -283,6 +284,7 @@
                     { id: 'mjesecni-sortimenti', icon: '📅', label: 'Sječa/otprema' },
                     { id: 'primaci', icon: '👷', label: 'SJEČA' },
                     { id: 'otpremaci', icon: '🚛', label: 'OTPREMA' },
+                    { id: 'unos-odjeli', icon: '📝', label: 'Unos u fajlove odjela' },
                     { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
                     { id: 'primaci-admin', icon: '🌲', label: 'Primači na šuma panju' },
                     { id: 'godisnji-plan', icon: '📋', label: 'Godišnji plan' },
