@@ -262,8 +262,7 @@
                 tabsConfig = [
                     { id: 'kupci', icon: '🏢', label: 'Prikaz po kupcima', active: true },
                     { id: 'primaci', icon: '📅', label: 'Sječa po danima' },
-                    { id: 'otpremaci', icon: '📅', label: 'Otprema po danima' },
-                    { id: 'unos-odjeli', icon: '📝', label: 'Unos sječe/otpreme' }
+                    { id: 'otpremaci', icon: '📅', label: 'Otprema po danima' }
                 ];
             } else if (userType === 'poslovođa' || userType === 'poslovodja') {
                 tabsConfig = [
@@ -329,14 +328,6 @@
             if (userType !== 'admin' && userType !== 'poslovođa' && userType !== 'poslovodja') {
                 var _dodaniUnosiBtn = document.getElementById('izvjestaji-subtab-dodani-unosi');
                 if (_dodaniUnosiBtn) _dodaniUnosiBtn.classList.add('hidden');
-            }
-
-            // "Unos sječe/otpreme" dugme unutar Izvještaja — SAMO za admin
-            // (operateri imaju ISTI ekran kao zaseban tab, vidi tabsConfig
-            // iznad; poslovođa/operativa ga ne dobijaju uopšte).
-            if (userType !== 'admin') {
-                var _unosSjeceBtn = document.getElementById('izvjestaji-subtab-unos-sjece-otpreme');
-                if (_unosSjeceBtn) _unosSjeceBtn.classList.add('hidden');
             }
 
             // Zum sadržaja — SAMO za poslovođu (50+, žele veći tekst). `userType` je
@@ -602,7 +593,7 @@
                 'mjesecni-sortimenti-content', 'stanje-odjela-admin-content',
                 'dinamika-content', 'kubikator-content', 'stanje-zaliha-content',
                 'sihtarica-primac-content', 'sihtarica-otpremac-content',
-                'godisnji-plan-content', 'unos-odjeli-content'
+                'godisnji-plan-content'
             ];
             panelIds.forEach(function(id) {
                 var el = document.getElementById(id);

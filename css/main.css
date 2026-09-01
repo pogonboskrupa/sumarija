@@ -1831,33 +1831,6 @@
             margin-bottom: 24px;
         }
 
-        /* UNOS SJEČE/OTPREME — sortimenti Četinara/Lišćara svaki u JEDNOM
-           redu (umjesto auto-fit grida koji bi ih razbio u više redova),
-           sa vodoravnim skrolom kao sigurnom rezervom na užim ekranima —
-           isti obrazac kao .kub-header-row u Kubikatoru. Veća specifičnost
-           (dvije klase) i kasnija pozicija u fajlu pobjeđuju .worker-form-grid. */
-        .worker-form-grid.uo-sortiment-row {
-            display: flex;
-            flex-wrap: nowrap;
-            gap: 10px;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: thin;
-            padding-bottom: 6px;
-        }
-        .uo-sortiment-row .worker-form-group {
-            flex: 0 0 100px;
-            min-width: 100px;
-        }
-
-        /* Širi ekran za "Unos sječe/otpreme" — nije ograničen na uski
-           centrirani .container (1200px) kao terenske forme (Dodaj sječu/
-           Dodaj otpremu), da stane više sortimentnih kolona bez nepotrebnog
-           skrola. */
-        #unos-odjeli-content.container {
-            max-width: 100%;
-        }
-
         .worker-form-group {
             display: flex;
             flex-direction: column;

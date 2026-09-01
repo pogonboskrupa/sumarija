@@ -291,7 +291,7 @@ function _sviCacheKljucevi() {
     );
     kljucevi = kljucevi.concat(_dinamikeIzvodjacaKljucevi(y));
   });
-  kljucevi.push('odjeli_alltime', 'primke_all', 'otpreme_all', 'stanje_zaliha_all', 'radnici_list_v2');
+  kljucevi.push('odjeli_alltime', 'primke_all', 'otpreme_all', 'stanje_zaliha_all');
   _mjeseciZaInvalidaciju().forEach(function (mj) {
     kljucevi.push(
       'primaci_daily_' + mj.y + '_' + mj.m, 'otpremaci_daily_' + mj.y + '_' + mj.m,
@@ -335,7 +335,7 @@ function invalidateCacheZa(tip) {
         if (tip === 'otprema') kljucevi.push('kupci_' + g);
         kljucevi = kljucevi.concat(_dinamikeIzvodjacaKljucevi(g));
       });
-      kljucevi.push('odjeli_alltime', 'stanje_zaliha_all', 'radnici_list_v2');
+      kljucevi.push('odjeli_alltime', 'stanje_zaliha_all');
       kljucevi.push(tip === 'sjeca' ? 'primke_all' : 'otpreme_all');
       _mjeseciZaInvalidaciju().forEach(function (mj) {
         kljucevi.push('daily_chart_' + mj.y + '_' + mj.m);

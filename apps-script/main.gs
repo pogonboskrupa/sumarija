@@ -106,10 +106,6 @@ function doGet(e) {
       return handleAddSjeca(e.parameter);
     } else if (path === 'add-otprema') {
       return handleAddOtprema(e.parameter);
-    } else if (path === 'unos-odjel-sjeca') {
-      return handleUnosOdjelSjeca(e.parameter);
-    } else if (path === 'unos-odjel-otprema') {
-      return handleUnosOdjelOtprema(e.parameter);
     } else if (path === 'pending-unosi') {
       return handlePendingUnosi(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'my-pending') {
@@ -122,8 +118,6 @@ function doGet(e) {
       return handleDeleteAllPending(e.parameter);
     } else if (path === 'get-odjeli-list') {
       return handleGetOdjeliList();
-    } else if (path === 'get-radnici-list') {
-      return handleGetRadniciList(e.parameter.username, e.parameter.password);
     } else if (path === 'mjesecni-sortimenti') {
       return handleMjesecniSortimenti(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'primaci-daily') {
