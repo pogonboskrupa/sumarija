@@ -173,11 +173,27 @@
         .section h2 { font-size: 20px; font-weight: bold; margin-bottom: 8px; color: #1f2937; }
         .section p { font-size: 14px; color: #4b5563; margin-bottom: 24px; }
 
-        /* Page Header */
+        /* Page Header — u velikoj većini tabova sjedi DIREKTNO na zelenoj
+           body pozadini (.container/.sub-content nemaju svoju), zato su
+           slova svijetla + suptilna sjenka za čitljivost na gradientu.
+           Izuzetak: kad je .page-header ugniježđen unutar .section (bijela
+           kartica — "Stanje Zaliha" tabovi) vraćaju se tamna slova ispod. */
         .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
-        .page-header-left h1 { font-size: 24px; font-weight: 700; color: #1f2937; margin-bottom: 4px; }
-        .page-header-left p { font-size: 14px; color: #4b5563; }
+        .page-header-left h1, .page-header-left h2 {
+            font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 4px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .18);
+        }
+        .page-header-left p { font-size: 14px; color: rgba(255, 255, 255, .88); }
         .page-header-right { display: flex; gap: 8px; align-items: center; }
+        /* Dugme se inače (#047857) gotovo stapa sa zelenom pozadinom iza
+           njega — sjenka ga vizuelno odvaja bez obzira na podlogu. */
+        .page-header-right .btn { box-shadow: 0 3px 10px rgba(0, 0, 0, .2); }
+        /* Izuzetak: .page-header unutar bijele .section kartice ("Stanje
+           Zaliha") — tekst se vraća na originalne tamne boje. */
+        .section .page-header-left h1, .section .page-header-left h2 {
+            color: #1f2937; text-shadow: none;
+        }
+        .section .page-header-left p { color: #4b5563; }
         .badge { display: inline-block; padding: 6px 12px; background: #e0e7ff; color: #3730a3; border-radius: 12px; font-size: 12px; font-weight: 600; }
         .notification-badge { position: relative; display: inline-block; }
         .notification-badge .badge-count { position: absolute; top: -8px; right: -8px; background: #dc2626; color: white; border-radius: 10px; padding: 2px 6px; font-size: 11px; font-weight: 700; min-width: 18px; text-align: center; display: none; }
@@ -198,10 +214,11 @@
         td.green { color: #059669; }
         td.blue { color: #2563eb; }
         td.red { color: #dc2626; }
+        /* Sjedi direktno na zelenoj body pozadini (.main-content nema svoju) — isti razlog kao .page-header. */
         .loading { text-align: center; padding: 60px 20px; }
         .loading-icon { font-size: 48px; margin-bottom: 16px; }
-        .loading-text { font-size: 18px; color: #374151; font-weight: 600; }
-        .loading-sub { font-size: 14px; color: #4b5563; margin-top: 8px; }
+        .loading-text { font-size: 18px; color: #fff; font-weight: 600; text-shadow: 0 1px 3px rgba(0, 0, 0, .18); }
+        .loading-sub { font-size: 14px; color: rgba(255, 255, 255, .88); margin-top: 8px; }
         .hidden { display: none; }
         .chart-container { margin-top: 20px; }
         .bar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
@@ -377,16 +394,15 @@
             color: #6b7280;
         }
 
-        /* Main Content Area — eksplicitna svijetla pozadina, NE oslanjati se
-           na body pozadinu (ta je zelena/login-splash gradient i nikad nije
-           bila namijenjena da se vidi iza stvarnog sadržaja — bez ovoga npr.
-           sivi .page-header-left p tekst postane skoro nečitljiv na tamnijoj
-           body pozadini). */
+        /* Main Content Area — nema svoju pozadinu, NAMJERNO: zelena body
+           pozadina (login/splash brend) treba prosijati kroz cijelu
+           aplikaciju, ne samo login ekran. Kontrast teksta koji zato sjedi
+           direktno na njoj (npr. .page-header) rješava se bojom SLOVA
+           (vidi .page-header-left ispod), ne pokrivanjem pozadinom. */
         .main-content {
             flex: 1;
             min-width: 0;
             overflow-x: hidden;
-            background: #f8fafc;
         }
 
         /* Desktop/Mobile visibility helpers */
