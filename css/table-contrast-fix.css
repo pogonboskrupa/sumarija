@@ -383,6 +383,16 @@ tr[style*="background:#059669; color:white; border-top:3px solid #047857"] td,
 tr[style*="background:#4338ca; color:white; border-top:3px solid #3730a3"] td {
     color: #fff !important;
 }
+/* Isti obrazac bug-a, treći put: primaci-daily-table/otpremaci-daily-table
+   nose class="kupci-table", a ".kupci-table tbody td { color: #1e293b
+   !important }" pobjeđuje čak i nad INLINE bojom (ecfdf5, gotovo bijela) na
+   "UKUPNO {MJESEC}" redu — tekst je stvarno bio taman, ne skoro-bijel kako
+   je pisalo u kodu, pa je crni obrub iznad opet pravio "tamna slova, tamni
+   obrub" (korisnički prijavljeno: "sječa po danima obrub crn, slova
+   tamna"). */
+#primaci-daily-grand-total-row td {
+    color: #ecfdf5 !important;
+}
 
 /* CRITICAL: Dark background rows MUST have white text */
 /* Override the color: #0f172a from above */
