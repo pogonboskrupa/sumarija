@@ -234,17 +234,43 @@
                 <div id="error-msg" class="error hidden"></div>
                 
                 <div class="form-group">
-                    <label>👤 Korisničko ime</label>
-                    <input type="text" id="username" placeholder="Email ili username" required autocomplete="username">
+                    <label for="username">👤 Korisničko ime</label>
+                    <!-- autocapitalize/autocorrect/spellcheck NAMJERNO isključeni:
+                         Android tastatura u type="text" polju po defaultu piše prvo
+                         slovo VELIKO, a backend poredi korisničko ime znak-za-znak
+                         (data[i][0] === username, apps-script/authentication.gs) —
+                         pa je "Adnan" umjesto "adnan" značilo "pogrešno korisničko
+                         ime ili šifra" iako je radnik ukucao ispravno. Namjerno se
+                         NE forsira mala slova u JS-u: u šifrarniku smiju postojati
+                         i korisnička imena s velikim slovom, pa se čuva tačno ono
+                         što je korisnik ukucao — samo se sprječava da mu tastatura
+                         to promijeni iza leđa. -->
+                    <input type="text" id="username" placeholder="Email ili username" required
+                           autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
                 </div>
 
                 <div class="form-group">
-                    <label>🔒 Šifra</label>
-                    <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+                    <label for="password">🔒 Šifra</label>
+                    <!-- "Prikaži šifru" — na terenu se kuca jednom rukom, u
+                         rukavicama i po suncu; bez ovoga se greška u šifri vidi
+                         tek kao odbijena prijava. -->
+                    <div class="login-pass-wrap">
+                        <input type="password" id="password" placeholder="••••••••" required
+                               autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false">
+                        <button type="button" id="login-pass-toggle" class="login-pass-toggle"
+                                onclick="toggleLoginPassword()" aria-label="Prikaži šifru" title="Prikaži šifru">👁️</button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn" id="login-btn">🔓 Prijavi se</button>
+
+                <!-- Šta je moguće bez mreže — popunjava _osvjeziLoginOfflineHint
+                     (js/auth.js). Do sada je radnik bez signala to saznavao tek
+                     nakon odbijene prijave. -->
+                <div id="login-offline-hint" class="login-offline-hint hidden"></div>
             </form>
+
+            <div class="login-version">v<span id="login-version-num">—</span></div>
         </div>
     </div>
 

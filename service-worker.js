@@ -1,6 +1,6 @@
 // ========== Service Worker - Offline Support ==========
 
-const CACHE_VERSION = 'v385';
+const CACHE_VERSION = 'v386';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
 // Karta (tile pločice + geojson) — NAMJERNO u zasebnom, NEVERZIONISANOM kešu.

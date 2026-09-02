@@ -17,7 +17,7 @@
         // Pri prijavi: ako se prijavljuje DRUGI korisnik od vlasnika keša,
         // obriši sav cache_* (privatnost na dijeljenom uređaju). Isti korisnik
         // zadržava keš — to omogućava pun offline rad i poslije odjave.
-        function _clearForeignCacheOnLogin(username) {
+        async function _clearForeignCacheOnLogin(username) {
             const owner = localStorage.getItem('sumarija_cache_owner');
             const uname = (username || '').toLowerCase();
             if (owner && owner.toLowerCase() !== uname) {
@@ -28,8 +28,23 @@
                         if (k && k.startsWith('cache_')) cacheKeys.push(k);
                     }
                     cacheKeys.forEach(k => localStorage.removeItem(k));
+
+                    // NAJVEĆI prikazi (primke/sječa, otprema — do 2.8MB svaki)
+                    // NISU u localStorage-u nego u IndexedDB (IDB_LARGE_KEYS,
+                    // js/app.js), pa ih petlja iznad uopšte ne dodiruje. Bez
+                    // ovoga bi na dijeljenom terenskom telefonu sljedeći
+                    // korisnik u tabovima Sječa/Otprema vidio TUĐE podatke —
+                    // dok se ne povuku novi, a bez signala i neograničeno.
+                    // Baš zbog toga ova funkcija i postoji, pa je rupa bila
+                    // upravo na dva najveća skupa podataka.
+                    if (typeof IDB_LARGE_KEYS !== 'undefined' && typeof _removeCacheEntry === 'function') {
+                        for (const k of IDB_LARGE_KEYS) {
+                            try { await _removeCacheEntry(k); } catch(_) {}
+                        }
+                    }
+
                     localStorage.removeItem('sumarija_offline_auth');
-                    console.log(`[LOGIN] Novi korisnik — obrisano ${cacheKeys.length} ključeva prethodnog vlasnika keša`);
+                    console.log(`[LOGIN] Novi korisnik — obrisano ${cacheKeys.length} ključeva prethodnog vlasnika keša (+ IndexedDB blobovi)`);
                 } catch(e) { console.error('foreign cache clear:', e); }
             }
             localStorage.setItem('sumarija_cache_owner', username || '');
@@ -43,6 +58,10 @@
             const password = document.getElementById('password').value.trim();
             const errorMsg = document.getElementById('error-msg');
             const loginBtn = document.getElementById('login-btn');
+            // Zapamti stvarnu labelu umjesto da je `finally` hardkodira: dugme
+            // nosi i ikonu ("🔓 Prijavi se"), pa je hardkodirani povratak na
+            // "Prijavi se" gutao ikonu nakon prvog neuspjelog pokušaja.
+            const loginBtnLabel = loginBtn.textContent;
 
             errorMsg.classList.add('hidden');
             loginBtn.disabled = true;
@@ -63,7 +82,9 @@
                 if (data.success) {
                     currentUser = data;
                     currentPassword = password;
-                    _clearForeignCacheOnLogin(data.username || username);
+                    // await — brisanje tuđeg keša MORA završiti prije nego
+                    // loadData() ispod počne čitati iz njega.
+                    await _clearForeignCacheOnLogin(data.username || username);
                     localStorage.setItem('sumarija_user', JSON.stringify(data));
                     localStorage.setItem('sumarija_pass', password);
                     // Offline snapshot — preživljava odjavu, omogućava offline prijavu
@@ -132,7 +153,7 @@
                 }
             } finally {
                 loginBtn.disabled = false;
-                loginBtn.textContent = 'Prijavi se';
+                loginBtn.textContent = loginBtnLabel;
             }
         });
 
@@ -638,3 +659,52 @@
                 return Promise.resolve();
             }
         }
+
+        // ================= LOGIN EKRAN — sitnice koje se tiču samo prijave =================
+
+        // "Prikaži/sakrij šifru". Fokus se namjerno vraća u polje (i kursor na
+        // kraj) — bez toga tastatura na telefonu padne, pa korisnik mora
+        // ponovo tapnuti u polje da nastavi kucati.
+        window.toggleLoginPassword = function() {
+            var inp = document.getElementById('password');
+            var btn = document.getElementById('login-pass-toggle');
+            if (!inp) return;
+            var prikazi = inp.type === 'password';
+            inp.type = prikazi ? 'text' : 'password';
+            if (btn) {
+                btn.textContent = prikazi ? '🙈' : '👁️';
+                btn.setAttribute('aria-label', prikazi ? 'Sakrij šifru' : 'Prikaži šifru');
+                btn.setAttribute('title', prikazi ? 'Sakrij šifru' : 'Prikaži šifru');
+            }
+            try {
+                inp.focus();
+                var kraj = inp.value.length;
+                inp.setSelectionRange(kraj, kraj);
+            } catch (_) {}
+        };
+
+        // Bez mreže: reci ODMAH šta je moguće, umjesto da radnik to sazna tek
+        // kroz odbijenu prijavu. Offline prijava radi samo za zadnjeg korisnika
+        // sa ovog uređaja (vidi 'sumarija_offline_auth' u login handleru gore).
+        function _osvjeziLoginOfflineHint() {
+            var el = document.getElementById('login-offline-hint');
+            if (!el) return;
+            if (navigator.onLine) { el.classList.add('hidden'); return; }
+            var imaSnapshot = false;
+            try { imaSnapshot = !!localStorage.getItem('sumarija_offline_auth'); } catch (_) {}
+            el.textContent = imaSnapshot
+                ? '📴 Nema mreže — moguća je prijava zadnjeg korisnika s ovog uređaja (ista šifra), sa zadnjim sačuvanim podacima.'
+                : '📴 Nema mreže — prijava nije moguća jer se s ovog uređaja još niko nije prijavio dok je bilo signala.';
+            el.classList.remove('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verzija na login ekranu — da korisnik na terenu može reći koju
+            // verziju ima, a da se prethodno ne mora prijaviti.
+            var v = document.getElementById('login-version-num');
+            if (v && window.APP_VERSION) v.textContent = window.APP_VERSION;
+
+            _osvjeziLoginOfflineHint();
+            window.addEventListener('online', _osvjeziLoginOfflineHint);
+            window.addEventListener('offline', _osvjeziLoginOfflineHint);
+        });

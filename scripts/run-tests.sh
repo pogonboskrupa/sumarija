@@ -29,26 +29,12 @@ echo "Pokretanje testova..."
 echo "----------------------------------------------"
 echo ""
 
-node --test tests/name-matching.test.js \
-              tests/validation.test.js \
-              tests/utils.test.js \
-              tests/retry-logic.test.js \
-              tests/security-audit.test.js \
-              tests/sjekacke-linije.test.js \
-              tests/kubikator-rounding.test.js \
-              tests/kubikator-stranica.test.js \
-              tests/karta-odjela-kategorije.test.js \
-              tests/karta-odjela-projektovana-masa.test.js \
-              tests/karta-odjela-klopke-po-vrsti.test.js \
-              tests/karta-odjela-pad-bounds.test.js \
-              tests/karta-odjela-zavrsena-realizacija.test.js \
-              tests/karta-odjela-neaktivnost-zavrseno.test.js \
-              tests/offline-red-cekanja.test.js \
-              tests/slaba-veza.test.js \
-              tests/karta-gps-pracenje.test.js \
-              tests/offline-karta-preuzimanje.test.js \
-              tests/priprema-za-teren.test.js \
-              tests/trend-period-od-do.test.js
+# Svi testovi iz tests/ — NAMJERNO preko obrasca, ne nabrajanjem fajlova.
+# Ranije je spisak bio hardkodiran, pa je svaki NOVI test fajl tiho
+# preskakan: suite bi i dalje javljao "sve prolazi" a da taj test nikad
+# nije pokrenut. Provjereno: obrazac hvata isti skup fajlova kao raniji
+# spisak (nijedan nije bio namjerno izostavljen).
+node --test tests/*.test.js
 
 echo ""
 echo "=============================================="

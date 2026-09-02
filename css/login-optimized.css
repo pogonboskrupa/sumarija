@@ -205,6 +205,33 @@ body.login-active {
     color: #6b7280;
 }
 
+/* Polje šifre + dugme "prikaži/sakrij" unutar njega */
+.login-pass-wrap { position: relative; }
+.login-pass-wrap input { padding-right: 52px; }
+.login-pass-toggle {
+    position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
+    width: 38px; height: 38px; padding: 0;
+    border: none; background: transparent; border-radius: 10px;
+    font-size: 18px; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+}
+.login-pass-toggle:active { background: #f3f4f6; }
+
+/* Šta je moguće bez mreže (vidi _osvjeziLoginOfflineHint u js/auth.js) */
+.login-offline-hint {
+    margin-top: 14px; padding: 10px 12px;
+    background: #fffbeb; border: 1px solid #fcd34d; border-radius: 10px;
+    color: #92400e; font-size: 12px; line-height: 1.45; text-align: center;
+}
+.login-offline-hint.hidden { display: none; }
+
+/* Verzija u podnožju — da se na terenu može reći koja je verzija bez prijave */
+.login-version {
+    margin-top: 16px; text-align: center;
+    font-size: 11px; color: #9ca3af; letter-spacing: 0.3px;
+}
+
 /* Submit button — isti gradient/smjer kao .kub-dodaj (glavna zelena radnja
    u appu), reciklirano radi dosljednosti. */
 .login-box .btn {
