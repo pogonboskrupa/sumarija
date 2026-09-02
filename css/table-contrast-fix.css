@@ -285,6 +285,65 @@ table tfoot td,
     font-size: 15px !important;
 }
 
+/* ============================================================
+   UKUPNO/TOTAL REDOVI — obrub oko slova (korisnički zahtjev): UVIJEK
+   bijeli obrub oko TAMNIH slova, crni obrub oko BIJELIH. Obrub sam daje
+   kontrast bez obzira šta je iza teksta, pa nije bitno poklapa li se boja
+   obruba s trenutnom pozadinom reda — bitna je samo boja SLOVA.
+   Dva pravila niže su ZADANA (default) i pokrivaju skoro sve ukupno/total
+   redove u appu (generic .ukupno-row/.totals-row klase iz app.js,
+   charts.js, izvjestaji-new.js, main.css...) — .ukupno-row je gotovo
+   svugdje bijela slova na tamnoj pozadini (crni obrub), .totals-row je
+   gotovo svugdje tamna slova (bijeli obrub). Kad neka konkretnija tabela
+   već ima svoj text-shadow (npr. .kupci-table .totals-row, "legacy"
+   .izvjestaj-week-table .totals-row) ta specifičnija pravila i dalje
+   pobjeđuju — ne diramo ih. Posebni slučajevi (boja slova suprotna od
+   pretpostavljene) su izuzeti ispod. */
+.ukupno-row td {
+    text-shadow:
+        -1px -1px 0 #000, 1px -1px 0 #000,
+        -1px  1px 0 #000, 1px  1px 0 #000,
+        -2px 0 0 #000, 2px 0 0 #000,
+        0 -2px 0 #000, 0 2px 0 #000 !important;
+}
+.totals-row td,
+.total-row td {
+    text-shadow:
+        -1px -1px 0 #fff, 1px -1px 0 #fff,
+        -1px  1px 0 #fff, 1px  1px 0 #fff,
+        -2px 0 0 #fff, 2px 0 0 #fff,
+        0 -2px 0 #fff, 0 2px 0 #fff !important;
+}
+
+/* Izuzetak: #mjesecna-kombinovano-table ukupno-row ima tamnu pozadinu i
+   bijela slova SAMO u prvoj koloni (col-vrsta) — ostale ćelije nemaju
+   eksplicitnu boju pa bi crni obrub gore bio beskoristan (crn na crnom).
+   Ovo im daje istu bijelu boju kao prva kolona. */
+#mjesecna-kombinovano-table tbody tr.ukupno-row td {
+    color: #fff !important;
+}
+
+/* Izuzetak: sedmični/mjesečni izvještaj (Izvještaji tab) — week-totals-row
+   i grand-totals-row imaju TAMNA slova na SVIJETLOJ pozadini (suprotno od
+   .ukupno-row default-a gore), pa im treba bijeli obrub. */
+.izvjestaj-week-table tbody tr.week-totals-row td,
+.izvjestaj-week-table tbody tr.grand-totals-row td {
+    text-shadow:
+        -1px -1px 0 #fff, 1px -1px 0 #fff,
+        -1px  1px 0 #fff, 1px  1px 0 #fff,
+        -2px 0 0 #fff, 2px 0 0 #fff,
+        0 -2px 0 #fff, 0 2px 0 #fff !important;
+}
+/* ...ali prva ćelija (labela) grand-totals-row ima TAMNU pozadinu i
+   BIJELA slova (ne prati boju ostatka reda) — vraća crni obrub. */
+.izvjestaj-week-table tbody tr.grand-totals-row td:first-child {
+    text-shadow:
+        -1px -1px 0 #000, 1px -1px 0 #000,
+        -1px  1px 0 #000, 1px  1px 0 #000,
+        -2px 0 0 #000, 2px 0 0 #000,
+        0 -2px 0 #000, 0 2px 0 #000 !important;
+}
+
 /* CRITICAL: Dark background rows MUST have white text */
 /* Override the color: #0f172a from above */
 tr[style*="background: #047857"] td,
