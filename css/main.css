@@ -377,11 +377,16 @@
             color: #6b7280;
         }
 
-        /* Main Content Area */
+        /* Main Content Area — eksplicitna svijetla pozadina, NE oslanjati se
+           na body pozadinu (ta je zelena/login-splash gradient i nikad nije
+           bila namijenjena da se vidi iza stvarnog sadržaja — bez ovoga npr.
+           sivi .page-header-left p tekst postane skoro nečitljiv na tamnijoj
+           body pozadini). */
         .main-content {
             flex: 1;
             min-width: 0;
             overflow-x: hidden;
+            background: #f8fafc;
         }
 
         /* Desktop/Mobile visibility helpers */
