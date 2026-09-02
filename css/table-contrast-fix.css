@@ -352,7 +352,9 @@ table tfoot td,
 .daily-nofilter td,
 tr[style*="linear-gradient(to bottom, #fde68a, #fbbf24)"] td,
 tr[style*="linear-gradient(to bottom, #dbeafe, #bfdbfe); color: #1e40af"] td,
-#otpremaci-daily-grand-total-row td[style*="color: #78350f"] {
+#otpremaci-daily-grand-total-row td[style*="color: #78350f"],
+tr[style*="background:#dbeafe; border-top:1px solid #1e40af"] td,
+tr[style*="background:#ecfdf5; border-top:1px solid #10b981"] td {
     text-shadow:
         -1px -1px 0 #fff, 1px -1px 0 #fff,
         -1px  1px 0 #fff, 1px  1px 0 #fff,
@@ -368,6 +370,18 @@ tr[style*="background:#4338ca; color:white; border-top:3px solid #3730a3"] td {
         -1px  1px 0 #000, 1px  1px 0 #000,
         -2px 0 0 #000, 2px 0 0 #000,
         0 -2px 0 #000, 0 2px 0 #000 !important;
+}
+/* Ova tri elementa oslanjaju se na color:white NASLIJEĐEN sa <tr> (nemaju
+   svoj inline color na <td>/label ćeliji) — a bare "td { color: #374151 }"
+   (main.css) uvijek pobjeđuje nad naslijeđenom vrijednošću, bez obzira na
+   specifičnost, pa je tekst ustvari bio taman (ne bijel kako je izgledalo
+   u kodu) i CRNI obrub iznad je na tome samo pravio "tamna slova, tamni
+   obrub" — upravo korisnički prijavljen bug. Eksplicitan color:#fff ovdje
+   popravlja stvarnu boju teksta, ne samo obrub. */
+#otpremaci-daily-grand-total-label,
+tr[style*="background:#059669; color:white; border-top:3px solid #047857"] td,
+tr[style*="background:#4338ca; color:white; border-top:3px solid #3730a3"] td {
+    color: #fff !important;
 }
 
 /* CRITICAL: Dark background rows MUST have white text */
