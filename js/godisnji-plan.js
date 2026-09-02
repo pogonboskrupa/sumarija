@@ -30,6 +30,7 @@
   // (dashboard endpoint, company-wide mjesečni zbirovi), ne PLAN_ENTRIES.
   let _dinamikaData    = null;
   let _dinamikaLoading = false;
+  let _dinamikeChart   = null;
   let _gjFilter   = 'sve';
   let _stFilter   = 'sve';
   let _izvFilter  = 'sve';
@@ -1176,11 +1177,20 @@
   function _dinamikeStatCard(naziv, boja, ukupno, punaCilj, ytdVrijednost, ytdCilj) {
     const pctPuna = punaCilj > 0 ? (ukupno / punaCilj * 100) : null;
     const pctTempo = ytdCilj > 0 ? (ytdVrijednost / ytdCilj * 100) : null;
+    // Vizuelna traka napretka prema PUNOM godišnjem cilju — do sada je
+    // realizacija bila samo tekst/badge (npr. "87.3%"), traka daje isti
+    // podatak na prvi pogled bez čitanja brojeva (isti .table-progress-*
+    // obrazac kao u tabeli ispod, samo malo deblja za kartice).
+    const barHtml = pctPuna != null ? `
+        <div class="table-progress-bar" style="height:8px;border-radius:4px;margin-top:10px;">
+          <div class="table-progress-fill" style="width:${Math.min(pctPuna,100)}%;background:${boja};border-radius:4px;"></div>
+        </div>` : '';
     return `
       <div style="flex:1;min-width:240px;background:white;border:1px solid #e5e7eb;border-radius:12px;padding:16px 18px;">
         <div style="font-size:13px;font-weight:700;color:${boja};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">${naziv}</div>
         <div style="font-size:26px;font-weight:800;color:#1e293b;">${fmtN(ukupno)} <span style="font-size:13px;font-weight:600;color:#94a3b8;">m³</span></div>
-        <div style="margin-top:8px;font-size:12px;color:#6b7280;">
+        ${barHtml}
+        <div style="margin-top:${pctPuna!=null?'6px':'8px'};font-size:12px;color:#6b7280;">
           Godišnji cilj: <b>${punaCilj>0 ? fmtN(punaCilj)+' m³' : '—'}</b> ${pctPuna!=null ? realizacijaBadge(pctPuna) : ''}
         </div>
         <div style="margin-top:4px;font-size:12px;color:#6b7280;">
@@ -1188,6 +1198,51 @@
           ${ytdCilj>0 ? `<span style="margin-left:4px;">${_dinamikeOstalo(ytdCilj-ytdVrijednost)}</span>` : ''}
         </div>
       </div>`;
+  }
+
+  // Bar-grafikon mjesečnog poređenja Sječa/Otprema (stupci) naspram
+  // Dinamike/plana (isprekidana linija) — isti Chart.js obrazac kao ostatak
+  // appa (npr. renderPrimaciIzvodjacTrendChart), lazy-loaded preko
+  // window.loadChartJs. Dosad je "Dinamike sječe i otpreme" bio jedini
+  // ovakav mjesečni pregled u appu bez grafikona, sve tabelarno.
+  function _renderDinamikeChart(mjeseci) {
+    if (typeof window.loadChartJs !== 'function') return;
+    window.loadChartJs().then(() => {
+      const canvas = document.getElementById('gp-dinamike-chart');
+      if (!canvas) return;
+      if (_dinamikeChart) { _dinamikeChart.destroy(); _dinamikeChart = null; }
+      const existing = Chart.getChart(canvas);
+      if (existing) existing.destroy();
+
+      const labels = mjeseci.map(m => String(m.mjesec || '').slice(0, 3));
+      const sjecaData = mjeseci.map(m => +(Number(m.sjeca) || 0).toFixed(2));
+      const otpremaData = mjeseci.map(m => +(Number(m.otprema) || 0).toFixed(2));
+      const dinamikaData = mjeseci.map(m => +(Number(m.dinamika) || 0).toFixed(2));
+
+      _dinamikeChart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Sječa', data: sjecaData, backgroundColor: '#059669', borderRadius: 4, order: 2 },
+            { label: 'Otprema', data: otpremaData, backgroundColor: '#2563eb', borderRadius: 4, order: 2 },
+            {
+              label: 'Plan (dinamika)', data: dinamikaData, type: 'line',
+              borderColor: '#94a3b8', backgroundColor: '#94a3b8', borderDash: [5, 4],
+              pointRadius: 3, pointBackgroundColor: '#94a3b8', tension: 0.2, fill: false, order: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+            tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(2) + ' m³' } }
+          },
+          scales: { y: { beginAtZero: true, title: { display: true, text: 'm³' } } }
+        }
+      });
+    });
   }
 
   function formatDayShort() {
@@ -1233,6 +1288,14 @@
       <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;">
         ${_dinamikeStatCard('🪓 Sječa', '#059669', totalSjeca, punaGodisnja, ytdSjeca, ytdDinamika)}
         ${_dinamikeStatCard('🚛 Otprema', '#2563eb', totalOtprema, punaGodisnja, ytdOtprema, ytdDinamika)}
+      </div>
+      <div class="enterprise-card" style="margin-bottom:20px;">
+        <div class="enterprise-card-header">
+          <div><h2>📊 Mjesečno poređenje — ${PLAN_YEAR}</h2></div>
+        </div>
+        <div class="enterprise-card-body">
+          <div style="height:280px;"><canvas id="gp-dinamike-chart"></canvas></div>
+        </div>
       </div>
       <div class="enterprise-card">
         <div class="enterprise-card-header">
@@ -1311,6 +1374,7 @@
     </tr></tbody></table></div></div></div>`;
 
     view.innerHTML = html;
+    _renderDinamikeChart(mjeseci);
   }
 
   // ---- ODJEL DETAIL MODAL ----
