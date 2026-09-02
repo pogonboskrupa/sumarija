@@ -121,6 +121,139 @@ async function preuzmiSve(plocice, paralelno, dohvati, prekid) {
     return { done, obradjeno };
 }
 
+// ============================================================
+// TRAJNI KES KARTE + "NASTAVI GDJE SI STAO"
+// ============================================================
+
+// --- kopija iz service-worker.js: koji kesevi prezivljavaju activate ---
+function zaBrisanje(imena, tekuci, mapKes) {
+    return imena.filter(n => n !== tekuci && n !== mapKes);
+}
+
+// --- kopija iz service-worker.js: sta se seli u trajni kes ---
+const TILE_HOSTOVI = /^server\.arcgisonline\.com$|(^|\.)tile\.openstreetmap\.org$|(^|\.)tile\.opentopomap\.org$/;
+function jeKartaZahtjev(urlStr) {
+    try {
+        const u = new URL(urlStr);
+        return TILE_HOSTOVI.test(u.hostname) || u.pathname.endsWith('.geojson');
+    } catch (_) { return false; }
+}
+
+// --- kopija iz js/mapa-radnika.js: kljuc plocice neovisan o subdomeni ---
+function tileKljuc(urlStr) {
+    try {
+        const u = new URL(urlStr);
+        if (u.hostname === 'server.arcgisonline.com') return 'sat|' + u.pathname;
+        if (/(^|\.)tile\.opentopomap\.org$/.test(u.hostname)) return 'topo|' + u.pathname;
+        if (/(^|\.)tile\.openstreetmap\.org$/.test(u.hostname)) return 'osm|' + u.pathname;
+        return null;
+    } catch (_) { return null; }
+}
+
+// --- kopija iz js/mapa-radnika.js: _tileUrl ---
+function tileUrl(t, mode) {
+    const s = ['a', 'b', 'c'][(t.x + t.y) % 3];
+    if (mode === 'sat') return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/' + t.z + '/' + t.y + '/' + t.x;
+    if (mode === 'topo') return 'https://' + s + '.tile.opentopomap.org/' + t.z + '/' + t.x + '/' + t.y + '.png';
+    return 'https://' + s + '.tile.openstreetmap.org/' + t.z + '/' + t.x + '/' + t.y + '.png';
+}
+
+// --- kopija iz js/mapa-radnika.js: _nedostajucePlocice ---
+function nedostajuce(tiles, mode, uKesu /* Set kljuceva ili null */) {
+    if (!uKesu) return tiles.slice();
+    return tiles.filter(t => !uKesu.has(tileKljuc(tileUrl(t, mode))));
+}
+
+// --- kopija iz js/mapa-radnika.js: konacna ocjena po STVARNOM kesu ---
+function ishodPoKesu({ imamo, ukupno }) {
+    return imamo >= ukupno * 0.9 ? 'zapisano' : 'nepotpuno';
+}
+
+test('Trajni kes karte (service worker)', async (t) => {
+    await t.test('azuriranje aplikacije NE brise skinute plocice', () => {
+        // Ovo je bio najskuplji bug: activate je brisao svaki kes osim tekuceg,
+        // pa je svako podizanje verzije aplikacije unistilo desetine MB karte
+        // koju je radnik minutama skidao — a kvacica "skinuto" je ostajala.
+        const brisemo = zaBrisanje(
+            ['sumarija-cache-v384', 'sumarija-cache-v385', 'sumarija-map-v1'],
+            'sumarija-cache-v385', 'sumarija-map-v1');
+        assert.deepStrictEqual(brisemo, ['sumarija-cache-v384']);
+        assert.ok(!brisemo.includes('sumarija-map-v1'), 'kes karte mora prezivjeti');
+    });
+
+    await t.test('stari verzionisani kesevi se i dalje ciste', () => {
+        const brisemo = zaBrisanje(
+            ['sumarija-cache-v380', 'sumarija-cache-v381', 'sumarija-cache-v385', 'sumarija-map-v1'],
+            'sumarija-cache-v385', 'sumarija-map-v1');
+        assert.deepStrictEqual(brisemo, ['sumarija-cache-v380', 'sumarija-cache-v381']);
+    });
+
+    await t.test('u trajni kes idu plocice i geojson, ne i app resursi', () => {
+        assert.strictEqual(jeKartaZahtjev('https://a.tile.openstreetmap.org/14/9012/5893.png'), true);
+        assert.strictEqual(jeKartaZahtjev('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/14/5893/9012'), true);
+        assert.strictEqual(jeKartaZahtjev('https://b.tile.opentopomap.org/14/9012/5893.png'), true);
+        assert.strictEqual(jeKartaZahtjev('https://sumarijaboskrupa.work/odjeli.geojson'), true);
+        assert.strictEqual(jeKartaZahtjev('https://sumarijaboskrupa.work/js/app.js'), false);
+        assert.strictEqual(jeKartaZahtjev('https://sumarijaboskrupa.work/index.html'), false);
+    });
+});
+
+test('Nastavi gdje si stao (nedostajuce plocice)', async (t) => {
+    const tiles = [
+        { z: 14, x: 9012, y: 5893 },
+        { z: 14, x: 9013, y: 5893 },
+        { z: 14, x: 9014, y: 5893 }
+    ];
+
+    await t.test('prazan kes — skidaju se sve', () => {
+        assert.strictEqual(nedostajuce(tiles, 'osm', new Set()).length, 3);
+    });
+
+    await t.test('sve u kesu — ne skida se nista (nema ponovnog trosenja podataka)', () => {
+        const kes = new Set(tiles.map(t2 => tileKljuc(tileUrl(t2, 'osm'))));
+        assert.strictEqual(nedostajuce(tiles, 'osm', kes).length, 0);
+    });
+
+    await t.test('prekinuto preuzimanje se NASTAVLJA, ne pocinje od nule', () => {
+        const kes = new Set([tileKljuc(tileUrl(tiles[0], 'osm'))]);
+        const fali = nedostajuce(tiles, 'osm', kes);
+        assert.strictEqual(fali.length, 2);
+        assert.ok(!fali.some(t2 => t2.x === 9012), 'vec skinuta plocica se ne skida opet');
+    });
+
+    await t.test('plocica keširana pod drugom subdomenom se prepoznaje', () => {
+        // Leaflet bira {s} po svom pravilu, mi po svom — bez normalizacije bi
+        // ista plocica izgledala kao "nedostaje" i skidala se opet.
+        const kljuc = tileKljuc('https://c.tile.openstreetmap.org/14/9012/5893.png');
+        assert.strictEqual(kljuc, tileKljuc(tileUrl(tiles[0], 'osm')));
+    });
+
+    await t.test('slojevi se ne mijesaju — OSM kes ne vazi za satelit', () => {
+        const kesOsm = new Set(tiles.map(t2 => tileKljuc(tileUrl(t2, 'osm'))));
+        assert.strictEqual(nedostajuce(tiles, 'sat', kesOsm).length, 3);
+    });
+
+    await t.test('bez Cache API-ja tretira sve kao nedostajuce (radije visak nego praznina)', () => {
+        assert.strictEqual(nedostajuce(tiles, 'osm', null).length, 3);
+    });
+});
+
+test('Ocjena se donosi po kesu, ne po brojacu pokusaja', async (t) => {
+    await t.test('malo dohvaceno u ovom prolazu, ali kes je pun — spremno za teren', () => {
+        // Drugi pokusaj na slaboj vezi dohvati samo ono sto je falilo; ranije
+        // bi brojac (40) pao ispod praga i lazno javio "nepotpuno".
+        assert.strictEqual(ishodPoKesu({ imamo: 940, ukupno: 950 }), 'zapisano');
+    });
+
+    await t.test('mnogo dohvaceno, ali kes prazan (npr. QuotaExceeded) — NIJE spremno', () => {
+        assert.strictEqual(ishodPoKesu({ imamo: 300, ukupno: 950 }), 'nepotpuno');
+    });
+
+    await t.test('prazan kes nikad ne nosi kvacicu', () => {
+        assert.strictEqual(ishodPoKesu({ imamo: 0, ukupno: 950 }), 'nepotpuno');
+    });
+});
+
 test('Paralelno preuzimanje', async (t) => {
     const plocice = Array.from({ length: 50 }, (_, i) => i);
     const ok = async () => ({ ok: true, type: 'cors' });

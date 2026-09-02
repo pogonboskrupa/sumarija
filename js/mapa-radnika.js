@@ -677,6 +677,66 @@
         if (mode === 'topo') return 'https://' + s + '.tile.opentopomap.org/' + t.z + '/' + t.x + '/' + t.y + '.png';
         return 'https://' + s + '.tile.openstreetmap.org/' + t.z + '/' + t.x + '/' + t.y + '.png';
     }
+    // ---- ŠTA JE STVARNO NA DISKU ----
+    // Do sada se stanje čitalo ISKLJUČIVO iz localStorage zabilješke, a pločice
+    // žive u Cache Storage-u — dvije potpuno odvojene stvari koje su umjele
+    // razići se na najgori mogući način:
+    //  · preuzimanje padne na slaboj vezi → svaki sljedeći pokušaj kreće od
+    //    NULE (i sa cache:'reload', dakle ponovo skida i ono što već ima), pa
+    //    se na lošoj vezi nikad ne "sabere" i troši iste podatke iznova;
+    //  · keš se obriše (ranije: pri svakom ažuriranju aplikacije), a zabilješka
+    //    ostane → kvačica tvrdi "spremno za teren", a nema nijedne pločice.
+    // Zato se od sada pita SAM KEŠ.
+    var MAP_CACHE = 'sumarija-map-v1';   // isti naziv kao u service-worker.js
+
+    // Ključ pločice neovisan o subdomeni: Leaflet i naše preuzimanje biraju
+    // {s} (a/b/c) po različitim pravilima, pa ISTA pločica zna biti keširana
+    // pod drugim hostom nego što ga _tileUrl izračuna — bez normalizacije bi
+    // provjera "je li već skinuta" lagala i skidali bismo je opet.
+    function _tileKljuc(urlStr) {
+        try {
+            var u = new URL(urlStr, location.href);
+            if (u.hostname === 'server.arcgisonline.com') return 'sat|' + u.pathname;
+            if (/(^|\.)tile\.opentopomap\.org$/.test(u.hostname)) return 'topo|' + u.pathname;
+            if (/(^|\.)tile\.openstreetmap\.org$/.test(u.hostname)) return 'osm|' + u.pathname;
+            return null;
+        } catch (_) { return null; }
+    }
+
+    // Jedan cache.keys() po kešu umjesto hiljadu pojedinačnih match() poziva.
+    // Gleda SVE keševe (ne samo MAP_CACHE) — pločice skinute prije prelaska na
+    // trajni keš mogu još čekati migraciju u starom, verzionisanom kešu.
+    // null = Cache API nedostupan (ne znamo ništa, pozivalac neka ne pretpostavlja).
+    async function _keiraniTileKljucevi() {
+        if (typeof caches === 'undefined') return null;
+        try {
+            var imena = await caches.keys();
+            var skup = new Set();
+            for (var i = 0; i < imena.length; i++) {
+                var c = await caches.open(imena[i]);
+                var kljucevi = await c.keys();
+                for (var j = 0; j < kljucevi.length; j++) {
+                    var k = _tileKljuc(kljucevi[j].url);
+                    if (k) skup.add(k);
+                }
+            }
+            return skup;
+        } catch (_) { return null; }
+    }
+
+    // Koje od potrebnih pločica NISU na disku — srce "nastavi gdje si stao".
+    // Bez keša (null) tretira sve kao nedostajuće: bolje skinuti višak nego
+    // tiho preskočiti pločice kojih nema.
+    async function _nedostajucePlocice(tiles, mode) {
+        var skup = await _keiraniTileKljucevi();
+        if (!skup) return tiles.slice();
+        var fali = [];
+        for (var i = 0; i < tiles.length; i++) {
+            if (!skup.has(_tileKljuc(_tileUrl(tiles[i], mode)))) fali.push(tiles[i]);
+        }
+        return fali;
+    }
+
     // Zabilješka o skinutoj karti — po sloju (OSM/Satelit/Topo se skidaju
     // odvojeno), da checkbox "Izvanmrežni prikaz karte" pokazuje STVARNO stanje
     // za sloj koji je trenutno prikazan, a ne jedno zajedničko "skinuto".
@@ -729,7 +789,32 @@
             _offlineStatusTimer = setTimeout(function() { st.classList.add('rm-fade-out'); }, OFFLINE_STATUS_MS);
         }
     }
-    window.mapaRadnikaRefreshOfflineToggle = _refreshOfflineToggle;
+    // Provjeri zabilješku naspram STVARNOG keša i skini kvačicu ako laže.
+    // Zabilješka živi u localStorage-u, pločice u Cache Storage-u — te dvije
+    // stvari se mogu razići (očišćeni podaci pregledača, prekinuto preuzimanje,
+    // ranije i svako ažuriranje aplikacije), a posljedica je najgora moguća:
+    // radnik ode u šumu jer kvačica kaže "spremno", a keš je prazan.
+    // NAMJERNO samo skida kvačicu, nikad je ne postavlja — uključivanje ostaje
+    // ishod stvarnog preuzimanja.
+    async function _verifyOfflineInfo() {
+        var mode = _baseMode;
+        if (!_offlineInfo(mode)) return;
+        try {
+            var granice = await _granicePoOdjelu();
+            if (!granice.length) return;
+            var tiles = _tilesForBoundsList(granice, OFFLINE_Z_MIN, _offlineZMax(mode), OFFLINE_BUFFER_M);
+            if (!tiles.length) return;
+            var imamo = tiles.length - (await _nedostajucePlocice(tiles, mode)).length;
+            if (imamo < tiles.length * 0.9) {
+                _setOfflineInfo(mode, null);
+                _refreshOfflineToggle();
+            }
+        } catch (_) {}
+    }
+    window.mapaRadnikaRefreshOfflineToggle = function() {
+        _refreshOfflineToggle();
+        _verifyOfflineInfo();   // u pozadini — ispravi kvačicu ako ne odgovara kešu
+    };
 
     // Checkbox umjesto ranijeg "⬇️ Offline" dugmeta: štiklirano = karta za
     // tekući sloj je skinuta. Sam checkbox NIKAD ne mijenja stanje direktno
@@ -737,20 +822,14 @@
     // kvačica lagala kad korisnik otkaže dijalog ili preuzimanje padne.
     window.mapaRadnikaToggleOffline = function(e) {
         if (e && e.preventDefault) e.preventDefault();
-        var info = _offlineInfo(_baseMode);
-        if (info) {
-            // _showTragConfirm koristi textContent — poruka mora biti čist tekst
-            _showTragConfirm(
-                'Karta (' + _slojNaziv(_baseMode) + ') je skinuta ' + info.datum +
-                '. Skinuti ponovo i osvježiti pločice?',
-                function() { _downloadOfflineNow(); }
-            );
-            return;
-        }
-        _downloadOfflineNow();
+        // Nema više "vjeruj zabilješci pa odmah nudi ponovno skidanje" —
+        // _downloadOfflineNow sam provjeri šta je STVARNO na disku i prema tome
+        // sroči pitanje: prvo preuzimanje / dopuna onoga što fali / osvježavanje
+        // već kompletne karte.
+        _downloadOfflineNow(false);
     };
 
-    function _downloadOfflineNow() {
+    async function _downloadOfflineNow(osvjezi) {
         if (!_map || !_allLayers.length) { _notify('showWarning', 'Odjeli još nisu učitani'); return; }
         var mode = _baseMode;
         var zMax = _offlineZMax(mode);
@@ -762,13 +841,32 @@
             _notify('showWarning', 'Nema šta preuzeti', 'Za tekući prikaz nije izračunata nijedna pločica.');
             return;
         }
+
+        // Pitanje mora govoriti STVARNO stanje — koliko pločica FALI, ne koliko
+        // ih ukupno treba. Bez toga korisnik kojem fali 60-ak pločica vidi
+        // "Preuzeti 936 pločica (~14 MB)" i odustane, ili nepotrebno skine sve
+        // iznova.
+        var fali = osvjezi ? tiles.slice() : await _nedostajucePlocice(tiles, mode);
+        if (!fali.length) {
+            _showTragConfirm(
+                'Karta (' + _slojNaziv(mode) + ') je već kompletna — svih ' + tiles.length +
+                ' pločica je na uređaju. Skinuti ponovo i osvježiti pločice?',
+                function() { _doOfflineDownload(tiles, mode, true); },
+                { title: '⬇️ Izvanmrežni prikaz karte', confirmLabel: 'Osvježi' }
+            );
+            return;
+        }
+        var dopuna = !osvjezi && fali.length < tiles.length;
+        var uvod = dopuna
+            ? 'Fali ' + fali.length + ' od ' + tiles.length + ' pločica — preuzeti ih'
+            : 'Preuzeti ' + fali.length + ' pločica';
         _showTragConfirm(
-            'Preuzeti ' + tiles.length + ' pločica (~' + _offlineSizeMb(tiles.length, mode) + ' MB, ' +
+            uvod + ' (~' + _offlineSizeMb(fali.length, mode) + ' MB, ' +
             _slojNaziv(mode) + ', zoom ' + OFFLINE_Z_MIN + '-' + zMax + ')? ' +
             'Skida se samo područje oko odjela (' + _allLayers.length + ' poligona, +' + OFFLINE_BUFFER_M + ' m rezerve), ' +
             'ne cijeli kvadrat oko njih. Može potrajati i potrošiti mobilne podatke.',
-            function() { _doOfflineDownload(tiles, mode); },
-            { title: '⬇️ Izvanmrežni prikaz karte', confirmLabel: 'Preuzmi' }
+            function() { _doOfflineDownload(tiles, mode, osvjezi); },
+            { title: '⬇️ Izvanmrežni prikaz karte', confirmLabel: dopuna ? 'Dopuni' : 'Preuzmi' }
         );
         // Ako korisnik otkaže, checkbox mora ostati u stanju PRIJE dodira (jer
         // je onclick već preventDefault-ovao promjenu) — _refreshOfflineToggle
@@ -777,7 +875,9 @@
         // ionako tačno stanje ekrana prije ovog poziva.
     }
 
-    async function _doOfflineDownload(tiles, mode) {
+    // osvjezi=true → svjesno "skini ponovo" (ide na mrežu i za pločice koje već
+    // postoje); inače se skida SAMO ono čega nema na disku.
+    async function _doOfflineDownload(tiles, mode, osvjezi) {
         // Bez mreže nema šta da se skine — bez ove provjere bi korisnik čekao
         // da prođe kroz stotine zahtjeva koji svi propadaju.
         if (!navigator.onLine) {
@@ -803,13 +903,32 @@
         _offlineAbort = false;
         _offlinePreuzimanjeUToku = true;
         _offlineDownloadSource = 'manual';
+
+        // Skidaj samo ono čega STVARNO nema na disku (osim kod svjesnog
+        // "osvježi"). Ovo je razlog zašto preuzimanje na slaboj vezi sad
+        // konvergira: svaki sljedeći pokušaj nastavlja tamo gdje je stao
+        // umjesto da počne od nule.
+        var zaSkidanje = osvjezi ? tiles.slice() : await _nedostajucePlocice(tiles, mode);
+        if (!zaSkidanje.length) {
+            // Sve je već tu — nema nikakvog razloga ponovo trošiti podatke.
+            _offlinePreuzimanjeUToku = false;
+            _offlineDownloadSource = null;
+            if (cb) cb.disabled = false;
+            _setOfflineInfo(mode, { datum: new Date().toLocaleDateString('bs-BA'), plocica: tiles.length });
+            _notify('showSuccess', 'Karta je već preuzeta',
+                'Svih ' + tiles.length + ' pločica (' + _slojNaziv(mode) + ') je na uređaju.');
+            _refreshOfflineToggle();
+            return;
+        }
+        var vecImamo = tiles.length - zaSkidanje.length;
         var done = 0, zapoceto = 0, obradjeno = 0;
 
         function _prikaziNapredak() {
             if (!st) return;
             // innerHTML (ne textContent) zbog dugmeta za otkazivanje — sadržaj je
             // isključivo naš literal + brojevi, nema korisničkog unosa.
-            st.innerHTML = 'Preuzimam... ' + obradjeno + '/' + tiles.length +
+            st.innerHTML = 'Preuzimam... ' + (vecImamo + obradjeno) + '/' + tiles.length +
+                (vecImamo ? ' (' + vecImamo + ' već imam)' : '') +
                 ' <button type="button" onclick="mapaRadnikaCancelOfflineDownload()" ' +
                 'style="margin-left:8px;padding:2px 8px;border:1px solid #b91c1c;border-radius:6px;' +
                 'background:#fff;color:#b91c1c;font-size:11px;font-weight:700;cursor:pointer;">✕ Otkaži</button>';
@@ -826,7 +945,7 @@
             while (true) {
                 if (_offlineAbort) return;
                 var i = zapoceto++;
-                if (i >= tiles.length) return;
+                if (i >= zaSkidanje.length) return;
                 // Broji SAMO stvarno dobavljene pločice. Service Worker na neuspjeh
                 // vraća `new Response('', {status:503})` — a to je RIJEŠEN odgovor,
                 // ne odbačen, pa bi golo `await fetch(); done++` brojalo i pločice
@@ -835,16 +954,16 @@
                 // radnik bi otišao na teren bez ijedne pločice.
                 // `type === 'opaque'` je legitiman slučaj (cross-origin pločica
                 // keširana iz <img> taga) — status joj je po spec-u uvijek 0.
-                //
-                // cache:'reload' — bez toga service worker vrati POSTOJEĆU keširanu
-                // pločicu i "osvježi pločice" ne osvježi baš ništa (vidi tile granu
-                // u service-worker.js).
                 try {
-                    var resp = await fetch(_tileUrl(tiles[i], mode), { cache: 'reload' });
+                    // cache:'reload' SAMO kod svjesnog osvježavanja — inače je
+                    // pločice ionako nema u kešu, a 'reload' bi nepotrebno
+                    // zaobilazio i browserov HTTP keš.
+                    var resp = await fetch(_tileUrl(zaSkidanje[i], mode),
+                        osvjezi ? { cache: 'reload' } : undefined);
                     if (resp && (resp.ok || resp.type === 'opaque')) done++;
                 } catch (_) {}
                 obradjeno++;
-                if (obradjeno % 10 === 0 || obradjeno === tiles.length) _prikaziNapredak();
+                if (obradjeno % 10 === 0 || obradjeno === zaSkidanje.length) _prikaziNapredak();
             }
         }
         var radnici = [];
@@ -855,21 +974,30 @@
         _offlineDownloadSource = null;
         if (cb) cb.disabled = false;
 
+        // Presudno: pitaj KEŠ koliko je stvarno na disku, ne brojač ovog
+        // pokušaja. Brojač zna samo šta je OVAJ prolaz dohvatio; keš zna i šta
+        // je ostalo od ranijih (prekinutih) pokušaja — a upravo to je razlika
+        // između "spreman za teren" i praznog keša sa kvačicom.
+        var imamo = tiles.length - (await _nedostajucePlocice(tiles, mode)).length;
+
         if (_offlineAbort) {
             // Otkazano na pola — zatečeno stanje NE smije nositi kvačicu
-            // "spremno za teren"; ostaje zapisano ono što je bilo prije.
-            _notify('showWarning', 'Preuzimanje otkazano', 'Preuzeto ' + done + ' od ' + tiles.length + ' pločica.');
+            // "spremno za teren" ako karta nije stvarno kompletna.
+            _notify('showWarning', 'Preuzimanje otkazano',
+                'Na uređaju je ' + imamo + ' od ' + tiles.length + ' pločica. Nastavak preuzima samo ono što fali.');
+            if (imamo < tiles.length * 0.9) _setOfflineInfo(mode, null);
             _refreshOfflineToggle();
             return;
         }
         // Zabilježi samo ako je preuzeta bar velika većina — pola skinute karte
         // ne smije prikazivati kvačicu kao da je sve spremno za teren.
-        if (done >= tiles.length * 0.9) {
-            _setOfflineInfo(mode, { datum: new Date().toLocaleDateString('bs-BA'), plocica: done });
-            _notify('showSuccess', 'Karta preuzeta', done + ' od ' + tiles.length + ' pločica (' + _slojNaziv(mode) + ')');
+        if (imamo >= tiles.length * 0.9) {
+            _setOfflineInfo(mode, { datum: new Date().toLocaleDateString('bs-BA'), plocica: imamo });
+            _notify('showSuccess', 'Karta preuzeta', imamo + ' od ' + tiles.length + ' pločica (' + _slojNaziv(mode) + ')');
         } else {
             _setOfflineInfo(mode, null);
-            _notify('showError', 'Preuzimanje nepotpuno', 'Preuzeto samo ' + done + ' od ' + tiles.length + ' pločica — pokušajte ponovo uz bolju vezu.');
+            _notify('showError', 'Preuzimanje nepotpuno',
+                'Na uređaju je ' + imamo + ' od ' + tiles.length + ' pločica — pokušajte ponovo uz bolju vezu, nastavlja se odakle je stalo.');
         }
         _refreshOfflineToggle();
     }
@@ -910,11 +1038,6 @@
     window.mapaRadnikaPripremiOfflineKartu = async function(opts) {
         var o = opts || {};
         var mode = _baseMode;
-        // Već skinuto za aktivni sloj → ne diraj. Korisnik je tražio "bez
-        // pitanja", ali to ne smije značiti da svaki tap na "Ažuriraj" ponovo
-        // povuče desetine MB mobilnih podataka. Osvježavanje već skinutih
-        // pločica ostaje svjesna radnja (Karta → ⚙️ Ostalo).
-        if (!o.force && _offlineInfo(mode)) return 'vec-skinuto';
         if (!navigator.onLine) return 'offline';
         if (_offlinePreuzimanjeUToku) return 'zauzeto';
 
@@ -923,6 +1046,21 @@
 
         var tiles = _tilesForBoundsList(granice, OFFLINE_Z_MIN, _offlineZMax(mode), OFFLINE_BUFFER_M);
         if (!tiles.length) return 'nema-podataka';
+
+        // Šta STVARNO fali na disku — ne šta localStorage zabilješka tvrdi.
+        // Ovo rješava obje strane iste greške:
+        //  · zabilješka kaže "skinuto", a keš prazan (npr. korisnik očistio
+        //    podatke) → ipak se skida, umjesto tihog odlaska na teren bez karte;
+        //  · zabilješka izgubljena ili preuzimanje ranije prekinuto, a pločice
+        //    su tu → NE povlači se desetine MB ponovo pri svakom "Ažuriraj",
+        //    nego samo ono što fali.
+        var zaSkidanje = o.force ? tiles.slice() : await _nedostajucePlocice(tiles, mode);
+        if (!zaSkidanje.length) {
+            _setOfflineInfo(mode, { datum: new Date().toLocaleDateString('bs-BA'), plocica: tiles.length });
+            _refreshOfflineToggle();
+            return 'vec-skinuto';
+        }
+        var vecImamo = tiles.length - zaSkidanje.length;
 
         _offlineAbort = false;
         _offlinePreuzimanjeUToku = true;
@@ -934,15 +1072,17 @@
             while (true) {
                 if (_offlineAbort) return;
                 var i = zapoceto++;
-                if (i >= tiles.length) return;
+                if (i >= zaSkidanje.length) return;
                 try {
-                    // cache:'reload' — vidi tile granu u service-worker.js
-                    var resp = await fetch(_tileUrl(tiles[i], mode), { cache: 'reload' });
+                    // Bez cache:'reload' — skidaju se samo pločice kojih u kešu
+                    // ionako nema (osim kod svjesnog o.force osvježavanja).
+                    var resp = await fetch(_tileUrl(zaSkidanje[i], mode),
+                        o.force ? { cache: 'reload' } : undefined);
                     if (resp && (resp.ok || resp.type === 'opaque')) done++;
                 } catch (_) {}
                 obradjeno++;
-                if (o.onProgress && (obradjeno % 10 === 0 || obradjeno === tiles.length)) {
-                    try { o.onProgress(obradjeno, tiles.length); } catch (_) {}
+                if (o.onProgress && (obradjeno % 10 === 0 || obradjeno === zaSkidanje.length)) {
+                    try { o.onProgress(vecImamo + obradjeno, tiles.length); } catch (_) {}
                 }
             }
         }
@@ -952,17 +1092,18 @@
         _offlinePreuzimanjeUToku = false;
         _offlineDownloadSource = null;
 
-        if (_offlineAbort) return 'nepotpuno';
-        // Isti prag kao ručno preuzimanje: pola skinute karte ne smije nositi
-        // oznaku "spremno za teren".
-        if (done >= tiles.length * 0.9) {
-            _setOfflineInfo(mode, { datum: new Date().toLocaleDateString('bs-BA'), plocica: done });
-            _refreshOfflineToggle();
-            return 'preuzeto';
+        // Isti princip kao kod ručnog preuzimanja: presudno je šta je na disku,
+        // ne šta je ovaj prolaz dohvatio (raniji prekinuti pokušaji se broje).
+        var imamo = tiles.length - (await _nedostajucePlocice(tiles, mode)).length;
+        var kompletno = imamo >= tiles.length * 0.9;
+        if (kompletno) {
+            _setOfflineInfo(mode, { datum: new Date().toLocaleDateString('bs-BA'), plocica: imamo });
+        } else {
+            _setOfflineInfo(mode, null);
         }
-        _setOfflineInfo(mode, null);
         _refreshOfflineToggle();
-        return 'nepotpuno';
+        if (_offlineAbort) return 'nepotpuno';
+        return kompletno ? 'preuzeto' : 'nepotpuno';
     };
 
     // Naziv aktivnog sloja — za poruku korisniku iz js/app.js.

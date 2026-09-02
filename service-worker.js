@@ -1,7 +1,25 @@
 // ========== Service Worker - Offline Support ==========
 
-const CACHE_VERSION = 'v384';
+const CACHE_VERSION = 'v385';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
+
+// Karta (tile pločice + geojson) — NAMJERNO u zasebnom, NEVERZIONISANOM kešu.
+// Ranije je i to živjelo u CACHE_NAME, a `activate` briše svaki keš osim
+// tekućeg — što je značilo da je SVAKO ažuriranje aplikacije brisalo desetine
+// MB pločica koje je radnik minutama skidao (i 7.5MB geojson-a). Najgore od
+// svega tiho: kvačica "skinuto" je u localStorage-u preživjela, pa je radnik
+// odlazio na teren uvjeren da ima kartu, a keš je bio prazan.
+// Pločice su nepromjenjive (isti z/x/y = ista slika) pa verzija aplikacije
+// za njih uopšte nije relevantna.
+const MAP_CACHE = 'sumarija-map-v1';
+
+const _TILE_HOSTOVI = /^server\.arcgisonline\.com$|(^|\.)tile\.openstreetmap\.org$|(^|\.)tile\.opentopomap\.org$/;
+function _jeKartaZahtjev(urlStr) {
+    try {
+        const u = new URL(urlStr);
+        return _TILE_HOSTOVI.test(u.hostname) || u.pathname.endsWith('.geojson');
+    } catch (_) { return false; }
+}
 
 // Install — pre-keširaj samo offline.html (fallback koji se inače nikad ne
 // fetcha pa lazy keširanje nikad ne bi imalo šta poslužiti offline korisniku);
@@ -14,15 +32,33 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// Activate — obriši stare cacheove, preuzmi kontrolu odmah
+// Prebaci pločice/geojson iz starog (verzionisanog) keša u trajni MAP_CACHE
+// PRIJE nego se stari keš obriše — bez ovoga bi se pri prelasku na ovu verziju
+// još jednom izgubilo sve što je radnik ranije skinuo. Defanzivno: bilo kakva
+// greška ovdje smije samo značiti "karta se skida ponovo", nikad srušenu
+// aktivaciju service workera.
+async function _migrirajKartu(staroIme) {
+    try {
+        const [stari, mapa] = await Promise.all([caches.open(staroIme), caches.open(MAP_CACHE)]);
+        const kljucevi = await stari.keys();
+        for (const req of kljucevi) {
+            if (!_jeKartaZahtjev(req.url)) continue;
+            if (await mapa.match(req)) continue;          // već prebačeno
+            const resp = await stari.match(req);
+            if (resp) await mapa.put(req, resp);
+        }
+    } catch (_) {}
+}
+
+// Activate — obriši stare cacheove (osim trajnog MAP_CACHE), preuzmi kontrolu odmah
 self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys()
-            .then(names => Promise.all(
-                names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n))
-            ))
-            .then(() => self.clients.claim())
-    );
+    event.waitUntil((async () => {
+        const names = await caches.keys();
+        const stari = names.filter(n => n !== CACHE_NAME && n !== MAP_CACHE);
+        for (const n of stari) await _migrirajKartu(n);
+        await Promise.all(stari.map(n => caches.delete(n)));
+        await self.clients.claim();
+    })());
 });
 
 // Fetch
@@ -54,10 +90,10 @@ self.addEventListener('fetch', (event) => {
             caches.match(request).then(cached => {
                 if (cached) {
                     // Osvježi u pozadini
-                    fetch(request).then(resp => { if (resp.ok) _cacheIfOk(resp, request); }).catch(() => {});
+                    fetch(request).then(resp => { if (resp.ok) _cacheIfOk(resp, request, MAP_CACHE); }).catch(() => {});
                     return cached;
                 }
-                return fetch(request).then(resp => { _cacheIfOk(resp.clone(), request); return resp; })
+                return fetch(request).then(resp => { _cacheIfOk(resp.clone(), request, MAP_CACHE); return resp; })
                     .catch(() => new Response('{"error":"offline"}', { status: 503 }));
             })
         );
@@ -89,7 +125,7 @@ self.addEventListener('fetch', (event) => {
         event.respondWith(
             (traziSvjeze ? Promise.resolve(null) : caches.match(request))
                 .then(cached => cached || fetch(request)
-                    .then(resp => { _cacheIfOk(resp.clone(), request); return resp; })
+                    .then(resp => { _cacheIfOk(resp.clone(), request, MAP_CACHE); return resp; })
                     .catch(() => new Response('', { status: 503 })))
         );
         return;
@@ -122,7 +158,7 @@ self.addEventListener('fetch', (event) => {
     );
 });
 
-function _cacheIfOk(response, request) {
+function _cacheIfOk(response, request, cacheName) {
     // status 200 = normalan (isti-origin) odgovor. type 'opaque' = cross-origin
     // no-cors odgovor (npr. OSM tile <img>) — status je UVIJEK 0 po spec-u bez
     // obzira na stvarni HTTP status, ali Cache API dozvoljava da se ipak snimi
@@ -132,7 +168,7 @@ function _cacheIfOk(response, request) {
         // odbijen cache.put() (npr. QuotaExceededError kad disk ostane bez
         // prostora) propadne NEČUJNO — mrežni fetch je uspio pa se pločica
         // broji kao "preuzeta", a na disku nikad nije zapisana.
-        caches.open(CACHE_NAME).then(c => c.put(request, response)).catch(() => {});
+        caches.open(cacheName || CACHE_NAME).then(c => c.put(request, response)).catch(() => {});
     }
 }
 
