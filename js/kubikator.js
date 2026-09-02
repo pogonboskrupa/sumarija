@@ -52,7 +52,33 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
     var PRVI_KEY = 'kubikator_prvi_unos_gotov'; // "24"/"4,50" prijedlog nestaje poslije prvog unosa ikad
     var PRVI_PROSTORNI_KEY = 'kubikator_prvi_prostorni_gotov'; // isto, za "1,20"/"1,50" (prostorno drvo)
     var MEM_PRIKAZ = 30;          // koliko zadnjih unosa se prikazuje u memoriji
-    var KUB_STRANICA = 20;        // "stranica" u službenoj knjizi = 20 unosa (mjerenja)
+    // Koliko mjerenja stane na jednu "stranicu" — ZAVISI OD ULOGE, jer papir
+    // na koji se prepisuje nije isti:
+    //   • primač   → 20, koliko ima red u službenoj knjizi na terenu;
+    //   • otpremač → 29, koliko redova stane na jednu otpremnicu.
+    var KUB_STRANICA_PRIMAC   = 20;
+    var KUB_STRANICA_OTPREMAC = 29;
+
+    function _kapacitetStranice() {
+        var t = (window.currentUser && String(window.currentUser.type || '').trim().toLowerCase()) || '';
+        return t === 'otpremac' ? KUB_STRANICA_OTPREMAC : KUB_STRANICA_PRIMAC;
+    }
+
+    // Kapacitet KONKRETNE stranice — čita se iz unosa koji su na njoj, ne iz
+    // trenutne uloge. Bez ovoga bi promjena kapaciteta (npr. isti uređaj,
+    // druga uloga, ili ova izmjena) retroaktivno "produžila" stranice koje su
+    // već ispisane i predate: stranica od 20 redova bi odjednom primala još 9
+    // unosa, pa bi ponovni ispis pokazao 29 redova tamo gdje je papir imao 20.
+    // Stariji unosi (prije nego je kapacitet postao dio zapisa) su svi pisani
+    // po 20 — otud fallback.
+    function _kapacitetZaStranicu(brStr) {
+        for (var i = 0; i < _unosi.length; i++) {
+            if ((_unosi[i].stranica || 1) === brStr && _unosi[i].kapacitet) {
+                return _unosi[i].kapacitet;
+            }
+        }
+        return KUB_STRANICA_PRIMAC;
+    }
     var UPOZORENJE_PRAG = 200;    // svakih 200 unosa (10 stranica) — podsjeti na izvoz/čišćenje
 
     // Dozvoljeni opsezi — sve van ovoga je gotovo sigurno omaška u kucanju
@@ -118,7 +144,9 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         var trebaMigracija = false;
         for (var mi = 0; mi < _unosi.length; mi++) { if (!_unosi[mi].stranica) { trebaMigracija = true; break; } }
         if (trebaMigracija) {
-            _unosi.forEach(function(u, i) { if (!u.stranica) u.stranica = Math.floor(i / KUB_STRANICA) + 1; });
+            // KUB_STRANICA_PRIMAC (20) NAMJERNO, a ne kapacitet tekuće uloge:
+            // ovi zapisi su nastali dok je 20 bilo jedino pravilo za sve.
+            _unosi.forEach(function(u, i) { if (!u.stranica) u.stranica = Math.floor(i / KUB_STRANICA_PRIMAC) + 1; });
             _save();
         }
         try {
@@ -429,7 +457,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         var brStr = zadnja.stranica || 1;
         var brojUStranici = 0;
         for (var i = 0; i < _unosi.length; i++) { if ((_unosi[i].stranica || 1) === brStr) brojUStranici++; }
-        return brojUStranici >= KUB_STRANICA ? brStr + 1 : brStr;
+        return brojUStranici >= _kapacitetZaStranicu(brStr) ? brStr + 1 : brStr;
     }
 
     // Predmemorija HTML-a za ZATVORENE stranice (sve osim trenutne, otvorene) —
@@ -451,7 +479,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
 
     function _rekapStranicaHtml(broj, grupa, uToku) {
         var statusHtml = uToku
-            ? '<span class="kub-rekap-stranica-status">' + grupa.length + '/' + KUB_STRANICA + ' · u toku</span>'
+            ? '<span class="kub-rekap-stranica-status">' + grupa.length + '/' + _kapacitetZaStranicu(broj) + ' · u toku</span>'
             : '<span class="kub-rekap-stranica-status kub-rekap-stranica-puna">popunjena</span>';
         return '<div class="kub-rekap-stranica">' +
             '<div class="kub-rekap-stranica-naslov"><span>📄 Stranica ' + broj + '</span>' + statusHtml + '</div>' +
@@ -459,8 +487,9 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             '</div>';
     }
 
-    // Rekap organizovan po "stranicama" od KUB_STRANICA (20) unosa — isto kao
-    // u službenoj knjizi na terenu: puni se 20 redova, na kraju stranice ide
+    // Rekap organizovan po "stranicama" (20 mjerenja za primača, 29 za
+    // otpremača — vidi _kapacitetStranice) — isto kao
+    // u službenoj knjizi na terenu: puni se stranica, na kraju nje ide
     // rekap po sortimentima, pa se nastavlja na sljedećoj stranici. Stranice
     // se prikazuju najnovija prva (isti obrazac kao "Zadnji unosi" ispod).
     // Nedovršena (trenutna) stranica se i dalje prikazuje, obilježena "u toku".
@@ -490,7 +519,7 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         var html = '';
         poredane.forEach(function(s) {
             var grupa = grupePoStranici[s];
-            var uToku = (s === trenutna) && grupa.length < KUB_STRANICA;
+            var uToku = (s === trenutna) && grupa.length < _kapacitetZaStranicu(s);
             if (!uToku && _rekapCacheValid && _rekapPageHtmlCache[s] !== undefined) {
                 html += _rekapPageHtmlCache[s];
                 return;
@@ -523,7 +552,11 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             odjel: '', sortiment: sortSel ? sortSel.value : '', napomena: '',
             // Trajno dodijeljena "stranica" — vidi _trenutnaStranica. Mora se
             // izračunati PRIJE push-a (na osnovu dosadašnjeg stanja _unosi).
-            stranica: _trenutnaStranica()
+            stranica: _trenutnaStranica(),
+            // Kapacitet stranice se pamti UZ unos, iz istog razloga iz kojeg i
+            // sama stranica: da kasnija promjena (druga uloga na istom
+            // uređaju) ne pomjeri granice već ispisanih stranica.
+            kapacitet: _kapacitetStranice()
         };
         if (_vrsta === 'prostorno') {
             unos.sirina = t.sirina; unos.visina = t.visina; unos.zapremina = t.zapremina;

@@ -16,9 +16,18 @@
 const { test, describe } = require('node:test');
 const assert = require('node:assert/strict');
 
-const KUB_STRANICA = 20;
+const KUB_STRANICA_PRIMAC = 20;
+const KUB_STRANICA_OTPREMAC = 29;
 
 // ===== EXTRAKTOVANO IZ js/kubikator.js =====
+
+// Kapacitet KONKRETNE stranice — iz unosa koji su na njoj, ne iz tekuce uloge.
+function _kapacitetZaStranicu(unosi, brStr) {
+    for (var i = 0; i < unosi.length; i++) {
+        if ((unosi[i].stranica || 1) === brStr && unosi[i].kapacitet) return unosi[i].kapacitet;
+    }
+    return KUB_STRANICA_PRIMAC;   // stari zapisi su svi pisani po 20
+}
 
 function _trenutnaStranica(unosi) {
     if (!unosi.length) return 1;
@@ -26,13 +35,18 @@ function _trenutnaStranica(unosi) {
     var brStr = zadnja.stranica || 1;
     var brojUStranici = 0;
     for (var i = 0; i < unosi.length; i++) { if ((unosi[i].stranica || 1) === brStr) brojUStranici++; }
-    return brojUStranici >= KUB_STRANICA ? brStr + 1 : brStr;
+    return brojUStranici >= _kapacitetZaStranicu(unosi, brStr) ? brStr + 1 : brStr;
 }
 
 // Simulira niz poziva kubikatorDodaj — svaki novi unos dobija stranicu
-// izračunatu PRIJE push-a, isto kao stvarna implementacija.
-function _dodaj(unosi, id) {
-    var unos = { id: id, stranica: _trenutnaStranica(unosi) };
+// izračunatu PRIJE push-a, isto kao stvarna implementacija. `kapacitet` je
+// kapacitet uloge koja unosi (20 primac / 29 otpremac).
+function _dodaj(unosi, id, kapacitet) {
+    var unos = {
+        id: id,
+        stranica: _trenutnaStranica(unosi),
+        kapacitet: kapacitet || KUB_STRANICA_PRIMAC
+    };
     unosi.push(unos);
     return unos;
 }
@@ -56,6 +70,54 @@ describe('_trenutnaStranica — dodjela pri dodavanju', () => {
         var poStranici = {};
         unosi.forEach(u => { poStranici[u.stranica] = (poStranici[u.stranica] || 0) + 1; });
         assert.deepEqual(poStranici, { 1: 20, 2: 20, 3: 5 });
+    });
+});
+
+describe('Kapacitet stranice po ulozi (primac 20 / otpremac 29)', () => {
+    test('otpremac: prvih 29 unosa ide na stranicu 1, 30. otvara stranicu 2', () => {
+        var unosi = [];
+        for (var i = 1; i <= 29; i++) _dodaj(unosi, i, KUB_STRANICA_OTPREMAC);
+        assert.equal(unosi.every(u => u.stranica === 1), true, '29 redova stane na jednu otpremnicu');
+        var tridesetii = _dodaj(unosi, 30, KUB_STRANICA_OTPREMAC);
+        assert.equal(tridesetii.stranica, 2);
+    });
+
+    test('otpremac: tacno 29 po stranici kroz vise stranica', () => {
+        var unosi = [];
+        for (var i = 1; i <= 65; i++) _dodaj(unosi, i, KUB_STRANICA_OTPREMAC);
+        var poStranici = {};
+        unosi.forEach(u => { poStranici[u.stranica] = (poStranici[u.stranica] || 0) + 1; });
+        assert.deepEqual(poStranici, { 1: 29, 2: 29, 3: 7 });
+    });
+
+    test('primac ostaje na 20 — promjena za otpremaca ga ne dira', () => {
+        var unosi = [];
+        for (var i = 1; i <= 21; i++) _dodaj(unosi, i, KUB_STRANICA_PRIMAC);
+        assert.equal(unosi.filter(u => u.stranica === 1).length, 20);
+        assert.equal(unosi.find(u => u.id === 21).stranica, 2);
+    });
+
+    test('[KLJUCNO] vec ispisana stranica od 20 se NE produzava na 29', () => {
+        // Otpremac koji je ranije unosio po starom pravilu (20/stranica): ta
+        // stranica je vec prepisana na papir i predata, pa ne smije odjednom
+        // primiti jos 9 redova — tek SLJEDECA stranica ide po 29.
+        var unosi = [];
+        for (var i = 1; i <= 20; i++) _dodaj(unosi, i, KUB_STRANICA_PRIMAC);
+        var novi = _dodaj(unosi, 21, KUB_STRANICA_OTPREMAC);
+        assert.equal(novi.stranica, 2, 'puna stranica od 20 se zatvara, ne dopunjava do 29');
+        assert.equal(unosi.filter(u => u.stranica === 1).length, 20);
+
+        // Nova stranica ide po novom kapacitetu (29)
+        for (var j = 22; j <= 49; j++) _dodaj(unosi, j, KUB_STRANICA_OTPREMAC);
+        assert.equal(unosi.filter(u => u.stranica === 2).length, 29);
+        assert.equal(_dodaj(unosi, 50, KUB_STRANICA_OTPREMAC).stranica, 3);
+    });
+
+    test('stari zapisi bez kapaciteta se citaju kao 20', () => {
+        var unosi = [];
+        for (var i = 1; i <= 20; i++) unosi.push({ id: i, stranica: 1 }); // bez .kapacitet
+        assert.equal(_kapacitetZaStranicu(unosi, 1), 20);
+        assert.equal(_trenutnaStranica(unosi), 2, 'puna je po starom pravilu');
     });
 });
 

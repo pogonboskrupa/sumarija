@@ -3077,9 +3077,12 @@
                     </div>
                 </div>
 
-                <!-- Rekapitulacija po sortimentima — organizovana po "stranicama" od
-                     20 unosa, isto kao u službenoj knjizi na terenu (napuni se 20
-                     redova, na kraju stranice ide rekap, pa se nastavi na sljedećoj).
+                <!-- Rekapitulacija po sortimentima — organizovana po "stranicama"
+                     onoliko unosa koliko stane na papir koji uloga stvarno
+                     koristi: 20 za primača (red u službenoj knjizi), 29 za
+                     otpremača (redova na jednoj otpremnici) — vidi
+                     _kapacitetStranice u js/kubikator.js. Napuni se stranica, na
+                     kraju nje ide rekap, pa se nastavi na sljedećoj.
                      Svi unosi (svih vremena, ne samo "Zadnji unosi" gore koji
                      prikazuje najviše 30) grupisani po u.sortiment (js/kubikator.js
                      _renderRekap/_rekapGrupe). Unosi bez izabranog sortimenta

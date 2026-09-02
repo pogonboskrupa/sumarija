@@ -88,8 +88,9 @@ function printKubikator() {
     // Rekapitulacija po STRANICAMA i SORTIMENTU — isti prikaz kao "📖
     // Rekapitulacija" na ekranu (js/kubikator.js _renderRekap/_rekapGrupe),
     // do sada je štampa imala samo grubi zbir po vrsti drveta iznad, bez
-    // sortimenta i bez podjele po stranicama (fizička "stranica" = 20 unosa,
-    // isto kao u službenoj knjizi na terenu). u.stranica je od nedavno
+    // sortimenta i bez podjele po stranicama (fizička "stranica" = 20 unosa
+    // za primača / 29 za otpremača, vidi _kapacitetStranice u
+    // js/kubikator.js). u.stranica je od nedavno
     // TRAJNO svojstvo svakog unosa (vidi kubikator.js _trenutnaStranica) —
     // stariji zapisi (prije te izmjene) nemaju ga, pa se tretiraju kao
     // stranica 1 (isto kao BEZ_SORTIMENTA fallback ispod).
