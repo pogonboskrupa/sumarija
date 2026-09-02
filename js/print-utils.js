@@ -1002,7 +1002,18 @@ thead tr th {
     text-align: center;
     padding: 5px 5px;
     border: 1px solid rgba(255,255,255,0.2);
-    white-space: nowrap;
+    /* NE nowrap + min-width:0 — vidi komentar uz _dailyPrintStyleBlock
+       niže: uzrok "printano fale krajevi" bug-a je dvostruk. (1) nowrap na
+       svakoj ćeliji + (2) ćelije klonirane iz živog DOM-a (tableToCleanHtml)
+       nose SVOJ inline min-width (ekranski tabele ga koriste za sticky
+       kolone/horizontalni skrol) — obje sile tabelu širom od stranice
+       umjesto da se prelomi. !important ovdje NADJAČAVA taj inline
+       min-width; overflow-wrap dozvoljava prelom i unutar jedne "riječi"
+       (npr. duži naziv sortimenta bez razmaka) kad treba. */
+    white-space: normal !important;
+    overflow-wrap: break-word;
+    min-width: 0 !important;
+    max-width: none !important;
     font-size: 9px;
     text-transform: uppercase;
     letter-spacing: 0.3px;
@@ -1015,7 +1026,10 @@ tbody td {
     padding: 3px 5px;
     border: 1px solid #d1d5db;
     text-align: right;
-    white-space: nowrap;
+    white-space: normal !important;
+    overflow-wrap: break-word;
+    min-width: 0 !important;
+    max-width: none !important;
     vertical-align: middle;
 }
 tbody td:first-child {
@@ -1185,25 +1199,46 @@ ${sectionsHtml}
 // ─── Sječa/Otprema "po danima" print ──────────────────────────
 // Generički printActiveView (gornje dugme ŠTAMPAJ na tabu) i dalje radi na
 // ovim tabelama, ali sa ~20 uskih sortimentnih kolona + dugim imenima
-// (Primač/Otpremač/Kupac) generički print CSS ima dva problema baš ovdje:
-// 1) svuda forsira white-space:nowrap, pa duže ime/naziv sortimenta gura
-//    tabelu šire od stranice umjesto da se prelomi u red;
-// 2) font boost za "sortimentne" kolone je fiksno vezan za redoslijed
-//    kolone (nth-child) koji više ne odgovara otkad je dodana "Datum"
-//    kolona (primaci-daily/otpremaci-daily sad imaju 3, odn. 4 vodeće
-//    kolone prije sortimenata, ne 2 kao ranije).
-// Ova dva dugmeta (na karticama) ispravljaju oboje ciljano, po ID-ju
-// tabele, bez diranja generičkog print CSS-a koji koriste druge tabele.
-function _dailyPrintStyleBlock(tableId, sortimentiOd, wrapCols) {
-    const wrapRules = (wrapCols || []).map(n =>
-        `#${tableId} tbody td:nth-child(${n}) { white-space: normal !important; max-width: 34mm; word-break: break-word; }`
+// (Primač/Otpremač/Kupac) generički print CSS ima problem baš ovdje:
+// forsira white-space:nowrap na SVAKOJ ćeliji (buildPrintDocument), a
+// tabela je table-layout:auto — širina kolona prati SADRŽAJ, ne stranicu.
+// S ~20 nowrap sortimentnih kolona + dugim nazivima odjela/imena, tabela
+// je uvijek bila ŠIRA od stranice, pa se desni dio odsijecao pri STVARNOM
+// štampanju — na ekranu (prozor za pregled prije klika na "Štampaj") se
+// to ne vidi jer prozor nema ograničenje širine papira, samo horizontalni
+// skrol koji korisnik ne primijeti (korisnički prijavljen bug: "na
+// preview izgleda dobro, printano fale krajevi").
+// Raniji pokušaj popravke (wrapCols — prelomi SAMO jednu poznatu široku
+// tekstualnu kolonu) nije bio dovoljan: i dalje je table-layout:auto,
+// pa širina i dalje zavisi od sadržaja ostalih (nowrap) kolona.
+// Stvarno rješenje: table-layout:fixed + eksplicitna širina (mm) za
+// "tekstualne" vodeće kolone (Datum/Odjel/Primač/Otpremač/Kupac) —
+// preostale (sortimentne) kolone automatski dijele PREOSTALI prostor
+// ravnomjerno (table-layout:fixed to radi za kolone bez eksplicitne
+// širine). Zbir vodećih širina je namjerno ispod stvarno dostupne širine
+// (A4 landscape - @page margine - body padding, vidi buildPrintDocument)
+// da ostane dovoljno prostora za ~20 sortimentnih kolona bez odsijecanja,
+// bez obzira na dužinu naziva odjela/imena — dugi tekst se sad PRELOMI
+// (white-space:normal + overflow-wrap), ne gura tabelu šire.
+function _dailyPrintStyleBlock(tableId, sortimentiOd, leadWidthsMm) {
+    const leadRules = (leadWidthsMm || []).map((w, i) =>
+        `#${tableId} thead th:nth-child(${i + 1}), #${tableId} tbody td:nth-child(${i + 1}) { width: ${w}mm !important; }`
     ).join('\n        ');
     return `
     <style>
-        #${tableId} thead th { white-space: normal !important; line-height: 1.15 !important; vertical-align: bottom !important; }
-        #${tableId} tbody td:nth-child(1) { font-size: 10px !important; color: #475569 !important; }
-        #${tableId} tbody td:nth-child(n+${sortimentiOd}) { font-size: 11.5px !important; font-weight: 600 !important; }
-        ${wrapRules}
+        #${tableId} { table-layout: fixed !important; width: 100% !important; }
+        #${tableId} thead th, #${tableId} tbody td {
+            white-space: normal !important; overflow-wrap: break-word; word-break: break-word;
+            /* Klonirane ćelije (tableToCleanHtml) nose svoj inline min-width
+               sa ekrana (sticky kolone/horizontalni skrol) — bez ovoga bi
+               taj min-width i dalje nadjačao eksplicitnu širinu ispod. */
+            min-width: 0 !important; max-width: none !important;
+        }
+        #${tableId} thead th { line-height: 1.15 !important; vertical-align: bottom !important; font-size: 8px !important; padding: 4px 2px !important; }
+        #${tableId} tbody td { font-size: 9px !important; padding: 3px 2px !important; }
+        #${tableId} tbody td:nth-child(1) { font-size: 8.5px !important; color: #475569 !important; }
+        #${tableId} tbody td:nth-child(n+${sortimentiOd}) { font-weight: 600 !important; }
+        ${leadRules}
     </style>`;
 }
 
@@ -1229,7 +1264,7 @@ function printPrimaciDaily() {
     const naslov = 'Sječa po danima' + (filterTerm ? ` — filtrirano: "${escapeHtml(filterTerm)}"` : '');
 
     const sectionsHtml = `
-        ${_dailyPrintStyleBlock('primaci-daily-table', 4, [3])}
+        ${_dailyPrintStyleBlock('primaci-daily-table', 4, [14, 22, 20])}
         <div class="print-section">
             <div class="section-header" style="border-left:4px solid ${accent};">${naslov}</div>
             ${tableToCleanHtml(tableEl)}
@@ -1270,7 +1305,7 @@ function printOtpremaciDaily() {
     const naslov = 'Otprema po danima' + (filterTerm ? ` — filtrirano: "${escapeHtml(filterTerm)}"` : '');
 
     const sectionsHtml = `
-        ${_dailyPrintStyleBlock('otpremaci-daily-table', 5, [3, 4])}
+        ${_dailyPrintStyleBlock('otpremaci-daily-table', 5, [12, 18, 16, 18])}
         <div class="print-section">
             <div class="section-header" style="border-left:4px solid ${accent};">${naslov}</div>
             ${tableToCleanHtml(tableEl)}
