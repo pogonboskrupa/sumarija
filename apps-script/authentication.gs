@@ -149,21 +149,64 @@ function logPrijava(username, ime, tip, uspjesno) {
 
     if (redIndex === -1) {
       sheet.appendRow([uname, ime || '', tip || '', sada, '']);
-      return;
+    } else {
+      var zadnja = data[redIndex][3];
+      var zadnjaMs = (zadnja instanceof Date) ? zadnja.getTime() : 0;
+      // i van 6h-prozora (ništa se ne piše) i dalje treba proći do bojenja
+      // ispod — datum se ne mijenja, ali "danas" se mijenja svaki dan.
+      if (!zadnjaMs || (sada.getTime() - zadnjaMs) >= PRIJAVA_LIMIT_MS) {
+        var redBroj = redIndex + 1; // 1-indexed red u sheetu (data je 0-indexed)
+        sheet.getRange(redBroj, 1, 1, PRIJAVA_HEADERS.length)
+          .setValues([[uname, ime || '', tip || '', sada, zadnja || '']]);
+      }
     }
 
-    var zadnja = data[redIndex][3];
-    var zadnjaMs = (zadnja instanceof Date) ? zadnja.getTime() : 0;
-    if (zadnjaMs && (sada.getTime() - zadnjaMs) < PRIJAVA_LIMIT_MS) {
-      return; // unutar 6h od zadnje prijave — ne diraj red
-    }
-
-    var redBroj = redIndex + 1; // 1-indexed red u sheetu (data je 0-indexed)
-    sheet.getRange(redBroj, 1, 1, PRIJAVA_HEADERS.length)
-      .setValues([[uname, ime || '', tip || '', sada, zadnja || '']]);
+    _obojiISortirajPrijave(sheet);
   } catch (e) {
     Logger.log('logPrijava greška: ' + e);
   } finally {
     try { lock.releaseLock(); } catch (e2) {}
   }
+}
+
+// Sortira "prijava" list po LOGIN 1 (najskorija prijava na vrhu) i boji svaki
+// red prema tome koliko je dana prošlo od LOGIN 1. Poziva se pri SVAKOM
+// pozivu logPrijava (ne samo za red koji se upravo mijenja) — inače bi npr.
+// jučerašnja "zelena" (danas) ostala zelena i sutra dok se BAŠ TAJ korisnik
+// ponovo ne prijavi, jer ništa drugo ne bi ponovo izračunalo boje.
+var PRIJAVA_TZ = 'Europe/Sarajevo';
+var PRIJAVA_BOJA_DANAS = '#b9f6ca';    // zelena — prijavljen danas
+var PRIJAVA_BOJA_JUCE = '#fff59d';     // žuta — prijavljen juče
+var PRIJAVA_BOJA_PREKJUCE = '#ffcc80'; // narandžasta — prijavljen prekjuče (2 dana)
+
+function _obojiISortirajPrijave(sheet) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+  var lastCol = PRIJAVA_HEADERS.length;
+
+  // Sortiraj PRIJE bojenja (ne poslije) — boje se ispod izračunaju iz
+  // vrijednosti u VEĆ sortiranom redoslijedu, pa ne ovisimo o tome da li
+  // Range.sort() prenosi i pozadinske boje zajedno sa vrijednostima.
+  sheet.getRange(2, 1, lastRow - 1, lastCol).sort({ column: 4, ascending: false });
+
+  var danas = Utilities.formatDate(new Date(), PRIJAVA_TZ, 'yyyy-MM-dd');
+  var vrijednosti = sheet.getRange(2, 4, lastRow - 1, 1).getValues();
+  var boje = vrijednosti.map(function (red) {
+    var v = red[0];
+    var boja = null;
+    if (v instanceof Date) {
+      var dStr = Utilities.formatDate(v, PRIJAVA_TZ, 'yyyy-MM-dd');
+      var razlikaDana = Math.round((_parseYmdUtc(danas) - _parseYmdUtc(dStr)) / 86400000);
+      if (razlikaDana === 0) boja = PRIJAVA_BOJA_DANAS;
+      else if (razlikaDana === 1) boja = PRIJAVA_BOJA_JUCE;
+      else if (razlikaDana === 2) boja = PRIJAVA_BOJA_PREKJUCE;
+    }
+    return new Array(lastCol).fill(boja);
+  });
+  sheet.getRange(2, 1, lastRow - 1, lastCol).setBackgrounds(boje);
+}
+
+function _parseYmdUtc(ymd) {
+  var d = ymd.split('-');
+  return Date.UTC(+d[0], +d[1] - 1, +d[2]);
 }
