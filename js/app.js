@@ -4,7 +4,7 @@
         // ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
         // Brojanje kreće od 1.0.1: patch ide 1→9, deseti commit povećava minor
         // za 1 i vraća patch na 1 (npr. ...1.0.9, 1.1.1, 1.1.2, ..., 1.1.9, 1.2.1, ...).
-        const APP_VERSION = '1.17.67';
+        const APP_VERSION = '1.17.68';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -7327,6 +7327,7 @@
             const sjecaEl = document.getElementById('primaci-trend-top-sjeca');
             const otpremaEl = document.getElementById('primaci-trend-top-otprema');
             const zalihaEl = document.getElementById('primaci-trend-zalihe');
+            const sumeOdjeliEl = document.getElementById('primaci-trend-sume-odjeli');
             if (!sjecaEl || !otpremaEl || !zalihaEl) return;
 
             const danaSel = document.getElementById('primaci-trend-overview-dana');
@@ -7352,12 +7353,15 @@
             const prag = pragEl && pragEl.value !== '' ? Number(pragEl.value) : TREND_ZALIHA_PRAG_DEFAULT;
             const pragLabelEl = document.getElementById('primaci-trend-zalihe-prag-label');
             if (pragLabelEl) pragLabelEl.textContent = prag;
+            const pragLabelSumeEl = document.getElementById('primaci-trend-sume-prag-label');
+            if (pragLabelSumeEl) pragLabelSumeEl.textContent = prag;
 
             const periodEl = document.getElementById('primaci-trend-overview-period');
             if (periodEl) periodEl.textContent = _fmtDanKratko(od) + '  →  ' + _fmtDanKratko(danas);
 
             sjecaEl.innerHTML = otpremaEl.innerHTML = zalihaEl.innerHTML =
                 '<div style="text-align:center;padding:12px;color:#9ca3af;">⏳</div>';
+            if (sumeOdjeliEl) sumeOdjeliEl.innerHTML = '<div style="text-align:center;padding:12px;color:#9ca3af;">⏳</div>';
 
             const [primke, otpreme] = await Promise.all([
                 _dohvatiPrimkeZaTimeline(),
@@ -7399,9 +7403,28 @@
                         '<span style="font-size:13px;font-weight:800;color:#b45309;font-variant-numeric:tabular-nums;">' + v.zaliha.toFixed(2) + ' m³</span>' +
                         '</div>'
                     )).join('');
+
+                // Sume zaliha po sortimentima — zbir SAME ⚠️ Zalihe liste iznad
+                // (ne sječa/otprema, ne period od-do), grupisano po sortimentu
+                // umjesto po odjelu. Odgovara na "koliko ukupno stoji nezaduženo
+                // po sortimentu" preko svih odjela koji su prešli izabrani prag —
+                // ista lista, drugi presjek (po sortimentu umjesto po odjelu).
+                if (sumeOdjeliEl) {
+                    if (!visokeZalihe.length) {
+                        sumeOdjeliEl.innerHTML = '<div style="text-align:center;padding:12px;color:#9ca3af;font-size:13px;">Nema odjela sa zalihom preko ' + prag + ' m³ po sortimentu.</div>';
+                    } else {
+                        const zbirZalihaPoSortimentu = {};
+                        visokeZalihe.forEach(v => {
+                            zbirZalihaPoSortimentu[v.sortiment] = (zbirZalihaPoSortimentu[v.sortiment] || 0) + v.zaliha;
+                        });
+                        const sumeZaliha = Object.entries(zbirZalihaPoSortimentu).sort((a, b) => b[1] - a[1]);
+                        sumeOdjeliEl.innerHTML = _trendOverviewListaHtml(sumeZaliha, '#b45309');
+                    }
+                }
             } catch (e) {
                 console.error('Error loading zalihe za trend overview:', e);
                 zalihaEl.innerHTML = '<div style="text-align:center;padding:12px;color:#dc2626;font-size:13px;">Greška pri učitavanju zaliha.</div>';
+                if (sumeOdjeliEl) sumeOdjeliEl.innerHTML = '<div style="text-align:center;padding:12px;color:#dc2626;font-size:13px;">Greška pri učitavanju zaliha.</div>';
             }
         }
 

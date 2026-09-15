@@ -1270,6 +1270,15 @@
                         </div>
                     </div>
 
+                    <!-- Sume ZALIHE po sortimentima — zbir iste ⚠️ Zalihe liste iznad
+                         (isti odjeli, isti prag), samo grupisano po sortimentu umjesto
+                         po odjelu. Vidi renderPrimaciTrendOverview (js/app.js) — puni se
+                         odmah nakon Zalihe liste, istim podacima (visokeZalihe). -->
+                    <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:14px 16px; margin-bottom:28px;">
+                        <div style="font-size:12px; font-weight:800; color:#b45309; text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px;">📊 Zalihe ukupno po sortimentu — preko <span id="primaci-trend-sume-prag-label">200</span> m³</div>
+                        <div id="primaci-trend-sume-odjeli"></div>
+                    </div>
+
                     <div id="primaci-trend-loading" style="text-align:center; padding:40px; color:#4b5563;">⏳ Učitavam...</div>
 
                     <div id="primaci-trend-charts" class="hidden">

@@ -115,6 +115,17 @@ function topSortimentiPoslednjihDana(niz, od, danas) {
     return Object.entries(zbir).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
 }
 
+// --- kopija iz js/app.js: grupisanje "Zalihe ukupno po sortimentu" ---
+// (renderPrimaciTrendOverview, dio ispod ⚠️ Zalihe liste) — isti
+// visokeZalihe niz ({odjel, sortiment, zaliha}), samo grupisan po
+// sortimentu umjesto po odjelu. Isti prag/odjeli kao Zalihe lista iznad
+// (ne dira period od-do niti primke/otpreme).
+function zbirZalihaPoSortimentu(visokeZalihe) {
+    const zbir = {};
+    visokeZalihe.forEach(v => { zbir[v.sortiment] = (zbir[v.sortiment] || 0) + v.zaliha; });
+    return Object.entries(zbir).sort((a, b) => b[1] - a[1]);
+}
+
 test('_topSortimentiPoslednjihDana — vikend unosi se broje (korisnički nalaz: sječa subotom)', async (t) => {
     await t.test('unos na subotu/nedjelju se RAČUNA u ukupno', () => {
         // 01.08.2026. je subota.
@@ -146,5 +157,37 @@ test('_topSortimentiPoslednjihDana — vikend unosi se broje (korisnički nalaz:
         assert.strictEqual(rez.length, 1);
         assert.strictEqual(rez[0][0], 'TRUPCI Č');
         assert.strictEqual(rez[0][1], 50);
+    });
+});
+
+// "Zalihe ukupno po sortimentu" (Sječa → Trendovi → Brzi pregled): isti
+// visokeZalihe niz (preko izabranog praga) kao ⚠️ Zalihe lista, samo
+// grupisan po sortimentu umjesto po odjelu.
+test('zbirZalihaPoSortimentu — grupisanje Zalihe liste po sortimentu', async (t) => {
+    await t.test('isti sortiment sa više odjela se sabira', () => {
+        const visokeZalihe = [
+            { odjel: '12a', sortiment: 'TRUPCI Č', zaliha: 250 },
+            { odjel: '7b', sortiment: 'TRUPCI Č', zaliha: 300 },
+            { odjel: '12a', sortiment: 'GULE', zaliha: 210 }
+        ];
+        const rez = zbirZalihaPoSortimentu(visokeZalihe);
+        assert.deepStrictEqual(rez.find(([s]) => s === 'TRUPCI Č'), ['TRUPCI Č', 550]);
+        assert.deepStrictEqual(rez.find(([s]) => s === 'GULE'), ['GULE', 210]);
+    });
+
+    await t.test('sortirano opadajuće po zbiru', () => {
+        const visokeZalihe = [
+            { odjel: '12a', sortiment: 'GULE', zaliha: 210 },
+            { odjel: '7b', sortiment: 'TRUPCI Č', zaliha: 300 },
+            { odjel: '3c', sortiment: 'TRUPCI Č', zaliha: 300 }
+        ];
+        const rez = zbirZalihaPoSortimentu(visokeZalihe);
+        assert.strictEqual(rez[0][0], 'TRUPCI Č');
+        assert.strictEqual(rez[0][1], 600);
+        assert.strictEqual(rez[1][0], 'GULE');
+    });
+
+    await t.test('prazna Zalihe lista (nijedan odjel preko praga) vraća prazan zbir', () => {
+        assert.deepStrictEqual(zbirZalihaPoSortimentu([]), []);
     });
 });
