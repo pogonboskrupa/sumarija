@@ -6356,7 +6356,7 @@
                             </div>
                             <div class="izv-card-actions">
                                 <button type="button" class="btn btn-secondary" onclick="printDinamikeIzvodjaca('${odjelEsc}')" style="font-size:11px; padding:5px 10px; white-space:nowrap;">🖨️ Štampaj</button>
-                                <button type="button" class="btn btn-secondary" onclick="printDinamikeObrazac10('${odjelEsc}')" style="font-size:11px; padding:5px 10px; white-space:nowrap;">📄 Obrazac br.10</button>
+                                <button type="button" class="btn btn-secondary" onclick="openObrazac10Dialog('${odjelEsc}')" style="font-size:11px; padding:5px 10px; white-space:nowrap;">📄 Obrazac br.10</button>
                             </div>
                         </div>
                         <div class="izv-card-body">

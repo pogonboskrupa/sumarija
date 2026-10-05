@@ -813,25 +813,53 @@ function printDinamikeIzvodjaca(odjelFilter) {
 // Plan redovi ostaju prazni (plan po sortimentu nije u bazi — upisuje se ručno).
 // Kolona "Niska šuma ogr." nema izvor u bazi pa je prazna; ŠKART je uračunat
 // u Σ celuloze (da Σ Č. = trupci + celuloza ostane tačan).
-function printDinamikeObrazac10(odjelFilter) {
-    const data = (typeof _dinamikeIzvodjacaData !== 'undefined') ? _dinamikeIzvodjacaData : null;
-    const sviOdjeli = (data && data.odjeli) || [];
-    const odjeli = odjelFilter ? sviOdjeli.filter(o => o.odjel === odjelFilter) : sviOdjeli;
-    if (!odjeli.length) {
-        if (typeof showWarning === 'function') showWarning('Nema podataka za štampanje');
-        else alert('Nema podataka za štampanje. Molimo sačekajte učitavanje.');
+const _OBRAZAC10_MJESECI = ['JANUAR', 'FEBRUAR', 'MART', 'APRIL', 'MAJ', 'JUNI', 'JULI', 'AUGUST', 'SEPTEMBAR', 'OKTOBAR', 'NOVEMBAR', 'DECEMBAR'];
+
+// Štampa obrasca za izabrane odjele i raspon mjeseci.
+// opts: { odjeli: string[] (prazno = svi), mjesecOd, mjesecDo (0-11) }
+async function printDinamikeObrazac10(opts) {
+    opts = opts || {};
+    const year = new Date().getFullYear();
+    const trenutni = (typeof _dinamikeIzvodjacaData !== 'undefined') ? _dinamikeIzvodjacaData : null;
+    const mOd = Number.isInteger(opts.mjesecOd) ? opts.mjesecOd : (trenutni ? trenutni.mjesecIzvjestaja : new Date().getMonth());
+    const mDo = Number.isInteger(opts.mjesecDo) ? opts.mjesecDo : mOd;
+
+    // Prozor se otvara odmah (u okviru klika) — poslije await bi popup blocker blokirao.
+    const win = window.open('', '_blank', 'width=1200,height=850,scrollbars=yes');
+    if (!win) {
+        if (typeof showError === 'function') showError('Popup blokiran', 'Dozvolite popup prozore za štampanje.');
+        else alert('Popup blokiran — dozvolite popup prozore za štampanje.');
         return;
     }
+    win.document.write('<p style="font-family:Arial;padding:20px;">⏳ Pripremam obrazac...</p>');
+    const poruka = (txt, boja) => { win.document.body.innerHTML = '<p style="font-family:Arial;padding:20px;color:' + boja + ';">' + txt + '</p>'; };
 
-    const mjeseciNazivi = ['JANUAR', 'FEBRUAR', 'MART', 'APRIL', 'MAJ', 'JUNI', 'JULI', 'AUGUST', 'SEPTEMBAR', 'OKTOBAR', 'NOVEMBAR', 'DECEMBAR'];
-    const nazivMjeseca = mjeseciNazivi[data.mjesecIzvjestaja] || '';
-    const godina = data.godinaIzvjestaja || new Date().getFullYear();
+    const strane = [];
+    try {
+        for (let m = mOd; m <= mDo; m++) {
+            let data = (trenutni && trenutni.mjesecIzvjestaja === m) ? trenutni : null;
+            if (!data) {
+                data = await fetchWithCache(buildApiUrl('dinamike-izvodjaca', { year, mjesec: m }),
+                    `cache_dinamike_izvodjaca_v9_${year}_${m}`, false, 120000);
+            }
+            if (!data || data.error) throw new Error((data && data.error) || 'Nema podataka');
+            (data.odjeli || [])
+                .filter(o => !opts.odjeli || !opts.odjeli.length || opts.odjeli.includes(o.odjel))
+                .forEach(o => strane.push({ o, nazivMjeseca: _OBRAZAC10_MJESECI[m] || '', godina: data.godinaIzvjestaja || year }));
+        }
+    } catch (e) {
+        poruka('Greška: ' + String(e.message || e).replace(/</g, '&lt;'), '#b91c1c');
+        return;
+    }
+    if (!strane.length) { poruka('Nema podataka za izabrani period/odjele.', '#000'); return; }
+
     const S = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'Σ ČETINARI',
                'F/L L', 'I L', 'II L', 'III L', 'TRUPCI L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI', 'UKUPNO Č+L'];
     const v = (p, k) => Number(p && p[k]) || 0;
     const sum = (a, b) => { const r = {}; S.forEach(k => r[k] = v(a, k) + v(b, k)); return r; };
     const sub = (a, b) => { const r = {}; S.forEach(k => r[k] = v(a, k) - v(b, k)); return r; };
     const fmt = n => (Math.abs(n) < 0.005) ? '' : n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (x => String(x));
 
     // Redoslijed ćelija prema formi: trupci Č (F/L,I,II,III,Σ), celuloza (rud,dug,cij,Σ),
     // trupci L (F/L,I,II,III,Σ), ogr.drvo (dug,cij,trup.), niska šuma ogr., Σ
@@ -847,8 +875,7 @@ function printDinamikeObrazac10(odjelFilter) {
         return `<tr${bold ? ' class="b"' : ''}><th class="lbl">${label}</th>${tds}</tr>`;
     };
 
-    const esc = typeof escapeHtml === 'function' ? escapeHtml : (x => String(x));
-    const strana = (o, idx) => {
+    const strana = ({ o, nazivMjeseca, godina }, idx) => {
         const sjeca = o.sjeca, otprema = o.otprema;
         const sjecaGod = sum(sjeca.prosliPeriod, sjeca.prosliMjesec);
         const zalihaPoc = sub(sjeca.prosliPeriod, otprema.prosliPeriod);
@@ -894,41 +921,112 @@ function printDinamikeObrazac10(odjelFilter) {
     };
 
     const html = `<!DOCTYPE html><html lang="bs"><head><meta charset="utf-8">
-<title>Obrazac br.10 — ${nazivMjeseca} ${godina}</title>
+<title>Obrazac br.10 — ${strane.length} str.</title>
 <style>
-@page { size: A4 landscape; margin: 10mm; }
-* { box-sizing: border-box; }
+@page { size: A4 landscape; margin: 12mm; }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 body { font-family: Arial, Helvetica, sans-serif; color: #000; margin: 0; font-size: 10px; }
 .top { display: flex; justify-content: space-between; align-items: flex-start; }
 .org { font-size: 11px; line-height: 1.35; }
 .obr { font-size: 10px; }
-.meta { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border: 1px solid #000; margin: 8px 0; }
-.meta div { padding: 4px 6px; border-right: 1px solid #000; }
+.meta { display: grid; grid-template-columns: repeat(5, 1fr); border: 2px solid #000; margin: 8px 0; }
+.meta div { padding: 4px 6px; border-right: 1.5px solid #000; }
 .meta div:last-child { border-right: 0; }
 .meta span { display: block; font-size: 8px; color: #444; }
 .meta b { font-size: 11px; }
 h1 { text-align: center; font-size: 13px; margin: 8px 0; }
 h1 small { font-size: 11px; font-weight: 700; }
-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-th, td { border: 1px solid #000; padding: 4px 2px; text-align: center; font-size: 9px; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 2.5px solid #000; }
+th, td { border: 1.5px solid #000; padding: 4px 2px; text-align: center; font-size: 9px; }
+thead th { background: #e5e7eb; }
 td { text-align: right; padding-right: 4px; height: 26px; font-variant-numeric: tabular-nums; }
-th.lbl { width: 17%; text-align: left; padding-left: 5px; font-weight: 600; }
+th.lbl { width: 17%; text-align: left; padding-left: 5px; font-weight: 600; background: #f3f4f6; }
 tr.b td, tr.b th { font-weight: 800; }
 .note { font-size: 8px; margin: 4px 0 0; }
 .sign { display: flex; justify-content: space-between; margin: 36px 40px 0; font-size: 11px; }
-.sign div { border-top: 1px solid #000; padding: 3px 30px 0; min-width: 160px; text-align: center; }
-</style></head><body>${odjeli.map(strana).join('')}
+.sign div { border-top: 1.5px solid #000; padding: 3px 30px 0; min-width: 160px; text-align: center; }
+</style></head><body>${strane.map(strana).join('')}
 <script>window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 300); });<\/script>
 </body></html>`;
 
-    const win = window.open('', '_blank', 'width=1200,height=850,scrollbars=yes');
-    if (!win) {
-        if (typeof showError === 'function') showError('Popup blokiran', 'Dozvolite popup prozore za štampanje.');
-        else alert('Popup blokiran — dozvolite popup prozore za štampanje.');
-        return;
-    }
+    win.document.open();
     win.document.write(html);
     win.document.close();
+}
+
+// Dijalog za izbor šta se štampa: period (od–do mjesec), radilište, izvođač, odjeli.
+function openObrazac10Dialog(predOdabraniOdjel) {
+    const data = (typeof _dinamikeIzvodjacaData !== 'undefined') ? _dinamikeIzvodjacaData : null;
+    const odjeli = (data && data.odjeli) || [];
+    if (!odjeli.length) {
+        if (typeof showWarning === 'function') showWarning('Nema učitanih odjela');
+        else alert('Nema učitanih odjela.');
+        return;
+    }
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (x => String(x));
+    const uniq = k => [...new Set(odjeli.map(o => String(o[k] || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'bs'));
+    const mjNaz = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+    const mjOpt = sel => mjNaz.map((m, i) => `<option value="${i}"${i === sel ? ' selected' : ''}>${m}</option>`).join('');
+    const sel = data.mjesecIzvjestaja;
+
+    document.getElementById('obrazac10-dialog')?.remove();
+    const ov = document.createElement('div');
+    ov.id = 'obrazac10-dialog';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:12px;';
+    ov.innerHTML = `
+      <div style="background:#fff;border-radius:12px;max-width:560px;width:100%;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.3);">
+        <div style="padding:14px 18px;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:15px;">📄 Obrazac br.10 — šta štampati</div>
+        <div style="padding:14px 18px;overflow-y:auto;display:grid;gap:12px;font-size:13px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <label>Period od<select id="ob10-od" style="width:100%;padding:6px;">${mjOpt(sel)}</select></label>
+            <label>Period do<select id="ob10-do" style="width:100%;padding:6px;">${mjOpt(sel)}</select></label>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <label>Radilište / G.J.<select id="ob10-rad" style="width:100%;padding:6px;"><option value="">Sva</option>${uniq('radiliste').map(r => `<option>${esc(r)}</option>`).join('')}</select></label>
+            <label>Izvođač<select id="ob10-izv" style="width:100%;padding:6px;"><option value="">Svi</option>${uniq('izvodjac').map(r => `<option>${esc(r)}</option>`).join('')}</select></label>
+          </div>
+          <div>
+            <label style="font-weight:600;"><input type="checkbox" id="ob10-all" checked> Odaberi sve prikazane odjele</label>
+            <div id="ob10-list" style="margin-top:6px;border:1px solid #e5e7eb;border-radius:8px;max-height:30vh;overflow-y:auto;"></div>
+            <div id="ob10-count" style="margin-top:4px;color:#6b7280;font-size:12px;"></div>
+          </div>
+        </div>
+        <div style="padding:12px 18px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:8px;">
+          <button type="button" class="btn btn-secondary" id="ob10-cancel">Odustani</button>
+          <button type="button" class="btn btn-primary" id="ob10-print">🖨️ Štampaj</button>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+    const $ = id => ov.querySelector('#' + id);
+    const vidljivi = () => odjeli.filter(o =>
+        (!$('ob10-rad').value || String(o.radiliste || '').trim() === $('ob10-rad').value) &&
+        (!$('ob10-izv').value || String(o.izvodjac || '').trim() === $('ob10-izv').value));
+    const cbs = () => [...ov.querySelectorAll('.ob10-cb')];
+    const updCount = () => { $('ob10-count').textContent = `Izabrano: ${cbs().filter(c => c.checked).length} / ${cbs().length}`; };
+    const renderList = () => {
+        $('ob10-list').innerHTML = vidljivi().map(o => `
+          <label style="display:flex;gap:8px;padding:6px 10px;border-bottom:1px solid #f3f4f6;cursor:pointer;">
+            <input type="checkbox" class="ob10-cb" data-odjel="${esc(o.odjel)}" ${(!predOdabraniOdjel || predOdabraniOdjel === o.odjel) ? 'checked' : ''}>
+            <span><b>${esc(o.odjel)}</b> <span style="color:#6b7280;">· ${esc(o.radiliste || '—')} · ${esc(o.izvodjac || '—')}</span></span>
+          </label>`).join('') || '<div style="padding:12px;color:#6b7280;">Nema odjela za ovaj filter.</div>';
+        $('ob10-all').checked = !predOdabraniOdjel;
+        cbs().forEach(c => c.addEventListener('change', updCount));
+        updCount();
+    };
+    $('ob10-rad').onchange = $('ob10-izv').onchange = () => { $('ob10-all').checked = true; renderList(); cbs().forEach(c => c.checked = true); updCount(); };
+    $('ob10-all').onchange = e => { cbs().forEach(c => c.checked = e.target.checked); updCount(); };
+    $('ob10-od').onchange = () => { if (+$('ob10-do').value < +$('ob10-od').value) $('ob10-do').value = $('ob10-od').value; };
+    $('ob10-do').onchange = () => { if (+$('ob10-do').value < +$('ob10-od').value) $('ob10-od').value = $('ob10-do').value; };
+    $('ob10-cancel').onclick = () => ov.remove();
+    ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+    $('ob10-print').onclick = () => {
+        const izabrani = cbs().filter(c => c.checked).map(c => c.dataset.odjel);
+        if (!izabrani.length) { alert('Izaberite bar jedan odjel.'); return; }
+        const opts = { odjeli: izabrani, mjesecOd: +$('ob10-od').value, mjesecDo: +$('ob10-do').value };
+        ov.remove();
+        printDinamikeObrazac10(opts);
+    };
+    renderList();
 }
 
 function printActiveView(contentId, tabLabel, accentColor) {
