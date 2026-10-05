@@ -845,7 +845,7 @@ async function printDinamikeObrazac10(opts) {
             if (!data || data.error) throw new Error((data && data.error) || 'Nema podataka');
             (data.odjeli || [])
                 .filter(o => !opts.odjeli || !opts.odjeli.length || opts.odjeli.includes(o.odjel))
-                .forEach(o => strane.push({ o, nazivMjeseca: _OBRAZAC10_MJESECI[m] || '', godina: data.godinaIzvjestaja || year }));
+                .forEach(o => strane.push({ o, mjesec: m, nazivMjeseca: _OBRAZAC10_MJESECI[m] || '', godina: data.godinaIzvjestaja || year }));
         }
     } catch (e) {
         poruka('Greška: ' + String(e.message || e).replace(/</g, '&lt;'), '#b91c1c');
@@ -853,98 +853,106 @@ async function printDinamikeObrazac10(opts) {
     }
     if (!strane.length) { poruka('Nema podataka za izabrani period/odjele.', '#000'); return; }
 
-    const S = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'Σ ČETINARI',
-               'F/L L', 'I L', 'II L', 'III L', 'TRUPCI L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI', 'UKUPNO Č+L'];
+    const RIM = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
     const v = (p, k) => Number(p && p[k]) || 0;
-    const sum = (a, b) => { const r = {}; S.forEach(k => r[k] = v(a, k) + v(b, k)); return r; };
-    const sub = (a, b) => { const r = {}; S.forEach(k => r[k] = v(a, k) - v(b, k)); return r; };
-    const fmt = n => (Math.abs(n) < 0.005) ? '' : n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const sum = (a, b) => { const r = {}; Object.keys(Object.assign({}, a, b)).forEach(k => r[k] = v(a, k) + v(b, k)); return r; };
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (x => String(x));
-
-    // Redoslijed ćelija prema formi: trupci Č (F/L,I,II,III,Σ), celuloza (rud,dug,cij,Σ),
-    // trupci L (F/L,I,II,III,Σ), ogr.drvo (dug,cij,trup.), niska šuma ogr., Σ
-    const cells = p => {
-        const celSum = v(p, 'RD') + v(p, 'CEL.DUGA') + v(p, 'CEL.CIJEPANA') + v(p, 'ŠKART');
-        return [v(p, 'F/L Č'), v(p, 'I Č'), v(p, 'II Č'), v(p, 'III Č'), v(p, 'TRUPCI Č'),
-                v(p, 'RD'), v(p, 'CEL.DUGA'), v(p, 'CEL.CIJEPANA'), celSum,
-                v(p, 'F/L L'), v(p, 'I L'), v(p, 'II L'), v(p, 'III L'), v(p, 'TRUPCI L'),
-                v(p, 'OGR.DUGI'), v(p, 'OGR.CIJEPANI'), v(p, 'GULE'), 0, v(p, 'UKUPNO Č+L')];
+    const f2 = n => (Number(n) || 0).toFixed(2);
+    // Redoslijed kolona prema obrascu: Četinari (trupci, rudno, dugo, cijep, škart, Σ),
+    // Lišćari (trupci, ogrjev dugo, ogrjev cijep, gule, Σ), ΣΣ (č+l)
+    const KOLONE = ['TRUPCI Č', 'RD', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'Σ ČETINARI',
+                    'TRUPCI L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI', 'UKUPNO Č+L'];
+    const POT = ['Σ ČETINARI', 'LIŠĆARI', 'UKUPNO Č+L'];
+    const thead = naslov => `
+        <thead>
+          <tr><th rowspan="4" class="sec">${naslov}</th><th colspan="12">Količina i struktura sortimenata (m³)</th><th rowspan="4" class="rot"><span>Ugovorena dinamika</span></th><th rowspan="4">Index izvrš.</th></tr>
+          <tr><th colspan="6">Četinari</th><th colspan="6">Lišćari</th></tr>
+          <tr><th rowspan="2">Trupci</th><th rowspan="2">Rudno</th><th colspan="2">Celuloza</th><th rowspan="2">Škart</th><th rowspan="2">Σ</th><th rowspan="2">Trupci</th><th colspan="2">Ogrjev</th><th rowspan="2">Gule</th><th rowspan="2">Σ</th><th rowspan="2">ΣΣ<br>(č+l)</th></tr>
+          <tr style="display:none"></tr>
+        </thead>`;
+    // Tabela sa dvije vrste zaglavlja (Dugo/Cijep) mora imati red ispod "Celuloza"/"Ogrjev"
+    const theadFix = naslov => thead(naslov).replace('<tr style="display:none"></tr>',
+        '<tr><th>Dugo</th><th>Cijep</th><th>Dugo</th><th>Cijep</th></tr>');
+    const tr = (labela, p, bold, dinamika, index) =>
+        `<tr${bold ? ' class="b"' : ''}><th class="lbl">${labela}</th>${KOLONE.map(k => `<td>${f2(v(p, k))}</td>`).join('')}<td>${f2(dinamika)}</td><td>${Math.round(index)}</td></tr>`;
+    const blok = (naslov, d, ugov, mjNaz) => {
+        const uk = sum(d.prosliPeriod, d.prosliMjesec);
+        const idx = (p) => ugov > 0 ? (v(p, 'UKUPNO Č+L') / ugov) * 100 : 0;
+        return `<table class="main">${theadFix(naslov)}<tbody>
+            ${tr('Izvršenje u prethodnom periodu', d.prosliPeriod, false, ugov, idx(d.prosliPeriod))}
+            ${tr('Izvršenje u tekućem mjesecu (' + mjNaz + ')', d.prosliMjesec, false, ugov, idx(d.prosliMjesec))}
+            ${tr('UKUPNO IZVRŠENJE:', uk, true, ugov, idx(uk))}
+        </tbody></table>`;
     };
-    const row = (label, p, bold) => {
-        const tds = p ? cells(p).map(n => `<td>${fmt(n)}</td>`).join('') : '<td></td>'.repeat(19);
-        return `<tr${bold ? ' class="b"' : ''}><th class="lbl">${label}</th>${tds}</tr>`;
-    };
+    const prazneUgovorene = ugov => `<td></td>`.repeat(11) + `<td>${ugov > 0 ? f2(ugov) : ''}</td>`;
 
-    const strana = ({ o, nazivMjeseca, godina }, idx) => {
-        const sjeca = o.sjeca, otprema = o.otprema;
-        const sjecaGod = sum(sjeca.prosliPeriod, sjeca.prosliMjesec);
-        const zalihaPoc = sub(sjeca.prosliPeriod, otprema.prosliPeriod);
-        const ukupnoRaspolozivo = sum(zalihaPoc, sjeca.prosliMjesec);
-        const zalihaKraj = sub(ukupnoRaspolozivo, otprema.prosliMjesec);
-        const imaSkart = v(sjecaGod, 'ŠKART') > 0;
+    const strana = ({ o, nazivMjeseca, godina, mjesec }, idx) => {
+        const ugov = Number(o.ugovorenoUkupno) || 0;
+        const period = mjesec === 0 ? 'I' : 'I-' + RIM[mjesec];
         return `
         <section class="page" style="${idx ? 'page-break-before:always;' : ''}">
-            <div class="top">
-                <div class="org">ŠPD „UNSKO-SANSKE ŠUME“ d.o.o. Bosanska Krupa<br>Radnička bb<br><b>Pogon Bosanska Krupa</b></div>
-                <div class="obr">obrazac br.10</div>
+            <h1>REALIZACIJA RADOVA NA SJEČI, IZVOZU I IZNOSU DRVNIH SORTIMENATA<br>ZA MJESEC ${nazivMjeseca} I PERIOD ${period} ${godina}. GODINE</h1>
+            <div class="head">
+                <div class="info">
+                    <p>IZVOĐAČ RADOVA: <b>"${esc(o.izvodjac || '')}"</b></p>
+                    <p class="gap">G. Jedinica: <b>${esc(o.radiliste || '')}</b></p>
+                    <p>Odjel/odsjek: <b>${esc(o.odjel)}</b></p>
+                    <p>Početak radova: ______________</p>
+                    <p>Broj ugovora: ______________</p>
+                </div>
+                <table class="ugov">
+                    <thead>
+                      <tr><th rowspan="4" class="vr">Vid rada</th><th colspan="12">Ugovorena količina (m³)</th></tr>
+                      <tr><th colspan="5">Četinari</th><th rowspan="3">Σ</th><th colspan="4">Lišćari</th><th rowspan="3">Σ</th><th rowspan="3">ΣΣ<br>(č+l)</th></tr>
+                      <tr><th rowspan="2">Trupci</th><th rowspan="2">Rudno</th><th colspan="2">Celuloza</th><th rowspan="2">Škart</th><th rowspan="2">Trupci</th><th colspan="2">Ogrjev</th><th rowspan="2">Gule</th></tr>
+                      <tr><th>Dugo</th><th>Cijep</th><th>Dugo</th><th>Cijep</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><th class="lbl">Sječa</th>${prazneUgovorene(ugov)}</tr>
+                      <tr><th class="lbl">Izvoz/iznos</th>${prazneUgovorene(ugov)}</tr>
+                    </tbody>
+                </table>
             </div>
-            <div class="meta">
-                <div><span>G. Jedinica</span><b>${esc(o.radiliste || '')}</b></div>
-                <div><span>Odjel/Osjek</span><b>${esc(o.odjel)}</b></div>
-                <div><span>Radilište</span><b>${esc(o.radiliste || '')}</b></div>
-                <div><span>Vrsta rada</span><b>Sječa i izrada</b></div>
-                <div><span>Izvođač</span><b>${esc(o.izvodjac || '')}</b></div>
+            <table class="dnev"><tr><th style="width:22%">Ugovorena dnevna dinamika</th><td>Sječa</td><td>Izvoz</td><td>Iznos</td></tr></table>
+            ${blok('SJEČA', o.sjeca, ugov, nazivMjeseca)}
+            ${blok('IZVOZ/IZNOS', o.otprema, ugov, nazivMjeseca)}
+            <div class="foot">
+                <div><b>Dostavljeno:</b><br>- Sektoru za iskorištavanje šuma<br>- a/a</div>
+                <div class="upr">Upravnik</div>
             </div>
-            <h1>IZVJEŠTAJ O IZVRŠENJU SJEČE DRVNIH SORTIMENATA<br><small>ZA MJESEC ${nazivMjeseca} ${godina}. god</small></h1>
-            <table>
-                <thead>
-                    <tr><th rowspan="4" class="lbl"></th><th colspan="19">Količina i struktura sortimenata (m³)</th></tr>
-                    <tr><th colspan="9">Četinari</th><th colspan="10">Lišćari</th></tr>
-                    <tr><th colspan="5">trupci</th><th colspan="4">celuloza</th><th colspan="5">trupci</th><th colspan="3">ogr. drvo</th><th rowspan="2">Niska šuma ogr.</th><th rowspan="2">Σ</th></tr>
-                    <tr><th>F/L</th><th>I</th><th>II</th><th>III</th><th>Σ</th><th>rud</th><th>dug</th><th>cij</th><th>Σ</th><th>F/L</th><th>I</th><th>II</th><th>III</th><th>Σ</th><th>dug</th><th>cij</th><th>trup.</th></tr>
-                </thead>
-                <tbody>
-                    ${row('Plan za izvještajni mjesec', null)}
-                    ${row('Plan od 01.01. do kraja izvještajnog mjeseca', null)}
-                    ${row('Izvršenje u izvještajnom mjesecu', sjeca.prosliMjesec, true)}
-                    ${row('Izvršenje od 01.01. do kraja izvještajnog mjeseca', sjecaGod, true)}
-                    ${row('Zaliha na početku izvještajnog mjeseca', zalihaPoc)}
-                    ${row('Izrađeno – dovoz – doprema u izvještajnom mjesecu', sjeca.prosliMjesec)}
-                    ${row('UKUPNO', ukupnoRaspolozivo, true)}
-                    ${row('Izvoz – otprema u izvještajnom mjesecu', otprema.prosliMjesec)}
-                    ${row('Zaliha šuma / panj – međ. na kraju izvještajnog mjeseca', zalihaKraj, true)}
-                </tbody>
-            </table>
-            ${imaSkart ? '<p class="note">* Škart je uračunat u Σ celuloze.</p>' : ''}
-            <div class="sign"><div>Izvještaj sastavio</div><div>Upravnik</div></div>
         </section>`;
     };
 
     const html = `<!DOCTYPE html><html lang="bs"><head><meta charset="utf-8">
-<title>Obrazac br.10 — ${strane.length} str.</title>
+<title>Realizacija radova — ${strane.length} str.</title>
 <style>
-@page { size: A4 landscape; margin: 12mm; }
+@page { size: A4 landscape; margin: 10mm; }
 * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 body { font-family: Arial, Helvetica, sans-serif; color: #000; margin: 0; font-size: 10px; }
-.top { display: flex; justify-content: space-between; align-items: flex-start; }
-.org { font-size: 11px; line-height: 1.35; }
-.obr { font-size: 10px; }
-.meta { display: grid; grid-template-columns: repeat(5, 1fr); border: 2px solid #000; margin: 8px 0; }
-.meta div { padding: 4px 6px; border-right: 1.5px solid #000; }
-.meta div:last-child { border-right: 0; }
-.meta span { display: block; font-size: 8px; color: #444; }
-.meta b { font-size: 11px; }
-h1 { text-align: center; font-size: 13px; margin: 8px 0; }
-h1 small { font-size: 11px; font-weight: 700; }
-table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 2.5px solid #000; }
-th, td { border: 1.5px solid #000; padding: 4px 2px; text-align: center; font-size: 9px; }
-thead th { background: #e5e7eb; }
-td { text-align: right; padding-right: 4px; height: 26px; font-variant-numeric: tabular-nums; }
-th.lbl { width: 17%; text-align: left; padding-left: 5px; font-weight: 600; background: #f3f4f6; }
-tr.b td, tr.b th { font-weight: 800; }
-.note { font-size: 8px; margin: 4px 0 0; }
-.sign { display: flex; justify-content: space-between; margin: 36px 40px 0; font-size: 11px; }
-.sign div { border-top: 1.5px solid #000; padding: 3px 30px 0; min-width: 160px; text-align: center; }
+h1 { text-align: center; font-size: 13px; margin: 0 0 10px; line-height: 1.4; }
+.head { display: flex; gap: 14px; align-items: flex-end; margin-bottom: 8px; }
+.info { width: 28%; font-size: 11px; }
+.info p { margin: 2px 0; }
+.info .gap { margin-top: 10px; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1.5px solid #000; padding: 3px 2px; text-align: center; font-size: 9px; }
+th { font-weight: 700; }
+table.ugov { flex: 1; border: 2.5px solid #000; }
+table.ugov th.vr { width: 9%; }
+table.ugov td { height: 16px; text-align: right; padding-right: 3px; }
+table.dnev { border: 2.5px solid #000; margin-bottom: 10px; }
+table.dnev th { text-align: center; font-size: 10px; }
+table.dnev td { height: 18px; font-size: 10px; }
+table.main { border: 2.5px solid #000; margin-bottom: 10px; table-layout: fixed; }
+table.main th.sec { width: 19%; font-size: 12px; }
+table.main th.lbl { text-align: left; padding-left: 4px; font-size: 10px; }
+table.main td { text-align: right; padding-right: 3px; height: 21px; font-size: 10px; font-variant-numeric: tabular-nums; }
+table.main th.rot { width: 4%; }
+table.main th.rot span { writing-mode: vertical-rl; transform: rotate(180deg); display: inline-block; font-size: 9px; }
+table.main tr.b td, table.main tr.b th { font-weight: 800; }
+th.lbl { text-align: left; padding-left: 4px; }
+.foot { display: flex; justify-content: space-between; font-size: 11px; margin-top: 8px; }
+.upr { margin-right: 40px; margin-top: 4px; min-width: 200px; text-align: left; border-bottom: 1.5px solid #000; height: 40px; font-weight: 700; }
 </style></head><body>${strane.map(strana).join('')}
 <script>window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 300); });<\/script>
 </body></html>`;
@@ -975,7 +983,7 @@ function openObrazac10Dialog(predOdabraniOdjel) {
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:12px;';
     ov.innerHTML = `
       <div style="background:#fff;border-radius:12px;max-width:560px;width:100%;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.3);">
-        <div style="padding:14px 18px;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:15px;">📄 Obrazac br.10 — šta štampati</div>
+        <div style="padding:14px 18px;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:15px;">📄 Realizacija radova — šta štampati</div>
         <div style="padding:14px 18px;overflow-y:auto;display:grid;gap:12px;font-size:13px;">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <label>Period od<select id="ob10-od" style="width:100%;padding:6px;">${mjOpt(sel)}</select></label>
