@@ -802,6 +802,135 @@ function printDinamikeIzvodjaca(odjelFilter) {
     win.document.close();
 }
 
+// ─── Dinamike izvođača — Obrazac br.10 ──────────────────────
+// Izvještaj o izvršenju sječe drvnih sortimenata (papirna forma ŠPD
+// "Unsko-sanske šume", obrazac br.10): jedna A4 landscape stranica po
+// odjelu. Redovi se računaju iz istih podataka kao ekranski prikaz:
+//   izvršenje u mjesecu / od 01.01  = sječa (INDEKS_PRIMKA)
+//   zaliha na početku mjeseca       = sječa − otprema prije izvještajnog mjeseca
+//   izvoz-otprema                   = otprema u izvještajnom mjesecu
+//   zaliha na kraju                 = zaliha na početku + izrađeno − otprema
+// Plan redovi ostaju prazni (plan po sortimentu nije u bazi — upisuje se ručno).
+// Kolona "Niska šuma ogr." nema izvor u bazi pa je prazna; ŠKART je uračunat
+// u Σ celuloze (da Σ Č. = trupci + celuloza ostane tačan).
+function printDinamikeObrazac10(odjelFilter) {
+    const data = (typeof _dinamikeIzvodjacaData !== 'undefined') ? _dinamikeIzvodjacaData : null;
+    const sviOdjeli = (data && data.odjeli) || [];
+    const odjeli = odjelFilter ? sviOdjeli.filter(o => o.odjel === odjelFilter) : sviOdjeli;
+    if (!odjeli.length) {
+        if (typeof showWarning === 'function') showWarning('Nema podataka za štampanje');
+        else alert('Nema podataka za štampanje. Molimo sačekajte učitavanje.');
+        return;
+    }
+
+    const mjeseciNazivi = ['JANUAR', 'FEBRUAR', 'MART', 'APRIL', 'MAJ', 'JUNI', 'JULI', 'AUGUST', 'SEPTEMBAR', 'OKTOBAR', 'NOVEMBAR', 'DECEMBAR'];
+    const nazivMjeseca = mjeseciNazivi[data.mjesecIzvjestaja] || '';
+    const godina = data.godinaIzvjestaja || new Date().getFullYear();
+    const S = ['F/L Č', 'I Č', 'II Č', 'III Č', 'RD', 'TRUPCI Č', 'CEL.DUGA', 'CEL.CIJEPANA', 'ŠKART', 'Σ ČETINARI',
+               'F/L L', 'I L', 'II L', 'III L', 'TRUPCI L', 'OGR.DUGI', 'OGR.CIJEPANI', 'GULE', 'LIŠĆARI', 'UKUPNO Č+L'];
+    const v = (p, k) => Number(p && p[k]) || 0;
+    const sum = (a, b) => { const r = {}; S.forEach(k => r[k] = v(a, k) + v(b, k)); return r; };
+    const sub = (a, b) => { const r = {}; S.forEach(k => r[k] = v(a, k) - v(b, k)); return r; };
+    const fmt = n => (Math.abs(n) < 0.005) ? '' : n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    // Redoslijed ćelija prema formi: trupci Č (F/L,I,II,III,Σ), celuloza (rud,dug,cij,Σ),
+    // trupci L (F/L,I,II,III,Σ), ogr.drvo (dug,cij,trup.), niska šuma ogr., Σ
+    const cells = p => {
+        const celSum = v(p, 'RD') + v(p, 'CEL.DUGA') + v(p, 'CEL.CIJEPANA') + v(p, 'ŠKART');
+        return [v(p, 'F/L Č'), v(p, 'I Č'), v(p, 'II Č'), v(p, 'III Č'), v(p, 'TRUPCI Č'),
+                v(p, 'RD'), v(p, 'CEL.DUGA'), v(p, 'CEL.CIJEPANA'), celSum,
+                v(p, 'F/L L'), v(p, 'I L'), v(p, 'II L'), v(p, 'III L'), v(p, 'TRUPCI L'),
+                v(p, 'OGR.DUGI'), v(p, 'OGR.CIJEPANI'), v(p, 'GULE'), 0, v(p, 'UKUPNO Č+L')];
+    };
+    const row = (label, p, bold) => {
+        const tds = p ? cells(p).map(n => `<td>${fmt(n)}</td>`).join('') : '<td></td>'.repeat(19);
+        return `<tr${bold ? ' class="b"' : ''}><th class="lbl">${label}</th>${tds}</tr>`;
+    };
+
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (x => String(x));
+    const strana = (o, idx) => {
+        const sjeca = o.sjeca, otprema = o.otprema;
+        const sjecaGod = sum(sjeca.prosliPeriod, sjeca.prosliMjesec);
+        const zalihaPoc = sub(sjeca.prosliPeriod, otprema.prosliPeriod);
+        const ukupnoRaspolozivo = sum(zalihaPoc, sjeca.prosliMjesec);
+        const zalihaKraj = sub(ukupnoRaspolozivo, otprema.prosliMjesec);
+        const imaSkart = v(sjecaGod, 'ŠKART') > 0;
+        return `
+        <section class="page" style="${idx ? 'page-break-before:always;' : ''}">
+            <div class="top">
+                <div class="org">ŠPD „UNSKO-SANSKE ŠUME“ d.o.o. Bosanska Krupa<br>Radnička bb<br><b>Pogon Bosanska Krupa</b></div>
+                <div class="obr">obrazac br.10</div>
+            </div>
+            <div class="meta">
+                <div><span>G. Jedinica</span><b>${esc(o.radiliste || '')}</b></div>
+                <div><span>Odjel/Osjek</span><b>${esc(o.odjel)}</b></div>
+                <div><span>Radilište</span><b>${esc(o.radiliste || '')}</b></div>
+                <div><span>Vrsta rada</span><b>Sječa i izrada</b></div>
+                <div><span>Izvođač</span><b>${esc(o.izvodjac || '')}</b></div>
+            </div>
+            <h1>IZVJEŠTAJ O IZVRŠENJU SJEČE DRVNIH SORTIMENATA<br><small>ZA MJESEC ${nazivMjeseca} ${godina}. god</small></h1>
+            <table>
+                <thead>
+                    <tr><th rowspan="4" class="lbl"></th><th colspan="19">Količina i struktura sortimenata (m³)</th></tr>
+                    <tr><th colspan="9">Četinari</th><th colspan="10">Lišćari</th></tr>
+                    <tr><th colspan="5">trupci</th><th colspan="4">celuloza</th><th colspan="5">trupci</th><th colspan="3">ogr. drvo</th><th rowspan="2">Niska šuma ogr.</th><th rowspan="2">Σ</th></tr>
+                    <tr><th>F/L</th><th>I</th><th>II</th><th>III</th><th>Σ</th><th>rud</th><th>dug</th><th>cij</th><th>Σ</th><th>F/L</th><th>I</th><th>II</th><th>III</th><th>Σ</th><th>dug</th><th>cij</th><th>trup.</th></tr>
+                </thead>
+                <tbody>
+                    ${row('Plan za izvještajni mjesec', null)}
+                    ${row('Plan od 01.01. do kraja izvještajnog mjeseca', null)}
+                    ${row('Izvršenje u izvještajnom mjesecu', sjeca.prosliMjesec, true)}
+                    ${row('Izvršenje od 01.01. do kraja izvještajnog mjeseca', sjecaGod, true)}
+                    ${row('Zaliha na početku izvještajnog mjeseca', zalihaPoc)}
+                    ${row('Izrađeno – dovoz – doprema u izvještajnom mjesecu', sjeca.prosliMjesec)}
+                    ${row('UKUPNO', ukupnoRaspolozivo, true)}
+                    ${row('Izvoz – otprema u izvještajnom mjesecu', otprema.prosliMjesec)}
+                    ${row('Zaliha šuma / panj – međ. na kraju izvještajnog mjeseca', zalihaKraj, true)}
+                </tbody>
+            </table>
+            ${imaSkart ? '<p class="note">* Škart je uračunat u Σ celuloze.</p>' : ''}
+            <div class="sign"><div>Izvještaj sastavio</div><div>Upravnik</div></div>
+        </section>`;
+    };
+
+    const html = `<!DOCTYPE html><html lang="bs"><head><meta charset="utf-8">
+<title>Obrazac br.10 — ${nazivMjeseca} ${godina}</title>
+<style>
+@page { size: A4 landscape; margin: 10mm; }
+* { box-sizing: border-box; }
+body { font-family: Arial, Helvetica, sans-serif; color: #000; margin: 0; font-size: 10px; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; }
+.org { font-size: 11px; line-height: 1.35; }
+.obr { font-size: 10px; }
+.meta { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border: 1px solid #000; margin: 8px 0; }
+.meta div { padding: 4px 6px; border-right: 1px solid #000; }
+.meta div:last-child { border-right: 0; }
+.meta span { display: block; font-size: 8px; color: #444; }
+.meta b { font-size: 11px; }
+h1 { text-align: center; font-size: 13px; margin: 8px 0; }
+h1 small { font-size: 11px; font-weight: 700; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+th, td { border: 1px solid #000; padding: 4px 2px; text-align: center; font-size: 9px; }
+td { text-align: right; padding-right: 4px; height: 26px; font-variant-numeric: tabular-nums; }
+th.lbl { width: 17%; text-align: left; padding-left: 5px; font-weight: 600; }
+tr.b td, tr.b th { font-weight: 800; }
+.note { font-size: 8px; margin: 4px 0 0; }
+.sign { display: flex; justify-content: space-between; margin: 36px 40px 0; font-size: 11px; }
+.sign div { border-top: 1px solid #000; padding: 3px 30px 0; min-width: 160px; text-align: center; }
+</style></head><body>${odjeli.map(strana).join('')}
+<script>window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 300); });<\/script>
+</body></html>`;
+
+    const win = window.open('', '_blank', 'width=1200,height=850,scrollbars=yes');
+    if (!win) {
+        if (typeof showError === 'function') showError('Popup blokiran', 'Dozvolite popup prozore za štampanje.');
+        else alert('Popup blokiran — dozvolite popup prozore za štampanje.');
+        return;
+    }
+    win.document.write(html);
+    win.document.close();
+}
+
 function printActiveView(contentId, tabLabel, accentColor) {
     const container = document.getElementById(contentId);
     if (!container) return;
