@@ -88,7 +88,7 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
   // (v4) da svaki izbor ima svoj keš, i bump-uje se sa svakom promjenom
   // odgovora da odmah istisne stari keširan rezultat.
   var mjesecZaKljuc = (mjesec !== undefined && mjesec !== null && mjesec !== '') ? mjesec : 'zadnji';
-  var cacheKey = 'dinamike_izvodjaca_v9_' + year + '_' + mjesecZaKljuc;
+  var cacheKey = 'dinamike_izvodjaca_v10_' + year + '_' + mjesecZaKljuc;
   var cached = getCachedData(cacheKey);
   if (cached) return createJsonResponse(cached, true);
 
@@ -116,6 +116,8 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
           zadnjiDatumSjece: null,
           zadnjiDatumOtpreme: null,
           ugovorenoUkupno: 0,
+          ugovoreno: null,
+          prviDatumSjece: null,
           sjeca: { prosliPeriod: _prazniSortimentiObjekat(), prosliMjesec: _prazniSortimentiObjekat() },
           otprema: { prosliPeriod: _prazniSortimentiObjekat(), prosliMjesec: _prazniSortimentiObjekat() }
         };
@@ -144,6 +146,7 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
         if (!pOdjelNaziv) continue;
         var podj = _osiguraj(pOdjelNaziv);
 
+        if (!podj.prviDatumSjece || pdatumObj < podj.prviDatumSjece) podj.prviDatumSjece = pdatumObj;
         if (!podj.zadnjiDatumSjece || pdatumObj > podj.zadnjiDatumSjece) {
           podj.zadnjiDatumSjece = pdatumObj;
           podj.radiliste = String(prow[PRIMKA_COL.RADILISTE] || '').trim() || podj.radiliste;
@@ -227,6 +230,9 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
             if (odjeliMap[odjelKljuc]) {
               // Kolone D:W (indeksi 3-22) = 20 sortimenata, zadnja je "UKUPNO Č+L"
               odjeliMap[odjelKljuc].ugovorenoUkupno = parseFloat(projekatRow[3 + SORTIMENTI_NAZIVI.length - 1]) || 0;
+              var ugov = _prazniSortimentiObjekat();
+              for (var uj = 0; uj < SORTIMENTI_NAZIVI.length; uj++) ugov[SORTIMENTI_NAZIVI[uj]] = parseFloat(projekatRow[3 + uj]) || 0;
+              odjeliMap[odjelKljuc].ugovoreno = ugov;
             }
           }
         }
@@ -250,6 +256,8 @@ function handleDinamikeIzvodjaca(year, mjesec, username, password) {
           izvodjac: o.izvodjac,
           poslovodja: o.poslovodja,
           ugovorenoUkupno: o.ugovorenoUkupno,
+          ugovoreno: o.ugovoreno,
+          pocetakRadova: o.prviDatumSjece ? { mjesec: o.prviDatumSjece.getMonth(), godina: o.prviDatumSjece.getFullYear() } : null,
           sjeca: o.sjeca,
           otprema: o.otprema,
           indexSjeca: o.ugovorenoUkupno > 0 ? (sjecaUkupno / o.ugovorenoUkupno) * 100 : 0,

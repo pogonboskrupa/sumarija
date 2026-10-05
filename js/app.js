@@ -6237,7 +6237,7 @@
                 const mjesecSel = document.getElementById('dinamike-izvodjaca-mjesec-select');
                 const mjesec = mjesecSel ? mjesecSel.value : '';
                 const url = buildApiUrl('dinamike-izvodjaca', { year, mjesec });
-                const data = await fetchWithCache(url, `cache_dinamike_izvodjaca_v9_${year}_${mjesec}`, forceRefresh, 120000);
+                const data = await fetchWithCache(url, `cache_dinamike_izvodjaca_v10_${year}_${mjesec}`, forceRefresh, 120000);
 
                 if (loadingEl) loadingEl.classList.add('hidden');
 

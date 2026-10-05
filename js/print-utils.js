@@ -840,7 +840,7 @@ async function printDinamikeObrazac10(opts) {
             let data = (trenutni && trenutni.mjesecIzvjestaja === m) ? trenutni : null;
             if (!data) {
                 data = await fetchWithCache(buildApiUrl('dinamike-izvodjaca', { year, mjesec: m }),
-                    `cache_dinamike_izvodjaca_v9_${year}_${m}`, false, 120000);
+                    `cache_dinamike_izvodjaca_v10_${year}_${m}`, false, 120000);
             }
             if (!data || data.error) throw new Error((data && data.error) || 'Nema podataka');
             (data.odjeli || [])
@@ -884,7 +884,16 @@ async function printDinamikeObrazac10(opts) {
             ${tr('UKUPNO IZVRŠENJE:', uk, true, ugov, idx(uk))}
         </tbody></table>`;
     };
-    const prazneUgovorene = ugov => `<td></td>`.repeat(11) + `<td>${ugov > 0 ? f2(ugov) : ''}</td>`;
+    // Ugovorena količina po sortimentu (STANJE_ZALIHA → PROJEKAT). Ako server još nije
+    // ažuriran (nema o.ugovoreno), ostaje samo ukupan zbir u ΣΣ koloni.
+    const ugovRed = o => {
+        const u = o.ugovoreno;
+        const ukupno = Number(o.ugovorenoUkupno) || 0;
+        const c = k => `<td>${u ? f2(v(u, k)) : ''}</td>`;
+        return c('TRUPCI Č') + c('RD') + c('CEL.DUGA') + c('CEL.CIJEPANA') + c('ŠKART') + c('Σ ČETINARI')
+             + c('TRUPCI L') + c('OGR.DUGI') + c('OGR.CIJEPANI') + c('GULE') + c('LIŠĆARI')
+             + `<td>${ukupno > 0 ? f2(ukupno) : ''}</td>`;
+    };
 
     const strana = ({ o, nazivMjeseca, godina, mjesec }, idx) => {
         const ugov = Number(o.ugovorenoUkupno) || 0;
@@ -897,7 +906,7 @@ async function printDinamikeObrazac10(opts) {
                     <p>IZVOĐAČ RADOVA: <b>"${esc(o.izvodjac || '')}"</b></p>
                     <p class="gap">G. Jedinica: <b>${esc(o.radiliste || '')}</b></p>
                     <p>Odjel/odsjek: <b>${esc(o.odjel)}</b></p>
-                    <p>Početak radova: ______________</p>
+                    <p>Početak radova: <b>${o.pocetakRadova ? (_OBRAZAC10_MJESECI[o.pocetakRadova.mjesec] + ' ' + o.pocetakRadova.godina) : '______________'}</b></p>
                     <p>Broj ugovora: ______________</p>
                 </div>
                 <table class="ugov">
@@ -908,8 +917,8 @@ async function printDinamikeObrazac10(opts) {
                       <tr><th>Dugo</th><th>Cijep</th><th>Dugo</th><th>Cijep</th></tr>
                     </thead>
                     <tbody>
-                      <tr><th class="lbl">Sječa</th>${prazneUgovorene(ugov)}</tr>
-                      <tr><th class="lbl">Izvoz/iznos</th>${prazneUgovorene(ugov)}</tr>
+                      <tr><th class="lbl">Sječa</th>${ugovRed(o)}</tr>
+                      <tr><th class="lbl">Izvoz/iznos</th>${ugovRed(o)}</tr>
                     </tbody>
                 </table>
             </div>
@@ -931,13 +940,15 @@ async function printDinamikeObrazac10(opts) {
 body { font-family: Arial, Helvetica, sans-serif; color: #000; margin: 0; font-size: 10px; }
 h1 { text-align: center; font-size: 13px; margin: 0 0 10px; line-height: 1.4; }
 .head { display: flex; gap: 14px; align-items: flex-end; margin-bottom: 8px; }
-.info { width: 28%; font-size: 11px; }
+.info { width: 30%; font-size: 13px; font-weight: 700; }
+.info b { font-weight: 700; }
 .info p { margin: 2px 0; }
 .info .gap { margin-top: 10px; }
 table { border-collapse: collapse; width: 100%; }
 th, td { border: 1.5px solid #000; padding: 3px 2px; text-align: center; font-size: 9px; }
 th { font-weight: 700; }
-table.ugov { flex: 1; border: 2.5px solid #000; }
+table.ugov { flex: 1; border: 2.5px solid #000; font-family: 'Times New Roman', Times, serif; }
+table.ugov th { font-size: 10px; }
 table.ugov th.vr { width: 9%; }
 table.ugov td { height: 16px; text-align: right; padding-right: 3px; }
 table.dnev { border: 2.5px solid #000; margin-bottom: 10px; }
