@@ -92,6 +92,7 @@ self.addEventListener('fetch', (event) => {
             caches.match(request).then(cached => {
                 const network = fetch(request, { cache: 'reload' }).then(resp => { _cacheIfOk(resp.clone(), request); return resp; })
                     .catch(() => cached || new Response('', { status: 503 }));
+                if (cached) event.waitUntil(network.catch(() => {}));
                 return cached || network;
             })
         );

@@ -71,6 +71,10 @@ async function saveData(storeName, data) {
 
         // Batch insert
         const requests = Array.isArray(data) ? data : [data];
+        if (requests.length === 0) {
+            resolve({ success: true, count: 0, errors: [] });
+            return;
+        }
         let completed = 0;
         let errors = [];
 

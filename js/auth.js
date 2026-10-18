@@ -16,10 +16,28 @@
                     }
                     cacheKeys.forEach(k => localStorage.removeItem(k));
                     localStorage.removeItem('sumarija_offline_auth');
+                    _clearForeignIdbData();
                     console.log(`[LOGIN] Novi korisnik — obrisano ${cacheKeys.length} ključeva prethodnog vlasnika keša`);
                 } catch(e) { console.error('foreign cache clear:', e); }
             }
             localStorage.setItem('sumarija_cache_owner', username || '');
+        }
+
+        // Isto za IndexedDB: primke/otpreme (delta sync + veliki keš prikazi) i
+        // sync pokazivači bi inače ostali vidljivi sljedećem korisniku. Foto
+        // zapisi su već ključani po korisniku (mapa_radnika_foto_<user>) — ne diraju se.
+        function _clearForeignIdbData() {
+            const idb = window.IDBHelper;
+            if (!idb) return;
+            const S = idb.STORES;
+            Promise.all([
+                idb.clearStore(S.PRIMKA),
+                idb.clearStore(S.OTPREMA),
+                idb.setMeta('blob_cache_primke_sjeca', null),
+                idb.setMeta('blob_cache_otpreme_tab', null),
+                idb.setMeta('primka_lastRow', 0),
+                idb.setMeta('otprema_lastRow', 0)
+            ]).catch(e => console.error('foreign IDB clear:', e));
         }
 
         // Login form handler
@@ -350,7 +368,7 @@
             // Setup auto-refresh listener for all panels
             setupAutoRefreshListeners();
 
-            // Setup scheduled refresh for weekdays at 10:00 and 12:00
+            // Setup scheduled refresh for weekdays at 09:00
             setupScheduledRefresh();
         }
 
@@ -425,7 +443,7 @@
             setInterval(checkAndRefresh, 60 * 1000);
             checkAndRefresh();
 
-            console.log('[SCHEDULED REFRESH] Scheduler initialized - will refresh at 10:00 and 12:00 on weekdays');
+            console.log('[SCHEDULED REFRESH] Scheduler initialized - will refresh at 09:00 on weekdays');
         }
 
         // Cross-tab synchronization - slusa promjene u localStorage izmedju tabova
