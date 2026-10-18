@@ -40,6 +40,25 @@
             ]).catch(e => console.error('foreign IDB clear:', e));
         }
 
+        // Lokalni zapisi (šihtarica, tragovi, poligoni, pogled mape) su ranije, zbog
+        // window.currentUser === undefined, pisani pod korisnikom 'anon'. Prvi
+        // korisnik koji se prijavi na uređaju ih preuzima; 'anon' ključ se briše
+        // da ga ne naslijedi sljedeći korisnik.
+        function _migrateAnonStorage(username) {
+            if (!username) return;
+            ['mapa_radnika_poligoni_', 'mapa_radnika_tragovi_', 'mapa_radnika_view_',
+             'sihtarica_unosi_', 'sihtarica_godisnji_'].forEach(prefix => {
+                try {
+                    const anon = localStorage.getItem(prefix + 'anon');
+                    if (anon === null) return;
+                    if (localStorage.getItem(prefix + username) === null) {
+                        localStorage.setItem(prefix + username, anon);
+                    }
+                    localStorage.removeItem(prefix + 'anon');
+                } catch (e) { console.error('anon storage migration:', e); }
+            });
+        }
+
         // Login form handler
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -181,6 +200,7 @@
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
             if (typeof setAppViewport === 'function') setAppViewport();
+            _migrateAnonStorage(currentUser && currentUser.username);
 
             // Traži "persistent storage" — bez ovoga Android/Chrome smije tiho
             // obrisati localStorage/IndexedDB (offline podaci) kad uređaju

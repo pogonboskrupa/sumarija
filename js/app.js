@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.112';
+        const APP_VERSION = '2.113';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -802,6 +802,14 @@
             const keys = Object.keys(localStorage);
             const matchingKeys = keys.filter(k => k.includes(pattern));
             matchingKeys.forEach(k => localStorage.removeItem(k));
+            // Primke/otpreme žive u IndexedDB (IDB_LARGE_KEYS), ne u localStorage —
+            // bez ovoga nakon unosa/izmjene/brisanja prikazi koji čitaju te
+            // ključeve (karta, timeline, izvođači) ostaju stari do isteka TTL-a
+            const idbKeys = [];
+            if (/primac|sjec/.test(pattern)) idbKeys.push('cache_primke_sjeca');
+            if (/otprem/.test(pattern)) idbKeys.push('cache_otpreme_tab');
+            if (/dashboard|izvjestaji|stanje|kupci/.test(pattern)) idbKeys.push(...IDB_LARGE_KEYS);
+            new Set(idbKeys).forEach(k => { _removeCacheEntry(k); });
             return matchingKeys.length;
         }
 
@@ -1455,6 +1463,11 @@
 
         let currentUser = null;
         let currentPassword = null;
+        // `let` na vrhu klasične skripte NIJE svojstvo window-a, pa su js/sihtarica.js,
+        // js/mapa-radnika.js i js/kubikator.js čitajući window.currentUser dobijali
+        // undefined (korisnik 'anon' — zajednički lokalni zapisi i pogrešan "home" tab).
+        // Read-only getter ih sada vodi na pravog korisnika.
+        Object.defineProperty(window, 'currentUser', { get: () => currentUser, configurable: true });
         let odjeliList = [];
         let preklasiranjaPodaci = []; // [{rowIndex, odjel, iz, u, kolicina, napomena, korisnik, datum}]
 
@@ -2242,7 +2255,7 @@
                             const izvodjacStyle = izvodjacBg ? `background-color: ${izvodjacBg};` : '';
                             const sjecaDateStyle = getSjecaMonthStyle(o.datumZadnjeSjece);
                             // Escapuj i navodnike i < — ime ide u onclick atribut (JS string u HTML atributu)
-                            const odjelEsc = (o.odjel || '').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;');
+                            const odjelEsc = jsAttr(o.odjel);
                             return `
                                 <tr style="cursor:pointer;" onclick="showOdjelStanjeModal('${odjelEsc}')" title="Klikni za stanje zaliha">
                                     <td class="${radilisteClass}" style="font-weight: 500;">${o.odjel || '-'}</td>
@@ -3643,6 +3656,7 @@
                 yesterday.setDate(today.getDate() - 1);
                 const fiveDaysAgo = new Date(yesterday);
                 fiveDaysAgo.setDate(yesterday.getDate() - 5);
+                fiveDaysAgo.setHours(0, 0, 0, 0); // inače se najstariji dan odsiječe po satu
 
                 // Load primke i otpreme
                 const primkeUrl = buildApiUrl('primke');
@@ -3667,8 +3681,8 @@
                 const userFullName = currentUser.fullName.toUpperCase().trim();
                 const filteredPrimke = (primkeData.primke || []).filter(primka => {
                     // Parse datum
-                    const primkaDatum = new Date(primka.datum);
-                    const withinLast5Days = primkaDatum >= fiveDaysAgo;
+                    const primkaDatum = parseDatumDDMMYYYY(primka.datum);
+                    const withinLast5Days = !!primkaDatum && primkaDatum >= fiveDaysAgo;
                     if (!withinLast5Days) return false;
 
                     // Prvo pokušaj filtrirati po poslovodja polju
@@ -3689,8 +3703,8 @@
                 // Filter otpreme by poslovodja/radilišta i datum (zadnjih 5 dana)
                 const filteredOtpreme = (otpremeData.otpreme || []).filter(otprema => {
                     // Parse datum
-                    const otpremaDatum = new Date(otprema.datum);
-                    const withinLast5Days = otpremaDatum >= fiveDaysAgo;
+                    const otpremaDatum = parseDatumDDMMYYYY(otprema.datum);
+                    const withinLast5Days = !!otpremaDatum && otpremaDatum >= fiveDaysAgo;
                     if (!withinLast5Days) return false;
 
                     // Prvo pokušaj filtrirati po poslovodja polju
@@ -3709,8 +3723,9 @@
                 });
 
                 // Sortiraj po datumu (najnoviji prvi)
-                filteredPrimke.sort((a, b) => new Date(b.datum) - new Date(a.datum));
-                filteredOtpreme.sort((a, b) => new Date(b.datum) - new Date(a.datum));
+                const _byDatumDesc = (a, b) => parseDatumDDMMYYYY(b.datum) - parseDatumDDMMYYYY(a.datum);
+                filteredPrimke.sort(_byDatumDesc);
+                filteredOtpreme.sort(_byDatumDesc);
 
 
                 // Render tables
@@ -6731,8 +6746,8 @@
             sortedData.forEach((kupac, index) => {
                 const rowBg = index % 2 === 0 ? '#f0fdf4' : 'white';
                 const redniBroj = index + 1;
-                const kupacName = (kupac.kupac || '').replace(/'/g, "\\'");
-                bodyHtml += `<tr style="background: ${rowBg}; cursor: pointer;" data-kupac="${(kupac.kupac || '').toLowerCase()}" onclick="showKupacDetails('${kupacName}')" title="Klikni za detalje">`;
+                const kupacName = jsAttr(kupac.kupac);
+                bodyHtml += `<tr style="background: ${rowBg}; cursor: pointer;" data-kupac="${escapeHtml((kupac.kupac || '').toLowerCase())}" onclick="showKupacDetails('${kupacName}')" title="Klikni za detalje">`;
                 bodyHtml += `<td style="text-align: center; font-weight: 600; color: #000000; padding: 8px 4px; background: ${rowBg}; ${stickyCol1Style}">${redniBroj}.</td>`;
                 bodyHtml += `<td style="font-weight: 600; background: ${rowBg}; ${stickyCol2Style}">${kupac.kupac || '-'}</td>`;
 
@@ -6851,8 +6866,8 @@
             sortedData.forEach((red, index) => {
                 const rowBg = index % 2 === 0 ? '#e0f2fe' : 'white';
                 const redniBroj = index + 1;
-                const kupacName = (red.kupac || '').replace(/'/g, "\\'");
-                bodyHtml += `<tr style="background: ${rowBg}; cursor: pointer;" data-kupac="${(red.kupac || '').toLowerCase()}" onclick="showKupacDetails('${kupacName}')" title="Klikni za detalje">`;
+                const kupacName = jsAttr(red.kupac);
+                bodyHtml += `<tr style="background: ${rowBg}; cursor: pointer;" data-kupac="${escapeHtml((red.kupac || '').toLowerCase())}" onclick="showKupacDetails('${kupacName}')" title="Klikni za detalje">`;
                 bodyHtml += `<td style="text-align: center; font-weight: 600; color: #000000; padding: 8px 4px; background: ${rowBg}; ${stickyCol1Style}">${redniBroj}.</td>`;
                 bodyHtml += `<td style="font-weight: 600; background: ${rowBg}; ${stickyCol2Style}">${red.kupac || '-'}</td>`;
 
@@ -7046,8 +7061,8 @@
             sortedData.forEach((kupac, index) => {
                 const rowBg = index % 2 === 0 ? '#f5f3ff' : 'white';
                 const redniBroj = index + 1;
-                const kupacName = (kupac.kupac || '').replace(/'/g, "\\'");
-                bodyHtml += `<tr style="background: ${rowBg}; cursor: pointer;" data-kupac="${(kupac.kupac || '').toLowerCase()}" onclick="showKupacDetails('${kupacName}')" title="Klikni za detalje">`;
+                const kupacName = jsAttr(kupac.kupac);
+                bodyHtml += `<tr style="background: ${rowBg}; cursor: pointer;" data-kupac="${escapeHtml((kupac.kupac || '').toLowerCase())}" onclick="showKupacDetails('${kupacName}')" title="Klikni za detalje">`;
                 bodyHtml += `<td style="text-align: center; font-weight: 600; color: #000000; padding: 8px 4px; background: ${rowBg}; ${stickyCol1Style}">${redniBroj}.</td>`;
                 bodyHtml += `<td style="font-weight: 600; background: ${rowBg}; ${stickyCol2Style}">${kupac.kupac || '-'}</td>`;
 
@@ -7569,7 +7584,7 @@
                 <tbody>`;
 
             godisnji.forEach((k, idx) => {
-                const kupacEsc = (k.kupac || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const kupacEsc = jsAttr(k.kupac);
                 const brOtpremnica = k.brOtpremnica || 0;
                 const prosjek = brOtpremnica > 0 ? (k.ukupno || 0) / brOtpremnica : 0;
                 const sortimenti = k.sortimenti || {};
@@ -8165,7 +8180,7 @@
             });
 
             filteredData.forEach((red, index) => {
-                bodyHtml += `<tr data-kupac="${(red.kupac || '').toLowerCase()}">`;
+                bodyHtml += `<tr data-kupac="${escapeHtml((red.kupac || '').toLowerCase())}">`;
                 bodyHtml += `<td>${red.kupac || '-'}</td>`;
 
                 sortimentiNazivi.forEach(sortiment => {
@@ -10091,6 +10106,7 @@
             data.forEach(row => {
                 // Parse datum (expecting DD/MM/YYYY format)
                 const datumStr = row.datum;
+                if (!datumStr) return;
                 const dateParts = datumStr.split(/[\/\.\-]/);
                 const day = parseInt(dateParts[0]);
                 const recordMonth = parseInt(dateParts[1]) - 1;
@@ -11326,7 +11342,7 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    messageDiv.innerHTML = `✅ ${result.message}<br>Ukupno: ${(Number(result.ukupno) || 0).toFixed(2)} m³`;
+                    messageDiv.innerHTML = `✅ ${escapeHtml(result.message)}<br>Ukupno: ${(Number(result.ukupno) || 0).toFixed(2)} m³`;
                     messageDiv.style.background = '#d1fae5';
                     messageDiv.style.color = '#047857';
                     messageDiv.classList.remove('hidden');
@@ -11353,7 +11369,7 @@
                 }
 
             } catch (error) {
-                messageDiv.innerHTML = `❌ Greška: ${error.message}`;
+                messageDiv.innerHTML = `❌ Greška: ${escapeHtml(error.message)}`;
                 messageDiv.style.background = '#fee2e2';
                 messageDiv.style.color = '#991b1b';
                 messageDiv.classList.remove('hidden');
@@ -11440,7 +11456,7 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    messageDiv.innerHTML = `✅ ${result.message}<br>Ukupno: ${(Number(result.ukupno) || 0).toFixed(2)} m³`;
+                    messageDiv.innerHTML = `✅ ${escapeHtml(result.message)}<br>Ukupno: ${(Number(result.ukupno) || 0).toFixed(2)} m³`;
                     messageDiv.style.background = '#dbeafe';
                     messageDiv.style.color = '#1e40af';
                     messageDiv.classList.remove('hidden');
@@ -11468,7 +11484,7 @@
                 }
 
             } catch (error) {
-                messageDiv.innerHTML = `❌ Greška: ${error.message}`;
+                messageDiv.innerHTML = `❌ Greška: ${escapeHtml(error.message)}`;
                 messageDiv.style.background = '#fee2e2';
                 messageDiv.style.color = '#991b1b';
                 messageDiv.classList.remove('hidden');
@@ -11697,7 +11713,7 @@
                         html += '<td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">' + ukupno.toFixed(2) + ' m³</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + new Date(unos.timestamp).toLocaleString('hr-HR') + '</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd; text-align: center;">';
-                        html += '<button class="btn btn-primary" style="margin-right: 8px;" onclick=\'editMySjeca(' + JSON.stringify(unos).replace(/'/g, "\\'") + ')\'>✏️ Uredi</button>';
+                        html += '<button class="btn btn-primary" style="margin-right: 8px;" onclick="editMySjeca(' + escapeHtml(JSON.stringify(unos)) + ')">✏️ Uredi</button>';
                         html += '<button class="btn btn-secondary" onclick="deleteMySjeca(' + unos.rowIndex + ')">🗑️ Obriši</button>';
                         html += '</td>';
                         html += '</tr>';
@@ -11775,7 +11791,7 @@
                         html += '<td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">' + ukupno.toFixed(2) + ' m³</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd;">' + new Date(unos.timestamp).toLocaleString('hr-HR') + '</td>';
                         html += '<td style="padding: 10px; border: 1px solid #ddd; text-align: center;">';
-                        html += '<button class="btn btn-primary" style="margin-right: 8px;" onclick=\'editMyOtprema(' + JSON.stringify(unos).replace(/'/g, "\\'") + ')\'>✏️ Uredi</button>';
+                        html += '<button class="btn btn-primary" style="margin-right: 8px;" onclick="editMyOtprema(' + escapeHtml(JSON.stringify(unos)) + ')">✏️ Uredi</button>';
                         html += '<button class="btn btn-secondary" onclick="deleteMyOtprema(' + unos.rowIndex + ')">🗑️ Obriši</button>';
                         html += '</td>';
                         html += '</tr>';
@@ -11926,7 +11942,7 @@
                 var result = await response.json();
 
                 if (result.success) {
-                    messageDiv.innerHTML = '✅ ' + result.message + '<br>Ukupno: ' + (Number(result.ukupno) || 0).toFixed(2) + ' m³';
+                    messageDiv.innerHTML = '✅ ' + escapeHtml(result.message) + '<br>Ukupno: ' + (Number(result.ukupno) || 0).toFixed(2) + ' m³';
                     messageDiv.style.background = '#d1fae5';
                     messageDiv.style.color = '#047857';
                     messageDiv.classList.remove('hidden');
@@ -11943,7 +11959,7 @@
                 }
 
             } catch (error) {
-                messageDiv.innerHTML = '❌ Greška: ' + error.message;
+                messageDiv.innerHTML = '❌ Greška: ' + escapeHtml(error.message);
                 messageDiv.style.background = '#fee2e2';
                 messageDiv.style.color = '#991b1b';
                 messageDiv.classList.remove('hidden');
@@ -12077,7 +12093,7 @@
                 var result = await response.json();
 
                 if (result.success) {
-                    messageDiv.innerHTML = '✅ ' + result.message + '<br>Ukupno: ' + (Number(result.ukupno) || 0).toFixed(2) + ' m³';
+                    messageDiv.innerHTML = '✅ ' + escapeHtml(result.message) + '<br>Ukupno: ' + (Number(result.ukupno) || 0).toFixed(2) + ' m³';
                     messageDiv.style.background = '#dbeafe';
                     messageDiv.style.color = '#1e40af';
                     messageDiv.classList.remove('hidden');
@@ -12093,7 +12109,7 @@
                 }
 
             } catch (error) {
-                messageDiv.innerHTML = '❌ Greška: ' + error.message;
+                messageDiv.innerHTML = '❌ Greška: ' + escapeHtml(error.message);
                 messageDiv.style.background = '#fee2e2';
                 messageDiv.style.color = '#991b1b';
                 messageDiv.classList.remove('hidden');
