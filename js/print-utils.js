@@ -171,7 +171,7 @@ function printStanjeZalihaAgregatna() {
         sectionsHtml += `
         <div class="print-section">
             <div class="section-header" style="border-left:4px solid ${accent};">
-                Pregled zaliha po sortimentima — ${radiliste}
+                Pregled zaliha po sortimentima — ${escapeHtml(radiliste)}
             </div>
             ${tableToCleanHtml(glavnaTabela)}
         </div>`;
@@ -180,7 +180,7 @@ function printStanjeZalihaAgregatna() {
         sectionsHtml += `
         <div class="print-section" style="page-break-before:always;">
             <div class="section-header" style="border-left:4px solid ${accent};">
-                Detaljni prikaz po odjelima — ${radiliste}
+                Detaljni prikaz po odjelima — ${escapeHtml(radiliste)}
             </div>
             ${tableToCleanHtml(detaljniTabela)}
         </div>`;
@@ -253,7 +253,7 @@ function printStanjeZalihaPoOdjelima() {
         sectionsHtml += `
         <div class="print-section" style="${first ? '' : 'page-break-before:always;'}">
             <div style="background:linear-gradient(135deg,#1e3a5f 0%,#2d5a87 100%);color:white;padding:12px 16px;border-radius:6px 6px 0 0;margin-bottom:0;">
-                <div style="font-size:16px;font-weight:700;">${odjelName}</div>
+                <div style="font-size:16px;font-weight:700;">${escapeHtml(odjelName)}</div>
                 <div style="font-size:11px;opacity:.85;margin-top:2px;">${meta}</div>
             </div>
             ${statsHtml}

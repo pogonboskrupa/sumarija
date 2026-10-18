@@ -2052,6 +2052,9 @@ function handleUpdatePending(params) {
 
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
+    if (!(rowIndex >= 2 && rowIndex <= data.length)) {
+      return createJsonResponse({ error: 'Unos ne postoji (možda je već obrisan)' }, false);
+    }
     const row = data[rowIndex - 1];
 
     // Verify ownership (only the creator or admin can edit)
@@ -2070,7 +2073,7 @@ function handleUpdatePending(params) {
     const updatedRow = [...row];
 
     // Update datum and odjel
-    updatedRow[headers.indexOf('DATUM')] = params.datum;
+    if (params.datum) updatedRow[headers.indexOf('DATUM')] = parseDate(params.datum);
     updatedRow[headers.indexOf('ODJEL')] = params.odjel;
 
     // Update kupac and broj otpremnice for otprema
@@ -2083,34 +2086,46 @@ function handleUpdatePending(params) {
       }
     }
 
-    // Update all sortimenti
-    headers.forEach((header, idx) => {
-      if (params[header] !== undefined && header !== 'ODJEL' && header !== 'DATUM' &&
-          header !== 'PRIMAČ' && header !== 'OTPREMAČ' && header !== 'KUPAC' && header !== 'BROJ_OTPREMNICE' &&
-          header !== 'STATUS' && header !== 'TIMESTAMP' && header !== 'SVEUKUPNO') {
-        const value = parseFloat(params[header]) || 0;
-        updatedRow[idx] = value;
+    // Update SAMO unosne sortimente (bijela lista). Ranije se prepisivala svaka
+    // kolona čije ime stigne u params (RADNIK, STATUS, IMAGE_URL...), a zbirne
+    // kolone su se uzimale od klijenta pod pogrešnim nazivima pa su ostajale stare.
+    const UNOSNI = ["F/L Č", "I Č", "II Č", "III Č", "RD", "CEL.DUGA", "CEL.CIJEPANA", "ŠKART",
+                    "F/L L", "I L", "II L", "III L", "OGR.DUGI", "OGR.CIJEPANI", "GULE"];
+    UNOSNI.forEach(function(naziv) {
+      const idx = headers.indexOf(naziv);
+      if (idx !== -1 && params[naziv] !== undefined) {
+        updatedRow[idx] = Math.max(0, parseFloat(String(params[naziv]).replace(',', '.')) || 0);
       }
     });
 
-    // Izračunaj SVEUKUPNO kao ČETINARI + LIŠĆARI
-    const cetinariCol = headers.indexOf('ČETINARI');
-    const liscariCol = headers.indexOf('LIŠĆARI');
-    const cetinari = cetinariCol !== -1 ? (parseFloat(updatedRow[cetinariCol]) || 0) : 0;
-    const liscari = liscariCol !== -1 ? (parseFloat(updatedRow[liscariCol]) || 0) : 0;
+    // Zbirne kolone uvijek računaj na serveru iz (ažuriranih) unosnih
+    const num = function(naziv) {
+      const idx = headers.indexOf(naziv);
+      return idx === -1 ? 0 : (parseFloat(updatedRow[idx]) || 0);
+    };
+    const setCol = function(naziv, v) {
+      const idx = headers.indexOf(naziv);
+      if (idx !== -1) updatedRow[idx] = v;
+    };
+    const trupciC = num("F/L Č") + num("I Č") + num("II Č") + num("III Č") + num("RD");
+    const cetinari = trupciC + num("CEL.DUGA") + num("CEL.CIJEPANA") + num("ŠKART");
+    const trupciL = num("F/L L") + num("I L") + num("II L") + num("III L");
+    const liscari = trupciL + num("OGR.DUGI") + num("OGR.CIJEPANI") + num("GULE");
     const ukupno = cetinari + liscari;
-
-    // Update SVEUKUPNO if it exists
-    const sveukupnoCol = headers.indexOf('SVEUKUPNO');
-    if (sveukupnoCol !== -1) {
-      updatedRow[sveukupnoCol] = ukupno;
-    }
+    setCol("TRUPCI Č", trupciC);
+    setCol("Σ ČETINARI", cetinari);
+    setCol("TRUPCI L", trupciL);
+    setCol("LIŠĆARI", liscari);
+    setCol("UKUPNO Č+L", ukupno);
+    setCol("SVEUKUPNO", ukupno);
 
     // Update timestamp to show it was edited
     updatedRow[headers.indexOf('TIMESTAMP')] = new Date();
 
     // Write updated row back to sheet
     sheet.getRange(rowIndex, 1, 1, updatedRow.length).setValues([updatedRow]);
+
+    invalidateAllCache();
 
     Logger.log('=== HANDLE UPDATE PENDING END ===');
     Logger.log(`Updated row ${rowIndex} in ${sheetName}`);
@@ -2155,6 +2170,9 @@ function handleDeletePending(params) {
 
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
+    if (!(rowIndex >= 2 && rowIndex <= data.length)) {
+      return createJsonResponse({ error: 'Unos ne postoji (možda je već obrisan)' }, false);
+    }
     const row = data[rowIndex - 1];
 
     // Verify ownership (only the creator or admin can delete)
@@ -2171,6 +2189,7 @@ function handleDeletePending(params) {
 
     // Delete the row
     sheet.deleteRow(rowIndex);
+    invalidateAllCache();
 
     Logger.log('=== HANDLE DELETE PENDING END ===');
     Logger.log(`Deleted row ${rowIndex} from ${sheetName}`);

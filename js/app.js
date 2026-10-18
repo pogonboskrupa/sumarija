@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.113';
+        const APP_VERSION = '2.114';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -11818,6 +11818,26 @@
         }
 
         // Edit My Sjeca - show edit form
+        // Forma za uređivanje koristi stara imena zbirnih kolona (RUDNO, ČETINARI, TRUPCI),
+        // a sheet/backend zovu ih RD, Σ ČETINARI, TRUPCI L. Bez prevođenja je RD u formi
+        // bio 0 (pa bi TRUPCI Č bio snimljen bez RD), a izmjene RD/zbirova gubile se.
+        const EDIT_KEY_ALIAS = { 'RUDNO': 'RD', 'ČETINARI': 'Σ ČETINARI', 'TRUPCI': 'TRUPCI L' };
+        function _editVrijednost(sortimenti, key) {
+            let v = sortimenti[key];
+            if (v === undefined && EDIT_KEY_ALIAS[key]) v = sortimenti[EDIT_KEY_ALIAS[key]];
+            return v || 0;
+        }
+        // Datum iz sheeta stiže kao ISO string sa vremenskom zonom; <input type="date">
+        // prihvata samo YYYY-MM-DD (lokalni datum, ne UTC — inače pomak za jedan dan)
+        function _toInputDate(v) {
+            if (!v) return '';
+            if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+            const m = String(v).match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})/);
+            const d = m ? new Date(+m[3], +m[2] - 1, +m[1]) : new Date(v);
+            if (isNaN(d)) return '';
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
         function editMySjeca(unos) {
             document.getElementById('loading-screen').classList.add('hidden');
 
@@ -11829,7 +11849,7 @@
 
             // Populate form with existing data
             document.getElementById('edit-sjeca-rowIndex').value = unos.rowIndex;
-            document.getElementById('edit-sjeca-datum').value = unos.datum;
+            document.getElementById('edit-sjeca-datum').value = _toInputDate(unos.datum);
             document.getElementById('edit-sjeca-odjel').value = unos.odjel;
 
             // Build sortimenti fields dynamically
@@ -11839,7 +11859,7 @@
 
             sortimentiKeys.forEach(function(key) {
                 var fieldId = 'edit-sjeca-' + key.replace(/\//g, '').replace(/ /g, '-');
-                var value = unos.sortimenti[key] || 0;
+                var value = _editVrijednost(unos.sortimenti, key);
                 var isCalculated = ['TRUPCI Č', 'ČETINARI', 'TRUPCI', 'LIŠĆARI'].indexOf(key) !== -1;
                 var readonlyAttr = isCalculated ? 'readonly' : '';
                 var styleExtra = isCalculated ? 'background: #f3f4f6; color: #374151; font-weight: 600;' : '';
@@ -11934,7 +11954,7 @@
                 sortimentiKeys.forEach(function(key) {
                     var fieldId = 'edit-sjeca-' + key.replace(/\//g, '').replace(/ /g, '-');
                     var value = document.getElementById(fieldId).value;
-                    formData.append(key, value);
+                    formData.append(EDIT_KEY_ALIAS[key] || key, value);
                 });
 
                 var url = API_URL + '?' + formData.toString();
@@ -11982,7 +12002,7 @@
             showTabContent('edit-otprema-content');
 
             document.getElementById('edit-otprema-rowIndex').value = unos.rowIndex;
-            document.getElementById('edit-otprema-datum').value = unos.datum;
+            document.getElementById('edit-otprema-datum').value = _toInputDate(unos.datum);
             document.getElementById('edit-otprema-odjel').value = unos.odjel;
             document.getElementById('edit-otprema-kupac').value = unos.kupac || '';
             document.getElementById('edit-otprema-broj-otpremnice').value = unos.brojOtpremnice || '';
@@ -11993,7 +12013,7 @@
 
             sortimentiKeys.forEach(function(key) {
                 var fieldId = 'edit-otprema-' + key.replace(/\//g, '').replace(/ /g, '-');
-                var value = unos.sortimenti[key] || 0;
+                var value = _editVrijednost(unos.sortimenti, key);
                 var isCalculated = ['TRUPCI Č', 'ČETINARI', 'TRUPCI', 'LIŠĆARI'].indexOf(key) !== -1;
                 var readonlyAttr = isCalculated ? 'readonly' : '';
                 var styleExtra = isCalculated ? 'background: #f3f4f6; color: #374151; font-weight: 600;' : '';
@@ -12085,7 +12105,7 @@
                 sortimentiKeys.forEach(function(key) {
                     var fieldId = 'edit-otprema-' + key.replace(/\//g, '').replace(/ /g, '-');
                     var value = document.getElementById(fieldId).value;
-                    formData.append(key, value);
+                    formData.append(EDIT_KEY_ALIAS[key] || key, value);
                 });
 
                 var url = API_URL + '?' + formData.toString();

@@ -49,8 +49,10 @@ function doGet(e) {
     }
 
     Logger.log('=== DOGET CALLED ===');
-    Logger.log('Full e.parameter: ' + JSON.stringify(e.parameter));
-    Logger.log('e.queryString: ' + e.queryString);
+    // Lozinke se NE loguju (Apps Script logovi su vidljivi svima s pristupom projektu)
+    Logger.log('Full e.parameter: ' + JSON.stringify(e.parameter, function(k, v) {
+      return (k === 'password' || k === 'imageData') ? '***' : v;
+    }));
 
     const path = e.parameter.path;
     Logger.log('Extracted path: ' + path);
@@ -155,7 +157,6 @@ function doGet(e) {
       return handleDeltaOtprema(e.parameter.username, e.parameter.password, e.parameter.fromRow, e.parameter.toRow);
     } else if (path === 'save_dinamika') {
       Logger.log('save_dinamika endpoint called');
-      Logger.log('Parameters: ' + JSON.stringify(e.parameter));
       return handleSaveDinamika(e.parameter.username, e.parameter.password, e.parameter.godina, e.parameter.mjeseci);
     } else if (path === 'stanje-zaliha') {
       // 📦 STANJE ZALIHA - Čita podatke sa STANJE_ZALIHA sheeta (opciono filtrirano po poslovođi)
