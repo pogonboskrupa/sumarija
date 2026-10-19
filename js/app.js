@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.117';
+        const APP_VERSION = '2.118';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -13,6 +13,15 @@
         // Čisti se ovdje (a ne samo u karti) jer korisnici koji ne otvaraju kartu
         // inače nikad ne bi oslobodili taj prostor.
         try { localStorage.removeItem('geojson_data'); localStorage.removeItem('geojson_version'); } catch(_) {}
+
+// JEDNOKRATNO: keširani dashboard iz perioda kad backend nije vraćao dinamiku (plan) bi
+// ostao u browseru do sutra 6:30 — briši ga jednom, pa se dinamika odmah prikaže
+try {
+    if (localStorage.getItem('sumarija_dashboard_cache_gen') !== '2') {
+        Object.keys(localStorage).filter(k => k.startsWith('cache_dashboard_')).forEach(k => localStorage.removeItem(k));
+        localStorage.setItem('sumarija_dashboard_cache_gen', '2');
+    }
+} catch(_) {}
 
         // JEDNOKRATNO ČIŠĆENJE: primke/otprema (do 2.8MB svaki) sada žive u
         // IndexedDB (vidi IDB_LARGE_KEYS) — stari localStorage zapisi pod istim
