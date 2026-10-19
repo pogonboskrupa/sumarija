@@ -3097,9 +3097,6 @@
                     </div>
                 </div>
 
-                <!-- KPI pregled (puni se iz renderStanjeZalihaKpi) -->
-                <div id="stanje-zaliha-kpi" class="sz-kpi-grid" aria-live="polite"></div>
-
                 <!-- Alatna traka: radilište, pretraga, status, sortiranje -->
                 <div class="sz-toolbar">
                     <div class="sz-toolbar-row">
@@ -3116,6 +3113,7 @@
                         <label class="sz-field">
                             <span>Sortiraj po</span>
                             <select id="stanje-zaliha-sort" class="filter-select" onchange="filterStanjeZaliha()">
+                                <option value="sjeca" selected>Zadnja sječa (najnovija)</option>
                                 <option value="otprema">Zadnja otprema (najnovija)</option>
                                 <option value="zaliha-desc">Zaliha (najveća)</option>
                                 <option value="zaliha-asc">Zaliha (najmanja)</option>
@@ -3132,6 +3130,7 @@
                             <button type="button" class="sz-chip" data-status="neutral" onclick="setStanjeZalihaStatus('neutral')">▫️ Prazna</button>
                         </div>
                         <span id="stanje-zaliha-count" class="sz-count"></span>
+                        <button type="button" class="btn btn-secondary sz-toggle-all" id="stanje-zaliha-show-all" onclick="toggleStanjeZalihaShowAll()" style="display:none;"></button>
                         <button type="button" class="btn btn-secondary sz-toggle-all" onclick="toggleAllStanjeZalihaDetails()">⇕ Otvori/zatvori detalje</button>
                     </div>
                 </div>
