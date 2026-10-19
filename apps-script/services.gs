@@ -7,57 +7,116 @@
 // ========================================
 
 /**
- * Dohvati dinamiku (plan) za godinu iz DINAMIKA sheeta
- * Čita iz K3:K14 (Jan=K3 ... Dec=K14) - vertikalni raspon
- * Prikazuje samo mjesece <= trenutni mjesec (budući mjeseci = 0)
+ * Pretvori vrijednost ćelije u broj. Podržava prave brojeve i tekst u lokalnom
+ * formatu ("1.364,00" → 1364, "1364,5" → 1364.5) — parseFloat("1.364,00") bi dao 1.364.
+ */
+function dinamikaToNumber(v) {
+  if (typeof v === 'number') return isFinite(v) ? v : 0;
+  let str = String(v == null ? '' : v).replace(/[\s\u00a0]/g, '');
+  if (!str) return 0;
+  if (str.indexOf(',') !== -1) str = str.replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(str);
+  return isFinite(n) ? n : 0;
+}
+
+/**
+ * Pročitaj PLAN DINAMIKE iz DINAMIKA sheeta — niz od 12 vrijednosti (Jan..Dec).
+ *
+ * Raspored lista: red 1 naslov, red 2 zaglavlje (MJESEC | sortimenti | ... | SVEUKUPNO Č+L),
+ * redovi 3-14 mjeseci (Januar..Decembar), red 15 EKAPITULACIJA. Plan = kolona SVEUKUPNO.
+ *
+ * Namjerno ne oslanja se na fiksne adrese: kolona se traži po zaglavlju, a mjeseci po
+ * nazivu u koloni A (uz rezervu na K3:K14), pa umetanje kolone/reda ne ruši dashboard.
+ */
+function readDinamikaPlan(dinamikaSheet) {
+  const MJESECI = ['januar', 'februar', 'mart', 'april', 'maj', 'juni', 'juli', 'august', 'septembar', 'oktobar', 'novembar', 'decembar'];
+  const values = dinamikaSheet.getDataRange().getValues();
+  const plan = Array(12).fill(0);
+  if (!values.length) return plan;
+
+  // 1. Kolona sa ukupnim planom — zaglavlje u prvih 5 redova
+  let col = -1;
+  for (let r = 0; r < Math.min(5, values.length) && col === -1; r++) {
+    for (let c = 1; c < values[r].length; c++) {
+      const h = String(values[r][c] || '').toUpperCase().replace(/\s+/g, '');
+      if (h.indexOf('SVEUKUPNO') !== -1 || /Č\+L$/.test(h)) { col = c; break; }
+    }
+  }
+  if (col === -1) col = 10; // K
+
+  // 2. Redovi mjeseci po nazivu u koloni A
+  let found = 0;
+  values.forEach(function(row) {
+    const naziv = String(row[0] || '').trim().toLowerCase();
+    const idx = MJESECI.indexOf(naziv);
+    if (idx !== -1) {
+      plan[idx] = dinamikaToNumber(row[col]);
+      found++;
+    }
+  });
+
+  // 3. Rezerva: ako nazivi mjeseci nisu prepoznati, redovi 3-14
+  if (found === 0) {
+    for (let i = 0; i < 12 && i + 2 < values.length; i++) {
+      plan[i] = dinamikaToNumber(values[i + 2][col]);
+    }
+  }
+
+  // 4. Rezerva: kolona SVEUKUPNO prazna/nula (npr. formula nije izračunata) —
+  //    saberi kolone ČETINARI + LIŠĆARI iz zaglavlja
+  if (plan.every(function(v) { return v === 0; })) {
+    let hdrRow = -1, cet = -1, lis = -1;
+    for (let r = 0; r < Math.min(5, values.length) && hdrRow === -1; r++) {
+      for (let c = 1; c < values[r].length; c++) {
+        const h = String(values[r][c] || '').toUpperCase().trim();
+        if (h === 'ČETINARI' || h === 'Σ ČETINARI') cet = c;
+        if (h === 'LIŠĆARI') lis = c;
+      }
+      if (cet !== -1 && lis !== -1) hdrRow = r;
+    }
+    if (hdrRow !== -1) {
+      values.forEach(function(row) {
+        const idx = MJESECI.indexOf(String(row[0] || '').trim().toLowerCase());
+        if (idx !== -1) plan[idx] = dinamikaToNumber(row[cet]) + dinamikaToNumber(row[lis]);
+      });
+    }
+  }
+  return plan;
+}
+
+/**
+ * Dohvati dinamiku (plan) za godinu iz DINAMIKA sheeta.
+ * Prikazuje samo mjesece <= trenutni mjesec (budući mjeseci = 0).
  * @param {number} year - Godina za koju se traži dinamika
  * @returns {Array} - Niz od 12 vrijednosti za svaki mjesec
  */
 function getDinamikaForYear(year) {
   try {
     const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
-    let dinamikaSheet = ss.getSheetByName("DINAMIKA");
+    const dinamikaSheet = ss.getSheetByName("DINAMIKA");
 
-    // Ako sheet ne postoji, vrati nule
     if (!dinamikaSheet) {
       Logger.log('DINAMIKA sheet does not exist, returning zeros');
       return Array(12).fill(0);
     }
 
-    // Dohvati trenutni mjesec (1-12) u Europe/Sarajevo timezone
+    // Trenutni mjesec (1-12) i godina u Europe/Sarajevo timezone
     const now = new Date();
-    const sarajevoTime = Utilities.formatDate(now, "Europe/Sarajevo", "M");
-    const currentMonth = parseInt(sarajevoTime);
+    const currentMonth = parseInt(Utilities.formatDate(now, "Europe/Sarajevo", "M"));
     const currentYear = parseInt(Utilities.formatDate(now, "Europe/Sarajevo", "yyyy"));
+    const godina = parseInt(year);
 
-    Logger.log('getDinamikaForYear: year=' + year + ', currentMonth=' + currentMonth + ', currentYear=' + currentYear);
+    const plan = readDinamikaPlan(dinamikaSheet);
 
-    // Čitaj K3:K14 (kolona K = 11, redovi 3-14) - plan za sve mjesece
-    const planRange = dinamikaSheet.getRange("K3:K14");
-    const planValues = planRange.getValues();
+    // Prošla godina - svi mjeseci; tekuća - do trenutnog mjeseca; buduća - ništa
+    const rezultat = plan.map(function(planValue, i) {
+      if (godina < currentYear) return planValue;
+      if (godina === currentYear) return (i + 1 <= currentMonth) ? planValue : 0;
+      return 0;
+    });
 
-    // Primijeni pravilo: prikaži samo mjesece <= currentMonth (za trenutnu godinu)
-    // Za prošle godine prikaži sve, za buduće godine prikaži ništa
-    const mjesecneVrijednosti = [];
-    for (let i = 0; i < 12; i++) {
-      const mjesec = i + 1; // 1-12
-      const planValue = parseFloat(planValues[i][0]) || 0;
-
-      let dinamikaShown = 0;
-      if (parseInt(year) < currentYear) {
-        // Prošla godina - prikaži sve mjesece
-        dinamikaShown = planValue;
-      } else if (parseInt(year) === currentYear) {
-        // Trenutna godina - prikaži samo do trenutnog mjeseca
-        dinamikaShown = (mjesec <= currentMonth) ? planValue : 0;
-      }
-      // Buduća godina - sve ostaje 0
-
-      mjesecneVrijednosti.push(dinamikaShown);
-    }
-
-    Logger.log('getDinamikaForYear: Returning dinamika for year ' + year + ': ' + JSON.stringify(mjesecneVrijednosti));
-    return mjesecneVrijednosti;
+    Logger.log('getDinamikaForYear(' + year + '): ' + JSON.stringify(rezultat));
+    return rezultat;
 
   } catch (error) {
     Logger.log('ERROR in getDinamikaForYear: ' + error.toString());

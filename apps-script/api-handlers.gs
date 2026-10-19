@@ -3377,39 +3377,16 @@ function handleGetDinamika(year, username, password) {
     const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
     let dinamikaSheet = ss.getSheetByName("DINAMIKA");
 
-    // Ako sheet ne postoji, kreiraj ga
     if (!dinamikaSheet) {
-      dinamikaSheet = ss.insertSheet("DINAMIKA");
-      const headers = ["GODINA", "JAN", "FEB", "MAR", "APR", "MAJ", "JUN", "JUL", "AVG", "SEP", "OKT", "NOV", "DEC", "UKUPNO"];
-      dinamikaSheet.appendRow(headers);
-
-      // Formatiraj header
-      const headerRange = dinamikaSheet.getRange(1, 1, 1, headers.length);
-      headerRange.setBackground("#f59e0b");
-      headerRange.setFontColor("white");
-      headerRange.setFontWeight("bold");
-
-      Logger.log('Created new DINAMIKA sheet');
+      return createJsonResponse({ dinamika: {} }, true);
     }
 
-    const data = dinamikaSheet.getDataRange().getValues();
+    // Raspored lista: redovi = mjeseci, plan = kolona SVEUKUPNO (vidi readDinamikaPlan u services.gs).
+    // Sheet nema dimenziju godine, pa vrijedi za godinu na koju je naslovljen.
     const dinamika = {};
-
-    // Skip header row, pronađi red za godinu
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      const rowYear = parseInt(row[0]) || 0;
-
-      // Ako postoji red za traženu godinu
-      if (rowYear === parseInt(year)) {
-        // Vrati mjesečne vrijednosti
-        for (let j = 1; j <= 12; j++) {
-          const mjesecKey = String(j).padStart(2, '0');
-          dinamika[mjesecKey] = parseFloat(row[j]) || 0;
-        }
-        break;
-      }
-    }
+    readDinamikaPlan(dinamikaSheet).forEach(function(v, i) {
+      dinamika[String(i + 1).padStart(2, '0')] = v;
+    });
 
     Logger.log('=== HANDLE GET DINAMIKA END ===');
     Logger.log('Found data: ' + (Object.keys(dinamika).length > 0));
@@ -3446,6 +3423,14 @@ function handleSaveDinamika(username, password, godina, mjeseciParam) {
 
     const ss = SpreadsheetApp.openById(BAZA_PODATAKA_ID);
     let dinamikaSheet = ss.getSheetByName("DINAMIKA");
+
+    // List DINAMIKA ima raspored "redovi = mjeseci" (plan se uređuje direktno u Google Sheetu).
+    // Stari upis "jedan red = jedna godina" bi dodao red na dno i pokvario tabelu.
+    if (dinamikaSheet && String(dinamikaSheet.getRange("A3").getValue()).trim().toLowerCase() === 'januar') {
+      return createJsonResponse({
+        error: "Dinamika se uređuje direktno u listu DINAMIKA (kolona SVEUKUPNO), ne kroz aplikaciju."
+      }, false);
+    }
 
     // Ako sheet ne postoji, kreiraj ga
     if (!dinamikaSheet) {
