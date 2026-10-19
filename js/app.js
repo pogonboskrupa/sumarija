@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.118';
+        const APP_VERSION = '2.119';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -2636,7 +2636,7 @@ try {
         // ========================================
         // STANJE ZALIHA TABELA - Agregirana tabela svih odjela (čita iz zadnjeg reda ZALIHA tabele)
         // ========================================
-        function renderStanjeZalihaTabela(odjeliData) {
+        function renderStanjeZalihaTabela(odjeliData, detaljiOpts) {
             const headerElem = document.getElementById('stanje-zaliha-tabela-header');
             const bodyElem = document.getElementById('stanje-zaliha-tabela-body');
 
@@ -2710,7 +2710,7 @@ try {
 
                 bodyElem.innerHTML = bodyHtml;
 
-                renderZalihaDetaljiTabela('stanje-zaliha-detalji-section', odjeliData);
+                renderZalihaDetaljiTabela('stanje-zaliha-detalji-section', odjeliData, detaljiOpts);
 
             } catch (error) {
                 console.error('Error rendering stanje zaliha tabela:', error);
@@ -3297,7 +3297,8 @@ try {
         }
 
         // Render Stanje Zaliha cards for poslovođa (identično admin view-u)
-        function renderZalihaDetaljiTabela(containerId, odjeliData) {
+        function renderZalihaDetaljiTabela(containerId, odjeliData, opts) {
+            opts = opts || {};
             const container = document.getElementById(containerId);
             if (!container) return;
             if (!odjeliData || !odjeliData.length) { container.innerHTML = ''; return; }
@@ -3320,6 +3321,7 @@ try {
                 cols.forEach(c => { values[c.key] = z[c.key] || 0; });
                 values['__ukupno'] = values['Σ ČETINARI'] + values['LIŠĆARI'];
                 values['__naziv'] = (odjel.radiliste ? odjel.radiliste + ' / ' : '') + (odjel.odjel || '');
+                values['__akt'] = opts.info ? opts.info(odjel) : null; // aktivnost sječe (samo admin Stanje zaliha)
                 // Sortimenti koji su bili preklasirani za ovaj odjel
                 const preklSet = new Set();
                 preklasiranjaPodaci
@@ -3356,7 +3358,10 @@ try {
             function buildBodyRows(sortedRows) {
                 return sortedRows.map(r => {
                     const preklSet = r['__preklSet'] || new Set();
-                    let cells = `<td style="padding:8px 10px;font-size:12px;font-weight:400;color:#1e3a5f;border:1px solid #e5e7eb;white-space:nowrap;">${r['__naziv']}</td>`;
+                    const akt = r['__akt'];
+                    const aktHtml = akt && akt.klasa !== 'nepoznato'
+                        ? `<div class="sz-akt sz-akt-${akt.klasa}">${akt.klasa === 'aktivno' ? '🪓 ' : ''}${escapeHtml(_szAktivnostTekst(akt))}</div>` : '';
+                    let cells = `<td class="sz-sticky-col" style="padding:8px 10px;font-size:12px;font-weight:${akt && akt.klasa === 'aktivno' ? '700' : '400'};color:#1e3a5f;border:1px solid #e5e7eb;white-space:nowrap;">${escapeHtml(r['__naziv'])}${aktHtml}</td>`;
                     cols.forEach(c => {
                         const val = r[c.key];
                         const isPrekl = !c.sum && preklSet.has(c.key);
@@ -3364,7 +3369,8 @@ try {
                     });
                     const u = r['__ukupno'];
                     cells += `<td style="${tdStyle(false, true, u)}">${u !== 0 ? u.toFixed(2) : '-'}</td>`;
-                    return `<tr style="background:white;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">${cells}</tr>`;
+                    const rowCls = akt ? ` class="sz-row-${akt.klasa}${akt.klasa === 'ostalo' ? ' sz-row-ostalo' : ''}"` : '';
+                    return `<tr${rowCls} style="background:white;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">${cells}</tr>`;
                 }).join('');
             }
 
@@ -3374,12 +3380,13 @@ try {
                     <span id="${containerId}-arrow" style="transition:transform .2s;display:inline-block;transform:rotate(90deg);">▶</span>
                     Detaljni prikaz po odjelima — ${odjeliData.length} odjela
                 </summary>
-                <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:2px;border:1px solid #e5e7eb;border-radius:0 0 8px 8px;">
+                <div class="${opts.info ? 'izv-scroll ' : ''}${opts.collapsed ? 'sz-collapsed' : ''}" style="${opts.info ? '' : 'overflow-x:auto;-webkit-overflow-scrolling:touch;'}margin-top:2px;border:1px solid #e5e7eb;border-radius:0 0 8px 8px;">
                     <table style="width:100%;border-collapse:collapse;">
                         <thead id="${containerId}-thead"><tr style="background:#1e3a5f;">${buildHeaderRow(null)}</tr></thead>
                         <tbody id="${containerId}-tbody">${buildBodyRows(rows)}</tbody>
                     </table>
                 </div>
+                ${opts.skrivenoCount || opts.showAll ? `<button type="button" class="sz-more-btn" onclick="toggleStanjeZalihaShowAll()">${opts.collapsed ? `▾ Prikaži ostale odjele (${opts.skrivenoCount}) — bez sječe u zadnjih ${SZ_NEDAVNO_DANA} dana` : `▴ Sakrij odjele bez sječe u zadnjih ${SZ_NEDAVNO_DANA} dana`}</button>` : ''}
             </details>`;
 
             // Toggle arrow
@@ -10384,13 +10391,15 @@ try {
 
             try {
                 const url = buildApiUrl('stanje-zaliha');
-                const [data, preklData] = await Promise.all([
+                const [data, preklData, sjecaMapa] = await Promise.all([
                     fetchWithCache(url, 'cache_stanje_zaliha', false, 180000),
-                    fetchPreklasiranjaCached()
+                    fetchPreklasiranjaCached(),
+                    _szLoadSjeca()
                 ]);
 
                 if (data.error) throw new Error(data.error);
                 preklasiranjaPodaci = (preklData && preklData.preklasiranja) || [];
+                stanjeZalihaSjeca = sjecaMapa;
 
                 stanjeZalihaData = data.odjeli || [];
                 stanjeZalihaRadilista = data.radilista || [];
@@ -10693,42 +10702,68 @@ try {
             det.forEach(d => { d.open = anyClosed; });
         }
 
-        function renderStanjeZalihaKpi(data) {
-            const el = document.getElementById('stanje-zaliha-kpi');
-            if (!el) return;
-            if (!data.length) { el.innerHTML = ''; return; }
+        // ---- Aktivnost sječe po odjelu (iz primki) ----
+        const SZ_AKTIVNO_DANA = 10;  // sječa u zadnjih 10 dana = odjel se aktivno siječe
+        const SZ_NEDAVNO_DANA = 60;  // starija sječa od 60 dana = odjel se skriva dok se ne proširi prikaz
+        let stanjeZalihaShowAll = false;
+        let stanjeZalihaSjeca = null; // Map(normalizovan naziv odjela → timestamp zadnje sječe) ili null ako primke nisu dostupne
 
-            let zaliha = 0, projekat = 0, sjeca = 0, otprema = 0, neg = 0, visoka = 0;
-            data.forEach(o => {
-                const info = _szInfo(o);
-                zaliha += info.zaliha;
-                projekat += o.ukupnoProjekat || 0;
-                sjeca += o.ukupnoSjeca || 0;
-                otprema += o.ukupnoOtprema || 0;
-                if (info.status === 'danger') neg++;
-                if (info.status === 'warning') visoka++;
+        function _szNorm(s) {
+            return String(s || '').toUpperCase().replace(/[ČĆ]/g, 'C').replace(/Š/g, 'S').replace(/Ž/g, 'Z').replace(/Đ/g, 'DJ').replace(/\s+/g, ' ').trim();
+        }
+
+        // Zadnji datum sječe po odjelu iz primki (isti keš koji koriste Karta i poslovođa)
+        async function _szLoadSjeca() {
+            try {
+                const data = await fetchWithCache(buildApiUrl('primke'), 'cache_primke_sjeca', false, 180000);
+                if (!data || data.error || data.offline || !Array.isArray(data.primke)) return null;
+                const m = new Map();
+                data.primke.forEach(p => {
+                    if (!(parseFloat(p.kolicina) > 0)) return;
+                    const d = parseDatumDDMMYYYY(p.datum);
+                    if (!d) return;
+                    const k = _szNorm(p.odjel), ts = d.getTime();
+                    if (!m.has(k) || m.get(k) < ts) m.set(k, ts);
+                });
+                return m;
+            } catch (e) {
+                console.warn('[Stanje zaliha] Primke nedostupne, prikazujem sve odjele:', e);
+                return null;
+            }
+        }
+
+        function _szZadnjaSjeca(odjel) {
+            if (!stanjeZalihaSjeca) return null;
+            const k = _szNorm(odjel.odjel);
+            if (stanjeZalihaSjeca.has(k)) return stanjeZalihaSjeca.get(k);
+            // Rezerva: jedan naziv završava drugim na granici riječi ("RISOVAC KRUPA 55" ↔ "55")
+            let best = null;
+            stanjeZalihaSjeca.forEach((ts, pk) => {
+                if (pk.endsWith(' ' + k) || k.endsWith(' ' + pk)) best = Math.max(best || 0, ts);
             });
-            const pct = (a, b) => b > 0 ? Math.min(100, Math.max(0, a / b * 100)) : 0;
-            const sjecaPct = pct(sjeca, projekat), otpPct = pct(otprema, sjeca);
-            const fmt = v => v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            const tile = (label, value, sub, accent, bar) => `
-                <div class="sz-kpi" style="--sz-accent:${accent};">
-                    <div class="sz-kpi-label">${label}</div>
-                    <div class="sz-kpi-value">${value}<small>m³</small></div>
-                    <div class="sz-kpi-sub">${sub}</div>
-                    ${bar !== undefined ? `<div class="sz-kpi-bar"><span style="width:${bar.toFixed(1)}%"></span></div>` : ''}
-                </div>`;
-            const upozorenja = neg + visoka;
-            el.innerHTML =
-                tile('📦 Ukupna zaliha', fmt(zaliha), `${data.length} odjela u prikazu`, '#059669') +
-                tile('📋 Projekat', fmt(projekat), 'planirana masa', '#3b82f6') +
-                tile('🪓 Sječa', fmt(sjeca), `${sjecaPct.toFixed(0)}% projekta`, '#10b981', sjecaPct) +
-                tile('🚛 Otprema', fmt(otprema), `${otpPct.toFixed(0)}% posječenog`, '#f59e0b', otpPct) +
-                `<button type="button" class="sz-kpi" style="--sz-accent:${upozorenja ? '#dc2626' : '#059669'};" onclick="setStanjeZalihaStatus('${neg ? 'danger' : 'warning'}')" ${upozorenja ? '' : 'disabled'}>
-                    <div class="sz-kpi-label">⚠️ Za pažnju</div>
-                    <div class="sz-kpi-value">${upozorenja}<small>odjela</small></div>
-                    <div class="sz-kpi-sub">${neg} negativnih · ${visoka} sa zalihom &gt; ${SZ_VISOKA_ZALIHA} m³</div>
-                </button>`;
+            return best;
+        }
+
+        // klasa: aktivno (≤10 d) · nedavno (≤60 d) · ostalo (starije/bez sječe) · nepoznato (primke nedostupne)
+        function _szAktivnost(odjel) {
+            if (!stanjeZalihaSjeca) return { klasa: 'nepoznato', dana: null };
+            const ts = _szZadnjaSjeca(odjel);
+            if (!ts) return { klasa: 'ostalo', dana: null };
+            const startDana = d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+            const dana = Math.round((startDana(new Date()) - startDana(new Date(ts))) / 86400000);
+            return { klasa: dana <= SZ_AKTIVNO_DANA ? 'aktivno' : dana <= SZ_NEDAVNO_DANA ? 'nedavno' : 'ostalo', dana, ts };
+        }
+
+        function _szAktivnostTekst(a) {
+            if (a.dana == null) return 'Bez evidentirane sječe';
+            if (a.dana <= 0) return 'Sječa danas';
+            if (a.dana === 1) return 'Sječa jučer';
+            return 'Sječa prije ' + a.dana + ' d';
+        }
+
+        function toggleStanjeZalihaShowAll() {
+            stanjeZalihaShowAll = !stanjeZalihaShowAll;
+            filterStanjeZaliha();
         }
 
         // Jedina ulazna tačka za prikaz: radilište + pretraga + status + sortiranje,
@@ -10739,7 +10774,7 @@ try {
             const searchEl = document.getElementById('stanje-zaliha-search');
             const q = searchEl ? searchEl.value.trim().toLowerCase() : '';
             const sortEl = document.getElementById('stanje-zaliha-sort');
-            const sort = sortEl ? sortEl.value : 'otprema';
+            const sort = sortEl ? sortEl.value : 'sjeca';
 
             let filtered = stanjeZalihaData.filter(o => !radiliste || o.radiliste === radiliste);
             if (q) {
@@ -10762,6 +10797,7 @@ try {
             }
 
             const cmp = {
+                'sjeca': (a, b) => (_szZadnjaSjeca(b) || 0) - (_szZadnjaSjeca(a) || 0) || _szParseDatum(b.zadnjaOtprema) - _szParseDatum(a.zadnjaOtprema),
                 'otprema': (a, b) => _szParseDatum(b.zadnjaOtprema) - _szParseDatum(a.zadnjaOtprema),
                 'zaliha-desc': (a, b) => _szInfo(b).zaliha - _szInfo(a).zaliha,
                 'zaliha-asc': (a, b) => _szInfo(a).zaliha - _szInfo(b).zaliha,
@@ -10769,13 +10805,35 @@ try {
             }[sort];
             filtered = [...filtered].sort(cmp);
 
-            renderStanjeZalihaKpi(filtered);
-            renderStanjeZalihaTabela(filtered);
-            renderStanjeZalihaCards(filtered);
+            // Skrivanje odjela bez sječe u zadnjih 60 dana — samo kad su primke dostupne i
+            // kad korisnik ne traži nešto konkretno (pretraga/status uvijek prikazuju sve podudaranja)
+            const sjecaDostupna = !!stanjeZalihaSjeca;
+            const skriveno = sjecaDostupna ? filtered.filter(o => _szAktivnost(o).klasa === 'ostalo').length : 0;
+            const trazi = !!q || !!stanjeZalihaStatusFilter;
+            const collapsed = sjecaDostupna && !stanjeZalihaShowAll && !trazi && skriveno > 0;
+            const opts = sjecaDostupna
+                ? { info: _szAktivnost, collapsed, skrivenoCount: skriveno, showAll: stanjeZalihaShowAll && !trazi && skriveno > 0 }
+                : {};
+
+            renderStanjeZalihaTabela(filtered, opts);
+            renderStanjeZalihaCards(filtered, opts);
+
+            const countEl = document.getElementById('stanje-zaliha-count');
+            if (countEl && filtered.length) {
+                const prikazano = collapsed ? filtered.length - skriveno : filtered.length;
+                countEl.textContent = `Prikazano: ${prikazano} od ${stanjeZalihaData.length} odjela` + (collapsed ? ` · ${skriveno} bez sječe u zadnjih ${SZ_NEDAVNO_DANA} d skriveno` : '');
+            }
+            const btn = document.getElementById('stanje-zaliha-show-all');
+            if (btn) {
+                btn.style.display = (sjecaDostupna && skriveno > 0 && !trazi) ? '' : 'none';
+                btn.textContent = collapsed ? `👁 Prikaži sve odjele (+${skriveno})` : '🙈 Sakrij odjele bez sječe';
+            }
         }
 
-        function renderStanjeZalihaCards(data) {
+        function renderStanjeZalihaCards(data, opts) {
+            opts = opts || {};
             const container = document.getElementById('stanje-zaliha-container');
+            container.classList.toggle('sz-collapsed', !!opts.collapsed);
             const countEl = document.getElementById('stanje-zaliha-count');
 
             if (data.length === 0) {
@@ -10807,6 +10865,8 @@ try {
 
             sorted.forEach((odjel, index) => {
                 const info = _szInfo(odjel);
+                const akt = opts.info ? opts.info(odjel) : null;
+                const aktKlasa = akt ? ' sz-card-' + akt.klasa + (akt.klasa === 'ostalo' ? ' sz-ostalo' : '') : '';
                 const statusClass = info.status;
                 const statusIcon = info.ikona;
                 const pozitivnaZaliha = info.zaliha;
@@ -10815,7 +10875,7 @@ try {
                     ? Math.min(100, Math.max(0, (odjel.ukupnoOtprema || 0) / odjel.ukupnoSjeca * 100)) : 0;
 
                 html += `
-                <div class="stanje-zaliha-card ${statusClass}" style="margin-bottom: 24px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden;">
+                <div class="stanje-zaliha-card ${statusClass}${aktKlasa}" style="margin-bottom: 24px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden;">
                     <!-- Card Header -->
                     <div class="stanje-zaliha-card-header" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
                         <div>
@@ -10848,6 +10908,8 @@ try {
                         </div>
                     </div>
 
+                    ${akt && akt.klasa !== 'nepoznato' ? `<div class="sz-activity sz-activity-${akt.klasa}">${akt.klasa === 'aktivno' ? '🪓 Aktivna sječa · ' : '🕓 '}${escapeHtml(_szAktivnostTekst(akt))}${akt.ts ? ' (' + (d => String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear())(new Date(akt.ts)) + ')' : ''}</div>` : ''}
+
                     <!-- Otpremljeno / posječeno -->
                     <div class="sz-progress-row">
                         <div class="sz-progress-label"><span>Otpremljeno od posječenog</span><span>${otpremaPct.toFixed(0)}%</span></div>
@@ -10855,7 +10917,7 @@ try {
                     </div>
 
                     <!-- Expandable Detail Table -->
-                    <details style="border-top: 1px solid #e5e7eb;">
+                    <details ${akt && akt.klasa === 'aktivno' ? 'open' : ''} style="border-top: 1px solid #e5e7eb;">
                         <summary style="padding: 12px 20px; cursor: pointer; font-weight: 600; color: #374151; background: #f9fafb; display: flex; align-items: center; gap: 8px;">
                             <span style="transition: transform 0.2s;">▶</span> Detaljni prikaz po sortimentima
                         </summary>
@@ -10901,6 +10963,10 @@ try {
                     </details>
                 </div>`;
             });
+
+            if (opts.skrivenoCount || opts.showAll) {
+                html += `<button type="button" class="sz-more-btn" onclick="toggleStanjeZalihaShowAll()">${opts.collapsed ? `▾ Prikaži ostale odjele (${opts.skrivenoCount}) — bez sječe u zadnjih ${SZ_NEDAVNO_DANA} dana` : `▴ Sakrij odjele bez sječe u zadnjih ${SZ_NEDAVNO_DANA} dana`}</button>`;
+            }
 
             container.innerHTML = html;
 

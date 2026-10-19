@@ -4016,3 +4016,21 @@ button.sz-kpi:hover { box-shadow: 0 4px 12px rgba(15,23,42,.12); }
     .izv-period .izv-btn-ghost { flex: 1 1 100%; justify-content: center; }
     .izv-scroll { max-height: 60vh; }
 }
+
+
+/* ===== STANJE ZALIHA — aktivnost sječe, skupljanje odjela ===== */
+#stanje-zaliha-container.sz-collapsed .stanje-zaliha-card.sz-ostalo,
+.sz-collapsed .sz-row-ostalo { display: none; }
+.stanje-zaliha-card.sz-card-aktivno { border-left: 6px solid #10b981; box-shadow: 0 6px 18px rgba(16,185,129,.18) !important; }
+.stanje-zaliha-card.sz-card-ostalo { opacity: .88; }
+.stanje-zaliha-card .sz-activity { padding: 8px 20px; font-size: 12.5px; font-weight: 700; background: #f9fafb; border-bottom: 1px solid #e5e7eb; color: #4b5563; }
+.stanje-zaliha-card .sz-activity-aktivno { background: #ecfdf5; color: #047857; }
+.stanje-zaliha-card .sz-activity-nedavno { background: #f0f9ff; color: #0369a1; }
+.sz-akt { font-size: 11px; font-weight: 600; margin-top: 2px; color: #6b7280; }
+.sz-akt-aktivno { color: #047857; }
+.sz-row-aktivno td { background: #f0fdf4 !important; }
+.sz-row-aktivno td.sz-sticky-col { box-shadow: inset 4px 0 0 #10b981; }
+.sz-sticky-col { position: sticky; left: 0; z-index: 2; background: #fff; }
+.sz-more-btn { display: block; width: 100%; margin: 14px 0 24px; padding: 14px 16px; border: 2px dashed #94a3b8; border-radius: 12px; background: #f8fafc; color: #1e3a5f; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.sz-more-btn:hover { background: #eef2f7; border-color: #1e3a5f; }
+.sz-more-btn:focus-visible { outline: 2px solid #2d5a87; outline-offset: 2px; }
