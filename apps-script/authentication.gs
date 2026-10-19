@@ -32,7 +32,7 @@ function verifyUser(username, password) {
     const storedPassword = String(data[i][1]);
     const inputPassword = String(password);
 
-    if (data[i][0] === username && storedPassword === inputPassword) {
+    if (String(data[i][0]) === String(username) && storedPassword === inputPassword) {
       return {
         username: username,
         ime: data[i][2], // Full name
@@ -62,7 +62,7 @@ function handleLogin(username, password) {
     const storedPassword = String(data[i][1]);
     const inputPassword = String(password);
 
-    if (data[i][0] === username && storedPassword === inputPassword) {
+    if (String(data[i][0]) === String(username) && storedPassword === inputPassword) {
       // trim/lowercase — bez ovoga bilo koji razmak ili varijanta velikih
       // slova u koloni D šifrarnika (npr. "Primac " ili "primač") ne pogađa
       // strogo poređenje na frontendu i korisnik tiho dobije PUN admin prikaz

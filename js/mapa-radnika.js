@@ -100,7 +100,7 @@
         return false;
     }
 
-    // currentUser je modul-scoped `let` u js/app.js IIFE-u i NIJE na window-u,
+    // currentUser je `let` u js/app.js (nije svojstvo window-a; app.js ga izlaže getterom),
     // pa se ime poslovođe mora čitati iz localStorage ('sumarija_user', upisuje
     // ga prijava/auto-login) — window.currentUser je uvijek undefined.
     function _currentUserObj() {

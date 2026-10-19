@@ -43,9 +43,10 @@ function initSyncConfig(apiUrl, username, password) {
 // Hardened fetch with timeout, retry, and abort
 async function fetchWithRetry(url, options = {}, retries = SYNC_CONFIG.MAX_RETRIES) {
     for (let attempt = 0; attempt <= retries; attempt++) {
+        let timeoutId = null;
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), SYNC_CONFIG.FETCH_TIMEOUT);
+            timeoutId = setTimeout(() => controller.abort(), SYNC_CONFIG.FETCH_TIMEOUT);
 
             const response = await fetch(url, {
                 ...options,
@@ -61,6 +62,7 @@ async function fetchWithRetry(url, options = {}, retries = SYNC_CONFIG.MAX_RETRI
             return await response.json();
 
         } catch (error) {
+            clearTimeout(timeoutId);
             if (attempt === retries) {
                 console.error(`[SYNC] Fetch failed after ${retries + 1} attempts:`, error);
                 throw error;
@@ -179,9 +181,9 @@ async function performDeltaSync() {
 
         // Get local meta
         const [localPrimkaRow, localOtpremaRow] = await Promise.all([
-            window.IDBHelper.getMeta('primka_lastRow') || 0,
-            window.IDBHelper.getMeta('otprema_lastRow') || 0
-        ]);
+            window.IDBHelper.getMeta('primka_lastRow'),
+            window.IDBHelper.getMeta('otprema_lastRow')
+        ]).then(rows => rows.map(r => r || 0));
 
         const remotePrimkaRow = manifest.primkaRowCount || 0;
         const remoteOtpremaRow = manifest.otpremaRowCount || 0;
@@ -199,7 +201,8 @@ async function performDeltaSync() {
             const newRows = await deltaSyncPrimka(localPrimkaRow + 1, remotePrimkaRow);
 
             if (newRows.length > 0) {
-                await window.IDBHelper.saveData(window.IDBHelper.STORES.PRIMKA, newRows);
+                const saved = await window.IDBHelper.saveData(window.IDBHelper.STORES.PRIMKA, newRows);
+                if (!saved.success) throw new Error(`IDB upis primke nepotpun (${saved.errors.length} grešaka)`);
                 await window.IDBHelper.setMeta('primka_lastRow', remotePrimkaRow);
                 syncMetrics.rowsApplied += newRows.length;
                 newRowsCount += newRows.length;
@@ -214,7 +217,8 @@ async function performDeltaSync() {
             const newRows = await deltaSyncOtprema(localOtpremaRow + 1, remoteOtpremaRow);
 
             if (newRows.length > 0) {
-                await window.IDBHelper.saveData(window.IDBHelper.STORES.OTPREMA, newRows);
+                const saved = await window.IDBHelper.saveData(window.IDBHelper.STORES.OTPREMA, newRows);
+                if (!saved.success) throw new Error(`IDB upis otpreme nepotpun (${saved.errors.length} grešaka)`);
                 await window.IDBHelper.setMeta('otprema_lastRow', remoteOtpremaRow);
                 syncMetrics.rowsApplied += newRows.length;
                 newRowsCount += newRows.length;
@@ -252,11 +256,17 @@ function isWorkingWindow() {
     return isWeekday && hour >= SYNC_CONFIG.WORK_HOURS_START && hour < SYNC_CONFIG.WORK_HOURS_END;
 }
 
+// Generacija sesije — početni performDeltaSync() je async; ako se korisnik
+// odjavi (ili ponovo prijavi) prije nego završi, njegov .then() ne smije
+// pokrenuti interval sa starim kredencijalima
+let syncGeneration = 0;
+
 function startSmartSync() {
     // Stop existing interval
     if (syncIntervalId) {
         clearInterval(syncIntervalId);
     }
+    const generation = ++syncGeneration;
 
     function scheduleNextCheck() {
         console.log(`[SYNC] Next check in ${SYNC_CONFIG.CHECK_INTERVAL / 1000 / 60} min (interval uvijek radi na 15 min; performDeltaSync se preskače van radnog prozora 07-14h pon-pet)`);
@@ -279,6 +289,7 @@ function startSmartSync() {
     // Initial check — radi UVIJEK bez obzira na dan/sat, korisnik treba
     // vidjeti najnovije podatke čim otvori app (catch-up)
     performDeltaSync().then(result => {
+        if (generation !== syncGeneration) return; // odjava/novi login u međuvremenu
         if (result.updated && window.onDataSyncUpdate) {
             window.onDataSyncUpdate(result);
         }
@@ -289,6 +300,9 @@ function startSmartSync() {
 }
 
 function stopSmartSync() {
+    syncGeneration++;
+    // Ne drži kredencijale odjavljenog korisnika u endpoint URL-ovima
+    SYNC_CONFIG.MANIFEST_ENDPOINT = SYNC_CONFIG.DELTA_PRIMKA_ENDPOINT = SYNC_CONFIG.DELTA_OTPREMA_ENDPOINT = null;
     if (syncIntervalId) {
         clearInterval(syncIntervalId);
         syncIntervalId = null;

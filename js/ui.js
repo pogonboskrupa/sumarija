@@ -96,6 +96,15 @@
             // Find and activate tabs that switch to this tab (works for both sidebar and mobile)
             document.querySelectorAll(`.tab[onclick*="'${tab}'"]`).forEach(t => t.classList.add('active'));
 
+            // Izađi iz mapa-fokus moda PRIJE instant putanje ispod — ona zna rano
+            // vratiti (svjež keš), pa bi fokus (sakriveno zaglavlje/meni) ostao
+            // zalijepljen na tabu na koji se prelazi
+            if (tab !== 'karta-odjela' && document.body.classList.contains('mapa-fokus')) {
+                document.body.classList.remove('mapa-fokus');
+                const fb = document.getElementById('karta-fokus-btn');
+                if (fb) { fb.textContent = '⛶ Fokus'; fb.classList.remove('active'); }
+            }
+
             // Provjeri može li se tab prikazati iz prethodno renderovanog DOM-a
             // (preskoči fetch/render ako su podaci još svježi)
             const ttl = (typeof getSmartCacheTTL === 'function') ? getSmartCacheTTL() : 60000;
@@ -117,13 +126,6 @@
                     // (korisnik već vidi podatke, refresh će ažurirati tiho)
                     bgRefreshEl = el;
                 }
-            }
-
-            // Exit mapa fokus mode when switching away
-            if (tab !== 'karta-odjela' && document.body.classList.contains('mapa-fokus')) {
-                document.body.classList.remove('mapa-fokus');
-                const fb = document.getElementById('karta-fokus-btn');
-                if (fb) { fb.textContent = '⛶ Fokus'; fb.classList.remove('active'); }
             }
 
             // Hide all content sections — osim onog koji se tiho osvježava u pozadini
@@ -752,7 +754,7 @@
             if (datumOd) {
                 filtered = filtered.filter(item => {
                     const itemDate = new Date(item.timestampObj);
-                    return itemDate >= new Date(datumOd);
+                    return itemDate >= new Date(datumOd + 'T00:00:00');
                 });
             }
             if (datumDo) {

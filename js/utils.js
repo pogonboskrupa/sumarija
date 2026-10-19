@@ -151,6 +151,13 @@
                 .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
 
+        // Vrijednost za umetanje u JS string unutar HTML atributa:
+        // onclick="fn('${jsAttr(x)}')". Prvo JS-escape (\ i '), pa HTML-escape —
+        // nazivi kupaca sa navodnicima/& (npr. D.O.O. "ABC") inače razbiju atribut
+        function jsAttr(s) {
+            return escapeHtml(String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+        }
+
         function showToast(type, title, message, duration = 4000) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
