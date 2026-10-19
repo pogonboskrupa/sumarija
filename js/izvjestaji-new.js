@@ -4,75 +4,134 @@
 
 console.log('🔵 [IZVJEŠTAJI-NEW.JS] File loaded successfully!');
 
+// ============================================
+// Zajednički period (mjesec/godina) za sve podtabove
+// ============================================
+const IZV_MJESECI = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+const IZV_PRVA_GODINA = 2024;
+let _izvPeriod = null;      // { year, month } — ostaje isti pri prebacivanju podtabova
+let _izvActiveSub = 'sedmicni';
+
+function izvResetPeriod() {
+    const d = new Date();
+    _izvPeriod = { year: d.getFullYear(), month: d.getMonth() };
+}
+
+// Popuni sve selecte godina (zajednički + skriveni u panelima) — bez hardkodiranih godina
+function _izvFillYearOptions() {
+    const maxYear = Math.max(new Date().getFullYear(), _izvPeriod ? _izvPeriod.year : 0);
+    let opts = '';
+    for (let y = maxYear; y >= IZV_PRVA_GODINA; y--) opts += `<option value="${y}">${y}</option>`;
+    document.querySelectorAll('#izvjestaji-content select[id$="-year"], #izv-period-year').forEach(sel => { sel.innerHTML = opts; });
+    const monthOpts = IZV_MJESECI.map((m, i) => `<option value="${i}">${m}</option>`).join('');
+    const ms = document.getElementById('izv-period-month');
+    if (ms) ms.innerHTML = monthOpts;
+}
+
+// Upiši period u zajedničku traku i u skrivene selecte koje čitaju loaderi/štampa
+function izvSyncSelects() {
+    if (!_izvPeriod) izvResetPeriod();
+    const ys = document.getElementById('izv-period-year'), ms = document.getElementById('izv-period-month');
+    if (!ys || !ms || !ys.options.length || !ms.options.length) _izvFillYearOptions();
+    const { year, month } = _izvPeriod;
+    document.querySelectorAll('#izvjestaji-content select[id$="-year"], #izv-period-year').forEach(sel => { sel.value = year; });
+    document.querySelectorAll('#izvjestaji-content select[id$="-month"], #izv-period-month').forEach(sel => { sel.value = month; });
+    // Ne dozvoli odlazak u budućnost
+    const now = new Date();
+    const next = document.getElementById('izv-step-next');
+    if (next) next.disabled = (year > now.getFullYear()) || (year === now.getFullYear() && month >= now.getMonth());
+}
+
+function izvReloadActive() {
+    if (_izvActiveSub === 'sedmicni') loadIzvjestajiSedmicni();
+    else if (_izvActiveSub === 'sedmicni-radnik') loadIzvjestajiSedmicniRadnik();
+    else if (_izvActiveSub === 'mjesecni') loadIzvjestajiMjesecni();
+    else if (_izvActiveSub === 'po-odjelima') loadIzvjestajiPoOdjelima();
+}
+
+function izvPeriodChanged() {
+    _izvPeriod = {
+        year: parseInt(document.getElementById('izv-period-year').value),
+        month: parseInt(document.getElementById('izv-period-month').value)
+    };
+    izvSyncSelects();
+    izvReloadActive();
+}
+
+function izvPeriodStep(delta) {
+    if (!_izvPeriod) izvResetPeriod();
+    const d = new Date(_izvPeriod.year, _izvPeriod.month + delta, 1);
+    if (d.getFullYear() < IZV_PRVA_GODINA) return;
+    const now = new Date();
+    if (d.getFullYear() > now.getFullYear() || (d.getFullYear() === now.getFullYear() && d.getMonth() > now.getMonth())) return;
+    _izvPeriod = { year: d.getFullYear(), month: d.getMonth() };
+    izvSyncSelects();
+    izvReloadActive();
+}
+
+function izvPeriodToday() {
+    izvResetPeriod();
+    izvSyncSelects();
+    izvReloadActive();
+}
+
+// ============================================
+// KPI pregled iznad tabela (isti .summary-card stil kao "Po odjelima")
+// ============================================
+function renderIzvKpi(containerId, primkaRows, otpremaRows, sortNazivi, grupa) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    const sum = (rows, sort) => rows.reduce((s, r) => s + _izvRowUkupno(r, sort), 0);
+    const sjeca = sum(primkaRows, sortNazivi.primka);
+    const otprema = sum(otpremaRows, sortNazivi.otprema);
+    if (!sjeca && !otprema) { el.innerHTML = ''; return; }
+
+    const uniq = (rows, key) => new Set(rows.map(r => r[key]).filter(Boolean)).size;
+    const brojGrupa = grupa === 'radnik'
+        ? uniq(primkaRows, 'primac') + uniq(otpremaRows, 'otpremac')
+        : new Set([...primkaRows, ...otpremaRows].map(r => r.odjel).filter(Boolean)).size;
+    const razlika = sjeca - otprema;
+    const fmt = v => v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const card = (title, value, sub, cls) =>
+        `<div class="summary-card ${cls || ''}"><div class="summary-card-title">${title}</div><div class="summary-card-value">${value}<small>m³</small></div>${sub ? `<div class="summary-card-subtitle">${sub}</div>` : ''}</div>`;
+
+    el.innerHTML =
+        card('🌲 Ukupno sječa', fmt(sjeca), `${IZV_MJESECI[_izvPeriod.month]} ${_izvPeriod.year}`, 'green') +
+        card('🚛 Ukupno otprema', fmt(otprema), sjeca > 0 ? `${Math.round(otprema / sjeca * 100)}% posječenog` : '', 'blue') +
+        card(razlika >= 0 ? '📦 Prirast zalihe' : '📉 Smanjenje zalihe', fmt(Math.abs(razlika)), 'sječa − otprema u periodu', razlika >= 0 ? '' : 'red') +
+        `<div class="summary-card"><div class="summary-card-title">${grupa === 'radnik' ? '👷 Aktivnih radnika' : '🏭 Aktivnih odjela'}</div><div class="summary-card-value">${brojGrupa}</div></div>`;
+}
+
+function _izvEsc(s) { return typeof escapeHtml === 'function' ? escapeHtml(s) : String(s == null ? '' : s); }
+
 // Switch between Sedmični, Sedmični po radniku, and Mjesečni sub-tabs
 function switchIzvjestajiSubTab(subTab) {
-    console.log('[IZVJEŠTAJI] Switching to:', subTab);
-
-    const sedmicniElem = document.getElementById('izvjestaji-sedmicni');
-    const sedmicniRadnikElem = document.getElementById('izvjestaji-sedmicni-radnik');
-    const mjesecniElem = document.getElementById('izvjestaji-mjesecni');
-    const poOdjelimaElem = document.getElementById('izvjestaji-po-odjelima');
-
-    // ✅ SAFETY CHECK: Elementi moraju postojati
-    if (!sedmicniElem || !mjesecniElem) {
-        console.error('[IZVJEŠTAJI] ❌ Elements not found! sedmicni:', !!sedmicniElem, 'mjesecni:', !!mjesecniElem);
+    const panels = {
+        'sedmicni': 'izvjestaji-sedmicni',
+        'sedmicni-radnik': 'izvjestaji-sedmicni-radnik',
+        'mjesecni': 'izvjestaji-mjesecni',
+        'po-odjelima': 'izvjestaji-po-odjelima'
+    };
+    if (!panels[subTab]) return;
+    if (!document.getElementById(panels.sedmicni) || !document.getElementById(panels.mjesecni)) {
+        console.error('[IZVJEŠTAJI] ❌ Elementi nisu pronađeni');
         return;
     }
+    _izvActiveSub = subTab;
 
-    const subTabs = document.querySelectorAll('#izvjestaji-content .sub-tab');
-    subTabs.forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('#izvjestaji-content .sub-tab').forEach(tab => {
+        const jeste = tab.getAttribute('onclick') === `switchIzvjestajiSubTab('${subTab}')`;
+        tab.classList.toggle('active', jeste);
+        tab.setAttribute('aria-selected', jeste ? 'true' : 'false');
+    });
+    Object.keys(panels).forEach(k => {
+        const el = document.getElementById(panels[k]);
+        if (el) el.classList.toggle('hidden', k !== subTab);
+    });
 
-    // Hide all sub-panels
-    sedmicniElem.classList.add('hidden');
-    if (sedmicniRadnikElem) sedmicniRadnikElem.classList.add('hidden');
-    mjesecniElem.classList.add('hidden');
-    if (poOdjelimaElem) poOdjelimaElem.classList.add('hidden');
-
-    if (subTab === 'sedmicni') {
-        sedmicniElem.classList.remove('hidden');
-        const btn = document.querySelector('#izvjestaji-content .sub-tab[onclick="switchIzvjestajiSubTab(\'sedmicni\')"]');
-        if (btn) btn.classList.add('active');
-
-        const currentDate = new Date();
-        document.getElementById('izvjestaji-sedmicni-year').value = currentDate.getFullYear();
-        document.getElementById('izvjestaji-sedmicni-month').value = currentDate.getMonth();
-
-        loadIzvjestajiSedmicni();
-    } else if (subTab === 'sedmicni-radnik') {
-        if (sedmicniRadnikElem) sedmicniRadnikElem.classList.remove('hidden');
-        const btn = document.querySelector('#izvjestaji-content .sub-tab[onclick="switchIzvjestajiSubTab(\'sedmicni-radnik\')"]');
-        if (btn) btn.classList.add('active');
-
-        const currentDate = new Date();
-        const yrElem = document.getElementById('izvjestaji-sedmicni-radnik-year');
-        const moElem = document.getElementById('izvjestaji-sedmicni-radnik-month');
-        if (yrElem) yrElem.value = currentDate.getFullYear();
-        if (moElem) moElem.value = currentDate.getMonth();
-
-        loadIzvjestajiSedmicniRadnik();
-    } else if (subTab === 'mjesecni') {
-        mjesecniElem.classList.remove('hidden');
-        const btn = document.querySelector('#izvjestaji-content .sub-tab[onclick="switchIzvjestajiSubTab(\'mjesecni\')"]');
-        if (btn) btn.classList.add('active');
-
-        const currentDate = new Date();
-        document.getElementById('izvjestaji-mjesecni-year').value = currentDate.getFullYear();
-        document.getElementById('izvjestaji-mjesecni-month').value = currentDate.getMonth();
-
-        loadIzvjestajiMjesecni();
-    } else if (subTab === 'po-odjelima') {
-        if (poOdjelimaElem) poOdjelimaElem.classList.remove('hidden');
-        const btn = document.querySelector('#izvjestaji-content .sub-tab[onclick="switchIzvjestajiSubTab(\'po-odjelima\')"]');
-        if (btn) btn.classList.add('active');
-
-        const currentDate = new Date();
-        const yrElem = document.getElementById('izvjestaji-po-odjelima-year');
-        const moElem = document.getElementById('izvjestaji-po-odjelima-month');
-        if (yrElem) yrElem.value = currentDate.getFullYear();
-        if (moElem) moElem.value = currentDate.getMonth();
-
-        loadIzvjestajiPoOdjelima();
-    }
+    // Period se NE vraća na tekući mjesec pri promjeni podtaba (izvResetPeriod se zove pri ulasku u tab)
+    izvSyncSelects();
+    izvReloadActive();
 }
 
 // Load SEDMIČNI izvještaj - grupirano po sedmicama u mjesecu
@@ -110,6 +169,11 @@ async function loadIzvjestajiSedmicni() {
         if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
         if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
 
+        // Korisnik je u međuvremenu promijenio period — odbaci zakasnjeli odgovor
+        // (poslovođa panel 'poslovodja-odjeli' ima vlastiti period, ne dira se)
+        if (_izvPeriod && (typeof prefix === 'undefined' || prefix === 'izvjestaji-po-odjelima') &&
+            (year !== _izvPeriod.year || month !== _izvPeriod.month)) return;
+
         // Offline i nema keša za ovaj mjesec/godinu — fetchWithCache vrati {offline:true}
         // bez .data/.sortimentiNazivi. Normalizuj na prazno umjesto da agregacija
         // pukne na undefined.forEach; renderIzvjestajiSedmicniTable već ima friendly
@@ -134,6 +198,7 @@ async function loadIzvjestajiSedmicni() {
         // Render tables po sedmicama
         renderIzvjestajiSedmicniTable(primkaByWeek, primkaSort, 'sedmicni-primka', weeks);
         renderIzvjestajiSedmicniTable(otpremaByWeek, otpremaSort, 'sedmicni-otprema', weeks);
+        renderIzvKpi('izvjestaji-sedmicni-kpi', primkaFiltered, otpremaFiltered, { primka: primkaSort, otprema: otpremaSort }, 'odjel');
 
         console.log('[IZVJEŠTAJI SEDMICNI] ✓ Data loaded successfully');
         if (typeof markTabRendered === 'function') markTabRendered('izvjestaji');
@@ -179,6 +244,11 @@ async function loadIzvjestajiSedmicniRadnik() {
         if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
         if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
 
+        // Korisnik je u međuvremenu promijenio period — odbaci zakasnjeli odgovor
+        // (poslovođa panel 'poslovodja-odjeli' ima vlastiti period, ne dira se)
+        if (_izvPeriod && (typeof prefix === 'undefined' || prefix === 'izvjestaji-po-odjelima') &&
+            (year !== _izvPeriod.year || month !== _izvPeriod.month)) return;
+
         // Offline i nema keša za ovaj mjesec/godinu — normalizuj na prazno umjesto pada
         const primkaRows = primkaData.data || [];
         const otpremaRows = otpremaData.data || [];
@@ -196,6 +266,7 @@ async function loadIzvjestajiSedmicniRadnik() {
 
         renderIzvjestajiSedmicniTable(primkaByWeek, primkaSort, 'sedmicni-radnik-primka', weeks, 'Radnik');
         renderIzvjestajiSedmicniTable(otpremaByWeek, otpremaSort, 'sedmicni-radnik-otprema', weeks, 'Radnik');
+        renderIzvKpi('izvjestaji-sedmicni-radnik-kpi', primkaFiltered, otpremaFiltered, { primka: primkaSort, otprema: otpremaSort }, 'radnik');
 
         console.log('[IZVJEŠTAJI SEDMICNI RADNIK] ✓ Data loaded successfully');
         if (typeof markTabRendered === 'function') markTabRendered('izvjestaji');
@@ -311,7 +382,7 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
 
     if (!hasAnyData) {
         headerElem.innerHTML = '';
-        bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka za odabrani period</td></tr>';
+        bodyElem.innerHTML = '<tr><td colspan="100" class="izv-nema">📭 Nema podataka za odabrani period</td></tr>';
         return;
     }
 
@@ -366,7 +437,7 @@ function renderIzvjestajiSedmicniTable(dataByWeek, sortimentiNazivi, tablePrefix
         // Redovi za svaki odjel
         odjeli.forEach((odjel, idx) => {
             bodyHtml += `<tr class="week-detail-row">`;
-            bodyHtml += `<td>${odjel}</td>`;
+            bodyHtml += `<td>${_izvEsc(odjel)}</td>`;
 
             sortimentiNazivi.forEach(sortiment => {
                 const value = weekData[odjel][sortiment] || 0;
@@ -439,6 +510,11 @@ async function loadIzvjestajiMjesecni() {
         if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
         if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
 
+        // Korisnik je u međuvremenu promijenio period — odbaci zakasnjeli odgovor
+        // (poslovođa panel 'poslovodja-odjeli' ima vlastiti period, ne dira se)
+        if (_izvPeriod && (typeof prefix === 'undefined' || prefix === 'izvjestaji-po-odjelima') &&
+            (year !== _izvPeriod.year || month !== _izvPeriod.month)) return;
+
         // Offline i nema keša za ovaj mjesec/godinu — normalizuj na prazno umjesto pada
         const primkaRows = primkaData.data || [];
         const otpremaRows = otpremaData.data || [];
@@ -456,6 +532,7 @@ async function loadIzvjestajiMjesecni() {
         // Render tables
         renderIzvjestajiTable(primkaByOdjel, primkaSort, 'mjesecni-primka');
         renderIzvjestajiTable(otpremaByOdjel, otpremaSort, 'mjesecni-otprema');
+        renderIzvKpi('izvjestaji-mjesecni-kpi', primkaFiltered, otpremaFiltered, { primka: primkaSort, otprema: otpremaSort }, 'odjel');
 
         console.log('[IZVJEŠTAJI MJESECNI] ✓ Data loaded successfully');
         if (typeof markTabRendered === 'function') markTabRendered('izvjestaji');
@@ -509,7 +586,7 @@ function renderIzvjestajiTable(data, sortimentiNazivi, tablePrefix) {
         headerElem.innerHTML = '';
         bodyElem.innerHTML = `
             <tr>
-                <td colspan="100" style="text-align: center; padding: 60px; color: #4b5563;">
+                <td colspan="100" class="izv-nema">
                     <div style="font-size: 48px; margin-bottom: 16px;">📭</div>
                     <div style="font-size: 16px;">Nema podataka za odabrani period</div>
                 </td>
@@ -545,7 +622,7 @@ function renderIzvjestajiTable(data, sortimentiNazivi, tablePrefix) {
     data.forEach((row, index) => {
         // Naizmjenični bijeli/sivi redovi - CSS :nth-child radi ovo automatski
         bodyHtml += '<tr>';
-        bodyHtml += `<td>${row.odjel}</td>`;
+        bodyHtml += `<td>${_izvEsc(row.odjel)}</td>`;
 
         sortimentiNazivi.forEach(sortiment => {
             const value = parseFloat(row.sortimenti?.[sortiment]) || 0;
@@ -575,32 +652,22 @@ function renderIzvjestajiTable(data, sortimentiNazivi, tablePrefix) {
     console.log(`[RENDER ${tablePrefix}] ✓ Mjesečni table renderiran (${data.length} odjela)`);
 }
 
-// Filter table by odjel name
+// Filter table by odjel/radnik name — redovi sa zbirovima (sedmica, mjesec) ostaju vidljivi
 function filterIzvjestajiTable(tablePrefix) {
-    const searchId = `izvjestaji-${tablePrefix}-search`;
-    const tableId = `izvjestaji-${tablePrefix}-table`;
+    const input = document.getElementById(`izvjestaji-${tablePrefix}-search`);
+    const table = document.getElementById(`izvjestaji-${tablePrefix}-table`);
+    if (!input || !table) return;
 
-    const input = document.getElementById(searchId);
-    if (!input) return;
+    const filter = input.value.toLowerCase().trim();
+    const body = table.tBodies[0];
+    if (!body) return;
 
-    const filter = input.value.toLowerCase();
-    const table = document.getElementById(tableId);
-    if (!table) return;
-
-    const tr = table.getElementsByTagName('tr');
-
-    // Start from 1 to skip header
-    for (let i = 1; i < tr.length; i++) {
-        const td = tr[i].getElementsByTagName('td')[0]; // First column (Odjel)
-        if (td) {
-            const txtValue = td.textContent || td.innerText;
-            if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                tr[i].style.display = '';
-            } else {
-                tr[i].style.display = 'none';
-            }
-        }
-    }
+    Array.from(body.rows).forEach(tr => {
+        const jeZbir = tr.classList.contains('week-totals-row') || tr.classList.contains('grand-totals-row') || tr.classList.contains('totals-row');
+        if (jeZbir) { tr.style.display = ''; return; }
+        const naziv = tr.cells[0] ? tr.cells[0].textContent : '';
+        tr.style.display = (!filter || naziv.toLowerCase().includes(filter)) ? '' : 'none';
+    });
 }
 
 // Filtriraj podatke po radilištima poslovođe (samo za poslovođa ulogu)
@@ -936,6 +1003,11 @@ async function loadIzvjestajiPoOdjelima(prefix = 'izvjestaji-po-odjelima', tabId
         if (primkaData.error) throw new Error('Primka: ' + primkaData.error);
         if (otpremaData.error) throw new Error('Otprema: ' + otpremaData.error);
 
+        // Korisnik je u međuvremenu promijenio period — odbaci zakasnjeli odgovor
+        // (poslovođa panel 'poslovodja-odjeli' ima vlastiti period, ne dira se)
+        if (_izvPeriod && (typeof prefix === 'undefined' || prefix === 'izvjestaji-po-odjelima') &&
+            (year !== _izvPeriod.year || month !== _izvPeriod.month)) return;
+
         const primkaRows  = primkaData.data || [];
         const otpremaRows = otpremaData.data || [];
         const sortimentiNazivi = (primkaData.sortimentiNazivi && primkaData.sortimentiNazivi.length)
@@ -956,7 +1028,7 @@ async function loadIzvjestajiPoOdjelima(prefix = 'izvjestaji-po-odjelima', tabId
 
     } catch (error) {
         console.error('[IZVJEŠTAJI PO ODJELIMA] Error:', error);
-        if (content) content.innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626;">❌ Greška pri učitavanju: ' + error.message + '</div>';
+        if (content) content.innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626;">❌ Greška pri učitavanju: ' + _izvEsc(error.message) + '</div>';
     }
 }
 
@@ -1071,7 +1143,7 @@ function renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName, prefix 
     let html = '<div class="summary-cards">';
     html += `<div class="summary-card green"><div class="summary-card-title">Ukupno sječa — ${monthName}</div><div class="summary-card-value">${totalSjeca.toFixed(2)} m³</div><div class="summary-card-subtitle">${odjeli.length} odjela</div></div>`;
     html += `<div class="summary-card blue"><div class="summary-card-title">Ukupno otprema — ${monthName}</div><div class="summary-card-value">${totalOtprema.toFixed(2)} m³</div></div>`;
-    html += `<div class="summary-card"><div class="summary-card-title">Najveći odjel</div><div class="summary-card-value" style="font-size:20px;">${najveci.odjel}</div><div class="summary-card-subtitle">${(najveci.sjecaUkupno + najveci.otpremaUkupno).toFixed(2)} m³ ukupno</div></div>`;
+    html += `<div class="summary-card"><div class="summary-card-title">Najveći odjel</div><div class="summary-card-value" style="font-size:20px;">${_izvEsc(najveci.odjel)}</div><div class="summary-card-subtitle">${(najveci.sjecaUkupno + najveci.otpremaUkupno).toFixed(2)} m³ ukupno</div></div>`;
     html += '</div>';
 
     // Po radilištu, pa po odjelu unutar radilišta
@@ -1081,9 +1153,9 @@ function renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName, prefix 
         const grupaUkupno = grupaOdjeli.reduce((s, o) => s + o.sjecaUkupno + o.otpremaUkupno, 0);
         const radUpper = String(radiliste).toUpperCase();
 
-        html += `<div class="izvjestaj-radiliste-grupa" data-radiliste="${radUpper}">`;
+        html += `<div class="izvjestaj-radiliste-grupa" data-radiliste="${_izvEsc(radUpper)}">`;
         html += `<div style="background: linear-gradient(135deg, #1e3a5f, #2563eb); color: white; padding: 14px 20px; border-radius: 10px; margin: 30px 0 16px 0; font-size: 16px; font-weight: 700; letter-spacing: 0.5px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-            <span>📍 ${radiliste}</span>
+            <span>📍 ${_izvEsc(radiliste)}</span>
             <span style="font-size:13px;font-weight:600;opacity:0.9;">${grupaOdjeli.length} odjela · ${grupaUkupno.toFixed(2)} m³</span>
         </div>`;
 
@@ -1094,11 +1166,11 @@ function renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName, prefix 
         const otpremaci = _izvSortList(o.otpremaci);
         const kupci = _izvSortList(o.kupci);
 
-        html += `<div class="enterprise-card izvjestaj-odjel-card" data-odjel="${String(o.odjel).toUpperCase()}" data-radiliste="${radUpper}" style="margin-top:16px;">
+        html += `<div class="enterprise-card izvjestaj-odjel-card" data-odjel="${_izvEsc(String(o.odjel).toUpperCase())}" data-radiliste="${_izvEsc(radUpper)}" style="margin-top:16px;">
             <div class="enterprise-card-header">
                 <div>
-                    <h2>🏭 Odjel ${o.odjel}</h2>
-                    <span class="card-subtitle">Radilište: ${keys(o.radiliste)} · Izvođač: ${keys(o.izvodjac)}</span>
+                    <h2>🏭 Odjel ${_izvEsc(o.odjel)}</h2>
+                    <span class="card-subtitle">Radilište: ${_izvEsc(keys(o.radiliste))} · Izvođač: ${_izvEsc(keys(o.izvodjac))}</span>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <span style="background:#dcfce7;color:#166534;font-weight:700;font-size:13px;padding:6px 12px;border-radius:8px;">🌲 Sječa: ${o.sjecaUkupno.toFixed(2)} m³</span>
@@ -1117,7 +1189,7 @@ function renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName, prefix 
             sortRows.forEach(s => {
                 const boja = _izvSortimentBoja(s);
                 const trStyle = boja ? ` style="background:${boja};"` : '';
-                html += `<tr${trStyle}><td style="font-weight:600;">${s}</td><td class="right">${fmt(o.sjecaSort[s] || 0)}</td><td class="right">${fmt(o.otpremaSort[s] || 0)}</td></tr>`;
+                html += `<tr${trStyle}><td style="font-weight:600;">${_izvEsc(s)}</td><td class="right">${fmt(o.sjecaSort[s] || 0)}</td><td class="right">${fmt(o.otpremaSort[s] || 0)}</td></tr>`;
             });
         } else {
             html += `<tr><td colspan="3" style="text-align:center;color:#6b7280;">Nema sortimenata</td></tr>`;
@@ -1130,20 +1202,20 @@ function renderIzvjestajiPoOdjelima(odjeli, sortimentiNazivi, monthName, prefix 
 
         html += `<div><h3 style="font-size:14px;font-weight:700;color:#166534;margin:0 0 8px;">👷 Sječa po radniku</h3>
             <table class="kupci-table" style="width:100%;font-size:13px;"><thead><tr><th style="text-align:left;">Primač</th><th class="right">m³</th></tr></thead><tbody>`;
-        if (primaci.length) primaci.forEach(p => { html += `<tr><td>${p.ime}</td><td class="right">${p.ukupno.toFixed(2)}</td></tr>`; });
+        if (primaci.length) primaci.forEach(p => { html += `<tr><td>${_izvEsc(p.ime)}</td><td class="right">${p.ukupno.toFixed(2)}</td></tr>`; });
         else html += `<tr><td colspan="2" style="text-align:center;color:#6b7280;">—</td></tr>`;
         html += `</tbody></table></div>`;
 
         html += `<div><h3 style="font-size:14px;font-weight:700;color:#1e40af;margin:0 0 8px;">🚛 Otprema po radniku</h3>
             <table class="kupci-table" style="width:100%;font-size:13px;"><thead><tr><th style="text-align:left;">Otpremač</th><th class="right">m³</th></tr></thead><tbody>`;
-        if (otpremaci.length) otpremaci.forEach(p => { html += `<tr><td>${p.ime}</td><td class="right">${p.ukupno.toFixed(2)}</td></tr>`; });
+        if (otpremaci.length) otpremaci.forEach(p => { html += `<tr><td>${_izvEsc(p.ime)}</td><td class="right">${p.ukupno.toFixed(2)}</td></tr>`; });
         else html += `<tr><td colspan="2" style="text-align:center;color:#6b7280;">—</td></tr>`;
         html += `</tbody></table></div>`;
 
         if (kupci.length) {
             html += `<div><h3 style="font-size:14px;font-weight:700;color:#0e7490;margin:0 0 8px;">🏢 Otprema po kupcu</h3>
                 <table class="kupci-table" style="width:100%;font-size:13px;"><thead><tr><th style="text-align:left;">Kupac</th><th class="right">m³</th></tr></thead><tbody>`;
-            kupci.forEach(p => { html += `<tr><td>${p.ime}</td><td class="right">${p.ukupno.toFixed(2)}</td></tr>`; });
+            kupci.forEach(p => { html += `<tr><td>${_izvEsc(p.ime)}</td><td class="right">${p.ukupno.toFixed(2)}</td></tr>`; });
             html += `</tbody></table></div>`;
         }
 
@@ -1190,7 +1262,7 @@ function populateIzvjestajiPoOdjelimaRadiliste(odjeli, prefix = 'izvjestaji-po-o
     });
     const sorted = Array.from(radilista).sort((a, b) => a.localeCompare(b, 'bs'));
     let html = '<option value="">Sva radilišta</option>';
-    sorted.forEach(r => { html += `<option value="${String(r).toUpperCase()}">${r}</option>`; });
+    sorted.forEach(r => { html += `<option value="${_izvEsc(String(r).toUpperCase())}">${_izvEsc(r)}</option>`; });
     select.innerHTML = html;
     select.value = (prev && sorted.some(r => String(r).toUpperCase() === prev)) ? prev : '';
 }

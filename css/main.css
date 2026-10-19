@@ -3971,3 +3971,48 @@ button.sz-kpi:hover { box-shadow: 0 4px 12px rgba(15,23,42,.12); }
     .sz-count { margin-left: 0; width: 100%; }
     .stanje-zaliha-card [style*="grid-template-columns: repeat(4"] { grid-template-columns: repeat(2, 1fr) !important; }
 }
+
+/* ===== IZVJEŠTAJI — zajednička traka perioda, KPI, tabele ===== */
+.izv-btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border: none; border-radius: 10px; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.izv-btn-green { background: #059669; color: #fff; }
+.izv-btn-green:hover { background: #047857; }
+.izv-btn-navy { background: #1e3a5f; color: #fff; }
+.izv-btn-navy:hover { background: #2d5a87; }
+.izv-btn-ghost { background: #fff; color: #1e3a5f; border: 1.5px solid #d1d5db; }
+.izv-btn-ghost:hover { background: #f3f4f6; }
+
+.izv-sticky { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; background: #fff; border-radius: 14px; padding: 10px 14px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(15,23,42,.1); }
+.izv-sticky .sub-tabs { padding: 0; box-shadow: none; background: transparent; gap: 8px; flex: 1 1 auto; }
+.izv-sticky .sub-tab { padding: 9px 16px; font-size: 13px; border-width: 1.5px; }
+.izv-period { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.izv-period-select { padding: 9px 12px; border: 1.5px solid #d1d5db; border-radius: 10px; font: inherit; font-size: 14px; font-weight: 600; color: #1e3a5f; background: #fff; cursor: pointer; }
+.izv-period-select:focus-visible, .izv-step:focus-visible, .izv-btn:focus-visible { outline: 2px solid #2d5a87; outline-offset: 2px; }
+.izv-step { width: 38px; height: 38px; border-radius: 10px; border: 1.5px solid #d1d5db; background: #fff; color: #1e3a5f; font-size: 14px; cursor: pointer; }
+.izv-step:hover:not(:disabled) { background: #f3f4f6; }
+.izv-step:disabled { opacity: .4; cursor: not-allowed; }
+
+/* Birači perioda unutar panela se vode iz zajedničke trake */
+#izvjestaji-content .sub-content select[id$="-year"],
+#izvjestaji-content .sub-content select[id$="-month"] { display: none; }
+
+.izv-kpi:empty { display: none; }
+.izv-kpi { margin-bottom: 20px; }
+.izv-kpi .summary-card { padding: 16px 18px; }
+.izv-kpi .summary-card-value small { font-size: 13px; font-weight: 600; color: #4b5563; margin-left: 4px; }
+.izv-kpi .summary-card.red .summary-card-value { color: #dc2626; }
+
+/* Tabele: zaglavlje ostaje vidljivo dok se listaju redovi */
+.izv-scroll { overflow: auto; max-height: 70vh; border: 1px solid #e5e7eb; border-radius: 10px; -webkit-overflow-scrolling: touch; }
+.izv-scroll table { border-collapse: separate; border-spacing: 0; width: 100%; }
+.izv-scroll thead th { position: sticky; top: 0; z-index: 3; }
+.izv-scroll .izv-nema { text-align: center; padding: 48px 16px; color: #4b5563; }
+
+@media (max-width: 720px) {
+    .izv-sticky { position: static; padding: 10px; }
+    .izv-sticky .sub-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+    .izv-period { width: 100%; }
+    .izv-period-select { flex: 1 1 0; min-width: 0; padding: 9px 8px; }
+    #izv-period-month { flex: 2 1 0; }
+    .izv-period .izv-btn-ghost { flex: 1 1 100%; justify-content: center; }
+    .izv-scroll { max-height: 60vh; }
+}

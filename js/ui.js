@@ -209,6 +209,7 @@
             } else if (tab === 'izvjestaji') {
                 // IZVJEŠTAJI - Sedmični i Mjesečni prikaz po odjelima
                 document.getElementById('izvjestaji-content').classList.remove('hidden');
+                if (typeof izvResetPeriod === 'function') izvResetPeriod(); // svaki ulazak u tab kreće od tekućeg mjeseca
                 switchIzvjestajiSubTab('sedmicni'); // Default: Sedmični izvještaj
             } else if (tab === 'izvjestaji-primac') {
                 // Set default to current month/year
