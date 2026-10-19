@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.115';
+        const APP_VERSION = '2.116';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -3290,7 +3290,8 @@
         // Render Stanje Zaliha cards for poslovođa (identično admin view-u)
         function renderZalihaDetaljiTabela(containerId, odjeliData) {
             const container = document.getElementById(containerId);
-            if (!container || !odjeliData || !odjeliData.length) return;
+            if (!container) return;
+            if (!odjeliData || !odjeliData.length) { container.innerHTML = ''; return; }
 
             const cols = [
                 { label: 'TRUPCI Č',  key: 'TRUPCI Č',    sum: false },
@@ -3625,13 +3626,13 @@
                         transform: rotate(90deg);
                     }
                     .stanje-zaliha-card.warning .stanje-zaliha-card-header {
-                        background: linear-gradient(135deg, #92400e 0%, #b45309 100%);
+                        background: linear-gradient(135deg, #92400e 0%, #b45309 100%) !important;
                     }
                     .stanje-zaliha-card.success .stanje-zaliha-card-header {
-                        background: linear-gradient(135deg, #065f46 0%, #059669 100%);
+                        background: linear-gradient(135deg, #065f46 0%, #059669 100%) !important;
                     }
                     .stanje-zaliha-card.danger .stanje-zaliha-card-header {
-                        background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%);
+                        background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%) !important;
                     }
                 `;
                 document.head.appendChild(style);
@@ -10363,8 +10364,7 @@
                 stanjeZalihaRadilista = szCached.radilista || [];
                 stanjeZalihaSortimenti = szCached.sortimentiHeader || [];
                 populateStanjeZalihaDropdown();
-                renderStanjeZalihaTabela(stanjeZalihaData);
-                renderStanjeZalihaCards(stanjeZalihaData);
+                filterStanjeZaliha();
                 markTabRendered('stanje-zaliha');
                 szHasCached = true;
             }
@@ -10387,14 +10387,9 @@
                 stanjeZalihaRadilista = data.radilista || [];
                 stanjeZalihaSortimenti = data.sortimentiHeader || [];
 
-                // Populate radilište dropdown
+                // Radilišta u dropdownu + KPI, agregirana tabela i kartice (poštuje aktivne filtere)
                 populateStanjeZalihaDropdown();
-
-                // Render agregirana tabela zaliha (svi odjeli)
-                renderStanjeZalihaTabela(stanjeZalihaData);
-
-                // Render cards
-                renderStanjeZalihaCards(stanjeZalihaData);
+                filterStanjeZaliha();
 
                 // Init preklasiranje admin section
                 initPreklasiranjeAdminSection();
@@ -10635,6 +10630,7 @@
 
         function populateStanjeZalihaDropdown() {
             const select = document.getElementById('stanje-zaliha-radiliste');
+            const prethodno = select.value; // osvježavanje podataka ne smije resetovati izbor
             select.innerHTML = '<option value="">Sva radilišta</option>';
 
             // Extract unique radilišta from data
@@ -10652,21 +10648,121 @@
                 option.textContent = radiliste;
                 select.appendChild(option);
             });
+            if (prethodno && radilistaSet.has(prethodno)) select.value = prethodno;
         }
 
-        function filterStanjeZaliha() {
-            const selectedRadiliste = document.getElementById('stanje-zaliha-radiliste').value;
+        // ---- Stanje zaliha: status, KPI, filteri ----
+        const SZ_VISOKA_ZALIHA = 100; // m³ — iznad ovoga odjel se označava kao "visoka zaliha"
+        let stanjeZalihaStatusFilter = '';
 
-            if (selectedRadiliste === '') {
-                // Prikaži sve odjele
-                renderStanjeZalihaTabela(stanjeZalihaData);
-                renderStanjeZalihaCards(stanjeZalihaData);
-            } else {
-                // Filtriraj po radilištu
-                const filteredData = stanjeZalihaData.filter(odjel => odjel.radiliste === selectedRadiliste);
-                renderStanjeZalihaTabela(filteredData);
-                renderStanjeZalihaCards(filteredData);
+        // Neto zaliha odjela (UKUPNO Č+L bez razlika mjerenja) + status za bojenje/filtriranje
+        function _szInfo(odjel) {
+            const netZ = getNetZaliha(odjel);
+            const zaliha = (netZ && netZ['UKUPNO Č+L'] !== undefined) ? netZ['UKUPNO Č+L'] : (odjel.ukupnoZaliha || 0);
+            let status = 'neutral', ikona = '▫️', naziv = 'Prazna';
+            if (zaliha < 0) { status = 'danger'; ikona = '🔴'; naziv = 'Negativna'; }
+            else if (zaliha > SZ_VISOKA_ZALIHA) { status = 'warning'; ikona = '⚠️'; naziv = 'Visoka'; }
+            else if (zaliha > 0) { status = 'success'; ikona = '✅'; naziv = 'Normalna'; }
+            return { zaliha, status, ikona, naziv };
+        }
+
+        function _szParseDatum(d) {
+            if (!d) return 0;
+            const [day, month, year] = String(d).split('.');
+            const t = new Date(year, month - 1, day).getTime();
+            return isNaN(t) ? 0 : t;
+        }
+
+        function setStanjeZalihaStatus(status) {
+            stanjeZalihaStatusFilter = (stanjeZalihaStatusFilter === status) ? '' : status;
+            filterStanjeZaliha();
+        }
+
+        function toggleAllStanjeZalihaDetails() {
+            const det = document.querySelectorAll('#stanje-zaliha-container .stanje-zaliha-card details');
+            const anyClosed = Array.from(det).some(d => !d.open);
+            det.forEach(d => { d.open = anyClosed; });
+        }
+
+        function renderStanjeZalihaKpi(data) {
+            const el = document.getElementById('stanje-zaliha-kpi');
+            if (!el) return;
+            if (!data.length) { el.innerHTML = ''; return; }
+
+            let zaliha = 0, projekat = 0, sjeca = 0, otprema = 0, neg = 0, visoka = 0;
+            data.forEach(o => {
+                const info = _szInfo(o);
+                zaliha += info.zaliha;
+                projekat += o.ukupnoProjekat || 0;
+                sjeca += o.ukupnoSjeca || 0;
+                otprema += o.ukupnoOtprema || 0;
+                if (info.status === 'danger') neg++;
+                if (info.status === 'warning') visoka++;
+            });
+            const pct = (a, b) => b > 0 ? Math.min(100, Math.max(0, a / b * 100)) : 0;
+            const sjecaPct = pct(sjeca, projekat), otpPct = pct(otprema, sjeca);
+            const fmt = v => v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const tile = (label, value, sub, accent, bar) => `
+                <div class="sz-kpi" style="--sz-accent:${accent};">
+                    <div class="sz-kpi-label">${label}</div>
+                    <div class="sz-kpi-value">${value}<small>m³</small></div>
+                    <div class="sz-kpi-sub">${sub}</div>
+                    ${bar !== undefined ? `<div class="sz-kpi-bar"><span style="width:${bar.toFixed(1)}%"></span></div>` : ''}
+                </div>`;
+            const upozorenja = neg + visoka;
+            el.innerHTML =
+                tile('📦 Ukupna zaliha', fmt(zaliha), `${data.length} odjela u prikazu`, '#059669') +
+                tile('📋 Projekat', fmt(projekat), 'planirana masa', '#3b82f6') +
+                tile('🪓 Sječa', fmt(sjeca), `${sjecaPct.toFixed(0)}% projekta`, '#10b981', sjecaPct) +
+                tile('🚛 Otprema', fmt(otprema), `${otpPct.toFixed(0)}% posječenog`, '#f59e0b', otpPct) +
+                `<button type="button" class="sz-kpi" style="--sz-accent:${upozorenja ? '#dc2626' : '#059669'};" onclick="setStanjeZalihaStatus('${neg ? 'danger' : 'warning'}')" ${upozorenja ? '' : 'disabled'}>
+                    <div class="sz-kpi-label">⚠️ Za pažnju</div>
+                    <div class="sz-kpi-value">${upozorenja}<small>odjela</small></div>
+                    <div class="sz-kpi-sub">${neg} negativnih · ${visoka} sa zalihom &gt; ${SZ_VISOKA_ZALIHA} m³</div>
+                </button>`;
+        }
+
+        // Jedina ulazna tačka za prikaz: radilište + pretraga + status + sortiranje,
+        // pa KPI, agregirana tabela i kartice dobiju ISTI skup odjela (štampa i
+        // Excel export čitaju DOM, pa moraju vidjeti baš ono što je filtrirano)
+        function filterStanjeZaliha() {
+            const radiliste = document.getElementById('stanje-zaliha-radiliste').value;
+            const searchEl = document.getElementById('stanje-zaliha-search');
+            const q = searchEl ? searchEl.value.trim().toLowerCase() : '';
+            const sortEl = document.getElementById('stanje-zaliha-sort');
+            const sort = sortEl ? sortEl.value : 'otprema';
+
+            let filtered = stanjeZalihaData.filter(o => !radiliste || o.radiliste === radiliste);
+            if (q) {
+                filtered = filtered.filter(o => `${o.odjel || ''} ${o.radiliste || ''}`.toLowerCase().includes(q));
             }
+
+            // Brojevi na čipovima: koliko odjela ima svaki status unutar radilišta/pretrage
+            const counts = { danger: 0, warning: 0, success: 0, neutral: 0 };
+            filtered.forEach(o => { counts[_szInfo(o).status]++; });
+            document.querySelectorAll('#stanje-zaliha-status-chips .sz-chip').forEach(chip => {
+                const st = chip.dataset.status;
+                chip.classList.toggle('active', st === stanjeZalihaStatusFilter);
+                chip.setAttribute('aria-pressed', st === stanjeZalihaStatusFilter ? 'true' : 'false');
+                const base = chip.dataset.label || (chip.dataset.label = chip.textContent.replace(/\s*\(\d+\)$/, ''));
+                chip.textContent = st ? `${base} (${counts[st]})` : `${base} (${filtered.length})`;
+            });
+
+            if (stanjeZalihaStatusFilter) {
+                filtered = filtered.filter(o => _szInfo(o).status === stanjeZalihaStatusFilter);
+            }
+
+            const cmp = {
+                'otprema': (a, b) => _szParseDatum(b.zadnjaOtprema) - _szParseDatum(a.zadnjaOtprema),
+                'zaliha-desc': (a, b) => _szInfo(b).zaliha - _szInfo(a).zaliha,
+                'zaliha-asc': (a, b) => _szInfo(a).zaliha - _szInfo(b).zaliha,
+                'naziv': (a, b) => String(a.odjel || '').localeCompare(String(b.odjel || ''), 'bs', { numeric: true })
+            }[sort];
+            filtered = [...filtered].sort(cmp);
+
+            renderStanjeZalihaKpi(filtered);
+            renderStanjeZalihaTabela(filtered);
+            renderStanjeZalihaCards(filtered);
         }
 
         function renderStanjeZalihaCards(data) {
@@ -10674,22 +10770,14 @@
             const countEl = document.getElementById('stanje-zaliha-count');
 
             if (data.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 60px; color: #4b5563; font-size: 16px;">Nema podataka za prikaz</div>';
+                container.innerHTML = '<div class="sz-empty">Nema odjela za odabrane filtere.</div>';
                 countEl.textContent = '';
                 return;
             }
 
-            // Sortiramo od najsvježije otpreme prema najstarijoj (DD.MM.YYYY)
-            const parseDatum = d => {
-                if (!d) return 0;
-                const [day, month, year] = d.split('.');
-                return new Date(year, month - 1, day).getTime();
-            };
-            const sorted = [...data].sort((a, b) =>
-                parseDatum(b.zadnjaOtprema) - parseDatum(a.zadnjaOtprema)
-            );
-
-            countEl.textContent = `Prikazano: ${sorted.length} odjela`;
+            // Redoslijed određuje filterStanjeZaliha (sortiranje po izboru korisnika)
+            const sorted = data;
+            countEl.textContent = `Prikazano: ${sorted.length} od ${stanjeZalihaData.length} odjela`;
 
             // Sortimenti names for display (shortened for table headers)
             const sortimentiShort = [
@@ -10709,38 +10797,25 @@
             let html = '';
 
             sorted.forEach((odjel, index) => {
-                // Determine status color based on zaliha
-                let statusClass = 'neutral';
-                let statusIcon = '📦';
-                const ukupnoZaliha = odjel.ukupnoZaliha || 0;
-                // Neto zaliha: UKUPNO Č+L iz getNetZaliha već isključuje razlika mjerenja sortimente
-                const netZ = getNetZaliha(odjel);
-                const pozitivnaZaliha = (netZ && netZ["UKUPNO Č+L"] !== undefined)
-                    ? netZ["UKUPNO Č+L"]
-                    : ukupnoZaliha;
-
-                if (pozitivnaZaliha < 0) {
-                    statusClass = 'danger';
-                    statusIcon = '🔴';
-                } else if (pozitivnaZaliha > 100) {
-                    statusClass = 'warning';
-                    statusIcon = '⚠️';
-                } else if (pozitivnaZaliha > 0) {
-                    statusClass = 'success';
-                    statusIcon = '✅';
-                }
+                const info = _szInfo(odjel);
+                const statusClass = info.status;
+                const statusIcon = info.ikona;
+                const pozitivnaZaliha = info.zaliha;
+                // Udio otpremljenog u posječenom — vidi se koliko je još na lageru
+                const otpremaPct = (odjel.ukupnoSjeca || 0) > 0
+                    ? Math.min(100, Math.max(0, (odjel.ukupnoOtprema || 0) / odjel.ukupnoSjeca * 100)) : 0;
 
                 html += `
                 <div class="stanje-zaliha-card ${statusClass}" style="margin-bottom: 24px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden;">
                     <!-- Card Header -->
                     <div class="stanje-zaliha-card-header" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: white;">${odjel.odjel}</h3>
-                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.85; color: white;">📍 ${odjel.radiliste || 'N/A'}${odjel.zadnjaOtprema ? ' &nbsp;|&nbsp; 🚛 ' + odjel.zadnjaOtprema : ''}</p>
+                            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: white;">${escapeHtml(odjel.odjel)}</h3>
+                            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.85; color: white;">📍 ${escapeHtml(odjel.radiliste || 'N/A')}${odjel.zadnjaOtprema ? ' &nbsp;|&nbsp; 🚛 ' + escapeHtml(odjel.zadnjaOtprema) : ''}</p>
                         </div>
                         <div style="text-align: right;">
                             <div style="font-size: 24px; font-weight: 700;">${pozitivnaZaliha.toFixed(2)} m³</div>
-                            <div style="font-size: 12px; opacity: 0.85;">${statusIcon} Zaliha</div>
+                            <div style="font-size: 12px; opacity: 0.95;">${statusIcon} Zaliha · ${info.naziv}</div>
                         </div>
                     </div>
 
@@ -10762,6 +10837,12 @@
                             <div style="font-size: 12px; color: #4b5563; margin-bottom: 4px;">📦 Zaliha</div>
                             <div style="font-size: 16px; font-weight: 700; color: #059669;">${pozitivnaZaliha.toFixed(2)}</div>
                         </div>
+                    </div>
+
+                    <!-- Otpremljeno / posječeno -->
+                    <div class="sz-progress-row">
+                        <div class="sz-progress-label"><span>Otpremljeno od posječenog</span><span>${otpremaPct.toFixed(0)}%</span></div>
+                        <div class="sz-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${otpremaPct.toFixed(0)}"><span style="width:${otpremaPct.toFixed(1)}%"></span></div>
                     </div>
 
                     <!-- Expandable Detail Table -->
@@ -10821,13 +10902,13 @@
                     transform: rotate(90deg);
                 }
                 .stanje-zaliha-card.warning .stanje-zaliha-card-header {
-                    background: linear-gradient(135deg, #92400e 0%, #b45309 100%);
+                    background: linear-gradient(135deg, #92400e 0%, #b45309 100%) !important;
                 }
                 .stanje-zaliha-card.success .stanje-zaliha-card-header {
-                    background: linear-gradient(135deg, #065f46 0%, #059669 100%);
+                    background: linear-gradient(135deg, #065f46 0%, #059669 100%) !important;
                 }
                 .stanje-zaliha-card.danger .stanje-zaliha-card-header {
-                    background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%);
+                    background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%) !important;
                 }
             `;
             if (!document.getElementById('stanje-zaliha-style')) {

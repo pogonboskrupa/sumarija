@@ -3082,14 +3082,42 @@
                     </div>
                 </div>
 
-                <!-- Filter Bar -->
-                <div class="controls-bar" style="margin-bottom: 24px;">
-                    <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
-                        <label style="font-weight: 600; color: #374151;">Radilište:</label>
-                        <select id="stanje-zaliha-radiliste" class="filter-select" onchange="filterStanjeZaliha()" style="min-width: 200px; padding: 10px 16px; border: 2px solid #d1d5db; border-radius: 8px; font-size: 14px;">
-                            <option value="">Sva radilišta</option>
-                        </select>
-                        <span id="stanje-zaliha-count" style="color: #4b5563; font-size: 14px;"></span>
+                <!-- KPI pregled (puni se iz renderStanjeZalihaKpi) -->
+                <div id="stanje-zaliha-kpi" class="sz-kpi-grid" aria-live="polite"></div>
+
+                <!-- Alatna traka: radilište, pretraga, status, sortiranje -->
+                <div class="sz-toolbar">
+                    <div class="sz-toolbar-row">
+                        <label class="sz-field">
+                            <span>Radilište</span>
+                            <select id="stanje-zaliha-radiliste" class="filter-select" onchange="filterStanjeZaliha()">
+                                <option value="">Sva radilišta</option>
+                            </select>
+                        </label>
+                        <label class="sz-field sz-field-grow">
+                            <span>Traži odjel</span>
+                            <input type="search" id="stanje-zaliha-search" placeholder="npr. 55 ili Risovac…" autocomplete="off" oninput="filterStanjeZaliha()">
+                        </label>
+                        <label class="sz-field">
+                            <span>Sortiraj po</span>
+                            <select id="stanje-zaliha-sort" class="filter-select" onchange="filterStanjeZaliha()">
+                                <option value="otprema">Zadnja otprema (najnovija)</option>
+                                <option value="zaliha-desc">Zaliha (najveća)</option>
+                                <option value="zaliha-asc">Zaliha (najmanja)</option>
+                                <option value="naziv">Naziv odjela</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="sz-toolbar-row">
+                        <div class="sz-chips" id="stanje-zaliha-status-chips" role="group" aria-label="Filter po statusu zalihe">
+                            <button type="button" class="sz-chip active" data-status="" onclick="setStanjeZalihaStatus('')">Sve</button>
+                            <button type="button" class="sz-chip" data-status="danger" onclick="setStanjeZalihaStatus('danger')">🔴 Negativna</button>
+                            <button type="button" class="sz-chip" data-status="warning" onclick="setStanjeZalihaStatus('warning')">⚠️ Visoka (&gt;100 m³)</button>
+                            <button type="button" class="sz-chip" data-status="success" onclick="setStanjeZalihaStatus('success')">✅ Normalna</button>
+                            <button type="button" class="sz-chip" data-status="neutral" onclick="setStanjeZalihaStatus('neutral')">▫️ Prazna</button>
+                        </div>
+                        <span id="stanje-zaliha-count" class="sz-count"></span>
+                        <button type="button" class="btn btn-secondary sz-toggle-all" onclick="toggleAllStanjeZalihaDetails()">⇕ Otvori/zatvori detalje</button>
                     </div>
                 </div>
 

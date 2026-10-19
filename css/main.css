@@ -3925,3 +3925,49 @@ body.kubikator-fullscreen #kubikator-content {
 }
 .kub-mem-btn:active { background: #f3f4f6; }
 .kub-mem-btn-danger { color: #dc2626; border-color: #fecaca; }
+
+
+/* ===== STANJE ZALIHA (admin) — KPI, alatna traka, kartice ===== */
+.sz-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.sz-kpi { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(15,23,42,.06); border-top: 4px solid var(--sz-accent, #1e3a5f); text-align: left; font: inherit; width: 100%; }
+button.sz-kpi { cursor: pointer; }
+button.sz-kpi:hover { box-shadow: 0 4px 12px rgba(15,23,42,.12); }
+.sz-kpi-label { font-size: 12px; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: .04em; }
+.sz-kpi-value { font-size: 26px; font-weight: 800; color: #111827; margin-top: 6px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.sz-kpi-value small { font-size: 13px; font-weight: 600; color: #4b5563; margin-left: 4px; }
+.sz-kpi-sub { font-size: 12px; color: #4b5563; margin-top: 6px; }
+.sz-kpi-bar { height: 6px; border-radius: 999px; background: #e5e7eb; margin-top: 10px; overflow: hidden; }
+.sz-kpi-bar > span { display: block; height: 100%; background: var(--sz-accent, #1e3a5f); border-radius: 999px; }
+
+.sz-toolbar { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px 16px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px; }
+.sz-toolbar-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.sz-toolbar-row + .sz-toolbar-row { align-items: center; }
+.sz-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #374151; min-width: 180px; }
+.sz-field-grow { flex: 1 1 220px; }
+.sz-field select, .sz-field input { padding: 10px 12px; border: 1.5px solid #d1d5db; border-radius: 10px; font-size: 14px; background: #fff; color: #111827; font-family: inherit; }
+.sz-field select:focus, .sz-field input:focus { outline: 2px solid #2d5a87; outline-offset: 1px; border-color: #2d5a87; }
+.sz-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.sz-chip { padding: 8px 14px; border-radius: 999px; border: 1.5px solid #d1d5db; background: #fff; color: #374151; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.sz-chip:hover { background: #f3f4f6; }
+.sz-chip.active { background: #1e3a5f; border-color: #1e3a5f; color: #fff; }
+.sz-count { margin-left: auto; font-size: 13px; color: #4b5563; font-weight: 600; }
+.sz-toggle-all { font-size: 13px; padding: 8px 14px; width: auto; flex: 0 0 auto; }
+
+.stanje-zaliha-card { transition: box-shadow .15s ease; }
+.stanje-zaliha-card:hover { box-shadow: 0 8px 20px rgba(15,23,42,.12) !important; }
+.stanje-zaliha-card .sz-progress-row { padding: 10px 20px 14px; background: #fff; border-bottom: 1px solid #e5e7eb; }
+.stanje-zaliha-card .sz-progress-label { display: flex; justify-content: space-between; font-size: 12px; color: #4b5563; margin-bottom: 6px; font-weight: 600; }
+.stanje-zaliha-card .sz-progress { height: 8px; border-radius: 999px; background: #e5e7eb; overflow: hidden; }
+.stanje-zaliha-card .sz-progress > span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #f59e0b, #10b981); }
+.stanje-zaliha-card summary:focus-visible { outline: 2px solid #2d5a87; outline-offset: -2px; }
+.sz-empty { text-align: center; padding: 60px 20px; color: #4b5563; font-size: 16px; background: #fff; border: 1px dashed #d1d5db; border-radius: 14px; }
+
+@media (max-width: 640px) {
+    .sz-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .sz-kpi-grid > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+    .sz-kpi { padding: 12px 14px; }
+    .sz-kpi-value { font-size: 20px; }
+    .sz-field { min-width: 100%; }
+    .sz-count { margin-left: 0; width: 100%; }
+    .stanje-zaliha-card [style*="grid-template-columns: repeat(4"] { grid-template-columns: repeat(2, 1fr) !important; }
+}
