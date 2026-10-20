@@ -4285,3 +4285,8 @@ body.oa-open { overflow: hidden; }
     .oc-total { font-size: 17px; }
     .oc-body { padding: 2px 10px 12px; }
 }
+
+/* Aktivni odjel: samo tabela (bez bočne trake) */
+.oa-layout.oa-single { grid-template-columns: minmax(0, 1fr); }
+.oa-main .oa-scroll { flex: 0 1 auto; max-height: calc(100vh - 230px); }
+@media (max-width: 1000px) { .oa-main .oa-scroll { max-height: calc(100vh - 250px); } }

@@ -89,24 +89,6 @@
         return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear();
     }
 
-    // Lista sa proporcionalnim trakama (ko je koliko radio) — najveći prvi
-    function sazetak(naslov, mapa) {
-        var stavke = Object.keys(mapa).map(function (k) { return { ime: k, v: mapa[k] }; }).sort(function (a, b) { return b.v - a.v; });
-        if (!stavke.length) return '';
-        var max = stavke[0].v || 1;
-        return '<div class="oa-sum"><div class="oa-sum-title">' + naslov + '</div><ul class="oa-bars">' +
-            stavke.map(function (st) {
-                return '<li><div class="oa-bar-row"><span class="oa-bar-name">' + esc(st.ime || '—') + '</span><span class="oa-bar-val">' + fmt(st.v) + ' m³</span></div>' +
-                    '<div class="oa-bar"><span style="width:' + Math.max(3, st.v / max * 100).toFixed(1) + '%"></span></div></li>';
-            }).join('') + '</ul></div>';
-    }
-
-    function kpiKartica(naslov, vrijednost, jedinica) {
-        return '<div class="oa-kpi"><div class="oa-kpi-v">' + vrijednost + (jedinica ? '<small>' + jedinica + '</small>' : '') + '</div><div class="oa-kpi-l">' + naslov + '</div></div>';
-    }
-
-    function broj(mapa) { return Object.keys(mapa).length; }
-
     // Tabela: kolone radnik (+ kupac za otpremu) + sortimenti + UKUPNO; dan se ispisuje samo na prvom redu
     function tabela(redovi, imeKolone, saKupcem) {
         if (!redovi.length) return '<div class="oa-empty">Nema evidentiranih unosa u odabranom periodu.</div>';
@@ -147,34 +129,17 @@
         if (state.greska) { body.innerHTML = '<div class="oa-empty">❌ ' + esc(state.greska) + '</div>'; return; }
         if (!state.primke || !state.otpreme) { body.innerHTML = '<div class="oa-empty">⏳ Učitavam podatke…</div>'; return; }
 
-        var side, main;
+        var main;
         if (state.tab === 'sjeca') {
             var z = filtriraj(state.primke, state.odjel, state.dana);
             var redovi = grupisi(z, function (x) { return x._ts + '|' + x.primac; }, function (x) { return { radnik: x.primac }; });
-            var poPrimacu = {}, dani = {}, ukupnoS = 0;
-            redovi.forEach(function (r) {
-                var u = ukupnoReda(r.sort);
-                ukupnoS += u; dani[r.ts] = true;
-                poPrimacu[r.meta.radnik] = (poPrimacu[r.meta.radnik] || 0) + u;
-            });
-            side = '<div class="oa-kpis">' + kpiKartica('Ukupno sječa', fmt(ukupnoS), 'm³') + kpiKartica('Dana sa sječom', broj(dani)) + kpiKartica('Primača', broj(poPrimacu)) + '</div>' +
-                sazetak('Ko je primao', poPrimacu);
             main = tabela(redovi, 'Primač', false);
         } else {
             var o = filtriraj(state.otpreme, state.odjel, state.dana);
             var redoviO = grupisi(o, function (x) { return x._ts + '|' + x.otpremac + '|' + x.kupac; }, function (x) { return { radnik: x.otpremac, kupac: x.kupac }; });
-            var poOtpremacu = {}, poKupcu = {}, daniO = {}, ukupnoO = 0;
-            redoviO.forEach(function (r) {
-                var u = ukupnoReda(r.sort);
-                ukupnoO += u; daniO[r.ts] = true;
-                poOtpremacu[r.meta.radnik] = (poOtpremacu[r.meta.radnik] || 0) + u;
-                poKupcu[r.meta.kupac || '—'] = (poKupcu[r.meta.kupac || '—'] || 0) + u;
-            });
-            side = '<div class="oa-kpis">' + kpiKartica('Ukupno otprema', fmt(ukupnoO), 'm³') + kpiKartica('Dana sa otpremom', broj(daniO)) + kpiKartica('Kupaca', broj(poKupcu)) + '</div>' +
-                sazetak('Kupci', poKupcu) + sazetak('Ko je otpremao', poOtpremacu);
             main = tabela(redoviO, 'Otpremač', true);
         }
-        var html = '<div class="oa-layout"><aside class="oa-side">' + side + '</aside><section class="oa-main">' + main + '</section></div>';
+        var html = '<div class="oa-layout oa-single"><section class="oa-main">' + main + '</section></div>';
         body.innerHTML = html;
 
         // Modal je izvan #app-screen pa ga drag-scroll observer ne vidi — priključi ručno
