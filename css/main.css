@@ -4232,3 +4232,56 @@ body.oa-open { overflow: hidden; }
     .ms-card-title { font-size: 16px; }
 }
 .ms-seg-light { background: #f1f5f9; box-shadow: none; }
+
+/* ===== ODJELI — kartice (Primači na šuma panju, Prikaz po odjelima) ===== */
+.oc-host { --oc-acc: #059669; --oc-bg: #f0fdf4; --oc-bd: #a7f3d0; --oc-dark: #065f46; }
+.oc-host.oc-blue { --oc-acc: #2563eb; --oc-bg: #eff6ff; --oc-bd: #bfdbfe; --oc-dark: #1e40af; }
+.oc-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 12px 14px; margin-bottom: 14px; }
+.oc-search { flex: 1 1 220px; min-width: 0; padding: 10px 12px; border: 1.5px solid #d1d5db; border-radius: 10px; font: inherit; font-size: 14px; }
+.oc-sort { padding: 10px 12px; border: 1.5px solid #d1d5db; border-radius: 10px; font: inherit; font-size: 14px; background: #fff; }
+.oc-search:focus, .oc-sort:focus { outline: 2px solid #2d5a87; outline-offset: 1px; }
+.oc-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.oc-chip, .oc-toggle { padding: 8px 14px; border-radius: 999px; border: 1.5px solid #d1d5db; background: #fff; color: #374151; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.oc-chip:hover, .oc-toggle:hover { background: #f3f4f6; }
+.oc-chip.active { background: var(--oc-dark); border-color: var(--oc-dark); color: #fff; }
+.oc-count { margin-left: auto; font-size: 13px; font-weight: 600; color: #4b5563; }
+.oc-list { display: flex; flex-direction: column; gap: 12px; }
+.oc-empty { text-align: center; padding: 40px 16px; color: #4b5563; background: #fff; border: 1px dashed #d1d5db; border-radius: 14px; }
+.oc-card { background: #fff; border: 1px solid #e5e7eb; border-left: 6px solid #cbd5e1; border-radius: 14px; box-shadow: 0 1px 4px rgba(15,23,42,.08); overflow: hidden; }
+.oc-card.oc-aktivno { border-left-color: var(--oc-acc); box-shadow: 0 4px 14px rgba(15,23,42,.12); }
+.oc-card.oc-nedavno { border-left-color: #94a3b8; }
+.oc-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; cursor: pointer; list-style: none; background: #fff; }
+.oc-head::-webkit-details-marker { display: none; }
+.oc-card.oc-aktivno .oc-head { background: var(--oc-bg); }
+.oc-head:focus-visible { outline: 2px solid #2d5a87; outline-offset: -2px; }
+.oc-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; min-width: 0; }
+.oc-name { font-size: 17px; font-weight: 800; color: #111827; }
+.oc-year { background: #fbbf24; color: #78350f; padding: 2px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; }
+.oc-badge { background: var(--oc-acc); color: #fff; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.oc-meta { flex-basis: 100%; font-size: 12.5px; color: #4b5563; }
+.oc-total { font-size: 20px; font-weight: 800; color: var(--oc-dark); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.oc-total small { font-size: 12px; font-weight: 700; color: #6b7280; }
+.oc-chev { transition: transform .2s; color: #6b7280; font-size: 18px; }
+.oc-card[open] .oc-chev { transform: rotate(180deg); }
+.oc-body { padding: 4px 16px 16px; border-top: 1px solid #eef0f3; }
+.oc-h4 { margin: 14px 0 8px; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--oc-dark); }
+.oc-scroll { overflow: auto; max-height: 60vh; border: 1px solid #e5e7eb; border-radius: 10px; cursor: grab; -webkit-overflow-scrolling: touch; }
+.oc-scroll:active { cursor: grabbing; }
+.oc-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13.5px; }
+.oc-table th { position: sticky; top: 0; z-index: 3; background: #1e3a5f; color: #fff; padding: 9px 10px; font-weight: 700; white-space: nowrap; text-align: left; }
+.oc-table th.right, .oc-table td.right { text-align: right; }
+.oc-table td { padding: 8px 10px; border-bottom: 1px solid #eef0f3; white-space: nowrap; color: #1f2937; font-weight: 500 !important; font-size: 13.5px !important; font-variant-numeric: tabular-nums; background: #fff; }
+.oc-table .oc-first { position: sticky; left: 0; z-index: 2; background: #fff; font-weight: 700 !important; box-shadow: 2px 0 0 #eef0f3; }
+.oc-table th.oc-first { z-index: 4; background: #1e3a5f; }
+.oc-table th.oc-ukupno { background: #064e3b; }
+.oc-table td.oc-ukupno { background: #f0fdf4; }
+.oc-table tr.sum-row td { background: #064e3b !important; color: #fff !important; font-weight: 800 !important; }
+@media (max-width: 640px) {
+    .oc-toolbar { padding: 10px; }
+    .oc-search { flex-basis: 100%; }
+    .oc-count { width: 100%; margin-left: 0; }
+    .oc-head { padding: 12px 12px; }
+    .oc-name { font-size: 15px; }
+    .oc-total { font-size: 17px; }
+    .oc-body { padding: 2px 10px 12px; }
+}
