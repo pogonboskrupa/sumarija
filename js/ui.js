@@ -302,6 +302,7 @@
             document.getElementById('primaci-daily-view').classList.add('hidden');
             document.getElementById('primaci-radilista-view').classList.add('hidden');
             document.getElementById('primaci-izvodjaci-view').classList.add('hidden');
+            document.getElementById('primaci-timeline-view').classList.add('hidden');
             document.getElementById('primaci-sortimenti-primac-view').classList.add('hidden');
 
             // Show selected view
@@ -328,6 +329,11 @@
                 if (!document.getElementById('primaci-izvodjaci-header').innerHTML) {
                     loadPrimaciByIzvodjac();
                 }
+            } else if (view === 'timeline') {
+                document.getElementById('primaci-timeline-view').classList.remove('hidden');
+                // Izbor izvođača puni loadPrimaciByIzvodjac; timeline se iscrtava poslije njega
+                if (typeof _primaciIzvodjaciData !== 'undefined' && _primaciIzvodjaciData) renderPrimaciIzvodjaciTimeline();
+                else loadPrimaciByIzvodjac();
             } else if (view === 'sortimenti-by-primac') {
                 document.getElementById('primaci-sortimenti-primac-view').classList.remove('hidden');
                 // Load on first open with current month as default

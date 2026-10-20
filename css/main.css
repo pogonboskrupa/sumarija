@@ -4317,3 +4317,43 @@ body.oa-open { overflow: hidden; }
     .kub-wrap > .kub-objasnjenje { grid-column: 1; margin-top: 0; }
     .kub-mem-lista { max-height: 52vh; }
 }
+
+
+/* ===== SJEČA → Izvođači radova / Timeline realizacije ===== */
+.iz-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.iz-h4 { margin: 22px 0 10px; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #7c2d12; }
+.iz-scroll { overflow: auto; max-height: 70vh; border: 1px solid #e5e7eb; border-radius: 10px; cursor: grab; -webkit-overflow-scrolling: touch; }
+.iz-scroll:active { cursor: grabbing; }
+.iz-detalj { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 14px; padding: 14px 16px 16px; margin-bottom: 8px; }
+.iz-detalj-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.iz-detalj-head h3 { margin: 0; color: #7c2d12; font-size: 17px; }
+.iz-zatvori { background: #fff; border: 1.5px solid #fdba74; color: #9a3412; border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.iz-zatvori:hover { background: #ffedd5; }
+.iz-detalj-grid { display: grid; grid-template-columns: minmax(240px, 380px) minmax(0, 1fr); gap: 16px; margin-top: 12px; align-items: start; }
+.iz-chart { position: relative; height: 280px; background: #fff; border: 1px solid #fed7aa; border-radius: 10px; padding: 8px; }
+
+.iz-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.iz-table th { position: sticky; top: 0; z-index: 4; background: #7c2d12; color: #fff; padding: 10px 10px; font-size: 12px; font-weight: 700; letter-spacing: .03em; white-space: nowrap; text-align: left; }
+.iz-table th.right, .iz-table td.right { text-align: right; }
+.iz-table td { padding: 9px 10px; border-bottom: 1px solid #f3e8e0; white-space: nowrap; color: #1f2937; font-weight: 500 !important; font-size: 13.5px !important; background: #fff; }
+.iz-table .iz-first { position: sticky; left: 0; z-index: 3; font-weight: 700 !important; background: #fff; box-shadow: 2px 0 0 #f3e8e0; min-width: 150px; }
+.iz-table th.iz-first { z-index: 6; background: #7c2d12; }
+.iz-table td.is-zero { color: #cbd5e1; }
+.iz-table td.heat { background: rgba(234, 88, 12, calc(var(--i) * .38)); }
+.iz-table .iz-tek { box-shadow: inset 0 0 0 1px #f59e0b; }
+.iz-table th.iz-tek { background: #b45309; box-shadow: none; }
+.iz-table .iz-uk { font-weight: 800 !important; background: #fef3c7 !important; color: #92400e; }
+.iz-table th.iz-uk { background: #451a03 !important; color: #fff; }
+.iz-udio-h { min-width: 120px; }
+.iz-udio { min-width: 120px; }
+.iz-bar { height: 7px; background: #f1f5f9; border-radius: 999px; overflow: hidden; display: inline-block; width: 70px; vertical-align: middle; margin-right: 6px; }
+.iz-bar > span { display: block; height: 100%; background: linear-gradient(90deg, #fb923c, #ea580c); border-radius: 999px; }
+.iz-udio small { color: #6b7280; font-weight: 700; }
+.iz-row { cursor: pointer; }
+.iz-row:hover td:not(.heat):not(.iz-uk) { background: #fff7ed; }
+.iz-row:focus-visible { outline: 2px solid #2d5a87; outline-offset: -2px; }
+.iz-table tr.sum-row td { background: #451a03 !important; color: #fff !important; font-weight: 800 !important; }
+@media (max-width: 800px) {
+    .iz-detalj-grid { grid-template-columns: minmax(0, 1fr); }
+    .iz-scroll { max-height: 62vh; }
+}
