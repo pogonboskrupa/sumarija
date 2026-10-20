@@ -4192,8 +4192,6 @@ body.oa-open { overflow: hidden; }
 .kupci-kpi { padding: 4px 4px 0; }
 .kupci-kpi-grid { margin-bottom: 14px; }
 .kupci-kpi .dash-kpi-value { font-size: 26px; }
-.kupci-top { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
-.kupci-top-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #4b5563; margin-bottom: 10px; }
 #kupci-content .kupci-table-wrapper { cursor: grab; }
 #kupci-content .kupci-table-wrapper:active { cursor: grabbing; }
 #kupci-content .kupci-table tbody tr:last-child td { position: sticky; bottom: 0; z-index: 5; }
@@ -4202,5 +4200,4 @@ body.oa-open { overflow: hidden; }
 #kupci-content .submenu-tab { white-space: nowrap; flex: 0 0 auto; }
 @media (max-width: 640px) {
     .kupci-kpi .dash-kpi-value { font-size: 20px; }
-    .kupci-top { padding: 12px; }
 }
