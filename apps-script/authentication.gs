@@ -45,8 +45,39 @@ function verifyUser(username, password) {
   return null;
 }
 
+// Upiši vrijeme zadnje prijave u list Korisnici (kolona "ZADNJI LOGIN").
+// Kolona se traži po zaglavlju; ako ne postoji, dodaje se iza zadnje popunjene kolone,
+// pa se nikad ne prepisuje postojeći sadržaj. Greška ovdje NE smije srušiti prijavu.
+// Upis se preskače ako je zadnji upis mlađi od 5 min (auto-prijava pri svakom otvaranju
+// aplikacije bi inače pisala u sheet stalno).
+function zabiljeziLogin(usersSheet, headerRow, rowValues, sheetRowNumber) {
+  try {
+    const NAZIV = 'ZADNJI LOGIN';
+    let col = -1;
+    for (let c = 0; c < headerRow.length; c++) {
+      if (String(headerRow[c] || '').trim().toUpperCase() === NAZIV) { col = c; break; }
+    }
+    if (col === -1) {
+      col = headerRow.length; // iza zadnje kolone koja je u opsegu podataka
+      usersSheet.getRange(1, col + 1).setValue(NAZIV).setFontWeight('bold');
+    }
+
+    const prethodni = rowValues[col];
+    const sada = new Date();
+    if (prethodni instanceof Date && (sada - prethodni) < 5 * 60 * 1000) return;
+
+    usersSheet.getRange(sheetRowNumber, col + 1)
+      .setValue(sada)
+      .setNumberFormat('dd.MM.yyyy HH:mm:ss');
+  } catch (e) {
+    Logger.log('zabiljeziLogin greška (ignorisano): ' + e);
+  }
+}
+
 // Login handler
-function handleLogin(username, password) {
+// zabiljezi=true samo za pravu prijavu (path=login) — handleLogin se interno poziva i
+// iz svakog drugog handlera radi autentikacije, i tada se ništa ne upisuje
+function handleLogin(username, password, zabiljezi) {
   const ss = SpreadsheetApp.openById(KORISNICI_SPREADSHEET_ID);
   const usersSheet = ss.getSheetByName('Korisnici'); // Sheet name: "Korisnici"
 
@@ -63,6 +94,7 @@ function handleLogin(username, password) {
     const inputPassword = String(password);
 
     if (String(data[i][0]) === String(username) && storedPassword === inputPassword) {
+      if (zabiljezi) zabiljeziLogin(usersSheet, data[0], data[i], i + 1);
       // trim/lowercase — bez ovoga bilo koji razmak ili varijanta velikih
       // slova u koloni D šifrarnika (npr. "Primac " ili "primač") ne pogađa
       // strogo poređenje na frontendu i korisnik tiho dobije PUN admin prikaz
