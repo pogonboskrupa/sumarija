@@ -22,7 +22,11 @@ function handleDashboard(year, username, password) {
   // 🚀 CACHE: Try to get from cache first
   const cacheKey = `dashboard_${year}`;
   const cached = getCachedData(cacheKey);
-  if (cached) {
+  // Keš bez dijagnostike ili bez plana (stari odgovor prije ažuriranja) se ignoriše — inače ga
+  // dobijaju svi klijenti do isteka TTL-a i dinamika izgleda "nije učitana"
+  const cacheUredan = cached && cached.dinamikaDiag !== undefined &&
+    (cached.mjesecnaStatistika || []).some(m => (m.dinamika || 0) > 0);
+  if (cacheUredan) {
     return createJsonResponse(cached, true);
   }
 
@@ -143,7 +147,9 @@ function handleDashboard(year, username, password) {
     odjeli: odjeliPrikaz,
     dinamikaDiag: _dinamikaDiag   // zašto je dinamika (ne)učitana — prikazuje se u aplikaciji kad je plan prazan
   };
-  setCachedData(cacheKey, result, CACHE_TTL);
+  if (mjesecnaStatistika.some(m => (m.dinamika || 0) > 0)) {
+    setCachedData(cacheKey, result, CACHE_TTL);
+  }
 
   return createJsonResponse(result, true);
 }

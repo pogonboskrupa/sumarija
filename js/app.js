@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.139';
+        const APP_VERSION = '2.140';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -17,9 +17,9 @@
 // JEDNOKRATNO: keširani dashboard iz perioda kad backend nije vraćao dinamiku (plan) bi
 // ostao u browseru do sutra 6:30 — briši ga jednom, pa se dinamika odmah prikaže
 try {
-    if (localStorage.getItem('sumarija_dashboard_cache_gen') !== '2') {
+    if (localStorage.getItem('sumarija_dashboard_cache_gen') !== '3') {
         Object.keys(localStorage).filter(k => k.startsWith('cache_dashboard_')).forEach(k => localStorage.removeItem(k));
-        localStorage.setItem('sumarija_dashboard_cache_gen', '2');
+        localStorage.setItem('sumarija_dashboard_cache_gen', '3');
     }
 } catch(_) {}
 
@@ -1844,7 +1844,13 @@ try {
 
                 // 🔄 BACKGROUND REFRESH: Fetch fresh data in background (180s timeout - super patient!)
                 try {
-                    const data = await fetchWithCache(url, cacheKey, false, 180000);
+                    // Keširani odgovor bez plana (dinamike) ili bez dijagnostike je zastario — preskoči keš
+                    const dinamikaOk = d => d && Array.isArray(d.mjesecnaStatistika) && d.dinamikaDiag !== undefined &&
+                        d.mjesecnaStatistika.some(m => (m.dinamika || 0) > 0);
+                    let data = await fetchWithCache(url, cacheKey, false, 180000);
+                    if (!data.offline && !data.error && !dinamikaOk(data)) {
+                        data = await fetchWithCache(url, cacheKey, true, 180000);
+                    }
 
                     if (data.offline || data.error) {
                         // Offline bez keša: otkrij tab (makar prazan kostur) umjesto
