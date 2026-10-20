@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.134';
+        const APP_VERSION = '2.135';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1984,6 +1984,30 @@ try {
                     kpi(razlikaDinamika >= 0 ? 'green' : 'red', razlikaDinamika >= 0 ? '📈' : '📉', 'Razlika sa dinamikom', (razlikaDinamika >= 0 ? '+' : '−') + fmt0(Math.abs(razlikaDinamika)), razlikaDinamika >= 0 ? 'Iznad plana' : 'Ispod plana') +
                     kpi('amber', '📅', mjTekNaziv, fmt0(mjTekSjeca), `Otprema ${fmt0(mjTekOtprema)} m³` + (mjTekDin > 0 ? ` · dinamika ${fmt0(mjTekDin)} m³` : ''), mjTekDin > 0 ? mjTekPct : null, 'm³ sječa');
                 document.getElementById('summary-cards').innerHTML = summaryHTML;
+
+                // Plan (dinamika) prazan za sve mjesece — objasni zašto umjesto tihih nula
+                const dinamikaPrazna = !data.mjesecnaStatistika.some(m => (m.dinamika || 0) > 0);
+                let dinNote = document.getElementById('dash-dinamika-note');
+                if (!dinNote) {
+                    dinNote = document.createElement('div');
+                    dinNote.id = 'dash-dinamika-note';
+                    dinNote.className = 'dash-note';
+                    const kpiEl = document.getElementById('summary-cards');
+                    kpiEl.parentNode.insertBefore(dinNote, kpiEl.nextSibling);
+                }
+                if (dinamikaPrazna) {
+                    const dg = data.dinamikaDiag;
+                    let razlog;
+                    if (dg === undefined) razlog = 'Backend (Apps Script) nije ažuriran na novu verziju — nedostaje dijagnostika dinamike. Zalijepite najnovije .gs fajlove i napravite New version u Manage deployments.';
+                    else if (dg && dg.greska) razlog = dg.greska;
+                    else if (dg) razlog = `Čitam list DINAMIKA: kolona ${dg.kolona}${dg.nazivKolone ? ' (' + dg.nazivKolone + ')' : ''}${dg.kolonaPoZaglavlju ? '' : ' — zaglavlje SVEUKUPNO nije pronađeno, uzeta kolona K'}, prepoznato mjeseci: ${dg.mjeseciPrepoznato}, vrijednosti plana: ${(dg.plan || []).join(', ') || 'nema'}.`;
+                    else razlog = 'Backend nije vratio podatke o planu.';
+                    dinNote.innerHTML = '⚠️ <b>Dinamika (plan) nije učitana.</b> ' + escapeHtml(razlog);
+                    dinNote.style.display = '';
+                    console.warn('[DINAMIKA] prazna:', data.dinamikaDiag);
+                } else {
+                    dinNote.style.display = 'none';
+                }
                 const dashYear = document.getElementById('dash-year');
                 if (dashYear) dashYear.textContent = year;
                 const dashSub = document.getElementById('dash-sub');
