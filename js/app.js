@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.126';
+        const APP_VERSION = '2.127';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1966,13 +1966,14 @@ try {
                 const clampPct = v => Math.min(100, Math.max(0, v));
                 const sjecaPctDin = totalDinamika > 0 ? (totalSjeca / totalDinamika) * 100 : 0;
                 const otpremaPctSjeca = totalSjeca > 0 ? (totalOtprema / totalSjeca) * 100 : 0;
-                const mjTek = data.mjesecnaStatistika.find(m => (m.mjesec || '').trim().toLowerCase() === ['januar','februar','mart','april','maj','juni','juli','august','septembar','oktobar','novembar','decembar'][new Date().getMonth()]) || {};
+                const mjTekNaziv = ['Januar','Februar','Mart','April','Maj','Juni','Juli','August','Septembar','Oktobar','Novembar','Decembar'][new Date().getMonth()];
+                const mjTek = data.mjesecnaStatistika.find(m => (m.mjesec || '').trim().toLowerCase() === mjTekNaziv.toLowerCase()) || {};
                 const mjTekSjeca = mjTek.sjeca || 0, mjTekOtprema = mjTek.otprema || 0, mjTekDin = mjTek.dinamika || 0;
                 const mjTekPct = mjTekDin > 0 ? (mjTekSjeca / mjTekDin) * 100 : 0;
-                const kpi = (cls, ikona, naslov, vrijednost, sub, bar) => `
+                const kpi = (cls, ikona, naslov, vrijednost, sub, bar, jedinica) => `
                     <div class="dash-kpi ${cls}">
                         <div class="dash-kpi-title"><span class="dash-kpi-ico">${ikona}</span>${naslov}</div>
-                        <div class="dash-kpi-value">${vrijednost}<small>m³</small></div>
+                        <div class="dash-kpi-value">${vrijednost}<small>${jedinica || 'm³'}</small></div>
                         <div class="dash-kpi-sub">${sub}</div>
                         ${bar != null ? `<div class="dash-kpi-bar"><span style="width:${clampPct(bar).toFixed(1)}%"></span></div>` : ''}
                     </div>`;
@@ -1981,7 +1982,7 @@ try {
                     kpi('blue', '🚛', 'Otprema ' + year, fmt0(totalOtprema), `${otpremaPctSjeca.toFixed(1)}% od sječe`, otpremaPctSjeca) +
                     kpi('neutral', '🌳', 'Šuma / panj', fmt0(totalStanje), 'Posječeno, a nije otpremljeno') +
                     kpi(razlikaDinamika >= 0 ? 'green' : 'red', razlikaDinamika >= 0 ? '📈' : '📉', 'Razlika sa dinamikom', (razlikaDinamika >= 0 ? '+' : '−') + fmt0(Math.abs(razlikaDinamika)), razlikaDinamika >= 0 ? 'Iznad plana' : 'Ispod plana') +
-                    kpi('amber', '📅', 'Tekući mjesec', fmt0(mjTekSjeca), `Otprema ${fmt0(mjTekOtprema)} m³` + (mjTekDin > 0 ? ` · dinamika ${fmt0(mjTekDin)} m³` : ''), mjTekDin > 0 ? mjTekPct : null);
+                    kpi('amber', '📅', mjTekNaziv, fmt0(mjTekSjeca), `Otprema ${fmt0(mjTekOtprema)} m³` + (mjTekDin > 0 ? ` · dinamika ${fmt0(mjTekDin)} m³` : ''), mjTekDin > 0 ? mjTekPct : null, 'm³ sječa');
                 document.getElementById('summary-cards').innerHTML = summaryHTML;
                 const dashYear = document.getElementById('dash-year');
                 if (dashYear) dashYear.textContent = year;
