@@ -4077,3 +4077,7 @@ button.sz-kpi:hover { box-shadow: 0 4px 12px rgba(15,23,42,.12); }
     .dash-kpi-value { font-size: 24px; }
     .dash-scroll { max-height: 60vh; }
 }
+
+.dash-grid-1 { margin-bottom: 22px; }
+.dash-grid-1 > .dash-card { margin: 0; }
+.dash-grid-1 .chart-container { height: 300px; }
