@@ -345,34 +345,6 @@
             <!-- KPI pregled godine (puni se iz renderDashboard) -->
             <div class="dash-kpi-grid" id="summary-cards" aria-live="polite"></div>
 
-            <!-- Dnevni grafikon tekućeg mjeseca -->
-            <div class="dash-grid-1">
-            <!-- Dnevni Chart za tekući mjesec -->
-            <div class="section dash-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
-                    <h2 style="margin: 0;">📅 Dnevna sječa i otprema - Tekući mjesec</h2>
-                    <select id="dashboard-daily-month-select" onchange="loadDashboardDailyChart()" style="padding: 10px 16px; font-size: 14px; border-radius: 8px; border: 2px solid #059669; min-width: 150px; font-family: 'Inter', sans-serif;">
-                        <option value="0">Januar</option>
-                        <option value="1">Februar</option>
-                        <option value="2">Mart</option>
-                        <option value="3">April</option>
-                        <option value="4">Maj</option>
-                        <option value="5">Juni</option>
-                        <option value="6">Juli</option>
-                        <option value="7">August</option>
-                        <option value="8">Septembar</option>
-                        <option value="9">Oktobar</option>
-                        <option value="10">Novembar</option>
-                        <option value="11">Decembar</option>
-                    </select>
-                </div>
-                <div class="chart-container" style="min-height: 300px; position: relative;">
-                    <canvas id="dashboardDailyChart"></canvas>
-                </div>
-            </div>
-
-            </div>
-
             <!-- Sječa i Otprema tekućeg mjeseca -->
             <div class="section">
                 <h2>📅 Sječa i otprema tekućeg mjeseca <span id="tekuci-mjesec-period" style="font-weight: 400; font-size: 14px; color: #4b5563;"></span></h2>
@@ -466,13 +438,42 @@
                 </div>
             </div>
 
+            <!-- Grafikoni u jednom redu: trend godine + dnevni pregled -->
+            <div class="dash-grid-2">
             <!-- Godišnji Chart -->
-            <div class="section dash-card" style="margin-bottom: 22px;">
+            <div class="section dash-card">
                 <h2>📈 Trendovi sječe i otpreme</h2>
                 <div class="chart-container">
                     <canvas id="trendsChart"></canvas>
                 </div>
             </div>
+            <!-- Dnevni Chart za tekući mjesec -->
+            <div class="section dash-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+                    <h2 style="margin: 0;">📅 Dnevna sječa i otprema - Tekući mjesec</h2>
+                    <select id="dashboard-daily-month-select" onchange="loadDashboardDailyChart()" style="padding: 10px 16px; font-size: 14px; border-radius: 8px; border: 2px solid #059669; min-width: 150px; font-family: 'Inter', sans-serif;">
+                        <option value="0">Januar</option>
+                        <option value="1">Februar</option>
+                        <option value="2">Mart</option>
+                        <option value="3">April</option>
+                        <option value="4">Maj</option>
+                        <option value="5">Juni</option>
+                        <option value="6">Juli</option>
+                        <option value="7">August</option>
+                        <option value="8">Septembar</option>
+                        <option value="9">Oktobar</option>
+                        <option value="10">Novembar</option>
+                        <option value="11">Decembar</option>
+                    </select>
+                </div>
+                <div class="chart-container" style="min-height: 300px; position: relative;">
+                    <canvas id="dashboardDailyChart"></canvas>
+                </div>
+            </div>
+
+
+            </div>
+
             <!-- Odjeli Table -->
             <div class="enterprise-card">
                 <div class="enterprise-card-header">
