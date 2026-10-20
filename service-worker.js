@@ -1,6 +1,6 @@
 // ========== Service Worker - Offline Support ==========
 
-const CACHE_VERSION = 'v169';
+const CACHE_VERSION = 'v170';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
 // Install — pre-keširaj samo offline.html (fallback koji se inače nikad ne
@@ -78,6 +78,21 @@ self.addEventListener('fetch', (event) => {
             caches.match(request).then(cached => cached || fetch(request)
                 .then(resp => { _cacheIfOk(resp.clone(), request); return resp; })
                 .catch(() => new Response('', { status: 503 })))
+        );
+        return;
+    }
+
+    // JS i CSS aplikacije — mreža-prvo (max 4 s), pa keš. Stale-while-revalidate je korisniku
+    // prvo servirao STARI kod pa tek poslije reloada novi ("stari prikaz pa novi"); ovako
+    // nova verzija stiže odmah, a offline/spora mreža i dalje koriste keš.
+    if (url.origin === self.location.origin && /\.(js|css)$/.test(url.pathname)) {
+        event.respondWith(
+            new Promise(resolve => {
+                const t = setTimeout(() => caches.match(request).then(c => c && resolve(c)), 4000);
+                fetch(request, { cache: 'reload' })
+                    .then(resp => { clearTimeout(t); _cacheIfOk(resp.clone(), request); resolve(resp); })
+                    .catch(() => { clearTimeout(t); caches.match(request).then(c => resolve(c || new Response('', { status: 503 }))); });
+            })
         );
         return;
     }
