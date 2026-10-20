@@ -140,7 +140,8 @@ function handleDashboard(year, username, password) {
   // 🚀 CACHE: Store result before returning
   const result = {
     mjesecnaStatistika: mjesecnaStatistika,
-    odjeli: odjeliPrikaz
+    odjeli: odjeliPrikaz,
+    dinamikaDiag: _dinamikaDiag   // zašto je dinamika (ne)učitana — prikazuje se u aplikaciji kad je plan prazan
   };
   setCachedData(cacheKey, result, CACHE_TTL);
 

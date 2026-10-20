@@ -4290,3 +4290,5 @@ body.oa-open { overflow: hidden; }
 .oa-layout.oa-single { grid-template-columns: minmax(0, 1fr); }
 .oa-main .oa-scroll { flex: 0 1 auto; max-height: calc(100vh - 230px); }
 @media (max-width: 1000px) { .oa-main .oa-scroll { max-height: calc(100vh - 250px); } }
+
+.dash-note { background: #fffbeb; border: 1px solid #fcd34d; color: #78350f; border-radius: 12px; padding: 10px 14px; margin: -6px 0 18px; font-size: 13px; line-height: 1.45; }

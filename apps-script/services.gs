@@ -10,6 +10,9 @@
  * Pretvori vrijednost ćelije u broj. Podržava prave brojeve i tekst u lokalnom
  * formatu ("1.364,00" → 1364, "1364,5" → 1364.5) — parseFloat("1.364,00") bi dao 1.364.
  */
+// Dijagnostika zadnjeg čitanja plana — ide u odgovor dashboarda da se vidi zašto je dinamika prazna
+var _dinamikaDiag = null;
+
 function dinamikaToNumber(v) {
   if (typeof v === 'number') return isFinite(v) ? v : 0;
   let str = String(v == null ? '' : v).replace(/[\s\u00a0]/g, '');
@@ -28,7 +31,7 @@ function dinamikaToNumber(v) {
  * Namjerno ne oslanja se na fiksne adrese: kolona se traži po zaglavlju, a mjeseci po
  * nazivu u koloni A (uz rezervu na K3:K14), pa umetanje kolone/reda ne ruši dashboard.
  */
-function readDinamikaPlan(dinamikaSheet) {
+function readDinamikaPlan(dinamikaSheet, diag) {
   const MJESECI = ['januar', 'februar', 'mart', 'april', 'maj', 'juni', 'juli', 'august', 'septembar', 'oktobar', 'novembar', 'decembar'];
   const values = dinamikaSheet.getDataRange().getValues();
   const plan = Array(12).fill(0);
@@ -42,7 +45,14 @@ function readDinamikaPlan(dinamikaSheet) {
       if (h.indexOf('SVEUKUPNO') !== -1 || /Č\+L$/.test(h)) { col = c; break; }
     }
   }
+  const nadjenaKolona = col !== -1;
   if (col === -1) col = 10; // K
+  if (diag) {
+    diag.redova = values.length;
+    diag.kolona = col + 1;
+    diag.nazivKolone = String((values[1] || values[0] || [])[col] || '');
+    diag.kolonaPoZaglavlju = nadjenaKolona;
+  }
 
   // 2. Redovi mjeseci po nazivu u koloni A
   let found = 0;
@@ -54,6 +64,8 @@ function readDinamikaPlan(dinamikaSheet) {
       found++;
     }
   });
+
+  if (diag) diag.mjeseciPrepoznato = found;
 
   // 3. Rezerva: ako nazivi mjeseci nisu prepoznati, redovi 3-14
   if (found === 0) {
@@ -97,6 +109,7 @@ function getDinamikaForYear(year) {
 
     if (!dinamikaSheet) {
       Logger.log('DINAMIKA sheet does not exist, returning zeros');
+      _dinamikaDiag = { greska: 'List DINAMIKA ne postoji u BAZA_PODATAKA (provjeri BAZA_PODATAKA_ID u config.gs)', plan: [] };
       return Array(12).fill(0);
     }
 
@@ -106,7 +119,10 @@ function getDinamikaForYear(year) {
     const currentYear = parseInt(Utilities.formatDate(now, "Europe/Sarajevo", "yyyy"));
     const godina = parseInt(year);
 
-    const plan = readDinamikaPlan(dinamikaSheet);
+    const diag = {};
+    const plan = readDinamikaPlan(dinamikaSheet, diag);
+    diag.plan = plan;
+    _dinamikaDiag = diag;
 
     // Prošla godina - svi mjeseci; tekuća - do trenutnog mjeseca; buduća - ništa
     const rezultat = plan.map(function(planValue, i) {
@@ -120,6 +136,7 @@ function getDinamikaForYear(year) {
 
   } catch (error) {
     Logger.log('ERROR in getDinamikaForYear: ' + error.toString());
+    _dinamikaDiag = { greska: 'Greška pri čitanju: ' + error.toString(), plan: [] };
     return Array(12).fill(0);
   }
 }
