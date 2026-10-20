@@ -4084,7 +4084,7 @@ button.sz-kpi:hover { box-shadow: 0 4px 12px rgba(15,23,42,.12); }
 
 
 /* ===== AKTIVNI ODJEL — detalji (sječa po danima / otprema) ===== */
-.oa-modal { display: none; position: fixed; inset: 0; z-index: 9995; background: rgba(15,23,42,.6); align-items: flex-start; justify-content: center; padding: 16px; overflow-y: auto; }
+.oa-modal { display: none; position: fixed; inset: 0; z-index: 20500; background: rgba(15,23,42,.6); align-items: flex-start; justify-content: center; padding: 16px; overflow-y: auto; }
 .oa-modal.show { display: flex; }
 body.oa-open { overflow: hidden; }
 .oa-card { background: #fff; border-radius: 16px; width: 100%; max-width: 1200px; margin: auto; box-shadow: 0 10px 40px rgba(0,0,0,.35); display: flex; flex-direction: column; max-height: calc(100vh - 32px); }
@@ -4124,3 +4124,60 @@ body.oa-open { overflow: hidden; }
     .oa-body { padding: 12px; }
     .oa-scroll { max-height: 60vh; }
 }
+
+
+/* ----- AKTIVNI ODJEL v2: široki responzivni raspored (desktop: bočna traka + tabela, telefon: sve ispod sebe) ----- */
+.oa-modal { padding: 12px; }
+.oa-card { width: 96vw; max-width: 1840px; height: calc(100vh - 24px); max-height: none; }
+.oa-body { flex: 1 1 auto; min-height: 0; padding: 18px 22px 20px; overflow: hidden; display: flex; flex-direction: column; }
+.oa-layout { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 22px; min-height: 0; flex: 1 1 auto; }
+.oa-side { overflow-y: auto; min-height: 0; padding-right: 4px; }
+.oa-main { min-height: 0; display: flex; flex-direction: column; }
+.oa-main .oa-scroll { max-height: none; flex: 1 1 auto; min-height: 0; }
+.oa-main .oa-empty { background: #f9fafb; border: 1px dashed #d1d5db; border-radius: 12px; }
+.oa-head h3 { font-size: 24px; }
+.oa-tabs button, .oa-periods button { padding: 9px 16px; font-size: 14px; }
+.oa-table { font-size: 14px; }
+.oa-table td { font-size: 14px !important; padding: 9px 12px; }
+.oa-table th { padding: 10px 12px; font-size: 13px; }
+
+.oa-kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
+.oa-kpi { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 12px 10px; text-align: center; }
+.oa-kpi-v { font-size: 20px; font-weight: 800; color: #065f46; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.oa-kpi-v small { font-size: 11px; font-weight: 700; margin-left: 3px; color: #4b5563; }
+.oa-kpi-l { margin-top: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #4b5563; }
+.oa-kpis .oa-kpi:first-child { grid-column: 1 / -1; background: #065f46; border-color: #065f46; }
+.oa-kpis .oa-kpi:first-child .oa-kpi-v, .oa-kpis .oa-kpi:first-child .oa-kpi-l, .oa-kpis .oa-kpi:first-child small { color: #fff; }
+.oa-kpis .oa-kpi:first-child .oa-kpi-v { font-size: 26px; }
+.oa-bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.oa-bar-row { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; }
+.oa-bar-name { font-weight: 700; color: #1f2937; overflow-wrap: anywhere; }
+.oa-bar-val { font-weight: 700; color: #065f46; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.oa-bar { height: 7px; border-radius: 999px; background: #e5e7eb; margin-top: 4px; overflow: hidden; }
+.oa-bar > span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #34d399, #059669); }
+
+@media (max-width: 1000px) {
+    .oa-layout { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+    .oa-layout > * { min-width: 0; }
+    .oa-body { overflow-y: auto; display: block; padding: 14px; }
+    .oa-side { overflow: visible; }
+    .oa-main .oa-scroll { max-height: 62vh; }
+}
+@media (max-width: 640px) {
+    .oa-modal { padding: 0; }
+    .oa-card { width: 100vw; height: 100vh; height: 100dvh; max-height: none; border-radius: 0; }
+    .oa-head { border-radius: 0; padding: 12px 14px; }
+    .oa-head h3 { font-size: 19px; }
+    .oa-toolbar { padding: 10px 12px; position: sticky; top: 0; z-index: 5; }
+    .oa-tabs { width: 100%; }
+    .oa-tabs button { flex: 1 1 0; }
+    .oa-periods { width: 100%; }
+    .oa-periods button { flex: 1 1 0; padding: 8px 6px; }
+    .oa-kpi-v { font-size: 17px; }
+    .oa-kpis .oa-kpi:first-child .oa-kpi-v { font-size: 22px; }
+    .oa-table td { font-size: 13px !important; padding: 8px 9px; }
+}
+
+.oa-layout > * { min-width: 0; }
+.oa-card, .oa-body { min-width: 0; }
+.oa-bars, .oa-sum { min-width: 0; }

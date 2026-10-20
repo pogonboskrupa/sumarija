@@ -2113,6 +2113,48 @@
         </div>
 
         <!-- POSLOVOĐA CONTENT - STANJE ZALIHA (Card-based view) -->
+        <!-- POSLOVOĐA: AKTIVNI ODJELI (sječa u zadnjih N dana, samo njihova radilišta) -->
+        <div id="poslovodja-aktivni-content" class="container hidden">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>🪓 Aktivni odjeli</h1>
+                    <p>Odjeli vaših radilišta sa nedavnom sječom — klik na odjel otvara sječu po danima i otpremu</p>
+                </div>
+                <div class="page-header-right">
+                    <button type="button" class="izv-btn izv-btn-ghost" onclick="loadPoslovodjaAktivni(true)">🔄 Osvježi</button>
+                </div>
+            </div>
+            <div id="poslovodja-aktivni-radilista" class="section" style="background: #eff6ff; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px;">
+                <p style="margin: 0; color: #1e40af; font-weight: 600;">👤 Vaša radilišta: <span id="poslovodja-aktivni-radilista-list"></span></p>
+            </div>
+            <div class="dash-chips" id="poslovodja-aktivni-chips" role="group" aria-label="Period posljednje sječe">
+                <button type="button" class="sz-chip active" data-dana="10" onclick="setPoslovodjaAktivniDana(10)">🪓 Sječa ≤ 10 dana</button>
+                <button type="button" class="sz-chip" data-dana="30" onclick="setPoslovodjaAktivniDana(30)">≤ 30 dana</button>
+                <button type="button" class="sz-chip" data-dana="60" onclick="setPoslovodjaAktivniDana(60)">≤ 60 dana</button>
+                <span class="sz-count" id="poslovodja-aktivni-count"></span>
+            </div>
+            <div class="enterprise-card">
+                <div class="enterprise-card-body">
+                    <div class="odjeli-table-wrapper dash-scroll">
+                        <table class="monthly-table" id="poslovodja-aktivni-table" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Odjel</th>
+                                    <th class="right">Sječa (m³)</th>
+                                    <th class="right">Otprema (m³)</th>
+                                    <th class="right">Šuma/panj</th>
+                                    <th>Radilište</th>
+                                    <th>Izvođač Radova</th>
+                                    <th>Zadnja Sječa</th>
+                                </tr>
+                            </thead>
+                            <tbody id="poslovodja-aktivni-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="poslovodja-stanje-content" class="container hidden">
             <div class="section">
                 <!-- Professional Header -->

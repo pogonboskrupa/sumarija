@@ -26,6 +26,7 @@
                 'mjesecni-sortimenti': 'mjesecni-sortimenti-content',
                 'dinamika': 'dinamika-content',
                 'poslovodja-stanje': 'poslovodja-stanje-content',
+                'poslovodja-aktivni': 'poslovodja-aktivni-content',
                 'poslovodja-sjeca': 'poslovodja-sjeca-content',
                 'poslovodja-otprema': 'poslovodja-otprema-content',
                 'poslovodja-pregled': 'poslovodja-pregled-content',
@@ -182,6 +183,9 @@
                 loadMjesecniSortimenti();
             } else if (tab === 'dinamika') {
                 loadDinamika();
+            } else if (tab === 'poslovodja-aktivni') {
+                document.getElementById('poslovodja-aktivni-content').classList.remove('hidden');
+                if (typeof loadPoslovodjaAktivni === 'function') loadPoslovodjaAktivni();
             } else if (tab === 'poslovodja-stanje') {
                 loadPoslovodjaStanje();
             } else if (tab === 'poslovodja-sjeca') {
