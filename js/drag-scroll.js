@@ -16,6 +16,7 @@
         '.mjesecni-table-wrapper',
         '.worker-table-card > div',
         '.oa-scroll',
+        '.mjesecna-scroll',
         'div[style*="overflow-x"]'
     ].join(', ');
 
