@@ -271,7 +271,10 @@ td[style*="color: #ef4444"] {
    red je u posebnom <tfoot> (već pokriven pravilom "table tfoot td" ispod),
    pa je zadnji red u <tbody> obični mjesec (Decembar), ne total — bez izuzetka
    bi se Decembar uvijek boldirao bez obzira na to koji je mjesec stvarno tekući. */
-table:not(#dashboard-table) tbody tr:last-child td,
+/* Boldira se SAMO red koji je stvarno zbir (UKUPNO/REKAPITULACIJA…): njega označava
+   js/utils.js (markTotalRows → klasa .sum-row). Ranije je pravilo pogađalo svaki
+   :last-child pa se zadnji odjel/radnik/mjesec u spisku boldirao kao da je total. */
+tbody tr.sum-row td,
 table tfoot td,
 .ukupno-row td,
 .total-row td {
@@ -396,7 +399,7 @@ th[style*="color: #ffffff"] {
         font-weight: 800 !important;
     }
 
-    table:not(#dashboard-table) tbody tr:last-child td,
+    tbody tr.sum-row td,
     .ukupno-row td {
         font-size: 16px !important;
         font-weight: 900 !important;
