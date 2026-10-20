@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.119';
+        const APP_VERSION = '2.120';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -10379,8 +10379,15 @@ try {
                 stanjeZalihaData = szCached.odjeli || [];
                 stanjeZalihaRadilista = szCached.radilista || [];
                 stanjeZalihaSortimenti = szCached.sortimentiHeader || [];
+                if (!stanjeZalihaSjeca) stanjeZalihaSjeca = await _szSjecaIzKesa();
+                // Keširana preklasiranja — bez njih bi prvi prikaz imao nekorigovane zalihe pa se promijenio
+                try {
+                    const pk = JSON.parse(localStorage.getItem('cache_preklasiranja') || 'null');
+                    if (pk && pk.data && Array.isArray(pk.data.preklasiranja)) preklasiranjaPodaci = pk.data.preklasiranja;
+                } catch (_) {}
                 populateStanjeZalihaDropdown();
                 filterStanjeZaliha();
+                szRenderSig = _szSig();
                 markTabRendered('stanje-zaliha');
                 szHasCached = true;
             }
@@ -10399,15 +10406,20 @@ try {
 
                 if (data.error) throw new Error(data.error);
                 preklasiranjaPodaci = (preklData && preklData.preklasiranja) || [];
-                stanjeZalihaSjeca = sjecaMapa;
+                stanjeZalihaSjeca = sjecaMapa || stanjeZalihaSjeca;
 
                 stanjeZalihaData = data.odjeli || [];
                 stanjeZalihaRadilista = data.radilista || [];
                 stanjeZalihaSortimenti = data.sortimentiHeader || [];
 
-                // Radilišta u dropdownu + KPI, agregirana tabela i kartice (poštuje aktivne filtere)
-                populateStanjeZalihaDropdown();
-                filterStanjeZaliha();
+                // Iscrtaj ponovo SAMO ako se nešto promijenilo u odnosu na već prikazan (keširani) prikaz —
+                // inače korisnik vidi kako se isti sadržaj "treperi" i rasklapa/sklapa
+                const sig = _szSig();
+                if (!szHasCached || sig !== szRenderSig) {
+                    populateStanjeZalihaDropdown();
+                    filterStanjeZaliha();
+                    szRenderSig = sig;
+                }
 
                 // Init preklasiranje admin section
                 initPreklasiranjeAdminSection();
@@ -10672,6 +10684,11 @@ try {
         // ---- Stanje zaliha: status, KPI, filteri ----
         const SZ_VISOKA_ZALIHA = 100; // m³ — iznad ovoga odjel se označava kao "visoka zaliha"
         let stanjeZalihaStatusFilter = '';
+        let szRenderSig = '';
+        // Otisak podataka koji utiču na prikaz (odjeli, preklasiranja, zadnja sječa po odjelu)
+        function _szSig() {
+            return JSON.stringify([stanjeZalihaData, preklasiranjaPodaci, stanjeZalihaSjeca ? Array.from(stanjeZalihaSjeca) : null]);
+        }
 
         // Neto zaliha odjela (UKUPNO Č+L bez razlika mjerenja) + status za bojenje/filtriranje
         function _szInfo(odjel) {
@@ -10713,23 +10730,35 @@ try {
         }
 
         // Zadnji datum sječe po odjelu iz primki (isti keš koji koriste Karta i poslovođa)
+        function _szBuildSjecaMap(data) {
+            if (!data || data.error || data.offline || !Array.isArray(data.primke)) return null;
+            const m = new Map();
+            data.primke.forEach(p => {
+                if (!(parseFloat(p.kolicina) > 0)) return;
+                const d = parseDatumDDMMYYYY(p.datum);
+                if (!d) return;
+                const k = _szNorm(p.odjel), ts = d.getTime();
+                if (!m.has(k) || m.get(k) < ts) m.set(k, ts);
+            });
+            return m;
+        }
+
         async function _szLoadSjeca() {
             try {
-                const data = await fetchWithCache(buildApiUrl('primke'), 'cache_primke_sjeca', false, 180000);
-                if (!data || data.error || data.offline || !Array.isArray(data.primke)) return null;
-                const m = new Map();
-                data.primke.forEach(p => {
-                    if (!(parseFloat(p.kolicina) > 0)) return;
-                    const d = parseDatumDDMMYYYY(p.datum);
-                    if (!d) return;
-                    const k = _szNorm(p.odjel), ts = d.getTime();
-                    if (!m.has(k) || m.get(k) < ts) m.set(k, ts);
-                });
-                return m;
+                return _szBuildSjecaMap(await fetchWithCache(buildApiUrl('primke'), 'cache_primke_sjeca', false, 180000));
             } catch (e) {
                 console.warn('[Stanje zaliha] Primke nedostupne, prikazujem sve odjele:', e);
                 return null;
             }
+        }
+
+        // Samo iz keša, bez mreže i bez obzira na starost — za trenutni prikaz pri otvaranju taba
+        // (da se prvi prikaz odmah iscrta sa ispravnim skupljanjem, bez "preskakanja" kasnije)
+        async function _szSjecaIzKesa() {
+            try {
+                const entry = await _readCacheEntry('cache_primke_sjeca');
+                return entry && entry.data ? _szBuildSjecaMap(entry.data) : null;
+            } catch (e) { return null; }
         }
 
         function _szZadnjaSjeca(odjel) {
