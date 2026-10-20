@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.137';
+        const APP_VERSION = '2.138';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -4984,100 +4984,68 @@ try {
 
         // Separate render function for otpremaci
         function renderOtpremaci(data) {
+            if (!data || !data.otpremaci || !Array.isArray(data.otpremaci)) {
+                if (data && data.offline) return;
+                console.error('Invalid otpremaci data structure:', data);
+                showError('Greška', 'Neispravni podaci otpremača');
+                return;
+            }
+            if (!data.mjeseci || !Array.isArray(data.mjeseci)) {
+                if (data && data.offline) return;
+                console.error('Missing mjeseci in otpremaci data');
+                showError('Greška', 'Nedostaju mjeseci u podacima');
+                return;
+            }
 
-                // Validate data structure
-                if (!data || !data.otpremaci || !Array.isArray(data.otpremaci)) {
-                    if (data && data.offline) return;
-                    console.error('Invalid otpremaci data structure:', data);
-                    showError('Greška', 'Neispravni podaci otpremača');
-                    return;
-                }
-
-                if (!data.mjeseci || !Array.isArray(data.mjeseci)) {
-                    if (data && data.offline) return;
-                    console.error('Missing mjeseci in otpremaci data');
-                    showError('Greška', 'Nedostaju mjeseci u podacima');
-                    return;
-                }
-
-                // Calculate totals per month
-                const monthTotals = new Array(12).fill(0);
-                let grandTotal = 0;
-
-                data.otpremaci.forEach(o => {
-                    if (o.mjeseci && Array.isArray(o.mjeseci)) {
-                        o.mjeseci.forEach((val, idx) => {
-                            monthTotals[idx] += (val || 0);
-                        });
-                    }
-                    grandTotal += (o.ukupno || 0);
+            const num = v => (v != null && !isNaN(v)) ? Number(v) : 0;
+            const monthTotals = new Array(12).fill(0);
+            let grandTotal = 0;
+            let maxCell = 0;
+            data.otpremaci.forEach(o => {
+                (Array.isArray(o.mjeseci) ? o.mjeseci : []).forEach((val, idx) => {
+                    monthTotals[idx] += num(val);
+                    maxCell = Math.max(maxCell, num(val));
                 });
+                grandTotal += num(o.ukupno);
+            });
 
-                // Create header with sticky styling (blue theme)
-                const headerHTML = `
-                    <tr>
-                        <th style="position: sticky; left: 0; background: #2563eb; z-index: 20; border-right: 3px solid #1e40af; min-width: 150px;">
-                            🚛 Otpremač
-                        </th>
-                        ${data.mjeseci.map((m, idx) => `
-                            <th class="right" style="min-width: 80px; background: #2563eb; color: white; font-weight: 700; border: 1px solid #1e40af;">
-                                ${m}
-                            </th>
-                        `).join('')}
-                        <th class="right" style="min-width: 100px; background: #1e40af; color: white; font-weight: 900; border: 2px solid #1e3a8a;">
-                            📊 UKUPNO
-                        </th>
-                    </tr>
-                `;
-                document.getElementById('otpremaci-header').innerHTML = headerHTML;
+            const curMonth = new Date().getMonth();
+            const cur = idx => idx === curMonth ? ' cur' : '';
 
-                // Create body with enhanced styling (blue theme)
-                const bodyHTML = data.otpremaci.map((o, idx) => {
-                    const rowBg = idx % 2 === 0 ? '#eff6ff' : 'white';
-                    const hoverBg = idx % 2 === 0 ? '#dbeafe' : '#eff6ff';
+            document.getElementById('otpremaci-header').innerHTML = `
+                <tr>
+                    <th class="ot-first">🚛 Otpremač</th>
+                    ${data.mjeseci.map((m, idx) => `<th class="num${cur(idx)}">${escapeHtml(String(m))}</th>`).join('')}
+                    <th class="num ot-total">Ukupno</th>
+                </tr>`;
 
-                    return `
-                        <tr style="background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${rowBg}'">
-                            <td style="font-weight: 600; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #2563eb; padding: 10px; font-size: 11px;">
-                                ${o.otpremac || '-'}
-                            </td>
-                            ${(o.mjeseci && Array.isArray(o.mjeseci) ? o.mjeseci : new Array(12).fill(0)).map((v, mIdx) => {
-                                const val = (v != null && !isNaN(v)) ? v : 0;
-                                const displayVal = val > 0 ? val.toFixed(2) : '-';
-                                const cellStyle = val > 0 ? 'font-weight: 600; color: #000000; text-shadow: 0 0 1px rgba(255,255,255,0.8);' : 'color: #6b7280;';
-                                return `<td class="right" style="${cellStyle} border: 1px solid #dbeafe; padding: 8px; font-size: 11px; font-family: 'Roboto Mono', ui-monospace, monospace;">${displayVal}</td>`;
-                            }).join('')}
-                            <td class="right" style="font-weight: 700; background: linear-gradient(to right, #dbeafe, #bfdbfe); border: 2px solid #2563eb; padding: 10px; font-size: 11px; color: #1e40af;">
-                                ${(o.ukupno != null && !isNaN(o.ukupno)) ? o.ukupno.toFixed(2) : '0.00'} m³
-                            </td>
-                        </tr>
-                    `;
+            const rows = data.otpremaci.map(o => {
+                const vals = Array.isArray(o.mjeseci) ? o.mjeseci : new Array(12).fill(0);
+                const cells = vals.map((v, idx) => {
+                    const n = num(v);
+                    const heat = maxCell > 0 ? (n / maxCell).toFixed(2) : 0;
+                    return n > 0
+                        ? `<td class="num${cur(idx)}" style="--h:${heat}">${n.toFixed(2)}</td>`
+                        : `<td class="num zero${cur(idx)}">-</td>`;
                 }).join('');
+                return `<tr>
+                    <td class="ot-first">${escapeHtml(o.otpremac || '-')}</td>
+                    ${cells}
+                    <td class="num ot-total">${num(o.ukupno).toFixed(2)} m³</td>
+                </tr>`;
+            }).join('');
 
-                // Add totals row with softer colors
-                const totalsRow = `
-                    <tr style="background: linear-gradient(to bottom, #dbeafe, #bfdbfe); color: #1e40af; font-weight: 700; border-top: 3px solid #60a5fa;">
-                        <td style="position: sticky; left: 0; background: #dbeafe; z-index: 10; border-right: 3px solid #60a5fa; padding: 12px; font-size: 12px;">
-                            📈 UKUPNO
-                        </td>
-                        ${monthTotals.map(total => {
-                            const val = (total != null && !isNaN(total)) ? total : 0;
-                            return `
-                            <td class="right" style="border: 1px solid #93c5fd; padding: 10px; font-size: 12px; font-weight: 700; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace; text-shadow: 0 0 1px rgba(255,255,255,0.8);">
-                                ${val > 0 ? val.toFixed(2) : '-'}
-                            </td>`;
-                        }).join('')}
-                        <td class="right" style="background: #bfdbfe; border: 2px solid #60a5fa; padding: 12px; font-size: 13px; font-weight: 900; color: #000000; font-family: 'Roboto Mono', ui-monospace, monospace;">
-                            ${(grandTotal != null && !isNaN(grandTotal)) ? grandTotal.toFixed(2) : '0.00'} m³
-                        </td>
-                    </tr>
-                `;
+            const totalsRow = `<tr class="sum-row">
+                <td class="ot-first">UKUPNO</td>
+                ${monthTotals.map((t, idx) => `<td class="num${cur(idx)}">${t > 0 ? t.toFixed(2) : '-'}</td>`).join('')}
+                <td class="num ot-total">${grandTotal.toFixed(2)} m³</td>
+            </tr>`;
 
-                document.getElementById('otpremaci-body').innerHTML = bodyHTML + totalsRow;
+            document.getElementById('otpremaci-body').innerHTML = rows + totalsRow;
 
-                if (!isActiveTab('otpremaci')) return;
-                document.getElementById('loading-screen').classList.add('hidden');
-                showTabContent('otpremaci-content');
+            if (!isActiveTab('otpremaci')) return;
+            document.getElementById('loading-screen').classList.add('hidden');
+            showTabContent('otpremaci-content');
         }
 
         // Helper function to get month name
@@ -5281,196 +5249,97 @@ try {
 
         // Load otpremaci daily data (for selected month)
         async function loadOtremaciDaily(selectedMonth) {
+            const body = document.getElementById('otpremaci-daily-body');
+            const head = document.getElementById('otpremaci-daily-header');
+            const emptyRow = (msg, err) => `<tr><td class="ot-empty${err ? ' err' : ''}">${msg}</td></tr>`;
             try {
                 const now = new Date();
                 const year = now.getFullYear();
-                const month = selectedMonth !== undefined ? parseInt(selectedMonth) : now.getMonth(); // 0-11
+                const month = selectedMonth !== undefined ? parseInt(selectedMonth) : now.getMonth();
 
-                // Set the selected month in the dropdown
                 const monthSelect = document.getElementById('otpremaci-month-select');
-                if (monthSelect) {
-                    monthSelect.value = month;
-                }
+                if (monthSelect) monthSelect.value = month;
 
                 const url = buildApiUrl('otpremaci-daily', { year, month });
                 const data = await fetchWithCache(url, `cache_otpremaci_daily_${year}_${month}`);
 
-
                 if (data.error) {
                     console.error('Error loading otpremaci daily:', data.error);
-                    document.getElementById('otpremaci-daily-body').innerHTML = `
-                        <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
-                            Greška: ${data.error}
-                        </td></tr>
-                    `;
+                    head.innerHTML = '';
+                    body.innerHTML = emptyRow('Greška: ' + escapeHtml(String(data.error)), true);
                     return;
                 }
-
                 if (!data.data || data.data.length === 0) {
-                    document.getElementById('otpremaci-daily-header').innerHTML = `
-                        <tr>
-                            <th style="background: #0891b2; color: white; padding: 12px;">
-                                📅 Otprema po danima - ${getMonthName(month)} ${year}
-                            </th>
-                        </tr>
-                    `;
-                    document.getElementById('otpremaci-daily-body').innerHTML = `
-                        <tr><td style="text-align: center; padding: 40px; color: #4b5563;">
-                            Nema podataka za tekući mjesec
-                        </td></tr>
-                    `;
+                    head.innerHTML = '';
+                    body.innerHTML = emptyRow(`Nema podataka za ${getMonthName(month)} ${year}`);
                     return;
                 }
 
-                // ✅ NOVO: Header sa kolonama ODJEL, OTPREMAČ, KUPAC + sortimenti
-                const headerHTML = `
-                    <tr>
-                        <th style="position: sticky; top: 0; left: 0; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); z-index: 30; border-right: 3px solid #164e63; min-width: 70px; box-shadow: 2px 0 5px rgba(0,0,0,0.1); font-size: 10px; padding: 8px 6px; font-weight: 800; color: white; text-transform: uppercase; letter-spacing: 0.5px;">
-                            🏢 Odjel
-                        </th>
-                        <th style="position: sticky; top: 0; min-width: 100px; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; font-weight: 800; border: 1px solid #164e63; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
-                            🚛 Otpremač
-                        </th>
-                        <th style="position: sticky; top: 0; min-width: 100px; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; font-weight: 800; border: 1px solid #164e63; font-size: 9px; padding: 8px 6px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.5px;">
-                            👤 Kupac
-                        </th>
-                        ${data.sortimentiNazivi.map(s => `
-                            <th style="position: sticky; top: 0; min-width: 52px; background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; font-weight: 700; border: 1px solid #164e63; font-size: 8.5px; padding: 8px 3px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase; line-height: 1.1;">
-                                ${s}
-                            </th>
-                        `).join('')}
-                    </tr>
-                `;
-                document.getElementById('otpremaci-daily-header').innerHTML = headerHTML;
+                const sortimenti = data.sortimentiNazivi;
+                const colSpan = 3 + sortimenti.length;
+                head.innerHTML = `<tr>
+                    <th class="ot-first">Odjel</th>
+                    <th>Otpremač</th>
+                    <th>Kupac</th>
+                    ${sortimenti.map(s => `<th class="num ${sortimentColClass(s)}">${escapeHtml(s)}</th>`).join('')}
+                </tr>`;
 
-                // ✅ NOVO: Grupiši podatke po datumu
-                const groupedByDate = {};
-                data.data.forEach(row => {
-                    if (!groupedByDate[row.datum]) {
-                        groupedByDate[row.datum] = [];
-                    }
-                    groupedByDate[row.datum].push(row);
-                });
+                const grouped = {};
+                data.data.forEach(row => (grouped[row.datum] = grouped[row.datum] || []).push(row));
 
-                // ✅ NOVO: Helper funkcija za dan u sedmici
-                function getDayName(dateStr) {
-                    const parts = dateStr.split('.');
-                    const day = parseInt(parts[0]);
-                    const month = parseInt(parts[1]) - 1;
-                    const yearPart = parts[2] ? parseInt(parts[2]) : year;
-                    const date = new Date(yearPart, month, day);
-                    const days = ['Nedjelja', 'Ponedjeljak', 'Utorak', 'Srijeda', 'Četvrtak', 'Petak', 'Subota'];
-                    return days[date.getDay()];
-                }
+                const DAYS = ['Nedjelja', 'Ponedjeljak', 'Utorak', 'Srijeda', 'Četvrtak', 'Petak', 'Subota'];
+                const dayName = datum => {
+                    const [d, m, y] = datum.split('.').map(Number);
+                    const dt = new Date(y || year, m - 1, d);
+                    return isNaN(dt) ? '' : DAYS[dt.getDay()];
+                };
+                const sortDate = datum => {
+                    const [d, m] = datum.split('.').map(Number);
+                    return m * 100 + d;
+                };
+                const cell = (v, extra) => v > 0
+                    ? `<td class="num ${extra || ''}">${v.toFixed(2)}</td>`
+                    : `<td class="num zero ${extra || ''}">-</td>`;
 
-                // ✅ NOVO: Build body sa grupisanjem po datumu
-                let bodyHTML = '';
-                const dates = Object.keys(groupedByDate).sort((a, b) => {
-                    const [dayA, monthA] = a.split('.').map(Number);
-                    const [dayB, monthB] = b.split('.').map(Number);
-                    return monthA !== monthB ? monthB - monthA : dayB - dayA;  // Obrnut redosled - od najnovijeg ka najstarijem
-                });
+                const grand = {};
+                sortimenti.forEach(s => grand[s] = 0);
+                let html = '';
 
-                dates.forEach(datum => {
-                    const rows = groupedByDate[datum];
-                    const dayName = getDayName(datum);
+                Object.keys(grouped).sort((a, b) => sortDate(b) - sortDate(a)).forEach(datum => {
+                    const rows = grouped[datum];
+                    const totals = {};
+                    sortimenti.forEach(s => totals[s] = 0);
 
-                    // ✅ Zaglavlje datuma (3 fiksne kolone: odjel, otpremač, kupac + sortimenti)
-                    const numSortimenti = data.sortimentiNazivi.length;
-                    bodyHTML += `
-                        <tr style="background: linear-gradient(135deg, #0e7490 0%, #155e75 50%, #164e63 100%); box-shadow: 0 2px 8px rgba(22, 78, 99, 0.4);">
-                            <td colspan="${3 + numSortimenti}" style="font-weight: 800; font-size: 14px; padding: 10px 12px; text-align: center; border-top: 3px solid #083344; color: white; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
-                                📅 ${datum} - ${dayName}
-                            </td>
-                        </tr>
-                    `;
-
-                    // ✅ Kalkuliši totale za ovaj dan
-                    const dailyTotals = {};
-                    data.sortimentiNazivi.forEach(s => dailyTotals[s] = 0);
+                    html += `<tr class="ot-day"><td colspan="${colSpan}">📅 ${escapeHtml(datum)} <span>${dayName(datum)}</span></td></tr>`;
                     rows.forEach(row => {
-                        data.sortimentiNazivi.forEach(s => {
-                            dailyTotals[s] += row.sortimenti[s] || 0;
+                        sortimenti.forEach(s => {
+                            const v = row.sortimenti[s] || 0;
+                            totals[s] += v;
+                            grand[s] += v;
                         });
+                        html += `<tr class="ot-row">
+                            <td class="ot-first">${escapeHtml(row.odjel || '-')}</td>
+                            <td>${escapeHtml(row.otpremac || '-')}</td>
+                            <td>${escapeHtml(row.kupac || '-')}</td>
+                            ${sortimenti.map(s => cell(row.sortimenti[s] || 0, sortimentColClass(s))).join('')}
+                        </tr>`;
                     });
-
-                    // ✅ Redovi za ovaj dan sa kolonama: Odjel, Otpremač, Kupac + sortimenti
-                    rows.forEach((row, idx) => {
-                        const rowBg = idx % 2 === 0 ? '#ecfeff' : '#ffffff';
-                        const hoverBg = '#cffafe';
-
-                        const sortimentiCells = data.sortimentiNazivi.map(sortiment => {
-                            const val = row.sortimenti[sortiment] || 0;
-                            const displayVal = val > 0 ? val.toFixed(2) : '-';
-                            const fontWeight = val > 0 ? 'font-weight: 600; color: #164e63;' : 'color: #d1d5db;';
-                            return `<td style="${fontWeight} border: 1px solid #a5f3fc; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 6px 3px; transition: all 0.15s;">${displayVal}</td>`;
-                        }).join('');
-
-                        bodyHTML += `
-                            <tr style="background: ${rowBg}; transition: all 0.15s ease;" onmouseover="this.style.background='${hoverBg}'; this.style.transform='scale(1.005)'; this.style.boxShadow='0 2px 8px rgba(8,145,178,0.15)';" onmouseout="this.style.background='${rowBg}'; this.style.transform='scale(1)'; this.style.boxShadow='none';">
-                                <td style="font-weight: 700; font-size: 10px; position: sticky; left: 0; background: ${rowBg}; z-index: 10; border-right: 2px solid #0891b2; padding: 6px 5px; border: 1px solid #a5f3fc; color: #164e63; box-shadow: 2px 0 3px rgba(0,0,0,0.05);">
-                                    ${row.odjel}
-                                </td>
-                                <td style="font-weight: 600; font-size: 10px; border: 1px solid #a5f3fc; padding: 6px 5px; color: #0e7490;">${row.otpremac}</td>
-                                <td style="border: 1px solid #a5f3fc; color: #155e75; font-weight: 600; font-size: 10px; padding: 6px 5px;">${row.kupac || '-'}</td>
-                                ${sortimentiCells}
-                            </tr>
-                        `;
-                    });
-
-                    // ✅ Rekapitulacija za ovaj dan
-                    const dailyTotalsCells = data.sortimentiNazivi.map(s => {
-                        const val = dailyTotals[s];
-                        const displayVal = val > 0 ? val.toFixed(2) : '-';
-                        return `<td style="border: 1px solid #22d3ee; font-family: 'Courier New', monospace; text-align: right; padding: 7px 3px; font-size: 10px; font-weight: 800; color: #164e63; background: #a5f3fc;">${displayVal}</td>`;
-                    }).join('');
-
-                    bodyHTML += `
-                        <tr style="background: linear-gradient(to bottom, #a5f3fc, #67e8f9); color: #0b1b2b; font-weight: 800;">
-                            <td style="position: sticky; left: 0; background: #a5f3fc; z-index: 10; border-right: 2px solid #0891b2; padding: 10px; font-size: 13px; font-weight: 800; color: #0b1b2b;">
-                                📊 UKUPNO ${datum}
-                            </td>
-                            <td style="background: #a5f3fc;"></td>
-                            <td style="background: #a5f3fc;"></td>
-                            ${dailyTotalsCells}
-                        </tr>
-                    `;
+                    html += `<tr class="ot-daytotal sum-row">
+                        <td class="ot-first">UKUPNO ${escapeHtml(datum)}</td><td></td><td></td>
+                        ${sortimenti.map(s => cell(totals[s], sortimentColClass(s))).join('')}
+                    </tr>`;
                 });
 
-                // ✅ Grand total za cijeli mjesec (na kraju)
-                const grandTotals = {};
-                data.sortimentiNazivi.forEach(s => grandTotals[s] = 0);
-                data.data.forEach(row => {
-                    data.sortimentiNazivi.forEach(s => {
-                        grandTotals[s] += row.sortimenti[s] || 0;
-                    });
-                });
-
-                const grandTotalsCells = data.sortimentiNazivi.map(s => {
-                    const val = grandTotals[s];
-                    const displayVal = val > 0 ? val.toFixed(2) : '-';
-                    return `<td style="border: 2px solid #164e63; font-family: 'Courier New', monospace; text-align: right; padding: 9px 3px; font-weight: 800; font-size: 11px; background: #bfdbfe; color: #1e3a8a;">${displayVal}</td>`;
-                }).join('');
-
-                bodyHTML += `
-                    <tr style="background: linear-gradient(135deg, #0e7490, #0891b2); color: white; font-weight: 700; border-top: 4px solid #164e63;">
-                        <td colspan="3" style="padding: 12px; font-size: 13px; font-weight: 900; letter-spacing: 1.5px; text-shadow: 0 1px 3px rgba(0,0,0,0.4); text-align: center;">
-                            📈 UKUPNO ${getMonthName(month).toUpperCase()}
-                        </td>
-                        ${grandTotalsCells}
-                    </tr>
-                `;
-
-                document.getElementById('otpremaci-daily-body').innerHTML = bodyHTML;
-
-
+                html += `<tr class="ot-monthtotal sum-row">
+                    <td class="ot-first" colspan="3">UKUPNO ${getMonthName(month).toUpperCase()}</td>
+                    ${sortimenti.map(s => cell(grand[s], sortimentColClass(s))).join('')}
+                </tr>`;
+                body.innerHTML = html;
+                if (typeof filterOtremaciDailyTable === 'function') filterOtremaciDailyTable();
             } catch (error) {
                 console.error('Error in loadOtremaciDaily:', error);
-                document.getElementById('otpremaci-daily-body').innerHTML = `
-                    <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
-                        Greška pri učitavanju: ${error.message}
-                    </td></tr>
-                `;
+                head.innerHTML = '';
+                body.innerHTML = emptyRow('Greška pri učitavanju: ' + escapeHtml(error.message), true);
             }
         }
 
@@ -6356,55 +6225,40 @@ try {
             const container = document.getElementById('otpremaci-sortimenti-otpremac-container');
 
             if (!data.radilista || data.radilista.length === 0) {
-                container.innerHTML = `<p style="text-align:center;padding:40px;color:#4b5563;">Nema podataka za ${MJESECI_NAZIVI[month]} ${year}.</p>`;
+                container.innerHTML = `<div class="ot-empty">Nema podataka za ${MJESECI_NAZIVI[month]} ${year}.</div>`;
                 return;
             }
 
             const sortNazivi = data.sortimentiNazivi;
-            let html = `<p style="color:#4b5563;font-size:13px;margin-bottom:12px;">📅 Prikazani podaci za: <strong>${MJESECI_NAZIVI[month]} ${year}</strong></p>`;
+            const cell = v => v > 0 ? `<td class="num">${v.toFixed(2)}</td>` : '<td class="num zero">-</td>';
+            const withClass = (s, j) => (td) => td.replace('<td class="', `<td class="${sortimentColClass(s)} `);
 
+            let html = '';
             data.radilista.forEach(radiliste => {
-                html += `<h4 style="background:#0891b2;color:white;padding:10px 16px;border-radius:6px;margin:20px 0 8px;">🏗️ ${radiliste.naziv}</h4>`;
-                html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">';
-                html += '<table class="monthly-table" style="min-width:900px;">';
-                html += '<thead><tr>';
-                html += `<th style="background:linear-gradient(135deg,#0891b2,#0e7490);color:white;padding:10px;position:sticky;left:0;z-index:10;min-width:160px;">🚛 Otpremač</th>`;
-                sortNazivi.forEach((s, i) => {
-                    const isTotal = i === 19;
-                    const bg = isTotal ? 'linear-gradient(135deg,#164e63,#0c4a6e)' : 'linear-gradient(135deg,#0891b2,#0e7490)';
-                    html += `<th style="background:${bg};color:white;padding:8px 4px;font-size:10px;min-width:65px;white-space:nowrap;">${s}</th>`;
-                });
-                html += '</tr></thead><tbody>';
+                const ukupno = Array(sortNazivi.length).fill(0);
+                const rows = radiliste.otpremaci.map(otpremac => `<tr>
+                    <td class="ot-first">${escapeHtml(otpremac.naziv)}</td>
+                    ${otpremac.sortimentiVrijednosti.map((val, j) => {
+                        ukupno[j] += val;
+                        return withClass(sortNazivi[j])(cell(val));
+                    }).join('')}
+                </tr>`).join('');
 
-                const radilisteUkupno = Array(20).fill(0);
-                radiliste.otpremaci.forEach((otpremac, idx) => {
-                    const bg = idx % 2 === 0 ? '#e0f2fe' : '#ffffff';
-                    html += `<tr style="background:${bg};" onmouseover="this.style.background='#bae6fd'" onmouseout="this.style.background='${bg}'">`;
-                    html += `<td style="font-weight:700;font-size:12px;border:1px solid #bae6fd;padding:9px;color:#155e75;position:sticky;left:0;background:${bg};">${otpremac.naziv}</td>`;
-                    otpremac.sortimentiVrijednosti.forEach((val, j) => {
-                        radilisteUkupno[j] += val;
-                        const disp = val > 0 ? val.toFixed(2) : '-';
-                        const isTotal = j === 19;
-                        const cellStyle = isTotal
-                            ? 'background:#cffafe;border:2px solid #06b6d4;font-weight:900;font-size:12px;color:#164e63;'
-                            : (val > 0 ? 'font-weight:700;color:#155e75;' : 'color:#d1d5db;');
-                        html += `<td style="${cellStyle}border:1px solid #bae6fd;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:7px;">${disp}</td>`;
-                    });
-                    html += '</tr>';
-                });
-
-                // UKUPNO red za radilište
-                html += `<tr style="background:linear-gradient(135deg,#0891b2,#0e7490);">`;
-                html += `<td style="font-weight:900;color:white;padding:10px;border:1px solid #0e7490;position:sticky;left:0;background:#0891b2;">UKUPNO</td>`;
-                radilisteUkupno.forEach((val, j) => {
-                    const disp = val > 0 ? val.toFixed(2) : '-';
-                    const isTotal = j === 19;
-                    const cellStyle = isTotal ? 'background:#164e63;font-size:13px;font-weight:900;' : 'font-weight:700;';
-                    html += `<td style="${cellStyle}color:white;border:1px solid #0e7490;font-family:'Courier New',monospace;font-size:11px;text-align:right;padding:8px;">${disp}</td>`;
-                });
-                html += '</tr>';
-
-                html += '</tbody></table></div>';
+                html += `<section class="ot-rad">
+                    <h3 class="ot-rad-title">🏗️ ${escapeHtml(radiliste.naziv)}</h3>
+                    <div class="ot-scroll">
+                        <table class="ot-table">
+                            <thead><tr>
+                                <th class="ot-first">Otpremač</th>
+                                ${sortNazivi.map(s => `<th class="num ${sortimentColClass(s)}">${escapeHtml(s)}</th>`).join('')}
+                            </tr></thead>
+                            <tbody>${rows}
+                                <tr class="sum-row"><td class="ot-first">UKUPNO</td>
+                                ${ukupno.map((v, j) => withClass(sortNazivi[j])(cell(v))).join('')}</tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>`;
             });
 
             container.innerHTML = html;
@@ -6412,125 +6266,77 @@ try {
 
         // Load otpremaci by radiliste
         async function loadOtremaciByRadiliste() {
+            const body = document.getElementById('otpremaci-radilista-body');
+            const head = document.getElementById('otpremaci-radilista-header');
+            const emptyRow = (msg, err) => `<tr><td class="ot-empty${err ? ' err' : ''}">${msg}</td></tr>`;
             try {
                 const year = new Date().getFullYear();
                 const url = buildApiUrl('otpremaci-by-radiliste', { year });
-
                 const data = await fetchWithCache(url, `cache_otpremaci_radiliste_${year}`);
-
 
                 if (data.error) {
                     console.error('Error loading otpremaci by radiliste:', data.error);
-                    document.getElementById('otpremaci-radilista-body').innerHTML = `
-                        <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
-                            Greška: ${data.error}
-                        </td></tr>
-                    `;
+                    head.innerHTML = '';
+                    body.innerHTML = emptyRow('Greška: ' + escapeHtml(String(data.error)), true);
                     return;
                 }
-
                 if (!data.radilista || data.radilista.length === 0) {
-                    document.getElementById('otpremaci-radilista-header').innerHTML = `
-                        <tr><th style="background: #0891b2; color: white; padding: 12px;">
-                            🏗️ Prikaz po radilištima - ${year}
-                        </th></tr>
-                    `;
-                    document.getElementById('otpremaci-radilista-body').innerHTML = `
-                        <tr><td style="text-align: center; padding: 40px; color: #4b5563;">
-                            Nema podataka o radilištima
-                        </td></tr>
-                    `;
+                    head.innerHTML = '';
+                    body.innerHTML = emptyRow('Nema podataka o radilištima');
                     return;
                 }
 
-                // Render mjesečnu tabelu
                 const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+                const curMonth = new Date().getMonth();
+                const cur = idx => idx === curMonth ? ' cur' : '';
+                const cell = (v, extra) => v > 0
+                    ? `<td class="num ${extra || ''}">${v.toFixed(2)}</td>`
+                    : `<td class="num zero ${extra || ''}">-</td>`;
 
-                let headerHTML = `
-                    <tr>
-                        <th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
-                            🏗️ Radilište
-                        </th>
-                `;
-                mjeseci.forEach(mj => {
-                    headerHTML += `<th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 12px;">${mj}</th>`;
-                });
-                headerHTML += `
-                    <th style="background: linear-gradient(135deg, #155e75, #164e63); color: white; padding: 12px; font-weight: 900; position: sticky; top: 0; z-index: 20;">
-                        UKUPNO
-                    </th>
-                </tr>
-                `;
-                document.getElementById('otpremaci-radilista-header').innerHTML = headerHTML;
+                head.innerHTML = `<tr>
+                    <th class="ot-first">Radilište</th>
+                    ${mjeseci.map((m, i) => `<th class="num${cur(i)}">${m}</th>`).join('')}
+                    <th class="num ot-total">Ukupno</th>
+                </tr>`;
 
-                let bodyHTML = '';
-                data.radilista.forEach((radiliste, idx) => {
-                    const rowBg = idx % 2 === 0 ? '#cffafe' : '#ffffff';
-                    const hoverBg = '#a5f3fc';
+                const monthSum = new Array(12).fill(0);
+                let allSum = 0;
+                let rows = data.radilista.map(r => {
+                    r.mjeseci.forEach((v, i) => monthSum[i] += v || 0);
+                    allSum += r.ukupno || 0;
+                    return `<tr>
+                        <td class="ot-first">${escapeHtml(r.naziv)}</td>
+                        ${r.mjeseci.map((v, i) => cell(v || 0, cur(i))).join('')}
+                        <td class="num ot-total">${(r.ukupno || 0).toFixed(2)}</td>
+                    </tr>`;
+                }).join('');
+                rows += `<tr class="sum-row"><td class="ot-first">UKUPNO</td>
+                    ${monthSum.map((v, i) => cell(v, cur(i))).join('')}
+                    <td class="num ot-total">${allSum.toFixed(2)}</td></tr>`;
+                body.innerHTML = rows;
 
-                    const mjeseciCells = radiliste.mjeseci.map(val => {
-                        const displayVal = val > 0 ? val.toFixed(2) : '-';
-                        const fontWeight = val > 0 ? 'font-weight: 700; color: #155e75;' : 'color: #d1d5db;';
-                        return `<td style="${fontWeight} border: 1px solid #a5f3fc; font-family: 'Courier New', monospace; font-size: 11px; text-align: right; padding: 8px;">${displayVal}</td>`;
-                    }).join('');
-
-                    bodyHTML += `
-                        <tr style="background: ${rowBg}; transition: all 0.15s ease;" onmouseover="this.style.background='${hoverBg}';" onmouseout="this.style.background='${rowBg}';">
-                            <td style="font-weight: 700; font-size: 12px; border: 1px solid #a5f3fc; padding: 10px; color: #155e75;">
-                                ${radiliste.naziv}
-                            </td>
-                            ${mjeseciCells}
-                            <td style="background: #bfdbfe; border: 2px solid #3b82f6; font-family: 'Courier New', monospace; text-align: right; padding: 10px; font-weight: 900; font-size: 13px; color: #1e3a8a;">
-                                ${radiliste.ukupno.toFixed(2)}
-                            </td>
-                        </tr>
-                    `;
-                });
-                document.getElementById('otpremaci-radilista-body').innerHTML = bodyHTML;
-
-                // Render godišnju rekapitulaciju po sortimentima
-                let recapHeaderHTML = `
-                    <tr>
-                        <th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20;">
-                            🏗️ Radilište
-                        </th>
-                `;
-                data.sortimentiNazivi.forEach(s => {
-                    recapHeaderHTML += `<th style="background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 10px;">${s}</th>`;
-                });
-                recapHeaderHTML += `</tr>`;
-                document.getElementById('otpremaci-radilista-recap-header').innerHTML = recapHeaderHTML;
-
-                let recapBodyHTML = '';
-                data.radilista.forEach((radiliste, idx) => {
-                    const rowBg = idx % 2 === 0 ? '#cffafe' : '#ffffff';
-
-                    const sortimentiCells = data.sortimentiNazivi.map(s => {
-                        const val = radiliste.sortimentiUkupno[s] || 0;
-                        const displayVal = val > 0 ? val.toFixed(2) : '-';
-                        const fontWeight = val > 0 ? 'font-weight: 700; color: #155e75;' : 'color: #d1d5db;';
-                        return `<td style="${fontWeight} border: 1px solid #a5f3fc; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 8px;">${displayVal}</td>`;
-                    }).join('');
-
-                    recapBodyHTML += `
-                        <tr style="background: ${rowBg};">
-                            <td style="font-weight: 700; font-size: 12px; border: 1px solid #a5f3fc; padding: 10px; color: #155e75;">
-                                ${radiliste.naziv}
-                            </td>
-                            ${sortimentiCells}
-                        </tr>
-                    `;
-                });
-                document.getElementById('otpremaci-radilista-recap-body').innerHTML = recapBodyHTML;
-
-
+                const sort = data.sortimentiNazivi;
+                document.getElementById('otpremaci-radilista-recap-header').innerHTML = `<tr>
+                    <th class="ot-first">Radilište</th>
+                    ${sort.map(s => `<th class="num ${sortimentColClass(s)}">${escapeHtml(s)}</th>`).join('')}
+                </tr>`;
+                const sortSum = {};
+                sort.forEach(s => sortSum[s] = 0);
+                let recap = data.radilista.map(r => `<tr>
+                    <td class="ot-first">${escapeHtml(r.naziv)}</td>
+                    ${sort.map(s => {
+                        const v = r.sortimentiUkupno[s] || 0;
+                        sortSum[s] += v;
+                        return cell(v, sortimentColClass(s));
+                    }).join('')}
+                </tr>`).join('');
+                recap += `<tr class="sum-row"><td class="ot-first">UKUPNO</td>
+                    ${sort.map(s => cell(sortSum[s], sortimentColClass(s))).join('')}</tr>`;
+                document.getElementById('otpremaci-radilista-recap-body').innerHTML = recap;
             } catch (error) {
                 console.error('Error in loadOtremaciByRadiliste:', error);
-                document.getElementById('otpremaci-radilista-body').innerHTML = `
-                    <tr><td colspan="100" style="text-align: center; padding: 40px; color: #dc2626;">
-                        Greška pri učitavanju: ${error.message}
-                    </td></tr>
-                `;
+                head.innerHTML = '';
+                body.innerHTML = emptyRow('Greška pri učitavanju: ' + escapeHtml(error.message), true);
             }
         }
 
@@ -8167,29 +7973,27 @@ try {
 
         // Load otpreme po kupcima u tekućem mjesecu
         async function loadOtremaciPoKupcima() {
-
             try {
                 const year = new Date().getFullYear();
                 const url = buildApiUrl('kupci', { year });
                 const data = await fetchWithCache(url, 'cache_kupci_' + year);
 
-
                 if (data.error || !data.mjesecni || !data.sortimentiNazivi) {
                     throw new Error(data.error || 'Nema podataka');
                 }
 
-                // Update dynamic month name in tab and title
                 const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
                 const currentMjesec = mjeseci[new Date().getMonth()];
                 document.getElementById('current-month-name').textContent = currentMjesec;
                 document.getElementById('otpremaci-po-kupcima-month-title').textContent = currentMjesec + ' ' + year;
 
-                // Renderuj expert tabelu
                 renderOtremaciPoKupcimaExpertTable(data.mjesecni, data.sortimentiNazivi);
-
             } catch (error) {
                 console.error('Error loading otpremaci po kupcima:', error);
-                document.getElementById('otpremaci-po-kupcima-body').innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #dc2626;">Greška pri učitavanju: ' + error.message + '</td></tr>';
+                document.getElementById('otpremaci-po-kupcima-header').innerHTML = '';
+                document.getElementById('otpremaci-po-kupcima-footer').innerHTML = '';
+                document.getElementById('otpremaci-po-kupcima-body').innerHTML =
+                    `<tr><td class="ot-empty err">Greška pri učitavanju: ${escapeHtml(error.message)}</td></tr>`;
             }
         }
 
@@ -8199,83 +8003,52 @@ try {
             const bodyElem = document.getElementById('otpremaci-po-kupcima-body');
             const footerElem = document.getElementById('otpremaci-po-kupcima-footer');
 
-
-            // Filtruj samo trenutni mjesec
-            const currentDate = new Date();
             const mjeseci = ["Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"];
-            const currentMjesec = mjeseci[currentDate.getMonth()];
+            const currentMjesec = mjeseci[new Date().getMonth()];
+            const filteredData = mjesecni.filter(red => red.mjesec === currentMjesec);
 
-
-            let filteredData = mjesecni.filter(red => red.mjesec === currentMjesec);
-
-
-            if (!filteredData || filteredData.length === 0) {
-                // DEBUG: Show which months are available
-                const availableMonths = [...new Set(mjesecni.map(r => r.mjesec))].join(', ');
+            if (filteredData.length === 0) {
                 headerElem.innerHTML = '';
-                bodyElem.innerHTML = `<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #4b5563;">
-                    <p>Nema podataka za tekući mjesec: <strong>${currentMjesec}</strong></p>
-                    <p style="margin-top: 10px; font-size: 14px;">Dostupni mjeseci u bazi: ${availableMonths || 'Nema podataka'}</p>
-                </td></tr>`;
                 footerElem.innerHTML = '';
+                bodyElem.innerHTML = `<tr><td class="ot-empty">Nema podataka za tekući mjesec: <strong>${currentMjesec}</strong></td></tr>`;
                 return;
             }
 
-            // SORTIRANJE: Od najvećeg ka najmanjem po ukupnoj količini
             filteredData.sort((a, b) => (b.ukupno || 0) - (a.ukupno || 0));
+            const cols = sortimentiNazivi.filter(s => s !== 'SVEUKUPNO');
+            const cell = (v, extra) => v > 0
+                ? `<td class="num ${extra}">${v.toFixed(2)}</td>`
+                : `<td class="num zero ${extra}">-</td>`;
 
-            // HEADER sa svim sortimentima
-            let headerHtml = '<tr><th>Kupac</th>';
-            sortimentiNazivi.forEach(sortiment => {
-                if (sortiment !== 'SVEUKUPNO') {
-                    headerHtml += `<th style="text-align: right;">${sortiment}</th>`;
-                }
-            });
-            headerHtml += '<th style="text-align: right;">UKUPNO (m³)</th></tr>';
-            headerElem.innerHTML = headerHtml;
+            headerElem.innerHTML = `<tr>
+                <th class="ot-first">Kupac</th>
+                ${cols.map(s => `<th class="num ${sortimentColClass(s)}">${escapeHtml(s)}</th>`).join('')}
+                <th class="num ot-total">Ukupno (m³)</th>
+            </tr>`;
 
-            // BODY redovi + računanje rekapitulacije
-            let bodyHtml = '';
             const totals = {};
+            cols.forEach(s => totals[s] = 0);
             let grandTotal = 0;
 
-            // Inicijalizuj sve sortimente na 0
-            sortimentiNazivi.forEach(sortiment => {
-                totals[sortiment] = 0;
-            });
-
-            filteredData.forEach((red, index) => {
-                bodyHtml += `<tr data-kupac="${escapeHtml((red.kupac || '').toLowerCase())}">`;
-                bodyHtml += `<td>${red.kupac || '-'}</td>`;
-
-                sortimentiNazivi.forEach(sortiment => {
-                    if (sortiment !== 'SVEUKUPNO') {
-                        const kolicina = red.sortimenti[sortiment] || 0;
-                        totals[sortiment] += kolicina;
-                        const display = kolicina > 0 ? kolicina.toFixed(2) : '-';
-                        bodyHtml += `<td class="sortiment-value">${display}</td>`;
-                    }
-                });
-
+            bodyElem.innerHTML = filteredData.map(red => {
                 const ukupno = red.ukupno || 0;
                 grandTotal += ukupno;
-                bodyHtml += `<td>${ukupno.toFixed(2)}</td>`;
-                bodyHtml += '</tr>';
-            });
-            bodyElem.innerHTML = bodyHtml;
+                return `<tr data-kupac="${escapeHtml((red.kupac || '').toLowerCase())}">
+                    <td class="ot-first">${escapeHtml(red.kupac || '-')}</td>
+                    ${cols.map(s => {
+                        const v = (red.sortimenti && red.sortimenti[s]) || 0;
+                        totals[s] += v;
+                        return cell(v, sortimentColClass(s));
+                    }).join('')}
+                    <td class="num ot-total">${ukupno.toFixed(2)}</td>
+                </tr>`;
+            }).join('');
 
-            // FOOTER - Rekapitulacija mjeseca
-            let footerHtml = '<tr><td>📊 REKAPITULACIJA ' + currentMjesec.toUpperCase() + '</td>';
-            sortimentiNazivi.forEach(sortiment => {
-                if (sortiment !== 'SVEUKUPNO') {
-                    const total = totals[sortiment] || 0;
-                    const display = total > 0 ? total.toFixed(2) : '-';
-                    footerHtml += `<td style="text-align: right;">${display}</td>`;
-                }
-            });
-            footerHtml += `<td>${grandTotal.toFixed(2)}</td>`;
-            footerHtml += '</tr>';
-            footerElem.innerHTML = footerHtml;
+            footerElem.innerHTML = `<tr class="sum-row">
+                <td class="ot-first">REKAPITULACIJA ${currentMjesec.toUpperCase()}</td>
+                ${cols.map(s => cell(totals[s], sortimentColClass(s))).join('')}
+                <td class="num ot-total">${grandTotal.toFixed(2)}</td>
+            </tr>`;
         }
 
         // Filter funkcija za otpreme po kupcima

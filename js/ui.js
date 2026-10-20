@@ -384,7 +384,7 @@
             // Update submenu buttons
             const submenuTabs = document.querySelectorAll('#otpremaci-content .submenu-tab');
             submenuTabs.forEach(tab => tab.classList.remove('active'));
-            if (event && event.target) event.target.classList.add('active');
+            if (event && event.currentTarget) event.currentTarget.classList.add('active');
 
             // Hide all submenu content
             document.getElementById('otpremaci-monthly-view').classList.add('hidden');
@@ -572,18 +572,12 @@
 
         // Filter otpremaci table
         function filterOtremaciTable() {
-            const input = document.getElementById('otpremaci-search');
-            const filter = input.value.toUpperCase();
-            const table = document.getElementById('otpremaci-table');
-            const tr = table.getElementsByTagName('tr');
-
-            for (let i = 1; i < tr.length; i++) {
-                const td = tr[i].getElementsByTagName('td')[0];
-                if (td) {
-                    const txtValue = td.textContent || td.innerText;
-                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
-                }
-            }
+            const filter = document.getElementById('otpremaci-search').value.toUpperCase();
+            document.querySelectorAll('#otpremaci-body tr').forEach(tr => {
+                if (tr.classList.contains('sum-row')) return;
+                const td = tr.querySelector('td');
+                tr.style.display = td && td.textContent.toUpperCase().includes(filter) ? '' : 'none';
+            });
         }
 
         // Filter primaci daily table
@@ -612,26 +606,33 @@
 
         // Filter otpremaci daily table
         function filterOtremaciDailyTable() {
-            const input = document.getElementById('otpremaci-daily-search');
-            const filter = input.value.toUpperCase();
-            const table = document.getElementById('otpremaci-daily-table');
-            const tbody = table.getElementsByTagName('tbody')[0];
-            if (!tbody) return;
-            const tr = tbody.getElementsByTagName('tr');
-
-            for (let i = 0; i < tr.length - 1; i++) { // -1 to exclude UKUPNO row
-                const tds = tr[i].getElementsByTagName('td');
-                let found = false;
-                // Search in datum, odjel, otpremac, and kupac columns
-                for (let j = 0; j < 4 && j < tds.length; j++) {
-                    const txtValue = tds[j].textContent || tds[j].innerText;
-                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
-                        found = true;
-                        break;
+            const filter = document.getElementById('otpremaci-daily-search').value.toUpperCase();
+            const rows = Array.from(document.querySelectorAll('#otpremaci-daily-body tr'));
+            // Dani su grupe: .ot-day (zaglavlje) → .ot-row* → .ot-daytotal; grupa je vidljiva ako ima red koji odgovara
+            let group = [];
+            const flush = () => {
+                if (!group.length) return;
+                const data = group.filter(r => r.classList.contains('ot-row'));
+                const anyMatch = data.some(r => r.textContent.toUpperCase().includes(filter));
+                group.forEach(r => {
+                    if (r.classList.contains('ot-row')) {
+                        r.style.display = !filter || r.textContent.toUpperCase().includes(filter) ? '' : 'none';
+                    } else {
+                        r.style.display = !filter || anyMatch ? '' : 'none';
                     }
+                });
+                group = [];
+            };
+            rows.forEach(r => {
+                if (r.classList.contains('ot-day')) flush();
+                if (r.classList.contains('ot-day') || r.classList.contains('ot-row') || r.classList.contains('ot-daytotal')) {
+                    group.push(r);
+                } else {
+                    flush();
+                    r.style.display = '';
                 }
-                tr[i].style.display = found ? '' : 'none';
-            }
+            });
+            flush();
         }
 
         // Filter primac personal table

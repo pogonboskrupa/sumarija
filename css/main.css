@@ -4357,3 +4357,59 @@ body.oa-open { overflow: hidden; }
     .iz-detalj-grid { grid-template-columns: minmax(0, 1fr); }
     .iz-scroll { max-height: 62vh; }
 }
+
+/* ===== OTPREMA tab (ot-*) ===== */
+#otpremaci-content .submenu { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+#otpremaci-content .submenu-tab { white-space: nowrap; flex: 0 0 auto; }
+.ot-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
+.ot-toolbar label { font-size: 13px; font-weight: 600; color: #475569; }
+.ot-toolbar .month-select { width: auto; min-width: 140px; }
+.ot-toolbar .search-input { flex: 1 1 240px; min-width: 0; max-width: 420px; margin: 0; }
+.ot-scroll { overflow: auto; max-height: 72vh; -webkit-overflow-scrolling: touch; border: 1px solid #e5e7eb; border-radius: 10px; }
+.ot-sub { margin: 22px 0 10px; font-size: 16px; color: #1e3a5f; }
+.ot-empty { text-align: center; padding: 36px 16px !important; color: #4b5563; }
+.ot-empty.err { color: #b91c1c; }
+
+.ot-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; margin: 0; min-width: 0; }
+.ot-table th, .ot-table td { padding: 8px 10px; border-bottom: 1px solid #eef2f7; white-space: nowrap; background: #fff; }
+.ot-table thead th { position: sticky; top: 0; z-index: 4; background: #1e3a5f; color: #fff; font-weight: 700; font-size: 12px; text-align: left; border-bottom: 2px solid #14283f; }
+.ot-table thead th.num { text-align: right; }
+.ot-table td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: 'Roboto Mono', ui-monospace, monospace; font-size: 12.5px; }
+.ot-table td.zero { color: #cbd5e1; }
+.ot-table tbody tr:hover td { background: #f1f5f9; }
+.ot-table .ot-first { position: sticky; left: 0; z-index: 2; font-weight: 600; border-right: 2px solid #cbd5e1; }
+.ot-table thead th.ot-first { z-index: 6; }
+.ot-table .ot-total { font-weight: 800; background: #eff6ff; color: #1e3a8a; }
+.ot-table thead th.ot-total { background: #14283f; color: #fff; }
+.ot-table .cur { box-shadow: inset 0 0 0 9999px rgba(250, 204, 21, .12); }
+.ot-table thead th.cur { background: #b45309; box-shadow: none; }
+.ot-table td.num[style*="--h"] { background-image: linear-gradient(rgba(37, 99, 235, calc(var(--h) * .28)), rgba(37, 99, 235, calc(var(--h) * .28))); font-weight: 600; color: #0f172a; }
+.ot-table tr.sum-row td { background: #1e3a5f !important; color: #fff !important; font-weight: 800 !important; border-top: 2px solid #14283f; }
+.ot-table tr.sum-row td.zero { color: #94a3b8 !important; }
+.ot-table tfoot td { position: sticky; bottom: 0; z-index: 3; }
+
+/* sortimenti — grupne boje zaglavlja */
+.ot-table thead th.col-cetinari { background: #166534; }
+.ot-table thead th.col-liscari { background: #92400e; }
+.ot-table thead th.col-sveukupno { background: #14283f; }
+.ot-table thead th.col-cetinari.is-subtotal, .ot-table thead th.col-cetinari.is-total { background: #14532d; color: #fff; }
+.ot-table thead th.col-liscari.is-subtotal, .ot-table thead th.col-liscari.is-total { background: #78350f; color: #fff; }
+.ot-table td.is-subtotal { background: #f8fafc; font-weight: 700; }
+.ot-table td.is-total, .ot-table td.col-sveukupno { background: #eff6ff; font-weight: 800; }
+
+/* po danima */
+.ot-table tr.ot-day td { position: sticky; left: 0; background: #0e7490; color: #fff; font-weight: 800; font-size: 13.5px; padding: 9px 12px; letter-spacing: .02em; }
+.ot-table tr.ot-day td span { font-weight: 500; opacity: .85; margin-left: 8px; }
+.ot-table tr.ot-daytotal td { background: #e0f2fe !important; color: #0c4a6e !important; border-top: 1px solid #7dd3fc; }
+.ot-table tr.ot-monthtotal td { font-size: 13.5px; }
+
+/* sortimenti po otpremačima */
+.ot-rad { margin-bottom: 22px; }
+.ot-rad-title { margin: 0 0 8px; font-size: 15px; font-weight: 800; color: #14532d; padding: 8px 12px; border-left: 5px solid #059669; background: #ecfdf5; border-radius: 6px; }
+
+@media (max-width: 640px) {
+    .ot-table { font-size: 12px; }
+    .ot-table th, .ot-table td { padding: 7px 8px; }
+    .ot-scroll { max-height: 66vh; }
+    .ot-toolbar .search-input { max-width: none; flex-basis: 100%; }
+}

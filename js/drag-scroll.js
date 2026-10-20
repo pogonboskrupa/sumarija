@@ -18,6 +18,7 @@
         '.oa-scroll',
         '.mjesecna-scroll',
         '.oc-scroll',
+        '.ot-scroll',
         '.iz-scroll',
         'div[style*="overflow-x"]'
     ].join(', ');
