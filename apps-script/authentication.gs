@@ -45,33 +45,80 @@ function verifyUser(username, password) {
   return null;
 }
 
-// Upiši vrijeme zadnje prijave u list Korisnici (kolona "ZADNJI LOGIN").
-// Kolona se traži po zaglavlju; ako ne postoji, dodaje se iza zadnje popunjene kolone,
-// pa se nikad ne prepisuje postojeći sadržaj. Greška ovdje NE smije srušiti prijavu.
-// Upis se preskače ako je zadnji upis mlađi od 5 min (auto-prijava pri svakom otvaranju
-// aplikacije bi inače pisala u sheet stalno).
-function zabiljeziLogin(usersSheet, headerRow, rowValues, sheetRowNumber) {
+// Evidencija prijava — list "prijava" u SUMARIJA_KORISNICI:
+//   KORISNICKO_IME | IME | TIP | login 1 | login 2
+// Jedan red po korisniku. "login 1" = zadnja prijava (datum + vrijeme), "login 2" = prethodna
+// (prikazuje se samo datum). Pri novoj prijavi prethodni "login 1" prelazi u "login 2".
+// Redovi se drže sortirani po "login 1" opadajuće (zadnje prijavljeni na vrhu).
+// Upis se preskače ako je zadnja prijava mlađa od 5 min (auto-prijava pri svakom
+// otvaranju aplikacije bi inače stalno pomjerala "login 2"). Greška ovdje NE smije
+// srušiti prijavu.
+const PRIJAVA_SHEET = 'prijava';
+const PRIJAVA_FORMAT_LOGIN1 = 'd.M.yyyy. HH:mm:ss';
+const PRIJAVA_FORMAT_LOGIN2 = 'd.M.yyyy.';
+
+function zabiljeziLogin(ss, username, fullName, tipNaziv) {
+  const lock = LockService.getScriptLock();
+  let imaLock = false;
   try {
-    const NAZIV = 'ZADNJI LOGIN';
-    let col = -1;
-    for (let c = 0; c < headerRow.length; c++) {
-      if (String(headerRow[c] || '').trim().toUpperCase() === NAZIV) { col = c; break; }
-    }
-    if (col === -1) {
-      col = headerRow.length; // iza zadnje kolone koja je u opsegu podataka
-      usersSheet.getRange(1, col + 1).setValue(NAZIV).setFontWeight('bold');
+    imaLock = lock.tryLock(3000);
+    if (!imaLock) return; // drugi upis u toku — preskoči, bolje nego blokirati prijavu
+
+    let sheet = ss.getSheetByName(PRIJAVA_SHEET);
+    if (!sheet) {
+      sheet = ss.insertSheet(PRIJAVA_SHEET);
+      sheet.appendRow(['KORISNICKO_IME', 'IME', 'TIP', 'login 1', 'login 2']);
+      sheet.getRange(1, 1, 1, 5).setBackground('#14532d').setFontColor('white').setFontWeight('bold');
+      sheet.setFrozenRows(1);
     }
 
-    const prethodni = rowValues[col];
     const sada = new Date();
-    if (prethodni instanceof Date && (sada - prethodni) < 5 * 60 * 1000) return;
+    const zadnji = sheet.getLastRow();
+    const redovi = zadnji >= 2 ? sheet.getRange(2, 1, zadnji - 1, 5).getValues() : [];
+    const idx = redovi.findIndex(function(r) { return String(r[0]) === String(username); });
 
-    usersSheet.getRange(sheetRowNumber, col + 1)
-      .setValue(sada)
-      .setNumberFormat('dd.MM.yyyy HH:mm:ss');
+    let red;
+    if (idx === -1) {
+      sheet.appendRow([username, fullName, tipNaziv, sada, '']);
+      red = sheet.getLastRow();
+    } else {
+      red = idx + 2;
+      const prethodni = redovi[idx][3];
+      if (prethodni instanceof Date && (sada - prethodni) < 5 * 60 * 1000) return;
+      sheet.getRange(red, 2, 1, 2).setValues([[fullName, tipNaziv]]);  // ime/tip prate šifrarnik
+      sheet.getRange(red, 4, 1, 2).setValues([[sada, prethodni || '']]);
+    }
+    sheet.getRange(red, 4).setNumberFormat(PRIJAVA_FORMAT_LOGIN1);
+    sheet.getRange(red, 5).setNumberFormat(PRIJAVA_FORMAT_LOGIN2);
+
+    const n = sheet.getLastRow();
+    if (n > 2) sheet.getRange(2, 1, n - 1, 5).sort({ column: 4, ascending: false });
+    oboji_prijave_(sheet, n);
   } catch (e) {
     Logger.log('zabiljeziLogin greška (ignorisano): ' + e);
+  } finally {
+    if (imaLock) lock.releaseLock();
   }
+}
+
+// Boja reda prema svježini zadnje prijave: danas zeleno, jučer žuto, prekjučer narandžasto,
+// starije bez boje (kao u postojećoj tabeli)
+function oboji_prijave_(sheet, n) {
+  if (n < 2) return;
+  const TZ = 'Europe/Sarajevo';
+  const dan = function(d) {
+    const p = Utilities.formatDate(d, TZ, 'yyyy-MM-dd').split('-');
+    return Date.UTC(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2])) / 86400000;
+  };
+  const danas = dan(new Date());
+  const boje = ['#b7f0c3', '#fff59d', '#ffcc80'];
+  const login1 = sheet.getRange(2, 4, n - 1, 1).getValues();
+  const pozadine = login1.map(function(r) {
+    const razlika = r[0] instanceof Date ? danas - dan(r[0]) : 99;
+    const boja = razlika >= 0 && razlika < boje.length ? boje[razlika] : null;
+    return [boja, boja, boja, boja, boja];
+  });
+  sheet.getRange(2, 1, n - 1, 5).setBackgrounds(pozadine);
 }
 
 // Login handler
@@ -94,12 +141,13 @@ function handleLogin(username, password, zabiljezi) {
     const inputPassword = String(password);
 
     if (String(data[i][0]) === String(username) && storedPassword === inputPassword) {
-      if (zabiljezi) zabiljeziLogin(usersSheet, data[0], data[i], i + 1);
       // trim/lowercase — bez ovoga bilo koji razmak ili varijanta velikih
       // slova u koloni D šifrarnika (npr. "Primac " ili "primač") ne pogađa
       // strogo poređenje na frontendu i korisnik tiho dobije PUN admin prikaz
       // (vidi js/auth.js showApp/loadData, else grana)
       const tip = String(data[i][3] || '').trim().toLowerCase(); // primac ili otpremac
+      const userTypeNaziv = tip === 'primac' ? 'Primač' : (tip === 'otpremac' ? 'Otpremač' : 'Korisnik');
+      if (zabiljezi) zabiljeziLogin(ss, data[i][0], data[i][2], userTypeNaziv);
 
       return createJsonResponse({
         success: true,
@@ -107,7 +155,7 @@ function handleLogin(username, password, zabiljezi) {
         fullName: data[i][2], // ime_prezime je već kompletno ime
         role: 'user', // svi su radnici
         type: tip || 'Korisnik',
-        userType: tip === 'primac' ? 'Primač' : (tip === 'otpremac' ? 'Otpremač' : 'Korisnik')
+        userType: userTypeNaziv
       }, true);
     }
   }
