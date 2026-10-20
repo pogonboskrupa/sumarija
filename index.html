@@ -599,11 +599,14 @@
 
         <!-- PRIMACI CONTENT (Prikaz po primačima) -->
         <div id="primaci-content" class="container hidden">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                <h2>👷 SJEČA</h2>
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <button onclick="printActiveView('primaci-content', 'Sječa', '#1e3a5f')" style="background: #1e3a5f; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;">🖨️ ŠTAMPAJ</button>
-                    <button onclick="exportVisibleTable('primaci-content', 'Sjeca')" style="background: #1e3a5f; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>👷 Sječa</h1>
+                    <p>Sječa po danima, primačima, radilištima, izvođačima i sortimentima</p>
+                </div>
+                <div class="page-header-right">
+                    <button type="button" class="izv-btn izv-btn-navy" onclick="printActiveView('primaci-content', 'Sječa', '#1e3a5f')">🖨️ Štampaj</button>
+                    <button type="button" class="izv-btn izv-btn-navy" onclick="exportVisibleTable('primaci-content', 'Sjeca')">📥 Excel</button>
                 </div>
             </div>
 
@@ -619,36 +622,57 @@
 
             <!-- Mjesečni prikaz -->
             <div id="primaci-monthly-view" class="submenu-content hidden">
-                <div class="section">
-                    <h3 style="color: #059669; text-align: center; margin-bottom: 15px;">📊 Prikaz sječe po primačima (m³)</h3>
-                    <div class="controls-bar">
-                        <input type="text" class="search-input" id="primaci-search" placeholder="🔍 Pretraži po imenu primača..." onkeyup="filterPrimaciTable()">
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📊 Sječa po primačima (m³)</h2>
+                            <span class="card-subtitle">Mjesečna sječa po radnicima; tekući mjesec je istaknut</span>
+                        </div>
                     </div>
-                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                        <table class="monthly-table" id="primaci-table">
-                            <thead id="primaci-header"></thead>
-                            <tbody id="primaci-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="section" style="margin-top: 30px;">
-                    <h3 style="color: #2563eb; text-align: center; margin-bottom: 15px;">📈 Prosječna sječa po radnom danu (m³/dan)</h3>
-                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                        <table class="monthly-table" id="primaci-prosjek-table">
-                            <thead id="primaci-prosjek-header"></thead>
-                            <tbody id="primaci-prosjek-body"></tbody>
-                        </table>
+                    <div class="enterprise-card-body">
+                        <div class="ot-toolbar">
+                            <input type="search" class="search-input" id="primaci-search" placeholder="🔍 Pretraži po imenu primača..." oninput="filterPrimaciTable()">
+                        </div>
+                        <div class="ot-scroll">
+                            <table class="ot-table" id="primaci-table">
+                                <thead id="primaci-header"></thead>
+                                <tbody id="primaci-body"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
-                <div class="section" style="margin-top: 30px;">
-                    <h3 style="color: #d97706; text-align: center; margin-bottom: 15px;">📅 Broj radnih dana po mjesecima</h3>
-                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                        <table class="monthly-table" id="primaci-radni-dani-table">
-                            <thead id="primaci-radni-dani-header"></thead>
-                            <tbody id="primaci-radni-dani-body"></tbody>
-                        </table>
+                <div class="enterprise-card" style="margin-top: 18px;">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📈 Prosječna sječa po radnom danu (m³/dan)</h2>
+                            <span class="card-subtitle">Količina podijeljena brojem radnih dana</span>
+                        </div>
+                    </div>
+                    <div class="enterprise-card-body">
+                        <div class="ot-scroll">
+                            <table class="ot-table" id="primaci-prosjek-table">
+                                <thead id="primaci-prosjek-header"></thead>
+                                <tbody id="primaci-prosjek-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="enterprise-card" style="margin-top: 18px;">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📅 Broj radnih dana po mjesecima</h2>
+                            <span class="card-subtitle">Najveći broj radnih dana među primačima u mjesecu</span>
+                        </div>
+                    </div>
+                    <div class="enterprise-card-body">
+                        <div class="ot-scroll">
+                            <table class="ot-table" id="primaci-radni-dani-table">
+                                <thead id="primaci-radni-dani-header"></thead>
+                                <tbody id="primaci-radni-dani-body"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -658,8 +682,9 @@
                      pri prvom otvaranju ovog podtaba) preko primaci-radnik-analiza
                      API-ja koji već vraća sve godine odjednom — bez novog fetch-a
                      pri promjeni radnika/godine u dropdownu. -->
-                <div class="section" style="margin-top: 30px;">
-                    <h3 style="color: #7c3aed; text-align: center; margin-bottom: 15px;">🔍 Analiza radnika</h3>
+                <div class="enterprise-card ot-analiza" style="margin-top: 18px;">
+                    <div class="enterprise-card-header"><div><h2>🔍 Analiza radnika</h2><span class="card-subtitle">Izaberi radnika za mjesečni, godišnji i odjelni pregled</span></div></div>
+                    <div class="enterprise-card-body">
                     <div class="controls-bar" style="gap: 10px;">
                         <select id="primaci-radnik-analiza-select" class="month-select" onchange="odaberiPrimaciRadnikAnaliza()">
                             <option value="">Učitavam radnike...</option>
@@ -668,7 +693,7 @@
                     </div>
 
                     <div id="primaci-radnik-analiza-content" class="hidden">
-                        <div class="enterprise-card" style="margin-top: 16px;">
+                        <div class="ot-analiza-inner">
                             <div class="enterprise-card-header">
                                 <div>
                                     <h2 id="primaci-radnik-analiza-naslov">📊 Analiza</h2>
@@ -679,7 +704,7 @@
                                 <h4 style="color: #059669; margin-bottom: 10px;">📅 Po mjesecu</h4>
                                 <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 24px;">
                                     <div style="flex: 1 1 260px; min-width: 240px; overflow-x: auto;">
-                                        <table class="kupci-table" id="primaci-radnik-mjesec-table" style="width: 100%;">
+                                        <table class="ot-table" id="primaci-radnik-mjesec-table">
                                             <thead id="primaci-radnik-mjesec-header"></thead>
                                             <tbody id="primaci-radnik-mjesec-body"></tbody>
                                         </table>
@@ -692,7 +717,7 @@
                                 <h4 style="color: #2563eb; margin-bottom: 10px;">📆 Po godini</h4>
                                 <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 24px;">
                                     <div style="flex: 1 1 260px; min-width: 240px; overflow-x: auto;">
-                                        <table class="kupci-table" id="primaci-radnik-godina-table" style="width: 100%;">
+                                        <table class="ot-table" id="primaci-radnik-godina-table">
                                             <thead><tr><th>Godina</th><th style="text-align:right;">Ukupno m³</th></tr></thead>
                                             <tbody id="primaci-radnik-godina-body"></tbody>
                                         </table>
@@ -704,7 +729,7 @@
 
                                 <h4 style="color: #d97706; margin-bottom: 10px;">🏭 Po odjelu</h4>
                                 <div style="overflow-x: auto;">
-                                    <table class="kupci-table" id="primaci-radnik-odjel-table" style="width: 100%;">
+                                    <table class="ot-table" id="primaci-radnik-odjel-table">
                                         <thead><tr><th>Odjel</th><th style="text-align:right;">Ukupno m³</th><th style="text-align:right;">Udio</th></tr></thead>
                                         <tbody id="primaci-radnik-odjel-body"></tbody>
                                     </table>
@@ -714,83 +739,77 @@
                     </div>
                 </div>
             </div>
+                    </div>
+            </div>
 
-            <!-- Dnevni prikaz - tekući mjesec -->
+            <!-- Dnevni prikaz -->
             <div id="primaci-daily-view" class="submenu-content">
-                <div class="section">
-                    <div class="month-selector">
-                        <label for="primaci-month-select">📅 Izaberi mjesec:</label>
-                        <select id="primaci-month-select" class="month-select" onchange="loadPrimaciDaily(this.value)">
-                            <option value="0">Januar</option>
-                            <option value="1">Februar</option>
-                            <option value="2">Mart</option>
-                            <option value="3">April</option>
-                            <option value="4">Maj</option>
-                            <option value="5">Juni</option>
-                            <option value="6">Juli</option>
-                            <option value="7">August</option>
-                            <option value="8">Septembar</option>
-                            <option value="9">Oktobar</option>
-                            <option value="10">Novembar</option>
-                            <option value="11">Decembar</option>
-                        </select>
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📅 Sječa po danima</h2>
+                            <span class="card-subtitle">Odjel, primač i sortimenti — najnoviji dan prvi</span>
+                        </div>
                     </div>
-                    <div class="controls-bar">
-                        <input type="text" class="search-input" id="primaci-daily-search" placeholder="🔍 Pretraži..." onkeyup="filterPrimaciDailyTable()">
-                    </div>
-                    <div class="kupci-table-wrapper">
-                        <table class="kupci-table" id="primaci-daily-table">
-                            <thead id="primaci-daily-header"></thead>
-                            <tbody id="primaci-daily-body"></tbody>
-                        </table>
+                    <div class="enterprise-card-body">
+                        <div class="ot-toolbar">
+                            <label for="primaci-month-select">Mjesec</label>
+                            <select id="primaci-month-select" class="month-select" onchange="loadPrimaciDaily(this.value)"><option value="0">Januar</option><option value="1">Februar</option><option value="2">Mart</option><option value="3">April</option><option value="4">Maj</option><option value="5">Juni</option><option value="6">Juli</option><option value="7">August</option><option value="8">Septembar</option><option value="9">Oktobar</option><option value="10">Novembar</option><option value="11">Decembar</option></select>
+                            <input type="search" class="search-input" id="primaci-daily-search" placeholder="🔍 Pretraži odjel ili primača..." oninput="filterPrimaciDailyTable()">
+                        </div>
+                        <div class="ot-scroll">
+                            <table class="ot-table" id="primaci-daily-table">
+                                <thead id="primaci-daily-header"></thead>
+                                <tbody id="primaci-daily-body"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Prikaz po radilištima -->
+            <!-- Po radilištima -->
             <div id="primaci-radilista-view" class="submenu-content hidden">
-                <div class="section">
-                    <h3 style="color: #ea580c; text-align: center; margin-bottom: 20px;">🏗️ Prikaz sječe po radilištima</h3>
-                    <div class="controls-bar">
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>🏗️ Sječa po radilištima</h2>
+                            <span class="card-subtitle">Mjesečna sječa i godišnja rekapitulacija po sortimentima</span>
+                        </div>
                     </div>
-                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                        <table class="monthly-table" id="primaci-radilista-table">
-                            <thead id="primaci-radilista-header"></thead>
-                            <tbody id="primaci-radilista-body"></tbody>
-                        </table>
-                    </div>
-                    <h4 style="color: #7c2d12; margin-top: 30px; margin-bottom: 15px;">📊 Godišnja rekapitulacija po sortimentima</h4>
-                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                        <table class="monthly-table" id="primaci-radilista-recap">
-                            <thead id="primaci-radilista-recap-header"></thead>
-                            <tbody id="primaci-radilista-recap-body"></tbody>
-                        </table>
+                    <div class="enterprise-card-body">
+                        <div class="ot-scroll">
+                            <table class="ot-table" id="primaci-radilista-table">
+                                <thead id="primaci-radilista-header"></thead>
+                                <tbody id="primaci-radilista-body"></tbody>
+                            </table>
+                        </div>
+                        <h3 class="ot-sub">📊 Godišnja rekapitulacija po sortimentima</h3>
+                        <div class="ot-scroll">
+                            <table class="ot-table" id="primaci-radilista-recap">
+                                <thead id="primaci-radilista-recap-header"></thead>
+                                <tbody id="primaci-radilista-recap-body"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Sortimentni prikaz po primačima (po radilištu, za odabrani mjesec) -->
+            <!-- Sortimenti po primačima -->
             <div id="primaci-sortimenti-primac-view" class="submenu-content hidden">
-                <div class="section">
-                    <h3 style="color: #2F343A; text-align: center; margin-bottom: 20px; font-weight: 600; letter-spacing: 0.02em;">🏷️ Sortimentni prikaz po primačima</h3>
-                    <div class="month-selector month-selector--neutral">
-                        <label>📅 Izaberi mjesec:</label>
-                        <select id="primaci-sortimenti-month-select" class="month-select" onchange="loadPrimaciSortimentiByPrimac(this.value)">
-                            <option value="0">Januar</option>
-                            <option value="1">Februar</option>
-                            <option value="2">Mart</option>
-                            <option value="3">April</option>
-                            <option value="4">Maj</option>
-                            <option value="5">Juni</option>
-                            <option value="6">Juli</option>
-                            <option value="7">August</option>
-                            <option value="8">Septembar</option>
-                            <option value="9">Oktobar</option>
-                            <option value="10">Novembar</option>
-                            <option value="11">Decembar</option>
-                        </select>
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>🏷️ Sortimenti po primačima</h2>
+                            <span class="card-subtitle">Za svako radilište, za odabrani mjesec</span>
+                        </div>
                     </div>
-                    <div id="primaci-sortimenti-primac-container"></div>
+                    <div class="enterprise-card-body">
+                        <div class="ot-toolbar">
+                            <label for="primaci-sortimenti-month-select">Mjesec</label>
+                            <select id="primaci-sortimenti-month-select" class="month-select" onchange="loadPrimaciSortimentiByPrimac(this.value)"><option value="0">Januar</option><option value="1">Februar</option><option value="2">Mart</option><option value="3">April</option><option value="4">Maj</option><option value="5">Juni</option><option value="6">Juli</option><option value="7">August</option><option value="8">Septembar</option><option value="9">Oktobar</option><option value="10">Novembar</option><option value="11">Decembar</option></select>
+                        </div>
+                        <div id="primaci-sortimenti-primac-container"></div>
+                    </div>
                 </div>
             </div>
 
