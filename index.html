@@ -1103,8 +1103,14 @@
 
         <!-- KUPCI CONTENT (Prikaz po kupcima) -->
         <div id="kupci-content" class="container hidden">
-            <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
-                <button onclick="printActiveView('kupci-content', 'Prikaz po kupcima', '#047857')" style="background:#047857; color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">🖨️ ŠTAMPAJ</button>
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>🏢 Kupci</h1>
+                    <p>Otprema po kupcima, sortimentima i periodima</p>
+                </div>
+                <div class="page-header-right">
+                    <button type="button" class="izv-btn izv-btn-navy" onclick="printActiveView('kupci-content', 'Prikaz po kupcima', '#047857')">🖨️ Štampaj</button>
+                </div>
             </div>
             <!-- Submenu za Kupci -->
             <div class="submenu">
@@ -1124,6 +1130,7 @@
                             <span class="card-subtitle">Otprema po kupcima i sortimentima za svaki mjesec</span>
                         </div>
                     </div>
+                    <div id="kupci-mjesecni-kpi" class="kupci-kpi" aria-live="polite"></div>
                     <div class="enterprise-card-body">
                         <div class="controls-bar">
                             <select id="kupci-mjesecni-month-select" class="month-select" onchange="odaberiKupciMjesecniMjesec(this.value)">
@@ -1140,9 +1147,9 @@
                                 <option value="10">Novembar</option>
                                 <option value="11">Decembar</option>
                             </select>
-                            <input type="text" class="search-input" id="kupci-mjesecni-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciMjesecniTable()">
+                            <input type="text" class="search-input" id="kupci-mjesecni-search" placeholder="🔍 Pretraži po kupcu..." oninput="filterKupciMjesecniTable()">
                         </div>
-                        <div class="kupci-table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <div class="kupci-table-wrapper dash-scroll">
                             <table class="kupci-table" id="kupci-mjesecni-table" style="width: 100%;">
                                 <thead id="kupci-mjesecni-header"></thead>
                                 <tbody id="kupci-mjesecni-body"></tbody>
@@ -1161,6 +1168,7 @@
                             <span class="card-subtitle">Otprema po kupcima i sortimentima za odabrani kvartal</span>
                         </div>
                     </div>
+                    <div id="kupci-kvartalni-kpi" class="kupci-kpi" aria-live="polite"></div>
                     <div class="enterprise-card-body">
                         <div class="controls-bar" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                             <select id="kupci-kvartalni-select" onchange="renderKupciKvartalniTable()" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white; min-width: 200px; cursor: pointer;">
@@ -1169,9 +1177,9 @@
                                 <option value="3">Q3 — Juli, August, Septembar</option>
                                 <option value="4">Q4 — Oktobar, Novembar, Decembar</option>
                             </select>
-                            <input type="text" class="search-input" id="kupci-kvartalni-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciKvartalniTable()">
+                            <input type="text" class="search-input" id="kupci-kvartalni-search" placeholder="🔍 Pretraži po kupcu..." oninput="filterKupciKvartalniTable()">
                         </div>
-                        <div class="kupci-table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <div class="kupci-table-wrapper dash-scroll">
                             <table class="kupci-table" id="kupci-kvartalni-table" style="width: 100%;">
                                 <thead id="kupci-kvartalni-header"></thead>
                                 <tbody id="kupci-kvartalni-body"></tbody>
@@ -1190,11 +1198,12 @@
                             <span class="card-subtitle">Ukupna otprema po kupcima za tekuću godinu</span>
                         </div>
                     </div>
+                    <div id="kupci-godisnji-kpi" class="kupci-kpi" aria-live="polite"></div>
                     <div class="enterprise-card-body">
                         <div class="controls-bar">
-                            <input type="text" class="search-input" id="kupci-godisnji-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterKupciGodisnjiTable()">
+                            <input type="text" class="search-input" id="kupci-godisnji-search" placeholder="🔍 Pretraži po kupcu..." oninput="filterKupciGodisnjiTable()">
                         </div>
-                        <div class="kupci-table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <div class="kupci-table-wrapper dash-scroll">
                             <table class="kupci-table" id="kupci-godisnji-table" style="width: 100%;">
                                 <thead id="kupci-godisnji-header"></thead>
                                 <tbody id="kupci-godisnji-body"></tbody>

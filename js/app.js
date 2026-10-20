@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.129';
+        const APP_VERSION = '2.130';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -6731,6 +6731,44 @@ try {
             return headerHtml;
         }
 
+        // ---- KPI pregled iznad tabela kupaca (godišnji / mjesečni / kvartalni) ----
+        function renderKupciKpi(view, data) {
+            const el = document.getElementById('kupci-' + view + '-kpi');
+            if (!el) return;
+            const rows = (data || [])
+                .map(k => ({ ime: k.kupac || '—', v: parseFloat(k.ukupno) || 0 }))
+                .filter(r => r.v > 0)
+                .sort((a, b) => b.v - a.v);
+            if (!rows.length) { el.innerHTML = ''; return; }
+
+            const total = rows.reduce((s, r) => s + r.v, 0);
+            const top = rows[0];
+            const top3 = rows.slice(0, 3).reduce((s, r) => s + r.v, 0);
+            const f0 = v => Math.round(v).toLocaleString('de-DE');
+            const f2 = v => v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const kpi = (cls, ikona, naslov, vrijednost, sub, jedinica) => `
+                <div class="dash-kpi ${cls}">
+                    <div class="dash-kpi-title"><span class="dash-kpi-ico">${ikona}</span>${naslov}</div>
+                    <div class="dash-kpi-value">${vrijednost}${jedinica === '' ? '' : `<small>${jedinica || 'm³'}</small>`}</div>
+                    <div class="dash-kpi-sub">${sub}</div>
+                </div>`;
+            const top5 = rows.slice(0, 5);
+            const max = top5[0].v || 1;
+            el.innerHTML = `
+                <div class="dash-kpi-grid kupci-kpi-grid">
+                    ${kpi('blue', '🚛', 'Ukupna otprema', f0(total), 'sve prikazane otpreme')}
+                    ${kpi('green', '🏢', 'Aktivnih kupaca', rows.length, 'sa otpremom u periodu', '')}
+                    ${kpi('amber', '🥇', 'Najveći kupac', f0(top.v), `${escapeHtml(top.ime)} · ${(top.v / total * 100).toFixed(1)}%`)}
+                    ${kpi('neutral', '📊', 'Udio top 3 kupca', (top3 / total * 100).toFixed(1), 'ukupne otpreme', '%')}
+                </div>
+                <div class="kupci-top">
+                    <div class="kupci-top-title">Top ${top5.length} kupaca</div>
+                    <ul class="oa-bars">
+                        ${top5.map((r, i) => `<li><div class="oa-bar-row"><span class="oa-bar-name">${i + 1}. ${escapeHtml(r.ime)}</span><span class="oa-bar-val">${f2(r.v)} m³ · ${(r.v / total * 100).toFixed(1)}%</span></div><div class="oa-bar"><span style="width:${Math.max(3, r.v / max * 100).toFixed(1)}%"></span></div></li>`).join('')}
+                    </ul>
+                </div>`;
+        }
+
         // Renderuj godišnju tabelu po kupcima i sortimentima
         function renderKupciGodisnjiTable(godisnji, sortimentiNazivi) {
             // Sačuvaj podatke globalno za sortiranje
@@ -6830,6 +6868,7 @@ try {
             bodyHtml += '</tr>';
 
             bodyElem.innerHTML = bodyHtml;
+            renderKupciKpi('godisnji', kupciGodisnjiData);
         }
 
         // Renderuj mjesečnu tabelu za izabrani mjesec (kupciMjesecniMjesecIdx,
@@ -6855,6 +6894,7 @@ try {
             if (!filteredData || filteredData.length === 0) {
                 headerElem.innerHTML = '';
                 bodyElem.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka za ' + izabraniMjesec + '</td></tr>';
+                renderKupciKpi('mjesecni', []);
                 return;
             }
 
@@ -6950,6 +6990,7 @@ try {
             bodyHtml += '</tr>';
 
             bodyElem.innerHTML = bodyHtml;
+            renderKupciKpi('mjesecni', kupciMjesecniData);
         }
 
         // Filter funkcije za kupce
@@ -7145,6 +7186,7 @@ try {
             bodyHtml += '</tr>';
 
             bodyElem.innerHTML = bodyHtml;
+            renderKupciKpi('kvartalni', kupciKvartalniData);
         }
 
         // Filter za kvartalni prikaz
