@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.131';
+        const APP_VERSION = '2.132';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -9793,6 +9793,7 @@ try {
             if (msCached) {
                 renderMjesecnaTabela(msCached.sjeca, 'mjesecna-sjeca');
                 renderMjesecnaTabela(msCached.otprema, 'mjesecna-otprema');
+                renderMjesecniPregled(msCached.sjeca, msCached.otprema);
                 msHasCached = true;
             }
 
@@ -9820,6 +9821,7 @@ try {
 
                 // Render OTPREMA table
                 renderMjesecnaTabela(data.otprema, 'mjesecna-otprema');
+                renderMjesecniPregled(data.sjeca, data.otprema);
 
                 document.getElementById('loading-screen').classList.add('hidden');
                 showTabContent('mjesecni-sortimenti-content');
@@ -9831,6 +9833,83 @@ try {
                 document.getElementById('loading-screen').classList.add('hidden');
                 showTabContent('mjesecni-sortimenti-content');
             }
+        }
+
+        // ---- Sječa/otprema po mjesecima: KPI + grafikon + izbor prikaza ----
+        let _msChart = null;
+        function setMjesecniPrikaz(view) {
+            const sjeca = document.getElementById('mjesecna-sjeca-table');
+            const otprema = document.getElementById('mjesecna-otprema-table');
+            const cardS = sjeca ? sjeca.closest('.mjesecni-card') : null;
+            const cardO = otprema ? otprema.closest('.mjesecni-card') : null;
+            if (cardS) cardS.style.display = (view === 'otprema') ? 'none' : '';
+            if (cardO) cardO.style.display = (view === 'sjeca') ? 'none' : '';
+            document.querySelectorAll('.ms-seg button').forEach(b => b.classList.toggle('active', b.dataset.msView === view));
+            try { localStorage.setItem('ms_prikaz', view); } catch (_) {}
+        }
+
+        async function renderMjesecniPregled(sjeca, otprema) {
+            try {
+                const ukupniKljuc = d => (d.sortimenti || []).find(s => s === 'SVEUKUPNO') || (d.sortimenti || []).find(s => s === 'UKUPNO Č+L');
+                const serija = d => {
+                    const k = d && ukupniKljuc(d);
+                    return Array.from({ length: 12 }, (_, m) => k && d.mjeseci && d.mjeseci[m] ? (parseFloat(d.mjeseci[m][k]) || 0) : 0);
+                };
+                const sj = serija(sjeca), ot = serija(otprema);
+                const sjUk = sj.reduce((a, b) => a + b, 0), otUk = ot.reduce((a, b) => a + b, 0);
+                const mj = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+                const godina = new Date().getFullYear();
+                const sub = document.getElementById('ms-sub');
+                if (sub) sub.textContent = `Mjesečni pregled po sortimentima · ${godina}`;
+
+                // Udio četinara u sječi (iz kolona Σ ČETINARI i LIŠĆARI)
+                const sumKol = (d, kolona) => d && d.mjeseci ? d.mjeseci.reduce((a, m) => a + (parseFloat(m && m[kolona]) || 0), 0) : 0;
+                const cet = sumKol(sjeca, 'Σ ČETINARI') || sumKol(sjeca, 'ČETINARI');
+                const lis = sumKol(sjeca, 'LIŠĆARI');
+                const cetPct = (cet + lis) > 0 ? cet / (cet + lis) * 100 : null;
+
+                const best = sj.reduce((bi, v, i) => v > sj[bi] ? i : bi, 0);
+                const f0 = v => Math.round(v).toLocaleString('de-DE');
+                const kpi = (cls, ikona, naslov, vrijednost, jedinica, sub) => `
+                    <div class="dash-kpi ${cls}">
+                        <div class="dash-kpi-title"><span class="dash-kpi-ico">${ikona}</span>${naslov}</div>
+                        <div class="dash-kpi-value">${vrijednost}<small>${jedinica}</small></div>
+                        <div class="dash-kpi-sub">${sub}</div>
+                    </div>`;
+                const kpiEl = document.getElementById('ms-kpi');
+                if (kpiEl) {
+                    kpiEl.innerHTML =
+                        kpi('green', '🌲', 'Sječa ' + godina, f0(sjUk), 'm³', 'ukupno od januara') +
+                        kpi('blue', '🚛', 'Otprema ' + godina, f0(otUk), 'm³', sjUk > 0 ? (otUk / sjUk * 100).toFixed(1) + '% od sječe' : '') +
+                        kpi('amber', '🏆', 'Najjači mjesec sječe', sjUk > 0 ? mj[best] : '—', '', sjUk > 0 ? f0(sj[best]) + ' m³' : 'nema podataka') +
+                        kpi('neutral', '🌲', 'Udio četinara', cetPct == null ? '—' : cetPct.toFixed(1), cetPct == null ? '' : '%', cetPct == null ? '' : `lišćari ${(100 - cetPct).toFixed(1)}%`);
+                }
+
+                // Grafikon (Chart.js se učitava na zahtjev, kao na dashboardu)
+                const canvas = document.getElementById('msChart');
+                if (!canvas || typeof window.loadChartJs !== 'function') return;
+                await window.loadChartJs();
+                if (_msChart) { _msChart.destroy(); _msChart = null; }
+                const tek = new Date().getMonth();
+                _msChart = new Chart(canvas.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: mj,
+                        datasets: [
+                            { label: 'Sječa', data: sj, backgroundColor: sj.map((_, i) => i === tek ? '#047857' : 'rgba(5,150,105,.75)'), borderRadius: 4 },
+                            { label: 'Otprema', data: ot, backgroundColor: ot.map((_, i) => i === tek ? '#1d4ed8' : 'rgba(37,99,235,.7)'), borderRadius: 4 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false } },
+                        scales: { y: { beginAtZero: true, title: { display: true, text: 'm³' } } }
+                    }
+                });
+            } catch (e) {
+                console.warn('[Sječa/otprema] KPI/grafikon nije prikazan:', e);
+            }
+            try { setMjesecniPrikaz(localStorage.getItem('ms_prikaz') || 'both'); } catch (_) {}
         }
 
         // Render monthly table (SJEČA or OTPREMA) - PRO LEVEL with Comfortaa font
@@ -9941,8 +10020,9 @@ try {
             // Mjesečni redovi. Klasa m-row je nužna: UKUPNO i % red žive u istom
             // <tbody> (ne u <tfoot> — vidi komentar niže), pa se zebra i hover
             // moraju ograničiti samo na mjesece.
+            const _tekMj = new Date().getMonth();
             for (let m = 0; m < 12; m++) {
-                bodyHtml += '<tr class="m-row">';
+                bodyHtml += `<tr class="m-row${m === _tekMj ? ' m-current' : (m > _tekMj ? ' m-future' : '')}">`;
                 bodyHtml += `<td class="col-mjesec">${mjeseci[m]}</td>`;
 
                 for (let s = 0; s < sortimenti.length; s++) {

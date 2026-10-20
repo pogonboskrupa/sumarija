@@ -518,27 +518,50 @@
 
         <!-- MJESEČNI SORTIMENTI CONTENT -->
         <div id="mjesecni-sortimenti-content" class="container hidden">
+            <div class="dash-head">
+                <div>
+                    <h1 class="dash-title">📅 Sječa i otprema po mjesecima</h1>
+                    <p class="dash-sub" id="ms-sub">Mjesečni pregled po sortimentima</p>
+                </div>
+                <div>
+                    <div class="ms-seg ms-seg-light" role="group" aria-label="Prikaz tabela">
+                        <button type="button" class="active" data-ms-view="both" onclick="setMjesecniPrikaz('both')">Obje</button>
+                        <button type="button" data-ms-view="sjeca" onclick="setMjesecniPrikaz('sjeca')">🌲 Sječa</button>
+                        <button type="button" data-ms-view="otprema" onclick="setMjesecniPrikaz('otprema')">🚛 Otprema</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dash-kpi-grid" id="ms-kpi" aria-live="polite"></div>
+
+            <div class="section dash-card" id="ms-chart-card" style="margin-bottom: 22px;">
+                <h2>📊 Sječa i otprema po mjesecima</h2>
+                <div class="chart-container" style="height: 280px;">
+                    <canvas id="msChart"></canvas>
+                </div>
+            </div>
+
             <!-- SJEČA PO MJESECIMA - Pro Card -->
-            <div class="mjesecni-card" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 32px; overflow: hidden;">
+            <div class="mjesecni-card ms-card">
                 <!-- Card Header -->
-                <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+                <div class="ms-card-head ms-head-sjeca">
                     <div>
-                        <h2 style="margin: 0; color: white; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+                        <h2 class="ms-card-title">
                             <span style="font-size: 24px;">📊</span> Sječa po mjesecima i sortimentima
                         </h2>
-                        <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Prikaz mjesečnih podataka za tekuću godinu</p>
+                        <p class="ms-card-sub">Prikaz mjesečnih podataka za tekuću godinu</p>
                     </div>
-                    <div style="display:flex; gap:8px;">
-                        <button onclick="printMjesecniCard('sjeca')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                    <div class="ms-card-actions">
+                        <button type="button" class="ms-btn" onclick="printMjesecniCard('sjeca')">
                             🖨️ ŠTAMPAJ
                         </button>
-                        <button onclick="exportMjesecnaToExcel('mjesecna-sjeca-table', 'Sjeca-po-mjesecima')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                        <button type="button" class="ms-btn" onclick="exportMjesecnaToExcel('mjesecna-sjeca-table', 'Sjeca-po-mjesecima')">
                             <span>📥</span> Export
                         </button>
                     </div>
                 </div>
                 <!-- Table Container -->
-                <div class="mjesecna-scroll" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                <div class="mjesecna-scroll">
                     <table class="pro-mjesecna-table" id="mjesecna-sjeca-table" style="width: 100%; border-collapse: separate; border-spacing: 0;">
                         <thead id="mjesecna-sjeca-header"></thead>
                         <tbody id="mjesecna-sjeca-body"></tbody>
@@ -547,26 +570,26 @@
             </div>
 
             <!-- OTPREMA PO MJESECIMA - Pro Card -->
-            <div class="mjesecni-card" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 32px; overflow: hidden;">
+            <div class="mjesecni-card ms-card">
                 <!-- Card Header -->
-                <div style="background: linear-gradient(135deg, #7c2d12 0%, #b45309 100%); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+                <div class="ms-card-head ms-head-otprema">
                     <div>
-                        <h2 style="margin: 0; color: white; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+                        <h2 class="ms-card-title">
                             <span style="font-size: 24px;">🚛</span> Otprema po mjesecima i sortimentima
                         </h2>
-                        <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Prikaz mjesečnih podataka za tekuću godinu</p>
+                        <p class="ms-card-sub">Prikaz mjesečnih podataka za tekuću godinu</p>
                     </div>
-                    <div style="display:flex; gap:8px;">
-                        <button onclick="printMjesecniCard('otprema')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                    <div class="ms-card-actions">
+                        <button type="button" class="ms-btn" onclick="printMjesecniCard('otprema')">
                             🖨️ ŠTAMPAJ
                         </button>
-                        <button onclick="exportMjesecnaToExcel('mjesecna-otprema-table', 'Otprema-po-mjesecima')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                        <button type="button" class="ms-btn" onclick="exportMjesecnaToExcel('mjesecna-otprema-table', 'Otprema-po-mjesecima')">
                             <span>📥</span> Export
                         </button>
                     </div>
                 </div>
                 <!-- Table Container -->
-                <div class="mjesecna-scroll" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                <div class="mjesecna-scroll">
                     <table class="pro-mjesecna-table" id="mjesecna-otprema-table" style="width: 100%; border-collapse: separate; border-spacing: 0;">
                         <thead id="mjesecna-otprema-header"></thead>
                         <tbody id="mjesecna-otprema-body"></tbody>
