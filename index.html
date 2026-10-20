@@ -877,133 +877,140 @@
 
         <!-- OTPREMACI CONTENT (Prikaz po otpremačima) -->
         <div id="otpremaci-content" class="container hidden">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                <h2>🚛 OTPREMA</h2>
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <button onclick="printActiveView('otpremaci-content', 'Otprema', '#7c2d12')" style="background: #7c2d12; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;">🖨️ ŠTAMPAJ</button>
-                    <button onclick="exportVisibleTable('otpremaci-content', 'Otprema')" style="background: #7c2d12; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;">📥 Export Excel</button>
+            <div class="page-header">
+                <div class="page-header-left">
+                    <h1>🚛 Otprema</h1>
+                    <p>Otprema po otpremačima, danima, radilištima, kupcima i sortimentima</p>
+                </div>
+                <div class="page-header-right">
+                    <button type="button" class="izv-btn izv-btn-navy" onclick="printActiveView('otpremaci-content', 'Otprema', '#7c2d12')">🖨️ Štampaj</button>
+                    <button type="button" class="izv-btn izv-btn-navy" onclick="exportVisibleTable('otpremaci-content', 'Otprema')">📥 Excel</button>
                 </div>
             </div>
 
-            <!-- Submenu -->
             <div class="submenu">
                 <button class="submenu-tab" onclick="switchOtremaciSubmenu('monthly')">📊 Mjesečni prikaz</button>
                 <button class="submenu-tab active" onclick="switchOtremaciSubmenu('daily')">📅 Po danima</button>
                 <button class="submenu-tab" onclick="switchOtremaciSubmenu('radilista')">🏗️ Radilišta</button>
                 <button class="submenu-tab" onclick="switchOtremaciSubmenu('po-kupcima')" id="otpremaci-po-kupcima-tab">🏢 Otprema u <span id="current-month-name">tekućem mjesecu</span></button>
-                <button class="submenu-tab" onclick="switchOtremaciSubmenu('sortimenti-by-otpremac')">🏷️ Sortimentni prikaz po otpremačima</button>
+                <button class="submenu-tab" onclick="switchOtremaciSubmenu('sortimenti-by-otpremac')">🏷️ Sortimenti po otpremačima</button>
             </div>
 
             <!-- Mjesečni prikaz -->
             <div id="otpremaci-monthly-view" class="submenu-content hidden">
-                <div class="section">
-                    <div class="controls-bar">
-                        <input type="text" class="search-input" id="otpremaci-search" placeholder="🔍 Pretraži po imenu otpremača..." onkeyup="filterOtremaciTable()">
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📊 Otprema po mjesecima</h2>
+                            <span class="card-subtitle">Količine (m³) po otpremačima za tekuću godinu; tekući mjesec je istaknut</span>
+                        </div>
                     </div>
-                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                        <table class="monthly-table" id="otpremaci-table">
-                            <thead id="otpremaci-header"></thead>
-                            <tbody id="otpremaci-body"></tbody>
-                        </table>
+                    <div class="enterprise-card-body">
+                        <div class="ot-toolbar">
+                            <input type="search" class="search-input" id="otpremaci-search" placeholder="🔍 Pretraži po imenu otpremača..." oninput="filterOtremaciTable()">
+                        </div>
+                        <div class="ot-scroll">
+                            <table class="ot-table" id="otpremaci-table">
+                                <thead id="otpremaci-header"></thead>
+                                <tbody id="otpremaci-body"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Dnevni prikaz - tekući mjesec -->
+            <!-- Dnevni prikaz -->
             <div id="otpremaci-daily-view" class="submenu-content">
-                <div class="section">
-                    <div class="month-selector">
-                        <label for="otpremaci-month-select">📅 Izaberi mjesec:</label>
-                        <select id="otpremaci-month-select" class="month-select" onchange="loadOtremaciDaily(this.value)">
-                            <option value="0">Januar</option>
-                            <option value="1">Februar</option>
-                            <option value="2">Mart</option>
-                            <option value="3">April</option>
-                            <option value="4">Maj</option>
-                            <option value="5">Juni</option>
-                            <option value="6">Juli</option>
-                            <option value="7">August</option>
-                            <option value="8">Septembar</option>
-                            <option value="9">Oktobar</option>
-                            <option value="10">Novembar</option>
-                            <option value="11">Decembar</option>
-                        </select>
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📅 Otprema po danima</h2>
+                            <span class="card-subtitle">Odjel, otpremač, kupac i sortimenti — najnoviji dan prvi</span>
+                        </div>
                     </div>
-                    <div class="controls-bar">
-                        <input type="text" class="search-input" id="otpremaci-daily-search" placeholder="🔍 Pretraži..." onkeyup="filterOtremaciDailyTable()">
-                    </div>
-                    <div class="kupci-table-wrapper">
-                        <table class="kupci-table" id="otpremaci-daily-table">
-                            <thead id="otpremaci-daily-header"></thead>
-                            <tbody id="otpremaci-daily-body"></tbody>
-                        </table>
+                    <div class="enterprise-card-body">
+                        <div class="ot-toolbar">
+                            <label for="otpremaci-month-select">Mjesec</label>
+                            <select id="otpremaci-month-select" class="month-select" onchange="loadOtremaciDaily(this.value)"><option value="0">Januar</option><option value="1">Februar</option><option value="2">Mart</option><option value="3">April</option><option value="4">Maj</option><option value="5">Juni</option><option value="6">Juli</option><option value="7">August</option><option value="8">Septembar</option><option value="9">Oktobar</option><option value="10">Novembar</option><option value="11">Decembar</option></select>
+                            <input type="search" class="search-input" id="otpremaci-daily-search" placeholder="🔍 Pretraži odjel, otpremača, kupca..." oninput="filterOtremaciDailyTable()">
+                        </div>
+                        <div class="ot-scroll">
+                            <table class="ot-table ot-table-days" id="otpremaci-daily-table">
+                                <thead id="otpremaci-daily-header"></thead>
+                                <tbody id="otpremaci-daily-body"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Prikaz po radilištima -->
+            <!-- Po radilištima -->
             <div id="otpremaci-radilista-view" class="submenu-content hidden">
-                <div class="section">
-                    <h3 style="color: #0891b2; text-align: center; margin-bottom: 20px;">🏗️ Prikaz otpreme po radilištima</h3>
-                    <div class="controls-bar">
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>🏗️ Otprema po radilištima</h2>
+                            <span class="card-subtitle">Mjesečna otprema i godišnja rekapitulacija po sortimentima</span>
+                        </div>
                     </div>
-                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                        <table class="monthly-table" id="otpremaci-radilista-table">
-                            <thead id="otpremaci-radilista-header"></thead>
-                            <tbody id="otpremaci-radilista-body"></tbody>
-                        </table>
-                    </div>
-                    <h4 style="color: #155e75; margin-top: 30px; margin-bottom: 15px;">📊 Godišnja rekapitulacija po sortimentima</h4>
-                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                        <table class="monthly-table" id="otpremaci-radilista-recap">
-                            <thead id="otpremaci-radilista-recap-header"></thead>
-                            <tbody id="otpremaci-radilista-recap-body"></tbody>
-                        </table>
+                    <div class="enterprise-card-body">
+                        <div class="ot-scroll">
+                            <table class="ot-table" id="otpremaci-radilista-table">
+                                <thead id="otpremaci-radilista-header"></thead>
+                                <tbody id="otpremaci-radilista-body"></tbody>
+                            </table>
+                        </div>
+                        <h3 class="ot-sub">📊 Godišnja rekapitulacija po sortimentima</h3>
+                        <div class="ot-scroll">
+                            <table class="ot-table" id="otpremaci-radilista-recap">
+                                <thead id="otpremaci-radilista-recap-header"></thead>
+                                <tbody id="otpremaci-radilista-recap-body"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Prikaz otpreme po kupcima u tekućem mjesecu -->
+            <!-- Po kupcima u tekućem mjesecu -->
             <div id="otpremaci-po-kupcima-view" class="submenu-content hidden">
-                <div class="section">
-                    <h3 style="color: #0891b2; text-align: center; margin-bottom: 20px; font-size: 24px;">
-                        🏢 Otprema po kupcima - <span id="otpremaci-po-kupcima-month-title"></span>
-                    </h3>
-                    <div class="controls-bar">
-                        <input type="text" class="search-input" id="otpremaci-po-kupcima-search" placeholder="🔍 Pretraži po kupcu..." onkeyup="filterOtremaciPoKupcimaTable()">
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>🏢 Otprema po kupcima — <span id="otpremaci-po-kupcima-month-title"></span></h2>
+                            <span class="card-subtitle">Sortirano po ukupnoj količini, od najvećeg kupca</span>
+                        </div>
                     </div>
-                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                        <table class="expert-table" id="otpremaci-po-kupcima-table">
-                            <thead id="otpremaci-po-kupcima-header"></thead>
-                            <tbody id="otpremaci-po-kupcima-body"></tbody>
-                            <tfoot id="otpremaci-po-kupcima-footer"></tfoot>
-                        </table>
+                    <div class="enterprise-card-body">
+                        <div class="ot-toolbar">
+                            <input type="search" class="search-input" id="otpremaci-po-kupcima-search" placeholder="🔍 Pretraži po kupcu..." oninput="filterOtremaciPoKupcimaTable()">
+                        </div>
+                        <div class="ot-scroll">
+                            <table class="ot-table" id="otpremaci-po-kupcima-table">
+                                <thead id="otpremaci-po-kupcima-header"></thead>
+                                <tbody id="otpremaci-po-kupcima-body"></tbody>
+                                <tfoot id="otpremaci-po-kupcima-footer"></tfoot>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Sortimentni prikaz po otpremačima (po radilištu, za odabrani mjesec) -->
+            <!-- Sortimenti po otpremačima -->
             <div id="otpremaci-sortimenti-otpremac-view" class="submenu-content hidden">
-                <div class="section">
-                    <h3 style="color: #0891b2; text-align: center; margin-bottom: 20px;">🏷️ Sortimentni prikaz po otpremačima</h3>
-                    <div class="month-selector">
-                        <label>📅 Izaberi mjesec:</label>
-                        <select id="otpremaci-sortimenti-month-select" class="month-select" onchange="loadOtremaciSortimentiByOtpremac(this.value)">
-                            <option value="0">Januar</option>
-                            <option value="1">Februar</option>
-                            <option value="2">Mart</option>
-                            <option value="3">April</option>
-                            <option value="4">Maj</option>
-                            <option value="5">Juni</option>
-                            <option value="6">Juli</option>
-                            <option value="7">August</option>
-                            <option value="8">Septembar</option>
-                            <option value="9">Oktobar</option>
-                            <option value="10">Novembar</option>
-                            <option value="11">Decembar</option>
-                        </select>
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>🏷️ Sortimenti po otpremačima</h2>
+                            <span class="card-subtitle">Za svako radilište, za odabrani mjesec</span>
+                        </div>
                     </div>
-                    <div id="otpremaci-sortimenti-otpremac-container"></div>
+                    <div class="enterprise-card-body">
+                        <div class="ot-toolbar">
+                            <label for="otpremaci-sortimenti-month-select">Mjesec</label>
+                            <select id="otpremaci-sortimenti-month-select" class="month-select" onchange="loadOtremaciSortimentiByOtpremac(this.value)"><option value="0">Januar</option><option value="1">Februar</option><option value="2">Mart</option><option value="3">April</option><option value="4">Maj</option><option value="5">Juni</option><option value="6">Juli</option><option value="7">August</option><option value="8">Septembar</option><option value="9">Oktobar</option><option value="10">Novembar</option><option value="11">Decembar</option></select>
+                        </div>
+                        <div id="otpremaci-sortimenti-otpremac-container"></div>
+                    </div>
                 </div>
             </div>
         </div>
