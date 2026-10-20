@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.127';
+        const APP_VERSION = '2.128';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -2276,7 +2276,7 @@ try {
                             return `background-color: ${m.bg}; color: ${m.color}; font-weight: 600; border-radius: 4px; padding: 4px 8px;`;
                         };
 
-                        const renderOdjelRow = (o) => {
+                        const renderOdjelRow = (o, vrsta) => {
                             if (!o) return '';
                             const radilisteClass = radilisteColorMap[o.radiliste] || '';
                             const realizacijaClass = getRealizacijaClass(o.realizacija);
@@ -2286,7 +2286,7 @@ try {
                             // Escapuj i navodnike i < — ime ide u onclick atribut (JS string u HTML atributu)
                             const odjelEsc = jsAttr(o.odjel);
                             return `
-                                <tr style="cursor:pointer;" data-dana="${_dashDanaOdSjece(o.datumZadnjeSjece)}" onclick="showOdjelStanjeModal('${odjelEsc}')" title="Klikni za stanje zaliha">
+                                <tr style="cursor:pointer;" data-dana="${_dashDanaOdSjece(o.datumZadnjeSjece)}" onclick="${vrsta === 'aktivni' ? `otvoriOdjelAktivnost('${odjelEsc}', '${jsAttr(o.radiliste)}', '${jsAttr(o.izvođač)}')` : `showOdjelStanjeModal('${odjelEsc}')`}" title="${vrsta === 'aktivni' ? 'Klikni za sječu i otpremu po danima' : 'Klikni za stanje zaliha'}">
                                     <td class="${radilisteClass}" style="font-weight: 500;">${escapeHtml(o.odjel || '-')}</td>
                                     <td class="right ${radilisteClass}">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
                                     <td class="right ${radilisteClass}">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
@@ -2298,7 +2298,7 @@ try {
                                 </tr>
                             `;
                         };
-                        const odjeliHTML = odjeliData.odjeli.map(renderOdjelRow).join('');
+                        const odjeliHTML = odjeliData.odjeli.map(o => renderOdjelRow(o)).join('');
                         document.getElementById('odjeli-table-body').innerHTML = odjeliHTML;
                         filterOdjeliTable();
 
@@ -2310,10 +2310,10 @@ try {
                         const aktivniSub = document.getElementById('aktivni-odjeli-sub');
                         if (aktivniBody) {
                             aktivniBody.innerHTML = aktivni.length
-                                ? aktivni.map(renderOdjelRow).join('')
+                                ? aktivni.map(o => renderOdjelRow(o, 'aktivni')).join('')
                                 : '<tr><td colspan="8" style="text-align:center;padding:24px;color:#4b5563;">Trenutno nema odjela sa sječom u zadnjih 10 dana</td></tr>';
                         }
-                        if (aktivniSub) aktivniSub.textContent = `Odjeli sa sječom u zadnjih 10 dana · ${aktivni.length}`;
+                        if (aktivniSub) aktivniSub.textContent = `Odjeli sa sječom u zadnjih 10 dana · ${aktivni.length} · klik na odjel: sječa i otprema po danima`;
                     } catch (e) {
                         console.error('Error rendering odjeli table:', e);
                         document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri prikazu tabele</td></tr>';
