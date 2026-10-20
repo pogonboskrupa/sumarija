@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.122';
+        const APP_VERSION = '2.123';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1906,6 +1906,20 @@ try {
             }
         }
 
+        // Dani od zadnje sječe odjela (datum dd.mm.yyyy); 9999 = nema podatka
+        function _dashDanaOdSjece(datumStr) {
+            const d = parseDatumDDMMYYYY(datumStr);
+            if (!d) return 9999;
+            const start = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+            return Math.round((start(new Date()) - start(d)) / 86400000);
+        }
+
+        let dashOdjeliFilter = ''; // '' | 'aktivni' (≤10 d) | '60' (≤60 d)
+        function setOdjeliFilter(mode) {
+            dashOdjeliFilter = (dashOdjeliFilter === mode) ? '' : mode;
+            filterOdjeliTable();
+        }
+
         // Separate render function for dashboard
         async function renderDashboard(data) {
                 // 🚀 KRITIČNO: Učitaj Chart.js PRE korištenja
@@ -1947,30 +1961,35 @@ try {
                 const razlikaDinamika = totalSjeca - totalDinamika;
                 const percentDinamika = totalDinamika > 0 ? ((totalSjeca / totalDinamika) * 100).toFixed(1) : '0.0';
 
-                // Create summary cards
-                const summaryHTML = `
-                    <div class="summary-card green">
-                        <div class="summary-card-title">Sječa</div>
-                        <div class="summary-card-value text-outline-dark">${totalSjeca.toFixed(0)} m³</div>
-                        <div class="summary-card-subtitle">${percentDinamika}% dinamike</div>
-                    </div>
-                    <div class="summary-card blue">
-                        <div class="summary-card-title">Otprema</div>
-                        <div class="summary-card-value text-outline-dark">${totalOtprema.toFixed(0)} m³</div>
-                        <div class="summary-card-subtitle">${totalSjeca > 0 ? ((totalOtprema/totalSjeca)*100).toFixed(1) : '0.0'}% od sječe</div>
-                    </div>
-                    <div class="summary-card">
-                        <div class="summary-card-title">Šuma/Panj</div>
-                        <div class="summary-card-value text-outline-dark">${totalStanje.toFixed(0)} m³</div>
-                        <div class="summary-card-subtitle">Preostalo u šumi</div>
-                    </div>
-                    <div class="summary-card ${razlikaDinamika >= 0 ? 'green' : 'red'}">
-                        <div class="summary-card-title">Razlika sa Dinamikom</div>
-                        <div class="summary-card-value text-outline-dark">${(razlikaDinamika >= 0 ? '+' : '') + razlikaDinamika.toFixed(0)} m³</div>
-                        <div class="summary-card-subtitle">${razlikaDinamika >= 0 ? 'Iznad plana' : 'Ispod plana'}</div>
-                    </div>
-                `;
+                // KPI pregled godine
+                const fmt0 = v => Math.round(v).toLocaleString('de-DE');
+                const clampPct = v => Math.min(100, Math.max(0, v));
+                const sjecaPctDin = totalDinamika > 0 ? (totalSjeca / totalDinamika) * 100 : 0;
+                const otpremaPctSjeca = totalSjeca > 0 ? (totalOtprema / totalSjeca) * 100 : 0;
+                const mjTek = data.mjesecnaStatistika.find(m => (m.mjesec || '').trim().toLowerCase() === ['januar','februar','mart','april','maj','juni','juli','august','septembar','oktobar','novembar','decembar'][new Date().getMonth()]) || {};
+                const mjTekSjeca = mjTek.sjeca || 0, mjTekOtprema = mjTek.otprema || 0, mjTekDin = mjTek.dinamika || 0;
+                const mjTekPct = mjTekDin > 0 ? (mjTekSjeca / mjTekDin) * 100 : 0;
+                const kpi = (cls, ikona, naslov, vrijednost, sub, bar) => `
+                    <div class="dash-kpi ${cls}">
+                        <div class="dash-kpi-title"><span class="dash-kpi-ico">${ikona}</span>${naslov}</div>
+                        <div class="dash-kpi-value">${vrijednost}<small>m³</small></div>
+                        <div class="dash-kpi-sub">${sub}</div>
+                        ${bar != null ? `<div class="dash-kpi-bar"><span style="width:${clampPct(bar).toFixed(1)}%"></span></div>` : ''}
+                    </div>`;
+                const summaryHTML =
+                    kpi('green', '🌲', 'Sječa ' + year, fmt0(totalSjeca), `${percentDinamika}% dinamike`, sjecaPctDin) +
+                    kpi('blue', '🚛', 'Otprema ' + year, fmt0(totalOtprema), `${otpremaPctSjeca.toFixed(1)}% od sječe`, otpremaPctSjeca) +
+                    kpi('neutral', '🌳', 'Šuma / panj', fmt0(totalStanje), 'Posječeno, a nije otpremljeno') +
+                    kpi(razlikaDinamika >= 0 ? 'green' : 'red', razlikaDinamika >= 0 ? '📈' : '📉', 'Razlika sa dinamikom', (razlikaDinamika >= 0 ? '+' : '−') + fmt0(Math.abs(razlikaDinamika)), razlikaDinamika >= 0 ? 'Iznad plana' : 'Ispod plana') +
+                    kpi('amber', '📅', 'Tekući mjesec', fmt0(mjTekSjeca), `Otprema ${fmt0(mjTekOtprema)} m³` + (mjTekDin > 0 ? ` · dinamika ${fmt0(mjTekDin)} m³` : ''), mjTekDin > 0 ? mjTekPct : null);
                 document.getElementById('summary-cards').innerHTML = summaryHTML;
+                const dashYear = document.getElementById('dash-year');
+                if (dashYear) dashYear.textContent = year;
+                const dashSub = document.getElementById('dash-sub');
+                if (dashSub) {
+                    const n = new Date();
+                    dashSub.textContent = 'Stanje na ' + String(n.getDate()).padStart(2, '0') + '.' + String(n.getMonth() + 1).padStart(2, '0') + '.' + n.getFullYear() + ' · ' + String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0');
+                }
 
                 // Create chart
                 const labels = data.mjesecnaStatistika.map(m => m.mjesec);
@@ -2266,19 +2285,20 @@ try {
                             // Escapuj i navodnike i < — ime ide u onclick atribut (JS string u HTML atributu)
                             const odjelEsc = jsAttr(o.odjel);
                             return `
-                                <tr style="cursor:pointer;" onclick="showOdjelStanjeModal('${odjelEsc}')" title="Klikni za stanje zaliha">
-                                    <td class="${radilisteClass}" style="font-weight: 500;">${o.odjel || '-'}</td>
+                                <tr style="cursor:pointer;" data-dana="${_dashDanaOdSjece(o.datumZadnjeSjece)}" onclick="showOdjelStanjeModal('${odjelEsc}')" title="Klikni za stanje zaliha">
+                                    <td class="${radilisteClass}" style="font-weight: 500;">${escapeHtml(o.odjel || '-')}</td>
                                     <td class="right ${radilisteClass}">${(o.sjeca != null && !isNaN(o.sjeca)) ? o.sjeca.toFixed(2) : '0.00'}</td>
                                     <td class="right ${radilisteClass}">${(o.otprema != null && !isNaN(o.otprema)) ? o.otprema.toFixed(2) : '0.00'}</td>
                                     <td class="right ${radilisteClass}">${(o.sumaPanj != null && !isNaN(o.sumaPanj)) ? o.sumaPanj.toFixed(2) : '0.00'}</td>
-                                    <td class="${radilisteClass}">${o.radiliste || '-'}</td>
-                                    <td style="${izvodjacStyle}">${o.izvođač || '-'}</td>
+                                    <td class="${radilisteClass}">${escapeHtml(o.radiliste || '-')}</td>
+                                    <td style="${izvodjacStyle}">${escapeHtml(o.izvođač || '-')}</td>
                                     <td><span style="${sjecaDateStyle}">${o.datumZadnjeSjece || '-'}</span></td>
                                     <td class="right ${realizacijaClass}">${(o.realizacija != null && o.realizacija > 0) ? o.realizacija.toFixed(1) + '%' : '-'}</td>
                                 </tr>
                             `;
                         }).join('');
                         document.getElementById('odjeli-table-body').innerHTML = odjeliHTML;
+                        filterOdjeliTable();
                     } catch (e) {
                         console.error('Error rendering odjeli table:', e);
                         document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri prikazu tabele</td></tr>';

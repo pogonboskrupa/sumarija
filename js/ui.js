@@ -517,17 +517,31 @@
         // Filter odjeli table
         function filterOdjeliTable() {
             const input = document.getElementById('odjeli-search');
-            const filter = input.value.toUpperCase();
-            const table = document.getElementById('odjeli-table');
-            const tr = table.getElementsByTagName('tr');
+            const filter = input ? input.value.toUpperCase().trim() : '';
+            const body = document.getElementById('odjeli-table-body');
+            if (!body) return;
+            const mode = (typeof dashOdjeliFilter !== 'undefined') ? dashOdjeliFilter : '';
+            const maxDana = mode === 'aktivni' ? 10 : mode === '60' ? 60 : Infinity;
 
-            for (let i = 1; i < tr.length; i++) {
-                const td = tr[i].getElementsByTagName('td')[0];
-                if (td) {
-                    const txtValue = td.textContent || td.innerText;
-                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
-                }
-            }
+            let prikazano = 0, ukupno = 0;
+            Array.from(body.rows).forEach(tr => {
+                const td = tr.cells[0];
+                if (!td || tr.cells.length < 2) return; // poruke ("Nema podataka") ostaju
+                ukupno++;
+                const dana = parseInt(tr.dataset.dana, 10);
+                const uOpsegu = (isNaN(dana) ? 9999 : dana) <= maxDana;
+                const naziv = (td.textContent || '').toUpperCase();
+                const vidljiv = uOpsegu && naziv.indexOf(filter) > -1;
+                tr.style.display = vidljiv ? '' : 'none';
+                if (vidljiv) prikazano++;
+            });
+
+            document.querySelectorAll('#odjeli-chips .sz-chip').forEach(c => {
+                c.classList.toggle('active', c.dataset.mode === mode);
+                c.setAttribute('aria-pressed', c.dataset.mode === mode ? 'true' : 'false');
+            });
+            const cnt = document.getElementById('odjeli-count');
+            if (cnt) cnt.textContent = ukupno ? `Prikazano: ${prikazano} od ${ukupno} odjela` : '';
         }
 
         // Filter primaci table
