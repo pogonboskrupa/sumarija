@@ -345,15 +345,8 @@
             <!-- KPI pregled godine (puni se iz renderDashboard) -->
             <div class="dash-kpi-grid" id="summary-cards" aria-live="polite"></div>
 
-            <!-- Grafikoni: godišnji trend + dnevni pregled -->
-            <div class="dash-grid-2">
-            <!-- Godišnji Chart -->
-            <div class="section dash-card">
-                <h2>📈 Trendovi sječe i otpreme</h2>
-                <div class="chart-container">
-                    <canvas id="trendsChart"></canvas>
-                </div>
-            </div>
+            <!-- Dnevni grafikon tekućeg mjeseca -->
+            <div class="dash-grid-1">
             <!-- Dnevni Chart za tekući mjesec -->
             <div class="section dash-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
@@ -412,6 +405,35 @@
                 </div>
             </div>
 
+            <!-- Aktivni odjeli (sječa u zadnjih 10 dana) — isti redovi kao u "Pregled po odjelima", samo aktivni -->
+            <div class="enterprise-card" id="aktivni-odjeli-card">
+                <div class="enterprise-card-header">
+                    <div>
+                        <h2>🪓 Aktivni odjeli</h2>
+                        <span class="card-subtitle" id="aktivni-odjeli-sub">Odjeli sa sječom u zadnjih 10 dana</span>
+                    </div>
+                </div>
+                <div class="enterprise-card-body">
+                    <div class="odjeli-table-wrapper dash-scroll">
+                        <table class="monthly-table" id="aktivni-odjeli-table" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Odjel</th>
+                                <th class="right">Sječa (m³)</th>
+                                <th class="right">Otprema (m³)</th>
+                                <th class="right">Zaliha</th>
+                                <th>Radilište</th>
+                                <th>Izvođač Radova</th>
+                                <th>Zadnja Sječa</th>
+                                <th class="right">Realizacija %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="aktivni-odjeli-body"></tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- Monthly Table - Enterprise Card -->
             <div class="enterprise-card">
                 <div class="enterprise-card-header">
@@ -444,6 +466,13 @@
                 </div>
             </div>
 
+            <!-- Godišnji Chart -->
+            <div class="section dash-card" style="margin-bottom: 22px;">
+                <h2>📈 Trendovi sječe i otpreme</h2>
+                <div class="chart-container">
+                    <canvas id="trendsChart"></canvas>
+                </div>
+            </div>
             <!-- Odjeli Table -->
             <div class="enterprise-card">
                 <div class="enterprise-card-header">

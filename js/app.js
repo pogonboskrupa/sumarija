@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.123';
+        const APP_VERSION = '2.124';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -2275,7 +2275,7 @@ try {
                             return `background-color: ${m.bg}; color: ${m.color}; font-weight: 600; border-radius: 4px; padding: 4px 8px;`;
                         };
 
-                        const odjeliHTML = odjeliData.odjeli.map(o => {
+                        const renderOdjelRow = (o) => {
                             if (!o) return '';
                             const radilisteClass = radilisteColorMap[o.radiliste] || '';
                             const realizacijaClass = getRealizacijaClass(o.realizacija);
@@ -2296,9 +2296,23 @@ try {
                                     <td class="right ${realizacijaClass}">${(o.realizacija != null && o.realizacija > 0) ? o.realizacija.toFixed(1) + '%' : '-'}</td>
                                 </tr>
                             `;
-                        }).join('');
+                        };
+                        const odjeliHTML = odjeliData.odjeli.map(renderOdjelRow).join('');
                         document.getElementById('odjeli-table-body').innerHTML = odjeliHTML;
                         filterOdjeliTable();
+
+                        // Aktivni odjeli (zadnja sječa ≤ 10 dana): iste kolone/redovi, najsvježija sječa prvo
+                        const aktivni = odjeliData.odjeli
+                            .filter(o => o && _dashDanaOdSjece(o.datumZadnjeSjece) <= 10)
+                            .sort((x, y) => _dashDanaOdSjece(x.datumZadnjeSjece) - _dashDanaOdSjece(y.datumZadnjeSjece));
+                        const aktivniBody = document.getElementById('aktivni-odjeli-body');
+                        const aktivniSub = document.getElementById('aktivni-odjeli-sub');
+                        if (aktivniBody) {
+                            aktivniBody.innerHTML = aktivni.length
+                                ? aktivni.map(renderOdjelRow).join('')
+                                : '<tr><td colspan="8" style="text-align:center;padding:24px;color:#4b5563;">Trenutno nema odjela sa sječom u zadnjih 10 dana</td></tr>';
+                        }
+                        if (aktivniSub) aktivniSub.textContent = `Odjeli sa sječom u zadnjih 10 dana · ${aktivni.length}`;
                     } catch (e) {
                         console.error('Error rendering odjeli table:', e);
                         document.getElementById('odjeli-table-body').innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc2626;">Greška pri prikazu tabele</td></tr>';
