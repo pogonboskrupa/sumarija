@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.136';
+        const APP_VERSION = '2.137';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -5655,123 +5655,65 @@ try {
                     }
                     loadPrimaciIzvodjacDetalj();
                 }
+                const tlSel = document.getElementById('primaci-timeline-select');
+                if (tlSel) {
+                    const prethodniTl = tlSel.value;
+                    tlSel.innerHTML = '<option value="">Svi izvođači</option>' +
+                        data.izvodjaci.map(iz => `<option value="${escapeHtml(iz.naziv)}">${escapeHtml(iz.naziv)}</option>`).join('');
+                    if (prethodniTl && data.izvodjaci.some(iz => iz.naziv === prethodniTl)) tlSel.value = prethodniTl;
+                    const tlView = document.getElementById('primaci-timeline-view');
+                    if (tlView && !tlView.classList.contains('hidden')) renderPrimaciIzvodjaciTimeline();
+                }
 
-                // Render mjesečnu tabelu
+                // ---- Tabela po mjesecima: heatmap po mjesecu, udio u ukupnom, klik na red = detalj ----
                 const mjeseci = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
+                const tekMj = new Date().getMonth();
+                const f2 = v => v > 0 ? v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '–';
+                const izvodjaci = [...data.izvodjaci].sort((a, b) => (Number(b.ukupno) || 0) - (Number(a.ukupno) || 0));
+                const grand = izvodjaci.reduce((sum, iz) => sum + (Number(iz.ukupno) || 0), 0);
+                const colMax = mjeseci.map((_, m) => Math.max(0, ...izvodjaci.map(iz => Number((iz.mjeseci || [])[m]) || 0)));
 
-                let headerHTML = `
-                    <tr>
-                        <th style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 12px; position: sticky; top: 0; z-index: 20;">
-                            👷 Izvođač radova
-                        </th>
-                `;
-                mjeseci.forEach(mj => {
-                    headerHTML += `<th style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 12px;">${mj}</th>`;
-                });
-                headerHTML += `
-                    <th style="background: linear-gradient(135deg, #7c2d12, #451a03); color: white; padding: 12px; font-weight: 900; position: sticky; top: 0; z-index: 20;">
-                        UKUPNO
-                    </th>
-                </tr>
-                `;
-                document.getElementById('primaci-izvodjaci-header').innerHTML = headerHTML;
+                document.getElementById('primaci-izvodjaci-header').innerHTML =
+                    '<tr><th class="iz-first">Izvođač radova</th>' +
+                    mjeseci.map((mj, m) => `<th class="right${m === tekMj ? ' iz-tek' : ''}">${mj}</th>`).join('') +
+                    '<th class="right iz-uk">UKUPNO</th><th class="iz-udio-h">Udio</th></tr>';
 
                 let bodyHTML = '';
-                data.izvodjaci.forEach((izvodjac, idx) => {
-                    const rowBg = idx % 2 === 0 ? '#fff7ed' : '#ffffff';
-                    const hoverBg = '#ffedd5';
-
-                    const mjeseciCells = izvodjac.mjeseci.map(val => {
-                        const displayVal = val > 0 ? val.toFixed(2) : '-';
-                        const fontWeight = val > 0 ? 'font-weight: 700; color: #7c2d12;' : 'color: #d1d5db;';
-                        return `<td style="${fontWeight} border: 1px solid #fed7aa; font-family: 'Courier New', monospace; font-size: 11px; text-align: right; padding: 8px;">${displayVal}</td>`;
+                izvodjaci.forEach(izvodjac => {
+                    const udio = grand > 0 ? (Number(izvodjac.ukupno) || 0) / grand * 100 : 0;
+                    const cells = mjeseci.map((_, m) => {
+                        const v = Number((izvodjac.mjeseci || [])[m]) || 0;
+                        const heat = v > 0 && colMax[m] > 0 ? ` heat" style="--i:${Math.sqrt(v / colMax[m]).toFixed(3)}` : '';
+                        return `<td class="right${v > 0 ? '' : ' is-zero'}${m === tekMj ? ' iz-tek' : ''}${heat}">${f2(v)}</td>`;
                     }).join('');
-
-                    bodyHTML += `
-                        <tr style="background: ${rowBg}; transition: all 0.15s ease;" onmouseover="this.style.background='${hoverBg}';" onmouseout="this.style.background='${rowBg}';">
-                            <td style="font-weight: 700; font-size: 12px; border: 1px solid #fed7aa; padding: 10px; color: #7c2d12;">
-                                ${izvodjac.naziv}
-                            </td>
-                            ${mjeseciCells}
-                            <td style="background: #fef3c7; border: 2px solid #f59e0b; font-family: 'Courier New', monospace; text-align: right; padding: 10px; font-weight: 900; font-size: 13px; color: #92400e;">
-                                ${izvodjac.ukupno.toFixed(2)}
-                            </td>
-                        </tr>
-                    `;
+                    bodyHTML += `<tr class="iz-row" data-iz="${escapeHtml(izvodjac.naziv)}" tabindex="0" onclick="odaberiIzvodjaca(this.dataset.iz)" onkeydown="if(event.key==='Enter')odaberiIzvodjaca(this.dataset.iz)" title="Klikni za detaljan pregled">
+                        <td class="iz-first">${escapeHtml(izvodjac.naziv)}</td>${cells}
+                        <td class="right iz-uk">${f2(Number(izvodjac.ukupno) || 0)}</td>
+                        <td class="iz-udio"><div class="iz-bar"><span style="width:${Math.max(udio > 0 ? 3 : 0, udio).toFixed(1)}%"></span></div><small>${udio.toFixed(1).replace('.', ',')}%</small></td>
+                    </tr>`;
                 });
-
-                // UKUPNO red — svaka ćelija je zbir SVOJE kolone iznad (mjeseci
-                // se sabiraju po mjesecu, zadnja ćelija je zbir UKUPNO kolone).
-                const mjeseciTotals = mjeseci.map((_, mIdx) =>
-                    data.izvodjaci.reduce((s, izv) => s + (Number((izv.mjeseci || [])[mIdx]) || 0), 0));
-                const grandTotal = data.izvodjaci.reduce((s, izv) => s + (Number(izv.ukupno) || 0), 0);
-                const totalCells = mjeseciTotals.map(val => {
-                    const displayVal = val > 0 ? val.toFixed(2) : '-';
-                    return `<td style="border: 1px solid #7c2d12; font-family: 'Courier New', monospace; font-size: 12px; text-align: right; padding: 10px; font-weight: 800; color: white;">${displayVal}</td>`;
-                }).join('');
-                bodyHTML += `
-                    <tr class="ukupno-row" style="background: linear-gradient(135deg, #7c2d12, #451a03);">
-                        <td style="font-weight: 900; font-size: 13px; border: 1px solid #7c2d12; padding: 12px; color: white;">
-                            📊 UKUPNO
-                        </td>
-                        ${totalCells}
-                        <td style="background: #92400e; border: 2px solid #f59e0b; font-family: 'Courier New', monospace; text-align: right; padding: 12px; font-weight: 900; font-size: 14px; color: white;">
-                            ${grandTotal.toFixed(2)}
-                        </td>
-                    </tr>
-                `;
+                const mjeseciTotals = mjeseci.map((_, m) => izvodjaci.reduce((sum, iz) => sum + (Number((iz.mjeseci || [])[m]) || 0), 0));
+                bodyHTML += `<tr class="sum-row"><td class="iz-first">📊 UKUPNO</td>${mjeseciTotals.map(v => `<td class="right">${f2(v)}</td>`).join('')}<td class="right iz-uk">${f2(grand)}</td><td></td></tr>`;
                 document.getElementById('primaci-izvodjaci-body').innerHTML = bodyHTML;
 
-                // Render godišnju rekapitulaciju po sortimentima
-                let recapHeaderHTML = `
-                    <tr>
-                        <th style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 12px; position: sticky; top: 0; z-index: 20;">
-                            👷 Izvođač radova
-                        </th>
-                `;
-                data.sortimentiNazivi.forEach(s => {
-                    recapHeaderHTML += `<th style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 12px; position: sticky; top: 0; z-index: 20; font-size: 10px;">${s}</th>`;
-                });
-                recapHeaderHTML += `</tr>`;
-                document.getElementById('primaci-izvodjaci-recap-header').innerHTML = recapHeaderHTML;
-
+                // ---- Godišnja rekapitulacija po sortimentima ----
+                const sortNazivi = data.sortimentiNazivi || [];
+                const sortClass = sn => typeof sortimentColClass === 'function' ? sortimentColClass(sn) : '';
+                document.getElementById('primaci-izvodjaci-recap-header').innerHTML =
+                    '<tr><th class="iz-first">Izvođač radova</th>' + sortNazivi.map(sn => `<th class="right ${sortClass(sn)}">${escapeHtml(sn)}</th>`).join('') + '</tr>';
                 let recapBodyHTML = '';
-                data.izvodjaci.forEach((izvodjac, idx) => {
-                    const rowBg = idx % 2 === 0 ? '#fff7ed' : '#ffffff';
-
-                    const sortimentiCells = data.sortimentiNazivi.map(s => {
-                        const val = izvodjac.sortimentiUkupno[s] || 0;
-                        const displayVal = val > 0 ? val.toFixed(2) : '-';
-                        const fontWeight = val > 0 ? 'font-weight: 700; color: #7c2d12;' : 'color: #d1d5db;';
-                        return `<td style="${fontWeight} border: 1px solid #fed7aa; font-family: 'Courier New', monospace; font-size: 10px; text-align: right; padding: 8px;">${displayVal}</td>`;
-                    }).join('');
-
-                    recapBodyHTML += `
-                        <tr style="background: ${rowBg};">
-                            <td style="font-weight: 700; font-size: 12px; border: 1px solid #fed7aa; padding: 10px; color: #7c2d12;">
-                                ${izvodjac.naziv}
-                            </td>
-                            ${sortimentiCells}
-                        </tr>
-                    `;
+                izvodjaci.forEach(izvodjac => {
+                    recapBodyHTML += `<tr class="iz-row" data-iz="${escapeHtml(izvodjac.naziv)}" tabindex="0" onclick="odaberiIzvodjaca(this.dataset.iz)" onkeydown="if(event.key==='Enter')odaberiIzvodjaca(this.dataset.iz)"><td class="iz-first">${escapeHtml(izvodjac.naziv)}</td>` +
+                        sortNazivi.map(sn => {
+                            const v = Number((izvodjac.sortimentiUkupno || {})[sn]) || 0;
+                            return `<td class="right ${sortClass(sn)}${v > 0 ? '' : ' is-zero'}">${f2(v)}</td>`;
+                        }).join('') + '</tr>';
                 });
-
-                // UKUPNO red — zbir svakog sortimenta preko svih izvođača
-                const recapTotalCells = data.sortimentiNazivi.map(s => {
-                    const val = data.izvodjaci.reduce((acc, izv) => acc + (Number((izv.sortimentiUkupno || {})[s]) || 0), 0);
-                    const displayVal = val > 0 ? val.toFixed(2) : '-';
-                    return `<td style="border: 1px solid #7c2d12; font-family: 'Courier New', monospace; font-size: 11px; text-align: right; padding: 10px; font-weight: 800; color: white;">${displayVal}</td>`;
-                }).join('');
-                recapBodyHTML += `
-                    <tr class="ukupno-row" style="background: linear-gradient(135deg, #7c2d12, #451a03);">
-                        <td style="font-weight: 900; font-size: 13px; border: 1px solid #7c2d12; padding: 12px; color: white;">
-                            📊 UKUPNO
-                        </td>
-                        ${recapTotalCells}
-                    </tr>
-                `;
+                recapBodyHTML += `<tr class="sum-row"><td class="iz-first">📊 UKUPNO</td>${sortNazivi.map(sn => {
+                    const v = izvodjaci.reduce((acc, iz) => acc + (Number((iz.sortimentiUkupno || {})[sn]) || 0), 0);
+                    return `<td class="right">${f2(v)}</td>`;
+                }).join('')}</tr>`;
                 document.getElementById('primaci-izvodjaci-recap-body').innerHTML = recapBodyHTML;
-
 
             } catch (error) {
                 console.error('Error in loadPrimaciByIzvodjac:', error);
@@ -5787,8 +5729,17 @@ try {
         // — koristi već učitane podatke iz loadPrimaciByIzvodjac (_primaciIzvodjaciData),
         // bez novog fetch-a: mjesečna tabela sa trendom u odnosu na prethodni
         // mjesec, godišnji ukupno po sortimentima, i linijski grafikon trenda.
+        // Klik na red tabele izvođača — izaberi ga u dropdownu i otvori detalj
+        function odaberiIzvodjaca(naziv) {
+            const sel = document.getElementById('primaci-izvodjac-select');
+            if (!sel) return;
+            sel.value = naziv;
+            loadPrimaciIzvodjacDetalj();
+            const card = document.getElementById('primaci-izvodjac-detalj');
+            if (card && !card.classList.contains('hidden')) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
         function loadPrimaciIzvodjacDetalj() {
-            renderPrimaciIzvodjaciTimeline(); // isti dropdown filtrira i timeline ispod
 
             const sel = document.getElementById('primaci-izvodjac-select');
             const card = document.getElementById('primaci-izvodjac-detalj');
@@ -5830,7 +5781,7 @@ try {
             });
             bodyHtml += '<tr class="ukupno-row" style="background:linear-gradient(135deg,#7c2d12,#451a03);color:#fff;">' +
                 '<td style="font-weight:900;padding:10px;">📊 UKUPNO</td>' +
-                '<td style="text-align:right;font-weight:900;padding:10px;">' + (izvodjac.ukupno || 0).toFixed(2) + '</td><td></td></tr>';
+                '<td style="text-align:right;font-weight:900;padding:10px;color:#fff;">' + (izvodjac.ukupno || 0).toFixed(2) + '</td><td></td></tr>';
             document.getElementById('primaci-izvodjac-detalj-body').innerHTML = bodyHtml;
 
             // Sortimenti — godišnji ukupno za izabranog izvođača
@@ -6214,7 +6165,7 @@ try {
                 const d = _parseDatumTl(p.datum);
                 return d && d.getFullYear() === tekucaGodina;
             });
-            const sel = document.getElementById('primaci-izvodjac-select');
+            const sel = document.getElementById('primaci-timeline-select');
             const izabraniIzvodjac = sel ? sel.value : '';
 
             const primkeFiltrirano = izabraniIzvodjac
@@ -6246,7 +6197,7 @@ try {
             });
 
             if (!stavke.length) {
-                view.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af;">Nema evidentirane sječe' + (izabraniIzvodjac ? ' za ' + izabraniIzvodjac : '') + '.</div>';
+                view.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af;">Nema evidentirane sječe' + (izabraniIzvodjac ? ' za ' + escapeHtml(izabraniIzvodjac) : '') + '.</div>';
                 return;
             }
 
@@ -6277,19 +6228,24 @@ try {
                 const barsHtml = s.segmenti.map(seg => {
                     const left = pct(seg.dayStart);
                     const width = pct(Math.max(seg.dayEnd - seg.dayStart + 1, 2));
-                    const naslov = s.odjel + ': ' + _fmtDatumTl(seg.datumPocetka) + ' → ' + _fmtDatumTl(seg.datumKraja);
+                    const naslov = escapeHtml(s.odjel + ': ' + _fmtDatumTl(seg.datumPocetka) + ' → ' + _fmtDatumTl(seg.datumKraja));
                     return '<div title="' + naslov + '" style="position:absolute;left:' + left + '%;width:' + width + '%;top:4px;bottom:4px;min-width:5px;background:#ea580c;border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.15);"></div>';
                 }).join('');
                 return '<div style="display:flex;align-items:center;border-bottom:1px solid #f1f5f9;">' +
-                    '<div style="flex:0 0 ' + LABEL_COL_WIDTH + 'px;padding:6px 10px;font-size:13px;font-weight:600;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + s.odjel + '</div>' +
+                    '<div style="flex:0 0 ' + LABEL_COL_WIDTH + 'px;padding:6px 10px;font-size:13px;font-weight:600;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:sticky;left:0;background:#fff;z-index:2;">' + escapeHtml(s.odjel) + '</div>' +
                     '<div style="flex:1;position:relative;height:28px;' + gridBg + '">' + barsHtml + '</div></div>';
             }).join('');
 
+            // Današnji dan — vertikalna linija preko svih redova (samo za tekuću godinu)
+            const danasLinija = (godina === new Date().getFullYear())
+                ? '<div title="Danas" style="position:absolute;top:0;bottom:0;left:calc(' + LABEL_COL_WIDTH + 'px + (100% - ' + LABEL_COL_WIDTH + 'px) * ' + (_dayOfYearTl(new Date()) / totalDays).toFixed(5) + ');width:2px;background:#dc2626;opacity:.75;z-index:3;pointer-events:none;"></div>'
+                : '';
+
             view.innerHTML = '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;overflow-x:auto;">' +
                 '<div style="font-size:12px;color:#6b7280;margin-bottom:12px;">Odjeli redani po datumu kad je sječa počela' +
-                (izabraniIzvodjac ? ' — izvođač: <strong>' + izabraniIzvodjac + '</strong>' : ' — svi izvođači') +
+                (izabraniIzvodjac ? ' — izvođač: <strong>' + escapeHtml(izabraniIzvodjac) + '</strong>' : ' — svi izvođači') +
                 '. Pauza duža od ' + TL_SEGMENT_PAUZA_DANA + ' dana prikazana je kao dvije trake na istom redu.</div>' +
-                '<div style="min-width:760px;">' +
+                '<div style="min-width:760px;position:relative;">' + danasLinija +
                 '<div style="display:flex;"><div style="flex:0 0 ' + LABEL_COL_WIDTH + 'px;"></div>' +
                 '<div style="flex:1;display:flex;border-bottom:2px solid #cbd5e1;padding-bottom:5px;margin-bottom:2px;">' + monthHeaderHtml + '</div></div>' +
                 rowsHtml +

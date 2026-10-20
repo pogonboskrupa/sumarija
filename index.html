@@ -612,7 +612,8 @@
                 <button class="submenu-tab active" onclick="switchPrimaciSubmenu('daily')">📅 Sječa po danima</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('monthly')">📊 Mjesečni prikaz po radnicima</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('radilista')">🏗️ Radilišta</button>
-                <button class="submenu-tab" onclick="switchPrimaciSubmenu('izvodjaci')">👷 Izvođači</button>
+                <button class="submenu-tab" onclick="switchPrimaciSubmenu('izvodjaci')">👷 Izvođači radova</button>
+                <button class="submenu-tab" onclick="switchPrimaciSubmenu('timeline')">📅 Timeline realizacije</button>
                 <button class="submenu-tab" onclick="switchPrimaciSubmenu('sortimenti-by-primac')">🏷️ Sortimentni po primačima</button>
             </div>
 
@@ -795,65 +796,80 @@
 
             <!-- Prikaz po izvođačima -->
             <div id="primaci-izvodjaci-view" class="submenu-content hidden">
-                <div class="section">
-                    <h3 style="color: #ea580c; text-align: center; margin-bottom: 20px;">👷 Prikaz sječe po izvođačima radova</h3>
-                    <div class="controls-bar">
-                        <select id="primaci-izvodjac-select" class="month-select" onchange="loadPrimaciIzvodjacDetalj()">
-                            <option value="">— Odaberite izvođača za detaljan pregled —</option>
-                        </select>
-                    </div>
-
-                    <!-- Detaljan pregled izabranog izvođača — vidljivo samo kad je
-                         nešto izabrano u dropdownu iznad; koristi već učitane
-                         podatke (loadPrimaciByIzvodjac), bez novog fetch-a. -->
-                    <div id="primaci-izvodjac-detalj" class="enterprise-card hidden" style="margin-bottom: 24px;">
-                        <div class="enterprise-card-header">
-                            <div>
-                                <h2 id="primaci-izvodjac-detalj-naziv">📊 Detaljan pregled</h2>
-                                <span class="card-subtitle">Mjesečni trend i pregled po sortimentima za tekuću godinu</span>
-                            </div>
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>👷 Sječa po izvođačima radova</h2>
+                            <span class="card-subtitle">Posječeno po mjesecima i sortimentima — klik na izvođača otvara detaljan pregled</span>
                         </div>
-                        <div class="enterprise-card-body">
-                            <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:20px;">
-                                <div style="flex:1 1 260px; min-width:240px; overflow-x:auto;">
+                        <div class="iz-toolbar">
+                            <select id="primaci-izvodjac-select" class="month-select" onchange="loadPrimaciIzvodjacDetalj()" aria-label="Izvođač">
+                                <option value="">— Odaberite izvođača za detaljan pregled —</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="enterprise-card-body">
+                        <!-- Detaljan pregled izabranog izvođača (koristi već učitane podatke) -->
+                        <div id="primaci-izvodjac-detalj" class="iz-detalj hidden">
+                            <div class="iz-detalj-head">
+                                <h3 id="primaci-izvodjac-detalj-naziv">📊 Detaljan pregled</h3>
+                                <button type="button" class="iz-zatvori" onclick="document.getElementById('primaci-izvodjac-select').value=''; loadPrimaciIzvodjacDetalj();">✕ Zatvori detalj</button>
+                            </div>
+                            <div class="iz-detalj-grid">
+                                <div class="iz-scroll">
                                     <table class="kupci-table" id="primaci-izvodjac-detalj-table" style="width:100%;">
                                         <thead id="primaci-izvodjac-detalj-header"></thead>
                                         <tbody id="primaci-izvodjac-detalj-body"></tbody>
                                     </table>
                                 </div>
-                                <div style="flex:1 1 320px; min-width:280px; position:relative; height:280px;">
+                                <div class="iz-chart">
                                     <canvas id="primaci-izvodjac-trend-chart"></canvas>
                                 </div>
                             </div>
-                            <h4 style="color: #7c2d12; margin-bottom: 12px;">🪵 Sortimenti — godišnji ukupno</h4>
-                            <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                            <h4 class="iz-h4">🪵 Sortimenti — godišnji ukupno</h4>
+                            <div class="iz-scroll">
                                 <table class="kupci-table" id="primaci-izvodjac-sortimenti-table" style="width:100%;">
                                     <thead id="primaci-izvodjac-sortimenti-header"></thead>
                                     <tbody id="primaci-izvodjac-sortimenti-body"></tbody>
                                 </table>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Timeline realizacije — sviizvođači, ili samo izabrani (isti
-                         dropdown iznad). Odjeli su redani po datumu kad je sječa
-                         u njima POČELA (ne po GJ kao u Godišnji plan tabu), da se
-                         vidi hronološki tok rada izvođača/izvođača kroz godinu. -->
-                    <h4 style="color: #7c2d12; margin-top: 30px; margin-bottom: 12px;">📅 Timeline realizacije</h4>
-                    <div id="primaci-izvodjaci-timeline"></div>
+                        <h4 class="iz-h4">📆 Po mjesecima (m³)</h4>
+                        <div class="iz-scroll">
+                            <table class="iz-table" id="primaci-izvodjaci-table">
+                                <thead id="primaci-izvodjaci-header"></thead>
+                                <tbody id="primaci-izvodjaci-body"></tbody>
+                            </table>
+                        </div>
 
-                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top:30px;">
-                        <table class="monthly-table" id="primaci-izvodjaci-table">
-                            <thead id="primaci-izvodjaci-header"></thead>
-                            <tbody id="primaci-izvodjaci-body"></tbody>
-                        </table>
+                        <h4 class="iz-h4">📊 Godišnja rekapitulacija po sortimentima</h4>
+                        <div class="iz-scroll">
+                            <table class="iz-table" id="primaci-izvodjaci-recap">
+                                <thead id="primaci-izvodjaci-recap-header"></thead>
+                                <tbody id="primaci-izvodjaci-recap-body"></tbody>
+                            </table>
+                        </div>
                     </div>
-                    <h4 style="color: #7c2d12; margin-top: 30px; margin-bottom: 15px;">📊 Godišnja rekapitulacija po sortimentima</h4>
-                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                        <table class="monthly-table" id="primaci-izvodjaci-recap">
-                            <thead id="primaci-izvodjaci-recap-header"></thead>
-                            <tbody id="primaci-izvodjaci-recap-body"></tbody>
-                        </table>
+                </div>
+            </div>
+
+            <!-- Timeline realizacije (odvojen podtab) — odjeli redani po datumu kad je sječa počela -->
+            <div id="primaci-timeline-view" class="submenu-content hidden">
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📅 Timeline realizacije</h2>
+                            <span class="card-subtitle">Hronološki tok sječe po odjelima kroz tekuću godinu</span>
+                        </div>
+                        <div class="iz-toolbar">
+                            <select id="primaci-timeline-select" class="month-select" onchange="renderPrimaciIzvodjaciTimeline()" aria-label="Izvođač">
+                                <option value="">Svi izvođači</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="enterprise-card-body">
+                        <div id="primaci-izvodjaci-timeline"></div>
                     </div>
                 </div>
             </div>
