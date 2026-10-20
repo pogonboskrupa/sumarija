@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.132';
+        const APP_VERSION = '2.133';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -8372,74 +8372,7 @@ try {
 
         function renderPrimacOdjeliPage() {
             if (!primacOdjeliData) return;
-
-            const start = primacOdjeliCurrentPage * primacOdjeliPageSize;
-            const end = Math.min(start + primacOdjeliPageSize, primacOdjeliData.odjeli.length);
-            const pageOdjeli = primacOdjeliData.odjeli.slice(start, end);
-
-            let html = '';
-
-            pageOdjeli.forEach(odjel => {
-                // Kreiraj HTML za odjel sa dve tabele
-                const yearBadge = odjel.godina ? `<span style="background: #fbbf24; color: #78350f; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; margin-left: 10px;">${odjel.godina}</span>` : '';
-                html += `
-                    <div style="margin-bottom: 40px; border: 2px solid #10b981; border-radius: 12px; padding: 20px; background: #f0fdf4;">
-                        <h3 style="color: #047857; margin-bottom: 16px;">📁 ${odjel.odjel} ${yearBadge}</h3>
-                        <p style="font-size: 13px; color: #4b5563; margin-bottom: 16px;">Zadnji unos: ${odjel.zadnjiDatum || 'N/A'}</p>
-
-                        <!-- Apsolutne vrijednosti -->
-                        <h4 style="font-size: 15px; margin-bottom: 8px; color: #059669;">Apsolutne vrijednosti (m³)</h4>
-                        <div class="kupci-table-wrapper" style="margin-bottom: 20px;">
-                            <table class="kupci-table">
-                                <thead>
-                                    <tr>
-                                        ${primacOdjeliData.sortimentiNazivi.map(s => `<th class="sortiment-col">${s}</th>`).join('')}
-                                        <th class="ukupno-col">Ukupno</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        ${primacOdjeliData.sortimentiNazivi.map(s => {
-                                            const val = odjel.sortimenti[s] || 0;
-                                            return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
-                                        }).join('')}
-                                        <td class="ukupno-col">${odjel.ukupno.toFixed(2)}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Procentualne vrijednosti -->
-                        <h4 style="font-size: 15px; margin-bottom: 8px; color: #059669;">Procentualni udio (%)</h4>
-                        <div class="kupci-table-wrapper">
-                            <table class="kupci-table">
-                                <thead>
-                                    <tr>
-                                        ${primacOdjeliData.sortimentiNazivi.map(s => `<th class="sortiment-col">${s}</th>`).join('')}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        ${primacOdjeliData.sortimentiNazivi.map(s => {
-                                            const val = odjel.sortimenti[s] || 0;
-                                            const percent = odjel.ukupno > 0 ? (val / odjel.ukupno) * 100 : 0;
-                                            return `<td class="sortiment-col">${percent > 0 ? percent.toFixed(1) + '%' : '-'}</td>`;
-                                        }).join('')}
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-            });
-
-            document.getElementById('primac-odjeli-container').innerHTML = html;
-
-            // Update pagination controls
-            const totalPages = Math.ceil(primacOdjeliData.odjeli.length / primacOdjeliPageSize);
-            document.getElementById('primac-odjeli-page-info').textContent = `Stranica ${primacOdjeliCurrentPage + 1} od ${totalPages}`;
-            document.getElementById('primac-odjeli-prev').disabled = primacOdjeliCurrentPage === 0;
-            document.getElementById('primac-odjeli-next').disabled = primacOdjeliCurrentPage >= totalPages - 1;
+            renderOdjelKartice('primac-odjeli-container', primacOdjeliData, { kind: 'simple', tema: 'green', pagPrevId: 'primac-odjeli-prev' });
         }
 
         function prevPagePrimacOdjeli() {
@@ -8853,55 +8786,7 @@ try {
         // Renderuj stranicu odjela za primaci-admin
         function renderPrimaciAdminOdjeliPage() {
             if (!primaciAdminOdjeliData || !primaciAdminOdjeliData.odjeli) return;
-
-            var start = primaciAdminOdjeliPage * primaciAdminOdjeliPageSize;
-            var end = Math.min(start + primaciAdminOdjeliPageSize, primaciAdminOdjeliData.odjeli.length);
-            var pageOdjeli = primaciAdminOdjeliData.odjeli.slice(start, end);
-
-            var html = '';
-            pageOdjeli.forEach(function(odjel) {
-                var yearBadge = odjel.godina ? '<span style="background: #fbbf24; color: #78350f; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; margin-left: 10px;">' + odjel.godina + '</span>' : '';
-
-                var sortHeaderCells = primaciAdminOdjeliData.sortimentiNazivi.map(function(s) {
-                    return '<th class="sortiment-col">' + s + '</th>';
-                }).join('');
-
-                var sortValCells = primaciAdminOdjeliData.sortimentiNazivi.map(function(s) {
-                    var val = odjel.sortimenti[s] || 0;
-                    return '<td class="sortiment-col">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
-                }).join('');
-
-                var sortPctCells = primaciAdminOdjeliData.sortimentiNazivi.map(function(s) {
-                    var val = odjel.sortimenti[s] || 0;
-                    var pct = odjel.ukupno > 0 ? (val / odjel.ukupno) * 100 : 0;
-                    return '<td class="sortiment-col">' + (pct > 0 ? pct.toFixed(1) + '%' : '-') + '</td>';
-                }).join('');
-
-                html += '<div style="margin-bottom: 24px; border: 2px solid #10b981; border-radius: 12px; padding: 20px; background: #f0fdf4;">' +
-                    '<h3 style="color: #047857; margin-bottom: 12px;">📁 ' + odjel.odjel + ' ' + yearBadge + '</h3>' +
-                    '<p style="font-size: 13px; color: #4b5563; margin-bottom: 12px;">Zadnji unos: ' + (odjel.zadnjiDatum || 'N/A') + ' | Ukupno: <strong>' + odjel.ukupno.toFixed(2) + ' m³</strong></p>' +
-                    '<h4 style="font-size: 14px; margin-bottom: 8px; color: #059669;">Apsolutne vrijednosti (m³)</h4>' +
-                    '<div class="kupci-table-wrapper" style="margin-bottom: 16px;">' +
-                    '<table class="kupci-table"><thead><tr>' + sortHeaderCells + '<th class="ukupno-col">Ukupno</th></tr></thead>' +
-                    '<tbody><tr>' + sortValCells + '<td class="ukupno-col">' + odjel.ukupno.toFixed(2) + '</td></tr></tbody></table></div>' +
-                    '<h4 style="font-size: 14px; margin-bottom: 8px; color: #059669;">Procentualni udio (%)</h4>' +
-                    '<div class="kupci-table-wrapper">' +
-                    '<table class="kupci-table"><thead><tr>' + sortHeaderCells + '</tr></thead>' +
-                    '<tbody><tr>' + sortPctCells + '</tr></tbody></table></div>' +
-                    '</div>';
-            });
-
-            if (pageOdjeli.length === 0) {
-                html = '<div style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka o odjelima za ovog primača.</div>';
-            }
-
-            document.getElementById('primaci-admin-odjeli-container').innerHTML = html;
-
-            // Pagination
-            var totalPages = Math.ceil(primaciAdminOdjeliData.odjeli.length / primaciAdminOdjeliPageSize);
-            document.getElementById('primaci-admin-odjeli-page-info').textContent = 'Stranica ' + (primaciAdminOdjeliPage + 1) + ' od ' + Math.max(totalPages, 1);
-            document.getElementById('primaci-admin-odjeli-prev').disabled = primaciAdminOdjeliPage === 0;
-            document.getElementById('primaci-admin-odjeli-next').disabled = primaciAdminOdjeliPage >= totalPages - 1;
+            renderOdjelKartice('primaci-admin-odjeli-container', primaciAdminOdjeliData, { kind: 'simple', tema: 'green', pagPrevId: 'primaci-admin-odjeli-prev' });
         }
 
         function prevPagePrimaciAdminOdjeli() {
@@ -8969,115 +8854,7 @@ try {
 
         function renderOdjeliDefaultPage() {
             if (!odjeliDefaultData || !odjeliDefaultData.odjeli) return;
-
-            var containerEl = document.getElementById('primaci-admin-odjeli-default-container');
-            var paginationEl = document.getElementById('primaci-admin-odjeli-default-pagination');
-
-            var start = odjeliDefaultPage * odjeliDefaultPageSize;
-            var end = Math.min(start + odjeliDefaultPageSize, odjeliDefaultData.odjeli.length);
-            var pageOdjeli = odjeliDefaultData.odjeli.slice(start, end);
-
-            var html = '';
-            pageOdjeli.forEach(function(odjel, idx) {
-                var boja = odjelBoje[(start + idx) % odjelBoje.length];
-                var primaciArr = odjel.primaci || [];
-                var sortNazivi = odjeliDefaultData.sortimentiNazivi;
-
-                // Header sortimenta za tabele
-                var sortHeaderCells = sortNazivi.map(function(s) {
-                    return '<th class="sortiment-col" style="white-space: nowrap;">' + s + '</th>';
-                }).join('');
-
-                // === TABELA 1: Apsolutne vrijednosti - primači kao redovi ===
-                var absRows = '';
-                primaciArr.forEach(function(p) {
-                    var cells = sortNazivi.map(function(s) {
-                        var val = (p.sortimenti && p.sortimenti[s]) || 0;
-                        return '<td class="sortiment-col">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
-                    }).join('');
-                    absRows += '<tr><td style="white-space: nowrap; font-weight: 500; position: sticky; left: 0; background: white; z-index: 1;">' + p.ime + '</td>' + cells + '</tr>';
-                });
-                // UKUPNO red
-                var totalAbsCells = sortNazivi.map(function(s) {
-                    var val = odjel.sortimenti[s] || 0;
-                    return '<td class="sortiment-col" style="font-weight: 700;">' + (val > 0 ? val.toFixed(2) : '-') + '</td>';
-                }).join('');
-                absRows += '<tr style="background: ' + boja.bg + '; border-top: 2px solid ' + boja.border + ';"><td style="font-weight: 700; position: sticky; left: 0; background: ' + boja.bg + '; z-index: 1;">UKUPNO</td>' +
-                    totalAbsCells + '</tr>';
-
-                // === TABELA 2: Procentualni udio - primači kao redovi ===
-                // Izračunaj rankove po svakom sortimentu za obojenje (zlato/srebro/bronza)
-                var medalBoje = ['#FFD700', '#C0C0C0', '#CD7F32'];
-                var pctData = primaciArr.map(function(p) {
-                    return sortNazivi.map(function(s) {
-                        var pVal = (p.sortimenti && p.sortimenti[s]) || 0;
-                        return p.ukupno > 0 ? (pVal / p.ukupno) * 100 : 0;
-                    });
-                });
-                // Za svaku kolonu odredi rang (top 3)
-                var colRanks = sortNazivi.map(function(s, colIdx) {
-                    var vals = pctData.map(function(row, rowIdx) { return { val: row[colIdx], idx: rowIdx }; })
-                        .filter(function(v) { return v.val > 0; })
-                        .sort(function(a, b) { return b.val - a.val; });
-                    var ranks = {};
-                    for (var r = 0; r < Math.min(3, vals.length); r++) {
-                        ranks[vals[r].idx] = r;
-                    }
-                    return ranks;
-                });
-
-                var pctRows = '';
-                primaciArr.forEach(function(p, pIdx) {
-                    var cells = sortNazivi.map(function(s, colIdx) {
-                        var pct = pctData[pIdx][colIdx];
-                        var rank = colRanks[colIdx][pIdx];
-                        var bg = rank !== undefined ? ' background: ' + medalBoje[rank] + ';' : '';
-                        return '<td class="sortiment-col" style="' + bg + '">' + (pct > 0 ? pct.toFixed(1) + '%' : '-') + '</td>';
-                    }).join('');
-                    pctRows += '<tr><td style="white-space: nowrap; font-weight: 500; position: sticky; left: 0; background: white; z-index: 1;">' + p.ime + '</td>' + cells + '</tr>';
-                });
-
-                // Zadnji datum
-                var zadnjiDatumStr = odjel.zadnjiDatum ? ' \u2022 Zadnja sje\u010Da: ' + odjel.zadnjiDatum : '';
-
-                html += '<div style="margin-bottom: 28px; border: 2px solid ' + boja.border + '; border-radius: 12px; overflow: hidden;">' +
-                    // Header odjela
-                    '<div style="background: ' + boja.border + '; color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">' +
-                    '<h3 style="margin: 0; font-size: 18px;">\uD83D\uDCC1 ' + odjel.odjel + '</h3>' +
-                    '<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">' +
-                    '<span style="font-size: 13px; opacity: 0.9;">' + zadnjiDatumStr + '</span>' +
-                    '<span style="background: rgba(255,255,255,0.25); padding: 4px 14px; border-radius: 6px; font-size: 14px; font-weight: 700;">' + odjel.ukupno.toFixed(2) + ' m\u00B3</span>' +
-                    '</div></div>' +
-                    '<div style="background: ' + boja.bg + '; padding: 12px;">' +
-                    // Tabela 1: Apsolutne vrijednosti sa primačima kao redovima
-                    '<h4 style="font-size: 14px; margin: 0 0 8px 0; color: ' + boja.header + ';">Apsolutne vrijednosti (m\u00B3)</h4>' +
-                    '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 16px;">' +
-                    '<table class="kupci-table"><thead><tr><th style="position: sticky; left: 0; background: inherit; z-index: 2;">Prima\u010D</th>' + sortHeaderCells + '</tr></thead>' +
-                    '<tbody>' + absRows + '</tbody></table></div>' +
-                    // Tabela 2: Procentualni udio sa primačima kao redovima
-                    '<h4 style="font-size: 14px; margin: 0 0 8px 0; color: ' + boja.header + ';">Procentualni udio (%)</h4>' +
-                    '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">' +
-                    '<table class="kupci-table odjeli-pct-table"><thead><tr><th style="position: sticky; left: 0; background: inherit; z-index: 2;">Prima\u010D</th>' + sortHeaderCells + '</tr></thead>' +
-                    '<tbody>' + pctRows + '</tbody></table></div>' +
-                    '</div></div>';
-            });
-
-            if (pageOdjeli.length === 0) {
-                html = '<div style="text-align: center; padding: 40px; color: #4b5563;">Nema podataka o odjelima.</div>';
-            }
-
-            containerEl.innerHTML = html;
-
-            // Pagination
-            var totalPages = Math.ceil(odjeliDefaultData.odjeli.length / odjeliDefaultPageSize);
-            if (totalPages > 1) {
-                paginationEl.style.display = 'flex';
-                document.getElementById('primaci-admin-odjeli-default-page-info').textContent = 'Stranica ' + (odjeliDefaultPage + 1) + ' od ' + totalPages;
-                document.getElementById('primaci-admin-odjeli-default-prev').disabled = odjeliDefaultPage === 0;
-                document.getElementById('primaci-admin-odjeli-default-next').disabled = odjeliDefaultPage >= totalPages - 1;
-            } else {
-                paginationEl.style.display = 'none';
-            }
+            renderOdjelKartice('primaci-admin-odjeli-default-container', odjeliDefaultData, { kind: 'primaci', tema: 'green', pagPrevId: 'primaci-admin-odjeli-default-prev' });
         }
 
         function prevPageOdjeliDefault() {
@@ -9280,74 +9057,7 @@ try {
 
         function renderOtpremacOdjeliPage() {
             if (!otpremacOdjeliData) return;
-
-            const start = otpremacOdjeliCurrentPage * otpremacOdjeliPageSize;
-            const end = Math.min(start + otpremacOdjeliPageSize, otpremacOdjeliData.odjeli.length);
-            const pageOdjeli = otpremacOdjeliData.odjeli.slice(start, end);
-
-            let html = '';
-
-            pageOdjeli.forEach(odjel => {
-                // Kreiraj HTML za odjel sa dve tabele
-                const yearBadge = odjel.godina ? `<span style="background: #fbbf24; color: #78350f; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; margin-left: 10px;">${odjel.godina}</span>` : '';
-                html += `
-                    <div style="margin-bottom: 40px; border: 2px solid #2563eb; border-radius: 12px; padding: 20px; background: #eff6ff;">
-                        <h3 style="color: #1e40af; margin-bottom: 16px;">📁 ${odjel.odjel} ${yearBadge}</h3>
-                        <p style="font-size: 13px; color: #4b5563; margin-bottom: 16px;">Zadnji unos: ${odjel.zadnjiDatum || 'N/A'}</p>
-
-                        <!-- Apsolutne vrijednosti -->
-                        <h4 style="font-size: 15px; margin-bottom: 8px; color: #2563eb;">Apsolutne vrijednosti (m³)</h4>
-                        <div class="kupci-table-wrapper" style="margin-bottom: 20px;">
-                            <table class="kupci-table">
-                                <thead>
-                                    <tr>
-                                        ${otpremacOdjeliData.sortimentiNazivi.map(s => `<th class="sortiment-col">${s}</th>`).join('')}
-                                        <th class="ukupno-col">Ukupno</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        ${otpremacOdjeliData.sortimentiNazivi.map(s => {
-                                            const val = odjel.sortimenti[s] || 0;
-                                            return `<td class="sortiment-col">${val > 0 ? val.toFixed(2) : '-'}</td>`;
-                                        }).join('')}
-                                        <td class="ukupno-col">${odjel.ukupno.toFixed(2)}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Procentualne vrijednosti -->
-                        <h4 style="font-size: 15px; margin-bottom: 8px; color: #2563eb;">Procentualni udio (%)</h4>
-                        <div class="kupci-table-wrapper">
-                            <table class="kupci-table">
-                                <thead>
-                                    <tr>
-                                        ${otpremacOdjeliData.sortimentiNazivi.map(s => `<th class="sortiment-col">${s}</th>`).join('')}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        ${otpremacOdjeliData.sortimentiNazivi.map(s => {
-                                            const val = odjel.sortimenti[s] || 0;
-                                            const percent = odjel.ukupno > 0 ? (val / odjel.ukupno) * 100 : 0;
-                                            return `<td class="sortiment-col">${percent > 0 ? percent.toFixed(1) + '%' : '-'}</td>`;
-                                        }).join('')}
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-            });
-
-            document.getElementById('otpremac-odjeli-container').innerHTML = html;
-
-            // Update pagination controls
-            const totalPages = Math.ceil(otpremacOdjeliData.odjeli.length / otpremacOdjeliPageSize);
-            document.getElementById('otpremac-odjeli-page-info').textContent = `Stranica ${otpremacOdjeliCurrentPage + 1} od ${totalPages}`;
-            document.getElementById('otpremac-odjeli-prev').disabled = otpremacOdjeliCurrentPage === 0;
-            document.getElementById('otpremac-odjeli-next').disabled = otpremacOdjeliCurrentPage >= totalPages - 1;
+            renderOdjelKartice('otpremac-odjeli-container', otpremacOdjeliData, { kind: 'simple', tema: 'blue', pagPrevId: 'otpremac-odjeli-prev' });
         }
 
         function prevPageOtpremacOdjeli() {
@@ -9861,29 +9571,6 @@ try {
                 const godina = new Date().getFullYear();
                 const sub = document.getElementById('ms-sub');
                 if (sub) sub.textContent = `Mjesečni pregled po sortimentima · ${godina}`;
-
-                // Udio četinara u sječi (iz kolona Σ ČETINARI i LIŠĆARI)
-                const sumKol = (d, kolona) => d && d.mjeseci ? d.mjeseci.reduce((a, m) => a + (parseFloat(m && m[kolona]) || 0), 0) : 0;
-                const cet = sumKol(sjeca, 'Σ ČETINARI') || sumKol(sjeca, 'ČETINARI');
-                const lis = sumKol(sjeca, 'LIŠĆARI');
-                const cetPct = (cet + lis) > 0 ? cet / (cet + lis) * 100 : null;
-
-                const best = sj.reduce((bi, v, i) => v > sj[bi] ? i : bi, 0);
-                const f0 = v => Math.round(v).toLocaleString('de-DE');
-                const kpi = (cls, ikona, naslov, vrijednost, jedinica, sub) => `
-                    <div class="dash-kpi ${cls}">
-                        <div class="dash-kpi-title"><span class="dash-kpi-ico">${ikona}</span>${naslov}</div>
-                        <div class="dash-kpi-value">${vrijednost}<small>${jedinica}</small></div>
-                        <div class="dash-kpi-sub">${sub}</div>
-                    </div>`;
-                const kpiEl = document.getElementById('ms-kpi');
-                if (kpiEl) {
-                    kpiEl.innerHTML =
-                        kpi('green', '🌲', 'Sječa ' + godina, f0(sjUk), 'm³', 'ukupno od januara') +
-                        kpi('blue', '🚛', 'Otprema ' + godina, f0(otUk), 'm³', sjUk > 0 ? (otUk / sjUk * 100).toFixed(1) + '% od sječe' : '') +
-                        kpi('amber', '🏆', 'Najjači mjesec sječe', sjUk > 0 ? mj[best] : '—', '', sjUk > 0 ? f0(sj[best]) + ' m³' : 'nema podataka') +
-                        kpi('neutral', '🌲', 'Udio četinara', cetPct == null ? '—' : cetPct.toFixed(1), cetPct == null ? '' : '%', cetPct == null ? '' : `lišćari ${(100 - cetPct).toFixed(1)}%`);
-                }
 
                 // Grafikon (Chart.js se učitava na zahtjev, kao na dashboardu)
                 const canvas = document.getElementById('msChart');

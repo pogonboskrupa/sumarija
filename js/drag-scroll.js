@@ -17,6 +17,7 @@
         '.worker-table-card > div',
         '.oa-scroll',
         '.mjesecna-scroll',
+        '.oc-scroll',
         'div[style*="overflow-x"]'
     ].join(', ');
 

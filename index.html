@@ -71,6 +71,7 @@
     <script src="js/mapa-radnika.js" defer></script>
     <script src="js/notifications.js" defer></script>
     <script src="js/odjel-aktivnost.js" defer></script>
+    <script src="js/odjeli-kartice.js" defer></script>
 
     <style>
         @media print {
@@ -531,8 +532,6 @@
                     </div>
                 </div>
             </div>
-
-            <div class="dash-kpi-grid" id="ms-kpi" aria-live="polite"></div>
 
             <div class="section dash-card" id="ms-chart-card" style="margin-bottom: 22px;">
                 <h2>📊 Sječa i otprema po mjesecima</h2>
@@ -995,8 +994,11 @@
 
         <!-- PRIMACI ADMIN CONTENT (Primači na šuma panju - admin panel) -->
         <div id="primaci-admin-content" class="container hidden" style="max-width: 100%;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
-                <h2 style="margin: 0;">🌲 Primači na šuma panju</h2>
+            <div class="dash-head">
+                <div>
+                    <h1 class="dash-title">🌲 Primači na šuma panju</h1>
+                    <p class="dash-sub">Posječeno po odjelima i primačima — aktivni odjeli (sječa ≤ 10 dana) su otvoreni</p>
+                </div>
                 <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                     <select id="primaci-admin-select" onchange="onPrimaciAdminSelectChange()" style="padding: 8px 12px; border-radius: 8px; border: 2px solid #10b981; font-size: 14px; min-width: 200px; background: white;">
                         <option value="">-- Izaberi primača --</option>
@@ -1006,7 +1008,7 @@
                 </div>
             </div>
 
-            <!-- Submenu - skriven dok se ne izabere primač -->
+<!-- Submenu - skriven dok se ne izabere primač -->
             <div class="submenu" id="primaci-admin-submenu" style="display: none;">
                 <button class="submenu-tab active" onclick="switchPrimaciAdminSubmenu('pregled')">🪓 Pregled sječe</button>
                 <button class="submenu-tab" onclick="switchPrimaciAdminSubmenu('godisnji')">📅 Godišnji prikaz</button>
