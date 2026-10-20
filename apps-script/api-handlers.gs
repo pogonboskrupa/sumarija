@@ -328,7 +328,7 @@ function handlePrimaci(year, username, password) {
     if (datumObj.getFullYear() !== parseInt(year)) continue;
 
     const mjesec = datumObj.getMonth();
-    const datumKey = datumObj.toISOString().split('T')[0]; // YYYY-MM-DD za jedinstveni dan
+    const datumKey = datumObj.getFullYear() + '-' + datumObj.getMonth() + '-' + datumObj.getDate(); // jedinstveni dan (lokalno, bez UTC pomaka)
 
     // Inicijalizuj primača ako ne postoji
     if (!primaciMap[primac]) {

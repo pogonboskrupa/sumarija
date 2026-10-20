@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.141';
+        const APP_VERSION = '2.142';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -1963,7 +1963,8 @@ try {
                 const totalSjeca = data.mjesecnaStatistika.reduce((sum, m) => sum + (m.sjeca || 0), 0);
                 const totalOtprema = data.mjesecnaStatistika.reduce((sum, m) => sum + (m.otprema || 0), 0);
                 const totalStanje = totalSjeca - totalOtprema;
-                const totalDinamika = data.mjesecnaStatistika.reduce((sum, m) => sum + (m.dinamika || 0), 0);
+                // Plan do kraja tekućeg mjeseca (mjeseci su Jan..Dec) — poređenje sječe od početka godine sa planom cijele godine bi uvijek davalo "ispod plana"
+                const totalDinamika = data.mjesecnaStatistika.slice(0, new Date().getMonth() + 1).reduce((sum, m) => sum + (m.dinamika || 0), 0);
                 const razlikaDinamika = totalSjeca - totalDinamika;
                 const percentDinamika = totalDinamika > 0 ? ((totalSjeca / totalDinamika) * 100).toFixed(1) : '0.0';
 
@@ -1984,7 +1985,7 @@ try {
                         ${bar != null ? `<div class="dash-kpi-bar"><span style="width:${clampPct(bar).toFixed(1)}%"></span></div>` : ''}
                     </div>`;
                 const summaryHTML =
-                    kpi('green', '🌲', 'Sječa ' + year, fmt0(totalSjeca), `${percentDinamika}% dinamike`, sjecaPctDin) +
+                    kpi('green', '🌲', 'Sječa ' + year, fmt0(totalSjeca), `${percentDinamika}% dinamike (plan Jan–${mjTekNaziv})`, sjecaPctDin) +
                     kpi('blue', '🚛', 'Otprema ' + year, fmt0(totalOtprema), `${otpremaPctSjeca.toFixed(1)}% od sječe`, otpremaPctSjeca) +
                     kpi('neutral', '🌳', 'Šuma / panj', fmt0(totalStanje), 'Posječeno, a nije otpremljeno') +
                     kpi(razlikaDinamika >= 0 ? 'green' : 'red', razlikaDinamika >= 0 ? '📈' : '📉', 'Razlika sa dinamikom', (razlikaDinamika >= 0 ? '+' : '−') + fmt0(Math.abs(razlikaDinamika)), razlikaDinamika >= 0 ? 'Iznad plana' : 'Ispod plana') +
