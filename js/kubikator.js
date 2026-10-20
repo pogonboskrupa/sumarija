@@ -268,6 +268,8 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             var m3 = _unosi.reduce(function(s, u) { return s + (Number(u.zapremina) || 0); }, 0);
             ukupnoEl.textContent = _unosi.length + ' kom · ' + _fmt(m3, DEC) + ' m³';
         }
+        _renderVrste();
+        _renderRazredi();
         if (!lista) return;
         if (!_unosi.length) {
             lista.innerHTML = '<div class="kub-mem-prazno">Još nema unosa.</div>';
@@ -287,6 +289,8 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
             html += '<div class="kub-mem-red' + animKlasa + '">' +
                 '<span class="kub-mem-dim">' + ikona + ' ' + dim + '</span>' +
                 '<span class="kub-mem-m3">' + _fmt(u.zapremina, DEC) + ' m³</span>' +
+                '<button type="button" class="kub-mem-ponovi" onclick="kubikatorPonovi(\'' + u.id + '\')" ' +
+                'aria-label="Dodaj isti komad još jednom" title="Dodaj isti komad još jednom">＋1</button>' +
                 '<button type="button" class="kub-mem-obrisi" onclick="kubikatorObrisi(\'' + u.id + '\')" ' +
                 'aria-label="Obriši unos">🗑️</button>' +
                 '</div>';
@@ -294,6 +298,81 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         lista.innerHTML = html;
         _justAdded = false;
     }
+
+    // ---- Zbir posebno za oblovinu i prostorno drvo (u jednoj sumi bi se miješale) ----
+    function _renderVrste() {
+        var el = _el('kub-ukupno-vrste');
+        if (!el) return;
+        var ob = { n: 0, v: 0 }, pr = { n: 0, v: 0 };
+        _unosi.forEach(function(u) {
+            var t = u.vrsta === 'prostorno' ? pr : ob;
+            t.n++; t.v += Number(u.zapremina) || 0;
+        });
+        if (!ob.n && !pr.n) { el.innerHTML = ''; return; }
+        var chip = function(ikona, naziv, t) {
+            return t.n ? '<span class="kub-vrsta-chip"><b>' + ikona + ' ' + naziv + '</b> ' + t.n + ' kom · ' + _fmt(t.v, DEC) + ' m³</span>' : '';
+        };
+        el.innerHTML = chip('🌲', 'Oblovina', ob) + chip('🪵', 'Prostorno', pr);
+    }
+
+    // ---- Pregled po prečniku (razred 10 cm) — samo oblovina ----
+    function _renderRazredi() {
+        var box = _el('kub-razredi');
+        var tijelo = _el('kub-razredi-body');
+        if (!box || !tijelo) return;
+        var razredi = {};
+        _unosi.forEach(function(u) {
+            if (u.vrsta === 'prostorno' || !u.precnik) return;
+            var od = Math.floor(u.precnik / 10) * 10;
+            var r = razredi[od] || (razredi[od] = { od: od, n: 0, v: 0, d: 0 });
+            r.n++; r.v += Number(u.zapremina) || 0; r.d += Number(u.duzina) || 0;
+        });
+        var lista = Object.keys(razredi).map(function(k) { return razredi[k]; }).sort(function(a, b) { return a.od - b.od; });
+        box.style.display = lista.length ? '' : 'none';
+        if (!lista.length) { tijelo.innerHTML = ''; return; }
+        var ukN = 0, ukV = 0;
+        var html = '';
+        lista.forEach(function(r) {
+            ukN += r.n; ukV += r.v;
+            html += '<tr><td>' + r.od + '–' + (r.od + 9) + ' cm</td><td class="d">' + r.n + '</td><td class="d">' + _fmt(r.v, DEC) + '</td><td class="d">' + _fmt(r.d / r.n, 2) + ' m</td></tr>';
+        });
+        html += '<tr class="kub-raz-ukupno"><td>UKUPNO</td><td class="d">' + ukN + '</td><td class="d">' + _fmt(ukV, DEC) + '</td><td class="d">' + _fmt(ukV / ukN, DEC) + ' m³/kom</td></tr>';
+        tijelo.innerHTML = html;
+    }
+
+    // ---- Poništi brisanje ----
+    var _undoStack = null, _undoTimer = null;
+    function _pokaziUndo(poruka, vraceno) {
+        _undoStack = vraceno;
+        var el = _el('kub-undo');
+        if (!el) return;
+        el.querySelector('.kub-undo-txt').textContent = poruka;
+        el.hidden = false;
+        clearTimeout(_undoTimer);
+        _undoTimer = setTimeout(function() { el.hidden = true; _undoStack = null; }, 8000);
+    }
+    window.kubikatorPonistiBrisanje = function() {
+        if (!_undoStack) return;
+        _undoStack.forEach(function(u) { _unosi.push(u); });
+        _unosi.sort(function(a, b) { return (a.ts || 0) - (b.ts || 0); }); // vrati originalni redoslijed unosa
+        _undoStack = null;
+        var el = _el('kub-undo'); if (el) el.hidden = true;
+        _save();
+        _renderMemorija();
+    };
+
+    // ---- Dodaj isti komad još jednom (+1) ----
+    window.kubikatorPonovi = function(id) {
+        var izvor = _unosi.filter(function(u) { return String(u.id) === String(id); })[0];
+        if (!izvor) return;
+        var ts = Date.now();
+        var kopija = Object.assign({}, izvor, { id: ts + Math.random().toString(36).slice(2, 6), ts: ts });
+        _unosi.push(kopija);
+        _save();
+        _justAdded = true;
+        _renderMemorija();
+        if (navigator.vibrate) { try { navigator.vibrate(15); } catch (_) {} }
+    };
 
     // ================== JAVNE FUNKCIJE ==================
 
@@ -413,15 +492,17 @@ const KUBIKATOR_SORTIMENTI = [...KUBIKATOR_CETINARI, ...KUBIKATOR_LISCARI];
         // a noviji kao string (ts + slučajan sufiks, vidi kubikatorDodaj) —
         // onclick uvijek šalje string, pa se bez ovoga stariji unosi ne bi
         // mogli obrisati (broj !== string).
+        var uklonjeno = _unosi.filter(function(u) { return String(u.id) === String(id); });
         _unosi = _unosi.filter(function(u) { return String(u.id) !== String(id); });
         _save();
         _renderMemorija();
+        if (uklonjeno.length) _pokaziUndo('Unos obrisan', uklonjeno);
     };
 
     window.kubikatorOcistiSve = function() {
         if (!_unosi.length) return;
         var poruka = 'Obrisati svih ' + _unosi.length + ' unosa? Ova radnja se ne može poništiti.';
-        var obrisi = function() { _unosi = []; _save(); _renderMemorija(); };
+        var obrisi = function() { var sve = _unosi; _unosi = []; _save(); _renderMemorija(); _pokaziUndo('Obrisano ' + sve.length + ' unosa', sve); };
         if (typeof showConfirmModal === 'function') {
             showConfirmModal('Obriši sve unose', poruka, obrisi, { confirmText: '🗑️ Obriši sve', danger: true });
         } else if (confirm(poruka)) { obrisi(); }

@@ -2582,6 +2582,11 @@
                 <button type="button" id="kub-mode-btn" class="kub-mode-btn" onclick="kubikatorToggleMode()">🪵 Prostorno drvo</button>
             </div>
 
+            <div id="kub-undo" class="kub-undo" hidden role="status">
+                <span class="kub-undo-txt"></span>
+                <button type="button" onclick="kubikatorPonistiBrisanje()">↩ Poništi</button>
+            </div>
+
             <div class="kub-wrap">
                 <div class="kub-card">
                     <div class="kub-samo-oblovina">
@@ -2623,7 +2628,15 @@
                         <span>Zadnji unosi</span>
                         <span class="kub-mem-ukupno" id="kub-ukupno">0 kom · 0,000 m³</span>
                     </div>
+                    <div id="kub-ukupno-vrste" class="kub-vrste"></div>
                     <div id="kub-mem-lista" class="kub-mem-lista"></div>
+                    <details id="kub-razredi" class="kub-razredi" style="display:none;">
+                        <summary>📊 Pregled po prečniku (razred 10 cm)</summary>
+                        <table class="kub-raz-tabela">
+                            <thead><tr><th>Razred</th><th class="d">Kom</th><th class="d">m³</th><th class="d">Prosj. dužina</th></tr></thead>
+                            <tbody id="kub-razredi-body"></tbody>
+                        </table>
+                    </details>
                     <div class="kub-mem-akcije">
                         <button type="button" class="kub-mem-btn" onclick="printKubikator()">🖨️ Štampaj</button>
                         <button type="button" class="kub-mem-btn" onclick="kubikatorPodijeli()">📤 Podijeli</button>
