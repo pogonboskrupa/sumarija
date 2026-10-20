@@ -66,7 +66,7 @@ function doGet(e) {
     }
 
     if (path === 'login') {
-      return handleLogin(e.parameter.username, e.parameter.password);
+      return handleLogin(e.parameter.username, e.parameter.password, true); // true = zabilježi zadnji login
     } else if (path === 'stats') {
       return handleStats(e.parameter.year, e.parameter.username, e.parameter.password);
     } else if (path === 'dashboard') {
