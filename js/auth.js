@@ -289,6 +289,7 @@
                 tabsConfig = [
                     { id: 'poslovodja-sjeca', icon: '🪓', label: 'SJEČA', active: true },
                     { id: 'poslovodja-otprema', icon: '🚛', label: 'OTPREMA' },
+                    { id: 'poslovodja-aktivni', icon: '🪓', label: 'Aktivni odjeli' },
                     { id: 'poslovodja-stanje', icon: '📦', label: 'Stanje zaliha' },
                     { id: 'poslovodja-mapa', icon: '🗺️', label: 'Karta' },
                     { id: 'izvjestaji', icon: '📋', label: 'Izvještaji' },
@@ -576,6 +577,7 @@
                 'edit-sjeca-content', 'edit-otprema-content',
                 'pending-unosi-content',
                 'poslovodja-stanje-content',
+                'poslovodja-aktivni-content',
                 'poslovodja-sjeca-content', 'poslovodja-otprema-content',
                 'poslovodja-pregled-content', 'poslovodja-izvjestaj-odjeli-content', 'poslovodja-unosi-content',
                 'izvjestaji-content', 'izvjestaji-primac-content', 'izvjestaji-otpremac-content',
