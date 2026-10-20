@@ -15,6 +15,7 @@
         '.dashboard-monthly-wrapper',
         '.mjesecni-table-wrapper',
         '.worker-table-card > div',
+        '.oa-scroll',
         'div[style*="overflow-x"]'
     ].join(', ');
 

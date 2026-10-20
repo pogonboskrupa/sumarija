@@ -177,6 +177,8 @@
         var html = '<div class="oa-layout"><aside class="oa-side">' + side + '</aside><section class="oa-main">' + main + '</section></div>';
         body.innerHTML = html;
 
+        // Modal je izvan #app-screen pa ga drag-scroll observer ne vidi — priključi ručno
+        if (typeof window.initDragScroll === 'function') window.initDragScroll();
         document.querySelectorAll('#oa-modal [data-oa-tab]').forEach(function (b) { b.classList.toggle('active', b.dataset.oaTab === state.tab); });
         document.querySelectorAll('#oa-modal [data-oa-dana]').forEach(function (b) { b.classList.toggle('active', parseInt(b.dataset.oaDana, 10) === state.dana); });
     }

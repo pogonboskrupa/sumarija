@@ -4181,3 +4181,26 @@ body.oa-open { overflow: hidden; }
 .oa-layout > * { min-width: 0; }
 .oa-card, .oa-body { min-width: 0; }
 .oa-bars, .oa-sum { min-width: 0; }
+
+.oa-scroll { cursor: grab; }
+.oa-scroll:active { cursor: grabbing; }
+.oa-scroll td, .oa-scroll th { user-select: text; }
+
+
+/* ===== KUPCI — KPI, top kupci, sticky zaglavlje/UKUPNO ===== */
+.kupci-kpi:empty { display: none; }
+.kupci-kpi { padding: 4px 4px 0; }
+.kupci-kpi-grid { margin-bottom: 14px; }
+.kupci-kpi .dash-kpi-value { font-size: 26px; }
+.kupci-top { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
+.kupci-top-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #4b5563; margin-bottom: 10px; }
+#kupci-content .kupci-table-wrapper { cursor: grab; }
+#kupci-content .kupci-table-wrapper:active { cursor: grabbing; }
+#kupci-content .kupci-table tbody tr:last-child td { position: sticky; bottom: 0; z-index: 5; }
+#kupci-content .kupci-table thead th { z-index: 12; }
+#kupci-content .submenu { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+#kupci-content .submenu-tab { white-space: nowrap; flex: 0 0 auto; }
+@media (max-width: 640px) {
+    .kupci-kpi .dash-kpi-value { font-size: 20px; }
+    .kupci-top { padding: 12px; }
+}

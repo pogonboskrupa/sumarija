@@ -225,9 +225,10 @@ function markTotalRows(root) {
     (root || document).querySelectorAll('tbody').forEach(tb => {
         const last = tb.lastElementChild;
         if (!last || last.tagName !== 'TR') return;
-        const cell = last.cells && last.cells[0];
+        // Oznaka može biti u prvoj ili drugoj ćeliji (tabele kupaca imaju kolonu "R.br." ispred)
+        const cells = last.cells ? Array.from(last.cells).slice(0, 2) : [];
         const jeZbir = _SUM_ROW_CLASSES.some(c => last.classList.contains(c)) ||
-            (cell && _SUM_ROW_LABEL.test((cell.textContent || '').trim()));
+            cells.some(c => _SUM_ROW_LABEL.test((c.textContent || '').trim()));
         last.classList.toggle('sum-row', !!jeZbir);
     });
 }
