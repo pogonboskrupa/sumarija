@@ -212,3 +212,33 @@
         function showWarning(title, message, duration) {
             return showToast('warning', title, message, duration);
         }
+
+
+// ========== OZNAČAVANJE REDOVA SA ZBIROM ==========
+// CSS boldira "UKUPNO" redove preko klase .sum-row (css/table-contrast-fix.css). Tabele se
+// renderuju na desetine mjesta, pa se zbirni red prepoznaje ovdje, jednom: zadnji red tbody-a
+// čija prva ćelija počinje sa UKUPNO/SVEUKUPNO/REKAPITULACIJA (ili ima poznatu klasu zbira).
+const _SUM_ROW_LABEL = /^[^A-Za-zČĆŽŠĐčćžšđ]*((sve|godišnje )?ukupno|rekapitulacij|zbir\b|grand total)/i;
+const _SUM_ROW_CLASSES = ['totals-row', 'grand-totals-row', 'ukupno-row', 'total-row', 'week-totals-row'];
+
+function markTotalRows(root) {
+    (root || document).querySelectorAll('tbody').forEach(tb => {
+        const last = tb.lastElementChild;
+        if (!last || last.tagName !== 'TR') return;
+        const cell = last.cells && last.cells[0];
+        const jeZbir = _SUM_ROW_CLASSES.some(c => last.classList.contains(c)) ||
+            (cell && _SUM_ROW_LABEL.test((cell.textContent || '').trim()));
+        last.classList.toggle('sum-row', !!jeZbir);
+    });
+}
+
+(function initTotalRowMarker() {
+    let timer = null;
+    const schedule = () => { clearTimeout(timer); timer = setTimeout(() => markTotalRows(), 120); };
+    const start = () => {
+        markTotalRows();
+        new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+    else start();
+})();
