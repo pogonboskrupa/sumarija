@@ -2206,6 +2206,7 @@
                 <button type="button" class="sz-chip active" data-dana="10" onclick="setPoslovodjaAktivniDana(10)">🪓 Sječa ≤ 10 dana</button>
                 <button type="button" class="sz-chip" data-dana="30" onclick="setPoslovodjaAktivniDana(30)">≤ 30 dana</button>
                 <button type="button" class="sz-chip" data-dana="60" onclick="setPoslovodjaAktivniDana(60)">≤ 60 dana</button>
+                <button type="button" class="sz-chip" data-dana="god" onclick="setPoslovodjaAktivniDana('god')">📅 Tekuća godina — svi odjeli</button>
                 <span class="sz-count" id="poslovodja-aktivni-count"></span>
             </div>
             <div class="enterprise-card">
@@ -3408,67 +3409,69 @@
             <!-- KARTA ODJELA CONTENT -->
             <div id="karta-odjela-content" class="hidden">
                 <!-- Header + filteri u padded wrapperu -->
-                <div style="padding:16px 20px 0;">
+                <div class="kt-wrap">
                     <div id="karta-page-header" class="page-header" style="margin-bottom:12px;">
                         <div class="page-header-left">
-                            <h1>🗺️ Mapa odjela 2026</h1>
-                            <p>Prostorni prikaz odjela po statusu realizacije plana sječe</p>
+                            <h1>🗺️ Mapa odjela <span id="karta-godina"></span></h1>
+                            <p>Prostorni prikaz odjela po statusu realizacije plana sječe — klik na odjel otvara detalje</p>
                         </div>
                         <div class="page-header-right">
-                            <button class="btn btn-primary" onclick="initKartaOdjela(true)">🔄 Osvježi</button>
+                            <span id="karta-count" class="kt-total"></span>
+                            <button type="button" class="izv-btn izv-btn-navy" onclick="initKartaOdjela(true)">🔄 Osvježi</button>
                         </div>
                     </div>
-                    <!-- Filter traka -->
-                    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;">
-                        <div style="display:flex;align-items:center;gap:6px;">
-                            <label style="font-size:12px;font-weight:600;color:#374151;">GJ:</label>
-                            <select id="karta-filter-gj" onchange="applyKartaFilter()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;">
-                                <option value="sve">Sve GJ</option>
-                                <option value="Risovac Krupa">Risovac Krupa</option>
-                                <option value="Grmeč Jasenica">Grmeč Jasenica</option>
-                                <option value="Vojskova">Vojskova</option>
-                            </select>
+
+                    <div class="kt-bar">
+                        <div class="kt-row">
+                            <label class="kt-field">GJ
+                                <select id="karta-filter-gj" onchange="applyKartaFilter()">
+                                    <option value="sve">Sve GJ</option>
+                                    <option value="Risovac Krupa">Risovac Krupa</option>
+                                    <option value="Grmeč Jasenica">Grmeč Jasenica</option>
+                                    <option value="Vojskova">Vojskova</option>
+                                </select>
+                            </label>
+                            <label class="kt-field">Status
+                                <select id="karta-filter-status" onchange="applyKartaFilter()">
+                                    <option value="sve">Svi statusi</option>
+                                    <option value="plan-2027">Plan 2027</option>
+                                    <option value="planirano">Planirano 2026</option>
+                                    <option value="u-sjeci">U sječi</option>
+                                    <option value="posjeceno">Posječeno</option>
+                                    <option value="bez-plana">Bez plana</option>
+                                </select>
+                            </label>
+                            <div class="kt-search">
+                                <input id="karta-search" type="search" placeholder="🔍 Broj odjela..." oninput="searchKartaOdjel()" aria-label="Pretraga odjela" />
+                                <button type="button" class="kt-btn" onclick="clearKartaSearch()" title="Očisti pretragu">✕</button>
+                            </div>
+                            <label class="kt-toggle" title="Prikaži samo odjele s otpremom u tekućem mjesecu">
+                                <input id="karta-otprema-toggle" type="checkbox" onchange="applyKartaFilter()" />
+                                🚛 Prikaz otpreme
+                            </label>
+                            <span id="karta-otprema-info" class="kt-info" style="display:none;"></span>
                         </div>
-                        <div style="display:flex;align-items:center;gap:6px;">
-                            <label style="font-size:12px;font-weight:600;color:#374151;">Status:</label>
-                            <select id="karta-filter-status" onchange="applyKartaFilter()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;">
-                                <option value="sve">Svi statusi</option>
-                                <option value="plan-2027">Plan 2027</option>
-                                <option value="planirano">Planirano 2026</option>
-                                <option value="u-sjeci">U sječi</option>
-                                <option value="posjeceno">Posječeno</option>
-                                <option value="bez-plana">Bez plana</option>
-                            </select>
+                        <div class="kt-row kt-actions">
+                            <button type="button" id="karta-sat-btn" class="kt-btn" onclick="toggleMapaSat()" title="Promijeni podlogu">🗺️ OSM</button>
+                            <button type="button" id="karta-offline-btn" class="kt-btn" onclick="downloadKartaOffline()" title="Preuzmi mapu za rad bez interneta">⬇️ Offline</button>
+                            <button type="button" id="karta-odjel-ruta-btn" class="kt-btn" onclick="toggleOdjelRutaMode()">🔀 Ruta odjel→odjel</button>
+                            <button type="button" class="kt-btn" onclick="resetKartaView()">↺ Reset</button>
+                            <button type="button" id="karta-fokus-btn" class="kt-btn" onclick="toggleMapaFokus()" title="Mapa u prvom planu">⛶ Fokus</button>
                         </div>
-                        <div style="display:flex;align-items:center;gap:4px;">
-                            <input id="karta-search" type="text" placeholder="Broj odjela..." oninput="searchKartaOdjel()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;width:110px;" />
-                            <button onclick="searchKartaOdjel()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🔍</button>
-                            <button onclick="clearKartaSearch()" style="font-size:12px;padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">✕</button>
-                        </div>
-                        <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#374151;cursor:pointer;background:white;border:1px solid #d1d5db;border-radius:6px;padding:4px 10px;">
-                            <input id="karta-otprema-toggle" type="checkbox" onchange="applyKartaFilter()" style="cursor:pointer;margin:0;" />
-                            🚛 Prikaz otpreme
-                        </label>
-                        <span id="karta-otprema-info" style="font-size:11px;color:#b45309;font-weight:700;display:none;"></span>
-                        <button id="karta-sat-btn" onclick="toggleMapaSat()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🗺️ OSM</button>
-                        <button id="karta-offline-btn" onclick="downloadKartaOffline()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">⬇️ Offline</button>
-                        <button id="karta-odjel-ruta-btn" onclick="toggleOdjelRutaMode()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">🔀 Ruta odjel→odjel</button>
-                        <button onclick="resetKartaView()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">↺ Reset</button>
-                        <button id="karta-fokus-btn" onclick="toggleMapaFokus()" title="Mapa u prvom planu" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;">⛶ Fokus</button>
-                        <!-- Legenda — svaka boja je sad i checkbox: isključi je da sakriješ
-                             sve odjele tog statusa na mapi (kombinuje se sa GJ/status/
-                             pretraga/otprema filterima preko applyKartaFilter()). -->
-                        <div style="display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;align-items:center;">
-                            <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" class="karta-legend-toggle" data-status="plan-2027" checked onchange="applyKartaFilter()" style="margin:0;cursor:pointer;" /><span style="display:inline-block;width:12px;height:12px;background:#2563eb;border-radius:2px;"></span>Plan sječa 2027</label>
-                            <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" class="karta-legend-toggle" data-status="planirano" checked onchange="applyKartaFilter()" style="margin:0;cursor:pointer;" /><span style="display:inline-block;width:12px;height:12px;background:#eab308;border-radius:2px;"></span>Planirano</label>
-                            <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" class="karta-legend-toggle" data-status="u-sjeci" checked onchange="applyKartaFilter()" style="margin:0;cursor:pointer;" /><span style="display:inline-block;width:12px;height:12px;background:#dc2626;border-radius:2px;"></span>U sječi</label>
-                            <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" class="karta-legend-toggle" data-status="posjeceno" checked onchange="applyKartaFilter()" style="margin:0;cursor:pointer;" /><span style="display:inline-block;width:12px;height:12px;background:#16a34a;border-radius:2px;"></span>Posječeno</label>
-                            <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" class="karta-legend-toggle" data-status="slucajni" checked onchange="applyKartaFilter()" style="margin:0;cursor:pointer;" /><span style="display:inline-block;width:12px;height:12px;background:#7c3aed;border-radius:2px;"></span>Slučajni</label>
-                            <label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" class="karta-legend-toggle" data-status="prelazni" checked onchange="applyKartaFilter()" style="margin:0;cursor:pointer;" /><span style="display:inline-block;width:12px;height:12px;background:#0891b2;border-radius:2px;"></span>Nekategorisan</label>
+                        <!-- Legenda — svaka boja je i checkbox: isključi je da sakriješ sve odjele tog statusa
+                             (kombinuje se sa GJ/status/pretraga/otprema filterima preko applyKartaFilter()).
+                             Broj pored boje = ukupno odjela tog statusa. -->
+                        <div class="kt-legend" role="group" aria-label="Legenda statusa">
+                            <label class="kt-leg"><input type="checkbox" class="karta-legend-toggle" data-status="plan-2027" checked onchange="applyKartaFilter()" /><span class="kt-dot" style="background:#2563eb"></span>Plan sječa 2027<b class="kt-count" data-status="plan-2027"></b></label>
+                            <label class="kt-leg"><input type="checkbox" class="karta-legend-toggle" data-status="planirano" checked onchange="applyKartaFilter()" /><span class="kt-dot" style="background:#eab308"></span>Planirano<b class="kt-count" data-status="planirano"></b></label>
+                            <label class="kt-leg"><input type="checkbox" class="karta-legend-toggle" data-status="u-sjeci" checked onchange="applyKartaFilter()" /><span class="kt-dot" style="background:#dc2626"></span>U sječi<b class="kt-count" data-status="u-sjeci"></b></label>
+                            <label class="kt-leg"><input type="checkbox" class="karta-legend-toggle" data-status="posjeceno" checked onchange="applyKartaFilter()" /><span class="kt-dot" style="background:#16a34a"></span>Posječeno<b class="kt-count" data-status="posjeceno"></b></label>
+                            <label class="kt-leg"><input type="checkbox" class="karta-legend-toggle" data-status="slucajni" checked onchange="applyKartaFilter()" /><span class="kt-dot" style="background:#7c3aed"></span>Slučajni<b class="kt-count" data-status="slucajni"></b></label>
+                            <label class="kt-leg"><input type="checkbox" class="karta-legend-toggle" data-status="prelazni" checked onchange="applyKartaFilter()" /><span class="kt-dot" style="background:#0891b2"></span>Nekategorisan<b class="kt-count" data-status="prelazni"></b></label>
                         </div>
                     </div>
                     <!-- Hint za ruta-mode -->
-                    <div id="mapa-ruta-hint" style="display:none;padding:8px 14px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;font-size:13px;color:#dc2626;font-weight:600;margin-bottom:8px;"></div>
+                    <div id="mapa-ruta-hint" class="kt-hint" style="display:none;"></div>
                 </div>
                 <!-- Leaflet mapa — puna širina -->
                 <style>

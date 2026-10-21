@@ -261,12 +261,15 @@
 
             var danas = startDana(new Date());
             var lista = Object.keys(odjeli).map(function (k) { return odjeli[k]; })
-                .filter(function (o) { return o.zadnja && Math.round((danas - o.zadnja) / 86400000) <= pa.dana; })
+                .filter(function (o) {
+                    if (pa.dana === 'god') return o.sjeca > 0 || o.otprema > 0; // svi odjeli sa sječom/otpremom u tekućoj godini
+                    return o.zadnja && Math.round((danas - o.zadnja) / 86400000) <= pa.dana;
+                })
                 .sort(function (a, b) { return b.zadnja - a.zadnja; });
 
             body.innerHTML = lista.length ? lista.map(function (o) {
-                var dana = Math.round((danas - o.zadnja) / 86400000);
-                var kad = dana <= 0 ? 'danas' : dana === 1 ? 'jučer' : 'prije ' + dana + ' d';
+                var dana = o.zadnja ? Math.round((danas - o.zadnja) / 86400000) : null;
+                var kad = dana === null ? 'nema sječe' : dana <= 0 ? 'danas' : dana === 1 ? 'jučer' : 'prije ' + dana + ' d';
                 var pan = o.sjeca - o.otprema;
                 return '<tr style="cursor:pointer;" onclick="otvoriOdjelAktivnost(\'' + jsAttr(o.naziv) + '\', \'' + jsAttr(o.radiliste) + '\', \'' + jsAttr(o.izvodjac) + '\', true)" title="Klikni za sječu i otpremu po danima">' +
                     '<td style="font-weight:700;">' + esc(o.naziv) + '</td>' +
@@ -274,13 +277,13 @@
                     '<td class="right">' + o.otprema.toFixed(2) + '</td>' +
                     '<td class="right">' + pan.toFixed(2) + '</td>' +
                     '<td>' + esc(o.radiliste || '-') + '</td><td>' + esc(o.izvodjac || '-') + '</td>' +
-                    '<td><b>' + datumTekst(o.zadnja) + '</b> <small style="color:#6b7280;">(' + kad + ')</small></td></tr>';
-            }).join('') : '<tr><td colspan="7" style="text-align:center;padding:28px;color:#4b5563;">Nema odjela vaših radilišta sa sječom u zadnjih ' + pa.dana + ' dana.</td></tr>';
+                    '<td><b>' + (o.zadnja ? datumTekst(o.zadnja) : '-') + '</b> <small style="color:#6b7280;">(' + kad + ')</small></td></tr>';
+            }).join('') : '<tr><td colspan="7" style="text-align:center;padding:28px;color:#4b5563;">Nema odjela vaših radilišta ' + (pa.dana === 'god' ? 'sa sječom ili otpremom u ' + godina + '. godini.' : 'sa sječom u zadnjih ' + pa.dana + ' dana.') + '</td></tr>';
 
             var cnt = document.getElementById('poslovodja-aktivni-count');
             if (cnt) cnt.textContent = lista.length + ' odjela';
             document.querySelectorAll('#poslovodja-aktivni-chips .sz-chip').forEach(function (c) {
-                c.classList.toggle('active', parseInt(c.dataset.dana, 10) === pa.dana);
+                c.classList.toggle('active', (c.dataset.dana === 'god' ? 'god' : parseInt(c.dataset.dana, 10)) === pa.dana);
             });
             if (typeof markTabRendered === 'function') markTabRendered('poslovodja-aktivni');
         } catch (e) {
