@@ -337,7 +337,7 @@
                 });
                 var _naslovi = { '#primaci-content': '📅 Sječa po danima', '#otpremaci-content': '📅 Otprema po danima' };
                 Object.keys(_naslovi).forEach(function(sel) {
-                    var h = document.querySelector(sel + ' h2');
+                    var h = document.querySelector(sel + ' .page-header-left h1');
                     if (h) h.textContent = _naslovi[sel];
                 });
             }

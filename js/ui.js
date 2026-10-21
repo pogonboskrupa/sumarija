@@ -638,42 +638,22 @@
 
         // Filter primac personal table
         function filterPrimacPersonalTable() {
-            const input = document.getElementById('primac-personal-search');
-            const filter = input.value.toUpperCase();
-            const table = document.getElementById('primac-personal-table');
-            const tr = table.getElementsByTagName('tr');
-
-            for (let i = 1; i < tr.length; i++) {
-                // Search in both datum and odjel columns (0 and 1)
-                const td0 = tr[i].getElementsByTagName('td')[0];
-                const td1 = tr[i].getElementsByTagName('td')[1];
-                if (td0 || td1) {
-                    const txtValue = (td0 ? (td0.textContent || td0.innerText) : '') + ' ' +
-                                     (td1 ? (td1.textContent || td1.innerText) : '');
-                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
-                }
-            }
+            const filter = document.getElementById('primac-personal-search').value.toUpperCase();
+            document.querySelectorAll('#primac-personal-body tr').forEach(tr => {
+                if (tr.classList.contains('sum-row') || tr.classList.contains('totals-row')) return;
+                const txt = Array.from(tr.cells).slice(0, 2).map(td => td.textContent).join(' ').toUpperCase();
+                tr.style.display = txt.includes(filter) ? '' : 'none';
+            });
         }
 
         // Filter otpremac personal table
         function filterOtpremacPersonalTable() {
-            const input = document.getElementById('otpremac-personal-search');
-            const filter = input.value.toUpperCase();
-            const table = document.getElementById('otpremac-personal-table');
-            const tr = table.getElementsByTagName('tr');
-
-            for (let i = 1; i < tr.length; i++) {
-                // Search in datum, odjel, and kupac columns (0, 1, and 2)
-                const td0 = tr[i].getElementsByTagName('td')[0];
-                const td1 = tr[i].getElementsByTagName('td')[1];
-                const td2 = tr[i].getElementsByTagName('td')[2];
-                if (td0 || td1 || td2) {
-                    const txtValue = (td0 ? (td0.textContent || td0.innerText) : '') + ' ' +
-                                     (td1 ? (td1.textContent || td1.innerText) : '') + ' ' +
-                                     (td2 ? (td2.textContent || td2.innerText) : '');
-                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
-                }
-            }
+            const filter = document.getElementById('otpremac-personal-search').value.toUpperCase();
+            document.querySelectorAll('#otpremac-personal-body tr').forEach(tr => {
+                if (tr.classList.contains('sum-row') || tr.classList.contains('totals-row')) return;
+                const txt = Array.from(tr.cells).slice(0, 3).map(td => td.textContent).join(' ').toUpperCase();
+                tr.style.display = txt.includes(filter) ? '' : 'none';
+            });
         }
 
         // Sort table

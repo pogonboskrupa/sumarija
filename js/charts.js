@@ -856,6 +856,53 @@
         }
 
         // Load primac personal data
+        // Pregled sječe/otpreme (radnik): KPI traka, razdvajanje mjeseci, oznaka ukupnog reda, brojač redova
+        function decorateWorkerView(kind, data) {
+            const unosi = data.unosi || [];
+            const tbody = document.getElementById(kind + '-personal-body');
+            if (tbody) {
+                let prev = null;
+                tbody.querySelectorAll('tr').forEach(tr => {
+                    if (tr.classList.contains('totals-row')) { tr.classList.add('sum-row'); return; }
+                    const m = (tr.className.match(/mjesec-(\d+)/) || [])[1];
+                    if (prev !== null && m !== prev) tr.classList.add('ot-mjesec-start');
+                    prev = m;
+                });
+            }
+            const cnt = document.getElementById(kind + '-row-count');
+            if (cnt) cnt.textContent = unosi.length + ' unosa';
+
+            const kpiEl = document.getElementById(kind + '-personal-kpi');
+            if (!kpiEl) return;
+            const P = kind === 'primac';
+            const num = v => Number(v) || 0;
+            const fmt = v => v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const MJ = ['Januar','Februar','Mart','April','Maj','Juni','Juli','August','Septembar','Oktobar','Novembar','Decembar'];
+            const perMjesec = new Array(12).fill(0);
+            const dani = {};
+            let ukupno = 0;
+            unosi.forEach(u => {
+                const parts = String(u.datum || '').split('.');
+                const mj = parseInt(parts[1], 10) - 1;
+                const k = num(u.ukupno);
+                ukupno += k;
+                if (mj >= 0 && mj < 12) perMjesec[mj] += k;
+                if (k > 0) dani[u.datum] = true;
+            });
+            const radnihDana = Object.keys(dani).length;
+            const mjIdx = perMjesec.reduce((best, v, i) => v > perMjesec[best] ? i : best, 0);
+            const tek = new Date().getMonth();
+            const card = (cls, ico, naslov, val, sub, unit) => `<div class="dash-kpi ${cls}">
+                <div class="dash-kpi-title"><span class="dash-kpi-ico">${ico}</span>${naslov}</div>
+                <div class="dash-kpi-value">${val}<small>${unit || 'm³'}</small></div>
+                <div class="dash-kpi-sub">${sub}</div></div>`;
+            kpiEl.innerHTML =
+                card(P ? 'green' : 'blue', P ? '🌲' : '🚛', (P ? 'Sječa ' : 'Otprema ') + (document.getElementById(kind + '-personal-year-select') || {}).value, fmt(ukupno), `${unosi.length} unosa`) +
+                card('amber', '📅', MJ[tek], fmt(perMjesec[tek]), 'tekući mjesec') +
+                card('neutral', '🗓️', 'Radnih dana', String(radnihDana), 'dana sa unosom', 'dana') +
+                card('neutral', '📈', 'Prosjek po danu', fmt(radnihDana ? ukupno / radnihDana : 0), perMjesec[mjIdx] > 0 ? `najjači mjesec: ${MJ[mjIdx]}` : '');
+        }
+
         async function loadPrimacPersonal() {
             if (window.currentTab && window.currentTab !== 'primac-personal') return;
             var ppYear = (document.getElementById('primac-personal-year-select') || {}).value || new Date().getFullYear();
@@ -936,6 +983,7 @@
                 `;
 
                 document.getElementById('primac-personal-body').innerHTML = bodyWithTotals;
+                decorateWorkerView('primac', data);
 
                 // Create monthly chart
                 await createWorkerMonthlyChart('primac-chart', data.unosi, '#047857', '#10b981');
@@ -1054,6 +1102,7 @@
                 `;
 
                 document.getElementById('otpremac-personal-body').innerHTML = bodyWithTotals;
+                decorateWorkerView('otpremac', data);
 
                 // Create monthly chart
                 await createWorkerMonthlyChart('otpremac-chart', data.unosi, '#1e40af', '#3b82f6');
