@@ -1331,65 +1331,47 @@
         <!-- PRIMAC PERSONAL VIEW -->
         <div id="primac-personal-content" class="container hidden">
             <div class="section">
-                <!-- Professional Header -->
-                <div class="worker-header primac">
-                    <div class="worker-header-icon">👷</div>
-                    <div style="flex: 1;">
-                        <h1 class="worker-header-title">Pregled sječe</h1>
-                        <p class="worker-header-subtitle">Pregled primki</p>
-                    </div>
+                <div class="dash-head">
                     <div>
-                        <select id="primac-personal-year-select" class="year-select" onchange="loadPrimacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 120px;">
-                            <option value="2025">2025</option>
-                            <option value="2026" selected>2026</option>
-                            <option value="2025">2025</option>
-                        </select>
+                        <h1 class="dash-title">👷 Pregled sječe</h1>
+                        <p class="dash-sub">Pregled primki po danima i odjelima</p>
                     </div>
+                    <select id="primac-personal-year-select" class="month-select" onchange="loadPrimacPersonal()" aria-label="Godina">
+                        <option value="2026" selected>2026</option>
+                        <option value="2025">2025</option>
+                    </select>
                 </div>
+                <div id="primac-personal-kpi" class="dash-kpi-grid" aria-live="polite"></div>
 
-                <!-- Dnevni dijagram sječe -->
-                <div class="worker-chart-card primac">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 12px;">
+                <div class="enterprise-card ot-card-gap">
+                    <div class="enterprise-card-header">
                         <div>
-                            <h3 class="worker-chart-title" style="margin: 0;">📊 Dnevni izvještaj sječa</h3>
-                            <p style="margin: 5px 0 0 0; color: #4b5563; font-size: 14px;">Prikaz dnevne sječe po mjesecima</p>
+                            <h2>📊 Dnevna sječa</h2>
+                            <span class="card-subtitle">Količina po danima za izabrani mjesec</span>
                         </div>
-                        <select id="primac-daily-month-select" class="year-select" onchange="loadPrimacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #047857; min-width: 150px;">
-                            <option value="1">Januar</option>
-                            <option value="2">Februar</option>
-                            <option value="3">Mart</option>
-                            <option value="4">April</option>
-                            <option value="5">Maj</option>
-                            <option value="6">Juni</option>
-                            <option value="7">Juli</option>
-                            <option value="8">August</option>
-                            <option value="9">Septembar</option>
-                            <option value="10">Oktobar</option>
-                            <option value="11">Novembar</option>
-                            <option value="12">Decembar</option>
-                        </select>
+                        <select id="primac-daily-month-select" class="month-select" onchange="loadPrimacPersonal()" aria-label="Mjesec"><option value="1">Januar</option><option value="2">Februar</option><option value="3">Mart</option><option value="4">April</option><option value="5">Maj</option><option value="6">Juni</option><option value="7">Juli</option><option value="8">August</option><option value="9">Septembar</option><option value="10">Oktobar</option><option value="11">Novembar</option><option value="12">Decembar</option></select>
                     </div>
-                    <canvas id="primac-daily-chart" class="worker-chart-canvas"></canvas>
-                </div>
-
-                <!-- Controls -->
-                <div class="controls-bar">
-                    <input type="text" class="search-input" id="primac-personal-search" placeholder="🔍 Pretraži po odjelu..." onkeyup="filterPrimacPersonalTable()">
-                </div>
-
-                <!-- Modern Table Card -->
-                <div class="worker-table-card">
-                    <div class="worker-table-card-header">
-                        <h3 class="worker-table-card-title">
-                            📋 Sječa po odjelima
-                        </h3>
-                        <span class="worker-table-card-badge" id="primac-row-count">0 redova</span>
+                    <div class="enterprise-card-body">
+                        <canvas id="primac-daily-chart" class="worker-chart-canvas"></canvas>
                     </div>
-                    <div style="overflow-x: auto;">
-                        <table class="worker-table" id="primac-personal-table">
-                            <thead id="primac-personal-header"></thead>
-                            <tbody id="primac-personal-body"></tbody>
-                        </table>
+                </div>
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📋 Sječa po odjelima</h2>
+                            <span class="card-subtitle" id="primac-row-count"></span>
+                        </div>
+                    </div>
+                    <div class="enterprise-card-body">
+                        <div class="ot-toolbar">
+                            <input type="search" class="search-input" id="primac-personal-search" placeholder="🔍 Pretraži po odjelu..." oninput="filterPrimacPersonalTable()">
+                        </div>
+                        <div class="ot-scroll">
+                            <table class="ot-table" id="primac-personal-table">
+                                <thead id="primac-personal-header"></thead>
+                                <tbody id="primac-personal-body"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1441,72 +1423,58 @@
         <!-- OTPREMAC PERSONAL VIEW -->
         <div id="otpremac-personal-content" class="container hidden">
             <div class="section">
-                <!-- Professional Header -->
-                <div class="worker-header otpremac">
-                    <div class="worker-header-icon">🚛</div>
-                    <div style="flex: 1;">
-                        <h1 class="worker-header-title">Pregled otpreme</h1>
-                        <p class="worker-header-subtitle">Pregled otpremnica</p>
-                    </div>
+                <div class="dash-head">
                     <div>
-                        <select id="otpremac-personal-year-select" class="year-select" onchange="loadOtpremacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #2563eb; min-width: 120px;">
-                            <option value="2025">2025</option>
-                            <option value="2026" selected>2026</option>
-                            <option value="2025">2025</option>
-                        </select>
+                        <h1 class="dash-title">🚛 Pregled otpreme</h1>
+                        <p class="dash-sub">Pregled otpremnica po danima, odjelima i kupcima</p>
                     </div>
+                    <select id="otpremac-personal-year-select" class="month-select" onchange="loadOtpremacPersonal()" aria-label="Godina">
+                        <option value="2026" selected>2026</option>
+                        <option value="2025">2025</option>
+                    </select>
                 </div>
+                <div id="otpremac-personal-kpi" class="dash-kpi-grid" aria-live="polite"></div>
 
-                <!-- Dnevni dijagram otpreme -->
-                <div class="worker-chart-card otpremac">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 12px;">
+                <div class="enterprise-card ot-card-gap">
+                    <div class="enterprise-card-header">
                         <div>
-                            <h3 class="worker-chart-title" style="margin: 0;">📊 Dnevni izvještaj otpreme</h3>
-                            <p style="margin: 5px 0 0 0; color: #4b5563; font-size: 14px;">Prikaz dnevne otpreme po mjesecima</p>
+                            <h2>📊 Dnevna otprema</h2>
+                            <span class="card-subtitle">Količina po danima za izabrani mjesec</span>
                         </div>
-                        <select id="otpremac-daily-month-select" class="year-select" onchange="loadOtpremacPersonal()" style="padding: 10px 16px; font-size: 16px; border-radius: 8px; border: 2px solid #1e40af; min-width: 150px;">
-                            <option value="1">Januar</option>
-                            <option value="2">Februar</option>
-                            <option value="3">Mart</option>
-                            <option value="4">April</option>
-                            <option value="5">Maj</option>
-                            <option value="6">Juni</option>
-                            <option value="7">Juli</option>
-                            <option value="8">August</option>
-                            <option value="9">Septembar</option>
-                            <option value="10">Oktobar</option>
-                            <option value="11">Novembar</option>
-                            <option value="12">Decembar</option>
-                        </select>
+                        <select id="otpremac-daily-month-select" class="month-select" onchange="loadOtpremacPersonal()" aria-label="Mjesec"><option value="1">Januar</option><option value="2">Februar</option><option value="3">Mart</option><option value="4">April</option><option value="5">Maj</option><option value="6">Juni</option><option value="7">Juli</option><option value="8">August</option><option value="9">Septembar</option><option value="10">Oktobar</option><option value="11">Novembar</option><option value="12">Decembar</option></select>
                     </div>
-                    <canvas id="otpremac-daily-chart" class="worker-chart-canvas"></canvas>
-                </div>
-
-                <!-- Mjesečni dijagram otpreme -->
-                <div class="worker-chart-card otpremac">
-                    <h3 class="worker-chart-title">📊 Mjesečna otprema - Grafički prikaz</h3>
-                    <p style="margin: 0 0 15px 0; color: #4b5563; font-size: 14px;">Godišnji pregled otpreme po mjesecima</p>
-                    <canvas id="otpremac-chart" class="worker-chart-canvas"></canvas>
-                </div>
-
-                <!-- Controls -->
-                <div class="controls-bar">
-                    <input type="text" class="search-input" id="otpremac-personal-search" placeholder="🔍 Pretraži po odjelu/kupcu..." onkeyup="filterOtpremacPersonalTable()">
-                </div>
-
-                <!-- Modern Table Card -->
-                <div class="worker-table-card">
-                    <div class="worker-table-card-header">
-                        <h3 class="worker-table-card-title">
-                            📦 Otprema po odjelima i kupcima
-                        </h3>
-                        <span class="worker-table-card-badge blue" id="otpremac-row-count">0 redova</span>
+                    <div class="enterprise-card-body">
+                        <canvas id="otpremac-daily-chart" class="worker-chart-canvas"></canvas>
                     </div>
-                    <div style="overflow-x: auto;">
-                        <table class="worker-table otpremac" id="otpremac-personal-table">
-                            <thead id="otpremac-personal-header"></thead>
-                            <tbody id="otpremac-personal-body"></tbody>
-                        </table>
+                </div>
+                <div class="enterprise-card ot-card-gap">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📈 Mjesečna otprema</h2>
+                            <span class="card-subtitle">Godišnji pregled otpreme po mjesecima</span>
+                        </div>
+                    </div>
+                    <div class="enterprise-card-body">
+                        <canvas id="otpremac-chart" class="worker-chart-canvas"></canvas>
+                    </div>
+                </div>
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📦 Otprema po odjelima i kupcima</h2>
+                            <span class="card-subtitle" id="otpremac-row-count"></span>
+                        </div>
+                    </div>
+                    <div class="enterprise-card-body">
+                        <div class="ot-toolbar">
+                            <input type="search" class="search-input" id="otpremac-personal-search" placeholder="🔍 Pretraži po odjelu/kupcu..." oninput="filterOtpremacPersonalTable()">
+                        </div>
+                        <div class="ot-scroll">
+                            <table class="ot-table" id="otpremac-personal-table">
+                                <thead id="otpremac-personal-header"></thead>
+                                <tbody id="otpremac-personal-body"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -3030,23 +2998,29 @@
                     <h1>📋 Izvještaji sječe</h1>
                     <p>Sedmični i mjesečni prikazi</p>
                 </div>
+                <div class="page-header-right">
+                    <button type="button" class="izv-btn izv-btn-navy" onclick="printActiveView('izvjestaji-primac-content', 'Izvještaj sječe', '#1e3a5f')">🖨️ Štampaj</button>
+                </div>
             </div>
 
             <!-- SUB-MENU TABS -->
-            <div class="sub-tabs" style="margin-bottom: 30px;">
+            <div class="sub-tabs" style="margin-bottom: 18px;">
                 <button class="sub-tab active" onclick="switchPrimacIzvjestajiSubTab('sedmicni')">📊 Sedmični izvještaj</button>
                 <button class="sub-tab" onclick="switchPrimacIzvjestajiSubTab('mjesecni')">📅 Mjesečni izvještaj</button>
             </div>
 
             <!-- SEDMIČNI IZVJEŠTAJ -->
             <div id="primac-sedmicni-izvjestaj" class="sub-content">
-                <div class="page-header" style="margin-top: 0;">
-                    <div class="page-header-left">
-                        <h2>📊 Sedmični izvještaj sječe</h2>
-                        <p>Suma sječe po sortimentima za radnu sedmicu</p>
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📊 Sedmični izvještaj sječe</h2>
+                            <span class="card-subtitle">Suma sječe po sortimentima za radnu sedmicu</span>
+                        </div>
                     </div>
-                    <div class="page-header-right">
-                        <select id="primac-sedmicni-year" class="year-select" onchange="loadPrimacSedmicni()">
+                    <div class="enterprise-card-body">
+                        <div class="ot-toolbar">
+                        <select id="primac-sedmicni-year" class="month-select" onchange="loadPrimacSedmicni()">
                             <option value="2026" selected>2026</option></select>
                         <select id="primac-sedmicni-month" class="month-select" onchange="loadPrimacSedmicni()">
                             <option value="0">Januar</option>
@@ -3061,17 +3035,14 @@
                             <option value="9">Oktobar</option>
                             <option value="10">Novembar</option>
                             <option value="11">Decembar</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="section">
-                    <div style="overflow-x: auto;">
+                        </select></div>
+                        <div class="ot-scroll">
                         <table class="izvjestaj-week-table" id="primac-sedmicni-table">
                             <thead id="primac-sedmicni-header"></thead>
                             <tbody id="primac-sedmicni-body"></tbody>
                             <tfoot id="primac-sedmicni-footer"></tfoot>
                         </table>
+                        </div>
                     </div>
                 </div>
                 <div id="primac-sedmicni-rekapitulacija"></div>
@@ -3079,13 +3050,16 @@
 
             <!-- MJESEČNI IZVJEŠTAJ -->
             <div id="primac-mjesecni-izvjestaj" class="sub-content hidden">
-                <div class="page-header" style="margin-top: 0;">
-                    <div class="page-header-left">
-                        <h2>📅 Mjesečni izvještaj sječe</h2>
-                        <p>Suma sječe po sortimentima za mjesec</p>
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📅 Mjesečni izvještaj sječe</h2>
+                            <span class="card-subtitle">Suma sječe po sortimentima za mjesec</span>
+                        </div>
                     </div>
-                    <div class="page-header-right">
-                        <select id="primac-mjesecni-year" class="year-select" onchange="loadPrimacMjesecni()">
+                    <div class="enterprise-card-body">
+                        <div class="ot-toolbar">
+                        <select id="primac-mjesecni-year" class="month-select" onchange="loadPrimacMjesecni()">
                             <option value="2026" selected>2026</option></select>
                         <select id="primac-mjesecni-month" class="month-select" onchange="loadPrimacMjesecni()">
                             <option value="0">Januar</option>
@@ -3100,17 +3074,14 @@
                             <option value="9">Oktobar</option>
                             <option value="10">Novembar</option>
                             <option value="11">Decembar</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="section">
-                    <div style="overflow-x: auto;">
+                        </select></div>
+                        <div class="ot-scroll">
                         <table class="izvjestaj-week-table" id="primac-mjesecni-table">
                             <thead id="primac-mjesecni-header"></thead>
                             <tbody id="primac-mjesecni-body"></tbody>
                             <tfoot id="primac-mjesecni-footer"></tfoot>
                         </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -3123,23 +3094,29 @@
                     <h1>📋 Izvještaji otpreme</h1>
                     <p>Sedmični i mjesečni prikazi</p>
                 </div>
+                <div class="page-header-right">
+                    <button type="button" class="izv-btn izv-btn-navy" onclick="printActiveView('izvjestaji-otpremac-content', 'Izvještaj otpreme', '#1e3a5f')">🖨️ Štampaj</button>
+                </div>
             </div>
 
             <!-- SUB-MENU TABS -->
-            <div class="sub-tabs" style="margin-bottom: 30px;">
+            <div class="sub-tabs" style="margin-bottom: 18px;">
                 <button class="sub-tab active" onclick="switchOtpremacIzvjestajiSubTab('sedmicni')">📊 Sedmični izvještaj</button>
                 <button class="sub-tab" onclick="switchOtpremacIzvjestajiSubTab('mjesecni')">📅 Mjesečni izvještaj</button>
             </div>
 
             <!-- SEDMIČNI IZVJEŠTAJ -->
             <div id="otpremac-sedmicni-izvjestaj" class="sub-content">
-                <div class="page-header" style="margin-top: 0;">
-                    <div class="page-header-left">
-                        <h2>📊 Sedmični izvještaj otpreme</h2>
-                        <p>Suma otpreme po sortimentima za radnu sedmicu</p>
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📊 Sedmični izvještaj otpreme</h2>
+                            <span class="card-subtitle">Suma otpreme po sortimentima za radnu sedmicu</span>
+                        </div>
                     </div>
-                    <div class="page-header-right">
-                        <select id="otpremac-sedmicni-year" class="year-select" onchange="loadOtpremacSedmicni()">
+                    <div class="enterprise-card-body">
+                        <div class="ot-toolbar">
+                        <select id="otpremac-sedmicni-year" class="month-select" onchange="loadOtpremacSedmicni()">
                             <option value="2026" selected>2026</option></select>
                         <select id="otpremac-sedmicni-month" class="month-select" onchange="loadOtpremacSedmicni()">
                             <option value="0">Januar</option>
@@ -3154,30 +3131,30 @@
                             <option value="9">Oktobar</option>
                             <option value="10">Novembar</option>
                             <option value="11">Decembar</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="section">
-                    <div style="overflow-x: auto;">
+                        </select></div>
+                        <div class="ot-scroll">
                         <table class="izvjestaj-week-table" id="otpremac-sedmicni-table">
                             <thead id="otpremac-sedmicni-header"></thead>
                             <tbody id="otpremac-sedmicni-body"></tbody>
                             <tfoot id="otpremac-sedmicni-footer"></tfoot>
                         </table>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- MJESEČNI IZVJEŠTAJ -->
             <div id="otpremac-mjesecni-izvjestaj" class="sub-content hidden">
-                <div class="page-header" style="margin-top: 0;">
-                    <div class="page-header-left">
-                        <h2>📅 Mjesečni izvještaj otpreme</h2>
-                        <p>Suma otpreme po sortimentima za mjesec</p>
+                <div class="enterprise-card">
+                    <div class="enterprise-card-header">
+                        <div>
+                            <h2>📅 Mjesečni izvještaj otpreme</h2>
+                            <span class="card-subtitle">Suma otpreme po sortimentima za mjesec</span>
+                        </div>
                     </div>
-                    <div class="page-header-right">
-                        <select id="otpremac-mjesecni-year" class="year-select" onchange="loadOtpremacMjesecni()">
+                    <div class="enterprise-card-body">
+                        <div class="ot-toolbar">
+                        <select id="otpremac-mjesecni-year" class="month-select" onchange="loadOtpremacMjesecni()">
                             <option value="2026" selected>2026</option></select>
                         <select id="otpremac-mjesecni-month" class="month-select" onchange="loadOtpremacMjesecni()">
                             <option value="0">Januar</option>
@@ -3192,17 +3169,14 @@
                             <option value="9">Oktobar</option>
                             <option value="10">Novembar</option>
                             <option value="11">Decembar</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="section">
-                    <div style="overflow-x: auto;">
+                        </select></div>
+                        <div class="ot-scroll">
                         <table class="izvjestaj-week-table" id="otpremac-mjesecni-table">
                             <thead id="otpremac-mjesecni-header"></thead>
                             <tbody id="otpremac-mjesecni-body"></tbody>
                             <tfoot id="otpremac-mjesecni-footer"></tfoot>
                         </table>
+                        </div>
                     </div>
                 </div>
             </div>

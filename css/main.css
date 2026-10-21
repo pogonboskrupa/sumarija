@@ -4456,3 +4456,16 @@ body.mapa-fokus .kt-bar { flex-direction: row; flex-wrap: nowrap; overflow-x: au
 body.mapa-fokus .kt-bar .kt-row { flex-wrap: nowrap; flex: 0 0 auto; }
 body.mapa-fokus .kt-legend { display: none; }
 body.mapa-fokus .kt-wrap { padding-top: 6px; }
+
+/* ===== Radnik: Pregled sječe/otpreme + Izvještaji ===== */
+.ot-card-gap { margin-bottom: 16px; }
+.ot-table tbody tr.ot-mjesec-start td { border-top: 2px solid #94a3b8; }
+#primac-personal-table td:first-child, #otpremac-personal-table td:first-child { position: sticky; left: 0; z-index: 2; font-weight: 600; border-right: 2px solid #cbd5e1; }
+#primac-personal-table thead th:first-child, #otpremac-personal-table thead th:first-child { position: sticky; left: 0; z-index: 6; }
+#primac-personal-table thead th, #otpremac-personal-table thead th { cursor: pointer; }
+#primac-personal-table td.ukupno-col, #otpremac-personal-table td.ukupno-col { background: #eff6ff; color: #1e3a8a; font-weight: 800; }
+#primac-personal-table tr.sum-row td, #otpremac-personal-table tr.sum-row td { background: #1e3a5f !important; color: #fff !important; }
+#primac-personal-table td.sortiment-col, #otpremac-personal-table td.sortiment-col { text-align: right; font-variant-numeric: tabular-nums; }
+#izvjestaji-primac-content .sub-tabs, #izvjestaji-otpremac-content .sub-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+#izvjestaji-primac-content .sub-tab, #izvjestaji-otpremac-content .sub-tab { white-space: nowrap; flex: 0 0 auto; }
+.ot-toolbar select.year-select, .ot-toolbar select.month-select { width: auto; min-width: 120px; }
