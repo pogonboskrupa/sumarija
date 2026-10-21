@@ -9,7 +9,7 @@ body.login-active {
     background-attachment: fixed;
     overflow-x: hidden;
     min-height: 100vh;
-    min-height: 100dvh; /* Dynamic viewport height for mobile */
+    min-height: 100svh; /* small viewport: ne mijenja se kad se otvori tastatura, pa se okvir ne pomjera */
 }
 
 /* 🔧 KRITIČNO: Osiguraj da login screen nestane kada je hidden */
@@ -27,7 +27,7 @@ body.login-active {
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    min-height: 100dvh; /* Dynamic viewport height for mobile */
+    min-height: 100svh; /* small viewport: ne mijenja se kad se otvori tastatura, pa se okvir ne pomjera */
     padding: 20px;
     position: relative;
     overflow: hidden; /* Spriječi horizontalno skrolanje od dekorativnih krugova */
@@ -303,7 +303,7 @@ body.login-active {
     .login-container {
         padding: 16px;
         min-height: 100vh;
-        min-height: 100dvh;
+        min-height: 100svh; /* small viewport: ne mijenja se kad se otvori tastatura, pa se okvir ne pomjera */
         align-items: center;
     }
 
@@ -425,3 +425,10 @@ body.login-active {
 /* ============================================ */
 /* DARK MODE SUPPORT (optional) */
 /* ============================================ */
+
+/* Stabilan centar tokom unosa: okvir se centrira sa margin:auto (kad je tastatura otvorena i
+   sadržaj viši od ekrana, skrola se umjesto da se centar "preskoči"), a container ne reaguje
+   na promjenu visine viewporta. */
+.login-container { align-items: stretch; }
+.login-container > .login-box { margin: auto; position: relative; z-index: 1; }
+body.login-active { overscroll-behavior-y: none; }
