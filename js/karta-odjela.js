@@ -427,7 +427,7 @@
       radius:10, color:'#dc2626', fillColor:'#fca5a5', fillOpacity:0.9, weight:3
     }).bindTooltip(`Polazište: Odjel ${_currentOdjelLabel}`, { permanent:true, direction:'top', offset:[0,-8] }).addTo(_map);
     const btn = document.getElementById('karta-odjel-ruta-btn');
-    if (btn) { btn.style.background = '#2563eb'; btn.style.color = 'white'; }
+    if (btn) btn.classList.add('active');
     const hint = document.getElementById('mapa-ruta-hint');
     if (hint) { hint.textContent = `🎯 Polazište: Odjel ${_currentOdjelLabel} — kliknite na odredišni odjel`; hint.style.display = 'block'; }
   };
@@ -470,7 +470,7 @@
     _odjelRutaFrom = null;
     if (_odjelRutaFromMark) { _map.removeLayer(_odjelRutaFromMark); _odjelRutaFromMark = null; }
     const btn = document.getElementById('karta-odjel-ruta-btn');
-    if (btn) { btn.style.background = 'white'; btn.style.color = '#374151'; }
+    if (btn) btn.classList.remove('active');
     const hint = document.getElementById('mapa-ruta-hint');
     if (hint) hint.style.display = 'none';
   }
@@ -496,7 +496,7 @@
     _odjelRutaMode = true;
     _odjelRutaFrom = null;
     const btn = document.getElementById('karta-odjel-ruta-btn');
-    if (btn) { btn.style.background = '#2563eb'; btn.style.color = 'white'; }
+    if (btn) btn.classList.add('active');
     const hint = document.getElementById('mapa-ruta-hint');
     if (hint) { hint.textContent = '📍 Kliknite na prvi odjel (polazište)'; hint.style.display = 'block'; }
   };
@@ -1120,6 +1120,16 @@
       }
     });
 
+    // Brojači u legendi (ukupno po statusu) i "Prikazano X od Y"
+    const tot = {};
+    _allFeatures.forEach(l => { tot[l._kartaStatus] = (tot[l._kartaStatus] || 0) + 1; });
+    document.querySelectorAll('.kt-count[data-status]').forEach(el => { el.textContent = tot[el.dataset.status] || 0; });
+    const cntEl = document.getElementById('karta-count');
+    if (cntEl && _allFeatures.length) {
+      const vis = _allFeatures.filter(l => _map.hasLayer(l)).length;
+      cntEl.textContent = `Prikazano ${vis} od ${_allFeatures.length} odjela`;
+    }
+
     // Info traka pored checkboxa — koliko odjela ima otpremu i za koji mjesec
     const info = document.getElementById('karta-otprema-info');
     if (info) {
@@ -1447,6 +1457,9 @@
 
     _statusMap = _buildStatusMap(primke, otpreme);
     _renderLayer(geojson, _statusMap);
+    const godEl = document.getElementById('karta-godina');
+    if (godEl) godEl.textContent = PLAN_YEAR;
+    applyKartaFilter();
     if (typeof markTabRendered === 'function') markTabRendered('karta-odjela');
 
     setTimeout(() => { if (_map) _map.invalidateSize(); }, 200);

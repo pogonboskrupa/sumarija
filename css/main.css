@@ -4413,3 +4413,46 @@ body.oa-open { overflow: hidden; }
     .ot-scroll { max-height: 66vh; }
     .ot-toolbar .search-input { max-width: none; flex-basis: 100%; }
 }
+
+/* ===== KARTA tab (kt-*) ===== */
+.kt-wrap { padding: 16px 20px 0; }
+.kt-total { font-size: 13px; font-weight: 700; color: #1e3a5f; background: #fff; border-radius: 999px; padding: 6px 12px; box-shadow: 0 1px 4px rgba(15,23,42,.12); }
+.kt-bar { background: #fff; border-radius: 14px; box-shadow: 0 2px 10px rgba(15,23,42,.1); padding: 10px 14px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; }
+.kt-row { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+.kt-field { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #374151; }
+.kt-field select, .kt-search input { font-size: 13px; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: #111827; min-height: 36px; }
+.kt-search { display: flex; align-items: center; gap: 6px; }
+.kt-search input { width: 150px; }
+.kt-btn { font-size: 13px; font-weight: 600; padding: 7px 12px; min-height: 36px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: #374151; cursor: pointer; white-space: nowrap; font-family: inherit; }
+.kt-btn:hover { background: #f3f4f6; }
+.kt-btn:disabled { opacity: .6; cursor: progress; }
+.kt-btn.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+.kt-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer; background: #f8fafc; border: 1px solid #d1d5db; border-radius: 8px; padding: 7px 12px; min-height: 36px; }
+.kt-toggle:has(input:checked) { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+.kt-toggle input { margin: 0; cursor: pointer; }
+.kt-info { font-size: 12px; color: #b45309; font-weight: 700; }
+.kt-actions { padding-top: 2px; }
+.kt-legend { display: flex; flex-wrap: wrap; gap: 6px; border-top: 1px solid #eef2f7; padding-top: 10px; }
+.kt-leg { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #1f2937; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 999px; padding: 4px 10px; cursor: pointer; user-select: none; }
+.kt-leg input { margin: 0; cursor: pointer; }
+.kt-leg:has(input:not(:checked)) { opacity: .5; text-decoration: line-through; }
+.kt-dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.kt-count { font-size: 11px; font-weight: 800; color: #475569; background: #e2e8f0; border-radius: 999px; padding: 0 7px; min-width: 18px; text-align: center; }
+.kt-count:empty { display: none; }
+.kt-hint { padding: 9px 14px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; font-size: 13px; color: #1e40af; font-weight: 600; margin-bottom: 8px; }
+#karta-odjela-map { border-top: 1px solid #e5e7eb; }
+
+@media (max-width: 640px) {
+    .kt-wrap { padding: 10px 10px 0; }
+    .kt-bar { padding: 10px; border-radius: 12px; }
+    .kt-search { flex: 1 1 100%; }
+    .kt-search input { flex: 1; width: auto; min-width: 0; }
+    .kt-actions { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+    .kt-legend { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+    .kt-leg { flex: 0 0 auto; }
+}
+body.mapa-fokus .kt-bar { padding: 6px 10px; }
+body.mapa-fokus .kt-bar { flex-direction: row; flex-wrap: nowrap; overflow-x: auto; gap: 10px; }
+body.mapa-fokus .kt-bar .kt-row { flex-wrap: nowrap; flex: 0 0 auto; }
+body.mapa-fokus .kt-legend { display: none; }
+body.mapa-fokus .kt-wrap { padding-top: 6px; }
