@@ -432,3 +432,31 @@ body.login-active {
 .login-container { align-items: stretch; }
 .login-container > .login-box { margin: auto; position: relative; z-index: 1; }
 body.login-active { overscroll-behavior-y: none; }
+
+/* ===== Redizajn login ekrana: zeleni brand-header sa velikim logom ===== */
+.login-box { padding: 0; overflow: hidden; max-width: 420px; border-radius: 24px; box-shadow: 0 30px 80px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.25); }
+.login-box .logo-container { margin: 0; padding: 30px 24px 26px; background: radial-gradient(120% 140% at 50% 0%, #10b981 0%, #047857 45%, #064e3b 100%); position: relative; }
+.login-box .logo-container::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0 2px, transparent 2px 14px); pointer-events: none; }
+.login-box .logo-container::after { display: none; }
+.login-box .logo-container img { position: relative; width: 210px; max-width: 78%; height: auto; margin: 0 auto 14px; display: block; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35)); }
+.login-box .logo-container .text-outline-firma { position: relative; color: #ecfdf5 !important; text-shadow: none !important; font-size: 12px; letter-spacing: 1.6px; margin: 0 0 3px; }
+.login-box .company-subtitle { position: relative; color: #a7f3d0; font-size: 11px; letter-spacing: 2.4px; font-weight: 600; margin: 0; }
+.login-body { padding: 26px 32px 32px; }
+.login-box h2 { font-size: 28px; margin-bottom: 4px; background: linear-gradient(135deg, #047857 0%, #065f46 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.login-box > p, .login-body > p { text-align: center; color: #6b7280; margin: 0 0 22px; font-size: 13.5px; }
+.form-group { margin-bottom: 18px; }
+.form-group input:focus { border-color: #059669; box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.15); }
+.login-box .btn { background: linear-gradient(135deg, #059669 0%, #047857 100%); box-shadow: 0 6px 18px rgba(4, 120, 87, 0.4); margin-top: 6px; }
+.login-box .btn:hover { box-shadow: 0 10px 26px rgba(4, 120, 87, 0.5); }
+
+@media (max-width: 767px) {
+    .login-box { max-width: 380px; width: calc(100% - 28px); border-radius: 20px; padding: 0; }
+    .login-box .logo-container { padding: 26px 20px 22px; }
+    .login-box .logo-container img { width: 190px; }
+    .login-body { padding: 22px 22px 26px; }
+}
+@media (max-width: 380px) {
+    .login-box .logo-container img { width: 165px; }
+    .login-body { padding: 18px 18px 22px; }
+}
+.login-box .logo-container img { border-radius: 16px; border: 3px solid rgba(255, 255, 255, 0.9); box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3); filter: none; background: #f4f1e6; }
