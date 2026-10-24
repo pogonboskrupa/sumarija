@@ -1,15 +1,45 @@
 // ========== Service Worker - Offline Support ==========
 
-const CACHE_VERSION = 'v171';
+const CACHE_VERSION = 'v172';
 const CACHE_NAME = `sumarija-cache-${CACHE_VERSION}`;
 
-// Install — pre-keširaj samo offline.html (fallback koji se inače nikad ne
-// fetcha pa lazy keširanje nikad ne bi imalo šta poslužiti offline korisniku);
-// ostali resursi se kešuju lazy pri prvom fetchu
+// Resursi koji se keširaju odmah pri instalaciji — aplikacija se tako otvara offline već
+// poslije PRVOG online posjeta (ranije se lazy keširalo samo ono što je stvarno učitano).
+const PRECACHE_LOCAL = [
+    './', 'index.html', 'offline.html', 'manifest.webmanifest', 'logo-zuti.png', 'favicon.svg', 'favicon.png',
+    'idb-helper.js', 'data-sync.js',
+    'css/main.css', 'css/login-optimized.css', 'css/table-contrast-fix.css',
+    'js/config-sumarija.js', 'js/izvjestaji-new.js', 'js/print-utils.js', 'js/kubikator.js', 'js/sihtarica.js',
+    'js/utils.js', 'js/app.js', 'js/auth.js', 'js/ui.js', 'js/drag-scroll.js', 'js/charts.js',
+    'js/godisnji-plan.js', 'js/karta-odjela.js', 'js/mapa-radnika.js', 'js/notifications.js',
+    'js/odjel-aktivnost.js', 'js/odjeli-kartice.js'
+];
+const PRECACHE_CDN = [
+    'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.mini.min.js',
+    'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+    'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+    'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'
+];
+
+// Jedan neuspjeli URL ne smije srušiti instalaciju — svaki se kešuje zasebno.
+// CDN: prvo CORS (potrebno za <script crossorigin>), pa no-cors (opaque) kao rezerva.
+async function _precacheOne(cache, url, cdn) {
+    try {
+        const resp = await fetch(url, { cache: 'no-cache' });
+        if (resp && resp.ok) { await cache.put(url, resp); return; }
+    } catch (_) { /* pokušaj rezervu */ }
+    if (cdn) {
+        try { await cache.put(url, await fetch(new Request(url, { mode: 'no-cors' }))); } catch (_) {}
+    }
+}
+
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then(c => c.add('offline.html').catch(() => {}))
+            .then(c => Promise.all([
+                ...PRECACHE_LOCAL.map(u => _precacheOne(c, u, false)),
+                ...PRECACHE_CDN.map(u => _precacheOne(c, u, true))
+            ]))
             .then(() => self.skipWaiting())
     );
 });
@@ -35,16 +65,19 @@ self.addEventListener('fetch', (event) => {
     // Google Apps Script — ne interceptuj (fetchWithCache u app.js ima stale fallback)
     if (url.hostname === 'script.google.com') return;
 
-    // Stranice (navigate) — network-first, fallback na cached ili offline.html.
-    // {cache:'reload'} zaobilazi browserov HTTP keš da se index.html stvarno
-    // provjeri na mreži pri svakom otvaranju (isti razlog kao kod JS/CSS ispod).
+    // Stranice (navigate) — mreža-prvo, ali najviše 3 s: ako je veza spora, odmah se otvara
+    // keširana aplikacija (nova verzija stiže pri sljedećem otvaranju). {cache:'no-cache'} =
+    // uslovna provjera (304 kad nema promjena) umjesto punog preuzimanja 'reload'.
     if (request.mode === 'navigate') {
-        event.respondWith(
-            fetch(request, { cache: 'reload' })
-                .then(resp => { _cacheIfOk(resp.clone(), request); return resp; })
-                .catch(() => caches.match(request)
-                    .then(c => c || caches.match('offline.html')))
-        );
+        const fallback = () => caches.match(request, { ignoreSearch: true })
+            .then(c => c || caches.match('index.html') || caches.match('./'))
+            .then(c => c || caches.match('offline.html'));
+        event.respondWith(new Promise(resolve => {
+            const t = setTimeout(() => fallback().then(c => c && resolve(c)), 3000);
+            fetch(request, { cache: 'no-cache' })
+                .then(resp => { clearTimeout(t); _cacheIfOk(resp.clone(), request); resolve(resp); })
+                .catch(() => { clearTimeout(t); fallback().then(c => resolve(c || new Response('Offline', { status: 503 }))); });
+        }));
         return;
     }
 
@@ -89,7 +122,7 @@ self.addEventListener('fetch', (event) => {
         event.respondWith(
             new Promise(resolve => {
                 const t = setTimeout(() => caches.match(request).then(c => c && resolve(c)), 4000);
-                fetch(request, { cache: 'reload' })
+                fetch(request, { cache: 'no-cache' })
                     .then(resp => { clearTimeout(t); _cacheIfOk(resp.clone(), request); resolve(resp); })
                     .catch(() => { clearTimeout(t); caches.match(request).then(c => resolve(c || new Response('', { status: 503 }))); });
             })
@@ -105,7 +138,7 @@ self.addEventListener('fetch', (event) => {
     if (/\.(js|css|png|jpg|svg|ico|woff2?)$/.test(url.pathname)) {
         event.respondWith(
             caches.match(request).then(cached => {
-                const network = fetch(request, { cache: 'reload' }).then(resp => { _cacheIfOk(resp.clone(), request); return resp; })
+                const network = fetch(request, { cache: 'no-cache' }).then(resp => { _cacheIfOk(resp.clone(), request); return resp; })
                     .catch(() => cached || new Response('', { status: 503 }));
                 if (cached) event.waitUntil(network.catch(() => {}));
                 return cached || network;
