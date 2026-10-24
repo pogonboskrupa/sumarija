@@ -1251,3 +1251,63 @@ table[id^="izvjestaji-sedmicni"].izvjestaj-week-table thead th.col-sedmica {
     margin-left: 4px;
     font-size: 12px;
 }
+
+/* ===== Izvještaji (svi podtabovi) — čitljiva zaglavlja =====
+   Uzrok nečitljivosti: sedmična tabela forsira sivu boju teksta (#475569 !important) za SVA
+   zaglavlja, pa su obojene kolone (TRUPCI Č, Σ ČETINARI, LIŠĆARI, SVEUKUPNO) imale tamno-sivi
+   tekst na tamno zelenoj/smeđoj/plavoj pozadini. Ovdje se obojenim zaglavljima eksplicitno
+   daje bijeli tekst, a običnim jači kontrast. */
+#izvjestaji-content .izvjestaj-week-table thead th,
+#izvjestaji-primac-content .izvjestaj-week-table thead th,
+#izvjestaji-otpremac-content .izvjestaj-week-table thead th {
+    font-size: 12.5px;
+    font-weight: 800;
+    letter-spacing: .3px;
+    white-space: nowrap;
+}
+#izvjestaji-content table.izvjestaj-week-table thead th:not(.col-cetinari):not(.col-liscari):not(.col-sveukupno):not(:first-child),
+#izvjestaji-primac-content table.izvjestaj-week-table thead th:not(.col-cetinari):not(.col-liscari):not(.col-sveukupno):not(:first-child),
+#izvjestaji-otpremac-content table.izvjestaj-week-table thead th:not(.col-cetinari):not(.col-liscari):not(.col-sveukupno):not(:first-child) {
+    background: #e8eef6 !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1;
+}
+#izvjestaji-content table.izvjestaj-week-table thead th.col-cetinari,
+#izvjestaji-content table.izvjestaj-week-table thead th.col-liscari,
+#izvjestaji-content table.izvjestaj-week-table thead th.col-sveukupno,
+#izvjestaji-primac-content table.izvjestaj-week-table thead th.col-cetinari,
+#izvjestaji-primac-content table.izvjestaj-week-table thead th.col-liscari,
+#izvjestaji-primac-content table.izvjestaj-week-table thead th.col-sveukupno,
+#izvjestaji-otpremac-content table.izvjestaj-week-table thead th.col-cetinari,
+#izvjestaji-otpremac-content table.izvjestaj-week-table thead th.col-liscari,
+#izvjestaji-otpremac-content table.izvjestaj-week-table thead th.col-sveukupno {
+    color: #ffffff !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .35);
+}
+#izvjestaji-content table.izvjestaj-week-table thead th.col-cetinari,
+#izvjestaji-primac-content table.izvjestaj-week-table thead th.col-cetinari,
+#izvjestaji-otpremac-content table.izvjestaj-week-table thead th.col-cetinari { background: #047857 !important; }
+#izvjestaji-content table.izvjestaj-week-table thead th.col-cetinari.is-subtotal,
+#izvjestaji-content table.izvjestaj-week-table thead th.col-cetinari.is-total,
+#izvjestaji-primac-content table.izvjestaj-week-table thead th.col-cetinari.is-subtotal,
+#izvjestaji-primac-content table.izvjestaj-week-table thead th.col-cetinari.is-total,
+#izvjestaji-otpremac-content table.izvjestaj-week-table thead th.col-cetinari.is-subtotal,
+#izvjestaji-otpremac-content table.izvjestaj-week-table thead th.col-cetinari.is-total { background: #064e3b !important; }
+#izvjestaji-content table.izvjestaj-week-table thead th.col-liscari,
+#izvjestaji-primac-content table.izvjestaj-week-table thead th.col-liscari,
+#izvjestaji-otpremac-content table.izvjestaj-week-table thead th.col-liscari { background: #b45309 !important; }
+#izvjestaji-content table.izvjestaj-week-table thead th.col-liscari.is-subtotal,
+#izvjestaji-content table.izvjestaj-week-table thead th.col-liscari.is-total,
+#izvjestaji-primac-content table.izvjestaj-week-table thead th.col-liscari.is-subtotal,
+#izvjestaji-primac-content table.izvjestaj-week-table thead th.col-liscari.is-total,
+#izvjestaji-otpremac-content table.izvjestaj-week-table thead th.col-liscari.is-subtotal,
+#izvjestaji-otpremac-content table.izvjestaj-week-table thead th.col-liscari.is-total { background: #78350f !important; }
+#izvjestaji-content table.izvjestaj-week-table thead th.col-sveukupno,
+#izvjestaji-primac-content table.izvjestaj-week-table thead th.col-sveukupno,
+#izvjestaji-otpremac-content table.izvjestaj-week-table thead th.col-sveukupno { background: #1e3a8a !important; }
+/* kolona ODJEL / SEDMICA (prva) */
+#izvjestaji-content table.izvjestaj-week-table thead th:first-child,
+#izvjestaji-primac-content table.izvjestaj-week-table thead th:first-child,
+#izvjestaji-otpremac-content table.izvjestaj-week-table thead th:first-child { color: #312e81 !important; font-weight: 800; }
+/* ostale tabele u Izvještajima (po radniku/odjelu) */
+#izvjestaji-content .kupci-table thead th { background: #1e3a5f !important; color: #fff !important; font-weight: 700; }
