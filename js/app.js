@@ -2,7 +2,7 @@
         // izvor istine je fajl VERSION u root-u repozitorija. Ručno se povećava
         // (minor+1) uz SVAKI novi commit (ne samo pri merge-u u main) — nema CI
         // koraka, ovo se ažurira direktno u istom commit-u koji nosi stvarnu izmjenu.
-        const APP_VERSION = '2.146';
+        const APP_VERSION = '2.147';
         const BUILD_COMMIT = 'pending';
         window.APP_VERSION = APP_VERSION; // dostupno za prikaz u meniju pored "Odjavi se"
 
@@ -556,6 +556,10 @@ try {
                         candidates.push({ key, ts });
                     }
                     candidates.sort((a, b) => a.ts - b.ts);
+                    if (!window._cacheQuotaWarned && typeof showWarning === 'function') {
+                        window._cacheQuotaWarned = true;
+                        showWarning('Offline prostor pun', 'Pregled najstarijih prikaza možda neće biti dostupan offline dok ih ponovo ne otvoriš online.', 7000);
+                    }
                     let written = false;
                     for (const c of candidates) {
                         localStorage.removeItem(c.key);
@@ -603,7 +607,35 @@ try {
             return promise;
         }
 
+        // Stale-while-revalidate: ako keš postoji ali je istekao, čekamo mrežu najviše STALE_WAIT_MS,
+        // pa vraćamo zadnje učitane podatke dok zahtjev završava u pozadini (upisuje keš i, ako su
+        // podaci drugačiji, šalje 'sumarija:cache-updated' da se aktivni prikaz tiho osvježi).
+        const STALE_WAIT_MS = 3000;
         async function _fetchWithCacheImpl(url, cacheKey, forceRefresh = false, timeout = 60000) {
+            if (!forceRefresh && navigator.onLine) {
+                const cached = await _readCacheEntry(cacheKey);
+                if (cached && cached.data && !cached.data.error && (Date.now() - cached.timestamp) >= getSmartCacheTTL()) {
+                    const network = _fetchNetworkImpl(url, cacheKey, forceRefresh, timeout);
+                    const STALE = Symbol('stale');
+                    const first = await Promise.race([
+                        network.catch(() => STALE),
+                        new Promise(resolve => setTimeout(() => resolve(STALE), STALE_WAIT_MS))
+                    ]);
+                    if (first !== STALE) return first;
+                    const age = Date.now() - cached.timestamp;
+                    showCacheIndicator(age, true);
+                    network.then(fresh => {
+                        if (fresh && !fresh.error && !fresh.offline && JSON.stringify(fresh) !== JSON.stringify(cached.data)) {
+                            window.dispatchEvent(new CustomEvent('sumarija:cache-updated', { detail: { cacheKey } }));
+                        }
+                    }).catch(() => {});
+                    return cached.data;
+                }
+            }
+            return _fetchNetworkImpl(url, cacheKey, forceRefresh, timeout);
+        }
+
+        async function _fetchNetworkImpl(url, cacheKey, forceRefresh = false, timeout = 60000) {
             if (typeof timeout === 'undefined') timeout = 60000;
 
             // Use smart cache TTL optimized for data entry patterns
@@ -1793,6 +1825,18 @@ try {
               _showInitFailureScreen(e.message);
           }
         });
+
+        // Offline podaci uvijek svježi: tiho osvježi sve prikaze (preskače one koji su već svježi) svakih
+        // 20 min dok je aplikacija otvorena i online, te čim se veza vrati.
+        (function () {
+            const osvjezi = () => {
+                if (!navigator.onLine || document.hidden || !window.currentUser || preloadScheduled) return;
+                preloadScheduled = true;
+                Promise.resolve(preloadAllViews(true)).catch(() => {}).then(() => { preloadScheduled = false; });
+            };
+            setInterval(osvjezi, 20 * 60 * 1000);
+            window.addEventListener('online', () => setTimeout(osvjezi, 3000));
+        })();
 
         // Log cache statistics when page is closed
         window.addEventListener('beforeunload', () => {

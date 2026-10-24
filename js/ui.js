@@ -47,6 +47,28 @@
                 'karta-odjela': 'karta-odjela-content',
         };
 
+        // Tiho osvježavanje aktivnog prikaza kad pozadinski zahtjev donese novije podatke od onih
+        // koji su prikazani iz keša (vidi STALE_WAIT_MS u app.js). Ne dira forme, mape, kubikator,
+        // šihtaricu niti prikaz u kojem korisnik trenutno kuca ili ima otvoren modal.
+        (function () {
+            const NE_OSVJEZAVAJ = /^(add-|edit-|my-|sihtarica|kubikator|karta-odjela|primac-mapa|otpremac-mapa|poslovodja-mapa)/;
+            let timer = null;
+            window.addEventListener('sumarija:cache-updated', () => {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    const tab = window.currentTab;
+                    if (!tab || NE_OSVJEZAVAJ.test(tab) || document.hidden) return;
+                    const ae = document.activeElement;
+                    if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;
+                    if (document.querySelector('.modal-overlay.show, #oa-modal.open, #oa-modal.show')) return;
+                    const mm = document.getElementById('mapa-modal');
+                    if (mm && mm.style.display && mm.style.display !== 'none') return;
+                    if (window._tabRenderTime) window._tabRenderTime[tab] = 0;
+                    if (typeof switchTab === 'function') switchTab(tab);
+                }, 1500);
+            });
+        })();
+
         // Switch between tabs
         function switchTab(tab) {
             // Prati aktivni tab za sprečavanje bleeding-a kod async operacija
