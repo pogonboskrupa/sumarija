@@ -98,9 +98,17 @@
 
         redovi.sort(function (a, b) { return (b.ts - a.ts) || String(a.meta.radnik).localeCompare(String(b.meta.radnik), 'bs'); });
 
+        // Granica između grupa: prva kolona lišćara (iza Σ ČETINARI) dobija istaknutu lijevu liniju
+        var grupaPocetak = null;
+        kolone.forEach(function (k) {
+            if (grupaPocetak === null && typeof sortimentColClass === 'function' && sortimentColClass(k).indexOf('col-liscari') > -1) grupaPocetak = k;
+        });
+        function kolClass(k) {
+            return (typeof sortimentColClass === 'function' ? sortimentColClass(k) : '') + (k === grupaPocetak ? ' oa-grp-start' : '');
+        }
         var html = '<div class="oa-scroll"><table class="oa-table"><thead><tr><th>Datum</th><th>' + imeKolone + '</th>' +
             (saKupcem ? '<th>Kupac</th>' : '') +
-            kolone.map(function (k) { return '<th class="right ' + (typeof sortimentColClass === 'function' ? sortimentColClass(k) : '') + '">' + esc(k) + '</th>'; }).join('') +
+            kolone.map(function (k) { return '<th class="right ' + kolClass(k) + '">' + esc(k) + '</th>'; }).join('') +
             '<th class="right oa-ukupno">UKUPNO</th></tr></thead><tbody>';
 
         var prethodniTs = null;
@@ -113,12 +121,12 @@
             html += '<tr class="' + (prviUDanu ? 'oa-novi-dan' : '') + '"><td class="oa-datum">' + (prviUDanu ? datumTekst(r.ts) : '') + '</td>' +
                 '<td class="oa-radnik">' + esc(r.meta.radnik || '—') + '</td>' +
                 (saKupcem ? '<td>' + esc(r.meta.kupac || '—') + '</td>' : '') +
-                kolone.map(function (k) { return '<td class="right ' + (typeof sortimentColClass === 'function' ? sortimentColClass(k) : '') + '">' + fmt(r.sort[k] || 0) + '</td>'; }).join('') +
+                kolone.map(function (k) { return '<td class="right ' + kolClass(k) + '">' + fmt(r.sort[k] || 0) + '</td>'; }).join('') +
                 '<td class="right oa-ukupno"><b>' + fmt(u) + '</b></td></tr>';
         });
 
         html += '<tr class="sum-row oa-total"><td colspan="' + (saKupcem ? 3 : 2) + '">UKUPNO</td>' +
-            kolone.map(function (k) { return '<td class="right">' + fmt(ukupno[k]) + '</td>'; }).join('') +
+            kolone.map(function (k) { return '<td class="right ' + kolClass(k) + '">' + fmt(ukupno[k]) + '</td>'; }).join('') +
             '<td class="right">' + fmt(sveUkupno) + '</td></tr></tbody></table></div>';
         return html;
     }
