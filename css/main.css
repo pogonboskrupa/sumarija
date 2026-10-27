@@ -4469,3 +4469,19 @@ body.mapa-fokus .kt-wrap { padding-top: 6px; }
 #izvjestaji-primac-content .sub-tabs, #izvjestaji-otpremac-content .sub-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
 #izvjestaji-primac-content .sub-tab, #izvjestaji-otpremac-content .sub-tab { white-space: nowrap; flex: 0 0 auto; }
 .ot-toolbar select.year-select, .ot-toolbar select.month-select { width: auto; min-width: 120px; }
+
+/* ===== Modal Aktivni odjel — grupe sortimenata (četinari | lišćari) ===== */
+.oa-table th.col-cetinari { background: #166534; }
+.oa-table th.col-liscari { background: #92400e; }
+.oa-table th.col-cetinari.is-subtotal, .oa-table th.col-cetinari.is-total { background: #14532d; }
+.oa-table th.col-liscari.is-subtotal, .oa-table th.col-liscari.is-total { background: #78350f; }
+.oa-table th.col-sveukupno { background: #1e3a8a; }
+.oa-table td.col-cetinari.is-subtotal, .oa-table td.col-cetinari.is-total { background: #f0fdf4; font-weight: 700 !important; }
+.oa-table td.col-liscari.is-subtotal, .oa-table td.col-liscari.is-total { background: #fffbeb; font-weight: 700 !important; }
+.oa-table td.col-cetinari.is-total { border-right: 0; }
+.oa-table th.oa-grp-start, .oa-table td.oa-grp-start { border-left: 3px solid #f59e0b; }
+.oa-table th.oa-ukupno, .oa-table td.oa-ukupno { border-left: 3px solid #064e3b; }
+.oa-table tr.oa-total td.oa-grp-start { border-left-color: #fbbf24; }
+.oa-table tbody tr:hover td { background-image: linear-gradient(rgba(30,58,95,.06), rgba(30,58,95,.06)); }
+.oa-table tr.oa-total:hover td { background-image: none; }
+.oa-table tr.oa-total td, .oa-table tr.oa-total td.is-subtotal, .oa-table tr.oa-total td.is-total { background: #064e3b !important; color: #fff !important; }
